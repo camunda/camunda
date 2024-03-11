@@ -11,13 +11,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TokenDto;
 import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @AllArgsConstructor
 @Path("/token")
@@ -31,8 +30,9 @@ public class TokenRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public TokenDto getCurrentToken(@Context final ContainerRequestContext requestContext) {
     return cloudSaasMetaInfoService
-      .map(saasMetaInfoService -> new TokenDto(saasMetaInfoService.getCurrentUserServiceToken().orElse(null)))
-      .orElseGet(() -> new TokenDto(null));
+        .map(
+            saasMetaInfoService ->
+                new TokenDto(saasMetaInfoService.getCurrentUserServiceToken().orElse(null)))
+        .orElseGet(() -> new TokenDto(null));
   }
-
 }

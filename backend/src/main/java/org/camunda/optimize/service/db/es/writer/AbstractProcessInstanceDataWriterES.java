@@ -5,17 +5,9 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
-import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.service.db.writer.AbstractProcessInstanceDataWriter;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Conditional;
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,14 +15,22 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
-import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.writer.AbstractProcessInstanceDataWriter;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Conditional;
 
 @RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class AbstractProcessInstanceDataWriterES<T extends OptimizeDto> implements AbstractProcessInstanceDataWriter<T> {
+public class AbstractProcessInstanceDataWriterES<T extends OptimizeDto>
+    implements AbstractProcessInstanceDataWriter<T> {
 
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final OptimizeElasticsearchClient esClient;
@@ -44,8 +44,8 @@ public class AbstractProcessInstanceDataWriterES<T extends OptimizeDto> implemen
   }
 
   @Override
-  public void createInstanceIndicesIfMissing(final List<T> optimizeDtos,
-                                             final Function<T, String> definitionKeyGetter) {
+  public void createInstanceIndicesIfMissing(
+      final List<T> optimizeDtos, final Function<T, String> definitionKeyGetter) {
     createInstanceIndicesIfMissing(optimizeDtos.stream().map(definitionKeyGetter).collect(toSet()));
   }
 
@@ -59,18 +59,20 @@ public class AbstractProcessInstanceDataWriterES<T extends OptimizeDto> implemen
   }
 
   private void createMissingInstanceIndices(final Set<String> defKeysOfMissingIndices) {
-    log.debug("Creating process instance indices for definition keys [{}].", defKeysOfMissingIndices);
-    defKeysOfMissingIndices.forEach(defKey -> elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
-      esClient,
-      new ProcessInstanceIndexES(defKey),
-      Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
-    ));
+    log.debug(
+        "Creating process instance indices for definition keys [{}].", defKeysOfMissingIndices);
+    defKeysOfMissingIndices.forEach(
+        defKey ->
+            elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
+                esClient,
+                new ProcessInstanceIndexES(defKey),
+                Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)));
     existingInstanceIndexDefinitionKeys.addAll(defKeysOfMissingIndices);
   }
 
   private boolean indexExists(final String definitionKey) {
     return existingInstanceIndexDefinitionKeys.contains(definitionKey)
-      || elasticSearchSchemaManager.indexExists(esClient, getProcessInstanceIndexAliasName(definitionKey));
+        || elasticSearchSchemaManager.indexExists(
+            esClient, getProcessInstanceIndexAliasName(definitionKey));
   }
-
 }

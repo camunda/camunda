@@ -11,22 +11,21 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.previousVersion>3.12.0</project.previousVersion>
 
-    <camunda.engine.version>7.18.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.18.11-ee</camunda.maven.artifacts.version>
+    <camunda.engine.version>7.19.0</camunda.engine.version>
+    <camunda.maven.artifacts.version>7.19.0-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.5.0-alpha1</zeebe.version>
-    <identity.version>8.5.0-alpha1</identity.version>
+    <zeebe.version>8.5.0-alpha2</zeebe.version>
+    <identity.version>8.5.0-alpha2</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
-    <plugin.version.sonar>3.10.0.2594</plugin.version.sonar>
 
     <!-- database config -->
-    <elasticsearch.version>7.17.17</elasticsearch.version>
-    <opensearch.version>2.8.1</opensearch.version>
+    <elasticsearch.version>7.17.18</elasticsearch.version>
+    <opensearch.version>2.9.0</opensearch.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -36,22 +35,22 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.22.1</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.23.0</elasticsearch.log4j.version>
 
     <jackson.version>2.16.1</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.0.0-jre</guava.version>
-    <spring.boot.version>3.1.8</spring.boot.version>
-    <spring.version>6.1.3</spring.version>
+    <spring.boot.version>3.1.9</spring.boot.version>
+    <spring.version>6.1.4</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
-    <netty.version>4.1.106.Final</netty.version>
+    <netty.version>4.1.107.Final</netty.version>
     <lombok.version>1.18.30</lombok.version>
-    <logback.version>1.4.14</logback.version>
-    <slf4j.version>2.0.11</slf4j.version>
+    <logback.version>1.5.0</logback.version>
+    <slf4j.version>2.0.12</slf4j.version>
     <commons.io.version>2.15.1</commons.io.version>
 
     <version.node>v20.9.0</version.node>
@@ -59,13 +58,14 @@
 
     <!-- testing config -->
     <h2.version>2.2.224</h2.version>
-    <postgres.version>42.7.1</postgres.version>
-    <mockito.version>5.10.0</mockito.version>
+    <postgres.version>42.7.2</postgres.version>
+    <mockito.version>5.11.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.10.1</junit.jupiter.version>
-    <junit.platform.version>1.10.1</junit.platform.version>
+    <junit.jupiter.version>5.10.2</junit.jupiter.version>
+    <junit.platform.version>1.10.2</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
-    <assertj.version>3.25.2</assertj.version>
+    <assertj.version>3.25.3</assertj.version>
+    <google-java-format.plugin.version>1.20.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
@@ -73,13 +73,6 @@
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
-
-    <sonar.organization>camunda</sonar.organization>
-    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <aggregate.report.dir>test-coverage/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
-    <sonar.junit.reportPaths>
-      ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
-    </sonar.junit.reportPaths>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -96,7 +89,6 @@
     <module>qa</module>
     <module>distro</module>
     <module>upgrade</module>
-    <module>test-coverage</module>
   </modules>
 
   <dependencyManagement>
@@ -150,12 +142,6 @@
       <id>engine-7.19</id>
       <properties>
         <camunda.engine.version>7.19.0</camunda.engine.version>
-      </properties>
-    </profile>
-    <profile>
-      <id>engine-7.18</id>
-      <properties>
-        <camunda.engine.version>7.18.0</camunda.engine.version>
       </properties>
     </profile>
 
@@ -219,25 +205,6 @@
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
     </profile>
-    <profile>
-      <id>coverage</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>prepare-agent</id>
-                <goals>
-                  <goal>prepare-agent</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
 
     <!-- database profiles-->
     <profile>
@@ -257,30 +224,46 @@
       </properties>
     </profile>
 
-    <!-- profile to perform only static code analysis using sonar scanner -->
+    <!-- profile to auto format -->
     <profile>
-      <id>sonar</id>
-      <properties>
-        <!-- sonarscanner integration -->
-        <!-- sonar.login token must be passed at runtime to avoid sharing token -->
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>camunda</sonar.organization>
-        <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
-        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
-        <sonar.token>${env.SONARCLOUD_TOKEN}</sonar.token>
-      </properties>
+      <id>autoFormat</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.sonarsource.scanner.maven</groupId>
-            <artifactId>sonar-maven-plugin</artifactId>
-            <version>${plugin.version.sonar}</version>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
             <executions>
               <execution>
-                <phase>verify</phase>
+                <id>spotless-format</id>
                 <goals>
-                  <goal>sonar</goal>
+                  <goal>apply</goal>
                 </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to perform strict validation checks -->
+    <profile>
+      <id>checkFormat</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
               </execution>
             </executions>
           </plugin>
@@ -346,6 +329,12 @@
       <artifactId>mockserver-junit-jupiter</artifactId>
       <version>${mockserver.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.github.netmikey.logunit</groupId>
@@ -374,6 +363,10 @@
         <exclusion>
           <artifactId>commons-codec</artifactId>
           <groupId>commons-codec</groupId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -471,7 +464,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.1</version>
+          <version>3.5.2</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>
@@ -479,7 +472,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -489,7 +482,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven3-plugin</artifactId>
-          <version>1.10.11</version>
+          <version>1.10.12</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
@@ -517,16 +510,26 @@
           <artifactId>license-maven-plugin</artifactId>
           <version>4.3</version>
         </plugin>
-        <!-- sonar relevant stuff -->
+        <!-- Google code format plugin -->
         <plugin>
-          <groupId>org.sonarsource.scanner.maven</groupId>
-          <artifactId>sonar-maven-plugin</artifactId>
-          <version>${plugin.version.sonar}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.11</version>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.43.0</version>
+          <configuration>
+            <java>
+              <googleJavaFormat>
+                <version>${google-java-format.plugin.version}</version>
+                <style>GOOGLE</style>
+              </googleJavaFormat>
+            </java>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.google.googlejavaformat</groupId>
+              <artifactId>google-java-format</artifactId>
+              <version>${google-java-format.plugin.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
       </plugins>
     </pluginManagement>

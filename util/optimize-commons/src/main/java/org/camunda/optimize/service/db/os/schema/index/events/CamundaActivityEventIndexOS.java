@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.schema.index.events;
 
-import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
+import java.io.IOException;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.opensearch.client.opensearch.indices.IndexSegmentSort;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.SegmentSortOrder;
-
-import java.io.IOException;
 
 public class CamundaActivityEventIndexOS extends CamundaActivityEventIndex<IndexSettings.Builder> {
 
@@ -21,22 +20,18 @@ public class CamundaActivityEventIndexOS extends CamundaActivityEventIndex<Index
   }
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     return OptimizeOpenSearchUtil.addStaticSetting(key, value, contentBuilder);
   }
 
   @Override
-  public IndexSettings.Builder getStaticSettings(IndexSettings.Builder contentBuilder,
-                                                 ConfigurationService configurationService) throws IOException {
-    final IndexSettings.Builder result = super.getStaticSettings(contentBuilder, configurationService);
+  public IndexSettings.Builder getStaticSettings(
+      IndexSettings.Builder contentBuilder, ConfigurationService configurationService)
+      throws IOException {
+    final IndexSettings.Builder result =
+        super.getStaticSettings(contentBuilder, configurationService);
     return result.sort(
-      new IndexSegmentSort.Builder()
-        .field(TIMESTAMP)
-        .order(SegmentSortOrder.Asc)
-        .build()
-    );
+        new IndexSegmentSort.Builder().field(TIMESTAMP).order(SegmentSortOrder.Asc).build());
   }
-
 }

@@ -6,6 +6,10 @@
 package org.camunda.optimize.service.events;
 
 import jakarta.ws.rs.BadRequestException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.xml.ModelParseException;
@@ -18,36 +22,31 @@ import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @Component
 @AllArgsConstructor
 public class EventMappingCleanupService {
 
   private final EventCountService eventCountService;
 
-  public Map<String, EventMappingDto> doMappingCleanup(final String userId,
-                                                       final EventMappingCleanupRequestDto requestDto) {
-    final Set<EventTypeDto> availableEventTypeDtos = eventCountService
-      .getEventCounts(userId, null, mapToEventCountRequest(requestDto))
-      .stream()
-      .map(EventDtoBuilderUtil::fromEventCountDto)
-      .collect(Collectors.toSet());
+  public Map<String, EventMappingDto> doMappingCleanup(
+      final String userId, final EventMappingCleanupRequestDto requestDto) {
+    final Set<EventTypeDto> availableEventTypeDtos =
+        eventCountService.getEventCounts(userId, null, mapToEventCountRequest(requestDto)).stream()
+            .map(EventDtoBuilderUtil::fromEventCountDto)
+            .collect(Collectors.toSet());
 
     final Set<String> currentModelFlowNodeIds =
-      BpmnModelUtil.extractFlowNodeData(parseXmlIntoBpmnModel(requestDto.getXml()))
-        .stream()
-        .map(FlowNodeDataDto::getId)
-        .collect(Collectors.toSet());
-    return requestDto.getMappings().entrySet()
-      .stream()
-      .filter(mappingEntry -> currentModelFlowNodeIds.contains(mappingEntry.getKey()))
-      .peek(entry -> cleanupOutOfSourceScopeMappings(entry.getValue(), availableEventTypeDtos))
-      .filter(mappingEntry -> mappingEntry.getValue().getStart() != null || mappingEntry.getValue().getEnd() != null)
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        BpmnModelUtil.extractFlowNodeData(parseXmlIntoBpmnModel(requestDto.getXml())).stream()
+            .map(FlowNodeDataDto::getId)
+            .collect(Collectors.toSet());
+    return requestDto.getMappings().entrySet().stream()
+        .filter(mappingEntry -> currentModelFlowNodeIds.contains(mappingEntry.getKey()))
+        .peek(entry -> cleanupOutOfSourceScopeMappings(entry.getValue(), availableEventTypeDtos))
+        .filter(
+            mappingEntry ->
+                mappingEntry.getValue().getStart() != null
+                    || mappingEntry.getValue().getEnd() != null)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
@@ -58,29 +57,31 @@ public class EventMappingCleanupService {
     }
   }
 
-  private EventCountRequestDto mapToEventCountRequest(final EventMappingCleanupRequestDto requestDto) {
+  private EventCountRequestDto mapToEventCountRequest(
+      final EventMappingCleanupRequestDto requestDto) {
     return EventCountRequestDto.builder()
-      .eventSources(requestDto.getEventSources())
-      .targetFlowNodeId(null)
-      .xml(requestDto.getXml())
-      .mappings(requestDto.getMappings())
-      .build();
+        .eventSources(requestDto.getEventSources())
+        .targetFlowNodeId(null)
+        .xml(requestDto.getXml())
+        .mappings(requestDto.getMappings())
+        .build();
   }
 
-  private void cleanupOutOfSourceScopeMappings(final EventMappingDto mappingEntry,
-                                               final Set<EventTypeDto> availableEvents) {
+  private void cleanupOutOfSourceScopeMappings(
+      final EventMappingDto mappingEntry, final Set<EventTypeDto> availableEvents) {
     Optional.ofNullable(mappingEntry.getStart())
-      .ifPresent(startMapping -> {
-        if (!availableEvents.contains(startMapping)) {
-          mappingEntry.setStart(null);
-        }
-      });
+        .ifPresent(
+            startMapping -> {
+              if (!availableEvents.contains(startMapping)) {
+                mappingEntry.setStart(null);
+              }
+            });
     Optional.ofNullable(mappingEntry.getEnd())
-      .ifPresent(endMapping -> {
-        if (!availableEvents.contains(endMapping)) {
-          mappingEntry.setEnd(null);
-        }
-      });
+        .ifPresent(
+            endMapping -> {
+              if (!availableEvents.contains(endMapping)) {
+                mappingEntry.setEnd(null);
+              }
+            });
   }
-
 }

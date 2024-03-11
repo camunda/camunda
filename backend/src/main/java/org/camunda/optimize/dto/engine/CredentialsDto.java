@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.dto.engine;
 
-
 import lombok.Data;
 
 @Data

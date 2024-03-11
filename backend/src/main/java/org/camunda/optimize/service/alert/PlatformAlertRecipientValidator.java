@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.alert;
 
+import java.util.List;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Conditional(CamundaPlatformCondition.class)
 @Component
@@ -20,8 +19,7 @@ public class PlatformAlertRecipientValidator implements AlertRecipientValidator 
   public void validateAlertRecipientEmailAddresses(final List<String> emailAddresses) {
     if (emailAddresses.isEmpty()) {
       throw new OptimizeValidationException(
-        "The field [emails] is not allowed to be empty. At least one recipient must be set.");
+          "The field [emails] is not allowed to be empty. At least one recipient must be set.");
     }
   }
-
 }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
+
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 
 public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
@@ -42,23 +41,22 @@ public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitio
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return super.addProperties(xContentBuilder)
-      .startObject(FLOW_NODE_DATA)
+        .startObject(FLOW_NODE_DATA)
         .field("type", DatabaseConstants.TYPE_OBJECT)
         .field(MAPPING_ENABLED_SETTING, "false")
-      .endObject()
-      .startObject(USER_TASK_NAMES)
+        .endObject()
+        .startObject(USER_TASK_NAMES)
         .field("type", DatabaseConstants.TYPE_OBJECT)
         .field(MAPPING_ENABLED_SETTING, "false")
-      .endObject()
-      .startObject(PROCESS_DEFINITION_XML)
+        .endObject()
+        .startObject(PROCESS_DEFINITION_XML)
         .field("type", DatabaseConstants.TYPE_TEXT)
         .field("index", true)
         .field("analyzer", "is_present_analyzer")
-      .endObject()
-      .startObject(ONBOARDED)
+        .endObject()
+        .startObject(ONBOARDED)
         .field("type", DatabaseConstants.TYPE_BOOLEAN)
-      .endObject();
+        .endObject();
     // @formatter:on
   }
-
 }

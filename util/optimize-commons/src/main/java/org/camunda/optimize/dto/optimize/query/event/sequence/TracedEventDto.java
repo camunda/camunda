@@ -29,13 +29,15 @@ public class TracedEventDto implements OptimizeDto {
 
   public static TracedEventDto fromEventDto(EventDto eventDto) {
     return TracedEventDto.builder()
-      .eventId(eventDto.getId())
-      .timestamp(eventDto.getTimestamp())
-      .group(eventDto.getGroup())
-      .source(eventDto.getSource())
-      .eventName(eventDto.getEventName())
-      .orderCounter(eventDto instanceof OrderedEventDto ? ((OrderedEventDto) eventDto).getOrderCounter() : null)
-      .build();
+        .eventId(eventDto.getId())
+        .timestamp(eventDto.getTimestamp())
+        .group(eventDto.getGroup())
+        .source(eventDto.getSource())
+        .eventName(eventDto.getEventName())
+        .orderCounter(
+            eventDto instanceof OrderedEventDto
+                ? ((OrderedEventDto) eventDto).getOrderCounter()
+                : null)
+        .build();
   }
-
 }

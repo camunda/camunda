@@ -586,7 +586,7 @@ body, td {font-family: Arial, Helvetica, sans-serif;}
                                       class="hs_cos_wrapper hs_cos_wrapper_widget hs_cos_wrapper_type_rich_text"
                                       style="color: inherit; font-size: inherit; line-height: inherit;"
                                       data-hs-cos-general-type="widget" data-hs-cos-type="rich_text">
-                                      <a rel="noopener" target="_blank" href="${optimizeProcessPageLink}" style="background:#4893ff; padding: 10px; text-decoration: none; color: white; border-radius: 3px; mso-padding-alt: 0;">
+                                      <a rel="noopener" target="_blank" href="${optimizeHomePageLink}" style="background:#4893ff; padding: 10px; text-decoration: none; color: white; border-radius: 3px; mso-padding-alt: 0;">
                                           <!--[if mso]>
                                           <i style="letter-spacing: 25px; mso-font-width: -100%; mso-text-raise: 30pt;">&nbsp;</i>
                                           <![endif]-->

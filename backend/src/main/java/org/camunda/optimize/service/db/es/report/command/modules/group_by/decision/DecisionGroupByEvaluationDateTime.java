@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.decision;
 
+import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
@@ -28,15 +36,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
-
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -47,57 +46,59 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
 
   @Override
-  public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ExecutionContext<DecisionReportDataDto> context) {
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<DecisionReportDataDto> context) {
     final AggregateByDateUnit unit = getGroupBy(context.getReportData()).getUnit();
     return createAggregation(searchSourceBuilder, context, unit);
   }
 
-  private List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                     final ExecutionContext<DecisionReportDataDto> context,
-                                                     final AggregateByDateUnit unit) {
-    final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
-      context,
-      searchSourceBuilder.query(),
-      getIndexNames(context),
-      EVALUATION_DATE_TIME
-    );
+  private List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<DecisionReportDataDto> context,
+      final AggregateByDateUnit unit) {
+    final MinMaxStatDto stats =
+        minMaxStatsService.getMinMaxDateRange(
+            context, searchSourceBuilder.query(), getIndexNames(context), EVALUATION_DATE_TIME);
 
-    final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .aggregateByDateUnit(unit)
-      .dateField(EVALUATION_DATE_TIME)
-      .minMaxStats(stats)
-      .timezone(context.getTimezone())
-      .subAggregations(distributedByPart.createAggregations(context))
-      .decisionFilters(context.getReportData().getFilter())
-      .decisionQueryFilterEnhancer(queryFilterEnhancer)
-      .filterContext(context.getFilterContext())
-      .build();
+    final DateAggregationContext dateAggContext =
+        DateAggregationContext.builder()
+            .aggregateByDateUnit(unit)
+            .dateField(EVALUATION_DATE_TIME)
+            .minMaxStats(stats)
+            .timezone(context.getTimezone())
+            .subAggregations(distributedByPart.createAggregations(context))
+            .decisionFilters(context.getReportData().getFilter())
+            .decisionQueryFilterEnhancer(queryFilterEnhancer)
+            .filterContext(context.getFilterContext())
+            .build();
 
-    return dateAggregationService.createDecisionEvaluationDateAggregation(dateAggContext)
-      .map(Collections::singletonList)
-      .orElse(Collections.emptyList());
+    return dateAggregationService
+        .createDecisionEvaluationDateAggregation(dateAggContext)
+        .map(Collections::singletonList)
+        .orElse(Collections.emptyList());
   }
 
   @Override
-  public void addQueryResult(final CompositeCommandResult result,
-                             final SearchResponse response,
-                             final ExecutionContext<DecisionReportDataDto> context) {
+  public void addQueryResult(
+      final CompositeCommandResult result,
+      final SearchResponse response,
+      final ExecutionContext<DecisionReportDataDto> context) {
     result.setGroups(processAggregations(response, context));
     result.setGroupBySorting(
-      context.getReportConfiguration()
-        .getSorting()
-        .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC))
-    );
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC)));
   }
 
-  private DecisionGroupByEvaluationDateTimeValueDto getGroupBy(final DecisionReportDataDto reportData) {
-    return ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy())
-      .getValue();
+  private DecisionGroupByEvaluationDateTimeValueDto getGroupBy(
+      final DecisionReportDataDto reportData) {
+    return ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy()).getValue();
   }
 
-  private List<GroupByResult> processAggregations(final SearchResponse response,
-                                                  final ExecutionContext<DecisionReportDataDto> context) {
+  private List<GroupByResult> processAggregations(
+      final SearchResponse response, final ExecutionContext<DecisionReportDataDto> context) {
     final Aggregations aggregations = response.getAggregations();
 
     if (aggregations == null) {
@@ -105,34 +106,36 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
       return Collections.emptyList();
     }
 
-    final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
+    final Optional<Aggregations> unwrappedLimitedAggregations =
+        unwrapFilterLimitedAggregations(aggregations);
     Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
-      keyToAggregationMap = dateAggregationService.mapDateAggregationsToKeyAggregationMap(
-        unwrappedLimitedAggregations.get(),
-        context.getTimezone()
-      );
+      keyToAggregationMap =
+          dateAggregationService.mapDateAggregationsToKeyAggregationMap(
+              unwrappedLimitedAggregations.get(), context.getTimezone());
     } else {
       return Collections.emptyList();
     }
     return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }
 
-  private List<GroupByResult> mapKeyToAggMapToGroupByResults(final Map<String, Aggregations> keyToAggregationMap,
-                                                             final SearchResponse response,
-                                                             final ExecutionContext<DecisionReportDataDto> context) {
-    return keyToAggregationMap
-      .entrySet()
-      .stream()
-      .map(stringBucketEntry -> GroupByResult.createGroupByResult(
-        stringBucketEntry.getKey(),
-        distributedByPart.retrieveResult(response, stringBucketEntry.getValue(), context)
-      ))
-      .collect(Collectors.toList());
+  private List<GroupByResult> mapKeyToAggMapToGroupByResults(
+      final Map<String, Aggregations> keyToAggregationMap,
+      final SearchResponse response,
+      final ExecutionContext<DecisionReportDataDto> context) {
+    return keyToAggregationMap.entrySet().stream()
+        .map(
+            stringBucketEntry ->
+                GroupByResult.createGroupByResult(
+                    stringBucketEntry.getKey(),
+                    distributedByPart.retrieveResult(
+                        response, stringBucketEntry.getValue(), context)))
+        .collect(Collectors.toList());
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto reportData) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto reportData) {
     reportData.setGroupBy(new DecisionGroupByEvaluationDateTimeDto());
   }
 }

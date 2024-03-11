@@ -19,6 +19,8 @@ import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -31,6 +33,9 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.test.it.extension.db.DatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.ElasticsearchDatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.OpenSearchDatabaseTestService;
+import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
+import org.camunda.optimize.test.repository.TestIndexRepository;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -204,6 +209,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getOptimizeElasticsearchClient();
   }
 
+  public TestIndexRepository getTestIndexRepository() {
+    return databaseTestService.getTestIndexRepository();
+  }
+
   public void cleanAndVerify() {
     databaseTestService.cleanAndVerifyDatabase();
   }
@@ -325,6 +334,11 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   }
 
   @SneakyThrows
+  public void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix, final String recordsToKeep) {
+    databaseTestService.deleteAllOtherZeebeRecordsWithPrefix(zeebeRecordPrefix, recordsToKeep);
+  }
+
+  @SneakyThrows
   public void updateZeebeRecordsWithPositionForPrefix(final String zeebeRecordPrefix, final String indexName,
                                                       final long position, final String updateScript) {
     databaseTestService.updateZeebeRecordsWithPositionForPrefix(zeebeRecordPrefix, indexName, position, updateScript);
@@ -354,6 +368,70 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public void update(final String indexName, final String entityId, final ScriptData script) {
     databaseTestService.getDatabaseClient().update(indexName, entityId, script);
+  }
+
+  public long countRecordsByQuery(final TermsQueryContainer queryContainer, final String index) {
+    return databaseTestService.countRecordsByQuery(queryContainer, index);
+  }
+
+  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex,
+                                                       final TermsQueryContainer queryForProcessableEvents,
+                                                       final Class<T> zeebeRecordClass) {
+    return databaseTestService.getZeebeExportedProcessableEvents(exportIndex, queryForProcessableEvents, zeebeRecordClass);
+  }
+
+  public boolean zeebeIndexExists(final String expectedIndex) {
+    return databaseTestService.zeebeIndexExists(expectedIndex);
+  }
+
+  public void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {
+    databaseTestService.updateEventProcessRoles(eventProcessId, identityDtos);
+  }
+
+  public Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
+    return databaseTestService.getEventProcessInstanceIndicesWithAliasesFromDatabase();
+  }
+
+  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromDatabase(final String processMappingId) {
+    return databaseTestService.getEventProcessPublishStateDtoFromDatabase(processMappingId);
+  }
+
+  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromDatabase(final String definitionId) {
+    return databaseTestService.getEventProcessDefinitionFromDatabase(definitionId);
+  }
+
+  public List<EventProcessInstanceDto> getEventProcessInstancesFromDatabaseForProcessPublishStateId(final String publishStateId) {
+    return databaseTestService.getEventProcessInstancesFromDatabaseForProcessPublishStateId(publishStateId);
+  }
+
+  public List<ProcessInstanceDto> getProcessInstancesById(final List<String> instanceIds) {
+    return databaseTestService.getProcessInstancesById(instanceIds);
+  }
+
+  public List<DecisionInstanceDto> getDecisionInstancesById(final List<String> instanceIds) {
+    return databaseTestService.getDecisionInstancesById(instanceIds);
+  }
+
+  public <T> Optional<T> getDatabaseEntryById(final String indexName,
+                                              final String entryId,
+                                              final Class<T> type) {
+    return databaseTestService.getDatabaseEntryById(indexName, entryId, type);
+  }
+
+  public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
+    databaseTestService.deleteProcessInstancesFromIndex(indexName, id);
+  }
+
+  public void deleteDatabaseEntryById(final String indexName, final String id) {
+    databaseTestService.deleteDatabaseEntryById(indexName, id);
+  }
+
+  public String getDatabaseVersion() {
+    return databaseTestService.getDatabaseVersion();
+  }
+
+  public DatabaseType getDatabaseVendor() {
+    return databaseTestService.getDatabaseVendor();
   }
 
 }

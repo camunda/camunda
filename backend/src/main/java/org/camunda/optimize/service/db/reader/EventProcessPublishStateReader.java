@@ -5,18 +5,17 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 
 public interface EventProcessPublishStateReader {
 
   Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
-    final String eventProcessMappingId);
+      final String eventProcessMappingId);
 
   List<EventProcessPublishStateDto> getAllEventProcessPublishStates();
 
-  List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(final boolean deleted);
-
+  List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(
+      final boolean deleted);
 }

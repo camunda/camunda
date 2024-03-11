@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 
 @RequiredArgsConstructor
 @Component
@@ -29,9 +28,9 @@ public class VariableUpdateInstanceReaderOS implements VariableUpdateInstanceRea
   private final ConfigurationService configurationService;
 
   @Override
-  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(Set<String> processInstanceIds) {
-    //todo will be handled in the OPT-7230
+  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
+      Set<String> processInstanceIds) {
+    log.error("Functionality not implemented for OpenSearch");
     return Collections.emptyList();
   }
-
 }

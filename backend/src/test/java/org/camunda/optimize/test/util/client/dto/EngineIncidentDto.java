@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.test.util.client.dto;
 
-import lombok.Data;
-
 import java.util.Date;
+import lombok.Data;
 
 @Data
 public class EngineIncidentDto {

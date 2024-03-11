@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.BackupState;
-
-import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor

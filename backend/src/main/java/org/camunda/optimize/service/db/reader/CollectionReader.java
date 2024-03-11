@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
-
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 
 public interface CollectionReader {
 
   Optional<CollectionDefinitionDto> getCollection(String collectionId);
 
   List<CollectionDefinitionDto> getAllCollections();
-
 }

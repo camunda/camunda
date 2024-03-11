@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.cloud;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -17,8 +18,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.util.Optional;
-
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
@@ -29,9 +28,12 @@ public class AccountsUserAccessTokenProvider {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication != null) {
       if (authentication instanceof JwtAuthenticationToken) {
-        return Optional.ofNullable(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
+        return Optional.ofNullable(
+            ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
       } else {
-        log.info("Could not retrieve Jwt Token. Provided token has type " + authentication.getClass().getTypeName());
+        log.info(
+            "Could not retrieve Jwt Token. Provided token has type "
+                + authentication.getClass().getTypeName());
         return Optional.empty();
       }
     }
@@ -39,17 +41,18 @@ public class AccountsUserAccessTokenProvider {
   }
 
   public Optional<String> getCurrentUsersAccessToken() {
-    Optional<String> accessToken = Optional.ofNullable(RequestContextHolder.getRequestAttributes())
-      .filter(ServletRequestAttributes.class::isInstance)
-      .map(ServletRequestAttributes.class::cast)
-      .map(ServletRequestAttributes::getRequest)
-      .flatMap(AuthCookieService::getServiceAccessToken);
-    // In case we don't have a cookie to extract the service token from, we try to retrieve it directly from the
+    Optional<String> accessToken =
+        Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+            .filter(ServletRequestAttributes.class::isInstance)
+            .map(ServletRequestAttributes.class::cast)
+            .map(ServletRequestAttributes::getRequest)
+            .flatMap(AuthCookieService::getServiceAccessToken);
+    // In case we don't have a cookie to extract the service token from, we try to retrieve it
+    // directly from the
     // framework
     if (accessToken.isEmpty()) {
       accessToken = retrieveServiceTokenFromFramework();
     }
     return accessToken;
   }
-
 }

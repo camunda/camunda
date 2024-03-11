@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 
 public interface DashboardReader {
 
@@ -22,5 +21,4 @@ public interface DashboardReader {
   List<DashboardDefinitionRestDto> getDashboardsForCollection(String collectionId);
 
   List<DashboardDefinitionRestDto> getDashboardsForReport(String reportId);
-
 }

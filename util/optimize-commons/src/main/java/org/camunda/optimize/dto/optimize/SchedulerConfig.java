@@ -5,5 +5,4 @@
  */
 package org.camunda.optimize.dto.optimize;
 
-public interface SchedulerConfig {
-}
+public interface SchedulerConfig {}

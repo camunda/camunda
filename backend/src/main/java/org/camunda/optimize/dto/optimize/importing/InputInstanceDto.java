@@ -22,5 +22,4 @@ public class InputInstanceDto {
   private String clauseName;
   private VariableType type;
   private String value;
-
 }

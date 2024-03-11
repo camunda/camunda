@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.engine;
 
-import lombok.Data;
-
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import lombok.Data;
 
 @Data
 public class DeploymentEngineDto implements Serializable, TenantSpecificEngineDto {

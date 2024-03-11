@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ProxyConfigurationTest {
 
@@ -21,29 +21,23 @@ public class ProxyConfigurationTest {
 
   @Test
   public void testValidateFailOnMissingHost() {
-    final ProxyConfiguration proxyConfiguration = new ProxyConfiguration(
-      true, null, 80, false
-    );
+    final ProxyConfiguration proxyConfiguration = new ProxyConfiguration(true, null, 80, false);
 
     assertThrows(OptimizeConfigurationException.class, () -> proxyConfiguration.validate());
   }
 
   @Test
   public void testValidateFailOnEmptyHost() {
-    final ProxyConfiguration proxyConfiguration = new ProxyConfiguration(
-      true, "", 80, false
-    );
+    final ProxyConfiguration proxyConfiguration = new ProxyConfiguration(true, "", 80, false);
 
     assertThrows(OptimizeConfigurationException.class, () -> proxyConfiguration.validate());
   }
 
   @Test
   public void testValidateFailOnMissingPort() {
-    final ProxyConfiguration proxyConfiguration = new ProxyConfiguration(
-      true, "localhost", null, false
-    );
+    final ProxyConfiguration proxyConfiguration =
+        new ProxyConfiguration(true, "localhost", null, false);
 
     assertThrows(OptimizeConfigurationException.class, () -> proxyConfiguration.validate());
   }
-
 }

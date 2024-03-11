@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsR
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto.DefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.util.SuppressionConstants;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -31,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
@@ -40,6 +42,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAM
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 
+@Tag(OPENSEARCH_PASSING)
 public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatformIT {
 
   private static final String TENANT_NOT_DEFINED_ID = TENANT_NOT_DEFINED.getId();

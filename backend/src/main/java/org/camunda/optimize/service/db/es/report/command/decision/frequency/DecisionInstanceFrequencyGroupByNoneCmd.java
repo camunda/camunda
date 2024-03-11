@@ -21,14 +21,15 @@ public class DecisionInstanceFrequencyGroupByNoneCmd extends DecisionCmd<Double>
   }
 
   @Override
-  protected DecisionReportCmdExecutionPlan<Double> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .decisionCommand()
-      .view(DecisionViewInstanceFrequency.class)
-      .groupBy(DecisionGroupByNone.class)
-      .distributedBy(DecisionDistributedByNone.class)
-      .resultAsNumber()
-      .build();
+  protected DecisionReportCmdExecutionPlan<Double> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .decisionCommand()
+        .view(DecisionViewInstanceFrequency.class)
+        .groupBy(DecisionGroupByNone.class)
+        .distributedBy(DecisionDistributedByNone.class)
+        .resultAsNumber()
+        .build();
   }
-
 }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.schema.index.events;
 
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
 
 public abstract class EventTraceStateIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -50,34 +49,32 @@ public abstract class EventTraceStateIndex<TBuilder> extends DefaultIndexMapping
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(TRACE_ID)
+        .startObject(TRACE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_TRACE)
+        .endObject()
+        .startObject(EVENT_TRACE)
         .field("type", "nested")
         .startObject("properties")
-          .startObject(EVENT_ID)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(GROUP)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(SOURCE)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(EVENT_NAME)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(TIMESTAMP)
-            .field("type", "date")
-          .endObject()
-          .startObject(ORDER_COUNTER)
-            .field("type", "keyword")
-          .endObject()
+        .startObject(EVENT_ID)
+        .field("type", "keyword")
         .endObject()
-      .endObject()
-      ;
+        .startObject(GROUP)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(SOURCE)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(EVENT_NAME)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(TIMESTAMP)
+        .field("type", "date")
+        .endObject()
+        .startObject(ORDER_COUNTER)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject();
     // @formatter:on
   }
-
 }

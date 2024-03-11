@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
-import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
-
 import static org.camunda.optimize.service.util.importing.EngineConstants.ACTIVATE_PROCESS_DEFINITION_OPERATION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ACTIVATE_PROCESS_INSTANCE_OPERATION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ACTIVATE_VIA_BATCH_OPERATION_TYPE;
@@ -15,6 +13,8 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.PROCES
 import static org.camunda.optimize.service.util.importing.EngineConstants.SUSPEND_PROCESS_DEFINITION_OPERATION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.SUSPEND_PROCESS_INSTANCE_OPERATION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.SUSPEND_VIA_BATCH_OPERATION_TYPE;
+
+import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
 
 public enum UserOperationType {
   SUSPEND_INSTANCE_BY_INSTANCE_ID(true),
@@ -38,7 +38,7 @@ public enum UserOperationType {
   }
 
   public static UserOperationType fromHistoricUserOperationLog(
-    final HistoricUserOperationLogDto historicUserOperationLogDto) {
+      final HistoricUserOperationLogDto historicUserOperationLogDto) {
     if (isSuspendByInstanceIdOperation(historicUserOperationLogDto)) {
       return SUSPEND_INSTANCE_BY_INSTANCE_ID;
     } else if (isActivateByInstanceIdOperation(historicUserOperationLogDto)) {
@@ -62,111 +62,124 @@ public enum UserOperationType {
 
   public static boolean isSuspensionByInstanceIdOperation(final UserOperationType userOpType) {
     return SUSPEND_INSTANCE_BY_INSTANCE_ID.equals(userOpType)
-      || ACTIVATE_INSTANCE_BY_INSTANCE_ID.equals(userOpType);
+        || ACTIVATE_INSTANCE_BY_INSTANCE_ID.equals(userOpType);
   }
 
   public static boolean isSuspensionByDefinitionIdOperation(final UserOperationType userOpType) {
     return SUSPEND_INSTANCES_BY_DEFINITION_ID.equals(userOpType)
-      || ACTIVATE_INSTANCES_BY_DEFINITION_ID.equals(userOpType);
+        || ACTIVATE_INSTANCES_BY_DEFINITION_ID.equals(userOpType);
   }
 
   public static boolean isSuspensionByDefinitionKeyOperation(final UserOperationType userOpType) {
     return SUSPEND_INSTANCES_BY_DEFINITION_KEY.equals(userOpType)
-      || ACTIVATE_INSTANCES_BY_DEFINITION_KEY.equals(userOpType);
+        || ACTIVATE_INSTANCES_BY_DEFINITION_KEY.equals(userOpType);
   }
 
   public static boolean isSuspensionViaBatchOperation(final UserOperationType userOpType) {
     return SUSPEND_INSTANCES_VIA_BATCH.equals(userOpType)
-      || ACTIVATE_INSTANCES_VIA_BATCH.equals(userOpType);
+        || ACTIVATE_INSTANCES_VIA_BATCH.equals(userOpType);
   }
 
-  private static boolean isSuspendByInstanceIdOperation(final HistoricUserOperationLogDto historicUserOpLog) {
+  private static boolean isSuspendByInstanceIdOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
     return SUSPEND_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-      && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
-      && historicUserOpLog.getProcessInstanceId() != null;
-  }
-
-  private static boolean isActivateByInstanceIdOperation(final HistoricUserOperationLogDto historicUserOpLog) {
-    return ACTIVATE_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-      && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
-      && historicUserOpLog.getProcessInstanceId() != null;
-  }
-
-  private static boolean isSuspendByDefinitionIdOperation(final HistoricUserOperationLogDto historicUserOpLog) {
-    final boolean isSuspendProcessInstanceByDefinitionIdOperation =
-      SUSPEND_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
         && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
-        && historicUserOpLog.getProcessInstanceId() == null
-        && historicUserOpLog.getProcessDefinitionId() != null;
+        && historicUserOpLog.getProcessInstanceId() != null;
+  }
+
+  private static boolean isActivateByInstanceIdOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
+    return ACTIVATE_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(
+            historicUserOpLog.getOperationType())
+        && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
+        && historicUserOpLog.getProcessInstanceId() != null;
+  }
+
+  private static boolean isSuspendByDefinitionIdOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
+    final boolean isSuspendProcessInstanceByDefinitionIdOperation =
+        SUSPEND_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
+            && historicUserOpLog.getProcessInstanceId() == null
+            && historicUserOpLog.getProcessDefinitionId() != null;
 
     final boolean isSuspendProcessDefinitionByIdIncludingInstancesOperation =
-      SUSPEND_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-        && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(historicUserOpLog.getProperty())
-        && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
-        && historicUserOpLog.getProcessDefinitionId() != null;
+        SUSPEND_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
+                historicUserOpLog.getProperty())
+            && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
+            && historicUserOpLog.getProcessDefinitionId() != null;
 
     return isSuspendProcessInstanceByDefinitionIdOperation
-      || isSuspendProcessDefinitionByIdIncludingInstancesOperation;
+        || isSuspendProcessDefinitionByIdIncludingInstancesOperation;
   }
 
-  private static boolean isActivateByDefinitionIdOperation(final HistoricUserOperationLogDto historicUserOpLog) {
+  private static boolean isActivateByDefinitionIdOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
     final boolean isActivateProcessInstanceByDefinitionIdOperation =
-      ACTIVATE_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-        && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
-        && historicUserOpLog.getProcessInstanceId() == null
-        && historicUserOpLog.getProcessDefinitionId() != null;
+        ACTIVATE_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
+            && historicUserOpLog.getProcessInstanceId() == null
+            && historicUserOpLog.getProcessDefinitionId() != null;
 
     final boolean isActivateProcessDefinitionByIdIncludingInstancesOperation =
-      ACTIVATE_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-        && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(historicUserOpLog.getProperty())
-        && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
-        && historicUserOpLog.getProcessDefinitionId() != null;
+        ACTIVATE_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
+                historicUserOpLog.getProperty())
+            && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
+            && historicUserOpLog.getProcessDefinitionId() != null;
 
     return isActivateProcessInstanceByDefinitionIdOperation
-      || isActivateProcessDefinitionByIdIncludingInstancesOperation;
+        || isActivateProcessDefinitionByIdIncludingInstancesOperation;
   }
 
-  private static boolean isSuspendByDefinitionKeyOperation(final HistoricUserOperationLogDto historicUserOpLog) {
+  private static boolean isSuspendByDefinitionKeyOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
     final boolean isSuspendProcessInstanceByDefinitionKeyOperation =
-      SUSPEND_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-        && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
-        && historicUserOpLog.getProcessInstanceId() == null
-        && historicUserOpLog.getProcessDefinitionId() == null
-        && historicUserOpLog.getProcessDefinitionKey() != null;
+        SUSPEND_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
+            && historicUserOpLog.getProcessInstanceId() == null
+            && historicUserOpLog.getProcessDefinitionId() == null
+            && historicUserOpLog.getProcessDefinitionKey() != null;
 
     final boolean isSuspendProcessDefinitionByKeyIncludingInstancesOperation =
-      SUSPEND_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-        && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(historicUserOpLog.getProperty())
-        && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
-        && historicUserOpLog.getProcessDefinitionId() == null;
+        SUSPEND_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
+                historicUserOpLog.getProperty())
+            && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
+            && historicUserOpLog.getProcessDefinitionId() == null;
 
     return isSuspendProcessInstanceByDefinitionKeyOperation
-      || isSuspendProcessDefinitionByKeyIncludingInstancesOperation;
+        || isSuspendProcessDefinitionByKeyIncludingInstancesOperation;
   }
 
-  private static boolean isActivateByDefinitionKeyOperation(final HistoricUserOperationLogDto historicUserOpLog) {
+  private static boolean isActivateByDefinitionKeyOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
     final boolean isActivateProcessInstanceByDefinitionKeyOperation =
-      ACTIVATE_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-        && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
-        && historicUserOpLog.getProcessInstanceId() == null
-        && historicUserOpLog.getProcessDefinitionId() == null
-        && historicUserOpLog.getProcessDefinitionKey() != null;
+        ACTIVATE_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
+            && historicUserOpLog.getProcessInstanceId() == null
+            && historicUserOpLog.getProcessDefinitionId() == null
+            && historicUserOpLog.getProcessDefinitionKey() != null;
 
     final boolean isActivateProcessDefinitionByKeyIncludingInstancesOperation =
-      ACTIVATE_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
-        && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(historicUserOpLog.getProperty())
-        && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
-        && historicUserOpLog.getProcessDefinitionId() == null;
+        ACTIVATE_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
+            && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
+                historicUserOpLog.getProperty())
+            && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
+            && historicUserOpLog.getProcessDefinitionId() == null;
 
     return isActivateProcessInstanceByDefinitionKeyOperation
-      || isActivateProcessDefinitionByKeyIncludingInstancesOperation;
+        || isActivateProcessDefinitionByKeyIncludingInstancesOperation;
   }
 
-  private static boolean isSuspendViaBatchOperation(final HistoricUserOperationLogDto historicUserOpLog) {
+  private static boolean isSuspendViaBatchOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
     return SUSPEND_VIA_BATCH_OPERATION_TYPE.equalsIgnoreCase(historicUserOpLog.getOperationType());
   }
 
-  private static boolean isActivateViaBatchOperation(final HistoricUserOperationLogDto historicUserOpLog) {
+  private static boolean isActivateViaBatchOperation(
+      final HistoricUserOperationLogDto historicUserOpLog) {
     return ACTIVATE_VIA_BATCH_OPERATION_TYPE.equalsIgnoreCase(historicUserOpLog.getOperationType());
   }
 }

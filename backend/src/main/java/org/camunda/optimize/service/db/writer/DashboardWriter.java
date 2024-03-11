@@ -14,12 +14,14 @@ public interface DashboardWriter {
 
   String DEFAULT_DASHBOARD_NAME = "New Dashboard";
 
-  IdResponseDto createNewDashboard(@NonNull final String userId,
-                                   @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto);
+  IdResponseDto createNewDashboard(
+      @NonNull final String userId,
+      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto);
 
-  IdResponseDto createNewDashboard(@NonNull final String userId,
-                                   @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
-                                   @NonNull final String id);
+  IdResponseDto createNewDashboard(
+      @NonNull final String userId,
+      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
+      @NonNull final String id);
 
   IdResponseDto saveDashboard(@NonNull final DashboardDefinitionRestDto dashboardDefinitionDto);
 
@@ -32,5 +34,4 @@ public interface DashboardWriter {
   void deleteDashboard(String dashboardId);
 
   void deleteManagementDashboard();
-
 }

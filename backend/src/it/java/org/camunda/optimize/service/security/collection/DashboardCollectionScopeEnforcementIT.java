@@ -7,24 +7,27 @@ package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityType.DASHBOARD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
+@Tag(OPENSEARCH_PASSING)
 public class DashboardCollectionScopeEnforcementIT extends AbstractPlatformIT {
 
   private static final List<ReportScenario> POSSIBLE_REPORT_SCENARIOS = ImmutableList

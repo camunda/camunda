@@ -5,19 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
 import {CarbonSelect} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
-import {getOptimizeProfile} from 'config';
 
 import GroupBy from './GroupBy';
-
-jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
-}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -151,15 +145,6 @@ it('should use the distributedBy value when removing the groupBy', () => {
   node.find(Button).simulate('click');
 
   expect(createReportUpdate.mock.calls[0][4].groupBy.$set).toEqual({type: 'distribution'});
-});
-
-it('should hide assignee option in cloud environment', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
-  const node = shallow(<GroupBy {...config} />);
-
-  await runAllEffects();
-
-  expect(node.find({value: 'assignee'})).not.toExist();
 });
 
 it('should pass null as a value to CarbonSelect if groupBy is null', () => {

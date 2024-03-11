@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer.variable;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -14,9 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -24,14 +23,14 @@ import java.util.List;
 public class VariableUpdateInstanceWriterOS implements VariableUpdateInstanceWriter {
 
   @Override
-  public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variableUpdates) {
-    //todo will be handled in the OPT-7376
+  public List<ImportRequestDto> generateVariableUpdateImports(
+      final List<ProcessVariableDto> variableUpdates) {
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
-
 }

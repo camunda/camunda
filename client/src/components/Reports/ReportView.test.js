@@ -256,7 +256,7 @@ it('should hide bottom raw data panel for empty reports', async () => {
   expect(node.find('.bottomPanel')).not.toExist();
 });
 
-it('should hide expandButton & report renderer when expanding bottom panel', async () => {
+it('should hide expandButton & report content when expanding bottom panel', async () => {
   const node = await shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
@@ -265,5 +265,5 @@ it('should hide expandButton & report renderer when expanding bottom panel', asy
 
   node.find('.expandButton').simulate('click');
   expect(node.find('.expandButton')).not.toExist();
-  expect(node.find(ReportRenderer)).not.toExist();
+  expect(node.find('.Report__content').hasClass('hidden')).toBe(true);
 });

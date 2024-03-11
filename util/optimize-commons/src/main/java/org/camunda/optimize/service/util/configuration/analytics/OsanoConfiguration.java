@@ -6,12 +6,11 @@
 package org.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Optional;
 
 @AllArgsConstructor
 @Data

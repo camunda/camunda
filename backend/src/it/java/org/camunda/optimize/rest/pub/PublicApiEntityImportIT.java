@@ -35,6 +35,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.client.Entity;
@@ -48,11 +49,13 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.RAW_DATA;
 import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitionIT {
 
   private static final String ACCESS_TOKEN = "secret_export_token";

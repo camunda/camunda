@@ -6,6 +6,8 @@
 package org.camunda.optimize.dto.optimize.persistence.incident;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serializable;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,9 +15,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.io.Serializable;
-import java.time.OffsetDateTime;
 
 @Accessors(chain = true)
 @NoArgsConstructor
@@ -25,13 +24,11 @@ import java.time.OffsetDateTime;
 @Builder
 public class IncidentDto implements Serializable, OptimizeDto {
 
-  @JsonIgnore
-  private String processInstanceId;
+  @JsonIgnore private String processInstanceId;
   private String definitionKey;
   private String definitionVersion;
   private String tenantId;
-  @JsonIgnore
-  private String engineAlias;
+  @JsonIgnore private String engineAlias;
 
   protected String id;
   protected OffsetDateTime createTime;

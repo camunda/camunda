@@ -22,6 +22,7 @@ public class MapResultEntryDto {
   @NonNull @Getter @Setter private String key;
   @Getter @Setter private Double value;
   @Setter private String label;
+
   // @formatter:on
 
   public MapResultEntryDto(@NonNull final String key, final Double value) {

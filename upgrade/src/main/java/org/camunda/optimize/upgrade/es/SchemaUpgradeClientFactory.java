@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.es;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -19,57 +20,55 @@ import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.util.List;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {
-  public static SchemaUpgradeClient createSchemaUpgradeClient(final UpgradeExecutionDependencies upgradeDependencies) {
+  public static SchemaUpgradeClient createSchemaUpgradeClient(
+      final UpgradeExecutionDependencies upgradeDependencies) {
     return createSchemaUpgradeClient(
-      upgradeDependencies.getMetadataService(),
-      upgradeDependencies.getConfigurationService(),
-      upgradeDependencies.getIndexNameService(),
-      upgradeDependencies.getEsClient()
-    );
+        upgradeDependencies.metadataService(),
+        upgradeDependencies.configurationService(),
+        upgradeDependencies.indexNameService(),
+        upgradeDependencies.esClient());
   }
 
-  public static SchemaUpgradeClient createSchemaUpgradeClient(final ElasticSearchMetadataService metadataService,
-                                                              final ConfigurationService configurationService,
-                                                              final OptimizeIndexNameService indexNameService,
-                                                              final OptimizeElasticsearchClient esClient) {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
+  public static SchemaUpgradeClient createSchemaUpgradeClient(
+      final ElasticSearchMetadataService metadataService,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService,
+      final OptimizeElasticsearchClient esClient) {
+    final MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
     // TODO remove call to convert list with OPT-7238
     return createSchemaUpgradeClient(
-      new ElasticSearchSchemaManager(
+        new ElasticSearchSchemaManager(
+            metadataService,
+            configurationService,
+            indexNameService,
+            convertList(mappingUtil.getAllMappings(indexNameService.getIndexPrefix()))),
         metadataService,
         configurationService,
-        indexNameService,
-        convertList(mappingUtil.getAllMappings(indexNameService.getIndexPrefix()))
-      ),
-      metadataService,
-      configurationService,
-      esClient
-    );
+        esClient);
   }
 
-  public static SchemaUpgradeClient createSchemaUpgradeClient(final ElasticSearchSchemaManager schemaManager,
-                                                              final ElasticSearchMetadataService metadataService,
-                                                              final ConfigurationService configurationService,
-                                                              final OptimizeElasticsearchClient esClient) {
+  public static SchemaUpgradeClient createSchemaUpgradeClient(
+      final ElasticSearchSchemaManager schemaManager,
+      final ElasticSearchMetadataService metadataService,
+      final ConfigurationService configurationService,
+      final OptimizeElasticsearchClient esClient) {
     return new SchemaUpgradeClient(
-      schemaManager,
-      metadataService,
-      esClient,
-      new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
-        .createOptimizeMapper()
-    );
+        schemaManager,
+        metadataService,
+        esClient,
+        new ObjectMapperFactory(
+                new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+            .createOptimizeMapper());
   }
 
   // TODO delete with OPT-7238
   @SuppressWarnings("unchecked") // Suppress unchecked cast warnings
-  private static List<IndexMappingCreator<XContentBuilder>> convertList(List<IndexMappingCreator<?>> wildcardList) {
+  private static List<IndexMappingCreator<XContentBuilder>> convertList(
+      final List<IndexMappingCreator<?>> wildcardList) {
     return wildcardList.stream()
-      .map(creator -> (IndexMappingCreator<XContentBuilder>) creator) // Unchecked cast
-      .toList();
+        .map(creator -> (IndexMappingCreator<XContentBuilder>) creator) // Unchecked cast
+        .toList();
   }
-
 }

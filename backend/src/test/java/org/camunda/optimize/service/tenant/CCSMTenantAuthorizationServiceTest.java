@@ -5,6 +5,17 @@
  */
 package org.camunda.optimize.service.tenant;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.security.CCSMTokenService;
@@ -21,18 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class CCSMTenantAuthorizationServiceTest {
@@ -40,10 +39,8 @@ public class CCSMTenantAuthorizationServiceTest {
   private static final String TEST_TOKEN = "someAuthToken";
   private static final String TEST_USER_ID = "someUserId";
 
-  @Mock
-  private CCSMTokenService ccsmTokenService;
-  @Mock
-  private ConfigurationService configurationService;
+  @Mock private CCSMTokenService ccsmTokenService;
+  @Mock private ConfigurationService configurationService;
 
   private CamundaCCSMTenantAuthorizationService underTest;
 
@@ -82,10 +79,10 @@ public class CCSMTenantAuthorizationServiceTest {
   @Test
   public void usersAuthorizedToTenantsRetrievedFromIdentity() {
     // given
-    final List<TenantDto> authorizedTenants = List.of(
-      new TenantDto("tenant1Id", "tenant1", ZEEBE_DATA_SOURCE),
-      new TenantDto("tenant2Id", "tenant2", ZEEBE_DATA_SOURCE)
-    );
+    final List<TenantDto> authorizedTenants =
+        List.of(
+            new TenantDto("tenant1Id", "tenant1", ZEEBE_DATA_SOURCE),
+            new TenantDto("tenant2Id", "tenant2", ZEEBE_DATA_SOURCE));
     when(ccsmTokenService.getAuthorizedTenantsFromToken(TEST_TOKEN)).thenReturn(authorizedTenants);
 
     // when
@@ -104,10 +101,10 @@ public class CCSMTenantAuthorizationServiceTest {
   @Test
   public void tenantAuthorizationCacheIsUsed() {
     // given
-    final List<TenantDto> authorizedTenants = List.of(
-      new TenantDto("tenant1Id", "tenant1", ZEEBE_DATA_SOURCE),
-      new TenantDto("tenant2Id", "tenant2", ZEEBE_DATA_SOURCE)
-    );
+    final List<TenantDto> authorizedTenants =
+        List.of(
+            new TenantDto("tenant1Id", "tenant1", ZEEBE_DATA_SOURCE),
+            new TenantDto("tenant2Id", "tenant2", ZEEBE_DATA_SOURCE));
     when(ccsmTokenService.getAuthorizedTenantsFromToken(TEST_TOKEN)).thenReturn(authorizedTenants);
 
     // when
@@ -120,7 +117,8 @@ public class CCSMTenantAuthorizationServiceTest {
     // when retrieving authorizations again before cache expires
     actualAuthorizedTenants = underTest.getCurrentUserAuthorizedTenants();
 
-    // then authorized tenants are taken from cache, so ccsmTokenService is not called a second time (just once overall)
+    // then authorized tenants are taken from cache, so ccsmTokenService is not called a second time
+    // (just once overall)
     Mockito.verify(ccsmTokenService, times(1)).getAuthorizedTenantsFromToken(TEST_TOKEN);
     assertThat(actualAuthorizedTenants).containsExactlyInAnyOrderElementsOf(authorizedTenants);
   }
@@ -139,39 +137,37 @@ public class CCSMTenantAuthorizationServiceTest {
   }
 
   private void assertTenantAuthorization(final String authorizedTenantId) {
-    assertThat(underTest.isAuthorizedToSeeTenant(
-      TEST_USER_ID,
-      IdentityType.USER,
-      authorizedTenantId,
-      ZEEBE_DATA_SOURCE
-    )).isTrue();
-    assertThat(underTest.isAuthorizedToSeeTenant(TEST_USER_ID, IdentityType.USER, authorizedTenantId)).isTrue();
+    assertThat(
+            underTest.isAuthorizedToSeeTenant(
+                TEST_USER_ID, IdentityType.USER, authorizedTenantId, ZEEBE_DATA_SOURCE))
+        .isTrue();
+    assertThat(
+            underTest.isAuthorizedToSeeTenant(TEST_USER_ID, IdentityType.USER, authorizedTenantId))
+        .isTrue();
   }
 
   private void assertNoTenantAuthorization(final String unauthorizedTenantId) {
-    assertThat(underTest.isAuthorizedToSeeTenant(TEST_USER_ID, IdentityType.USER, unauthorizedTenantId)).isFalse();
-    assertThat(underTest.isAuthorizedToSeeTenant(
-      TEST_USER_ID,
-      IdentityType.USER,
-      unauthorizedTenantId,
-      ZEEBE_DATA_SOURCE
-    )).isFalse();
+    assertThat(
+            underTest.isAuthorizedToSeeTenant(
+                TEST_USER_ID, IdentityType.USER, unauthorizedTenantId))
+        .isFalse();
+    assertThat(
+            underTest.isAuthorizedToSeeTenant(
+                TEST_USER_ID, IdentityType.USER, unauthorizedTenantId, ZEEBE_DATA_SOURCE))
+        .isFalse();
   }
 
   private void assertTenantAuthorization(final List<String> authorizedTenantIds) {
-    assertThat(underTest.isAuthorizedToSeeAllTenants(
-      TEST_USER_ID,
-      IdentityType.USER,
-      authorizedTenantIds
-    )).isTrue();
+    assertThat(
+            underTest.isAuthorizedToSeeAllTenants(
+                TEST_USER_ID, IdentityType.USER, authorizedTenantIds))
+        .isTrue();
   }
 
   private void assertNoTenantAuthorization(final List<String> unauthorizedTenantIds) {
-    assertThat(underTest.isAuthorizedToSeeAllTenants(
-      TEST_USER_ID,
-      IdentityType.USER,
-      unauthorizedTenantIds
-    )).isFalse();
+    assertThat(
+            underTest.isAuthorizedToSeeAllTenants(
+                TEST_USER_ID, IdentityType.USER, unauthorizedTenantIds))
+        .isFalse();
   }
-
 }

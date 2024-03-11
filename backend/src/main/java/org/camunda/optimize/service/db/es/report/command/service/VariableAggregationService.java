@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.report.command.service;
 
+import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.es.report.command.modules.group_by.AbstractGroupByVariable.FILTERED_FLOW_NODE_AGGREGATION;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+import java.time.ZoneId;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.db.es.report.MinMaxStatDto;
@@ -26,16 +35,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
-import java.util.Map;
-import java.util.Optional;
-
-import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.db.es.report.command.modules.group_by.AbstractGroupByVariable.FILTERED_FLOW_NODE_AGGREGATION;
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 @RequiredArgsConstructor
 @Component
 public class VariableAggregationService {
@@ -55,15 +54,18 @@ public class VariableAggregationService {
   private final MinMaxStatsService minMaxStatsService;
 
   public Optional<AggregationBuilder> createVariableSubAggregation(
-    final VariableAggregationContext context) {
+      final VariableAggregationContext context) {
     context.setVariableRangeMinMaxStats(getVariableMinMaxStats(context));
     switch (context.getVariableType()) {
       case STRING:
       case BOOLEAN:
-        final TermsAggregationBuilder variableTermsAggregation = AggregationBuilders
-          .terms(VARIABLES_AGGREGATION)
-          .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
-          .field(context.getNestedVariableValueFieldLabel());
+        final TermsAggregationBuilder variableTermsAggregation =
+            AggregationBuilders.terms(VARIABLES_AGGREGATION)
+                .size(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getAggregationBucketLimit())
+                .field(context.getNestedVariableValueFieldLabel());
         context.getSubAggregations().forEach(variableTermsAggregation::subAggregation);
         return Optional.of(variableTermsAggregation);
       case DATE:
@@ -77,69 +79,74 @@ public class VariableAggregationService {
     }
   }
 
-  public Optional<QueryBuilder> createVariableFilterQuery(final VariableAggregationContext context) {
+  public Optional<QueryBuilder> createVariableFilterQuery(
+      final VariableAggregationContext context) {
     if (VariableType.getNumericTypes().contains(context.getVariableType())) {
-      return numberVariableAggregationService.getBaselineForNumberVariableAggregation(context)
-        .filter(baseLineValue -> !baseLineValue.isNaN())
-        .map(baseLineValue -> QueryBuilders
-          .rangeQuery(context.getNestedVariableValueFieldLabel())
-          .lte(context.getMaxVariableValue())
-          .gte(baseLineValue)
-        );
+      return numberVariableAggregationService
+          .getBaselineForNumberVariableAggregation(context)
+          .filter(baseLineValue -> !baseLineValue.isNaN())
+          .map(
+              baseLineValue ->
+                  QueryBuilders.rangeQuery(context.getNestedVariableValueFieldLabel())
+                      .lte(context.getMaxVariableValue())
+                      .gte(baseLineValue));
     } else {
       return Optional.empty();
     }
   }
 
   private Optional<AggregationBuilder> createDateVariableAggregation(
-    final VariableAggregationContext context) {
-    final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .aggregateByDateUnit(context.getDateUnit())
-      .dateField(context.getNestedVariableValueFieldLabel())
-      .minMaxStats(context.getVariableRangeMinMaxStats())
-      .timezone(context.getTimezone())
-      .subAggregations(context.getSubAggregations())
-      .dateAggregationName(VARIABLES_AGGREGATION)
-      .filterContext(context.getFilterContext())
-      .build();
+      final VariableAggregationContext context) {
+    final DateAggregationContext dateAggContext =
+        DateAggregationContext.builder()
+            .aggregateByDateUnit(context.getDateUnit())
+            .dateField(context.getNestedVariableValueFieldLabel())
+            .minMaxStats(context.getVariableRangeMinMaxStats())
+            .timezone(context.getTimezone())
+            .subAggregations(context.getSubAggregations())
+            .dateAggregationName(VARIABLES_AGGREGATION)
+            .filterContext(context.getFilterContext())
+            .build();
 
     return dateAggregationService.createDateVariableAggregation(dateAggContext);
   }
 
-  public Map<String, Aggregations> retrieveResultBucketMap(final Filter filteredParentAgg,
-                                                           final MultiBucketsAggregation variableTermsAgg,
-                                                           final VariableType variableType,
-                                                           final ZoneId timezone) {
+  public Map<String, Aggregations> retrieveResultBucketMap(
+      final Filter filteredParentAgg,
+      final MultiBucketsAggregation variableTermsAgg,
+      final VariableType variableType,
+      final ZoneId timezone) {
     Map<String, Aggregations> bucketAggregations;
     if (VariableType.DATE.equals(variableType)) {
       bucketAggregations =
-        dateAggregationService.mapDateAggregationsToKeyAggregationMap(
-          filteredParentAgg.getAggregations(),
-          timezone,
-          VARIABLES_AGGREGATION
-        );
+          dateAggregationService.mapDateAggregationsToKeyAggregationMap(
+              filteredParentAgg.getAggregations(), timezone, VARIABLES_AGGREGATION);
     } else {
       bucketAggregations =
-        variableTermsAgg.getBuckets().stream()
-          .collect(toMap(
-            MultiBucketsAggregation.Bucket::getKeyAsString,
-            MultiBucketsAggregation.Bucket::getAggregations,
-            (bucketAggs1, bucketAggs2) -> bucketAggs1
-          ));
+          variableTermsAgg.getBuckets().stream()
+              .collect(
+                  toMap(
+                      MultiBucketsAggregation.Bucket::getKeyAsString,
+                      MultiBucketsAggregation.Bucket::getAggregations,
+                      (bucketAggs1, bucketAggs2) -> bucketAggs1));
     }
     return bucketAggregations;
   }
 
-  public Aggregations retrieveSubAggregationFromBucketMapEntry(Map.Entry<String, Aggregations> bucketMapEntry) {
-    final ReverseNested reverseNested = bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
+  public Aggregations retrieveSubAggregationFromBucketMapEntry(
+      Map.Entry<String, Aggregations> bucketMapEntry) {
+    final ReverseNested reverseNested =
+        bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
     if (reverseNested == null) {
       return bucketMapEntry.getValue();
     } else {
-      final ParsedNested nestedFlowNodeAgg = reverseNested.getAggregations().get(NESTED_FLOWNODE_AGGREGATION);
+      final ParsedNested nestedFlowNodeAgg =
+          reverseNested.getAggregations().get(NESTED_FLOWNODE_AGGREGATION);
       if (nestedFlowNodeAgg == null) {
         return reverseNested.getAggregations(); // this is an instance report
       } else {
-        Aggregations flowNodeAggs = nestedFlowNodeAgg.getAggregations(); // this is a flownode report
+        Aggregations flowNodeAggs =
+            nestedFlowNodeAgg.getAggregations(); // this is a flownode report
         final ParsedFilter aggregation = flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION);
         return aggregation.getAggregations();
       }
@@ -148,45 +155,37 @@ public class VariableAggregationService {
 
   private MinMaxStatDto getVariableMinMaxStats(final VariableAggregationContext context) {
     return getVariableMinMaxStats(
-      context.getVariableType(),
-      context.getVariableName(),
-      context.getVariablePath(),
-      context.getNestedVariableNameField(),
-      context.getNestedVariableValueFieldLabel(),
-      context.getIndexNames(),
-      context.getBaseQueryForMinMaxStats()
-    );
+        context.getVariableType(),
+        context.getVariableName(),
+        context.getVariablePath(),
+        context.getNestedVariableNameField(),
+        context.getNestedVariableValueFieldLabel(),
+        context.getIndexNames(),
+        context.getBaseQueryForMinMaxStats());
   }
 
-  public MinMaxStatDto getVariableMinMaxStats(final VariableType variableType,
-                                              final String variableName,
-                                              final String variablePath,
-                                              final String nestedVariableNameField,
-                                              final String nestedVariableValueFieldLabel,
-                                              final String[] indexNames,
-                                              final QueryBuilder baseQuery) {
-    final BoolQueryBuilder filterQuery = boolQuery().must(
-      termQuery(nestedVariableNameField, variableName)
-    );
+  public MinMaxStatDto getVariableMinMaxStats(
+      final VariableType variableType,
+      final String variableName,
+      final String variablePath,
+      final String nestedVariableNameField,
+      final String nestedVariableValueFieldLabel,
+      final String[] indexNames,
+      final QueryBuilder baseQuery) {
+    final BoolQueryBuilder filterQuery =
+        boolQuery().must(termQuery(nestedVariableNameField, variableName));
     if (VariableType.getNumericTypes().contains(variableType)) {
       return minMaxStatsService.getSingleFieldMinMaxStats(
-        baseQuery,
-        indexNames,
-        nestedVariableValueFieldLabel,
-        variablePath,
-        filterQuery
-      );
+          baseQuery, indexNames, nestedVariableValueFieldLabel, variablePath, filterQuery);
     } else if (VariableType.DATE.equals(variableType)) {
       return minMaxStatsService.getSingleFieldMinMaxStats(
-        baseQuery,
-        indexNames,
-        nestedVariableValueFieldLabel,
-        OPTIMIZE_DATE_FORMAT,
-        variablePath,
-        filterQuery
-      );
+          baseQuery,
+          indexNames,
+          nestedVariableValueFieldLabel,
+          OPTIMIZE_DATE_FORMAT,
+          variablePath,
+          filterQuery);
     }
     return new MinMaxStatDto(Double.NaN, Double.NaN); // not used for other variable types
   }
-
 }

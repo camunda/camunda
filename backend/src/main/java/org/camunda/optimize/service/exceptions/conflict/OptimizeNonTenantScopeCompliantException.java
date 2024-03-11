@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.exceptions.conflict;
 
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 
 public class OptimizeNonTenantScopeCompliantException extends OptimizeConflictException {
 
@@ -15,11 +14,10 @@ public class OptimizeNonTenantScopeCompliantException extends OptimizeConflictEx
 
   public OptimizeNonTenantScopeCompliantException(Set<ConflictedItemDto> conflictedItems) {
     super(
-      "Could not apply action due to conflicts with the collection data source. The definition for the report is " +
-        "available in the data source yet at least one tenant defined in the report is not available in the data " +
-        "source.",
-      conflictedItems
-    );
+        "Could not apply action due to conflicts with the collection data source. The definition for the report is "
+            + "available in the data source yet at least one tenant defined in the report is not available in the data "
+            + "source.",
+        conflictedItems);
   }
 
   @Override

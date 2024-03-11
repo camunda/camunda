@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.sharing;
 
+import java.util.List;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
-
-import java.util.List;
 
 @Data
 public class DashboardShareRestDto {

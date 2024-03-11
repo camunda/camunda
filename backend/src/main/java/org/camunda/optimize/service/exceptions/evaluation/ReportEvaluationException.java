@@ -18,7 +18,8 @@ public class ReportEvaluationException extends OptimizeRuntimeException {
     super();
   }
 
-  public ReportEvaluationException(AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {
+  public ReportEvaluationException(
+      AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {
     super(e.getMessage(), e);
     setReportDefinition(reportDefinition);
   }

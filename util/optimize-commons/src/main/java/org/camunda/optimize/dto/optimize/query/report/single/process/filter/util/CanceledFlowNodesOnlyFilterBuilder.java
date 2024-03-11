@@ -32,5 +32,4 @@ public class CanceledFlowNodesOnlyFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

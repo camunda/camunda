@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.writer.usertask;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 
-import java.util.List;
-
 public interface IdentityLinkLogWriter extends AbstractUserTaskWriter {
 
-   List<ImportRequestDto> generateIdentityLinkLogImports(final List<IdentityLinkLogEntryDto> identityLinkLogs);
-
+  List<ImportRequestDto> generateIdentityLinkLogImports(
+      final List<IdentityLinkLogEntryDto> identityLinkLogs);
 }

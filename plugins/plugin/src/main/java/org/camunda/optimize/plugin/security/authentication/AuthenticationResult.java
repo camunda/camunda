@@ -16,5 +16,4 @@ public class AuthenticationResult {
 
   private boolean isAuthenticated;
   private String authenticatedUser;
-
 }

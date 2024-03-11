@@ -13,9 +13,6 @@ import lombok.NonNull;
 @Data
 public class CustomHeader {
 
-  @NonNull
-  private String header;
-  @NonNull
-  private String value;
-
+  @NonNull private String header;
+  @NonNull private String value;
 }

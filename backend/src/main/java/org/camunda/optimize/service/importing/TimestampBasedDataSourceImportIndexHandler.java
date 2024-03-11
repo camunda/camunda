@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.importing;
 
+import jakarta.annotation.PostConstruct;
+import java.time.OffsetDateTime;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -13,17 +16,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import jakarta.annotation.PostConstruct;
-import java.time.OffsetDateTime;
-import java.util.Optional;
-
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataSourceDto>
-  extends TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> {
+    extends TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> {
 
-  @Autowired
-  protected TimestampBasedImportIndexReader importIndexReader;
+  @Autowired protected TimestampBasedImportIndexReader importIndexReader;
 
   protected OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
@@ -41,7 +39,7 @@ public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataS
   @PostConstruct
   protected void init() {
     final Optional<TimestampBasedImportIndexDto> dto =
-      importIndexReader.getImportIndex(getDatabaseDocID(), getDataSource());
+        importIndexReader.getImportIndex(getDatabaseDocID(), getDataSource());
     if (dto.isPresent()) {
       TimestampBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
@@ -63,5 +61,4 @@ public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataS
   protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
     this.lastImportExecutionTimestamp = timestamp;
   }
-
 }

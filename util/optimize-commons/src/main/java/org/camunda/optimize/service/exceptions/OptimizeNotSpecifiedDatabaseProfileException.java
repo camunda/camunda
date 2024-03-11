@@ -10,5 +10,4 @@ public class OptimizeNotSpecifiedDatabaseProfileException extends OptimizeRuntim
   public OptimizeNotSpecifiedDatabaseProfileException(String message) {
     super(message);
   }
-
 }

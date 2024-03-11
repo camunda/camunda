@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static java.lang.String.format;
+import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.exception.NotFoundException;
@@ -27,14 +34,6 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static java.lang.String.format;
-import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
-import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -49,16 +48,18 @@ public class AlertWriterOS implements AlertWriter {
     String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
 
-    IndexRequest.Builder<AlertDefinitionDto> request = new IndexRequest.Builder<AlertDefinitionDto>()
-      .index(ALERT_INDEX_NAME)
-      .id(id)
-      .document(alertDefinitionDto)
-      .refresh(Refresh.True);
+    IndexRequest.Builder<AlertDefinitionDto> request =
+        new IndexRequest.Builder<AlertDefinitionDto>()
+            .index(ALERT_INDEX_NAME)
+            .id(id)
+            .document(alertDefinitionDto)
+            .refresh(Refresh.True);
 
     IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      String message = "Could not write alert to OpenSearch. Maybe the connection to OpenSearch got lost?";
+      String message =
+          "Could not write alert to OpenSearch. Maybe the connection to OpenSearch got lost?";
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
@@ -71,24 +72,27 @@ public class AlertWriterOS implements AlertWriter {
   public void updateAlert(AlertDefinitionDto alertUpdate) {
     log.debug("Updating alert with id [{}] in OpenSearch", alertUpdate.getId());
 
-    UpdateRequest.Builder<Void, AlertDefinitionDto> requestBuilder = RequestDSL.<Void, AlertDefinitionDto>updateRequestBuilder(ALERT_INDEX_NAME)
-      .id(alertUpdate.getId())
-      .doc(alertUpdate)
-      .refresh(Refresh.True)
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    UpdateRequest.Builder<Void, AlertDefinitionDto> requestBuilder =
+        RequestDSL.<Void, AlertDefinitionDto>updateRequestBuilder(ALERT_INDEX_NAME)
+            .id(alertUpdate.getId())
+            .doc(alertUpdate)
+            .refresh(Refresh.True)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-    UpdateResponse<Void> response = osClient.update(requestBuilder, e -> {
-        final String errorMessage = "There were errors while updating alerts to OS.";
-        log.error(errorMessage, e);
-        return errorMessage + e.getMessage();
-    });
+    UpdateResponse<Void> response =
+        osClient.update(
+            requestBuilder,
+            e -> {
+              final String errorMessage = "There were errors while updating alerts to OS.";
+              log.error(errorMessage, e);
+              return errorMessage + e.getMessage();
+            });
 
     if (response.shards().failed().intValue() > 0) {
-      String errorMessage = format(
-        "Was not able to update alert with id [%s] and name [%s]. Error during the update in Opensearch.",
-        alertUpdate.getId(),
-        alertUpdate.getName()
-      );
+      String errorMessage =
+          format(
+              "Was not able to update alert with id [%s] and name [%s]. Error during the update in Opensearch.",
+              alertUpdate.getId(), alertUpdate.getName());
       log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
@@ -96,19 +100,26 @@ public class AlertWriterOS implements AlertWriter {
 
   public void deleteAlert(String alertId) {
     log.debug("Deleting alert with id [{}]", alertId);
-    DeleteRequest.Builder request = new DeleteRequest.Builder()
-      .index(ALERT_INDEX_NAME)
-      .id(alertId)
-      .refresh(Refresh.True);
+    DeleteRequest.Builder request =
+        new DeleteRequest.Builder().index(ALERT_INDEX_NAME).id(alertId).refresh(Refresh.True);
 
-    DeleteResponse deleteResponse = osClient.delete(request, e -> {
-      String error = format("Could not delete alert with id [%s]. Maybe Optimize is not connected to OpenSearch?", alertId);
-        log.error(error, e);
-        return "There were errors while deleting alerts to OS." + e.getMessage();
-    });
+    DeleteResponse deleteResponse =
+        osClient.delete(
+            request,
+            e -> {
+              String error =
+                  format(
+                      "Could not delete alert with id [%s]. Maybe Optimize is not connected to OpenSearch?",
+                      alertId);
+              log.error(error, e);
+              return "There were errors while deleting alerts to OS." + e.getMessage();
+            });
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
-      String error = format("Could not delete alert with id [%s]. Alert does not exist. Maybe it was already deleted by someone else?", alertId);
+      String error =
+          format(
+              "Could not delete alert with id [%s]. Alert does not exist. Maybe it was already deleted by someone else?",
+              alertId);
       log.error(error);
       throw new NotFoundException(error);
     }
@@ -124,27 +135,31 @@ public class AlertWriterOS implements AlertWriter {
 
     try {
       log.debug("Writing alert status for alert with id [{}] to OpenSearch", alertId);
-      UpdateRequest.Builder<Void, AlertTriggered> request = new UpdateRequest.Builder<Void, AlertTriggered>()
-        .index(ALERT_INDEX_NAME)
-        .id(alertId)
-        .doc(new AlertTriggered(alertStatus))
-        .refresh(Refresh.True)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      UpdateRequest.Builder<Void, AlertTriggered> request =
+          new UpdateRequest.Builder<Void, AlertTriggered>()
+              .index(ALERT_INDEX_NAME)
+              .id(alertId)
+              .doc(new AlertTriggered(alertStatus))
+              .refresh(Refresh.True)
+              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-        osClient.update(request, e -> {
-          final String errorMessage = String.format("Could not update status of alert with id [%s]. " +
-            "Maybe Optimize is not connected to OpenSearch?", alertId);
-          log.error(errorMessage, e);
-          return "There were errors while updating status alerts to OS." + e.getMessage();
-        });
+      osClient.update(
+          request,
+          e -> {
+            final String errorMessage =
+                String.format(
+                    "Could not update status of alert with id [%s]. "
+                        + "Maybe Optimize is not connected to OpenSearch?",
+                    alertId);
+            log.error(errorMessage, e);
+            return "There were errors while updating status alerts to OS." + e.getMessage();
+          });
     } catch (Exception e) {
       log.error("Can't update status of alert [{}]", alertId, e);
     }
   }
 
-  /**
-   * Delete all alerts that are associated with following report ID
-   */
+  /** Delete all alerts that are associated with following report ID */
   @Override
   public void deleteAlertsForReport(String reportId) {
     osClient.deleteByQuery(term(AlertIndex.REPORT_ID, reportId), true, ALERT_INDEX_NAME);

@@ -5,32 +5,31 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.UserAndGroupProvider;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import static org.apache.commons.lang3.RandomStringUtils.random;
+import static org.apache.commons.lang3.RandomUtils.nextInt;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.IntStream;
-
-import static org.apache.commons.lang3.RandomStringUtils.random;
-import static org.apache.commons.lang3.RandomUtils.nextInt;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class DRIProcessWithLoadsOfVariablesDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/dri-process.bpmn";
-  private static final String[] REVIEW_GATEWAY_OPTIONS = new String[]{"yes", "no"};
+  private static final String[] REVIEW_GATEWAY_OPTIONS = new String[] {"yes", "no"};
 
   private final String[] variableNames;
 
-  public DRIProcessWithLoadsOfVariablesDataGenerator(final SimpleEngineClient engineClient,
-                                                     final Integer nVersions,
-                                                     final UserAndGroupProvider userAndGroupProvider) {
+  public DRIProcessWithLoadsOfVariablesDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
-    this.variableNames = IntStream.range(0, 100)
-      .mapToObj(i -> random(15, true, false))
-      .toArray(String[]::new);
+    this.variableNames =
+        IntStream.range(0, 100).mapToObj(i -> random(15, true, false)).toArray(String[]::new);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.importing.event.handler;
 
-import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.service.importing.EngineImportIndexHandler;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.service.importing.EngineImportIndexHandler;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component
@@ -21,7 +20,8 @@ public class EventImportIndexHandlerRegistry {
 
   private final BeanFactory beanFactory;
 
-  private final Map<String, CamundaEventTraceImportIndexHandler> camundaEventTraceHandlers = new HashMap<>();
+  private final Map<String, CamundaEventTraceImportIndexHandler> camundaEventTraceHandlers =
+      new HashMap<>();
 
   public List<EngineImportIndexHandler<?, ?>> getAllHandlers() {
     final List<EngineImportIndexHandler<?, ?>> result = new ArrayList<>();
@@ -34,11 +34,9 @@ public class EventImportIndexHandlerRegistry {
     return beanFactory.getBean(ExternalEventTraceImportIndexHandler.class);
   }
 
-  public synchronized CamundaEventTraceImportIndexHandler getCamundaEventTraceImportIndexHandler(final String definitionKey) {
+  public synchronized CamundaEventTraceImportIndexHandler getCamundaEventTraceImportIndexHandler(
+      final String definitionKey) {
     return camundaEventTraceHandlers.computeIfAbsent(
-      definitionKey,
-      key -> beanFactory.getBean(CamundaEventTraceImportIndexHandler.class, key)
-    );
+        definitionKey, key -> beanFactory.getBean(CamundaEventTraceImportIndexHandler.class, key));
   }
-
 }

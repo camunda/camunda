@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.SuspendedInstancesOnlyFilterDataDto;
-
 import java.util.Collections;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.SuspendedInstancesOnlyFilterDataDto;
 
-public class SuspendedInstancesOnlyFilterDto extends ProcessFilterDto<SuspendedInstancesOnlyFilterDataDto> {
+public class SuspendedInstancesOnlyFilterDto
+    extends ProcessFilterDto<SuspendedInstancesOnlyFilterDataDto> {
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.INSTANCE);

@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
+
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
@@ -16,18 +18,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDistributedByAssignee extends ProcessDistributedByIdentity {
 
-
-  public ProcessDistributedByAssignee(final ConfigurationService configurationService,
-                                      final LocalizationService localizationService,
-                                      final DefinitionService definitionService,
-                                      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
-    super(configurationService, localizationService, definitionService, assigneeCandidateGroupService);
+  public ProcessDistributedByAssignee(
+      final ConfigurationService configurationService,
+      final LocalizationService localizationService,
+      final DefinitionService definitionService,
+      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    super(
+        configurationService,
+        localizationService,
+        definitionService,
+        assigneeCandidateGroupService);
   }
 
   @Override
@@ -41,7 +45,8 @@ public class ProcessDistributedByAssignee extends ProcessDistributedByIdentity {
   }
 
   @Override
-  protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  protected void addAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setDistributedBy(new AssigneeDistributedByDto());
   }
 }

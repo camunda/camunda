@@ -5,8 +5,15 @@
  */
 package org.camunda.optimize.service.importing.zeebe.handler;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
+import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.ZeebeImportIndexHandler;
@@ -16,14 +23,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeImportIndexHandlerProvider {
@@ -31,18 +30,18 @@ public class ZeebeImportIndexHandlerProvider {
   private static final List<Class<?>> POSITION_BASED_HANDLER_CLASSES;
 
   static {
-    try (ScanResult scanResult = new ClassGraph()
-      .enableClassInfo()
-      .acceptPackages(ZeebeImportIndexHandlerProvider.class.getPackage().getName())
-      .scan()) {
-      POSITION_BASED_HANDLER_CLASSES = scanResult.getSubclasses(PositionBasedImportIndexHandler.class.getName())
-        .loadClasses();
+    try (final ScanResult scanResult =
+        new ClassGraph()
+            .enableClassInfo()
+            .acceptPackages(ZeebeImportIndexHandlerProvider.class.getPackage().getName())
+            .scan()) {
+      POSITION_BASED_HANDLER_CLASSES =
+          scanResult.getSubclasses(PositionBasedImportIndexHandler.class.getName()).loadClasses();
     }
   }
 
-  private ZeebeDataSourceDto zeebeDataSourceDto;
-  @Autowired
-  private BeanFactory beanFactory;
+  private final ZeebeDataSourceDto zeebeDataSourceDto;
+  @Autowired private BeanFactory beanFactory;
   private Map<String, PositionBasedImportIndexHandler> positionBasedHandlersByName;
 
   public ZeebeImportIndexHandlerProvider(final ZeebeDataSourceDto zeebeDataSourceDto) {
@@ -53,12 +52,13 @@ public class ZeebeImportIndexHandlerProvider {
   public void init() {
     positionBasedHandlersByName = new HashMap<>();
 
-    POSITION_BASED_HANDLER_CLASSES
-      .forEach(clazz -> {
-        final PositionBasedImportIndexHandler importIndexHandlerInstance =
-          (PositionBasedImportIndexHandler) getImportIndexHandlerInstance(zeebeDataSourceDto, clazz);
-        positionBasedHandlersByName.put(clazz.getSimpleName(), importIndexHandlerInstance);
-      });
+    POSITION_BASED_HANDLER_CLASSES.forEach(
+        clazz -> {
+          final PositionBasedImportIndexHandler importIndexHandlerInstance =
+              (PositionBasedImportIndexHandler)
+                  getImportIndexHandlerInstance(zeebeDataSourceDto, clazz);
+          positionBasedHandlersByName.put(clazz.getSimpleName(), importIndexHandlerInstance);
+        });
   }
 
   public List<PositionBasedImportIndexHandler> getPositionBasedEngineHandlers() {
@@ -66,24 +66,22 @@ public class ZeebeImportIndexHandlerProvider {
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  public <C extends ZeebeImportIndexHandler> C getImportIndexHandler(Class<C> clazz) {
+  public <C extends ZeebeImportIndexHandler> C getImportIndexHandler(final Class<C> clazz) {
     return (C) positionBasedHandlersByName.get(clazz.getSimpleName());
   }
 
-  private <R, C extends Class<R>> R getImportIndexHandlerInstance(ZeebeDataSourceDto zeebeDataSourceDto,
-                                                                  C requiredType) {
-    R result;
+  private <R, C extends Class<R>> R getImportIndexHandlerInstance(
+      final ZeebeDataSourceDto zeebeDataSourceDto, final C requiredType) {
+    final R result;
     if (isInstantiated(requiredType)) {
-      result = requiredType.cast(
-        positionBasedHandlersByName.get(requiredType.getSimpleName())
-      );
+      result = requiredType.cast(positionBasedHandlersByName.get(requiredType.getSimpleName()));
     } else {
       result = beanFactory.getBean(requiredType, zeebeDataSourceDto);
     }
     return result;
   }
 
-  private boolean isInstantiated(Class<?> handlerClass) {
+  private boolean isInstantiated(final Class<?> handlerClass) {
     return positionBasedHandlersByName.get(handlerClass.getSimpleName()) != null;
   }
 }

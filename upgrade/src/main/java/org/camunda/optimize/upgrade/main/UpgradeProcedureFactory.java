@@ -5,22 +5,21 @@
  */
 package org.camunda.optimize.upgrade.main;
 
+import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 
-import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpgradeProcedureFactory {
   public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
     return new UpgradeProcedure(
-      upgradeDependencies.getEsClient(),
-      new UpgradeValidationService(),
-      createSchemaUpgradeClient(upgradeDependencies),
-      new UpgradeStepLogService()
-    );
+        upgradeDependencies.esClient(),
+        new UpgradeValidationService(),
+        createSchemaUpgradeClient(upgradeDependencies),
+        new UpgradeStepLogService());
   }
 }

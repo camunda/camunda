@@ -8,8 +8,8 @@ package org.camunda.optimize.service.db.os;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -27,14 +27,15 @@ public class OptimizeOpenSearchClientConfiguration {
   private final OpenSearchSchemaManager openSearchSchemaManager;
 
   @Bean(destroyMethod = "close")
-  public OptimizeOpenSearchClient optimizeOpenSearchClient(final BackoffCalculator backoffCalculator) {
+  public OptimizeOpenSearchClient optimizeOpenSearchClient(
+      final BackoffCalculator backoffCalculator) {
     return createOptimizeOpenSearchClient(backoffCalculator);
   }
 
   @SneakyThrows
-  public OptimizeOpenSearchClient createOptimizeOpenSearchClient(final BackoffCalculator backoffCalculator) {
+  public OptimizeOpenSearchClient createOptimizeOpenSearchClient(
+      final BackoffCalculator backoffCalculator) {
     return OptimizeOpenSearchClientFactory.create(
-      configurationService, optimizeIndexNameService, openSearchSchemaManager, backoffCalculator);
+        configurationService, optimizeIndexNameService, openSearchSchemaManager, backoffCalculator);
   }
-
 }

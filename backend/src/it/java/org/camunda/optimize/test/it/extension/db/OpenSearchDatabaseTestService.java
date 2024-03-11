@@ -10,7 +10,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import jakarta.ws.rs.NotSupportedException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
@@ -18,7 +23,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClientFactory;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import org.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
@@ -31,6 +35,7 @@ import org.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -38,10 +43,14 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.test.repository.TestIndexRepositoryOS;
+import org.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -53,6 +62,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
@@ -70,6 +80,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -92,6 +103,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                                        final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initOsClient();
+    setTestIndexRepository(new TestIndexRepositoryOS(prefixAwareOptimizeOpenSearchClient));
   }
 
   @Override
@@ -127,7 +139,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public ClientAndServer useDBMockServer() {
-    log.debug("Using OpenSearch MockServer");
+    log.info("Using OpenSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
       prefixAwareOptimizeOpenSearchClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
     } else {
@@ -328,6 +340,17 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       .indexExists(indexOrAliasName);
   }
 
+  @Override
+  @SneakyThrows
+  public boolean zeebeIndexExists(final String indexName) {
+    // Cannot use the rich client here because we need an unprefixed index name
+    return getOptimizeOpenSearchClient()
+      .getOpenSearchClient()
+      .indices()
+      .exists(new ExistsRequest.Builder().index(indexName).build())
+      .value();
+  }
+
   @SneakyThrows
   @Override
   public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String dbType, final String engine) {
@@ -363,6 +386,22 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
     final String[] indicesToDelete = allIndices.result().keySet().stream()
       .filter(indexName -> indexName.contains(zeebeRecordPrefix))
+      .toArray(String[]::new);
+
+    if (indicesToDelete.length > 1) {
+      deleteIndices(indicesToDelete);
+    }
+  }
+
+  @SneakyThrows
+  @Override
+  public void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix, final String recordsToKeep) {
+    final GetIndexResponse allIndices = getOptimizeOpenSearchClient().getRichOpenSearchClient()
+      .index()
+      .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true));
+
+    final String[] indicesToDelete = allIndices.result().keySet().stream()
+      .filter(indexName -> indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
       .toArray(String[]::new);
 
     if (indicesToDelete.length > 1) {
@@ -423,6 +462,98 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     return calculateExpectedValueGivenDurationsWithPercentileInterpolation(setDuration);
   }
 
+  @Override
+  @SneakyThrows
+  public long countRecordsByQuery(final TermsQueryContainer queryContainer, final String expectedIndex) {
+    return getOptimizeOpenSearchClient().count(new String[]{expectedIndex}, queryContainer.toOpenSearchQuery());
+  }
+
+  @Override
+  @SneakyThrows
+  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex, final TermsQueryContainer queryForProcessableEvents, final Class<T> zeebeRecordClass) {
+    BoolQuery query = queryForProcessableEvents.toOpenSearchQuery();
+    SearchRequest.Builder searchRequest = RequestDSL.searchRequestBuilder()
+      .index(exportIndex)
+      .query(query.toQuery())
+      .size(100);
+    return getOptimizeOpenSearchClient()
+      .getOpenSearchClient()
+      .search(searchRequest.build(), zeebeRecordClass)
+      .documents();
+  }
+
+  @Override
+  public void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {
+    // TODO #10087
+    throw new NotImplementedException("Not yet implemented for OpenSearch");
+  }
+
+  @Override
+  public Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
+    // TODO #10087
+    throw new NotImplementedException("Not yet implemented for OpenSearch");
+  }
+
+  @Override
+  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromDatabase(final String processMappingId) {
+    // TODO #10087
+    throw new NotImplementedException("Not yet implemented for OpenSearch");
+  }
+
+  @Override
+  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromDatabase(final String definitionId) {
+    return Optional.ofNullable(
+      getOptimizeOpenSearchClient().get(
+        RequestDSL.getRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME, definitionId),
+        EventProcessDefinitionDto.class,
+        "Could not retrieve entry from index " + EVENT_PROCESS_DEFINITION_INDEX_NAME + " with id " + definitionId)
+        .source()
+    );
+  }
+
+  @Override
+  public List<EventProcessInstanceDto> getEventProcessInstancesFromDatabaseForProcessPublishStateId(final String publishStateId) {
+    return getAllDocumentsOfIndicesAs(
+      new String[]{EventProcessInstanceIndex.constructIndexName(publishStateId)},
+      EventProcessInstanceDto.class,
+      QueryDSL.matchAll()
+    );
+  }
+
+  @Override
+  public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
+    getOptimizeOpenSearchClient().getRichOpenSearchClient().doc().delete(indexName, id);
+  }
+
+  @Override
+  public void deleteDatabaseEntryById(final String indexName, final String id) {
+    getOptimizeOpenSearchClient().delete(indexName, id);
+  }
+
+  @Override
+  public DatabaseType getDatabaseVendor() {
+    return DatabaseType.OPENSEARCH;
+  }
+
+  @Override
+  protected <T extends OptimizeDto> List<T> getInstancesById(final String indexName,
+                                                             final List<String> instanceIds,
+                                                             final String idField,
+                                                             final Class<T> type) {
+    return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, QueryDSL.stringTerms(idField, instanceIds));
+  }
+
+  @Override
+  public <T> Optional<T> getDatabaseEntryById(final String indexName, final String entryId, final Class<T> type) {
+    return Optional.ofNullable(
+      getOptimizeOpenSearchClient().get(
+        RequestDSL.getRequest(indexName, entryId),
+        type,
+        "Could not retrieve entry from index " + indexName + " with id " + entryId)
+        .source()
+    );
+  }
+
   @SneakyThrows
   @Override
   public void deleteIndicesStartingWithPrefix(final String term) {
@@ -437,6 +568,14 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
+  @SneakyThrows
+  public String getDatabaseVersion() {
+    if (opensearchDatabaseVersion == null) {
+      opensearchDatabaseVersion =
+        OpenSearchClientBuilder.getCurrentOSVersion(getOptimizeOpenSearchClient().getOpenSearchClient());
+    }
+    return opensearchDatabaseVersion;
+  }
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {
     return prefixAwareOptimizeOpenSearchClient;
   }
@@ -462,7 +601,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       configurationService.getOpenSearchConfiguration().getFirstConnectionNode();
     log.info("Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
     prefixAwareOptimizeOpenSearchClient = new OptimizeOpenSearchClient(
-      OptimizeOpenSearchClientFactory.buildOpenSearchClientFromConfig(configurationService),
+      OpenSearchClientBuilder.buildOpenSearchClientFromConfig(configurationService),
+      OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(configurationService),
       new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH)
     );
     adjustClusterSettings();

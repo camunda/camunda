@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-
-import java.time.Instant;
 
 @Data
 @AllArgsConstructor
@@ -28,13 +27,11 @@ public class DeletableEventDto {
 
   public static DeletableEventDto from(final EventDto eventDto) {
     return new DeletableEventDto(
-      eventDto.getId(),
-      eventDto.getTraceId(),
-      eventDto.getGroup(),
-      eventDto.getSource(),
-      eventDto.getEventName(),
-      Instant.ofEpochMilli(eventDto.getTimestamp())
-    );
+        eventDto.getId(),
+        eventDto.getTraceId(),
+        eventDto.getGroup(),
+        eventDto.getSource(),
+        eventDto.getEventName(),
+        Instant.ofEpochMilli(eventDto.getTimestamp()));
   }
-
 }

@@ -5,16 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
-
 import java.util.Arrays;
 import java.util.List;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 
 @NoArgsConstructor
 public class CandidateGroupFilterDto extends ProcessFilterDto<IdentityLinkFilterDataDto> {
 
-  public CandidateGroupFilterDto(final IdentityLinkFilterDataDto assigneeCandidateGroupFilterDataDto) {
+  public CandidateGroupFilterDto(
+      final IdentityLinkFilterDataDto assigneeCandidateGroupFilterDataDto) {
     super(assigneeCandidateGroupFilterDataDto, FilterApplicationLevel.INSTANCE);
   }
 
@@ -22,5 +22,4 @@ public class CandidateGroupFilterDto extends ProcessFilterDto<IdentityLinkFilter
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Arrays.asList(FilterApplicationLevel.INSTANCE, FilterApplicationLevel.VIEW);
   }
-
 }

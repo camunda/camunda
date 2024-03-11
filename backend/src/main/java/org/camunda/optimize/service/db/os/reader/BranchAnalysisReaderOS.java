@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -14,8 +15,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -23,9 +22,9 @@ import java.time.ZoneId;
 public class BranchAnalysisReaderOS implements BranchAnalysisReader {
 
   @Override
-  public BranchAnalysisResponseDto branchAnalysis(final BranchAnalysisRequestDto request, final ZoneId timezone) {
-    //todo will be handled in the OPT-7230
+  public BranchAnalysisResponseDto branchAnalysis(
+      final BranchAnalysisRequestDto request, final ZoneId timezone) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
-
 }

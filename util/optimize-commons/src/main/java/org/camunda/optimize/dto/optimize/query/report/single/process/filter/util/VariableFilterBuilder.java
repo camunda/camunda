@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
@@ -23,12 +28,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class VariableFilterBuilder {
 
@@ -96,12 +95,13 @@ public class VariableFilterBuilder {
 
   public VariableFilterBuilder booleanValues(final List<Boolean> values) {
     values(
-      Optional.ofNullable(values)
-        .map(theValues -> theValues.stream()
-          .map(aBoolean -> aBoolean != null ? aBoolean.toString() : null)
-          .collect(Collectors.toList())
-        ).orElse(null)
-    );
+        Optional.ofNullable(values)
+            .map(
+                theValues ->
+                    theValues.stream()
+                        .map(aBoolean -> aBoolean != null ? aBoolean.toString() : null)
+                        .collect(Collectors.toList()))
+            .orElse(null));
     return this;
   }
 
@@ -141,12 +141,14 @@ public class VariableFilterBuilder {
   }
 
   public VariableFilterBuilder rollingDate(final Long value, final DateUnit unit) {
-    this.dateFilterDataDto = new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
+    this.dateFilterDataDto =
+        new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
     return this;
   }
 
   public VariableFilterBuilder relativeDate(final Long value, final DateUnit unit) {
-    this.dateFilterDataDto = new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
+    this.dateFilterDataDto =
+        new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
     return this;
   }
 
@@ -187,14 +189,16 @@ public class VariableFilterBuilder {
   }
 
   private ProcessFilterBuilder createBooleanVariableFilter() {
-    final BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(
-      name,
-      Optional.ofNullable(values)
-        .map(theValues -> theValues.stream()
-          .map(value -> value != null ? Boolean.valueOf(value) : null)
-          .collect(Collectors.toList()))
-        .orElse(null)
-    );
+    final BooleanVariableFilterDataDto dataDto =
+        new BooleanVariableFilterDataDto(
+            name,
+            Optional.ofNullable(values)
+                .map(
+                    theValues ->
+                        theValues.stream()
+                            .map(value -> value != null ? Boolean.valueOf(value) : null)
+                            .collect(Collectors.toList()))
+                .orElse(null));
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dataDto);
     filter.setFilterLevel(filterLevel);
@@ -203,10 +207,10 @@ public class VariableFilterBuilder {
   }
 
   private ProcessFilterBuilder createVariableDateFilter() {
-    DateVariableFilterDataDto dateVariableFilterDataDto = new DateVariableFilterDataDto(
-      name,
-      dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null)
-    );
+    DateVariableFilterDataDto dateVariableFilterDataDto =
+        new DateVariableFilterDataDto(
+            name,
+            dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null));
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dateVariableFilterDataDto);
     filter.setFilterLevel(filterLevel);

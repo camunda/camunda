@@ -5,13 +5,29 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.TENANT_ID;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -23,23 +39,6 @@ import org.elasticsearch.script.ScriptType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.TENANT_ID;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -50,16 +49,19 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
-  private static final Script MARK_AS_DELETED_SCRIPT = new Script(
-    ScriptType.INLINE,
-    Script.DEFAULT_SCRIPT_LANG,
-    "ctx._source.deleted = true",
-    Collections.emptyMap()
-  );
+  private static final Script MARK_AS_DELETED_SCRIPT =
+      new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          "ctx._source.deleted = true",
+          Collections.emptyMap());
 
   @Override
-  public void importDecisionDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
-    log.debug("Writing [{}] decision definitions to elasticsearch", decisionDefinitionOptimizeDtos.size());
+  public void importDecisionDefinitions(
+      List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+    log.debug(
+        "Writing [{}] decision definitions to elasticsearch",
+        decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
 
@@ -67,87 +69,90 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   public void markDefinitionAsDeleted(final String definitionId) {
     log.debug("Marking decision definition with ID {} as deleted", definitionId);
     try {
-      final UpdateRequest updateRequest = new UpdateRequest()
-        .index(DECISION_DEFINITION_INDEX_NAME)
-        .id(definitionId)
-        .script(MARK_AS_DELETED_SCRIPT)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(DECISION_DEFINITION_INDEX_NAME)
+              .id(definitionId)
+              .script(MARK_AS_DELETED_SCRIPT)
+              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
     } catch (Exception e) {
       throw new OptimizeRuntimeException(
-        String.format("There was a problem when trying to mark decision definition with ID %s as deleted", definitionId),
-        e
-      );
+          String.format(
+              "There was a problem when trying to mark decision definition with ID %s as deleted",
+              definitionId),
+          e);
     }
   }
 
   @Override
-  public boolean markRedeployedDefinitionsAsDeleted(final List<DecisionDefinitionOptimizeDto> importedDefinitions) {
+  public boolean markRedeployedDefinitionsAsDeleted(
+      final List<DecisionDefinitionOptimizeDto> importedDefinitions) {
     final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
-    // We must partition this into batches to avoid the maximum ES boolQuery clause limit being reached
+    // We must partition this into batches to avoid the maximum ES boolQuery clause limit being
+    // reached
     Lists.partition(importedDefinitions, 1000)
-      .forEach(
-        partition -> {
-          final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
-          final Set<String> decisionDefIds = new HashSet<>();
-          partition
-            .forEach(definition -> {
-              final BoolQueryBuilder matchingDefinitionQuery = boolQuery()
-                .must(termQuery(DECISION_DEFINITION_KEY, definition.getKey()))
-                .must(termQuery(DECISION_DEFINITION_VERSION, definition.getVersion()))
-                .mustNot(termQuery(DECISION_DEFINITION_ID, definition.getId()));
-              decisionDefIds.add(definition.getId());
-              if (definition.getTenantId() != null) {
-                matchingDefinitionQuery.must(termQuery(TENANT_ID, definition.getTenantId()));
-              } else {
-                matchingDefinitionQuery.mustNot(existsQuery(TENANT_ID));
-              }
-              definitionsToDeleteQuery.should(matchingDefinitionQuery);
-            });
+        .forEach(
+            partition -> {
+              final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
+              final Set<String> decisionDefIds = new HashSet<>();
+              partition.forEach(
+                  definition -> {
+                    final BoolQueryBuilder matchingDefinitionQuery =
+                        boolQuery()
+                            .must(termQuery(DECISION_DEFINITION_KEY, definition.getKey()))
+                            .must(termQuery(DECISION_DEFINITION_VERSION, definition.getVersion()))
+                            .mustNot(termQuery(DECISION_DEFINITION_ID, definition.getId()));
+                    decisionDefIds.add(definition.getId());
+                    if (definition.getTenantId() != null) {
+                      matchingDefinitionQuery.must(termQuery(TENANT_ID, definition.getTenantId()));
+                    } else {
+                      matchingDefinitionQuery.mustNot(existsQuery(TENANT_ID));
+                    }
+                    definitionsToDeleteQuery.should(matchingDefinitionQuery);
+                  });
 
-          final boolean deleted = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-            esClient,
-            String.format("%d decision definitions", decisionDefIds.size()),
-            MARK_AS_DELETED_SCRIPT,
-            definitionsToDeleteQuery,
-            DECISION_DEFINITION_INDEX_NAME
-          );
-          if (deleted && !definitionsUpdated.get()) {
-            definitionsUpdated.set(true);
-          }
-        });
+              final boolean deleted =
+                  ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+                      esClient,
+                      String.format("%d decision definitions", decisionDefIds.size()),
+                      MARK_AS_DELETED_SCRIPT,
+                      definitionsToDeleteQuery,
+                      DECISION_DEFINITION_INDEX_NAME);
+              if (deleted && !definitionsUpdated.get()) {
+                definitionsUpdated.set(true);
+              }
+            });
     if (definitionsUpdated.get()) {
       log.debug("Marked old decision definitions with new deployments as deleted");
     }
     return definitionsUpdated.get();
   }
 
-  private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+  private void writeDecisionDefinitionInformation(
+      List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     String importItemName = "decision definition information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitionOptimizeDtos.size(), importItemName);
     esClient.doImportBulkRequestWithList(
-      importItemName,
-      decisionDefinitionOptimizeDtos,
-      this::addImportDecisionDefinitionRequest,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        importItemName,
+        decisionDefinitionOptimizeDtos,
+        this::addImportDecisionDefinitionRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  private void addImportDecisionDefinitionRequest(final BulkRequest bulkRequest,
-                                                  final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
-    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-      FIELDS_TO_UPDATE,
-      decisionDefinitionDto,
-      objectMapper
-    );
-    final UpdateRequest request = new UpdateRequest()
-      .index(DECISION_DEFINITION_INDEX_NAME)
-      .id(decisionDefinitionDto.getId())
-      .script(updateScript)
-      .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+  private void addImportDecisionDefinitionRequest(
+      final BulkRequest bulkRequest, final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+    final Script updateScript =
+        ElasticsearchWriterUtil.createFieldUpdateScript(
+            FIELDS_TO_UPDATE, decisionDefinitionDto, objectMapper);
+    final UpdateRequest request =
+        new UpdateRequest()
+            .index(DECISION_DEFINITION_INDEX_NAME)
+            .id(decisionDefinitionDto.getId())
+            .script(updateScript)
+            .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(request);
   }
-
 }

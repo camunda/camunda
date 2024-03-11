@@ -1,17 +1,22 @@
-.VersionPopover {
-  .LoadingIndicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: rgba(255, 255, 255, 0.8);
-  }
+@use '@carbon/styles/scss/spacing' as *;
 
-  .disabled {
-    cursor: not-allowed;
-    opacity: 0.4;
+.VersionPopover {
+  .skeleton {
+    height: 20px;
   }
 
   .specificVersions {
-    margin: 10px 0 0 28px;
+    > .cds--form-item {
+      margin-left: $spacing-04;
+    }
+
+    .checkboxLabel {
+      display: flex;
+      align-items: center;
+
+      .cds--tag {
+        margin-block: 0;
+      }
+    }
   }
 }

@@ -8,10 +8,10 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 
-public class StartDateDistributedByDto extends ProcessReportDistributedByDto<DateDistributedByValueDto> {
+public class StartDateDistributedByDto
+    extends ProcessReportDistributedByDto<DateDistributedByValueDto> {
 
   public StartDateDistributedByDto() {
     this.type = DistributedByType.START_DATE;
   }
-
 }

@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.rest.optimize.dto;
 
+import java.io.Serializable;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-
-import java.io.Serializable;
 
 @Getter
 @Setter
@@ -27,5 +26,4 @@ public class VariableDto implements Serializable {
     private String objectTypeName;
     private String serializationDataFormat;
   }
-
 }

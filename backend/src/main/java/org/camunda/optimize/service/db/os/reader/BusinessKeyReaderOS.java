@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
@@ -22,13 +28,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -39,17 +38,24 @@ public class BusinessKeyReaderOS implements BusinessKeyReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(final Set<String> processInstanceIds) {
+  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(
+      final Set<String> processInstanceIds) {
     log.debug("Fetching business keys for [{}] process instances", processInstanceIds.size());
 
     if (processInstanceIds.isEmpty()) {
       return Collections.emptyList();
     }
-    SearchRequest.Builder searchReqBuilder = new SearchRequest.Builder()
-      .index(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
-      .size(LIST_FETCH_LIMIT)
-      .query(QueryDSL.ids(processInstanceIds.toArray(new String[0])))
-      .scroll(RequestDSL.time(String.valueOf(configurationService.getOpenSearchConfiguration().getScrollTimeoutInSeconds())));
+    SearchRequest.Builder searchReqBuilder =
+        new SearchRequest.Builder()
+            .index(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
+            .size(LIST_FETCH_LIMIT)
+            .query(QueryDSL.ids(processInstanceIds.toArray(new String[0])))
+            .scroll(
+                RequestDSL.time(
+                    String.valueOf(
+                        configurationService
+                            .getOpenSearchConfiguration()
+                            .getScrollTimeoutInSeconds())));
 
     OpenSearchDocumentOperations.AggregatedResult<Hit<BusinessKeyDto>> searchResponse;
     try {
@@ -61,5 +67,4 @@ public class BusinessKeyReaderOS implements BusinessKeyReader {
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);
   }
-
 }

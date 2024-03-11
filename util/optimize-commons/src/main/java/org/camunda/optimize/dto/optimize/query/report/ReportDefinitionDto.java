@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
@@ -17,8 +18,6 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-
-import java.time.OffsetDateTime;
 
 @Data
 @AllArgsConstructor
@@ -35,8 +34,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   protected String lastModifier;
   protected String collectionId;
 
-  @Valid
-  protected D data;
+  @Valid protected D data;
 
   private final boolean combined;
 
@@ -51,23 +49,21 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   @Override
   public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(
-      getId(),
-      getName(),
-      getDescription(),
-      getLastModified(),
-      getCreated(),
-      getOwner(),
-      getLastModifier(),
-      EntityType.REPORT,
-      this.combined,
-      this.reportType,
-      roleType
-    );
+        getId(),
+        getName(),
+        getDescription(),
+        getLastModified(),
+        getCreated(),
+        getOwner(),
+        getLastModifier(),
+        EntityType.REPORT,
+        this.combined,
+        this.reportType,
+        roleType);
   }
 
   @JsonIgnore
   public DefinitionType getDefinitionType() {
     return this.reportType.toDefinitionType();
   }
-
 }

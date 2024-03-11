@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.importing;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import lombok.Getter;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -12,35 +17,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-
 public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
-  implements EngineImportIndexHandler<TimestampBasedImportPage, INDEX_DTO> {
+    implements EngineImportIndexHandler<TimestampBasedImportPage, INDEX_DTO> {
 
-  public static final OffsetDateTime BEGINNING_OF_TIME = OffsetDateTime.ofInstant(
-    Instant.EPOCH,
-    ZoneId.systemDefault()
-  );
+  public static final OffsetDateTime BEGINNING_OF_TIME =
+      OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  protected ConfigurationService configurationService;
+  @Autowired protected ConfigurationService configurationService;
 
-  protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
+  @Getter protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
 
   public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
-    final OffsetDateTime backOffWindowStart = reduceByCurrentTimeBackoff(
-      OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault())
-    );
+    final OffsetDateTime backOffWindowStart =
+        reduceByCurrentTimeBackoff(OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()));
     if (timestamp.isAfter(backOffWindowStart)) {
       logger.info(
-        "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
-        getTipOfTimeBackoffMilliseconds()
-      );
+          "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
+          getTipOfTimeBackoffMilliseconds());
       updateLastPersistedEntityTimestamp(backOffWindowStart);
     } else {
       updateLastPersistedEntityTimestamp(timestamp);
@@ -48,14 +43,12 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
   }
 
   public void updatePendingTimestampOfLastEntity(final OffsetDateTime timestamp) {
-    final OffsetDateTime backOffWindowStart = reduceByCurrentTimeBackoff(
-      OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault())
-    );
+    final OffsetDateTime backOffWindowStart =
+        reduceByCurrentTimeBackoff(OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()));
     if (timestamp.isAfter(backOffWindowStart)) {
       logger.info(
-        "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
-        getTipOfTimeBackoffMilliseconds()
-      );
+          "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
+          getTipOfTimeBackoffMilliseconds());
       updatePendingLastEntityTimestamp(backOffWindowStart);
     } else {
       updatePendingLastEntityTimestamp(timestamp);
@@ -68,7 +61,7 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
 
   @Override
   public TimestampBasedImportPage getNextPage() {
-    TimestampBasedImportPage page = new TimestampBasedImportPage();
+    final TimestampBasedImportPage page = new TimestampBasedImportPage();
     page.setTimestampOfLastEntity(getTimestampOfLastEntity());
     return page;
   }
@@ -80,19 +73,15 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
     updatePendingLastEntityTimestamp(BEGINNING_OF_TIME);
   }
 
-  public OffsetDateTime getTimestampOfLastEntity() {
-    return timestampOfLastEntity;
-  }
+  protected abstract void updateLastPersistedEntityTimestamp(OffsetDateTime timestamp);
 
-  abstract protected void updateLastPersistedEntityTimestamp(OffsetDateTime timestamp);
-
-  abstract protected void updateLastImportExecutionTimestamp(OffsetDateTime timestamp);
+  protected abstract void updateLastImportExecutionTimestamp(OffsetDateTime timestamp);
 
   protected void updatePendingLastEntityTimestamp(final OffsetDateTime timestamp) {
-    this.timestampOfLastEntity = timestamp;
+    timestampOfLastEntity = timestamp;
   }
 
-  protected OffsetDateTime reduceByCurrentTimeBackoff(OffsetDateTime currentDateTime) {
+  protected OffsetDateTime reduceByCurrentTimeBackoff(final OffsetDateTime currentDateTime) {
     return currentDateTime.minus(getTipOfTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
   }
 

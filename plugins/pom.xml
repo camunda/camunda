@@ -11,10 +11,6 @@
   <artifactId>optimize-plugin-parent</artifactId>
   <packaging>pom</packaging>
 
-  <properties>
-    <sonar.skip>true</sonar.skip>
-  </properties>
-
   <modules>
     <module>plugin</module>
     <module>optimize-test-plugins/optimize-main-test-plugin</module>

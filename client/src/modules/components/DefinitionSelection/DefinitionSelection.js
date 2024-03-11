@@ -300,7 +300,8 @@ export class DefinitionSelection extends React.Component {
       isLoadingVersions,
       isLoadingTenants,
     } = this.state;
-    const {expanded, type, disableDefinition, selectedDefinitions, onChange} = this.props;
+    const {expanded, type, disableDefinition, selectedDefinitions, onChange, invalid, invalidText} =
+      this.props;
     const collectionId = getCollection(this.props.location.pathname);
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const selectedKey = selection.key;
@@ -342,6 +343,8 @@ export class DefinitionSelection extends React.Component {
                   changeDefinition={this.changeDefinition}
                   resetSelection={this.resetSelection}
                   onChange={onChange}
+                  invalid={invalid}
+                  invalidText={invalidText}
                 />
               ) : (
                 <ComboBox
@@ -371,6 +374,8 @@ export class DefinitionSelection extends React.Component {
                       (item.name || item.key).toLowerCase().includes(inputValue?.toLowerCase())
                     );
                   }}
+                  invalid={invalid}
+                  invalidText={invalidText}
                 />
               )}
               <div className="version entry">

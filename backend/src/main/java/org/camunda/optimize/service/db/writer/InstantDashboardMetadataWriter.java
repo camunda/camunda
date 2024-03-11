@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
-
 import java.io.IOException;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 
 public interface InstantDashboardMetadataWriter {
 
   void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto);
 
-  List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(List<Long> hashesAllowed) throws IOException;
+  List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(List<Long> hashesAllowed)
+      throws IOException;
 }

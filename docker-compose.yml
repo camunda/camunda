@@ -59,7 +59,7 @@ services:
       timeout: 10s
       retries: 5
   cambpm:
-    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.18.0}
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.19.0}
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin

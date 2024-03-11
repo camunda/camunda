@@ -6,14 +6,13 @@
 package org.camunda.optimize.dto.optimize.query;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.lucene.search.ScoreDoc;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -22,11 +21,10 @@ public class IdentitySearchResultResponseDto {
   private List<IdentityWithMetadataResponseDto> result = new ArrayList<>();
 
   /**
-   * ScoreDoc holds a reference to the ScoreDoc of the last result the result list.
-   * Used to paginate through the searchableIdentityCache.
+   * ScoreDoc holds a reference to the ScoreDoc of the last result the result list. Used to paginate
+   * through the searchableIdentityCache.
    */
-  @JsonIgnore
-  private ScoreDoc scoreDoc;
+  @JsonIgnore private ScoreDoc scoreDoc;
 
   public IdentitySearchResultResponseDto(final List<IdentityWithMetadataResponseDto> result) {
     this.result = result;

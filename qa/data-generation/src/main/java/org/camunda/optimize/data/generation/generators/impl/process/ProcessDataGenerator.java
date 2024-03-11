@@ -5,24 +5,24 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-
 public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstance> {
 
   private static final String CORRELATION_VARIABLE_NAME = "correlatingVariable";
   private static final String CORRELATION_VALUE_PREFIX = "correlationValue_";
 
-  public ProcessDataGenerator(final SimpleEngineClient engineClient,
-                              final Integer nVersions,
-                              final UserAndGroupProvider userAndGroupProvider) {
+  public ProcessDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
@@ -53,8 +53,8 @@ public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstan
     return engineClient.deployProcesses(instance, nVersions, tenants);
   }
 
-  public BpmnModelInstance readProcessDiagramAsInstance(String diagramPath) {
-    InputStream inputStream = getClass().getResourceAsStream(diagramPath);
+  public BpmnModelInstance readProcessDiagramAsInstance(final String diagramPath) {
+    final InputStream inputStream = ProcessDataGenerator.class.getResourceAsStream(diagramPath);
     return Bpmn.readModelFromStream(inputStream);
   }
 }

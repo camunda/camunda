@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DeletedIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DeletedIncidentFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 
 public class DeletedIncidentFilterBuilder {
   private final ProcessFilterBuilder filterBuilder;
@@ -45,5 +44,4 @@ public class DeletedIncidentFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.util.List;
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
-
-import java.util.List;
-import java.util.Set;
 
 public interface EventSequenceCountReader {
 
@@ -19,26 +18,26 @@ public interface EventSequenceCountReader {
   String SOURCE_AGG = EventCountResponseDto.Fields.source;
   String EVENT_NAME_AGG = EventCountResponseDto.Fields.eventName;
   String COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION =
-    "compositeEventNameSourceAndGroupAggregation";
+      "compositeEventNameSourceAndGroupAggregation";
   String COUNT_AGG = EventCountResponseDto.Fields.count;
   String KEYWORD_ANALYZER = "keyword";
 
   List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
-    final List<EventTypeDto> incomingEvents,
-    final List<EventTypeDto> outgoingEvents);
+      final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents);
 
-  List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(final String searchTerm);
+  List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(
+      final String searchTerm);
 
-  List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(final List<String> groups,
-                                                                             final String searchTerm);
+  List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(
+      final List<String> groups, final String searchTerm);
 
-  List<EventCountResponseDto> getEventCountsForCamundaSources(final List<CamundaEventSourceEntryDto> camundaSources);
+  List<EventCountResponseDto> getEventCountsForCamundaSources(
+      final List<CamundaEventSourceEntryDto> camundaSources);
 
   Set<String> getIndexSuffixesForCurrentSequenceCountIndices();
 
-  List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(final EventTypeDto firstEventTypeDto,
-                                                                        final EventTypeDto secondEventTypeDto);
+  List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(
+      final EventTypeDto firstEventTypeDto, final EventTypeDto secondEventTypeDto);
 
   List<EventSequenceCountDto> getAllSequenceCounts();
-
 }

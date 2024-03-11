@@ -5,18 +5,17 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
-
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 
-public interface AbstractProcessInstanceDataWriter<T extends OptimizeDto> extends ConfigurationReloadable {
+public interface AbstractProcessInstanceDataWriter<T extends OptimizeDto>
+    extends ConfigurationReloadable {
 
-  void createInstanceIndicesIfMissing(final List<T> optimizeDtos,
-                                      final Function<T, String> definitionKeyGetter);
+  void createInstanceIndicesIfMissing(
+      final List<T> optimizeDtos, final Function<T, String> definitionKeyGetter);
 
   void createInstanceIndicesIfMissing(final Set<String> processDefinitionKeys);
-
 }

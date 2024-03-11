@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_ASSIGNEE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_CANDIDATE_GROUP;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_END_DATE;
@@ -17,6 +15,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_S
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_USER_TASK;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_VARIABLE;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum DistributedByType {
   NONE(DISTRIBUTED_BY_NONE),
   USER_TASK(DISTRIBUTED_BY_USER_TASK),
@@ -26,8 +26,7 @@ public enum DistributedByType {
   VARIABLE(DISTRIBUTED_BY_VARIABLE),
   START_DATE(DISTRIBUTED_BY_START_DATE),
   END_DATE(DISTRIBUTED_BY_END_DATE),
-  PROCESS(DISTRIBUTED_BY_PROCESS)
-  ;
+  PROCESS(DISTRIBUTED_BY_PROCESS);
 
   private final String id;
 

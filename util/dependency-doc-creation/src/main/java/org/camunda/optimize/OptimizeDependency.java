@@ -46,16 +46,20 @@ public class OptimizeDependency {
 
   public String toMarkDown() {
     if (validString(licenseLink)) {
-      return "* " + projectName +
-        "@" + projectVersion + ", " +
-        "[(" + licenseName +")]" +
-        "(" + licenseLink + ")\n";
+      return "* "
+          + projectName
+          + "@"
+          + projectVersion
+          + ", "
+          + "[("
+          + licenseName
+          + ")]"
+          + "("
+          + licenseLink
+          + ")\n";
     } else {
-      return "* " + projectName +
-        "@" + projectVersion + ", " +
-        "(" + licenseName +")\n";
+      return "* " + projectName + "@" + projectVersion + ", " + "(" + licenseName + ")\n";
     }
-
   }
 
   public boolean isProperLicense() {

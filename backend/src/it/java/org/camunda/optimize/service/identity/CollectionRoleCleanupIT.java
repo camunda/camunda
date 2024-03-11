@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.identity;
 
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -24,6 +25,7 @@ import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,11 +37,11 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
 
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
@@ -51,6 +53,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class CollectionRoleCleanupIT extends AbstractPlatformIT {
 
   private static final String USER_KERMIT = "kermit";

@@ -16,5 +16,4 @@ public class PlatformOptimizeVersionService extends OptimizeVersionService {
   public PlatformOptimizeVersionService() {
     super(Version.RAW_VERSION, Version.VERSION, Version.VERSION);
   }
-
 }

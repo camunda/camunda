@@ -29,13 +29,12 @@ public class EsEventMappingDto implements OptimizeDto {
   EventTypeDto start;
   EventTypeDto end;
 
-  public static EsEventMappingDto fromEventMappingDto(final String flowNodeId,
-                                                      final EventMappingDto eventMappingDto) {
+  public static EsEventMappingDto fromEventMappingDto(
+      final String flowNodeId, final EventMappingDto eventMappingDto) {
     return EsEventMappingDto.builder()
-      .flowNodeId(flowNodeId)
-      .start(eventMappingDto.getStart())
-      .end(eventMappingDto.getEnd())
-      .build();
+        .flowNodeId(flowNodeId)
+        .start(eventMappingDto.getStart())
+        .end(eventMappingDto.getEnd())
+        .build();
   }
-
 }

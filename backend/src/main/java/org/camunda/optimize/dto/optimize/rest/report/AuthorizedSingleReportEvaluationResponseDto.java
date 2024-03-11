@@ -18,15 +18,15 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 @FieldNameConstants(asEnum = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthorizedSingleReportEvaluationResponseDto<T, D extends ReportDefinitionDto<?>>
-  extends AuthorizedReportEvaluationResponseDto<D> {
+    extends AuthorizedReportEvaluationResponseDto<D> {
 
   protected ReportResultResponseDto<T> result;
 
-  public AuthorizedSingleReportEvaluationResponseDto(final RoleType currentUserRole,
-                                                     final ReportResultResponseDto<T> result,
-                                                     final D reportDefinition) {
+  public AuthorizedSingleReportEvaluationResponseDto(
+      final RoleType currentUserRole,
+      final ReportResultResponseDto<T> result,
+      final D reportDefinition) {
     super(currentUserRole, reportDefinition);
     this.result = result;
   }
-
 }

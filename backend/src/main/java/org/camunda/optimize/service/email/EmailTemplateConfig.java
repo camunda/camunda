@@ -23,5 +23,4 @@ public class EmailTemplateConfig {
     freeMarkerConfigurer.setConfiguration(configuration);
     return freeMarkerConfigurer;
   }
-
 }

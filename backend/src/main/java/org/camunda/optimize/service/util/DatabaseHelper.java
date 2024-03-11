@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.util;
 
-
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
@@ -20,12 +19,9 @@ public class DatabaseHelper {
 
   public static String constructKey(String databaseType, DataSourceDto dataSourceDto) {
     if (dataSourceDto instanceof ZeebeDataSourceDto) {
-      return constructKey(
-        databaseType,
-        dataSourceDto.getName()
-      ) + ((ZeebeDataSourceDto) dataSourceDto).getPartitionId();
+      return constructKey(databaseType, dataSourceDto.getName())
+          + ((ZeebeDataSourceDto) dataSourceDto).getPartitionId();
     }
     return constructKey(databaseType, dataSourceDto.getName());
   }
-
 }

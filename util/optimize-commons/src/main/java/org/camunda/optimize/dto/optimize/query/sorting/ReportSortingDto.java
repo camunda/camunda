@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.sorting;
 
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Optional;
 
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
@@ -30,5 +29,4 @@ public class ReportSortingDto {
   public Optional<SortOrder> getOrder() {
     return Optional.ofNullable(order);
   }
-
 }

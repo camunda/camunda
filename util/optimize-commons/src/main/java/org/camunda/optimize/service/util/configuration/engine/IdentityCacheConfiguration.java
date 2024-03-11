@@ -6,12 +6,11 @@
 package org.camunda.optimize.service.util.configuration.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Optional;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.CronNormalizerUtil;
-
-import java.util.Optional;
 
 @Data
 @FieldNameConstants
@@ -24,12 +23,14 @@ public abstract class IdentityCacheConfiguration {
 
   public void validate() {
     if (cronTrigger == null || cronTrigger.isEmpty()) {
-      throw new OptimizeConfigurationException(getConfigName() + ".cronTrigger must be set and not empty");
+      throw new OptimizeConfigurationException(
+          getConfigName() + ".cronTrigger must be set and not empty");
     }
   }
 
   public final void setCronTrigger(String cronTrigger) {
-    this.cronTrigger = Optional.ofNullable(cronTrigger).map(CronNormalizerUtil::normalizeToSixParts).orElse(null);
+    this.cronTrigger =
+        Optional.ofNullable(cronTrigger).map(CronNormalizerUtil::normalizeToSixParts).orElse(null);
   }
 
   @JsonIgnore

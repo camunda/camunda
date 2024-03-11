@@ -6,6 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,11 +27,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 
-import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -37,13 +36,13 @@ import java.util.List;
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
 public class DecisionReportDataDto extends SingleReportDataDto {
 
-  @Builder.Default
-  @Valid
-  protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
+  @Builder.Default @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
+
   @Builder.Default
   protected ProcessReportDistributedByDto<?> distributedBy = new NoneDistributedByDto();
+
   protected DecisionVisualization visualization;
 
   public String getDecisionDefinitionKey() {
@@ -107,5 +106,4 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
     return viewCommandKey + "_" + groupByCommandKey;
   }
-
 }

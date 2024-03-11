@@ -11,13 +11,12 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
-
-import java.io.IOException;
 
 public class CustomDefinitionDeserializer extends StdDeserializer<DefinitionOptimizeResponseDto> {
 
@@ -33,13 +32,15 @@ public class CustomDefinitionDeserializer extends StdDeserializer<DefinitionOpti
   }
 
   @Override
-  public DefinitionOptimizeResponseDto deserialize(final JsonParser jsonParser,
-                                                   final DeserializationContext deserializationContext) throws IOException {
+  public DefinitionOptimizeResponseDto deserialize(
+      final JsonParser jsonParser, final DeserializationContext deserializationContext)
+      throws IOException {
     JsonNode node = jsonParser.readValueAsTree();
     return deserialize(jsonParser, node);
   }
 
-  public DefinitionOptimizeResponseDto deserialize(final JsonParser jsonParser, final JsonNode jsonNode) throws IOException {
+  public DefinitionOptimizeResponseDto deserialize(
+      final JsonParser jsonParser, final JsonNode jsonNode) throws IOException {
     final DefinitionType definitionType = resolveDefinitionType(jsonNode);
     switch (definitionType) {
       case PROCESS:
@@ -48,13 +49,14 @@ public class CustomDefinitionDeserializer extends StdDeserializer<DefinitionOpti
         return objectMapper.readValue(jsonParser, DecisionDefinitionOptimizeDto.class);
       default:
         throw new JsonParseException(
-          jsonParser, "Could not create definition object as it contains no specific xml property of a subclass."
-        );
+            jsonParser,
+            "Could not create definition object as it contains no specific xml property of a subclass.");
     }
   }
 
   private DefinitionType resolveDefinitionType(final JsonNode node) {
-    return node.has(ProcessDefinitionIndex.PROCESS_DEFINITION_XML) ? DefinitionType.PROCESS : DefinitionType.DECISION;
+    return node.has(ProcessDefinitionIndex.PROCESS_DEFINITION_XML)
+        ? DefinitionType.PROCESS
+        : DefinitionType.DECISION;
   }
-
 }

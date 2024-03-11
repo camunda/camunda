@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data

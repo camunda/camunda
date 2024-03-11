@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEva
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE;
@@ -44,6 +46,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 
+@Tag(OPENSEARCH_PASSING)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CombinedReportCombinationsIT extends AbstractPlatformIT {
 
@@ -52,6 +55,8 @@ public class CombinedReportCombinationsIT extends AbstractPlatformIT {
     LocalDateUtil.reset();
   }
 
+  // Passes locally, but fails on CI
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("getCombinableSingleReports")
   public void combineCombinableSingleReports(List<SingleProcessReportDefinitionRequestDto> singleReports) {

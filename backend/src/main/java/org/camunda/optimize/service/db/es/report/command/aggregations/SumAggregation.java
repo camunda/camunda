@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.report.command.aggregations;
 
+import static org.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
+
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
-
-import static org.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 
 public class SumAggregation extends AggregationStrategy<SumAggregationBuilder> {
 
@@ -26,7 +26,8 @@ public class SumAggregation extends AggregationStrategy<SumAggregationBuilder> {
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<SumAggregationBuilder> createAggregationBuilderForAggregation(final String customIdentifier) {
+  public ValuesSourceAggregationBuilder<SumAggregationBuilder>
+      createAggregationBuilderForAggregation(final String customIdentifier) {
     return sum(createAggregationName(customIdentifier, SUM_AGGREGATION));
   }
 
@@ -34,5 +35,4 @@ public class SumAggregation extends AggregationStrategy<SumAggregationBuilder> {
   public AggregationDto getAggregationType() {
     return new AggregationDto(AggregationType.SUM);
   }
-
 }

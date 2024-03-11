@@ -6,6 +6,8 @@
 package org.camunda.optimize.dto.optimize.query.telemetry;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +15,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
@@ -27,8 +26,7 @@ public class InternalsDto implements OptimizeDto {
   @JsonProperty("engine-installation-ids")
   private List<String> engineInstallationIds = new ArrayList<>();
 
-  @NonNull
-  private final DatabaseDto database;
+  @NonNull private final DatabaseDto database;
 
   @JsonProperty("license-key")
   private final LicenseKeyDto licenseKey;

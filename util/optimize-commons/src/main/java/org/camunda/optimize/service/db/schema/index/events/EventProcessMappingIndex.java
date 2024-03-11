@@ -5,21 +5,21 @@
  */
 package org.camunda.optimize.service.db.schema.index.events;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-
-public abstract class EventProcessMappingIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+public abstract class EventProcessMappingIndex<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 4;
 
@@ -63,122 +63,123 @@ public abstract class EventProcessMappingIndex<TBuilder> extends DefaultIndexMap
   @Override
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    XContentBuilder newXContentBuilder = xContentBuilder
-      .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(NAME)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(LAST_MODIFIER)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(LAST_MODIFIED)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(XML)
-        .field("type", "text")
-        .field("index", true)
-        .field("analyzer", "is_present_analyzer")
-      .endObject()
-      .startObject(MAPPINGS)
-        .field("type", "object")
-        .startObject("properties");
-          addNestedFlowNodeMappingsFields(newXContentBuilder)
+    XContentBuilder newXContentBuilder =
+        xContentBuilder
+            .startObject(ID)
+            .field("type", "keyword")
+            .endObject()
+            .startObject(NAME)
+            .field("type", "keyword")
+            .endObject()
+            .startObject(LAST_MODIFIER)
+            .field("type", "keyword")
+            .endObject()
+            .startObject(LAST_MODIFIED)
+            .field("type", "date")
+            .field("format", OPTIMIZE_DATE_FORMAT)
+            .endObject()
+            .startObject(XML)
+            .field("type", "text")
+            .field("index", true)
+            .field("analyzer", "is_present_analyzer")
+            .endObject()
+            .startObject(MAPPINGS)
+            .field("type", "object")
+            .startObject("properties");
+    addNestedFlowNodeMappingsFields(newXContentBuilder)
         .endObject()
-      .endObject()
-      .startObject(EVENT_SOURCES)
+        .endObject()
+        .startObject(EVENT_SOURCES)
         .field("type", "object")
         .field("dynamic", true)
         .startObject("properties");
-          addEventSourcesField(newXContentBuilder)
+    addEventSourcesField(newXContentBuilder)
         .endObject()
-      .endObject()
-      .startObject(ROLES)
+        .endObject()
+        .startObject(ROLES)
         .field("type", "object")
         .startObject("properties");
-          addNestedRolesFields(newXContentBuilder)
-        .endObject()
-      .endObject();
+    addNestedRolesFields(newXContentBuilder).endObject().endObject();
     // @formatter:on
     return newXContentBuilder;
   }
 
-  private XContentBuilder addNestedFlowNodeMappingsFields(final XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addNestedFlowNodeMappingsFields(final XContentBuilder xContentBuilder)
+      throws IOException {
     // @formatter:off
-    XContentBuilder newXContentBuilder = xContentBuilder
-      .startObject(FLOWNODE_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(START)
+    XContentBuilder newXContentBuilder =
+        xContentBuilder
+            .startObject(FLOWNODE_ID)
+            .field("type", "keyword")
+            .endObject()
+            .startObject(START)
+            .field("type", "object")
+            .startObject("properties");
+    addEventMappingFields(newXContentBuilder)
+        .endObject()
+        .endObject()
+        .startObject(END)
         .field("type", "object")
         .startObject("properties");
-          addEventMappingFields(newXContentBuilder)
-        .endObject()
-      .endObject()
-      .startObject(END)
-        .field("type", "object")
-        .startObject("properties");
-          addEventMappingFields(newXContentBuilder)
-        .endObject()
-      .endObject();
+    addEventMappingFields(newXContentBuilder).endObject().endObject();
     // @formatter:on
     return newXContentBuilder;
   }
 
-  private XContentBuilder addEventMappingFields(final XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addEventMappingFields(final XContentBuilder xContentBuilder)
+      throws IOException {
     return xContentBuilder
-      // @formatter:off
-      .startObject(GROUP)
+        // @formatter:off
+        .startObject(GROUP)
         .field("type", "keyword")
-      .endObject()
-      .startObject(SOURCE)
+        .endObject()
+        .startObject(SOURCE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_NAME)
+        .endObject()
+        .startObject(EVENT_NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_LABEL)
-      .field("type", "keyword")
-      .endObject();
+        .endObject()
+        .startObject(EVENT_LABEL)
+        .field("type", "keyword")
+        .endObject();
     // @formatter:on
   }
 
-  private XContentBuilder addEventSourcesField(final XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addEventSourcesField(final XContentBuilder xContentBuilder)
+      throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(EVENT_SOURCE_ID)
+        .startObject(EVENT_SOURCE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_TYPE)
+        .endObject()
+        .startObject(EVENT_SOURCE_TYPE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_SOURCE_CONFIG)
+        .endObject()
+        .startObject(EVENT_SOURCE_CONFIG)
         .field("type", "object")
         .field("dynamic", true)
-      .endObject();
+        .endObject();
     // @formatter:on
   }
 
-  private XContentBuilder addNestedRolesFields(final XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addNestedRolesFields(final XContentBuilder xContentBuilder)
+      throws IOException {
     return xContentBuilder
-      // @formatter:off
-      .startObject(ROLE_ID)
+        // @formatter:off
+        .startObject(ROLE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(ROLE_IDENTITY)
+        .endObject()
+        .startObject(ROLE_IDENTITY)
         .field("type", "object")
         .startObject("properties")
-          .startObject(ROLE_IDENTITY_ID)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(ROLE_IDENTITY_TYPE)
-            .field("type", "keyword")
-          .endObject()
+        .startObject(ROLE_IDENTITY_ID)
+        .field("type", "keyword")
         .endObject()
-      .endObject();
+        .startObject(ROLE_IDENTITY_TYPE)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject();
     // @formatter:on
   }
-
 }

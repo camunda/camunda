@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
-import org.junit.jupiter.api.Test;
-
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.Response;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static com.google.common.net.HttpHeaders.STRICT_TRANSPORT_SECURITY;
@@ -18,9 +18,11 @@ import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_XSS_PROTECTION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
+@Tag(OPENSEARCH_PASSING)
 public class SecurityResponseHeadersIT extends AbstractPlatformIT {
 
   @Test

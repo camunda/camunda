@@ -5,25 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import update from 'immutability-helper';
-import {Button} from '@carbon/react';
-
 import {
-  Modal,
-  DefinitionSelection,
-  LabeledInput,
-  Typeahead,
+  ActionableNotification,
+  Button,
+  ComboBox,
   Form,
-  Message,
-  MessageBox,
-  DocsLink,
-  Tabs,
-} from 'components';
+  FormGroup,
+  RadioButton,
+  RadioButtonGroup,
+  Stack,
+} from '@carbon/react';
+
+import {Modal, DefinitionSelection, DocsLink, Tabs} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
-import {loadVariables} from 'services';
+import {loadVariables as loadVariablesService} from 'services';
 import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
 
 import ExternalSource from './ExternalSource';
 import {loadEvents} from './service';
@@ -44,277 +43,293 @@ const defaultSource = {
   traceVariable: null,
 };
 
-export default withErrorHandling(
-  class EventsSourceModal extends React.Component {
-    state = {
-      source: this.props.initialSource?.configuration || defaultSource,
-      variables: null,
-      type: 'camunda',
-      externalExist: false,
-      externalSources: [],
-    };
+export default function EventsSourceModal({
+  initialSource,
+  existingSources,
+  autoGenerate,
+  onConfirm,
+  onClose,
+}) {
+  const [source, setSource] = useState(initialSource?.configuration || defaultSource);
+  const [variables, setVariables] = useState(null);
+  const [type, setType] = useState('camunda');
+  const [externalExist, setExternalExist] = useState(false);
+  const [externalSources, setExternalSources] = useState([]);
+  const {mightFail} = useErrorHandling();
+  const {processDefinitionKey, versions, tenants, tracedByBusinessKey, traceVariable, eventScope} =
+    source;
 
-    componentDidMount = async () => {
-      if (this.isEditing()) {
-        const {processDefinitionKey, versions, tenants} = this.props.initialSource.configuration;
-        this.loadVariables(processDefinitionKey, versions, tenants);
-      }
-
-      this.props.mightFail(
-        loadEvents({eventSources: allExternalGroups}),
-        (events) => this.setState({externalExist: !!events.length}),
-        showError
+  function updateSources() {
+    if (type === 'external') {
+      const camundaSources = existingSources.filter((src) => src.type !== 'external');
+      const existingExternalGroups = existingSources.filter(
+        (src) => src.type === 'external' && !src.configuration.includeAllGroups
       );
-    };
+      const newExternalSources =
+        autoGenerate || includeAllGroups(externalSources)
+          ? allExternalGroups
+          : externalSources.concat(existingExternalGroups);
 
-    updateSources = () => {
-      const {existingSources, autoGenerate} = this.props;
-      const {source, type, externalSources} = this.state;
-      if (type === 'external') {
-        const camundaSources = existingSources.filter((src) => src.type !== 'external');
-        const existingExternalGroups = existingSources.filter(
-          (src) => src.type === 'external' && !src.configuration.includeAllGroups
+      const updatedSources = camundaSources.concat(newExternalSources);
+      onConfirm(updatedSources, camundaSources.length < existingSources.length);
+    } else {
+      let updatedSources;
+      const newSource = {
+        type: 'camunda',
+        configuration: {
+          ...source,
+          traceVariable: source.tracedByBusinessKey ? null : source.traceVariable,
+        },
+      };
+
+      if (isEditing()) {
+        const sourceIndex = existingSources.findIndex(
+          ({configuration: {processDefinitionKey}}) =>
+            processDefinitionKey === source.processDefinitionKey
         );
-        const newExternalSources =
-          autoGenerate || includeAllGroups(externalSources)
-            ? allExternalGroups
-            : externalSources.concat(existingExternalGroups);
 
-        const updatedSources = camundaSources.concat(newExternalSources);
-        this.props.onConfirm(updatedSources, camundaSources.length < existingSources.length);
+        updatedSources = update(existingSources, {[sourceIndex]: {$set: newSource}});
       } else {
-        let updatedSources;
-        const newSource = {
-          type: 'camunda',
-          configuration: {
-            ...source,
-            traceVariable: source.tracedByBusinessKey ? null : source.traceVariable,
-          },
-        };
-
-        if (this.isEditing()) {
-          const sourceIndex = existingSources.findIndex(
-            ({configuration: {processDefinitionKey}}) =>
-              processDefinitionKey === source.processDefinitionKey
-          );
-
-          updatedSources = update(existingSources, {[sourceIndex]: {$set: newSource}});
-        } else {
-          updatedSources = update(existingSources, {$push: [newSource]});
-        }
-        this.props.onConfirm(updatedSources, this.isEditing());
+        updatedSources = update(existingSources, {$push: [newSource]});
       }
-    };
+      onConfirm(updatedSources, isEditing());
+    }
+  }
 
-    isEditing = () => !!this.props.initialSource?.configuration;
+  const isEditing = useCallback(() => !!initialSource?.configuration, [initialSource]);
 
-    alreadyExists = () =>
-      this.props.existingSources.some(
-        (source) =>
-          source.configuration.processDefinitionKey === this.state.source.processDefinitionKey
+  function alreadyExists() {
+    return existingSources.some(
+      (existingSource) =>
+        existingSource.configuration.processDefinitionKey === source.processDefinitionKey
+    );
+  }
+
+  function isValid() {
+    if (type === 'external') {
+      return externalExist && (externalSources.length > 0 || autoGenerate);
+    } else {
+      const {processDefinitionKey, tracedByBusinessKey, traceVariable} = source;
+      return (
+        processDefinitionKey &&
+        (tracedByBusinessKey || traceVariable) &&
+        (isEditing() || !alreadyExists())
       );
+    }
+  }
 
-    isValid = () => {
-      const {source, type, externalExist, externalSources} = this.state;
-      if (type === 'external') {
-        return externalExist && (externalSources.length > 0 || this.props.autoGenerate);
-      } else {
-        const {processDefinitionKey, tracedByBusinessKey, traceVariable} = source;
-        return (
-          processDefinitionKey &&
-          (tracedByBusinessKey || traceVariable) &&
-          (this.isEditing() || !this.alreadyExists())
-        );
-      }
-    };
-
-    loadVariables = (processDefinitionKey, processDefinitionVersions, tenantIds) => {
+  const loadVariables = useCallback(
+    (processDefinitionKey, processDefinitionVersions, tenantIds) => {
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
-        this.props.mightFail(
-          loadVariables([
+        mightFail(
+          loadVariablesService([
             {
               processDefinitionKey,
               processDefinitionVersions,
               tenantIds,
             },
           ]),
-          (variables) => this.setState({variables}),
+          setVariables,
           showError
         );
       }
-    };
+    },
+    [mightFail]
+  );
 
-    updateSource = (key, value) => {
-      this.setState({source: update(this.state.source, {[key]: {$set: value}})});
-    };
+  function updateSource(key, value) {
+    setSource(update(source, {[key]: {$set: value}}));
+  }
 
-    render() {
-      const {onClose, autoGenerate} = this.props;
-      const {source, variables, type, externalExist, externalSources} = this.state;
-      const {
-        processDefinitionKey,
-        versions,
-        tenants,
-        tracedByBusinessKey,
-        traceVariable,
-        eventScope,
-      } = source;
+  useEffect(() => {
+    if (isEditing()) {
+      const {processDefinitionKey, versions, tenants} = initialSource.configuration;
+      loadVariables(processDefinitionKey, versions, tenants);
+    }
 
-      return (
-        <Modal open onClose={onClose} className="EventsSourceModal" isOverflowVisible>
-          <Modal.Header>
-            {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
-          </Modal.Header>
-          <Modal.Content>
-            <Tabs
-              value={type}
-              onChange={(type) => this.setState({type})}
-              showButtons={!this.isEditing()}
-            >
-              <Tabs.Tab value="camunda" title={t('events.sources.camundaEvents')}>
-                <DefinitionSelection
-                  type="process"
-                  definitionKey={processDefinitionKey}
-                  versions={versions}
-                  tenants={tenants}
-                  disableDefinition={this.isEditing()}
-                  expanded
-                  camundaEventImportedOnly
-                  onChange={({key, name, versions, tenantIds}) => {
-                    this.loadVariables(key, versions, tenantIds);
-                    this.setState({
-                      source: update(this.state.source, {
-                        $merge: {
-                          processDefinitionName: name,
-                          processDefinitionKey: key,
-                          versions,
-                          tenants: tenantIds,
-                          traceVariable: undefined,
-                        },
-                      }),
-                    });
-                  }}
-                />
-                {!this.isEditing() && this.alreadyExists() && (
-                  <Message error>{t('events.sources.alreadyExists')}</Message>
-                )}
-                <Form className="sourceOptions">
-                  <Form.Group>
-                    <h4>{t('events.sources.defineTrace')}</h4>
-                    <LabeledInput
-                      checked={!tracedByBusinessKey}
-                      onChange={() => this.updateSource('tracedByBusinessKey', false)}
-                      type="radio"
-                      label={t('events.sources.byVariable')}
-                    />
-                    <Typeahead
-                      value={variables && traceVariable}
-                      noValuesMessage={getDisabledMessage(tracedByBusinessKey, variables)}
-                      disabled={tracedByBusinessKey}
-                      placeholder={t('common.filter.variableModal.inputPlaceholder')}
-                      onChange={(traceVariable) =>
-                        this.updateSource('traceVariable', traceVariable)
+    mightFail(
+      loadEvents({eventSources: allExternalGroups}),
+      (events) => setExternalExist(!!events.length),
+      showError
+    );
+  }, [initialSource, mightFail, isEditing, loadVariables]);
+
+  return (
+    <Modal open onClose={onClose} className="EventsSourceModal" isOverflowVisible>
+      <Modal.Header>
+        {isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
+      </Modal.Header>
+      <Modal.Content>
+        <Tabs value={type} onChange={setType} showButtons={!isEditing()}>
+          <Tabs.Tab value="camunda" title={t('events.sources.camundaEvents')}>
+            <Stack gap={6}>
+              <DefinitionSelection
+                type="process"
+                definitionKey={processDefinitionKey}
+                versions={versions}
+                tenants={tenants}
+                disableDefinition={isEditing()}
+                expanded
+                camundaEventImportedOnly
+                onChange={({key, name, versions, tenantIds}) => {
+                  loadVariables(key, versions, tenantIds);
+                  setSource(
+                    update(source, {
+                      $merge: {
+                        processDefinitionName: name,
+                        processDefinitionKey: key,
+                        versions,
+                        tenants: tenantIds,
+                        traceVariable: undefined,
+                      },
+                    })
+                  );
+                }}
+                invalid={!isEditing() && alreadyExists()}
+                invalidText={t('events.sources.alreadyExists')}
+              />
+              <Form className="sourceOptions">
+                <Stack gap={6}>
+                  <FormGroup legendText={t('events.sources.defineTrace')}>
+                    <Stack gap={6}>
+                      <RadioButtonGroup
+                        name="variable-or-business-key-selector"
+                        orientation="vertical"
+                      >
+                        <RadioButton
+                          value="true"
+                          checked={tracedByBusinessKey}
+                          onClick={() => updateSource('tracedByBusinessKey', true)}
+                          labelText={t('events.sources.byKey')}
+                        />
+                        <RadioButton
+                          value="false"
+                          checked={!tracedByBusinessKey}
+                          onClick={() => updateSource('tracedByBusinessKey', false)}
+                          labelText={t('events.sources.byVariable')}
+                        />
+                      </RadioButtonGroup>
+                      <ComboBox
+                        className="variablesSelector"
+                        id="variable-selector"
+                        items={variables || []}
+                        itemToString={(item) => item?.label || item?.name}
+                        selectedItem={
+                          (variables &&
+                            variables.find((variable) => variable.name === traceVariable)) ||
+                          null
+                        }
+                        disabled={!processDefinitionKey || tracedByBusinessKey}
+                        placeholder={t('common.filter.variableModal.inputPlaceholder')}
+                        onChange={({selectedItem: traceVariable}) =>
+                          updateSource('traceVariable', traceVariable?.name || traceVariable?.label)
+                        }
+                        helperText={getDisabledMessage(
+                          tracedByBusinessKey,
+                          variables,
+                          processDefinitionKey
+                        )}
+                      />
+                    </Stack>
+                  </FormGroup>
+                  {!isEditing() && (
+                    <FormGroup
+                      legendText={
+                        <div className="displayHeader">
+                          <h4>
+                            {autoGenerate
+                              ? t('events.sources.generatedEvents')
+                              : t('events.sources.display')}
+                          </h4>
+                          <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
+                            {t('events.sources.learnMore')}
+                          </DocsLink>
+                        </div>
                       }
                     >
-                      {variables &&
-                        variables.map(({name, label}) => (
-                          <Typeahead.Option key={name} value={name}>
-                            {label || name}
-                          </Typeahead.Option>
-                        ))}
-                    </Typeahead>
-                    <LabeledInput
-                      checked={tracedByBusinessKey}
-                      onChange={() => this.updateSource('tracedByBusinessKey', true)}
-                      type="radio"
-                      label={t('events.sources.byKey')}
-                    />
-                  </Form.Group>
-                  {!this.isEditing() && (
-                    <Form.Group>
-                      <div className="displayHeader">
-                        <h4>
-                          {autoGenerate
-                            ? t('events.sources.generatedEvents')
-                            : t('events.sources.display')}
-                        </h4>
-                        <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
-                          {t('events.sources.learnMore')}
-                        </DocsLink>
-                      </div>
-                      <LabeledInput
-                        label={t('events.sources.startAndEnd')}
-                        onChange={() => this.updateSource('eventScope', ['process_instance'])}
-                        checked={eventScope.includes('process_instance')}
-                        type="radio"
-                      />
-                      <LabeledInput
-                        onChange={() => this.updateSource('eventScope', ['start_end'])}
-                        checked={eventScope.includes('start_end')}
-                        label={t('events.sources.flownodeEvents')}
-                        type="radio"
-                      />
-                      {!autoGenerate && (
-                        <LabeledInput
-                          label={t('events.sources.allEvents')}
-                          onChange={() => this.updateSource('eventScope', ['all'])}
-                          checked={eventScope.includes('all')}
-                          type="radio"
+                      <RadioButtonGroup name="event-type-selector" orientation="vertical">
+                        <RadioButton
+                          value="process_instance"
+                          labelText={t('events.sources.startAndEnd')}
+                          onClick={() => updateSource('eventScope', ['process_instance'])}
+                          checked={eventScope.includes('process_instance')}
                         />
-                      )}
-                    </Form.Group>
+                        <RadioButton
+                          value="start_end"
+                          onClick={() => updateSource('eventScope', ['start_end'])}
+                          checked={eventScope.includes('start_end')}
+                          labelText={t('events.sources.flownodeEvents')}
+                        />
+                        {!autoGenerate ? (
+                          <RadioButton
+                            value="all"
+                            labelText={t('events.sources.allEvents')}
+                            onClick={() => updateSource('eventScope', ['all'])}
+                            checked={eventScope.includes('all')}
+                          />
+                        ) : (
+                          <></>
+                        )}
+                      </RadioButtonGroup>
+                    </FormGroup>
                   )}
-                  {this.isEditing() && (
-                    <MessageBox type="warning">
+                  {isEditing() && (
+                    <ActionableNotification
+                      kind="warning"
+                      className="editingWarning"
+                      hideCloseButton
+                    >
                       {t('events.sources.definitionChangeWarning')}{' '}
                       <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
                         {t('events.sources.learnMore')}
                       </DocsLink>
-                    </MessageBox>
+                    </ActionableNotification>
                   )}
-                </Form>
-              </Tabs.Tab>
-              <Tabs.Tab value="external" title={t('events.sources.externalEvents')}>
-                {!autoGenerate && (
-                  <ExternalSource
-                    empty={!externalExist}
-                    existingExternalSources={this.props.existingSources.filter(
-                      (src) => src.type === 'external'
-                    )}
-                    externalSources={externalSources}
-                    onChange={(externalSources) => this.setState({externalSources})}
-                  />
-                )}
-                {autoGenerate && (
-                  <p className="addExternalInfo">{t('events.sources.addExternalInfo')}</p>
-                )}
-              </Tabs.Tab>
-            </Tabs>
-          </Modal.Content>
-          <Modal.Footer>
-            <Button kind="secondary" className="close" onClick={onClose}>
-              {t('common.cancel')}
-            </Button>
-            <Button disabled={!this.isValid()} className="confirm" onClick={this.updateSources}>
-              {this.isEditing() ? t('common.update') : t('common.add')}
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      );
-    }
-  }
-);
+                </Stack>
+              </Form>
+            </Stack>
+          </Tabs.Tab>
+          <Tabs.Tab value="external" title={t('events.sources.externalEvents')}>
+            {!autoGenerate && (
+              <ExternalSource
+                empty={!externalExist}
+                existingExternalSources={existingSources.filter((src) => src.type === 'external')}
+                externalSources={externalSources}
+                onChange={setExternalSources}
+              />
+            )}
+            {autoGenerate && (
+              <p className="addExternalInfo">{t('events.sources.addExternalInfo')}</p>
+            )}
+          </Tabs.Tab>
+        </Tabs>
+      </Modal.Content>
+      <Modal.Footer>
+        <Button kind="secondary" className="close" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
+        <Button disabled={!isValid()} className="confirm" onClick={updateSources}>
+          {isEditing() ? t('common.update') : t('common.add')}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
 
-function getDisabledMessage(tracedByBusinessKey, variables) {
+function getDisabledMessage(tracedByBusinessKey, variables, processDefinitionKey) {
   if (tracedByBusinessKey) {
-    return t('common.none');
+    return;
   }
 
   if (variables && !variables.length) {
     return t('common.filter.variableModal.noVariables');
   }
 
-  return t('events.sources.selectProcess');
+  if (!processDefinitionKey) {
+    return t('events.sources.selectProcess');
+  }
+
+  return;
 }
 
 function includeAllGroups(sources) {

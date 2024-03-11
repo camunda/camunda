@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -22,24 +24,23 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-
 @Component
-public class DecisionInstanceEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+public class DecisionInstanceEngineImportMediatorFactory
+    extends AbstractEngineImportMediatorFactory {
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
   private final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
   private final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
 
-  public DecisionInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                     final ConfigurationService configurationService,
-                                                     final DecisionInstanceWriter decisionInstanceWriter,
-                                                     final DecisionDefinitionResolverService decisionDefinitionResolverService,
-                                                     final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
-                                                     final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider,
-                                                     final DatabaseClient databaseClient) {
+  public DecisionInstanceEngineImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final DecisionInstanceWriter decisionInstanceWriter,
+      final DecisionDefinitionResolverService decisionDefinitionResolverService,
+      final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
+      final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.decisionInstanceWriter = decisionInstanceWriter;
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
@@ -49,28 +50,26 @@ public class DecisionInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return configurationService.isImportDmnDataEnabled() ?
-      ImmutableList.of(createDecisionInstanceEngineImportMediator(engineContext))
-      : Collections.emptyList();
+    return configurationService.isImportDmnDataEnabled()
+        ? ImmutableList.of(createDecisionInstanceEngineImportMediator(engineContext))
+        : Collections.emptyList();
   }
 
   public DecisionInstanceEngineImportMediator createDecisionInstanceEngineImportMediator(
-    EngineContext engineContext) {
+      EngineContext engineContext) {
     return new DecisionInstanceEngineImportMediator(
-      importIndexHandlerRegistry.getDecisionInstanceImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(DecisionInstanceFetcher.class, engineContext),
-      new DecisionInstanceImportService(
+        importIndexHandlerRegistry.getDecisionInstanceImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(DecisionInstanceFetcher.class, engineContext),
+        new DecisionInstanceImportService(
+            configurationService,
+            engineContext,
+            decisionInstanceWriter,
+            decisionDefinitionResolverService,
+            decisionInputImportAdapterProvider,
+            decisionOutputImportAdapterProvider,
+            databaseClient),
         configurationService,
-        engineContext,
-        decisionInstanceWriter,
-        decisionDefinitionResolverService,
-        decisionInputImportAdapterProvider,
-        decisionOutputImportAdapterProvider,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
-
 }

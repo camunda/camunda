@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serializable;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,13 +21,6 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
-
-import java.io.Serializable;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -45,8 +44,7 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   private String tenantId;
 
   // Note that engine is transient and only used for correct "routing" during import
-  @JsonIgnore
-  private String engine;
+  @JsonIgnore private String engine;
 
   private String userTaskInstanceId;
 
@@ -63,11 +61,16 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   private Long workDurationInMs;
 
   // engine activity instance specific ctor with mandatory and default but nullable fields
-  public FlowNodeInstanceDto(@NonNull final String definitionKey, @NonNull final String definitionVersion,
-                             final String tenantId, @NonNull final String engine,
-                             @NonNull final String processInstanceId, @NonNull final String flowNodeId,
-                             @NonNull final String flowNodeType, @NonNull final String flowNodeInstanceId,
-                             final String userTaskInstanceId) {
+  public FlowNodeInstanceDto(
+      @NonNull final String definitionKey,
+      @NonNull final String definitionVersion,
+      final String tenantId,
+      @NonNull final String engine,
+      @NonNull final String processInstanceId,
+      @NonNull final String flowNodeId,
+      @NonNull final String flowNodeType,
+      @NonNull final String flowNodeInstanceId,
+      final String userTaskInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeId = flowNodeId;
     this.flowNodeType = flowNodeType;
@@ -80,10 +83,14 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   }
 
   // event/zeebe process activity instance specific ctor with mandatory fields
-  public FlowNodeInstanceDto(@NonNull final String definitionKey, @NonNull final String definitionVersion,
-                             final String tenantId,
-                             @NonNull final String processInstanceId, @NonNull final String flowNodeId,
-                             @NonNull final String flowNodeType, @NonNull final String flowNodeInstanceId) {
+  public FlowNodeInstanceDto(
+      @NonNull final String definitionKey,
+      @NonNull final String definitionVersion,
+      final String tenantId,
+      @NonNull final String processInstanceId,
+      @NonNull final String flowNodeId,
+      @NonNull final String flowNodeType,
+      @NonNull final String flowNodeInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeId = flowNodeId;
     this.flowNodeType = flowNodeType;
@@ -94,9 +101,13 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   }
 
   // engine user task specific ctor with mandatory fields
-  public FlowNodeInstanceDto(@NonNull final String definitionKey, @NonNull final String engine,
-                             @NonNull final String processInstanceId, @NonNull final String flowNodeId,
-                             @NonNull final String flowNodeInstanceId, @NonNull final String userTaskInstanceId) {
+  public FlowNodeInstanceDto(
+      @NonNull final String definitionKey,
+      @NonNull final String engine,
+      @NonNull final String processInstanceId,
+      @NonNull final String flowNodeId,
+      @NonNull final String flowNodeInstanceId,
+      @NonNull final String userTaskInstanceId) {
     this.processInstanceId = processInstanceId;
     this.definitionKey = definitionKey;
     this.engine = engine;
@@ -107,13 +118,15 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   }
 
   // engine identity link log specific ctor with mandatory fields
-  public FlowNodeInstanceDto(@NonNull final String definitionKey, @NonNull final String engine,
-                             @NonNull final String processInstanceId, @NonNull final String userTaskInstanceId) {
+  public FlowNodeInstanceDto(
+      @NonNull final String definitionKey,
+      @NonNull final String engine,
+      @NonNull final String processInstanceId,
+      @NonNull final String userTaskInstanceId) {
     this.processInstanceId = processInstanceId;
     this.definitionKey = definitionKey;
     this.engine = engine;
     this.flowNodeType = FLOW_NODE_TYPE_USER_TASK;
     this.userTaskInstanceId = userTaskInstanceId;
   }
-
 }

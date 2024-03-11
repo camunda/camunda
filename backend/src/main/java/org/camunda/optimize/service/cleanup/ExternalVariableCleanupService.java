@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.writer.variable.ExternalProcessVariableWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
 
 @AllArgsConstructor
 @Component
@@ -38,5 +37,4 @@ public class ExternalVariableCleanupService extends CleanupService {
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
-
 }

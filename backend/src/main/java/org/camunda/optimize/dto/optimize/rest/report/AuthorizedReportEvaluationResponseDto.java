@@ -17,11 +17,12 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto<?>> extends AuthorizedEntityDto {
-  @JsonUnwrapped
-  protected D reportDefinition;
+public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto<?>>
+    extends AuthorizedEntityDto {
+  @JsonUnwrapped protected D reportDefinition;
 
-  public AuthorizedReportEvaluationResponseDto(final RoleType currentUserRole, final D reportDefinition) {
+  public AuthorizedReportEvaluationResponseDto(
+      final RoleType currentUserRole, final D reportDefinition) {
     super(currentUserRole);
     this.reportDefinition = reportDefinition;
   }

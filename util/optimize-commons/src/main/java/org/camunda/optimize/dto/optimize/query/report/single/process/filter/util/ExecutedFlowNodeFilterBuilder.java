@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 
 public class ExecutedFlowNodeFilterBuilder {
 
@@ -77,7 +76,8 @@ public class ExecutedFlowNodeFilterBuilder {
     ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
     executedFlowNodeFilterDto.setData(dataDto);
     executedFlowNodeFilterDto.setFilterLevel(filterLevel);
-    Optional.ofNullable(appliedTo).ifPresent(value -> executedFlowNodeFilterDto.setAppliedTo(appliedTo));
+    Optional.ofNullable(appliedTo)
+        .ifPresent(value -> executedFlowNodeFilterDto.setAppliedTo(appliedTo));
     filterBuilder.addFilter(executedFlowNodeFilterDto);
     return filterBuilder;
   }

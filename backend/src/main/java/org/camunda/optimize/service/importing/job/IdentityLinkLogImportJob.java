@@ -5,80 +5,82 @@
  */
 package org.camunda.optimize.service.importing.job;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
-import org.camunda.optimize.service.AssigneeCandidateGroupService;
-import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
-import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
+import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
+import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 @Slf4j
-
 public class IdentityLinkLogImportJob extends DatabaseImportJob<IdentityLinkLogEntryDto> {
 
   private final IdentityLinkLogWriter identityLinkLogWriter;
-  private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+  private final PlatformUserTaskIdentityCache platformUserTaskIdentityCache;
   private final ConfigurationService configurationService;
 
-  public IdentityLinkLogImportJob(final IdentityLinkLogWriter identityLinkLogWriter,
-                                  final AssigneeCandidateGroupService assigneeCandidateGroupService,
-                                  final ConfigurationService configurationService,
-                                  final Runnable callback,
-                                  final DatabaseClient databaseClient) {
+  public IdentityLinkLogImportJob(
+      final IdentityLinkLogWriter identityLinkLogWriter,
+      final PlatformUserTaskIdentityCache platformUserTaskIdentityCache,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.identityLinkLogWriter = identityLinkLogWriter;
-    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.platformUserTaskIdentityCache = platformUserTaskIdentityCache;
     this.configurationService = configurationService;
   }
 
   @Override
   protected void persistEntities(final List<IdentityLinkLogEntryDto> newOptimizeEntities) {
-    final List<ImportRequestDto> importRequests = identityLinkLogWriter.generateIdentityLinkLogImports(
-      newOptimizeEntities);
+    final List<ImportRequestDto> importRequests =
+        identityLinkLogWriter.generateIdentityLinkLogImports(newOptimizeEntities);
     databaseClient.executeImportRequestsAsBulk(
-      "identity link logs",
-      importRequests,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "identity link logs",
+        importRequests,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
     try {
-      assigneeCandidateGroupService.addIdentitiesIfNotPresent(mapToIdentityDtos(newOptimizeEntities));
+      platformUserTaskIdentityCache.addIdentitiesIfNotPresent(
+          mapToIdentityDtos(newOptimizeEntities));
     } catch (final Exception e) {
       log.warn(
-        "Failed forwarding identities to assignee & candidate group service, " +
-          "will be retried with future import batches.", e
-      );
+          "Failed forwarding identities to assignee & candidate group service, "
+              + "will be retried with future import batches.",
+          e);
     }
   }
 
-  private Set<IdentityDto> mapToIdentityDtos(final List<IdentityLinkLogEntryDto> newOptimizeEntities) {
+  private Set<IdentityDto> mapToIdentityDtos(
+      final List<IdentityLinkLogEntryDto> newOptimizeEntities) {
     return newOptimizeEntities.stream()
-      .map(entry -> {
-        switch (entry.getType()) {
-          case ASSIGNEE:
-            return Optional.ofNullable(entry.getUserId())
-              .map(id -> new IdentityDto(id, IdentityType.USER))
-              .orElse(null);
-          case CANDIDATE:
-            return Optional.ofNullable(entry.getGroupId())
-              .map(id -> new IdentityDto(id, IdentityType.GROUP))
-              .orElse(null);
-          default:
-          case OWNER:
-            log.debug("Skipping non identity identityLinkLog entry of type: {}.", entry.getType());
-            return null;
-        }
-      })
-      .filter(Objects::nonNull)
-      .collect(Collectors.toSet());
+        .map(
+            entry -> {
+              switch (entry.getType()) {
+                case ASSIGNEE:
+                  return Optional.ofNullable(entry.getUserId())
+                      .map(id -> new IdentityDto(id, IdentityType.USER))
+                      .orElse(null);
+                case CANDIDATE:
+                  return Optional.ofNullable(entry.getGroupId())
+                      .map(id -> new IdentityDto(id, IdentityType.GROUP))
+                      .orElse(null);
+                default:
+                case OWNER:
+                  log.debug(
+                      "Skipping non identity identityLinkLog entry of type: {}.", entry.getType());
+                  return null;
+              }
+            })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
   }
 }

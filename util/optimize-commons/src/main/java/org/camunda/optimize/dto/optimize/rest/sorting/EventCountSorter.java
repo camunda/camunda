@@ -5,16 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
-import com.google.common.collect.ImmutableMap;
-import jakarta.ws.rs.BadRequestException;
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
 import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.count;
@@ -22,30 +12,49 @@ import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountR
 import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.group;
 import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.source;
 
+import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.BadRequestException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+
 @NoArgsConstructor
 public class EventCountSorter extends Sorter<EventCountResponseDto> {
 
   private static final Comparator<EventCountResponseDto> SUGGESTED_COMPARATOR =
-    Comparator.comparing(EventCountResponseDto::isSuggested, nullsFirst(naturalOrder())).reversed();
+      Comparator.comparing(EventCountResponseDto::isSuggested, nullsFirst(naturalOrder()))
+          .reversed();
   private static final Comparator<EventCountResponseDto> GROUP_COMPARATOR =
-    Comparator.comparing(EventCountResponseDto::getGroup, nullsFirst(String.CASE_INSENSITIVE_ORDER));
+      Comparator.comparing(
+          EventCountResponseDto::getGroup, nullsFirst(String.CASE_INSENSITIVE_ORDER));
   private static final Comparator<EventCountResponseDto> SOURCE_COMPARATOR =
-    Comparator.comparing(EventCountResponseDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER));
+      Comparator.comparing(
+          EventCountResponseDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER));
   private static final Comparator<EventCountResponseDto> EVENT_NAME_COMPARATOR =
-    Comparator.comparing(eventCountDto -> Optional.ofNullable(eventCountDto.getEventLabel())
-      .orElse(eventCountDto.getEventName()), nullsFirst(String.CASE_INSENSITIVE_ORDER));
+      Comparator.comparing(
+          eventCountDto ->
+              Optional.ofNullable(eventCountDto.getEventLabel())
+                  .orElse(eventCountDto.getEventName()),
+          nullsFirst(String.CASE_INSENSITIVE_ORDER));
   private static final Comparator<EventCountResponseDto> COUNTS_COMPARATOR =
-    Comparator.comparing(EventCountResponseDto::getCount, nullsFirst(naturalOrder()));
+      Comparator.comparing(EventCountResponseDto::getCount, nullsFirst(naturalOrder()));
 
-  private static final Comparator<EventCountResponseDto> DEFAULT_COMPARATOR = nullsFirst(GROUP_COMPARATOR.thenComparing(
-    SOURCE_COMPARATOR).thenComparing(EVENT_NAME_COMPARATOR).thenComparing(COUNTS_COMPARATOR));
+  private static final Comparator<EventCountResponseDto> DEFAULT_COMPARATOR =
+      nullsFirst(
+          GROUP_COMPARATOR
+              .thenComparing(SOURCE_COMPARATOR)
+              .thenComparing(EVENT_NAME_COMPARATOR)
+              .thenComparing(COUNTS_COMPARATOR));
 
-  private static final ImmutableMap<String, Comparator<EventCountResponseDto>> sortComparators = ImmutableMap.of(
-    group.toLowerCase(), GROUP_COMPARATOR,
-    source.toLowerCase(), SOURCE_COMPARATOR,
-    eventName.toLowerCase(), EVENT_NAME_COMPARATOR,
-    count.toLowerCase(), COUNTS_COMPARATOR
-  );
+  private static final ImmutableMap<String, Comparator<EventCountResponseDto>> sortComparators =
+      ImmutableMap.of(
+          group.toLowerCase(), GROUP_COMPARATOR,
+          source.toLowerCase(), SOURCE_COMPARATOR,
+          eventName.toLowerCase(), EVENT_NAME_COMPARATOR,
+          count.toLowerCase(), COUNTS_COMPARATOR);
 
   public EventCountSorter(final String sortBy, final SortOrder sortOrder) {
     this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
@@ -61,8 +70,8 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
       if (!sortComparators.containsKey(sortBy.toLowerCase())) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
-      eventCountSorter = sortComparators.get(sortBy.toLowerCase())
-        .thenComparing(DEFAULT_COMPARATOR);
+      eventCountSorter =
+          sortComparators.get(sortBy.toLowerCase()).thenComparing(DEFAULT_COMPARATOR);
       if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         eventCountSorter = eventCountSorter.reversed();
       }

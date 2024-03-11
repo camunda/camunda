@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.tenant;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.TenantDto;
@@ -13,8 +14,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Component
@@ -34,7 +33,6 @@ public class CamundaCCSMTenantService implements TenantService {
   public List<TenantDto> getTenantsForUser(final String userId) {
     // In CCSM, we can only retrieve tenant auths for the current user using the user's token
     return getTenantsForCurrentUser();
-
   }
 
   @Override

@@ -6,11 +6,6 @@
 package org.camunda.optimize.rest;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
-import org.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -20,6 +15,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import org.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(AuthenticationRestService.AUTHENTICATION_PATH)
@@ -36,8 +35,8 @@ public class AuthenticationRestService {
   @POST
   @Produces("application/json")
   @Consumes("application/json")
-  public Response authenticateUser(@Context ContainerRequestContext requestContext,
-                                   CredentialsRequestDto credentials) {
+  public Response authenticateUser(
+      @Context ContainerRequestContext requestContext, CredentialsRequestDto credentials) {
     return authenticationService.authenticateUser(requestContext, credentials);
   }
 
@@ -49,10 +48,11 @@ public class AuthenticationRestService {
 
   @GET
   @Path(CALLBACK)
-  public Response loginCallback(@Context ContainerRequestContext requestContext,
-                                final @QueryParam("code") String code,
-                                final @QueryParam("state") String state,
-                                final @QueryParam("error") String error) {
+  public Response loginCallback(
+      @Context ContainerRequestContext requestContext,
+      final @QueryParam("code") String code,
+      final @QueryParam("state") String state,
+      final @QueryParam("error") String error) {
     return authenticationService.loginCallback(requestContext, new AuthCodeDto(code, state, error));
   }
 
@@ -61,5 +61,4 @@ public class AuthenticationRestService {
   public Response logoutUser(@Context ContainerRequestContext requestContext) {
     return authenticationService.logout(requestContext);
   }
-
 }

@@ -26,17 +26,17 @@ public class StatusCheckingServiceES extends StatusCheckingService {
 
   private final OptimizeElasticsearchClient esClient;
 
-  public StatusCheckingServiceES(final OptimizeElasticsearchClient esClient,
-                                 final ConfigurationService configurationService,
-                                 final EngineContextFactory engineContextFactory,
-                                 final ImportSchedulerManagerService importSchedulerManagerService,
-                                 final OptimizeIndexNameService optimizeIndexNameService) {
+  public StatusCheckingServiceES(
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final EngineContextFactory engineContextFactory,
+      final ImportSchedulerManagerService importSchedulerManagerService,
+      final OptimizeIndexNameService optimizeIndexNameService) {
     super(
-      configurationService,
-      engineContextFactory,
-      importSchedulerManagerService,
-      optimizeIndexNameService
-    );
+        configurationService,
+        engineContextFactory,
+        importSchedulerManagerService,
+        optimizeIndexNameService);
     this.esClient = esClient;
   }
 
@@ -44,11 +44,13 @@ public class StatusCheckingServiceES extends StatusCheckingService {
   public boolean isConnectedToDatabase() {
     boolean isConnected = false;
     try {
-      ClusterHealthRequest request = new ClusterHealthRequest(optimizeIndexNameService.getIndexPrefix() + "*");
+      ClusterHealthRequest request =
+          new ClusterHealthRequest(optimizeIndexNameService.getIndexPrefix() + "*");
       final ClusterHealthResponse healthResponse = esClient.getClusterHealth(request);
 
-      isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
-        && healthResponse.getStatus() != ClusterHealthStatus.RED;
+      isConnected =
+          healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
+              && healthResponse.getStatus() != ClusterHealthStatus.RED;
     } catch (Exception ignored) {
       // do nothing
     }

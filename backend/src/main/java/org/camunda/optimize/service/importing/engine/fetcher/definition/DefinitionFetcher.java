@@ -5,6 +5,20 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.definition;
 
+import static org.camunda.optimize.service.util.importing.EngineConstants.DEPLOYED_AFTER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.DEPLOYED_AT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.DEPLOYMENT_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_BY;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_ORDER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_ORDER_ASC;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.MediaType;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import org.camunda.optimize.dto.engine.DeploymentEngineDto;
 import org.camunda.optimize.dto.engine.definition.DefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -14,24 +28,10 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.ws.rs.core.GenericType;
-import jakarta.ws.rs.core.MediaType;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.DEPLOYED_AFTER;
-import static org.camunda.optimize.service.util.importing.EngineConstants.DEPLOYED_AT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.DEPLOYMENT_ENDPOINT_TEMPLATE;
-import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
-import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_BY;
-import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_ORDER;
-import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_ORDER_ASC;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends RetryBackoffEngineEntityFetcher {
+public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto>
+    extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 
@@ -45,30 +45,27 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends
   }
 
   public List<DEF> fetchDefinitions(final TimestampBasedImportPage nextPage) {
-    return fetchDefinitions(
-      nextPage.getTimestampOfLastEntity(),
-      getMaxPageSize()
-    );
+    return fetchDefinitions(nextPage.getTimestampOfLastEntity(), getMaxPageSize());
   }
 
-  public List<DEF> fetchDefinitionsForTimestamp(final OffsetDateTime deploymentTimeOfLastDefinition) {
+  public List<DEF> fetchDefinitionsForTimestamp(
+      final OffsetDateTime deploymentTimeOfLastDefinition) {
     logger.debug("Fetching definitions ...");
     long requestStart = System.currentTimeMillis();
     List<DEF> definitions =
-      fetchWithRetry(() -> performDefinitionRequest(deploymentTimeOfLastDefinition));
+        fetchWithRetry(() -> performDefinitionRequest(deploymentTimeOfLastDefinition));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] definitions for set deployment time within [{}] ms",
-      definitions.size(),
-      requestEnd - requestStart
-    );
+        "Fetched [{}] definitions for set deployment time within [{}] ms",
+        definitions.size(),
+        requestEnd - requestStart);
     return definitions;
   }
 
   /**
-   * We need to explicitly create the response type during runtime else
-   * java won't be to extract the specific type and stick to DefinitionEngineDto which
-   * would not contain all the necessary fields.
+   * We need to explicitly create the response type during runtime else java won't be to extract the
+   * specific type and stick to DefinitionEngineDto which would not contain all the necessary
+   * fields.
    */
   protected abstract GenericType<List<DEF>> getResponseType();
 
@@ -76,19 +73,16 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends
 
   protected abstract int getMaxPageSize();
 
-  private List<DEF> fetchDefinitions(final OffsetDateTime timeStamp,
-                                     final int pageSize) {
+  private List<DEF> fetchDefinitions(final OffsetDateTime timeStamp, final int pageSize) {
     logger.debug("Fetching definitions ...");
     long requestStart = System.currentTimeMillis();
-    List<DEF> entries =
-      fetchWithRetry(() -> performDefinitionRequest(timeStamp, pageSize));
+    List<DEF> entries = fetchWithRetry(() -> performDefinitionRequest(timeStamp, pageSize));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] definitions which were deployed after set timestamp with page size [{}] within [{}] ms",
-      entries.size(),
-      pageSize,
-      requestEnd - requestStart
-    );
+        "Fetched [{}] definitions which were deployed after set timestamp with page size [{}] within [{}] ms",
+        entries.size(),
+        pageSize,
+        requestEnd - requestStart);
 
     addDeploymentTimeToDefinitionDtos(entries);
     return entries;
@@ -98,44 +92,42 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends
     if (!entries.isEmpty()) {
       final DEF lastDefinitionEntry = entries.get(entries.size() - 1);
       final DeploymentEngineDto deploymentEngineDto =
-        fetchWithRetry(() -> performDeploymentRequest(lastDefinitionEntry.getDeploymentId()));
+          fetchWithRetry(() -> performDeploymentRequest(lastDefinitionEntry.getDeploymentId()));
       entries.forEach(entry -> entry.setDeploymentTime(deploymentEngineDto.getDeploymentTime()));
     }
   }
 
   private DeploymentEngineDto performDeploymentRequest(final String deploymentId) {
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(DEPLOYMENT_ENDPOINT_TEMPLATE)
-      .resolveTemplate("id", deploymentId)
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get(DeploymentEngineDto.class);
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(DEPLOYMENT_ENDPOINT_TEMPLATE)
+        .resolveTemplate("id", deploymentId)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get(DeploymentEngineDto.class);
   }
 
-  private List<DEF> performDefinitionRequest(final OffsetDateTime timeStamp,
-                                             final long pageSize) {
+  private List<DEF> performDefinitionRequest(final OffsetDateTime timeStamp, final long pageSize) {
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(getDefinitionEndpoint())
-      .queryParam(DEPLOYED_AFTER, dateTimeFormatter.format(timeStamp))
-      .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
-      .queryParam(SORT_BY, "deployTime")
-      .queryParam(SORT_ORDER, SORT_ORDER_ASC)
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get(getResponseType());
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(getDefinitionEndpoint())
+        .queryParam(DEPLOYED_AFTER, dateTimeFormatter.format(timeStamp))
+        .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
+        .queryParam(SORT_BY, "deployTime")
+        .queryParam(SORT_ORDER, SORT_ORDER_ASC)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get(getResponseType());
   }
 
   private List<DEF> performDefinitionRequest(OffsetDateTime deploymentTimeOfLastDefinition) {
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(getDefinitionEndpoint())
-      .queryParam(DEPLOYED_AT, dateTimeFormatter.format(deploymentTimeOfLastDefinition))
-      .queryParam(MAX_RESULTS_TO_RETURN, getMaxPageSize())
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get(getResponseType());
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(getDefinitionEndpoint())
+        .queryParam(DEPLOYED_AT, dateTimeFormatter.format(deploymentTimeOfLastDefinition))
+        .queryParam(MAX_RESULTS_TO_RETURN, getMaxPageSize())
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get(getResponseType());
   }
-
 }

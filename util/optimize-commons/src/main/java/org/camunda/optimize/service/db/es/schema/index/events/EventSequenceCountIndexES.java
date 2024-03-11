@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.es.schema.index.events;
 
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
 
 public class EventSequenceCountIndexES extends EventSequenceCountIndex<XContentBuilder> {
 
@@ -17,7 +16,8 @@ public class EventSequenceCountIndexES extends EventSequenceCountIndex<XContentB
   }
 
   @Override
-  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
     return contentBuilder.field(key, value);
   }
 }

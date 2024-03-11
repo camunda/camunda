@@ -21,14 +21,15 @@ public class ProcessInstanceDurationGroupByNoneCmd extends ProcessCmd<Double> {
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<Double> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewInstanceDuration.class)
-      .groupBy(ProcessGroupByNone.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsNumber()
-      .build();
+  protected ProcessReportCmdExecutionPlan<Double> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewInstanceDuration.class)
+        .groupBy(ProcessGroupByNone.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .resultAsNumber()
+        .build();
   }
-
 }

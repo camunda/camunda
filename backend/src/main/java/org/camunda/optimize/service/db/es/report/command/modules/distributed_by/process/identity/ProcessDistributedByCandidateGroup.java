@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
+
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.CandidateGroupDistributedByDto;
@@ -16,17 +18,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDistributedByCandidateGroup extends ProcessDistributedByIdentity {
 
-  public ProcessDistributedByCandidateGroup(final ConfigurationService configurationService,
-                                            final LocalizationService localizationService,
-                                            final DefinitionService definitionService,
-                                            final AssigneeCandidateGroupService assigneeCandidateGroupService) {
-    super(configurationService, localizationService, definitionService, assigneeCandidateGroupService);
+  public ProcessDistributedByCandidateGroup(
+      final ConfigurationService configurationService,
+      final LocalizationService localizationService,
+      final DefinitionService definitionService,
+      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    super(
+        configurationService,
+        localizationService,
+        definitionService,
+        assigneeCandidateGroupService);
   }
 
   @Override
@@ -40,7 +45,8 @@ public class ProcessDistributedByCandidateGroup extends ProcessDistributedByIden
   }
 
   @Override
-  protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  protected void addAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setDistributedBy(new CandidateGroupDistributedByDto());
   }
 }

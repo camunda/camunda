@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.command.exec;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+
+import java.util.function.Function;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -20,25 +25,21 @@ import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-
 @Slf4j
-public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, DecisionReportDataDto> {
+public class DecisionReportCmdExecutionPlan<T>
+    extends ReportCmdExecutionPlan<T, DecisionReportDataDto> {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
 
-  public DecisionReportCmdExecutionPlan(final ViewPart<DecisionReportDataDto> viewPart,
-                                        final GroupByPart<DecisionReportDataDto> groupByPart,
-                                        final DistributedByPart<DecisionReportDataDto> distributedByPart,
-                                        final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
-                                        final DatabaseClient databaseClient,
-                                        final DecisionDefinitionReader decisionDefinitionReader,
-                                        final DecisionQueryFilterEnhancer queryFilterEnhancer) {
+  public DecisionReportCmdExecutionPlan(
+      final ViewPart<DecisionReportDataDto> viewPart,
+      final GroupByPart<DecisionReportDataDto> groupByPart,
+      final DistributedByPart<DecisionReportDataDto> distributedByPart,
+      final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
+      final DatabaseClient databaseClient,
+      final DecisionDefinitionReader decisionDefinitionReader,
+      final DecisionQueryFilterEnhancer queryFilterEnhancer) {
     super(viewPart, groupByPart, distributedByPart, mapToReportResult, databaseClient);
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.queryFilterEnhancer = queryFilterEnhancer;
@@ -48,28 +49,26 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
   public BoolQueryBuilder setupBaseQuery(final ExecutionContext<DecisionReportDataDto> context) {
     final BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context);
     queryFilterEnhancer.addFilterToQuery(
-      boolQueryBuilder, context.getReportData().getFilter(), context.getFilterContext()
-    );
+        boolQueryBuilder, context.getReportData().getFilter(), context.getFilterContext());
     return boolQueryBuilder;
   }
 
   @Override
-  protected BoolQueryBuilder setupUnfilteredBaseQuery(final ExecutionContext<DecisionReportDataDto> context) {
+  protected BoolQueryBuilder setupUnfilteredBaseQuery(
+      final ExecutionContext<DecisionReportDataDto> context) {
     final BoolQueryBuilder definitionFilterQuery = boolQuery().minimumShouldMatch(1);
     // for decision reports only one (the first) definition is supported
-    context.getReportData()
-      .getDefinitions()
-      .stream()
-      .findFirst()
-      .ifPresent(definitionDto -> definitionFilterQuery.should(
-        DefinitionQueryUtil.createDefinitionQuery(
-          definitionDto.getKey(),
-          definitionDto.getVersions(),
-          definitionDto.getTenantIds(),
-          new DecisionInstanceIndexES(definitionDto.getKey()),
-          decisionDefinitionReader::getLatestVersionToKey
-        )
-      ));
+    context.getReportData().getDefinitions().stream()
+        .findFirst()
+        .ifPresent(
+            definitionDto ->
+                definitionFilterQuery.should(
+                    DefinitionQueryUtil.createDefinitionQuery(
+                        definitionDto.getKey(),
+                        definitionDto.getVersions(),
+                        definitionDto.getTenantIds(),
+                        new DecisionInstanceIndexES(definitionDto.getKey()),
+                        decisionDefinitionReader::getLatestVersionToKey)));
     return definitionFilterQuery;
   }
 
@@ -80,7 +79,7 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
 
   @Override
   protected String[] getMultiIndexAlias() {
-    return new String[]{DECISION_INSTANCE_MULTI_ALIAS};
+    return new String[] {DECISION_INSTANCE_MULTI_ALIAS};
   }
 
   @Override

@@ -20,5 +20,4 @@ public enum MembershipFilterOperator {
   public String getId() {
     return id;
   }
-
 }

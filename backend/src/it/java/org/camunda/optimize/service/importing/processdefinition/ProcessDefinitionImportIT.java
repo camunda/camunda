@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.AbstractImportIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -22,11 +23,13 @@ import org.mockserver.model.MediaType;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessDefinitionImportIT extends AbstractImportIT {
   private static final String START = "aStart";
   private static final String END = "anEnd";

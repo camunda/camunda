@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.util;
 
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -16,34 +17,33 @@ import org.elasticsearch.search.aggregations.bucket.ParsedSingleBucketAggregatio
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 
-import java.util.Optional;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FilterLimitedAggregationUtil {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 
   public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
-    final BoolQueryBuilder limitFilterQuery,
-    final AggregationBuilder subAggregationToLimit) {
-    return wrapWithFilterLimitedParentAggregation(FILTER_LIMITED_AGGREGATION, limitFilterQuery, subAggregationToLimit);
+      final BoolQueryBuilder limitFilterQuery, final AggregationBuilder subAggregationToLimit) {
+    return wrapWithFilterLimitedParentAggregation(
+        FILTER_LIMITED_AGGREGATION, limitFilterQuery, subAggregationToLimit);
   }
 
-  public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(final String filterParentAggregationName,
-                                                                                final QueryBuilder limitFilterQuery,
-                                                                                final AggregationBuilder subAggregationToLimit) {
-    return AggregationBuilders
-      .filter(filterParentAggregationName, limitFilterQuery)
-      .subAggregation(subAggregationToLimit);
+  public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
+      final String filterParentAggregationName,
+      final QueryBuilder limitFilterQuery,
+      final AggregationBuilder subAggregationToLimit) {
+    return AggregationBuilders.filter(filterParentAggregationName, limitFilterQuery)
+        .subAggregation(subAggregationToLimit);
   }
 
-  public static Optional<Aggregations> unwrapFilterLimitedAggregations(final Aggregations aggregations) {
+  public static Optional<Aggregations> unwrapFilterLimitedAggregations(
+      final Aggregations aggregations) {
     return unwrapFilterLimitedAggregations(FILTER_LIMITED_AGGREGATION, aggregations);
   }
 
-  public static Optional<Aggregations> unwrapFilterLimitedAggregations(final String filterParentAggregationName,
-                                                                       final Aggregations aggregations) {
+  public static Optional<Aggregations> unwrapFilterLimitedAggregations(
+      final String filterParentAggregationName, final Aggregations aggregations) {
     return Optional.ofNullable((ParsedFilter) aggregations.get(filterParentAggregationName))
-      .map(ParsedSingleBucketAggregation::getAggregations);
+        .map(ParsedSingleBucketAggregation::getAggregations);
   }
 }

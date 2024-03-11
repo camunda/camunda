@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
-
-import java.util.List;
-
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
+
+import java.util.List;
+import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 
 public interface CorrelatedCamundaProcessInstanceReader {
 
@@ -20,8 +19,9 @@ public interface CorrelatedCamundaProcessInstanceReader {
   String[] CORRELATABLE_FIELDS = {BUSINESS_KEY, VARIABLES};
   int MAX_HITS = 100;
 
-  List<String> getCorrelationValueSampleForEventSources(final List<CamundaEventSourceEntryDto> eventSources);
+  List<String> getCorrelationValueSampleForEventSources(
+      final List<CamundaEventSourceEntryDto> eventSources);
 
-  List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(final List<CamundaEventSourceEntryDto> camundaSources,
-                                                                          final List<String> correlationValues);
+  List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
+      final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues);
 }

@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.events.EventTraceStateService;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
-import java.util.List;
-
 public class EventCountAndTracesImportJob extends DatabaseImportJob<EventDto> {
 
   private final EventTraceStateService eventTraceStateService;
 
-  public EventCountAndTracesImportJob(final EventTraceStateService eventTraceStateService,
-                                      final Runnable callback,
-                                      final DatabaseClient databaseClient) {
+  public EventCountAndTracesImportJob(
+      final EventTraceStateService eventTraceStateService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.eventTraceStateService = eventTraceStateService;
   }
@@ -27,5 +27,4 @@ public class EventCountAndTracesImportJob extends DatabaseImportJob<EventDto> {
   protected void persistEntities(final List<EventDto> eventDtos) {
     eventTraceStateService.updateTracesAndCountsForEvents(eventDtos);
   }
-
 }

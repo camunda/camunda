@@ -50,10 +50,10 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.typeText(e.processTypeahead, 'Invoice', {replace: true});
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
-  await t.expect(e.optionsButton(e.variableTypeahead).hasAttribute('disabled')).notOk();
-  await t.click(e.optionsButton(e.variableTypeahead));
-  await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
-  await t.click(e.startAndEndEvents);
+  await t.expect(e.variableTypeahead.hasAttribute('disabled')).notOk();
+  await t.click(e.variableTypeahead);
+  await t.click(Common.carbonOption('longVar'));
+  await t.click(Common.radioButton('Start and end flow node events'));
 
   await t.takeElementScreenshot(Common.modalContainer, 'additional-features/img/sourceModal.png');
 
@@ -145,7 +145,7 @@ test('auto generate a process', async (t) => {
   await t.typeText(e.processTypeahead, 'Invoice', {replace: true});
   await t.click(Common.carbonOption('Invoice Receipt'));
 
-  await t.click(e.businessKey);
+  await t.click(Common.radioButton('Business key'));
   await t.click(Common.modalConfirmButton);
 
   await t.click(e.addEventSourceBtn);
@@ -177,5 +177,32 @@ test('delete multiple external events', async (t) => {
   await t.takeScreenshot('additional-features/img/deleting-events.png', {fullPage: true});
 
   await t.click(e.batchDeleteButton);
+  await t.click(Common.modalConfirmButton);
+});
+
+test('edit event source', async (t) => {
+  await t.click(e.navItem);
+  await t.click(e.createDropdown);
+  await t.click(Common.menuOption('Model a process'));
+  await t.click(e.addSource);
+
+  await t.typeText(e.processTypeahead, 'Invoice', {replace: true});
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
+  await t.click(e.variableTypeahead);
+  await t.click(Common.carbonOption('longVar'));
+  await t.click(Common.radioButton('Start and end flow node events'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(e.sourceMenuButton('Invoice Receipt'));
+  await t.click(Common.menuOption('Edit event source'));
+
+  await t.expect(e.editingNotification.exists).ok();
+  await t.expect(e.processTypeahead.hasAttribute('disabled')).ok();
+  await t.expect(e.variableTypeahead.find('input').value).eql('longVar');
+
+  await t.click(e.variableTypeahead);
+  await t.click(Common.carbonOption('boolVar'));
+  await t.click(Common.radioButton('Business key'));
+
   await t.click(Common.modalConfirmButton);
 });

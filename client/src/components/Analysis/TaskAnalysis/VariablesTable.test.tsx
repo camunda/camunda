@@ -11,22 +11,23 @@ import {shallow} from 'enzyme';
 import {LoadingIndicator} from 'components';
 
 import VariablesTable from './VariablesTable';
-import {SelectedNode, loadCommonOutliersVariables} from './service';
+import {OutlierNode, loadCommonOutliersVariables} from './service';
 
-const selectedNode = {
+const selectedOutlierNode = {
   name: 'test',
   higherOutlier: {
     boundValue: 23,
   },
-} as SelectedNode;
+} as OutlierNode;
 
 const props = {
   config: {
     processDefinitionKey: '',
     processDefinitionVersions: [],
     tenantIds: [],
+    filters: [],
   },
-  selectedNode: selectedNode,
+  selectedOutlierNode,
 };
 
 jest.mock('./service', () => ({

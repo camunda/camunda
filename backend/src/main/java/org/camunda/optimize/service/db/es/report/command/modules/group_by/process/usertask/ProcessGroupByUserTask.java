@@ -5,6 +5,16 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.usertask;
 
+import static org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -28,17 +38,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
@@ -46,95 +45,108 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
 
   private final ConfigurationService configurationService;
 
-  public ProcessGroupByUserTask(final ConfigurationService configurationService,
-                                final DefinitionService definitionService) {
+  public ProcessGroupByUserTask(
+      final ConfigurationService configurationService, final DefinitionService definitionService) {
     super(definitionService);
     this.configurationService = configurationService;
   }
 
   @Override
-  public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ExecutionContext<ProcessReportDataDto> context) {
-    final TermsAggregationBuilder userTaskTermsAggregation = AggregationBuilders
-      .terms(USER_TASK_ID_TERMS_AGGREGATION)
-      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
-      .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context) {
+    final TermsAggregationBuilder userTaskTermsAggregation =
+        AggregationBuilders.terms(USER_TASK_ID_TERMS_AGGREGATION)
+            .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
+            .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
     distributedByPart.createAggregations(context).forEach(userTaskTermsAggregation::subAggregation);
-    return Collections.singletonList(createFilteredUserTaskAggregation(context, userTaskTermsAggregation));
+    return Collections.singletonList(
+        createFilteredUserTaskAggregation(context, userTaskTermsAggregation));
   }
 
   @Override
-  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
-                             final SearchResponse response,
-                             final ExecutionContext<ProcessReportDataDto> context) {
+  public void addQueryResult(
+      final CompositeCommandResult compositeCommandResult,
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto> context) {
     getFilteredUserTaskAggregation(response)
-      .map(filteredFlowNodes -> (Terms) filteredFlowNodes.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION))
-      .ifPresent(userTasksAggregation -> {
-        getUserTasksAggregation(response)
-          .map(SingleBucketAggregation::getAggregations)
-          .ifPresent(userTaskSubAggregations -> distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
-            context,
-            userTaskSubAggregations
-          ));
+        .map(
+            filteredFlowNodes ->
+                (Terms) filteredFlowNodes.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION))
+        .ifPresent(
+            userTasksAggregation -> {
+              getUserTasksAggregation(response)
+                  .map(SingleBucketAggregation::getAggregations)
+                  .ifPresent(
+                      userTaskSubAggregations ->
+                          distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
+                              context, userTaskSubAggregations));
 
-        final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
-        List<GroupByResult> groupedData = new ArrayList<>();
-        for (Terms.Bucket b : userTasksAggregation.getBuckets()) {
-          final String userTaskKey = b.getKeyAsString();
-          if (userTaskNames.containsKey(userTaskKey)) {
-            final List<DistributedByResult> singleResult =
-              distributedByPart.retrieveResult(response, b.getAggregations(), context);
-            String label = userTaskNames.get(userTaskKey);
-            groupedData.add(GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
-            userTaskNames.remove(userTaskKey);
-          }
-        }
+              final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
+              List<GroupByResult> groupedData = new ArrayList<>();
+              for (Terms.Bucket b : userTasksAggregation.getBuckets()) {
+                final String userTaskKey = b.getKeyAsString();
+                if (userTaskNames.containsKey(userTaskKey)) {
+                  final List<DistributedByResult> singleResult =
+                      distributedByPart.retrieveResult(response, b.getAggregations(), context);
+                  String label = userTaskNames.get(userTaskKey);
+                  groupedData.add(
+                      GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
+                  userTaskNames.remove(userTaskKey);
+                }
+              }
 
-        addMissingGroupByResults(userTaskNames, groupedData, context);
+              addMissingGroupByResults(userTaskNames, groupedData, context);
 
-        compositeCommandResult.setGroupBySorting(
-          context.getReportConfiguration()
-            .getSorting()
-            .orElseGet(() -> new ReportSortingDto(null, SortOrder.ASC))
-        );
-        compositeCommandResult.setGroups(groupedData);
-      });
+              compositeCommandResult.setGroupBySorting(
+                  context
+                      .getReportConfiguration()
+                      .getSorting()
+                      .orElseGet(() -> new ReportSortingDto(null, SortOrder.ASC)));
+              compositeCommandResult.setGroups(groupedData);
+            });
   }
 
-  private void addMissingGroupByResults(final Map<String, String> userTaskNames,
-                                        final List<GroupByResult> groupedData,
-                                        final ExecutionContext<ProcessReportDataDto> context) {
-    final boolean viewLevelFilterExists = context.getReportData()
-      .getFilter()
-      .stream()
-      .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
+  private void addMissingGroupByResults(
+      final Map<String, String> userTaskNames,
+      final List<GroupByResult> groupedData,
+      final ExecutionContext<ProcessReportDataDto> context) {
+    final boolean viewLevelFilterExists =
+        context.getReportData().getFilter().stream()
+            .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
     // If a view level filter exists, the data should not be enriched as the missing data has been
     // omitted by the filters
     if (!viewLevelFilterExists) {
-      // If no view level filter exists, we enrich the user task data with user tasks that may not have been executed,
+      // If no view level filter exists, we enrich the user task data with user tasks that may not
+      // have been executed,
       // but should still show up in the result
-      userTaskNames.forEach((key, value) -> groupedData.add(
-        GroupByResult.createGroupByResult(key, value, distributedByPart.createEmptyResult(context))
-      ));
+      userTaskNames.forEach(
+          (key, value) ->
+              groupedData.add(
+                  GroupByResult.createGroupByResult(
+                      key, value, distributedByPart.createEmptyResult(context))));
     }
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
     return definitionService.extractUserTaskIdAndNames(
-      reportData.getDefinitions().stream()
-        .map(definitionDto -> definitionService.getDefinition(
-          DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
-        ))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .map(ProcessDefinitionOptimizeDto.class::cast)
-        .collect(Collectors.toList())
-    );
+        reportData.getDefinitions().stream()
+            .map(
+                definitionDto ->
+                    definitionService.getDefinition(
+                        DefinitionType.PROCESS,
+                        definitionDto.getKey(),
+                        definitionDto.getVersions(),
+                        definitionDto.getTenantIds()))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(ProcessDefinitionOptimizeDto.class::cast)
+            .collect(Collectors.toList()));
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new UserTasksGroupByDto());
   }
-
 }

@@ -5,25 +5,24 @@
  */
 package org.camunda.optimize.service.events.rollover;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
-
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
 @Component
 public class EventIndexRolloverService extends AbstractIndexRolloverService {
 
   private final ConfigurationService configurationService;
 
-  protected EventIndexRolloverService(final DatabaseClient databaseClient,
-                                   final ConfigurationService configurationService) {
+  protected EventIndexRolloverService(
+      final DatabaseClient databaseClient, final ConfigurationService configurationService) {
     super(databaseClient);
     this.configurationService = configurationService;
   }
@@ -48,12 +47,14 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
 
   @SneakyThrows
   private Set<String> getCamundaActivityEventsIndexAliases() {
-    return databaseClient.getAliasesForIndexPattern(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
-      .values()
-      .stream()
-      .flatMap(Set::stream)
-      .map(alias -> alias.substring(databaseClient.getIndexNameService().getIndexPrefix().length() + 1))
-      .collect(Collectors.toSet());
+    return databaseClient
+        .getAliasesForIndexPattern(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
+        .values()
+        .stream()
+        .flatMap(Set::stream)
+        .map(
+            alias ->
+                alias.substring(databaseClient.getIndexNameService().getIndexPrefix().length() + 1))
+        .collect(Collectors.toSet());
   }
-
 }

@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -21,9 +23,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-
 @Component
 public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
@@ -31,15 +30,21 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
   private final ProcessDefinitionReader processDefinitionReader;
   private final ObjectVariableService objectVariableService;
 
-  public ZeebeVariableImportMediatorFactory(final BeanFactory beanFactory,
-                                            final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                            final ConfigurationService configurationService,
-                                            final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
-                                            final ObjectMapper objectMapper,
-                                            final DatabaseClient databaseClient,
-                                            final ProcessDefinitionReader processDefinitionReader,
-                                            final ObjectVariableService objectVariableService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, databaseClient);
+  public ZeebeVariableImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
+      final ObjectMapper objectMapper,
+      final DatabaseClient databaseClient,
+      final ProcessDefinitionReader processDefinitionReader,
+      final ObjectVariableService objectVariableService) {
+    super(
+        beanFactory,
+        importIndexHandlerRegistry,
+        configurationService,
+        objectMapper,
+        databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.processDefinitionReader = processDefinitionReader;
     this.objectVariableService = objectVariableService;
@@ -48,28 +53,24 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
     return Collections.singletonList(
-      new ZeebeVariableImportMediator(
-        importIndexHandlerRegistry.getZeebeVariableImportIndexHandler(zeebeDataSourceDto.getPartitionId()),
-        beanFactory.getBean(
-          ZeebeVariableFetcher.class,
-          zeebeDataSourceDto.getPartitionId(),
-          databaseClient,
-          objectMapper,
-          configurationService
-        ),
-        new ZeebeVariableImportService(
-          configurationService,
-          zeebeProcessInstanceWriter,
-          zeebeDataSourceDto.getPartitionId(),
-          new ObjectMapper(),
-          processDefinitionReader,
-          objectVariableService,
-          databaseClient
-        ),
-        configurationService,
-        new BackoffCalculator(configurationService)
-      )
-    );
+        new ZeebeVariableImportMediator(
+            importIndexHandlerRegistry.getZeebeVariableImportIndexHandler(
+                zeebeDataSourceDto.getPartitionId()),
+            beanFactory.getBean(
+                ZeebeVariableFetcher.class,
+                zeebeDataSourceDto.getPartitionId(),
+                databaseClient,
+                objectMapper,
+                configurationService),
+            new ZeebeVariableImportService(
+                configurationService,
+                zeebeProcessInstanceWriter,
+                zeebeDataSourceDto.getPartitionId(),
+                new ObjectMapper(),
+                processDefinitionReader,
+                objectVariableService,
+                databaseClient),
+            configurationService,
+            new BackoffCalculator(configurationService)));
   }
-
 }

@@ -5,26 +5,30 @@
  */
 package org.camunda.optimize.service.db.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
-public abstract class CamundaActivityEventIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
+
+public abstract class CamundaActivityEventIndex<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final String ACTIVITY_ID = CamundaActivityEventDto.Fields.activityId;
   public static final String ACTIVITY_NAME = CamundaActivityEventDto.Fields.activityName;
   public static final String ACTIVITY_TYPE = CamundaActivityEventDto.Fields.activityType;
-  public static final String ACTIVITY_INSTANCE_ID = CamundaActivityEventDto.Fields.activityInstanceId;
-  public static final String PROCESS_DEFINITION_KEY = CamundaActivityEventDto.Fields.processDefinitionKey;
+  public static final String ACTIVITY_INSTANCE_ID =
+      CamundaActivityEventDto.Fields.activityInstanceId;
+  public static final String PROCESS_DEFINITION_KEY =
+      CamundaActivityEventDto.Fields.processDefinitionKey;
   public static final String PROCESS_INSTANCE_ID = CamundaActivityEventDto.Fields.processInstanceId;
-  public static final String PROCESS_DEFINITION_VERSION = CamundaActivityEventDto.Fields.processDefinitionVersion;
-  public static final String PROCESS_INSTANCE_NAME = CamundaActivityEventDto.Fields.processDefinitionName;
+  public static final String PROCESS_DEFINITION_VERSION =
+      CamundaActivityEventDto.Fields.processDefinitionVersion;
+  public static final String PROCESS_INSTANCE_NAME =
+      CamundaActivityEventDto.Fields.processDefinitionName;
   public static final String ENGINE = CamundaActivityEventDto.Fields.engine;
   public static final String TENANT_ID = CamundaActivityEventDto.Fields.tenantId;
   public static final String TIMESTAMP = CamundaActivityEventDto.Fields.timestamp;
@@ -67,48 +71,46 @@ public abstract class CamundaActivityEventIndex<TBuilder> extends DefaultIndexMa
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(ACTIVITY_ID)
+        .startObject(ACTIVITY_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(ACTIVITY_NAME)
+        .endObject()
+        .startObject(ACTIVITY_NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(ACTIVITY_TYPE)
+        .endObject()
+        .startObject(ACTIVITY_TYPE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(ACTIVITY_INSTANCE_ID)
+        .endObject()
+        .startObject(ACTIVITY_INSTANCE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_DEFINITION_KEY)
+        .endObject()
+        .startObject(PROCESS_DEFINITION_KEY)
         .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_INSTANCE_ID)
+        .endObject()
+        .startObject(PROCESS_INSTANCE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_DEFINITION_VERSION)
+        .endObject()
+        .startObject(PROCESS_DEFINITION_VERSION)
         .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_INSTANCE_NAME)
+        .endObject()
+        .startObject(PROCESS_INSTANCE_NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(ENGINE)
+        .endObject()
+        .startObject(ENGINE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(TENANT_ID)
+        .endObject()
+        .startObject(TENANT_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(TIMESTAMP)
+        .endObject()
+        .startObject(TIMESTAMP)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(ORDER_COUNTER)
+        .endObject()
+        .startObject(ORDER_COUNTER)
         .field("type", "keyword")
-      .endObject()
-      .startObject(CANCELED)
+        .endObject()
+        .startObject(CANCELED)
         .field("type", "boolean")
-      .endObject()
-      ;
+        .endObject();
     // @formatter:on
   }
-
 }

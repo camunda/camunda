@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.util;
 
+import java.util.concurrent.TimeUnit;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.concurrent.TimeUnit;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DurationFormatterUtil {
@@ -64,9 +63,6 @@ public class DurationFormatterUtil {
   }
 
   public static String formatDuration(final String unitString, final long duration) {
-    return duration <= 0
-      ? ""
-      : String.format("%d%s", duration, unitString);
+    return duration <= 0 ? "" : String.format("%d%s", duration, unitString);
   }
-
 }

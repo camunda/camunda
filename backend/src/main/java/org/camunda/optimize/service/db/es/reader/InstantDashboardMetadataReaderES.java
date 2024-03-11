@@ -5,23 +5,22 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
-import org.camunda.optimize.service.db.reader.InstantDashboardMetadataReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.InstantDashboardMetadataReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -34,8 +33,11 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
 
   @Override
   public Optional<String> getInstantDashboardIdFor(String processDefinitionKey, String template)
-    throws OptimizeRuntimeException {
-    log.debug("Fetching Instant preview dashboard ID for [{}] with template [{}] ", processDefinitionKey, template);
+      throws OptimizeRuntimeException {
+    log.debug(
+        "Fetching Instant preview dashboard ID for [{}] with template [{}] ",
+        processDefinitionKey,
+        template);
     InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
     dashboardDataDto.setTemplateName(template);
     dashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
@@ -47,29 +49,32 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
     try {
       getResponse = esClient.get(getRequest);
     } catch (IOException e) {
-      String reason = String.format("Could not fetch Instant preview dashboard with key [%s]", instantDashboardKey);
+      String reason =
+          String.format(
+              "Could not fetch Instant preview dashboard with key [%s]", instantDashboardKey);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
     if (getResponse.isExists()) {
       try {
-        final InstantDashboardDataDto dashboardData = objectMapper.readValue(
-          getResponse.getSourceAsString(),
-          InstantDashboardDataDto.class
-        );
+        final InstantDashboardDataDto dashboardData =
+            objectMapper.readValue(getResponse.getSourceAsString(), InstantDashboardDataDto.class);
         return Optional.of(dashboardData.getDashboardId());
       } catch (IOException e) {
-        String reason = "Could not deserialize dashboard data with key [" + instantDashboardKey + "] from " +
-          "Elasticsearch.";
+        String reason =
+            "Could not deserialize dashboard data with key ["
+                + instantDashboardKey
+                + "] from "
+                + "Elasticsearch.";
         log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
     } else {
-      String reason = "Could not find dashboard data for key [" + instantDashboardKey + "] in Elasticsearch.";
+      String reason =
+          "Could not find dashboard data for key [" + instantDashboardKey + "] in Elasticsearch.";
       log.error(reason);
       return Optional.empty();
     }
   }
-
 }

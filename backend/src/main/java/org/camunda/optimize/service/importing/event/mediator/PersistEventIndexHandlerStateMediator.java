@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.event.mediator;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.service.db.DatabaseClient;
@@ -17,21 +19,23 @@ import org.camunda.optimize.service.importing.event.handler.EventImportIndexHand
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 @Component
 @Slf4j
 public class PersistEventIndexHandlerStateMediator
-  extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService> implements ImportMediator {
+    extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService>
+    implements ImportMediator {
 
   protected EventImportIndexHandlerRegistry importIndexHandlerRegistry;
 
-  protected PersistEventIndexHandlerStateMediator(final ConfigurationService configurationService,
-                                                  final ImportIndexWriter importIndexWriter,
-                                                  final EventImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                  final DatabaseClient databaseClient) {
-    super(new StoreIndexesEngineImportService(configurationService, importIndexWriter, databaseClient), configurationService);
+  protected PersistEventIndexHandlerStateMediator(
+      final ConfigurationService configurationService,
+      final ImportIndexWriter importIndexWriter,
+      final EventImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final DatabaseClient databaseClient) {
+    super(
+        new StoreIndexesEngineImportService(
+            configurationService, importIndexWriter, databaseClient),
+        configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
   }
 
@@ -40,17 +44,16 @@ public class PersistEventIndexHandlerStateMediator
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
-      final List<EngineImportIndexDto> importIndices = importIndexHandlerRegistry.getAllHandlers()
-        .stream()
-        .map(EngineImportIndexHandler::getIndexStateDto)
-        .filter(EngineImportIndexDto.class::isInstance)
-        .map(EngineImportIndexDto.class::cast)
-        .toList();
+      final List<EngineImportIndexDto> importIndices =
+          importIndexHandlerRegistry.getAllHandlers().stream()
+              .map(EngineImportIndexHandler::getIndexStateDto)
+              .filter(EngineImportIndexDto.class::isInstance)
+              .map(EngineImportIndexDto.class::cast)
+              .toList();
       importService.executeImport(importIndices, () -> importCompleted.complete(null));
     } catch (Exception e) {
       log.error("Could not execute import for storing event processing index handlers!", e);
     }
     return importCompleted;
   }
-
 }

@@ -5,16 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
-import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
-import org.camunda.optimize.service.identity.AbstractIdentityService;
-import org.camunda.optimize.service.security.SessionService;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
@@ -26,6 +16,15 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
+import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
+import org.camunda.optimize.service.security.SessionService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(IdentityRestService.IDENTITY_RESOURCE_PATH)
@@ -43,25 +42,28 @@ public class IdentityRestService {
   @GET
   @Path(IDENTITY_SEARCH_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public IdentitySearchResultResponseDto searchIdentity(@QueryParam("terms") final String searchTerms,
-                                                        @QueryParam("limit") @DefaultValue("25") final int limit,
-                                                        @QueryParam("excludeUserGroups") final boolean excludeUserGroups,
-                                                        @Context ContainerRequestContext requestContext) {
+  public IdentitySearchResultResponseDto searchIdentity(
+      @QueryParam("terms") final String searchTerms,
+      @QueryParam("limit") @DefaultValue("25") final int limit,
+      @QueryParam("excludeUserGroups") final boolean excludeUserGroups,
+      @Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return identityService.searchForIdentitiesAsUser(
-      userId, Optional.ofNullable(searchTerms).orElse(""), limit, excludeUserGroups);
+        userId, Optional.ofNullable(searchTerms).orElse(""), limit, excludeUserGroups);
   }
 
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdentityWithMetadataResponseDto getIdentityById(@PathParam("id") final String identityId,
-                                                         @Context ContainerRequestContext requestContext) {
+  public IdentityWithMetadataResponseDto getIdentityById(
+      @PathParam("id") final String identityId, @Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return identityService.getIdentityWithMetadataForIdAsUser(userId, identityId)
-      .orElseThrow(() -> new NotFoundException(
-        "Could find neither a user nor a group with the id [" + identityId + "]."
-      ));
+    return identityService
+        .getIdentityWithMetadataForIdAsUser(userId, identityId)
+        .orElseThrow(
+            () ->
+                new NotFoundException(
+                    "Could find neither a user nor a group with the id [" + identityId + "]."));
   }
 
   @GET
@@ -69,8 +71,10 @@ public class IdentityRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public UserResponseDto getCurrentUser(@Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final UserDto currentUserDto = identityService.getCurrentUserById(userId, requestContext).orElseGet(() -> new UserDto(userId));
+    final UserDto currentUserDto =
+        identityService
+            .getCurrentUserById(userId, requestContext)
+            .orElseGet(() -> new UserDto(userId));
     return new UserResponseDto(currentUserDto, identityService.getUserAuthorizations(userId));
   }
-
 }

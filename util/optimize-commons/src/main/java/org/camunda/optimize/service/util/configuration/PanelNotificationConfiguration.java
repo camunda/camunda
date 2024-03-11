@@ -12,5 +12,4 @@ public class PanelNotificationConfiguration {
   private String url;
   private boolean enabled;
   private String m2mTokenAudience;
-
 }

@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
@@ -20,9 +22,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -30,27 +29,31 @@ import java.util.Map;
 public class DurationOutliersReaderOS implements DurationOutliersReader {
 
   @Override
-  public List<DurationChartEntryDto> getCountByDurationChart(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
-    //todo will be handled in the OPT-7230
+  public List<DurationChartEntryDto> getCountByDurationChart(
+      final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public Map<String, FindingsDto> getFlowNodeOutlierMap(final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams) {
-    //todo will be handled in the OPT-7230
+  public Map<String, FindingsDto> getFlowNodeOutlierMap(
+      final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto>
+          outlierAnalysisParams) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public List<VariableTermDto> getSignificantOutlierVariableTerms(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
-    //todo will be handled in the OPT-7230
+  public List<VariableTermDto> getSignificantOutlierVariableTerms(
+      final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> outlierParams) {
-    //todo will be handled in the OPT-7230
+  public List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(
+      final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> outlierParams) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
-
 }

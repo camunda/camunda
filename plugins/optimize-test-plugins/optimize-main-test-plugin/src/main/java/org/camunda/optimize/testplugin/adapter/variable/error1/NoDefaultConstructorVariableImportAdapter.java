@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.error1;
 
-
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class NoDefaultConstructorVariableImportAdapter implements VariableImportAdapter {
 

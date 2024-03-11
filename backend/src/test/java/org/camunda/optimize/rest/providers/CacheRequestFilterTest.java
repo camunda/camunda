@@ -5,6 +5,17 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
+import static org.mockito.Mockito.when;
+
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.stream.Stream;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,28 +25,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class CacheRequestFilterTest {
 
   private CacheRequestFilterFactory.CacheRequestFilter underTest;
 
-  @Mock
-  ContainerRequestContext requestContext;
+  @Mock ContainerRequestContext requestContext;
 
-  @Mock
-  ContainerResponseContext responseContext;
+  @Mock ContainerResponseContext responseContext;
 
   @BeforeEach
   public void setup() {
@@ -54,7 +51,8 @@ public class CacheRequestFilterTest {
     underTest.filter(requestContext, responseContext);
 
     // then
-    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL)).isEqualTo("max-age=21600");
+    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL))
+        .isEqualTo("max-age=21600");
   }
 
   @Test
@@ -67,7 +65,8 @@ public class CacheRequestFilterTest {
 
     // then
     assertThat(responseContext.getHeaders().get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
-    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL)).isEqualTo(CACHE_CONTROL_NO_STORE);
+    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL))
+        .isEqualTo(CACHE_CONTROL_NO_STORE);
   }
 
   @ParameterizedTest
@@ -87,10 +86,6 @@ public class CacheRequestFilterTest {
 
   private static Stream<Response.Status> unsuccessfulResponses() {
     return Stream.of(
-      Response.Status.BAD_REQUEST,
-      Response.Status.NOT_FOUND,
-      Response.Status.FORBIDDEN
-    );
+        Response.Status.BAD_REQUEST, Response.Status.NOT_FOUND, Response.Status.FORBIDDEN);
   }
-
 }

@@ -18,18 +18,23 @@ public class CombinedIntervalSelectionCalculator {
   }
 
   public Optional<MinMaxStatDto> getGlobalMinMaxStats() {
-    final Optional<MinMaxStatDto> globalMaxStat = minMaxStats.stream()
-      .filter(MinMaxStatDto::isMaxValid)
-      .max(Comparator.comparing(MinMaxStatDto::getMax));
-    final Optional<MinMaxStatDto> globalMinStat = minMaxStats.stream()
-      .filter(MinMaxStatDto::isMinValid)
-      .min(Comparator.comparing(MinMaxStatDto::getMin));
+    final Optional<MinMaxStatDto> globalMaxStat =
+        minMaxStats.stream()
+            .filter(MinMaxStatDto::isMaxValid)
+            .max(Comparator.comparing(MinMaxStatDto::getMax));
+    final Optional<MinMaxStatDto> globalMinStat =
+        minMaxStats.stream()
+            .filter(MinMaxStatDto::isMinValid)
+            .min(Comparator.comparing(MinMaxStatDto::getMin));
     if (globalMaxStat.isPresent() && globalMinStat.isPresent()) {
       final MinMaxStatDto minStat = globalMinStat.get();
       final MinMaxStatDto maxStat = globalMaxStat.get();
       return Optional.of(
-        new MinMaxStatDto(minStat.getMin(), maxStat.getMax(), minStat.getMinAsString(), maxStat.getMaxAsString())
-      );
+          new MinMaxStatDto(
+              minStat.getMin(),
+              maxStat.getMax(),
+              minStat.getMinAsString(),
+              maxStat.getMaxAsString()));
     }
     return Optional.empty();
   }

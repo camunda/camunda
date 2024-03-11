@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.upgrade.indices;
 
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
 
 public class RenameFieldTestIndex extends DefaultIndexMappingCreator<XContentBuilder> {
   private static final int VERSION = 1;
@@ -25,16 +24,12 @@ public class RenameFieldTestIndex extends DefaultIndexMappingCreator<XContentBui
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    return xContentBuilder
-      .startObject("name")
-      .field("type", "keyword")
-      .endObject();
+    return xContentBuilder.startObject("name").field("type", "keyword").endObject();
   }
 
   @Override
-  public XContentBuilder addStaticSetting(final String key,
-                                          final int value,
-                                          final XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
     return contentBuilder.field(key, value);
   }
 }

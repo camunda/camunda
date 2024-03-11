@@ -6,9 +6,8 @@
 package org.camunda.optimize.service.util.configuration.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class DatabaseSSLConfiguration {
@@ -21,5 +20,4 @@ public class DatabaseSSLConfiguration {
 
   @JsonProperty("certificate_authorities")
   private List<String> certificateAuthorities;
-
 }

@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.util2;
 
-
+import java.util.List;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
-
-import java.util.List;
 
 public class SetAllValuesToFooVariableImportAdapter implements VariableImportAdapter {
 

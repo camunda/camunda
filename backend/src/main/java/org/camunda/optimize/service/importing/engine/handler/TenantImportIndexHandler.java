@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.importing.engine.handler;
 
-import org.camunda.optimize.dto.engine.TenantEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.camunda.optimize.dto.engine.TenantEngineDto;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -40,12 +39,12 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
     moveImportIndex(tenantDtos.size());
   }
 
-  public List<TenantEngineDto> filterNewOrChangedTenants(final List<TenantEngineDto> engineEntities) {
+  public List<TenantEngineDto> filterNewOrChangedTenants(
+      final List<TenantEngineDto> engineEntities) {
     final Collection<TenantEngineDto> importedTenantDtos = alreadyImportedTenants.values();
-    return engineEntities
-      .stream()
-      .filter(tenantDto -> !importedTenantDtos.contains(tenantDto))
-      .collect(Collectors.toList());
+    return engineEntities.stream()
+        .filter(tenantDto -> !importedTenantDtos.contains(tenantDto))
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -58,5 +57,4 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
     super.resetImportIndex();
     alreadyImportedTenants.clear();
   }
-
 }

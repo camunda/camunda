@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.data;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,5 +23,4 @@ public class DurationFilterDataDto implements FilterDataDto {
   protected DurationUnit unit;
   protected ComparisonOperator operator;
   protected boolean includeNull;
-
 }

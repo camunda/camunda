@@ -14,7 +14,6 @@ public class IndependentNewVariableDto extends PluginVariableDto {
     return "also-plugin-class";
   }
 
-
   public boolean isThisMyPluginClassInstance() {
     return true;
   }

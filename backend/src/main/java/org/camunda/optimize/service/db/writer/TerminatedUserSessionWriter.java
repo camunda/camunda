@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import java.io.IOException;
+import java.time.OffsetDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
-import java.io.IOException;
-import java.time.OffsetDateTime;
 
 @Slf4j
 public abstract class TerminatedUserSessionWriter {
@@ -31,14 +30,16 @@ public abstract class TerminatedUserSessionWriter {
     try {
       performDeleteTerminatedUserSessionOlderThan(timestamp);
     } catch (IOException e) {
-      String message = String.format("Could not delete user sessions older than [%s] from database", timestamp);
+      String message =
+          String.format("Could not delete user sessions older than [%s] from database", timestamp);
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
-  protected abstract void performWritingTerminatedUserSession(final TerminatedUserSessionDto sessionDto) throws IOException;
+  protected abstract void performWritingTerminatedUserSession(
+      final TerminatedUserSessionDto sessionDto) throws IOException;
 
-  protected abstract void performDeleteTerminatedUserSessionOlderThan(final OffsetDateTime timestamp) throws IOException;
-
+  protected abstract void performDeleteTerminatedUserSessionOlderThan(
+      final OffsetDateTime timestamp) throws IOException;
 }

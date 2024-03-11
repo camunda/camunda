@@ -5,13 +5,25 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.service.db.reader.DefinitionInstanceReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.DefinitionInstanceReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -27,19 +39,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -54,37 +53,37 @@ public class DefinitionInstanceReaderES implements DefinitionInstanceReader {
   }
 
   @Override
-  public Set<String> getAllExistingDefinitionKeys(final DefinitionType type,
-                                                  final Set<String> instanceIds) {
-    final BoolQueryBuilder idQuery = CollectionUtils.isEmpty(instanceIds)
-      ? boolQuery().must(matchAllQuery())
-      : boolQuery().filter(termsQuery(resolveInstanceIdFieldForType(type), instanceIds));
+  public Set<String> getAllExistingDefinitionKeys(
+      final DefinitionType type, final Set<String> instanceIds) {
+    final BoolQueryBuilder idQuery =
+        CollectionUtils.isEmpty(instanceIds)
+            ? boolQuery().must(matchAllQuery())
+            : boolQuery().filter(termsQuery(resolveInstanceIdFieldForType(type), instanceIds));
     final String defKeyAggName = "definitionKeyAggregation";
-    final TermsAggregationBuilder definitionKeyAgg = AggregationBuilders
-      .terms(defKeyAggName)
-      .field(resolveDefinitionKeyFieldForType(type))
-      .size(MAX_RESPONSE_SIZE_LIMIT);
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(idQuery).fetchSource(false).size(0);
+    final TermsAggregationBuilder definitionKeyAgg =
+        AggregationBuilders.terms(defKeyAggName)
+            .field(resolveDefinitionKeyFieldForType(type))
+            .size(MAX_RESPONSE_SIZE_LIMIT);
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder().query(idQuery).fetchSource(false).size(0);
     searchSourceBuilder.aggregation(definitionKeyAgg);
 
     final SearchRequest searchRequest =
-      new SearchRequest(resolveIndexMultiAliasForType(type)).source(searchSourceBuilder);
+        new SearchRequest(resolveIndexMultiAliasForType(type)).source(searchSourceBuilder);
 
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest);
     } catch (IOException e) {
-      throw new OptimizeRuntimeException(String.format(
-        "Was not able to retrieve definition keys for instances of type %s",
-        type
-      ), e);
+      throw new OptimizeRuntimeException(
+          String.format("Was not able to retrieve definition keys for instances of type %s", type),
+          e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(type, e)) {
         log.info(
-          "Was not able to retrieve definition keys for instances because no {} instance indices exist. " +
-            "Returning empty set.",
-          type
-        );
+            "Was not able to retrieve definition keys for instances because no {} instance indices exist. "
+                + "Returning empty set.",
+            type);
         return Collections.emptySet();
       }
       throw e;
@@ -92,14 +91,14 @@ public class DefinitionInstanceReaderES implements DefinitionInstanceReader {
 
     final Terms definitionKeyTerms = response.getAggregations().get(defKeyAggName);
     return definitionKeyTerms.getBuckets().stream()
-      .map(MultiBucketsAggregation.Bucket::getKeyAsString)
-      .collect(toSet());
+        .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+        .collect(toSet());
   }
 
   private String[] resolveIndexMultiAliasForType(final DefinitionType type) {
     return switch (type) {
-      case PROCESS -> new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
-      case DECISION -> new String[]{DECISION_INSTANCE_MULTI_ALIAS};
+      case PROCESS -> new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
+      case DECISION -> new String[] {DECISION_INSTANCE_MULTI_ALIAS};
       default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     };
   }

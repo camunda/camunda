@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -23,6 +24,7 @@ import java.util.Collections;
 
 import static jakarta.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
@@ -31,6 +33,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
   @Test

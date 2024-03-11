@@ -6,21 +6,24 @@
 package org.camunda.optimize.service.util.configuration.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 import lombok.Data;
 import org.camunda.optimize.util.SuppressionConstants;
-
-import java.util.Map;
 
 @Data
 public class ResponseHeadersConfiguration {
   @JsonProperty("HSTS.max-age")
   private Long httpStrictTransportSecurityMaxAge;
+
   @JsonProperty("HSTS.includeSubDomains")
   private Boolean httpStrictTransportSecurityIncludeSubdomains;
+
   @JsonProperty("X-XSS-Protection")
   private String xsssProtection;
+
   @JsonProperty("X-Content-Type-Options")
   private Boolean xContentTypeOptions;
+
   @JsonProperty("Content-Security-Policy")
   private String contentSecurityPolicy;
 

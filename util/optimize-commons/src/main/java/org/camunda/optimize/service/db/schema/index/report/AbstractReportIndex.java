@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.service.db.schema.index.report;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
+
+import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class AbstractReportIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -37,50 +36,52 @@ public abstract class AbstractReportIndex<TBuilder> extends DefaultIndexMappingC
 
   public static final String CONFIGURATION = SingleReportDataDto.Fields.configuration;
   public static final String XML = SingleReportConfigurationDto.Fields.xml;
-  public static final String AGGREGATION_TYPES = SingleReportConfigurationDto.Fields.aggregationTypes;
+  public static final String AGGREGATION_TYPES =
+      SingleReportConfigurationDto.Fields.aggregationTypes;
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-     XContentBuilder newBuilder = xContentBuilder
-      .startObject(ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(NAME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(DESCRIPTION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-        .field("index", false)
-      .endObject()
-      .startObject(LAST_MODIFIED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(CREATED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(OWNER)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(LAST_MODIFIER)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(COLLECTION_ID)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(REPORT_TYPE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(COMBINED)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-      .endObject();
-     // @formatter:on
+    XContentBuilder newBuilder =
+        xContentBuilder
+            .startObject(ID)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+            .endObject()
+            .startObject(NAME)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+            .endObject()
+            .startObject(DESCRIPTION)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+            .field("index", false)
+            .endObject()
+            .startObject(LAST_MODIFIED)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+            .field("format", OPTIMIZE_DATE_FORMAT)
+            .endObject()
+            .startObject(CREATED)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+            .field("format", OPTIMIZE_DATE_FORMAT)
+            .endObject()
+            .startObject(OWNER)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+            .endObject()
+            .startObject(LAST_MODIFIER)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+            .endObject()
+            .startObject(COLLECTION_ID)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+            .endObject()
+            .startObject(REPORT_TYPE)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+            .endObject()
+            .startObject(COMBINED)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
+            .endObject();
+    // @formatter:on
     newBuilder = addReportTypeSpecificFields(newBuilder);
     return newBuilder;
   }
 
-  protected abstract XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder) throws IOException;
-
+  protected abstract XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder)
+      throws IOException;
 }

@@ -7,9 +7,9 @@ package org.camunda.optimize.rest.pub;
 
 import org.camunda.optimize.AbstractPlatformIT;
 import jakarta.ws.rs.core.Response;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,9 +21,11 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 @TestInstance(PER_CLASS)
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiRestServiceIT extends AbstractPlatformIT {
 
   private static final String ACCESS_TOKEN = "1_2_Polizei";

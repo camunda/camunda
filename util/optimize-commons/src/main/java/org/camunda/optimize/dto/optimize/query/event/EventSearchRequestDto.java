@@ -6,9 +6,13 @@
 package org.camunda.optimize.dto.optimize.query.event;
 
 import com.google.common.collect.ImmutableList;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.QueryParam;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,11 +22,6 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
-import java.util.Optional;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -31,24 +30,19 @@ public class EventSearchRequestDto {
   public static final int DEFAULT_LIMIT = 20;
   public static final int DEFAULT_OFFSET = 0;
 
-  public static final List<String> sortableFields = ImmutableList.of(
-    EventDto.Fields.group.toLowerCase(),
-    EventDto.Fields.source.toLowerCase(),
-    EventDto.Fields.eventName.toLowerCase(),
-    EventDto.Fields.traceId.toLowerCase(),
-    EventDto.Fields.timestamp.toLowerCase()
-  );
+  public static final List<String> sortableFields =
+      ImmutableList.of(
+          EventDto.Fields.group.toLowerCase(),
+          EventDto.Fields.source.toLowerCase(),
+          EventDto.Fields.eventName.toLowerCase(),
+          EventDto.Fields.traceId.toLowerCase(),
+          EventDto.Fields.timestamp.toLowerCase());
 
   @QueryParam("searchTerm")
   private String searchTerm;
-  @BeanParam
-  @Valid
-  @NotNull
-  private SortRequestDto sortRequestDto;
-  @BeanParam
-  @Valid
-  @NotNull
-  private PaginationRequestDto paginationRequestDto;
+
+  @BeanParam @Valid @NotNull private SortRequestDto sortRequestDto;
+  @BeanParam @Valid @NotNull private PaginationRequestDto paginationRequestDto;
 
   public void validateRequest() {
     if (StringUtils.isEmpty(searchTerm)) {
@@ -62,15 +56,15 @@ public class EventSearchRequestDto {
     }
     final Optional<String> sortBy = sortRequestDto.getSortBy();
     final Optional<SortOrder> sortOrder = sortRequestDto.getSortOrder();
-    if ((sortBy.isPresent() && !sortOrder.isPresent()) || (!sortBy.isPresent() && sortOrder.isPresent())) {
-      throw new BadRequestException(String.format(
-        "Cannot supply only one of %s and %s",
-        SortRequestDto.SORT_BY,
-        SortRequestDto.SORT_ORDER
-      ));
-    } else if (sortBy.isPresent() && !EventSearchRequestDto.sortableFields.contains(sortBy.get().toLowerCase())) {
+    if ((sortBy.isPresent() && !sortOrder.isPresent())
+        || (!sortBy.isPresent() && sortOrder.isPresent())) {
+      throw new BadRequestException(
+          String.format(
+              "Cannot supply only one of %s and %s",
+              SortRequestDto.SORT_BY, SortRequestDto.SORT_ORDER));
+    } else if (sortBy.isPresent()
+        && !EventSearchRequestDto.sortableFields.contains(sortBy.get().toLowerCase())) {
       throw new BadRequestException(String.format("%s is not a sortable field", sortBy.get()));
     }
   }
-
 }

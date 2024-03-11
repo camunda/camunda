@@ -33,6 +33,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -58,6 +59,7 @@ import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
@@ -83,6 +85,7 @@ import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
@@ -874,6 +877,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @EnumSource(ReportType.class)
   public void forceDeleteReport_notDeletedIfEsFailsWhenRemovingFromDashboards(final ReportType reportType) {

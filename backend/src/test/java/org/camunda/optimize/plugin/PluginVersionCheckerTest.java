@@ -5,16 +5,6 @@
  */
 package org.camunda.optimize.plugin;
 
-import org.apache.commons.io.IOUtils;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.metadata.Version;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.plugin.PluginVersionChecker.OPTIMIZE_VERSION_FILE_NAME;
 import static org.camunda.optimize.plugin.PluginVersionChecker.OPTIMIZE_VERSION_KEY;
@@ -25,20 +15,25 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import org.apache.commons.io.IOUtils;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.metadata.Version;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 public class PluginVersionCheckerTest {
 
-  @Mock
-  PluginClassLoader classLoader;
+  @Mock PluginClassLoader classLoader;
 
   @Test
   public void validatePluginVersion_validVersion() throws IOException {
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
-      .thenReturn(IOUtils.toInputStream(
-        OPTIMIZE_VERSION_KEY + "=" + Version.VERSION,
-        "UTF-8"
-      ));
+        .thenReturn(IOUtils.toInputStream(OPTIMIZE_VERSION_KEY + "=" + Version.VERSION, "UTF-8"));
 
     // then
     assertDoesNotThrow(() -> validatePluginVersion(classLoader));
@@ -48,10 +43,8 @@ public class PluginVersionCheckerTest {
   public void validatePluginVersion_validSnapshotVersion() throws IOException {
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
-      .thenReturn(IOUtils.toInputStream(
-        OPTIMIZE_VERSION_KEY + "=" + Version.RAW_VERSION,
-        "UTF-8"
-      ));
+        .thenReturn(
+            IOUtils.toInputStream(OPTIMIZE_VERSION_KEY + "=" + Version.RAW_VERSION, "UTF-8"));
 
     // then
     assertDoesNotThrow(() -> validatePluginVersion(classLoader));
@@ -60,14 +53,11 @@ public class PluginVersionCheckerTest {
   @Test
   public void validatePluginVersion_missingVersion() throws IOException {
     // given
-    when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
-      .thenReturn(null);
+    when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME)).thenReturn(null);
 
     // then
-    OptimizeRuntimeException exception = assertThrows(
-      OptimizeRuntimeException.class,
-      () -> validatePluginVersion(classLoader)
-    );
+    OptimizeRuntimeException exception =
+        assertThrows(OptimizeRuntimeException.class, () -> validatePluginVersion(classLoader));
     assertThat(exception.getMessage()).isEqualTo(buildMissingPluginVersionMessage(Version.VERSION));
   }
 
@@ -75,34 +65,27 @@ public class PluginVersionCheckerTest {
   public void validatePluginVersion_invalidVersionString() throws IOException {
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
-      .thenReturn(IOUtils.toInputStream(
-        OPTIMIZE_VERSION_KEY + "=" + "nope_definitely_not_valid",
-        "UTF-8"
-      ));
+        .thenReturn(
+            IOUtils.toInputStream(
+                OPTIMIZE_VERSION_KEY + "=" + "nope_definitely_not_valid", "UTF-8"));
 
     // then
-    OptimizeRuntimeException exception = assertThrows(
-      OptimizeRuntimeException.class,
-      () -> validatePluginVersion(classLoader)
-    );
-    assertThat(exception.getMessage()).isEqualTo(buildUnsupportedPluginVersionMessage(
-      "nope_definitely_not_valid", Version.VERSION));
+    OptimizeRuntimeException exception =
+        assertThrows(OptimizeRuntimeException.class, () -> validatePluginVersion(classLoader));
+    assertThat(exception.getMessage())
+        .isEqualTo(
+            buildUnsupportedPluginVersionMessage("nope_definitely_not_valid", Version.VERSION));
   }
 
   @Test
   public void validatePluginVersion_unexpectedVersionFileEntry() throws IOException {
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
-      .thenReturn(IOUtils.toInputStream(
-        "hello.world" + "=" + "how.are.you",
-        "UTF-8"
-      ));
+        .thenReturn(IOUtils.toInputStream("hello.world" + "=" + "how.are.you", "UTF-8"));
 
     // then
-    OptimizeRuntimeException exception = assertThrows(
-      OptimizeRuntimeException.class,
-      () -> validatePluginVersion(classLoader)
-    );
+    OptimizeRuntimeException exception =
+        assertThrows(OptimizeRuntimeException.class, () -> validatePluginVersion(classLoader));
     assertThat(exception.getMessage()).isEqualTo(buildMissingPluginVersionMessage(Version.VERSION));
   }
 

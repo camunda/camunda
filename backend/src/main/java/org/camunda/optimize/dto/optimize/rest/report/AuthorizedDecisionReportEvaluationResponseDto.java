@@ -11,11 +11,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 
 @NoArgsConstructor
 public class AuthorizedDecisionReportEvaluationResponseDto<T>
-  extends AuthorizedSingleReportEvaluationResponseDto<T, SingleDecisionReportDefinitionRequestDto> {
+    extends AuthorizedSingleReportEvaluationResponseDto<
+        T, SingleDecisionReportDefinitionRequestDto> {
 
-  public AuthorizedDecisionReportEvaluationResponseDto(final RoleType currentUserRole,
-                                                       final ReportResultResponseDto<T> reportResult,
-                                                       final SingleDecisionReportDefinitionRequestDto reportDefinition) {
+  public AuthorizedDecisionReportEvaluationResponseDto(
+      final RoleType currentUserRole,
+      final ReportResultResponseDto<T> reportResult,
+      final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(currentUserRole, reportResult, reportDefinition);
   }
 }

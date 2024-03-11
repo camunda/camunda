@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportD
 import org.camunda.optimize.service.entities.report.AbstractReportDefinitionExportIT;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -24,8 +25,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
 
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiReportDefinitionExportIT extends AbstractReportDefinitionExportIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 

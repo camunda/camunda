@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.OpenIncidentFilterDataDto;
-
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.OpenIncidentFilterDataDto;
 
 public class OpenIncidentFilterDto extends ProcessFilterDto<OpenIncidentFilterDataDto> {
   @Override

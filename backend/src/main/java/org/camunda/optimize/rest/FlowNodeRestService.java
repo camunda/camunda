@@ -5,15 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
-import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
-import org.camunda.optimize.rest.providers.CacheRequest;
-import org.camunda.optimize.service.DefinitionService;
-import org.springframework.stereotype.Component;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -23,8 +15,15 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
+import org.camunda.optimize.rest.providers.CacheRequest;
+import org.camunda.optimize.service.DefinitionService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(FlowNodeRestService.FLOW_NODE_PATH)
@@ -45,17 +44,17 @@ public class FlowNodeRestService {
   public FlowNodeNamesResponseDto getFlowNodeNames(final FlowNodeIdsToNamesRequestDto request) {
     final FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
 
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = definitionService
-      .getProcessDefinitionWithXmlAsService(
-        DefinitionType.PROCESS,
-        request.getProcessDefinitionKey(),
-        request.getProcessDefinitionVersion(),
-        request.getTenantId()
-      );
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto =
+        definitionService.getProcessDefinitionWithXmlAsService(
+            DefinitionType.PROCESS,
+            request.getProcessDefinitionKey(),
+            request.getProcessDefinitionVersion(),
+            request.getTenantId());
 
     if (processDefinitionXmlDto.isPresent()) {
       List<String> nodeIds = request.getNodeIds();
-      Map<String, String> flowNodeIdsToNames = extractFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeData());
+      Map<String, String> flowNodeIdsToNames =
+          extractFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeData());
       if (nodeIds != null && !nodeIds.isEmpty()) {
         for (String id : nodeIds) {
           result.getFlowNodeNames().put(id, flowNodeIdsToNames.get(id));
@@ -65,10 +64,9 @@ public class FlowNodeRestService {
       }
     } else {
       log.debug(
-        "No process definition found for key {} and version {}, returning empty result.",
-        request.getProcessDefinitionKey(),
-        request.getProcessDefinitionVersion()
-      );
+          "No process definition found for key {} and version {}, returning empty result.",
+          request.getProcessDefinitionKey(),
+          request.getProcessDefinitionVersion());
     }
     return result;
   }

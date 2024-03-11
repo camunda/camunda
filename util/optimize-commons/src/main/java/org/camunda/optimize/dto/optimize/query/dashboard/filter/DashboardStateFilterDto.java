@@ -7,5 +7,4 @@ package org.camunda.optimize.dto.optimize.query.dashboard.filter;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStateFilterDataDto;
 
-public class DashboardStateFilterDto extends DashboardFilterDto<DashboardStateFilterDataDto> {
-}
+public class DashboardStateFilterDto extends DashboardFilterDto<DashboardStateFilterDataDto> {}

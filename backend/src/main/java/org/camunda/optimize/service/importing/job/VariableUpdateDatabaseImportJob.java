@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.CamundaEventImportService;
@@ -13,20 +15,18 @@ import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWrit
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class VariableUpdateDatabaseImportJob extends DatabaseImportJob<ProcessVariableDto> {
 
   private final ProcessVariableUpdateWriter processVariableUpdateWriter;
   private final CamundaEventImportService camundaEventImportService;
   private final ConfigurationService configurationService;
 
-  public VariableUpdateDatabaseImportJob(final ProcessVariableUpdateWriter variableWriter,
-                                         final CamundaEventImportService camundaEventImportService,
-                                         final ConfigurationService configurationService,
-                                         final Runnable callback,
-                                         final DatabaseClient databaseClient) {
+  public VariableUpdateDatabaseImportJob(
+      final ProcessVariableUpdateWriter variableWriter,
+      final CamundaEventImportService camundaEventImportService,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.processVariableUpdateWriter = variableWriter;
     this.camundaEventImportService = camundaEventImportService;
@@ -39,10 +39,8 @@ public class VariableUpdateDatabaseImportJob extends DatabaseImportJob<ProcessVa
     importBulks.addAll(processVariableUpdateWriter.generateVariableUpdateImports(variableUpdates));
     importBulks.addAll(camundaEventImportService.generateVariableUpdateImports(variableUpdates));
     databaseClient.executeImportRequestsAsBulk(
-      "Variable updates",
-      importBulks,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "Variable updates",
+        importBulks,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
-
 }

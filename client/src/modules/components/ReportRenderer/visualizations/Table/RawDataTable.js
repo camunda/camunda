@@ -46,7 +46,7 @@ export default function RawDataTable({
       const offset = pageSize * pageIndex;
 
       // The backend currently cannot display more than the first 10000 instances
-      // TODO: Remove this when OPT-5247 is done
+      // TODO: Remove this when #10799 is done
       const maxExceeded = offset >= 10000;
       setError(maxExceeded);
       if (!maxExceeded) {
@@ -80,7 +80,7 @@ export default function RawDataTable({
     defaultPageSize: result.pagination.limit,
     defaultPage: result.pagination.offset / result.pagination.limit,
     totalEntries: result.instanceCount,
-    error: error ? (
+    errorInPage: error ? (
       <NoDataNotice type="error">{t('report.table.pageError')}</NoDataNotice>
     ) : undefined,
     resultType: result.type,

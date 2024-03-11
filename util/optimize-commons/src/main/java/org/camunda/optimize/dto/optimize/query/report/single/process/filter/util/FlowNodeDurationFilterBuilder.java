@@ -12,7 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 
 public class FlowNodeDurationFilterBuilder extends DurationFilterBuilder {
 
-  private final FlowNodeDurationFiltersDataDto flowNodeFilters = new FlowNodeDurationFiltersDataDto();
+  private final FlowNodeDurationFiltersDataDto flowNodeFilters =
+      new FlowNodeDurationFiltersDataDto();
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private FlowNodeDurationFilterBuilder(ProcessFilterBuilder filterBuilder) {

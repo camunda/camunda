@@ -24,5 +24,4 @@ public class DatabaseIndex {
   private Integer nestedDocumentsLimit;
 
   private String prefix;
-
 }

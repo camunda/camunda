@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_DAY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_HOUR;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_MILLISECOND;
@@ -15,6 +13,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_MONTH;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_SECOND;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_WEEK;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_YEAR;
+
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum BucketUnit {
   YEAR(DATE_UNIT_YEAR),

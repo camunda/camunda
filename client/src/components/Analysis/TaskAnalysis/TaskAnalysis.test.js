@@ -213,7 +213,7 @@ it('display load chart data and display details modal when loadChartData is call
 
   expect(loadDurationData).toHaveBeenCalled();
 
-  expect(node.find(OutlierDetailsModal).prop('selectedNode')).toEqual({
+  expect(node.find(OutlierDetailsModal).prop('selectedOutlierNode')).toEqual({
     name: 'nodeName',
     id: 'nodeKey',
     ...nodeData,
@@ -273,8 +273,8 @@ it('should display an empty state if no outliers found', async () => {
     tenantIds: ['a', 'b'],
   });
 
-  runAllEffects();
   await flushPromises();
+  await runAllEffects();
 
   expect(node.find('.noOutliers')).toExist();
 });

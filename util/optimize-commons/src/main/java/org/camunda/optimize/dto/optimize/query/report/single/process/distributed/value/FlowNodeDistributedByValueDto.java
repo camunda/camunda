@@ -5,5 +5,4 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value;
 
-public class FlowNodeDistributedByValueDto implements ProcessReportDistributedByValueDto {
-}
+public class FlowNodeDistributedByValueDto implements ProcessReportDistributedByValueDto {}

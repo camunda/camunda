@@ -7,6 +7,10 @@ package org.camunda.optimize.service.onboarding;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
@@ -25,17 +29,13 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Consumer;
-
 @EqualsAndHashCode(callSuper = true)
 @RequiredArgsConstructor
 @Component
 @Data
 @Slf4j
-public class OnboardingSchedulerService extends AbstractScheduledService implements ConfigurationReloadable {
+public class OnboardingSchedulerService extends AbstractScheduledService
+    implements ConfigurationReloadable {
 
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessDefinitionWriter processDefinitionWriter;
@@ -45,8 +45,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   private final ProcessOverviewService processOverviewService;
   private final CustomerOnboardingDataImportService onboardingDataService;
   private CCSaaSOnboardingPanelNotificationService saaSPanelNotificationService;
-  @Autowired
-  private ApplicationContext applicationContext;
+  @Autowired private ApplicationContext applicationContext;
   private int intervalToCheckForOnboardingDataInSeconds;
   private Consumer<String> emailNotificationHandler;
   private Consumer<String> panelNotificationHandler;
@@ -66,28 +65,38 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
       log.info("Initializing OnboardingScheduler");
       // Check no more often than every 60s, recommended 180 (3min)
       setIntervalToCheckForOnboardingDataInSeconds(
-        Math.max(60, configurationService.getOnboarding().getIntervalForCheckingTriggerForOnboardingEmails()));
+          Math.max(
+              60,
+              configurationService
+                  .getOnboarding()
+                  .getIntervalForCheckingTriggerForOnboardingEmails()));
       setupOnboardingEmailNotifications();
       setupOnboardingPanelNotifications();
       startOnboardingScheduling();
     } else {
-      log.info("Will not schedule checks for process onboarding state as this is disabled by configuration");
+      log.info(
+          "Will not schedule checks for process onboarding state as this is disabled by configuration");
     }
   }
 
   public void setupOnboardingEmailNotifications() {
     if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
-      this.setEmailNotificationHandler(onboardingEmailNotificationService::sendOnboardingEmailWithErrorHandling);
+      this.setEmailNotificationHandler(
+          onboardingEmailNotificationService::sendOnboardingEmailWithErrorHandling);
     } else {
       log.info("Onboarding emails deactivated by configuration");
     }
   }
 
   public void setupOnboardingPanelNotifications() {
-    if (applicationContext.containsBeanDefinition(CCSaaSOnboardingPanelNotificationService.class.getSimpleName())) {
+    if (applicationContext.containsBeanDefinition(
+        CCSaaSOnboardingPanelNotificationService.class.getSimpleName())) {
       if (configurationService.getPanelNotificationConfiguration().isEnabled()) {
-        this.setPanelNotificationHandler(processDefKey -> applicationContext.getBean(CCSaaSOnboardingPanelNotificationService.class)
-          .sendOnboardingPanelNotification(processDefKey));
+        this.setPanelNotificationHandler(
+            processDefKey ->
+                applicationContext
+                    .getBean(CCSaaSOnboardingPanelNotificationService.class)
+                    .sendOnboardingPanelNotification(processDefKey));
       } else {
         log.info("Onboarding panel notifications deactivated by configuration");
       }
@@ -96,7 +105,8 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
 
   public void onboardNewProcesses() {
     Set<String> processesNewlyOnboarded = new HashSet<>();
-    for (String processToBeOnboarded : processDefinitionReader.getAllNonOnboardedProcessDefinitionKeys()) {
+    for (String processToBeOnboarded :
+        processDefinitionReader.getAllNonOnboardedProcessDefinitionKeys()) {
       resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
       if (processHasStartedInstance(processToBeOnboarded)) {
         emailNotificationHandler.accept(processToBeOnboarded);
@@ -144,5 +154,4 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   private void resolveAnyPendingOwnerAuthorizations(final String processToBeOnboarded) {
     processOverviewService.confirmOrDenyOwnershipData(processToBeOnboarded);
   }
-
 }

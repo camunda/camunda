@@ -6,6 +6,12 @@
 package org.camunda.optimize.service.db.es.report.result;
 
 import com.google.common.collect.Streams;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -16,23 +22,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.export.CSVUtils;
 
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 @Slf4j
 public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMapResultEntryDto>> {
 
-  public HyperMapCommandResult(@NonNull final List<MeasureDto<List<HyperMapResultEntryDto>>> measures,
-                               @NonNull final ProcessReportDataDto reportDataDto) {
+  public HyperMapCommandResult(
+      @NonNull final List<MeasureDto<List<HyperMapResultEntryDto>>> measures,
+      @NonNull final ProcessReportDataDto reportDataDto) {
     super(measures, reportDataDto);
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
+  public List<String[]> getResultAsCsv(
+      final Integer limit, final Integer offset, final ZoneId timezone) {
     return mapHyperMapReportResultsToCsvList(limit, getFirstMeasureData());
   }
 
@@ -41,10 +42,11 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
     return ResultType.HYPER_MAP;
   }
 
-  private List<String[]> mapHyperMapReportResultsToCsvList(final Integer limit,
-                                                           final List<HyperMapResultEntryDto> hyperMapResult) {
+  private List<String[]> mapHyperMapReportResultsToCsvList(
+      final Integer limit, final List<HyperMapResultEntryDto> hyperMapResult) {
 
-    final List<List<String[]>> allSingleReportsAsCsvList = mapHyperMapReportResultsToCsvLists(limit, hyperMapResult);
+    final List<List<String[]>> allSingleReportsAsCsvList =
+        mapHyperMapReportResultsToCsvLists(limit, hyperMapResult);
 
     final List<String[]> mergedCsvReports = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
     addHeaderLine(mergedCsvReports);
@@ -55,35 +57,33 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
   private void addHeaderLine(List<String[]> mergedCsvReports) {
     ProcessReportDataDto data = (ProcessReportDataDto) reportData;
     final String[] reportNameHeader =
-      new String[]{data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey()};
+        new String[] {
+          data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey()
+        };
     mergedCsvReports.add(0, reportNameHeader);
   }
 
   private List<List<String[]>> mapHyperMapReportResultsToCsvLists(
-    final Integer limit,
-    final List<HyperMapResultEntryDto> hyperMapResult) {
+      final Integer limit, final List<HyperMapResultEntryDto> hyperMapResult) {
 
     return Streams.mapWithIndex(
-      hyperMapResult.stream(),
-      (hyperMapResultEntry, index) -> mapSingleHyperMapResultEntry(limit, hyperMapResultEntry, index > 0)
-    )
-      .collect(Collectors.toList());
+            hyperMapResult.stream(),
+            (hyperMapResultEntry, index) ->
+                mapSingleHyperMapResultEntry(limit, hyperMapResultEntry, index > 0))
+        .collect(Collectors.toList());
   }
 
   private List<String[]> removeLabelColumn(List<String[]> column) {
     return column.stream()
-      .map(row -> row.length > 1 ? ArrayUtils.remove(row, 0) : row)
-      .collect(Collectors.toList());
+        .map(row -> row.length > 1 ? ArrayUtils.remove(row, 0) : row)
+        .collect(Collectors.toList());
   }
 
-  private List<String[]> mapSingleHyperMapResultEntry(final Integer limit,
-                                                      HyperMapResultEntryDto resultEntryDto,
-                                                      final boolean removeLabelColumn) {
+  private List<String[]> mapSingleHyperMapResultEntry(
+      final Integer limit, HyperMapResultEntryDto resultEntryDto, final boolean removeLabelColumn) {
     List<String[]> csvStrings = CSVUtils.map(resultEntryDto.getValue(), limit, 0);
-    final String label =
-      resultEntryDto.getLabel();
-    final String[] header =
-      new String[]{"", label};
+    final String label = resultEntryDto.getLabel();
+    final String[] header = new String[] {"", label};
     csvStrings.add(0, header);
 
     if (removeLabelColumn) {
@@ -92,22 +92,25 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
     return csvStrings;
   }
 
-  private List<String[]> mergeSingleReportsToOneCsv(final List<List<String[]>> allSingleReportsAsCsvList) {
+  private List<String[]> mergeSingleReportsToOneCsv(
+      final List<List<String[]>> allSingleReportsAsCsvList) {
     int numberOfRows = allSingleReportsAsCsvList.stream().mapToInt(List::size).max().orElse(0);
     return allSingleReportsAsCsvList.stream()
-      .reduce((l1, l2) -> {
-        fillMissingRowsWithEmptyEntries(numberOfRows, l1);
-        fillMissingRowsWithEmptyEntries(numberOfRows, l2);
-        for (int i = 0; i < l1.size(); i++) {
-          l1.set(i, ArrayUtils.addAll(l1.get(i), l2.get(i)));
-        }
-        return l1;
-      })
-      .orElseGet(() -> {
-        String message = "Was not able to merge single map entry to hyper map report csv";
-        log.warn(message);
-        return new ArrayList<>();
-      });
+        .reduce(
+            (l1, l2) -> {
+              fillMissingRowsWithEmptyEntries(numberOfRows, l1);
+              fillMissingRowsWithEmptyEntries(numberOfRows, l2);
+              for (int i = 0; i < l1.size(); i++) {
+                l1.set(i, ArrayUtils.addAll(l1.get(i), l2.get(i)));
+              }
+              return l1;
+            })
+        .orElseGet(
+            () -> {
+              String message = "Was not able to merge single map entry to hyper map report csv";
+              log.warn(message);
+              return new ArrayList<>();
+            });
   }
 
   private void fillMissingRowsWithEmptyEntries(int numberOfRows, List<String[]> l1) {
@@ -115,5 +118,4 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
     Arrays.fill(l1Fill, "");
     IntStream.range(l1.size(), numberOfRows).forEach(i -> l1.add(l1Fill));
   }
-
 }

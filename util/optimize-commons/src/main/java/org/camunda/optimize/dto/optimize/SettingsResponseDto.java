@@ -6,6 +6,8 @@
 package org.camunda.optimize.dto.optimize;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.OffsetDateTime;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,9 +15,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
-
-import java.time.OffsetDateTime;
-import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @AllArgsConstructor
@@ -42,5 +41,4 @@ public class SettingsResponseDto {
   public Optional<Boolean> getSharingEnabled() {
     return Optional.ofNullable(sharingEnabled);
   }
-
 }

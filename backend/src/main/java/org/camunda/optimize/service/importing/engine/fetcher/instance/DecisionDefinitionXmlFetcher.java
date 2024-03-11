@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
+import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE;
+
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
@@ -12,16 +14,15 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionDefinitionXmlFetcher extends AbstractDefinitionXmlFetcher<DecisionDefinitionXmlEngineDto> {
+public class DecisionDefinitionXmlFetcher
+    extends AbstractDefinitionXmlFetcher<DecisionDefinitionXmlEngineDto> {
 
   private final DecisionDefinitionWriter decisionDefinitionWriter;
 
-  public DecisionDefinitionXmlFetcher(final EngineContext engineContext,
-                                      final DecisionDefinitionWriter decisionDefinitionWriter) {
+  public DecisionDefinitionXmlFetcher(
+      final EngineContext engineContext, final DecisionDefinitionWriter decisionDefinitionWriter) {
     super(engineContext);
     this.decisionDefinitionWriter = decisionDefinitionWriter;
   }
@@ -40,5 +41,4 @@ public class DecisionDefinitionXmlFetcher extends AbstractDefinitionXmlFetcher<D
   protected Class<DecisionDefinitionXmlEngineDto> getOptimizeClassForDefinitionResponse() {
     return DecisionDefinitionXmlEngineDto.class;
   }
-
 }

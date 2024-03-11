@@ -30,6 +30,7 @@ import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConfli
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +50,7 @@ import java.util.List;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -61,6 +63,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
   public static final String DEFAULT_DEFINITION_KEY = "_KEY_";
@@ -416,6 +419,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
       );
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void updateDefinitionScopeEntry_removeTenant_reportXmlNotAffected() {
     // given

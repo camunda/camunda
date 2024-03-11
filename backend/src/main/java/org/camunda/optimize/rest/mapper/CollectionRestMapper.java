@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.rest.mapper;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -19,17 +18,17 @@ public class CollectionRestMapper {
 
   private final AbstractIdentityService identityService;
 
-  public void prepareRestResponse(final AuthorizedCollectionDefinitionRestDto collectionDefinitionRestDto) {
+  public void prepareRestResponse(
+      final AuthorizedCollectionDefinitionRestDto collectionDefinitionRestDto) {
     resolveOwnerAndModifierNames(collectionDefinitionRestDto.getDefinitionDto());
   }
 
   private void resolveOwnerAndModifierNames(BaseCollectionDefinitionDto collectionDefinitionDto) {
     Optional.ofNullable(collectionDefinitionDto.getOwner())
-      .flatMap(identityService::getIdentityNameById)
-      .ifPresent(collectionDefinitionDto::setOwner);
+        .flatMap(identityService::getIdentityNameById)
+        .ifPresent(collectionDefinitionDto::setOwner);
     Optional.ofNullable(collectionDefinitionDto.getLastModifier())
-      .flatMap(identityService::getIdentityNameById)
-      .ifPresent(collectionDefinitionDto::setLastModifier);
+        .flatMap(identityService::getIdentityNameById)
+        .ifPresent(collectionDefinitionDto::setLastModifier);
   }
-
 }

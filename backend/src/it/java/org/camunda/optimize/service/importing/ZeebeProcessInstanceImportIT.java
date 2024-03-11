@@ -18,13 +18,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -36,7 +30,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
@@ -655,27 +648,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
       .setEndDate(getExpectedEndDateForEvents(events.get(eventId)))
       .setTotalDurationInMs(getExpectedDurationForEvents(events.get(eventId)))
       .setCanceled(false);
-  }
-
-  @SneakyThrows
-  private Map<String, List<ZeebeProcessInstanceRecordDto>> getZeebeExportedProcessInstanceEventsByElementId() {
-    final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient =
-      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(expectedIndex)
-      .source(new SearchSourceBuilder()
-                .query(getQueryForProcessableEvents())
-                .trackTotalHits(true)
-                .size(100));
-    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
-    return ElasticsearchReaderUtil.mapHits(
-        searchResponse.getHits(),
-        ZeebeProcessInstanceRecordDto.class,
-        embeddedOptimizeExtension.getObjectMapper()
-      ).stream()
-      .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 
   private long getExpectedDurationForEvents(final List<ZeebeProcessInstanceRecordDto> eventsForElement) {

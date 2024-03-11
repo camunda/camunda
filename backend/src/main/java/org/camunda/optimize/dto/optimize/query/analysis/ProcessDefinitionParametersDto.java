@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.analysis;
 
-import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.rest.queryparam.QueryParamUtil;
-import org.camunda.optimize.service.util.TenantListHandlingUtil;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.rest.queryparam.QueryParamUtil;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 @Data
 public class ProcessDefinitionParametersDto {
@@ -31,7 +30,9 @@ public class ProcessDefinitionParametersDto {
   }
 
   protected List<String> normalizeNullTenants(final List<String> tenantIds) {
-    return tenantIds.stream().map(QueryParamUtil::normalizeNullStringValue).collect(Collectors.toList());
+    return tenantIds.stream()
+        .map(QueryParamUtil::normalizeNullStringValue)
+        .collect(Collectors.toList());
   }
 
   private List<String> normalizeTenants(final List<String> tenantIds) {

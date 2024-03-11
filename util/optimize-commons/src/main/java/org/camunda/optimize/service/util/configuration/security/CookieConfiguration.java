@@ -7,25 +7,28 @@ package org.camunda.optimize.service.util.configuration.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Map;
+import java.util.Optional;
 import lombok.Data;
 import org.camunda.optimize.rest.constants.RestConstants;
 import org.camunda.optimize.util.SuppressionConstants;
-
-import java.util.Map;
-import java.util.Optional;
 
 @Data
 public class CookieConfiguration {
 
   @JsonProperty("same-site.enabled")
   private boolean sameSiteFlagEnabled;
+
   @JsonProperty("secure")
   private CookieSecureMode cookieSecureMode;
+
   @JsonProperty("maxSize")
   private Integer maxSize;
 
   public boolean resolveSecureFlagValue(final String requestScheme) {
-    return Optional.ofNullable(this.cookieSecureMode).map(mode -> mode.resolveSecureValue(requestScheme)).orElse(false);
+    return Optional.ofNullable(this.cookieSecureMode)
+        .map(mode -> mode.resolveSecureValue(requestScheme))
+        .orElse(false);
   }
 
   @SuppressWarnings(SuppressionConstants.UNUSED)

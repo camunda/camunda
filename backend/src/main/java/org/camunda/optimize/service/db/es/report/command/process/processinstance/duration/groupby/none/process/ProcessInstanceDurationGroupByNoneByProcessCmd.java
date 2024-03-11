@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.processinstance.duration.groupby.none.process;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
@@ -14,23 +15,24 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.proces
 import org.camunda.optimize.service.db.es.report.command.modules.view.process.duration.ProcessViewInstanceDuration;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ProcessInstanceDurationGroupByNoneByProcessCmd extends ProcessCmd<List<HyperMapResultEntryDto>> {
+public class ProcessInstanceDurationGroupByNoneByProcessCmd
+    extends ProcessCmd<List<HyperMapResultEntryDto>> {
 
-  public ProcessInstanceDurationGroupByNoneByProcessCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public ProcessInstanceDurationGroupByNoneByProcessCmd(
+      final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
-  protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewInstanceDuration.class)
-      .groupBy(ProcessGroupByNone.class)
-      .distributedBy(ProcessDistributedByProcess.class)
-      .resultAsHyperMap()
-      .build();
+  protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewInstanceDuration.class)
+        .groupBy(ProcessGroupByNone.class)
+        .distributedBy(ProcessDistributedByProcess.class)
+        .resultAsHyperMap()
+        .build();
   }
-
 }

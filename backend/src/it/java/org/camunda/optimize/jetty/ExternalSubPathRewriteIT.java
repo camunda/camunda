@@ -8,6 +8,7 @@ package org.camunda.optimize.jetty;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,6 +17,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_HTML_PAGE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
@@ -23,6 +25,7 @@ import static org.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROU
 import static org.camunda.optimize.rest.EntitiesRestService.ENTITIES_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 
+@Tag(OPENSEARCH_PASSING)
 public class ExternalSubPathRewriteIT extends AbstractPlatformIT {
 
   @BeforeEach

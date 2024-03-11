@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.security;
 
+import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
 
 @Conditional(CamundaCloudCondition.class)
 @Component
@@ -37,5 +36,4 @@ public class CloudApplicationAuthorizationService implements ApplicationAuthoriz
   public List<String> getAuthorizedEnginesForGroup(final String groupId) {
     return Collections.emptyList();
   }
-
 }

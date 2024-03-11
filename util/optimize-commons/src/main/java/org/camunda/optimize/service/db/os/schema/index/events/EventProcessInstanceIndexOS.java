@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.schema.index.events;
 
-import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.opensearch.client.opensearch.indices.IndexSettings;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
 import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public class EventProcessInstanceIndexOS extends EventProcessInstanceIndex<IndexSettings.Builder> {
 
@@ -21,17 +20,18 @@ public class EventProcessInstanceIndexOS extends EventProcessInstanceIndex<Index
   }
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     return OptimizeOpenSearchUtil.addStaticSetting(key, value, contentBuilder);
   }
 
   @Override
-  public IndexSettings.Builder getStaticSettings(IndexSettings.Builder contentBuilder,
-                                                 ConfigurationService configurationService) throws IOException {
-    return addStaticSetting(NUMBER_OF_SHARDS_SETTING,
-                            configurationService.getOpenSearchConfiguration().getNumberOfShards(), contentBuilder);
+  public IndexSettings.Builder getStaticSettings(
+      IndexSettings.Builder contentBuilder, ConfigurationService configurationService)
+      throws IOException {
+    return addStaticSetting(
+        NUMBER_OF_SHARDS_SETTING,
+        configurationService.getOpenSearchConfiguration().getNumberOfShards(),
+        contentBuilder);
   }
-
 }

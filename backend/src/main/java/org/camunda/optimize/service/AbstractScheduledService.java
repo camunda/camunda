@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service;
 
+import java.util.concurrent.ScheduledFuture;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-
-import java.util.concurrent.ScheduledFuture;
 
 public abstract class AbstractScheduledService {
 
@@ -53,5 +52,4 @@ public abstract class AbstractScheduledService {
       this.taskScheduler = null;
     }
   }
-
 }

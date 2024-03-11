@@ -8,7 +8,6 @@
 import React, {useState, useEffect} from 'react';
 
 import {t} from 'translation';
-import {getOptimizeProfile} from 'config';
 import {useDocs} from 'hooks';
 
 import TemplateModal from './TemplateModal';
@@ -27,13 +26,11 @@ export default function DashboardTemplateModal({
   initialDefinitions,
   trackingEventName,
 }) {
-  const [optimizeProfile, setOptimizeProfile] = useState();
   const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
   const {generateDocsLink} = useDocs();
 
   useEffect(() => {
     (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
       setOptimizeProfileLoaded(true);
     })();
   }, []);
@@ -58,9 +55,7 @@ export default function DashboardTemplateModal({
     },
   ];
 
-  if (optimizeProfile === 'platform') {
-    templateGroups[2].templates.unshift(portfolioPerformanceDashboardTemplate());
-  }
+  templateGroups[2].templates.unshift(portfolioPerformanceDashboardTemplate());
 
   if (!optimizeProfileLoaded) {
     return null;

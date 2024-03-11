@@ -5,21 +5,20 @@
  */
 package org.camunda.optimize;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.Map;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MarkDownDependencyCreator {
   private static final UrlValidator urlValidator = new UrlValidator();
@@ -58,7 +57,8 @@ public class MarkDownDependencyCreator {
           if (licenseLink.isProperLicense()) {
             dependencyMarkdownPage.append(licenseLink.toMarkDown());
           } else {
-            System.err.println("Could not resolve valid license entry for :" + licenseLink.toMarkDown());
+            System.err.println(
+                "Could not resolve valid license entry for :" + licenseLink.toMarkDown());
           }
         }
       }
@@ -86,23 +86,22 @@ public class MarkDownDependencyCreator {
   }
 
   private static String createMarkdownHeader() {
-    return "---\n" +
-      "\n" +
-      "title: 'Back-end dependencies'\n" +
-      "weight: 70\n" +
-      "\n" +
-      "menu:\n" +
-      "  main:\n" +
-      "    identifier: \"technical-guide-back-end-third-party-libraries\"\n" +
-      "    parent: \"technical-guide-third-party-libraries\"\n" +
-      "\n" +
-      "---\n" +
-      "\n";
+    return "---\n"
+        + "\n"
+        + "title: 'Back-end dependencies'\n"
+        + "weight: 70\n"
+        + "\n"
+        + "menu:\n"
+        + "  main:\n"
+        + "    identifier: \"technical-guide-back-end-third-party-libraries\"\n"
+        + "    parent: \"technical-guide-third-party-libraries\"\n"
+        + "\n"
+        + "---\n"
+        + "\n";
   }
 
   private static String getElementTextContent(Element eElement, String tagName) {
-    NodeList nodeList = eElement
-      .getElementsByTagName(tagName);
+    NodeList nodeList = eElement.getElementsByTagName(tagName);
     if (nodeList != null && nodeList.getLength() > 0) {
       return nodeList.item(0).getTextContent();
     } else {

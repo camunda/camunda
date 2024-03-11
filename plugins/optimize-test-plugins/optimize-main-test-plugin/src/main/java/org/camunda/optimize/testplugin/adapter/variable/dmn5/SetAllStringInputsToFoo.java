@@ -5,16 +5,16 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.dmn5;
 
+import java.util.List;
 import org.camunda.optimize.plugin.importing.variable.DecisionInputImportAdapter;
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 
-import java.util.List;
-
 public class SetAllStringInputsToFoo implements DecisionInputImportAdapter {
 
-  public List<PluginDecisionInputDto> adaptInputs(List<PluginDecisionInputDto> inputs) {
-    for (PluginDecisionInputDto input : inputs) {
-      if (input.getType().toLowerCase().equals("string")) {
+  @Override
+  public List<PluginDecisionInputDto> adaptInputs(final List<PluginDecisionInputDto> inputs) {
+    for (final PluginDecisionInputDto input : inputs) {
+      if (input.getType().equalsIgnoreCase("string")) {
         input.setValue("foo");
       }
     }

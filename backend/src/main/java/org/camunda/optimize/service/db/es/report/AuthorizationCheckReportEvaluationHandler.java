@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report;
 
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.DefinitionService;
@@ -13,26 +14,30 @@ import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Component
 public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationHandler {
 
   private final ReportAuthorizationService authorizationService;
 
-  public AuthorizationCheckReportEvaluationHandler(final ReportService reportService,
-                                                   final SingleReportEvaluator singleReportEvaluator,
-                                                   final CombinedReportEvaluator combinedReportEvaluator,
-                                                   final ReportAuthorizationService authorizationService,
-                                                   final ProcessVariableService processVariableService,
-                                                   final DefinitionService definitionService) {
-    super(reportService, singleReportEvaluator, combinedReportEvaluator, processVariableService, definitionService);
+  public AuthorizationCheckReportEvaluationHandler(
+      final ReportService reportService,
+      final SingleReportEvaluator singleReportEvaluator,
+      final CombinedReportEvaluator combinedReportEvaluator,
+      final ReportAuthorizationService authorizationService,
+      final ProcessVariableService processVariableService,
+      final DefinitionService definitionService) {
+    super(
+        reportService,
+        singleReportEvaluator,
+        combinedReportEvaluator,
+        processVariableService,
+        definitionService);
     this.authorizationService = authorizationService;
   }
 
   @Override
-  protected Optional<RoleType> getAuthorizedRole(final String userId,
-                                                 final ReportDefinitionDto report) {
+  protected Optional<RoleType> getAuthorizedRole(
+      final String userId, final ReportDefinitionDto report) {
     return authorizationService.getAuthorizedRole(userId, report);
   }
 }

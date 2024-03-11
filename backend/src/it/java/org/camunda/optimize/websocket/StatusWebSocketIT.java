@@ -9,6 +9,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
@@ -24,9 +25,11 @@ import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class StatusWebSocketIT extends AbstractPlatformIT {
   // use single web socket container instance, as every get call is by default creating new instances otherwise
   private static final WebSocketContainer WEB_SOCKET_CONTAINER = ContainerProvider.getWebSocketContainer();

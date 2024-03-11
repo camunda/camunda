@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.TILES;
+
+import java.util.Collections;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -35,15 +43,6 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.TILES;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -53,41 +52,46 @@ public class DashboardWriterOS implements DashboardWriter {
   private final OptimizeOpenSearchClient osClient;
 
   @Override
-  public IdResponseDto createNewDashboard(@NonNull final String userId,
-                                          @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public IdResponseDto createNewDashboard(
+      @NonNull final String userId,
+      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     return createNewDashboard(userId, dashboardDefinitionDto, IdGenerator.getNextId());
   }
 
   @Override
-  public IdResponseDto createNewDashboard(@NonNull final String userId,
-                                          @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
-                                          @NonNull final String id) {
+  public IdResponseDto createNewDashboard(
+      @NonNull final String userId,
+      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
+      @NonNull final String id) {
     log.debug("Writing new dashboard to OpenSearch");
     dashboardDefinitionDto.setOwner(userId);
     dashboardDefinitionDto.setName(
-      Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
+        Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
     dashboardDefinitionDto.setLastModifier(userId);
     dashboardDefinitionDto.setId(id);
     return saveDashboard(dashboardDefinitionDto);
   }
 
   @Override
-  public IdResponseDto saveDashboard(@NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public IdResponseDto saveDashboard(
+      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
     dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();
 
-    IndexRequest.Builder<DashboardDefinitionRestDto> request = new IndexRequest.Builder<DashboardDefinitionRestDto>()
-      .index(DASHBOARD_INDEX_NAME)
-      .id(dashboardId)
-      .document(dashboardDefinitionDto)
-      .refresh(Refresh.True);
+    final IndexRequest.Builder<DashboardDefinitionRestDto> request =
+        new IndexRequest.Builder<DashboardDefinitionRestDto>()
+            .index(DASHBOARD_INDEX_NAME)
+            .id(dashboardId)
+            .document(dashboardDefinitionDto)
+            .refresh(Refresh.True);
 
-    IndexResponse indexResponse = osClient.index(request);
+    final IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      String message = "Could not write dashboard to OpenSearch. " +
-        "Maybe the connection to OpenSearch was lost?";
+      final String message =
+          "Could not write dashboard to OpenSearch. "
+              + "Maybe the connection to OpenSearch was lost?";
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
@@ -97,82 +101,84 @@ public class DashboardWriterOS implements DashboardWriter {
   }
 
   @Override
-  public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
+  public void updateDashboard(final DashboardDefinitionUpdateDto dashboard, final String id) {
     log.debug("Updating dashboard with id [{}] in OpenSearch", id);
 
-    UpdateRequest.Builder<Void, DashboardDefinitionUpdateDto> request = new UpdateRequest.Builder<Void,
-      DashboardDefinitionUpdateDto>()
-      .index(DASHBOARD_INDEX_NAME)
-      .id(id)
-      .doc(dashboard)
-      .refresh(Refresh.True)
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    final UpdateRequest.Builder<Void, DashboardDefinitionUpdateDto> request =
+        new UpdateRequest.Builder<Void, DashboardDefinitionUpdateDto>()
+            .index(DASHBOARD_INDEX_NAME)
+            .id(id)
+            .doc(dashboard)
+            .refresh(Refresh.True)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-    final String errorMessage = String.format(
-      "Was not able to update dashboard with id [%s] and name [%s].",
-      id,
-      dashboard.getName()
-    );
+    final String errorMessage =
+        String.format(
+            "Was not able to update dashboard with id [%s] and name [%s].",
+            id, dashboard.getName());
 
-    UpdateResponse<Void> updateResponse = osClient.update(request, errorMessage);
+    final UpdateResponse<Void> updateResponse = osClient.update(request, errorMessage);
 
     if (updateResponse.shards().failed().intValue() > 0) {
       log.error(
-        "Was not able to update dashboard with id [{}] and name [{}].",
-        id,
-        dashboard.getName()
-      );
+          "Was not able to update dashboard with id [{}] and name [{}].", id, dashboard.getName());
       throw new OptimizeRuntimeException("Was not able to update dashboard!");
     }
   }
 
-  public void removeReportFromDashboards(String reportId) {
+  @Override
+  public void removeReportFromDashboards(final String reportId) {
     final String updateItem = String.format("report from dashboard with report ID [%s]", reportId);
     log.info("Removing {}}.", updateItem);
 
-    Script removeReportFromDashboardScript =
-      OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-        "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))",
-        Collections.singletonMap("idToRemove", JsonData.of(reportId))
-      );
+    final Script removeReportFromDashboardScript =
+        OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+            "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))",
+            Collections.singletonMap("idToRemove", JsonData.of(reportId)));
 
-    Query query = new NestedQuery.Builder()
-      .path(TILES)
-      .query(QueryDSL.term(TILES + "." + DashboardIndex.REPORT_ID, reportId))
-      .scoreMode(ChildScoreMode.None)
-      .build()._toQuery();
+    final Query query =
+        new NestedQuery.Builder()
+            .path(TILES)
+            .query(QueryDSL.term(TILES + "." + DashboardIndex.REPORT_ID, reportId))
+            .scoreMode(ChildScoreMode.None)
+            .build()
+            .toQuery();
 
     osClient.updateByQuery(DASHBOARD_INDEX_NAME, query, removeReportFromDashboardScript);
   }
 
-  public void deleteDashboardsOfCollection(String collectionId) {
-    Query query = QueryDSL.term(COLLECTION_ID, collectionId);
+  @Override
+  public void deleteDashboardsOfCollection(final String collectionId) {
+    final Query query = QueryDSL.term(COLLECTION_ID, collectionId);
     osClient.deleteByQuery(query, true, DASHBOARD_INDEX_NAME);
   }
 
-  public void deleteDashboard(String dashboardId) {
+  @Override
+  public void deleteDashboard(final String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
 
-    DeleteRequest.Builder request = new DeleteRequest.Builder()
-      .index(DASHBOARD_INDEX_NAME)
-      .id(dashboardId)
-      .refresh(Refresh.True);
+    final DeleteRequest.Builder request =
+        new DeleteRequest.Builder()
+            .index(DASHBOARD_INDEX_NAME)
+            .id(dashboardId)
+            .refresh(Refresh.True);
 
-    String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
+    final String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
 
-    DeleteResponse deleteResponse = osClient.delete(request, reason);
+    final DeleteResponse deleteResponse = osClient.delete(request, reason);
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
-      String message =
-        String.format("Could not delete dashboard with id [%s]. Dashboard does not exist.", dashboardId);
+      final String message =
+          String.format(
+              "Could not delete dashboard with id [%s]. Dashboard does not exist.", dashboardId);
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
   }
 
+  @Override
   public void deleteManagementDashboard() {
-    Query query = QueryDSL.term(MANAGEMENT_DASHBOARD, true);
+    final Query query = QueryDSL.term(MANAGEMENT_DASHBOARD, true);
     osClient.deleteByQuery(query, true, DASHBOARD_INDEX_NAME);
   }
-
 }

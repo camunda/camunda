@@ -10,7 +10,8 @@ import java.util.Set;
 public class OptimizeAlertEmailValidationException extends OptimizeRuntimeException {
 
   public static final String ERROR_CODE = "invalidAlertEmailAddresses";
-  public static final String ERROR_MESSAGE = "Users with the following email addresses are not available for receiving alerts: ";
+  public static final String ERROR_MESSAGE =
+      "Users with the following email addresses are not available for receiving alerts: ";
 
   private final Set<String> invalidAlertEmails;
 

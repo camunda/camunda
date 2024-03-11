@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.event;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
@@ -15,22 +16,24 @@ import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.eventprocess.EventBasedProcessRestServiceIT.createProcessDefinitionXml;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
 
   private static String simpleDiagramXml;
@@ -163,6 +166,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getEventProcessMappingWithIdWithoutEventSourceAuthorization() {
     // given
@@ -211,6 +215,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getAllEventProcessMappingsWithPartialEventSourceAuthorization() {
     final String eventProcessName = "anEventProcessName";

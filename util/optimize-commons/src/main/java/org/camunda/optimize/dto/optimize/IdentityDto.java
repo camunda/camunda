@@ -17,7 +17,6 @@ import lombok.experimental.FieldNameConstants;
 @AllArgsConstructor
 @FieldNameConstants
 public class IdentityDto {
-  @NonNull
-  private String id;
+  @NonNull private String id;
   private IdentityType type;
 }

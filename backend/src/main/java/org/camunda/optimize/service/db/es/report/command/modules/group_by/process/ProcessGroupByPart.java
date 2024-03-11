@@ -11,10 +11,9 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.GroupB
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 
 public abstract class ProcessGroupByPart extends GroupByPart<ProcessReportDataDto> {
-  
+
   @Override
   protected String[] getIndexNames(ExecutionContext<ProcessReportDataDto> context) {
     return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
   }
-
 }

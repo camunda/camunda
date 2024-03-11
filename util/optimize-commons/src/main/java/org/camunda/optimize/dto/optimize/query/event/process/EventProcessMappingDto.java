@@ -6,6 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.event.process;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,13 +22,6 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -30,10 +29,8 @@ import java.util.Map;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants
 public class EventProcessMappingDto implements OptimizeDto {
-  @EqualsAndHashCode.Include
-  private String id;
-  @NotBlank
-  private String name;
+  @EqualsAndHashCode.Include private String id;
+  @NotBlank private String name;
 
   private String lastModifier;
 
@@ -52,6 +49,5 @@ public class EventProcessMappingDto implements OptimizeDto {
 
   private Double publishingProgress;
 
-  @Builder.Default
-  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+  @Builder.Default private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 }

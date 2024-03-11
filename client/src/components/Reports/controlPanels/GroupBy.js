@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
 import {Close} from '@carbon/icons-react';
@@ -13,19 +12,10 @@ import {Close} from '@carbon/icons-react';
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 import {CarbonSelect} from 'components';
-import {getOptimizeProfile} from 'config';
 
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
-  const [optimizeProfile, setOptimizeProfile] = useState();
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-    })();
-  }, []);
-
   const reportType = type;
 
   if (!report.view) {
@@ -45,12 +35,7 @@ export default function GroupBy({type, report, onChange, variables}) {
   }
 
   const options = groups
-    .filter(
-      ({visible, key}) =>
-        visible(report) &&
-        key !== 'none' &&
-        (optimizeProfile === 'platform' ? true : !['assignee', 'candidateGroup'].includes(key))
-    )
+    .filter(({visible, key}) => visible(report) && key !== 'none')
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
         return (

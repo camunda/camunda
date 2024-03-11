@@ -16,5 +16,4 @@ public interface ApplicationAuthorizationService {
   List<String> getAuthorizedEnginesForUser(String userId);
 
   List<String> getAuthorizedEnginesForGroup(String groupId);
-
 }

@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize.query.processoverview;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit.mapToChronoUnit;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Duration;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
-
-import java.time.Duration;
-
-import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit.mapToChronoUnit;
 
 @Data
 @FieldNameConstants
@@ -29,8 +28,10 @@ public class KpiResultDto {
   private String reportName;
   private String value;
   private String target;
+
   @JsonProperty("isBelow")
   private boolean isBelow;
+
   private KpiType type;
   private ViewProperty measure;
   private TargetValueUnit unit;
@@ -44,15 +45,16 @@ public class KpiResultDto {
     final double doubleTarget = Double.parseDouble(target);
     if (isBelow) {
       return DURATION.equals(measure)
-        ? Duration.ofMillis((long) doubleValue)
-        .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit))) <= 0
-        : doubleValue <= doubleTarget;
+          ? Duration.ofMillis((long) doubleValue)
+                  .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit)))
+              <= 0
+          : doubleValue <= doubleTarget;
     } else {
       return DURATION.equals(measure)
-        ? Duration.ofMillis((long) doubleValue)
-        .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit))) >= 0
-        : doubleValue >= doubleTarget;
+          ? Duration.ofMillis((long) doubleValue)
+                  .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit)))
+              >= 0
+          : doubleValue >= doubleTarget;
     }
   }
-
 }

@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.reimport.preparation;
 
+import static jakarta.ws.rs.HttpMethod.GET;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
+import static org.mockserver.model.HttpRequest.request;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -18,15 +26,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static jakarta.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
-import static org.mockserver.model.HttpRequest.request;
 
 @Slf4j
 public class ForceReimportPluginIT extends AbstractEventProcessIT {
@@ -70,10 +69,13 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
     final RequestDefinition[] allRequests = dbMockServer.retrieveRecordedRequests(null);
     assertThat(allRequests).hasSizeGreaterThan(1);
     IntStream.range(0, allRequests.length)
-      .forEach(integerSuffix -> dbMockServer.verify(
-        request().withHeader(new Header("Authorization", "Bearer dynamicToken_" + integerSuffix)),
-        VerificationTimes.once()
-      ));
+        .forEach(
+            integerSuffix ->
+                dbMockServer.verify(
+                    request()
+                        .withHeader(
+                            new Header("Authorization", "Bearer dynamicToken_" + integerSuffix)),
+                    VerificationTimes.once()));
   }
 
   @Test
@@ -90,20 +92,23 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
     forceReimportOfEngineData();
 
     // then
-    dbMockServer.verify(request().withHeaders(
-      new Header("Authorization", "Bearer dynamicToken_0"),
-      new Header("CustomHeader", "customValue")
-    ),
-    // The first request is to check the ES version during client creation, the second is
-    // being done when fetching the ES version to verify if we need to turn on the compatibility mode.
-    VerificationTimes.exactly(2));
+    dbMockServer.verify(
+        request()
+            .withHeaders(
+                new Header("Authorization", "Bearer dynamicToken_0"),
+                new Header("CustomHeader", "customValue")),
+        // The first request is to check the ES version during client creation, the second is
+        // being done when fetching the ES version to verify if we need to turn on the compatibility
+        // mode.
+        VerificationTimes.exactly(2));
   }
 
   private void forceReimportOfEngineData() {
     ReimportPreparation.performReimport(configurationService);
   }
 
-  private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(String... basePackages) {
+  private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(
+      String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setElasticsearchCustomHeaderPluginBasePackages(basePackagesList);
     embeddedOptimizeExtension.reloadConfiguration();
@@ -115,12 +120,9 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
     @Bean
     @Primary
     public ConfigurationService configurationService() {
-      ConfigurationService configurationService = createConfigurationFromLocations(
-        "service-config.yaml",
-        "it/it-config.yaml"
-      );
+      ConfigurationService configurationService =
+          createConfigurationFromLocations("service-config.yaml", "it/it-config.yaml");
       return configurationService;
     }
   }
-
 }

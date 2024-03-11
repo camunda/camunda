@@ -5,16 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.group;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.report.Combinable;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.ProcessGroupByValueDto;
-
-import java.util.Objects;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_ASSIGNEE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_CANDIDATE_GROUP;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION;
@@ -26,12 +16,23 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_START_D
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_USER_TASKS_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABLE_TYPE;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.util.Objects;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.ProcessGroupByValueDto;
 
 /**
- * Abstract class that contains a hidden "type" field to distinguish which
- * group by type the jackson object mapper should transform the object to.
+ * Abstract class that contains a hidden "type" field to distinguish which group by type the jackson
+ * object mapper should transform the object to.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = StartDateGroupByDto.class, name = GROUP_BY_START_DATE_TYPE),
   @JsonSubTypes.Type(value = EndDateGroupByDto.class, name = GROUP_BY_END_DATE_TYPE),
@@ -45,10 +46,10 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABL
   @JsonSubTypes.Type(value = DurationGroupByDto.class, name = GROUP_BY_DURATION),
 })
 @Data
-public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> implements Combinable {
+public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto>
+    implements Combinable {
 
-  @JsonProperty
-  protected ProcessGroupByType type;
+  @JsonProperty protected ProcessGroupByType type;
   protected VALUE value;
 
   @Override
@@ -65,8 +66,7 @@ public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> im
       return false;
     }
     ProcessGroupByDto<?> that = (ProcessGroupByDto<?>) o;
-    return isTypeCombinable(that) &&
-      Combinable.isCombinable(value, that.value);
+    return isTypeCombinable(that) && Combinable.isCombinable(value, that.value);
   }
 
   protected boolean isTypeCombinable(final ProcessGroupByDto<?> that) {
@@ -77,6 +77,4 @@ public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> im
   public String createCommandKey() {
     return type.getId();
   }
-
-
 }

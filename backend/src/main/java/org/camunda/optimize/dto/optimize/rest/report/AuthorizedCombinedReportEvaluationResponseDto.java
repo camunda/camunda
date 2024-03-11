@@ -16,13 +16,14 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthorizedCombinedReportEvaluationResponseDto<T>
-  extends AuthorizedReportEvaluationResponseDto<CombinedReportDefinitionRequestDto> {
+    extends AuthorizedReportEvaluationResponseDto<CombinedReportDefinitionRequestDto> {
 
   protected CombinedProcessReportResultDataDto<T> result;
 
-  public AuthorizedCombinedReportEvaluationResponseDto(final RoleType currentUserRole,
-                                                       final CombinedReportDefinitionRequestDto reportDefinition,
-                                                       final CombinedProcessReportResultDataDto<T> result) {
+  public AuthorizedCombinedReportEvaluationResponseDto(
+      final RoleType currentUserRole,
+      final CombinedReportDefinitionRequestDto reportDefinition,
+      final CombinedProcessReportResultDataDto<T> result) {
     super(currentUserRole, reportDefinition);
     this.result = result;
   }

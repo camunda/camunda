@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -23,46 +25,46 @@ import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
   private static final String TOKEN_REQUEST_GRANT_TYPE = "client_credentials";
 
-  protected CCSaaSM2MTokenProvider(final ObjectMapper objectMapper, final ConfigurationService configurationService) {
+  protected CCSaaSM2MTokenProvider(
+      final ObjectMapper objectMapper, final ConfigurationService configurationService) {
     super(objectMapper, configurationService);
   }
 
   public TokenResponseDto retrieveM2MToken(final String audience) {
-    final TokenRequestDto tokenRequestDto = TokenRequestDto.builder()
-      .grantType(TOKEN_REQUEST_GRANT_TYPE)
-      .audience(audience)
-      .clientId(getM2MClientId())
-      .clientSecret(getM2MClientSecret())
-      .build();
-    log.info("Requesting M2M token for audience {}", audience);
+    final TokenRequestDto tokenRequestDto =
+        TokenRequestDto.builder()
+            .grantType(TOKEN_REQUEST_GRANT_TYPE)
+            .audience(audience)
+            .clientId(getM2MClientId())
+            .clientSecret(getM2MClientSecret())
+            .build();
+    log.info("Requesting M2M token");
     try {
       final HttpPost request = new HttpPost(getTokenProviderUrl());
-      final StringEntity notificationRequestBody = new StringEntity(
-        objectMapper.writeValueAsString(tokenRequestDto),
-        ContentType.APPLICATION_JSON
-      );
+      final StringEntity notificationRequestBody =
+          new StringEntity(
+              objectMapper.writeValueAsString(tokenRequestDto), ContentType.APPLICATION_JSON);
       request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
       request.setEntity(notificationRequestBody);
 
       try (final CloseableHttpResponse response = performRequest(request)) {
-        final Response.Status statusCode = Response.Status.fromStatusCode(
-          response.getStatusLine().getStatusCode()
-        );
+        final Response.Status statusCode =
+            Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
         if (!Response.Status.OK.equals(statusCode)) {
-          throw new OptimizeRuntimeException("Unexpected response when retrieving M2M token: " + statusCode);
+          throw new OptimizeRuntimeException(
+              "Unexpected response when retrieving M2M token: " + statusCode);
         }
-        return objectMapper.readValue(EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8), TokenResponseDto.class);
+        return objectMapper.readValue(
+            EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8),
+            TokenResponseDto.class);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem retrieving the M2M token.", e);
     }
   }
@@ -78,5 +80,4 @@ public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
   private String getM2MClientSecret() {
     return configurationService.getM2mAuth0ClientConfiguration().getM2mClientSecret();
   }
-
 }

@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -17,7 +18,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
+@Tag(OPENSEARCH_PASSING)
 public class CleanupSchedulerIT extends AbstractPlatformIT {
 
   @Test

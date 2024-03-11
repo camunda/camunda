@@ -9,6 +9,7 @@ import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -21,8 +22,10 @@ import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class HealthRestServiceIT extends AbstractMultiEngineIT {
 
   @Test
@@ -98,7 +101,7 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   }
 
   @Test
-  public void getReadiness_elasticsearchNotConnected() {
+  public void getReadiness_databaseNotConnected() {
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
     dbMockServer

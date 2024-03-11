@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.definition;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,14 +13,11 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 
-import java.util.List;
-
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class TenantWithDefinitionsResponseDto {
   private String id;
   private String name;
-  @NonNull
-  private List<SimpleDefinitionDto> definitions;
+  @NonNull private List<SimpleDefinitionDto> definitions;
 }

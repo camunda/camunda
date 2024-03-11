@@ -6,14 +6,13 @@
 package org.camunda.optimize.data.generation.generators.impl.process;
 
 import com.google.common.collect.Lists;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.UserAndGroupProvider;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class HiringProcessFor5TenantsDataGenerator extends ProcessDataGenerator {
 
@@ -24,12 +23,19 @@ public class HiringProcessFor5TenantsDataGenerator extends ProcessDataGenerator 
   private static String TASK_ONSITE_INTERVIEW = "Task_onsite_interview";
   private static String TASK_MAKE_OFFER = "Task_make_offer";
   private static String TASK_OFFER_ACCEPTED = "Task_offer_accepted";
-  private static String[] allVariableNames = {TASK_AUTOMATICALLY_ASSIGNED, TASK_SCREEN_PROCEED, TASK_PHONE_PROCEED,
-    TASK_ONSITE_INTERVIEW, TASK_MAKE_OFFER, TASK_OFFER_ACCEPTED};
+  private static String[] allVariableNames = {
+    TASK_AUTOMATICALLY_ASSIGNED,
+    TASK_SCREEN_PROCEED,
+    TASK_PHONE_PROCEED,
+    TASK_ONSITE_INTERVIEW,
+    TASK_MAKE_OFFER,
+    TASK_OFFER_ACCEPTED
+  };
 
-  public HiringProcessFor5TenantsDataGenerator(final SimpleEngineClient engineClient,
-                                               final Integer nVersions,
-                                               final UserAndGroupProvider userAndGroupProvider) {
+  public HiringProcessFor5TenantsDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
@@ -46,8 +52,7 @@ public class HiringProcessFor5TenantsDataGenerator extends ProcessDataGenerator 
   protected Map<String, Object> createVariables() {
     Map<String, Object> variables = new HashMap<>();
     Arrays.stream(allVariableNames)
-      .forEach(v -> variables.put(v, ThreadLocalRandom.current().nextDouble()));
+        .forEach(v -> variables.put(v, ThreadLocalRandom.current().nextDouble()));
     return variables;
   }
-
 }

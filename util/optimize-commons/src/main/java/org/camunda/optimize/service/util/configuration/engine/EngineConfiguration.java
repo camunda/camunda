@@ -6,16 +6,15 @@
 package org.camunda.optimize.service.util.configuration.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.configuration.ConfigurationUtil;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Builder
@@ -24,16 +23,12 @@ import java.util.Optional;
 public class EngineConfiguration {
 
   private String name;
-  @Builder.Default
-  private DefaultTenant defaultTenant = new DefaultTenant();
+  @Builder.Default private DefaultTenant defaultTenant = new DefaultTenant();
   private String rest;
   private EngineWebappsConfiguration webapps;
-  @Builder.Default
-  private boolean importEnabled = false;
-  @Builder.Default
-  private boolean eventImportEnabled = false;
-  @Builder.Default
-  private List<String> excludedTenants = new ArrayList<>();
+  @Builder.Default private boolean importEnabled = false;
+  @Builder.Default private boolean eventImportEnabled = false;
+  @Builder.Default private List<String> excludedTenants = new ArrayList<>();
 
   private EngineAuthenticationConfiguration authentication;
 
@@ -54,5 +49,4 @@ public class EngineConfiguration {
   public void setRest(String rest) {
     this.rest = ConfigurationUtil.cutTrailingSlash(rest);
   }
-
 }

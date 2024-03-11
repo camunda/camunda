@@ -63,7 +63,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
   }
 
   @Test
@@ -82,7 +82,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(unaffectedProcessInstances));
+    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(unaffectedProcessInstances));
   }
 
   @Test
@@ -106,7 +106,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
       HttpRequest.request()
         .withPath("/_bulk")
@@ -138,7 +138,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
 
   @Test
@@ -160,7 +160,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getCamundaActivityEvents())
       .extracting(CamundaActivityEventDto::getProcessInstanceId)
       .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
@@ -194,7 +194,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(getCamundaActivityEvents())
       .extracting(CamundaActivityEventDto::getProcessInstanceId)
       .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
@@ -225,7 +225,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
   }
 
   @Test
@@ -249,7 +249,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
       HttpRequest.request()
         .withPath("/_bulk")
@@ -330,7 +330,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
 
   @Test
@@ -353,7 +353,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
       .isNotEmpty()
       .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
@@ -382,7 +382,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
       .isNotEmpty()
       .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
@@ -413,7 +413,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then data clear up has succeeded as expected
-    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesWithEndTimeWithinTtl));
+    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesWithEndTimeWithinTtl));
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesWithEndTimeLessThanTtl));
     // and the misconfigured process is logged
     cleanupServiceLogs.assertContains(String.format(

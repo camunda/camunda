@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-
-import java.util.List;
-import java.util.Map;
 
 public interface ProcessVariableReader {
 
@@ -24,17 +23,18 @@ public interface ProcessVariableReader {
   String VAR_NAME_AND_TYPE_COMPOSITE_AGG = "varNameAndTypeCompositeAgg";
   String INDEX_AGGREGATION = "_index";
   String PROCESS_INSTANCE_INDEX_NAME_SUBSECTION =
-    "-" + DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+      "-" + DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
   List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto requestDto);
 
-  List<ProcessVariableNameResponseDto> getVariableNames(final List<ProcessVariableNameRequestDto> variableNameRequests);
+  List<ProcessVariableNameResponseDto> getVariableNames(
+      final List<ProcessVariableNameRequestDto> variableNameRequests);
 
-  List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(final BoolQueryBuilder baseQuery,
-                                                                                 final Map<String,
-                                                                                   DefinitionVariableLabelsDto> definitionLabelsDtos);
+  List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
+      final BoolQueryBuilder baseQuery,
+      final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos);
+
   String extractProcessDefinitionKeyFromIndexName(final String indexName);
 
   List<String> getVariableValues(final ProcessVariableValuesQueryDto requestDto);
-
 }

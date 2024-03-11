@@ -49,3 +49,4 @@ jobs:
           # Optional
           # Token to authenticate requests to GitHub
           github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
+          copy_requested_reviewers: true

@@ -30,7 +30,7 @@ public class LicenseCheckingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public LicenseInformationResponseDto validateOptimizeLicenseAndStoreIt(String license) {
     LicenseInformationResponseDto licenseInformationDto =
-      licenseManager.validateOptimizeLicense(license);
+        licenseManager.validateOptimizeLicense(license);
     licenseManager.storeLicense(license);
     return licenseInformationDto;
   }

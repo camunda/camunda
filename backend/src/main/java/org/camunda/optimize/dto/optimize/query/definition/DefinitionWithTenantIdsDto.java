@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.definition;
 
+import java.util.List;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,23 +17,20 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
-import java.util.List;
-import java.util.Set;
-
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
-  @NonNull
-  private List<String> tenantIds;
+  @NonNull private List<String> tenantIds;
 
-  public DefinitionWithTenantIdsDto(@NonNull final String key,
-                                    final String name,
-                                    @NonNull final DefinitionType type,
-                                    final Boolean isEventProcess,
-                                    @NonNull final List<String> tenantIds,
-                                    @NonNull final Set<String> engines) {
+  public DefinitionWithTenantIdsDto(
+      @NonNull final String key,
+      final String name,
+      @NonNull final DefinitionType type,
+      final Boolean isEventProcess,
+      @NonNull final List<String> tenantIds,
+      @NonNull final Set<String> engines) {
     super(key, name, type, isEventProcess, engines);
     this.tenantIds = tenantIds;
   }

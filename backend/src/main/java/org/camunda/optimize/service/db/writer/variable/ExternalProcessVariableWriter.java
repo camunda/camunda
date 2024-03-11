@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.service.db.writer.variable;
 
-import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
-
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 
 public interface ExternalProcessVariableWriter {
 
   void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables);
 
   void deleteExternalVariablesIngestedBefore(final OffsetDateTime timestamp);
-
 }

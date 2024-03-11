@@ -14,8 +14,6 @@
   <properties>
     <skip.fe.build>false</skip.fe.build>
     <skip.yarn.build>${skip.fe.build}</skip.yarn.build>
-    <sonar.sources>src</sonar.sources>
-    <sonar.skip>true</sonar.skip>
   </properties>
 
   <build>

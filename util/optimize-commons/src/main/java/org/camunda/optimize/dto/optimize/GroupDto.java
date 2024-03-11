@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,8 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
-
-import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

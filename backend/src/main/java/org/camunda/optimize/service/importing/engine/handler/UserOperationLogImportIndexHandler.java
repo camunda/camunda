@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UserOperationLogImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
-  private static final String USER_OPERATION_LOG_IMPORT_INDEX_DOC_ID = "userOperationLogImportIndex";
+  private static final String USER_OPERATION_LOG_IMPORT_INDEX_DOC_ID =
+      "userOperationLogImportIndex";
 
   private final EngineContext engineContext;
 
@@ -32,5 +33,4 @@ public class UserOperationLogImportIndexHandler extends TimestampBasedEngineImpo
   protected String getDatabaseDocID() {
     return USER_OPERATION_LOG_IMPORT_INDEX_DOC_ID;
   }
-
 }

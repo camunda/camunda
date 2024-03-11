@@ -22,11 +22,10 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
-  @JsonUnwrapped
-  private CollectionDefinitionDto definitionDto;
+  @JsonUnwrapped private CollectionDefinitionDto definitionDto;
 
-  public AuthorizedCollectionDefinitionDto(final RoleType currentUserRole,
-                                           final CollectionDefinitionDto definitionDto) {
+  public AuthorizedCollectionDefinitionDto(
+      final RoleType currentUserRole, final CollectionDefinitionDto definitionDto) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }
@@ -46,5 +45,4 @@ public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
         return RoleType.VIEWER;
     }
   }
-
 }

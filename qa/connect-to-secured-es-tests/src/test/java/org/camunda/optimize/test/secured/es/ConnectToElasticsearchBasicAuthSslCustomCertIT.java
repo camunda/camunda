@@ -5,14 +5,15 @@
  */
 package org.camunda.optimize.test.secured.es;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationWithDefaultAndAdditionalLocations;
+
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationWithDefaultAndAdditionalLocations;
-
-public class ConnectToElasticsearchBasicAuthSslCustomCertIT extends AbstractConnectToElasticsearchIT {
+public class ConnectToElasticsearchBasicAuthSslCustomCertIT
+    extends AbstractConnectToElasticsearchIT {
 
   private static final String CONFIG_FILE = "secured-connection-basic-auth-ssl-custom-cert.yaml";
 

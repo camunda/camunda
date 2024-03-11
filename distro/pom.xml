@@ -13,7 +13,6 @@
 
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
-    <sonar.skip>true</sonar.skip>
     <elasticsearch.demo.version>8.9.0</elasticsearch.demo.version>
   </properties>
 
@@ -124,7 +123,7 @@
       <plugin>
         <groupId>com.googlecode.maven-download-plugin</groupId>
         <artifactId>download-maven-plugin</artifactId>
-        <version>1.8.0</version>
+        <version>1.8.1</version>
         <executions>
           <execution>
             <phase>process-resources</phase>

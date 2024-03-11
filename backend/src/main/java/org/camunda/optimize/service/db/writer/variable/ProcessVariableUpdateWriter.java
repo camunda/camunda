@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.writer.variable;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
-
-import java.util.List;
 
 public interface ProcessVariableUpdateWriter {
 
@@ -16,7 +15,6 @@ public interface ProcessVariableUpdateWriter {
 
   List<ImportRequestDto> generateVariableUpdateImports(List<ProcessVariableDto> variables);
 
-  void deleteVariableDataByProcessInstanceIds(final String processDefinitionKey,
-                                              final List<String> processInstanceIds);
-
+  void deleteVariableDataByProcessInstanceIds(
+      final String processDefinitionKey, final List<String> processInstanceIds);
 }

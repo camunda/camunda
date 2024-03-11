@@ -15,5 +15,4 @@ public class DecisionOutputVariableQueryFilter extends DecisionVariableQueryFilt
   String getVariablePath() {
     return DecisionInstanceIndex.OUTPUTS;
   }
-
 }

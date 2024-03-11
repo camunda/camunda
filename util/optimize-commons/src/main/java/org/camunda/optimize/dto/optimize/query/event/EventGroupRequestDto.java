@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.QueryParam;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-
-import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.QueryParam;
 
 @Data
 @AllArgsConstructor
@@ -20,6 +19,7 @@ public class EventGroupRequestDto {
 
   @QueryParam("searchTerm")
   private String searchTerm;
+
   @QueryParam("limit")
   @NotNull
   private int limit;
@@ -29,5 +29,4 @@ public class EventGroupRequestDto {
       searchTerm = null;
     }
   }
-
 }

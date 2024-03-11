@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.view.process.frequency;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
@@ -17,12 +22,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-
 public abstract class ProcessViewFrequency extends ProcessViewPart {
 
   @Override
@@ -31,14 +30,16 @@ public abstract class ProcessViewFrequency extends ProcessViewPart {
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+  public List<AggregationBuilder> createAggregations(
+      final ExecutionContext<ProcessReportDataDto> context) {
     return Collections.singletonList(filter(FREQUENCY_AGGREGATION, QueryBuilders.matchAllQuery()));
   }
 
   @Override
-  public ViewResult retrieveResult(final SearchResponse response,
-                                   final Aggregations aggs,
-                                   final ExecutionContext<ProcessReportDataDto> context) {
+  public ViewResult retrieveResult(
+      final SearchResponse response,
+      final Aggregations aggs,
+      final ExecutionContext<ProcessReportDataDto> context) {
     final Filter count = aggs.get(FREQUENCY_AGGREGATION);
     return createViewResult((double) count.getDocCount());
   }
@@ -50,7 +51,7 @@ public abstract class ProcessViewFrequency extends ProcessViewPart {
 
   public ViewResult createViewResult(final Double value) {
     return ViewResult.builder()
-      .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
-      .build();
+        .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
+        .build();
   }
 }

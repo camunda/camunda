@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.events.rollover;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 @Slf4j
 public abstract class AbstractIndexRolloverService extends AbstractScheduledService {
@@ -28,16 +27,18 @@ public abstract class AbstractIndexRolloverService extends AbstractScheduledServ
   public List<String> triggerRollover() {
     List<String> rolledOverIndexAliases = new ArrayList<>();
     getAliasesToConsiderRolling()
-      .forEach(indexAlias -> {
-        try {
-          boolean isRolledOver = databaseClient.triggerRollover(indexAlias, getMaxIndexSizeGB());
-          if (isRolledOver) {
-            rolledOverIndexAliases.add(indexAlias);
-          }
-        } catch (Exception e) {
-          log.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
-        }
-      });
+        .forEach(
+            indexAlias -> {
+              try {
+                boolean isRolledOver =
+                    databaseClient.triggerRollover(indexAlias, getMaxIndexSizeGB());
+                if (isRolledOver) {
+                  rolledOverIndexAliases.add(indexAlias);
+                }
+              } catch (Exception e) {
+                log.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
+              }
+            });
     return rolledOverIndexAliases;
   }
 
@@ -56,5 +57,4 @@ public abstract class AbstractIndexRolloverService extends AbstractScheduledServ
   protected abstract int getMaxIndexSizeGB();
 
   protected abstract int getScheduleIntervalInMinutes();
-
 }

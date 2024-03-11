@@ -5,13 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect} from 'react';
 import {Edit} from '@carbon/icons-react';
 import {Form, FormGroup, Stack, Toggle} from '@carbon/react';
 
 import {Popover} from 'components';
 import {t} from 'translation';
-import {getOptimizeProfile} from 'config';
 
 import './AggregationType.scss';
 
@@ -29,13 +27,6 @@ export default function AggregationType({report, onChange}) {
   const isUserTaskReport = report?.view?.entity === 'userTask';
   const isVariableReport = report?.view?.entity === 'variable';
   const isIncidentReport = report?.view?.entity === 'incident';
-  const [optimizeProfile, setOptimizeProfile] = useState();
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-    })();
-  }, []);
 
   function isLastAggregation(field, type, value) {
     return (
@@ -131,7 +122,7 @@ export default function AggregationType({report, onChange}) {
       >
         <Form>
           <Stack gap={3}>
-            {isUserTaskReport && optimizeProfile === 'platform' && (
+            {isUserTaskReport && (
               <FormGroup legendText={t('report.config.aggregation.userTaskLegend')}>
                 <Stack gap={3}>
                   {orders.userTaskDurationTimes.map((type) => (
@@ -185,24 +176,27 @@ export default function AggregationType({report, onChange}) {
             {distributedBy.type !== 'process' && !processPart && (
               <FormGroup legendText={t('report.config.aggregation.percentileLegend')}>
                 <Stack gap={3}>
-                  {orders.percentileAggregations.map((value) => (
-                    <Toggle
-                      key={value}
-                      id={value}
-                      size="sm"
-                      labelA={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
-                      labelB={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
-                      toggled={hasAggregation('aggregationTypes', 'percentile', value)}
-                      disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
-                      onToggle={(checked) => {
-                        if (checked) {
-                          addAggregation('aggregationTypes', 'percentile', value);
-                        } else {
-                          removeAggregation('aggregationTypes', 'percentile', value);
-                        }
-                      }}
-                    />
-                  ))}
+                  {orders.percentileAggregations.map((value) => {
+                    const defaultLabel = `P${value}`;
+                    return (
+                      <Toggle
+                        key={defaultLabel}
+                        id={defaultLabel}
+                        size="sm"
+                        labelA={value === 50 ? t('report.config.aggregation.p50') : defaultLabel}
+                        labelB={value === 50 ? t('report.config.aggregation.p50') : defaultLabel}
+                        toggled={hasAggregation('aggregationTypes', 'percentile', value)}
+                        disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
+                        onToggle={(checked) => {
+                          if (checked) {
+                            addAggregation('aggregationTypes', 'percentile', value);
+                          } else {
+                            removeAggregation('aggregationTypes', 'percentile', value);
+                          }
+                        }}
+                      />
+                    );
+                  })}
                 </Stack>
               </FormGroup>
             )}

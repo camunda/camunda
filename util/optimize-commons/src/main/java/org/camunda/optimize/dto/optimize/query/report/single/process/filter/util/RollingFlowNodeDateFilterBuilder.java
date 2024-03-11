@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
@@ -13,11 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-
-import java.util.List;
-
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
 
 public class RollingFlowNodeDateFilterBuilder {
   private ProcessFilterBuilder filterBuilder;
@@ -59,7 +58,10 @@ public class RollingFlowNodeDateFilterBuilder {
 
   public ProcessFilterBuilder add() {
     ProcessFilterDto<FlowNodeDateFilterDataDto<?>> filterDto;
-    filterDto = type.equals(FLOW_NODE_START_DATE) ? new FlowNodeStartDateFilterDto() : new FlowNodeEndDateFilterDto();
+    filterDto =
+        type.equals(FLOW_NODE_START_DATE)
+            ? new FlowNodeStartDateFilterDto()
+            : new FlowNodeEndDateFilterDto();
     filterDto.setData(new RollingFlowNodeDateFilterDataDto(flowNodeIds, start));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);

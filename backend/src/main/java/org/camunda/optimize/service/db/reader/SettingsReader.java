@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
-
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 
 public interface SettingsReader {
 
-   Optional<SettingsResponseDto> getSettings();
-
+  Optional<SettingsResponseDto> getSettings();
 }

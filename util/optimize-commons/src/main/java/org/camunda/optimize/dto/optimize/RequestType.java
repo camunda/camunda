@@ -6,5 +6,6 @@
 package org.camunda.optimize.dto.optimize;
 
 public enum RequestType {
-  INDEX, UPDATE
+  INDEX,
+  UPDATE
 }

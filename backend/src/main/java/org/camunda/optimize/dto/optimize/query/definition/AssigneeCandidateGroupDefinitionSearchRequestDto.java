@@ -6,15 +6,14 @@
 package org.camunda.optimize.dto.optimize.query.definition;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,10 +21,9 @@ import java.util.Optional;
 @Builder
 public class AssigneeCandidateGroupDefinitionSearchRequestDto {
   private String terms;
-  @Builder.Default
-  private int limit = 25;
-  @NotNull
-  private String processDefinitionKey;
+  @Builder.Default private int limit = 25;
+  @NotNull private String processDefinitionKey;
+
   @Builder.Default
   private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
 

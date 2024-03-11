@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.BADGE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BAR_LINE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BAR_VISUALIZATION;
@@ -15,6 +13,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.LINE_VISUALIZATI
 import static org.camunda.optimize.dto.optimize.ReportConstants.PIE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.TABLE_VISUALIZATION;
+
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ProcessVisualization {
   NUMBER(SINGLE_NUMBER_VISUALIZATION),

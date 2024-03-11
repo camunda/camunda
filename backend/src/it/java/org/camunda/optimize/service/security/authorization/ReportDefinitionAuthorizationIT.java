@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -19,42 +19,34 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
-import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
+@Tag(OPENSEARCH_PASSING)
 public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_KEY = "aprocess";
@@ -123,6 +115,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("definitionType")
   public void evaluateAllTenantsAuthorizedStoredReport(int definitionResourceType) {
@@ -406,6 +399,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     reportClient.createSingleProcessReportAsUser(reportDefinitionDto, KERMIT_USER, KERMIT_USER);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getUnauthorizedEventProcessReport() {
     // given
@@ -449,6 +443,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void evaluateUnauthorizedEventProcessReport() {
     // given
@@ -471,6 +466,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void evaluateEventProcessReport() {
     // given
@@ -487,6 +483,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     reportClient.evaluateNumberReportById(reportId);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void updateUnauthorizedEventProcessReport() {
     // given
@@ -529,6 +526,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void deleteUnauthorizedEventProcessReport() {
     // given
@@ -735,37 +733,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   }
 
   private void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {
-    try {
-      UpdateRequest request = new UpdateRequest(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId)
-        .script(new Script(
-          ScriptType.INLINE,
-          Script.DEFAULT_SCRIPT_LANG,
-          "ctx._source.roles = params.updatedRoles;",
-          Collections.singletonMap(
-            "updatedRoles",
-            databaseIntegrationTestExtension.getObjectMapper()
-              .convertValue(normalizeToSimpleIdentityDtos(identityDtos), Object.class)
-          )
-        ))
-        .setRefreshPolicy(IMMEDIATE);
-      final UpdateResponse updateResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-        .update(request);
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        throw new OptimizeIntegrationTestException(String.format(
-          "Was not able to update event process roles with id [%s].", eventProcessId
-        ));
-      }
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Unable to update event process roles.", e);
-    }
-  }
-
-  private List<EventProcessRoleRequestDto<IdentityDto>> normalizeToSimpleIdentityDtos(final List<IdentityDto> identityDtos) {
-    return identityDtos.stream()
-      .filter(Objects::nonNull)
-      .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
-      .map(EventProcessRoleRequestDto::new)
-      .collect(Collectors.toList());
+    databaseIntegrationTestExtension.updateEventProcessRoles(eventProcessId, identityDtos);
   }
 
 }

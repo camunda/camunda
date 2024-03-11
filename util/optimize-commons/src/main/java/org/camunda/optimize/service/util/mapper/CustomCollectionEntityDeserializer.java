@@ -5,18 +5,17 @@
  */
 package org.camunda.optimize.service.util.mapper;
 
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.REPORT_TYPE;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.REPORT_TYPE;
 
 public class CustomCollectionEntityDeserializer extends StdDeserializer<CollectionEntity> {
 
@@ -32,7 +31,8 @@ public class CustomCollectionEntityDeserializer extends StdDeserializer<Collecti
   }
 
   @Override
-  public CollectionEntity deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+  public CollectionEntity deserialize(JsonParser jp, DeserializationContext ctxt)
+      throws IOException {
     JsonNode node = jp.getCodec().readTree(jp);
     String json = node.toString();
     if (isReport(node)) {

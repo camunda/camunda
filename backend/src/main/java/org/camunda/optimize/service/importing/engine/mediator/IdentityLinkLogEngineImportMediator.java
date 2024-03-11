@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.HistoricIdentityLinkLogDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.IdentityLinkLogInstanceFetcher;
@@ -16,27 +18,27 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IdentityLinkLogEngineImportMediator
-  extends TimestampBasedImportMediator<IdentityLinkLogImportIndexHandler, HistoricIdentityLinkLogDto> {
+    extends TimestampBasedImportMediator<
+        IdentityLinkLogImportIndexHandler, HistoricIdentityLinkLogDto> {
 
   private final IdentityLinkLogInstanceFetcher engineEntityFetcher;
 
-  public IdentityLinkLogEngineImportMediator(final IdentityLinkLogImportIndexHandler importIndexHandler,
-                                             final IdentityLinkLogInstanceFetcher engineEntityFetcher,
-                                             final IdentityLinkLogImportService importService,
-                                             final ConfigurationService configurationService,
-                                             final BackoffCalculator idleBackoffCalculator) {
+  public IdentityLinkLogEngineImportMediator(
+      final IdentityLinkLogImportIndexHandler importIndexHandler,
+      final IdentityLinkLogInstanceFetcher engineEntityFetcher,
+      final IdentityLinkLogImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final HistoricIdentityLinkLogDto historicIdentityLinkLogDto) {
+  protected OffsetDateTime getTimestamp(
+      final HistoricIdentityLinkLogDto historicIdentityLinkLogDto) {
     return historicIdentityLinkLogDto.getTime();
   }
 
@@ -47,7 +49,8 @@ public class IdentityLinkLogEngineImportMediator
 
   @Override
   protected List<HistoricIdentityLinkLogDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchIdentityLinkLogsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    return engineEntityFetcher.fetchIdentityLinkLogsForTimestamp(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
@@ -59,5 +62,4 @@ public class IdentityLinkLogEngineImportMediator
   public MediatorRank getRank() {
     return MediatorRank.INSTANCE_SUB_ENTITIES;
   }
-
 }

@@ -5,19 +5,15 @@
  */
 package org.camunda.optimize.service.importing;
 
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
-
-/**
- * Represents one page of entities that should be added
- * to database.
- */
+/** Represents one page of entities that should be added to database. */
 public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runnable {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -29,14 +25,13 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
 
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
 
-  protected DatabaseImportJob(final Runnable importCompleteCallback, final DatabaseClient databaseClient) {
+  protected DatabaseImportJob(
+      final Runnable importCompleteCallback, final DatabaseClient databaseClient) {
     this.importCompleteCallback = importCompleteCallback;
     this.databaseClient = databaseClient;
   }
 
-  /**
-   * Run the import job
-   */
+  /** Run the import job */
   @Override
   public void run() {
     executeImport();
@@ -45,8 +40,7 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
   /**
    * Prepares the given page of entities to be imported.
    *
-   * @param pageOfOptimizeEntities that are not already in
-   *                               database and need to be imported.
+   * @param pageOfOptimizeEntities that are not already in database and need to be imported.
    */
   public void setEntitiesToImport(List<OPT> pageOfOptimizeEntities) {
     this.newOptimizeEntities = pageOfOptimizeEntities;
@@ -79,5 +73,4 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
   }
 
   protected abstract void persistEntities(List<OPT> newOptimizeEntities) throws Exception;
-
 }

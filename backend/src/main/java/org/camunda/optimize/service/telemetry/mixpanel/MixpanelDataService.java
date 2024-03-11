@@ -31,32 +31,28 @@ public class MixpanelDataService {
   public MixpanelHeartbeatProperties getMixpanelHeartbeatProperties() {
     final MixpanelConfiguration.TrackingProperties mixpanelProperties = getMixpanelProperties();
     return new MixpanelHeartbeatProperties(
-      new MixpanelHeartbeatMetrics(
-        reportReader.getReportCount(ReportType.PROCESS),
-        reportReader.getReportCount(ReportType.DECISION),
-        dashboardReader.getDashboardCount(),
-        sharingReader.getReportShareCount(),
-        sharingReader.getDashboardShareCount(),
-        alertReader.getAlertCount()
-      ),
-      mixpanelProperties.getStage(),
-      mixpanelProperties.getOrganizationId(),
-      mixpanelProperties.getClusterId()
-    );
+        new MixpanelHeartbeatMetrics(
+            reportReader.getReportCount(ReportType.PROCESS),
+            reportReader.getReportCount(ReportType.DECISION),
+            dashboardReader.getDashboardCount(),
+            sharingReader.getReportShareCount(),
+            sharingReader.getDashboardShareCount(),
+            alertReader.getAlertCount()),
+        mixpanelProperties.getStage(),
+        mixpanelProperties.getOrganizationId(),
+        mixpanelProperties.getClusterId());
   }
 
   public MixpanelEntityEventProperties getMixpanelEntityEventProperties(final String entityId) {
     final MixpanelConfiguration.TrackingProperties mixpanelProperties = getMixpanelProperties();
     return new MixpanelEntityEventProperties(
-      entityId,
-      mixpanelProperties.getStage(),
-      mixpanelProperties.getOrganizationId(),
-      mixpanelProperties.getClusterId()
-    );
+        entityId,
+        mixpanelProperties.getStage(),
+        mixpanelProperties.getOrganizationId(),
+        mixpanelProperties.getClusterId());
   }
 
   private MixpanelConfiguration.TrackingProperties getMixpanelProperties() {
     return configurationService.getAnalytics().getMixpanel().getProperties();
   }
-
 }

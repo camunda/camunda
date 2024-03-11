@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.decision.frequency;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.DecisionCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.DecisionReportCmdExecutionPlan;
@@ -14,24 +15,25 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.decisi
 import org.camunda.optimize.service.db.es.report.command.modules.view.decision.DecisionViewInstanceFrequency;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class DecisionInstanceFrequencyGroupByInputVariableCmd extends DecisionCmd<List<MapResultEntryDto>> {
+public class DecisionInstanceFrequencyGroupByInputVariableCmd
+    extends DecisionCmd<List<MapResultEntryDto>> {
 
-  public DecisionInstanceFrequencyGroupByInputVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public DecisionInstanceFrequencyGroupByInputVariableCmd(
+      final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected DecisionReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .decisionCommand()
-      .view(DecisionViewInstanceFrequency.class)
-      .groupBy(DecisionGroupByInputVariable.class)
-      .distributedBy(DecisionDistributedByNone.class)
-      .resultAsMap()
-      .build();
+  protected DecisionReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .decisionCommand()
+        .view(DecisionViewInstanceFrequency.class)
+        .groupBy(DecisionGroupByInputVariable.class)
+        .distributedBy(DecisionDistributedByNone.class)
+        .resultAsMap()
+        .build();
   }
-
 }

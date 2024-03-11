@@ -5,14 +5,12 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.util1;
 
-
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class TakeOnlyEverySecondEntityVariableImportAdapter implements VariableImportAdapter {
 
@@ -21,9 +19,10 @@ public class TakeOnlyEverySecondEntityVariableImportAdapter implements VariableI
     int counter = 0;
     List<PluginVariableDto> newList = new ArrayList<>();
     // for consistent behavior
-    final List<PluginVariableDto> sortedByName = list.stream()
-      .sorted(Comparator.comparing(PluginVariableDto::getName))
-      .collect(Collectors.toList());
+    final List<PluginVariableDto> sortedByName =
+        list.stream()
+            .sorted(Comparator.comparing(PluginVariableDto::getName))
+            .collect(Collectors.toList());
     for (PluginVariableDto pluginVariableDto : sortedByName) {
       if (counter % 2 == 0) {
         newList.add(pluginVariableDto);

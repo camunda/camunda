@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.date;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
@@ -16,22 +18,21 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByProcessInstanceEndDate extends AbstractProcessGroupByProcessInstanceDate {
+public class ProcessGroupByProcessInstanceEndDate
+    extends AbstractProcessGroupByProcessInstanceDate {
 
-  protected ProcessGroupByProcessInstanceEndDate(final ConfigurationService configurationService,
-                                                 final DateAggregationService dateAggregationService,
-                                                 final MinMaxStatsService minMaxStatsService,
-                                                 final ProcessQueryFilterEnhancer processQueryFilterEnhancer) {
+  protected ProcessGroupByProcessInstanceEndDate(
+      final ConfigurationService configurationService,
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final ProcessQueryFilterEnhancer processQueryFilterEnhancer) {
     super(
-      configurationService,
-      dateAggregationService,
-      minMaxStatsService,
-      processQueryFilterEnhancer
-    );
+        configurationService,
+        dateAggregationService,
+        minMaxStatsService,
+        processQueryFilterEnhancer);
   }
 
   @Override

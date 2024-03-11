@@ -5,29 +5,28 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Objects;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class SingleReportCountChartDto {
 
   private Boolean isBelow = false;
   private String value = "100";
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof SingleReportCountChartDto)) {
+    if (!(o instanceof final SingleReportCountChartDto that)) {
       return false;
     }
-    SingleReportCountChartDto that = (SingleReportCountChartDto) o;
-    return Objects.equals(isBelow, that.isBelow) &&
-      Objects.equals(value, that.value);
+    return Objects.equals(isBelow, that.isBelow) && Objects.equals(value, that.value);
   }
 
   @Override

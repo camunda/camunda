@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize;
 
+import java.util.Map;
+import java.util.Optional;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
@@ -13,9 +15,6 @@ import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.Optional;
-
 @Component
 public class SpringPropertiesPostProcessor implements EnvironmentPostProcessor {
 
@@ -23,33 +22,36 @@ public class SpringPropertiesPostProcessor implements EnvironmentPostProcessor {
   public static final String SPRING_HTTP2_ENABLED_PROPERTY = "server.http2.enabled";
 
   @Override
-  public void postProcessEnvironment(ConfigurableEnvironment environment,
-                                     SpringApplication application) {
+  public void postProcessEnvironment(
+      ConfigurableEnvironment environment, SpringApplication application) {
     Map<String, Object> propertiesToAddMap = createSpringProperties();
     addToDefaultProperties(environment.getPropertySources(), propertiesToAddMap);
   }
 
   private Map<String, Object> createSpringProperties() {
     ConfigurationService preAutowireConfigService = ConfigurationService.createDefault();
-    return Map.of(SPRING_HTTP2_ENABLED_PROPERTY, preAutowireConfigService.getContainerHttp2Enabled());
+    return Map.of(
+        SPRING_HTTP2_ENABLED_PROPERTY, preAutowireConfigService.getContainerHttp2Enabled());
   }
 
   /*
-      This does NOT overwrite properties defined in application.properties
-   */
-  private void addToDefaultProperties(MutablePropertySources propertySources,
-                                      Map<String, Object> propertiesToAddMap) {
+     This does NOT overwrite properties defined in application.properties
+  */
+  private void addToDefaultProperties(
+      MutablePropertySources propertySources, Map<String, Object> propertiesToAddMap) {
     Optional.ofNullable(propertySources.get(PROPERTY_SOURCE_NAME))
-      .filter(MapPropertySource.class::isInstance)
-      .map(MapPropertySource.class::cast)
-      .ifPresentOrElse(
-        propertySource -> {
-          for (String key : propertiesToAddMap.keySet()) {
-            if (!propertySource.containsProperty(key)) {
-              propertySource.getSource().put(key, propertiesToAddMap.get(key));
-            }
-          }
-        }, () -> propertySources.addLast(new MapPropertySource(PROPERTY_SOURCE_NAME, propertiesToAddMap))
-      );
+        .filter(MapPropertySource.class::isInstance)
+        .map(MapPropertySource.class::cast)
+        .ifPresentOrElse(
+            propertySource -> {
+              for (String key : propertiesToAddMap.keySet()) {
+                if (!propertySource.containsProperty(key)) {
+                  propertySource.getSource().put(key, propertiesToAddMap.get(key));
+                }
+              }
+            },
+            () ->
+                propertySources.addLast(
+                    new MapPropertySource(PROPERTY_SOURCE_NAME, propertiesToAddMap)));
   }
 }

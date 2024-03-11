@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.panelnotification;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.cloud.panelnotifications.PanelNotificationDataDto;
@@ -23,13 +29,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class CCSaaSOnboardingPanelNotificationServiceTest {
 
@@ -37,25 +36,22 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
   private static final String PROCESS_NAME = "aProcessName";
   private static final String ORG_ID = "anOrgId";
   private static final String CLUSTER_ID = "aClusterId";
-  @Mock
-  private CCSaaSNotificationClient notificationClient;
-  @Mock
-  private DefinitionService definitionService;
+  @Mock private CCSaaSNotificationClient notificationClient;
+  @Mock private DefinitionService definitionService;
   private CCSaaSOnboardingPanelNotificationService underTest;
-  @Mock
-  private RootUrlGenerator rootUrlGenerator;
+  @Mock private RootUrlGenerator rootUrlGenerator;
 
   @BeforeEach
   public void setup() {
-    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    configurationService.getAuthConfiguration().getCloudAuthConfiguration().setClusterId(CLUSTER_ID);
-    configurationService.getAuthConfiguration().getCloudAuthConfiguration().setOrganizationId(ORG_ID);
-    underTest = new CCSaaSOnboardingPanelNotificationService(
-      notificationClient,
-      configurationService,
-      definitionService,
-      rootUrlGenerator
-    );
+    final ConfigurationService configurationService =
+        ConfigurationServiceBuilder.createDefaultConfiguration();
+    configurationService
+        .getAuthConfiguration()
+        .getCloudAuthConfiguration()
+        .setOrganizationId(ORG_ID);
+    underTest =
+        new CCSaaSOnboardingPanelNotificationService(
+            notificationClient, configurationService, definitionService, rootUrlGenerator);
   }
 
   @Test
@@ -63,42 +59,45 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
     // given
     final DefinitionOptimizeResponseDto returnedDefWithName = new ProcessDefinitionOptimizeDto();
     returnedDefWithName.setName(PROCESS_NAME);
-    when(definitionService.getDefinition(any(), any(), any(), any())).thenReturn(Optional.of(returnedDefWithName));
-    when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090");
+    when(definitionService.getDefinition(any(), any(), any(), any()))
+        .thenReturn(Optional.of(returnedDefWithName));
+    when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090/" + CLUSTER_ID);
 
     // when
-    ArgumentCaptor<PanelNotificationRequestDto> actualNotification = ArgumentCaptor.forClass(PanelNotificationRequestDto.class);
+    ArgumentCaptor<PanelNotificationRequestDto> actualNotification =
+        ArgumentCaptor.forClass(PanelNotificationRequestDto.class);
     underTest.sendOnboardingPanelNotification(PROCESS_KEY);
     verify(notificationClient).sendPanelNotificationToOrg(actualNotification.capture());
 
     // then
-    assertThat(actualNotification.getValue().getNotification()).isEqualTo(createExpectedNotificationDataDto());
+    assertThat(actualNotification.getValue().getNotification())
+        .isEqualTo(createExpectedNotificationDataDto());
   }
 
   private PanelNotificationDataDto createExpectedNotificationDataDto() {
     return PanelNotificationDataDto.builder()
-      .uniqueId("initialVisitToInstantDashboard_" + PROCESS_KEY)
-      .source("optimize")
-      .type("org")
-      .orgId(ORG_ID)
-      .title("See how your process is doing")
-      .description("Your first process of " + PROCESS_NAME + " was started successfully. Track the status in the instant " +
-                     "preview dashboard.")
-      .meta(createExpectedPanelNotificationMetadataDto())
-      .build();
+        .uniqueId("initialVisitToInstantDashboard_" + PROCESS_KEY)
+        .source("optimize")
+        .type("org")
+        .orgId(ORG_ID)
+        .title("See how your process is doing")
+        .description(
+            "Your first process of "
+                + PROCESS_NAME
+                + " was started successfully. Track the status in the instant "
+                + "preview dashboard.")
+        .meta(createExpectedPanelNotificationMetadataDto())
+        .build();
   }
 
   private PanelNotificationMetaDataDto createExpectedPanelNotificationMetadataDto() {
     return PanelNotificationMetaDataDto.builder()
-      .permissions(new String[]{"cluster:optimize:read"})
-      .identifier("initialVisitToInstantDashboard")
-      .href(String.format(
-        "http://localhost:8090/%s/#/dashboard/instant/%s",
-        CLUSTER_ID,
-        PROCESS_KEY
-      ))
-      .label("View instant preview dashboard")
-      .build();
+        .permissions(new String[] {"cluster:optimize:read"})
+        .identifier("initialVisitToInstantDashboard")
+        .href(
+            String.format(
+                "http://localhost:8090/%s/#/dashboard/instant/%s", CLUSTER_ID, PROCESS_KEY))
+        .label("View instant preview dashboard")
+        .build();
   }
-
 }

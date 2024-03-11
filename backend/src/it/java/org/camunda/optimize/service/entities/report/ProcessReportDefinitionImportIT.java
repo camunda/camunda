@@ -7,6 +7,7 @@ package org.camunda.optimize.service.entities.report;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -26,15 +27,15 @@ import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -45,12 +46,14 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   private static Stream<String> specialVersionKeywords() {

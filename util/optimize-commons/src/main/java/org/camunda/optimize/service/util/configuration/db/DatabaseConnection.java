@@ -6,11 +6,10 @@
 package org.camunda.optimize.service.util.configuration.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.Data;
 import org.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
-
-import java.util.List;
 
 @Data
 public class DatabaseConnection {
@@ -27,5 +26,4 @@ public class DatabaseConnection {
 
   @JsonProperty("nodes")
   protected List<DatabaseConnectionNodeConfiguration> connectionNodes;
-
 }

@@ -22,10 +22,6 @@ public class JsonMappingExceptionMapper implements ExceptionMapper<JsonMappingEx
 
   @Override
   public Response toResponse(final JsonMappingException exception) {
-    return Response
-      .status(Response.Status.BAD_REQUEST)
-      .type(MediaType.TEXT_PLAIN)
-      .build();
+    return Response.status(Response.Status.BAD_REQUEST).type(MediaType.TEXT_PLAIN).build();
   }
-
 }

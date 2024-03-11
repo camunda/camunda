@@ -5,24 +5,21 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants
 public class DefinitionVariableLabelsDto implements OptimizeDto {
-  @NotBlank
-  private String definitionKey;
+  @NotBlank private String definitionKey;
 
-  @Valid
-  private List<LabelDto> labels;
+  @Valid private List<LabelDto> labels;
 }

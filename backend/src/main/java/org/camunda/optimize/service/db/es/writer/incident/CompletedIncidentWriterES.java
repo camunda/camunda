@@ -7,9 +7,9 @@ package org.camunda.optimize.service.db.es.writer.incident;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.db.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -17,12 +17,13 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class CompletedIncidentWriterES extends AbstractIncidentWriterES implements CompletedIncidentWriter {
+public class CompletedIncidentWriterES extends AbstractIncidentWriterES
+    implements CompletedIncidentWriter {
 
-  public CompletedIncidentWriterES(final OptimizeElasticsearchClient esClient,
-                                   final ElasticSearchSchemaManager elasticSearchSchemaManager,
-                                   final ObjectMapper objectMapper) {
+  public CompletedIncidentWriterES(
+      final OptimizeElasticsearchClient esClient,
+      final ElasticSearchSchemaManager elasticSearchSchemaManager,
+      final ObjectMapper objectMapper) {
     super(esClient, elasticSearchSchemaManager, objectMapper);
   }
-
 }

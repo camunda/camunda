@@ -9,28 +9,34 @@ import {Table, TableBody} from 'components';
 import {t} from 'translation';
 import {Button} from '@carbon/react';
 
-import {getOutlierSummary} from './service';
+import {AnalysisProcessDefinitionParameters, getOutlierSummary} from './service';
+import InstancesButton from './InstanceButton';
 
 import './OutlierDetailsTable.scss';
 
-type TaskData = {totalCount: number; higherOutlier?: {count: number; relation: number}};
+type TaskData = {
+  totalCount: number;
+  higherOutlier?: {count: number; relation: number; boundValue: number};
+};
 
 type Variable = {variableName: string; variableTerm: string | number | boolean};
 
 interface OutlierDetailsTableProps {
   loading?: boolean;
-  tasksData: Record<string, TaskData | undefined>;
+  nodeOutliers: Record<string, TaskData | undefined>;
   outlierVariables: Record<string, Variable[]>;
   flowNodeNames: Record<string, string>;
   onDetailsClick: (taskId: string, taskData: TaskData) => string;
+  config: AnalysisProcessDefinitionParameters;
 }
 
 export default function OutlierDetailsTable({
   loading,
-  tasksData,
+  nodeOutliers,
   outlierVariables,
   flowNodeNames,
   onDetailsClick,
+  config,
 }: OutlierDetailsTableProps) {
   function getVariablesList(variables?: Variable[]): string | JSX.Element {
     if (!variables?.length) {
@@ -47,33 +53,47 @@ export default function OutlierDetailsTable({
   }
 
   function parseTableBody(): TableBody[] {
-    if (!tasksData) {
+    if (!nodeOutliers) {
       return [];
     }
 
-    return Object.entries(tasksData).reduce<TableBody[]>((result, [taskId, taskData]) => {
-      if (!taskData || !taskData.higherOutlier) {
-        return result;
-      }
+    return Object.entries(nodeOutliers).reduce<TableBody[]>(
+      (tableRows, [nodeOutlierId, nodeOutlierData]) => {
+        if (!nodeOutlierData || !nodeOutlierData.higherOutlier) {
+          return tableRows;
+        }
 
-      const {
-        higherOutlier: {count, relation},
-        totalCount,
-      } = taskData;
-      const variables = outlierVariables[taskId];
+        const {
+          higherOutlier: {count, relation, boundValue},
+          totalCount,
+        } = nodeOutlierData;
+        const variables = outlierVariables[nodeOutlierId];
 
-      result.push([
-        flowNodeNames[taskId] || taskId,
-        totalCount.toString(),
-        getOutlierSummary(count, relation),
-        getVariablesList(variables),
-        <Button kind="tertiary" size="sm" onClick={() => onDetailsClick(taskId, taskData)}>
-          {t('common.viewDetails')}
-        </Button>,
-      ]);
+        tableRows.push([
+          flowNodeNames[nodeOutlierId] || nodeOutlierId,
+          totalCount.toString(),
+          getOutlierSummary(count, relation),
+          getVariablesList(variables),
+          <Button
+            kind="tertiary"
+            size="sm"
+            onClick={() => onDetailsClick(nodeOutlierId, nodeOutlierData)}
+          >
+            {t('common.viewDetails')}
+          </Button>,
+          <InstancesButton
+            id={nodeOutlierId}
+            name={flowNodeNames[nodeOutlierId]}
+            value={boundValue}
+            config={config}
+            totalCount={totalCount}
+          />,
+        ]);
 
-      return result;
-    }, []);
+        return tableRows;
+      },
+      []
+    );
   }
 
   return (
@@ -85,6 +105,7 @@ export default function OutlierDetailsTable({
         t('analysis.task.table.outliers').toString(),
         t('report.variables.default').toString(),
         t('common.details').toString(),
+        t('common.download').toString(),
       ]}
       body={parseTableBody()}
       loading={loading}

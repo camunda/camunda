@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.security;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
+import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
+
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
@@ -21,6 +29,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.NewCookie;
+import java.net.URI;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.TenantDto;
@@ -31,20 +44,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import java.net.URI;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
-import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
-import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
-import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
 @Component
 @Slf4j
@@ -58,75 +57,80 @@ public class CCSMTokenService {
   private final ConfigurationService configurationService;
   private final Identity identity;
 
-  public CCSMTokenService(final AuthCookieService authCookieService, final ConfigurationService configurationService,
-                          final Identity identity) {
+  public CCSMTokenService(
+      final AuthCookieService authCookieService,
+      final ConfigurationService configurationService,
+      final Identity identity) {
     this.authCookieService = authCookieService;
     this.configurationService = configurationService;
     this.identity = identity;
   }
 
-  public List<Cookie> createOptimizeAuthCookies(final Tokens tokens, final AccessToken accessToken, final String scheme) {
-    final Cookie optimizeAuthCookie = authCookieService.createCookie(
-      OPTIMIZE_AUTHORIZATION,
-      accessToken.getToken().getToken(),
-      accessToken.getToken().getExpiresAtAsInstant(),
-      scheme
-    );
+  public List<Cookie> createOptimizeAuthCookies(
+      final Tokens tokens, final AccessToken accessToken, final String scheme) {
+    final Cookie optimizeAuthCookie =
+        authCookieService.createCookie(
+            OPTIMIZE_AUTHORIZATION,
+            accessToken.getToken().getToken(),
+            accessToken.getToken().getExpiresAtAsInstant(),
+            scheme);
 
     final Date refreshTokenExpirationDate = getRefreshTokenExpirationDate(tokens.getRefreshToken());
 
-    final Cookie optimizeRefreshCookie = authCookieService.createCookie(
-      OPTIMIZE_REFRESH_TOKEN,
-      tokens.getRefreshToken(),
-      Optional.ofNullable(refreshTokenExpirationDate).map(Date::toInstant).orElse(null),
-      scheme
-    );
+    final Cookie optimizeRefreshCookie =
+        authCookieService.createCookie(
+            OPTIMIZE_REFRESH_TOKEN,
+            tokens.getRefreshToken(),
+            Optional.ofNullable(refreshTokenExpirationDate).map(Date::toInstant).orElse(null),
+            scheme);
     return List.of(optimizeAuthCookie, optimizeRefreshCookie);
   }
 
-  public List<NewCookie> createOptimizeAuthNewCookies(final Tokens tokens, final AccessToken accessToken, final String scheme) {
-    final NewCookie optimizeAuthCookie = authCookieService.createCookie(
-      OPTIMIZE_AUTHORIZATION,
-      accessToken.getToken().getToken(),
-      accessToken.getToken().getExpiresAt(),
-      scheme
-    );
-    final NewCookie optimizeRefreshCookie = authCookieService.createCookie(
-      OPTIMIZE_REFRESH_TOKEN,
-      tokens.getRefreshToken(),
-      getRefreshTokenExpirationDate(tokens.getRefreshToken()),
-      scheme
-    );
+  public List<NewCookie> createOptimizeAuthNewCookies(
+      final Tokens tokens, final AccessToken accessToken, final String scheme) {
+    final NewCookie optimizeAuthCookie =
+        authCookieService.createCookie(
+            OPTIMIZE_AUTHORIZATION,
+            accessToken.getToken().getToken(),
+            accessToken.getToken().getExpiresAt(),
+            scheme);
+    final NewCookie optimizeRefreshCookie =
+        authCookieService.createCookie(
+            OPTIMIZE_REFRESH_TOKEN,
+            tokens.getRefreshToken(),
+            getRefreshTokenExpirationDate(tokens.getRefreshToken()),
+            scheme);
     return List.of(optimizeAuthCookie, optimizeRefreshCookie);
   }
 
   public List<Cookie> createOptimizeDeleteAuthCookies() {
     return List.of(
-      authCookieService.createDeleteOptimizeAuthCookie(),
-      authCookieService.createDeleteOptimizeRefreshCookie()
-    );
+        authCookieService.createDeleteOptimizeAuthCookie(),
+        authCookieService.createDeleteOptimizeRefreshCookie());
   }
 
   public List<NewCookie> createOptimizeDeleteAuthNewCookies() {
     return List.of(
-      authCookieService.createDeleteOptimizeAuthNewCookie(true),
-      authCookieService.createDeleteOptimizeRefreshNewCookie(true)
-    );
+        authCookieService.createDeleteOptimizeAuthNewCookie(true),
+        authCookieService.createDeleteOptimizeRefreshNewCookie(true));
   }
 
   public URI buildAuthorizeUri(final String redirectUri) {
     // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
-    final String authorizeUri = appendCallbackSubpath(getConfiguredRedirectUri().orElse(redirectUri));
+    final String authorizeUri =
+        appendCallbackSubpath(getConfiguredRedirectUri().orElse(redirectUri));
     log.trace("Authorizing with authorizeUri: {}", authorizeUri);
     return authentication().authorizeUriBuilder(authorizeUri).build();
   }
 
-  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
+  public Tokens exchangeAuthCode(
+      final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
     // If a redirect root URL is explicitly set, we append the callback subpath and use that.
     // Otherwise, we use the one provided in the request
-    final String redirectUri = getConfiguredRedirectUri()
-      .map(CCSMTokenService::appendCallbackSubpath)
-      .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
+    final String redirectUri =
+        getConfiguredRedirectUri()
+            .map(CCSMTokenService::appendCallbackSubpath)
+            .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
     log.trace("Exchanging auth code with redirectUri: {}", redirectUri);
     try {
       return authentication().exchangeAuthCode(authCode, redirectUri);
@@ -143,9 +147,8 @@ public class CCSMTokenService {
       return refreshTokenExpiresAt;
     } catch (final TokenDecodeException e) {
       log.trace(
-        "Refresh token is not a JWT and expiry date can not be determined. Error message: {}",
-        e.getMessage()
-      );
+          "Refresh token is not a JWT and expiry date can not be determined. Error message: {}",
+          e.getMessage());
       return null;
     }
   }
@@ -155,15 +158,17 @@ public class CCSMTokenService {
   }
 
   private Optional<String> getConfiguredRedirectUri() {
-    final String configuredRedirectRootUrl = configurationService.getAuthConfiguration()
-      .getCcsmAuthConfiguration()
-      .getRedirectRootUrl();
-    return StringUtils.isEmpty(configuredRedirectRootUrl) ? Optional.empty() : Optional.of(configuredRedirectRootUrl);
+    final String configuredRedirectRootUrl =
+        configurationService.getAuthConfiguration().getCcsmAuthConfiguration().getRedirectRootUrl();
+    return StringUtils.isEmpty(configuredRedirectRootUrl)
+        ? Optional.empty()
+        : Optional.of(configuredRedirectRootUrl);
   }
 
   public AccessToken verifyToken(final String accessToken) {
     try {
-      final AccessToken verifiedToken = authentication().verifyToken(extractTokenFromAuthorizationValue(accessToken));
+      final AccessToken verifiedToken =
+          authentication().verifyToken(extractTokenFromAuthorizationValue(accessToken));
       if (!userHasOptimizeAuthorization(verifiedToken)) {
         throw new NotAuthorizedException("User is not authorized to access Optimize");
       }
@@ -191,20 +196,22 @@ public class CCSMTokenService {
 
   public String getSubjectFromToken(final String accessToken) {
     try {
-      return authentication().decodeJWT(extractTokenFromAuthorizationValue(accessToken)).getSubject();
+      return authentication()
+          .decodeJWT(extractTokenFromAuthorizationValue(accessToken))
+          .getSubject();
     } catch (TokenDecodeException ex) {
       throw new NotAuthorizedException("Token could not be decoded", ex);
     }
   }
 
   public UserDto getUserInfoFromToken(final String userId, final String accessToken) {
-    final UserDetails userDetails = verifyToken(extractTokenFromAuthorizationValue(accessToken)).getUserDetails();
+    final UserDetails userDetails =
+        verifyToken(extractTokenFromAuthorizationValue(accessToken)).getUserDetails();
     return new UserDto(
-      userId,
-      userDetails.getName().orElse(userId),
-      userDetails.getEmail().orElse(userId),
-      Collections.emptyList()
-    );
+        userId,
+        userDetails.getName().orElse(userId),
+        userDetails.getEmail().orElse(userId),
+        Collections.emptyList());
   }
 
   public Optional<String> getCurrentUserIdFromAuthToken() {
@@ -218,19 +225,17 @@ public class CCSMTokenService {
 
   public Optional<String> getCurrentUserAuthToken() {
     return Optional.ofNullable(RequestContextHolder.getRequestAttributes())
-      .filter(ServletRequestAttributes.class::isInstance)
-      .map(ServletRequestAttributes.class::cast)
-      .map(ServletRequestAttributes::getRequest)
-      .flatMap(AuthCookieService::getAuthCookieToken);
+        .filter(ServletRequestAttributes.class::isInstance)
+        .map(ServletRequestAttributes.class::cast)
+        .map(ServletRequestAttributes::getRequest)
+        .flatMap(AuthCookieService::getAuthCookieToken);
   }
 
   public List<TenantDto> getAuthorizedTenantsFromToken(final String accessToken) {
     try {
-      return identity.tenants()
-        .forToken(accessToken)
-        .stream()
-        .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
-        .toList();
+      return identity.tenants().forToken(accessToken).stream()
+          .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
+          .toList();
     } catch (Exception e) {
       log.error("Could not retrieve authorized tenants from identity.", e);
       return Collections.emptyList();
@@ -251,5 +256,4 @@ public class CCSMTokenService {
   private static boolean userHasOptimizeAuthorization(final AccessToken accessToken) {
     return accessToken.getPermissions().contains(OPTIMIZE_PERMISSION);
   }
-
 }

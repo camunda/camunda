@@ -5,13 +5,6 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -21,6 +14,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationUtil {
@@ -34,9 +33,8 @@ public class ConfigurationUtil {
   }
 
   /**
-   * Checks if the given file exists and Optimize has the
-   * rights to read. If the given path is relative to
-   * the classpath, it is resolved to an absolute path.
+   * Checks if the given file exists and Optimize has the rights to read. If the given path is
+   * relative to the classpath, it is resolved to an absolute path.
    */
   public static URL resolvePathAsAbsoluteUrl(String pathToFile) {
     final File file = new File(pathToFile);
@@ -51,16 +49,16 @@ public class ConfigurationUtil {
       return getAbsolutePathOfClasspathFile(pathToFile);
     }
 
-    String errorMessage = String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
+    String errorMessage =
+        String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
     throw new OptimizeConfigurationException(errorMessage);
   }
 
   /**
-   * Checks if the given path to file is a relative to the class path
-   * or an absolute and then tries to resolve the corresponding file
-   * behind the path to a stream.
-   * <p>
-   * Note: Make sure to close the stream after it has been used.
+   * Checks if the given path to file is a relative to the class path or an absolute and then tries
+   * to resolve the corresponding file behind the path to a stream.
+   *
+   * <p>Note: Make sure to close the stream after it has been used.
    */
   public static InputStream resolvePathToStream(String pathToFile) {
     final File file = new File(pathToFile);
@@ -75,19 +73,22 @@ public class ConfigurationUtil {
       return getStreamOfClasspathFile(pathToFile);
     }
 
-    String errorMessage = String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
+    String errorMessage =
+        String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
     throw new OptimizeConfigurationException(errorMessage);
   }
 
   public static void ensureGreaterThanZero(int value) {
     if (value <= 0) {
-      throw new OptimizeRuntimeException("Value should be greater than zero, but was " + value + "!");
+      throw new OptimizeRuntimeException(
+          "Value should be greater than zero, but was " + value + "!");
     }
   }
 
   public static void ensureGreaterThanZero(long value) {
     if (value <= 0) {
-      throw new OptimizeRuntimeException("Value should be greater than zero, but was " + value + "!");
+      throw new OptimizeRuntimeException(
+          "Value should be greater than zero, but was " + value + "!");
     }
   }
 
@@ -114,7 +115,8 @@ public class ConfigurationUtil {
   }
 
   private static URL getAbsolutePathOfClasspathFile(String classpathToFile) {
-    return Objects.requireNonNull(ConfigurationUtil.class.getClassLoader().getResource(classpathToFile));
+    return Objects.requireNonNull(
+        ConfigurationUtil.class.getClassLoader().getResource(classpathToFile));
   }
 
   private static InputStream getStreamOfClasspathFile(String classpathToFile) {

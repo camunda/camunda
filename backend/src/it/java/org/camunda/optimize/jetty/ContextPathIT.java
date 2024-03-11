@@ -9,6 +9,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.UIConfigurationRestService;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -17,9 +18,11 @@ import jakarta.ws.rs.core.Response;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
+@Tag(OPENSEARCH_PASSING)
 public class ContextPathIT extends AbstractPlatformIT {
 
   @AfterAll

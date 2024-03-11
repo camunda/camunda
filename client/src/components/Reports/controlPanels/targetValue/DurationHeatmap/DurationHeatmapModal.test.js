@@ -38,6 +38,16 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   };
 });
 
+beforeEach(() => {
+  Object.defineProperty(global, 'ResizeObserver', {
+    writable: true,
+    value: jest.fn().mockImplementation(() => ({
+      observe: jest.fn(() => 'Mocking works'),
+      disconnect: jest.fn(),
+    })),
+  });
+});
+
 const validProps = {
   report: {
     data: {
@@ -119,9 +129,6 @@ it('should apply previously defined target values to input fields', async () => 
 });
 
 it('should set invalid property for input if value is invalid', async () => {
-  global.ResizeObserver = class {
-    observe(element, initObject) {}
-  };
   const node = mount(<DurationHeatmapModal {...validProps} />);
   node.setProps({open: true});
   await flushPromises();

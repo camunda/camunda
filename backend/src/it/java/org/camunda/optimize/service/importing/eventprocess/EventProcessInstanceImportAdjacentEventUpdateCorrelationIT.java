@@ -69,7 +69,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     importScenario.accept(this);
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -138,7 +138,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -207,7 +207,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -280,7 +280,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -364,7 +364,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -448,7 +448,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -527,7 +527,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     importScenario.accept(this);
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -596,7 +596,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -665,7 +665,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -738,7 +738,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -817,7 +817,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -896,7 +896,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()

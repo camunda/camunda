@@ -8,10 +8,14 @@ package org.camunda.optimize.service.util;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+@Tag(OPENSEARCH_PASSING)
 public class EngineVersionCheckerIT extends AbstractPlatformIT {
 
   @RegisterExtension

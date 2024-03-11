@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.group.value;
 
+import java.util.Objects;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-
-import java.util.Objects;
 
 @Data
 public class VariableGroupByValueDto implements ProcessGroupByValueDto {
@@ -25,7 +24,6 @@ public class VariableGroupByValueDto implements ProcessGroupByValueDto {
       return false;
     }
     VariableGroupByValueDto that = (VariableGroupByValueDto) o;
-    return Objects.equals(name, that.name) &&
-      Objects.equals(type, that.type);
+    return Objects.equals(name, that.name) && Objects.equals(type, that.type);
   }
 }

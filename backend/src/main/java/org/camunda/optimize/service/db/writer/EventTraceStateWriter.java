@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 
 public interface EventTraceStateWriter {
 
   void upsertEventTraceStates(final List<EventTraceStateDto> eventTraceStateDtos);
-
 }

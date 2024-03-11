@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BeanParam;
@@ -20,6 +24,9 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -42,14 +49,6 @@ import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
-import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
-import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
-
 @AllArgsConstructor
 @Path("/report")
 @Component
@@ -64,52 +63,58 @@ public class ReportRestService {
   @Path("/process/single/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdResponseDto createNewSingleProcessReport(@Context final ContainerRequestContext requestContext,
-                                                    @Valid final SingleProcessReportDefinitionRequestDto definition) {
+  public IdResponseDto createNewSingleProcessReport(
+      @Context final ContainerRequestContext requestContext,
+      @Valid final SingleProcessReportDefinitionRequestDto definition) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (definition != null && definition.getData() != null &&
-      (definition.getData().isManagementReport() || definition.getData().isInstantPreviewReport())) {
-      throw new OptimizeValidationException("Management or Instant Preview Reports cannot be created manually");
+    if (definition != null
+        && definition.getData() != null
+        && (definition.getData().isManagementReport()
+            || definition.getData().isInstantPreviewReport())) {
+      throw new OptimizeValidationException(
+          "Management or Instant Preview Reports cannot be created manually");
     }
     return reportService.createNewSingleProcessReport(
-      userId,
-      Optional.ofNullable(definition).orElseGet(SingleProcessReportDefinitionRequestDto::new)
-    );
+        userId,
+        Optional.ofNullable(definition).orElseGet(SingleProcessReportDefinitionRequestDto::new));
   }
 
   @POST
   @Path("/decision/single/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdResponseDto createNewSingleDecisionReport(@Context final ContainerRequestContext requestContext,
-                                                     @Valid final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
+  public IdResponseDto createNewSingleDecisionReport(
+      @Context final ContainerRequestContext requestContext,
+      @Valid final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewSingleDecisionReport(
-      userId,
-      Optional.ofNullable(singleDecisionReportDefinitionDto).orElseGet(SingleDecisionReportDefinitionRequestDto::new)
-    );
+        userId,
+        Optional.ofNullable(singleDecisionReportDefinitionDto)
+            .orElseGet(SingleDecisionReportDefinitionRequestDto::new));
   }
 
   @POST
   @Path("/process/combined/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdResponseDto createNewCombinedProcessReport(@Context final ContainerRequestContext requestContext,
-                                                      CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
+  public IdResponseDto createNewCombinedProcessReport(
+      @Context final ContainerRequestContext requestContext,
+      CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewCombinedProcessReport(
-      userId,
-      Optional.ofNullable(combinedReportDefinitionDto).orElseGet(CombinedReportDefinitionRequestDto::new)
-    );
+        userId,
+        Optional.ofNullable(combinedReportDefinitionDto)
+            .orElseGet(CombinedReportDefinitionRequestDto::new));
   }
 
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdResponseDto copyReport(@Context ContainerRequestContext requestContext,
-                                  @PathParam("id") String id,
-                                  @QueryParam("collectionId") String collectionId,
-                                  @QueryParam("name") String newReportName) {
+  public IdResponseDto copyReport(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String id,
+      @QueryParam("collectionId") String collectionId,
+      @QueryParam("name") String newReportName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (collectionId == null) {
       return reportService.copyReport(id, userId, newReportName);
@@ -122,28 +127,29 @@ public class ReportRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(@Context ContainerRequestContext requestContext) {
+  public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(
+      @Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<AuthorizedReportDefinitionResponseDto> reportDefinitions =
-      reportService.findAndFilterPrivateReports(userId);
-    reportDefinitions
-      .forEach(
+        reportService.findAndFilterPrivateReports(userId);
+    reportDefinitions.forEach(
         authorizedReportDefinitionDto ->
-          reportRestMapper.prepareLocalizedRestResponse(
-            authorizedReportDefinitionDto,
-            requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
-          ));
+            reportRestMapper.prepareLocalizedRestResponse(
+                authorizedReportDefinitionDto,
+                requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)));
     return reportDefinitions;
   }
 
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedReportDefinitionResponseDto getReport(@Context ContainerRequestContext requestContext,
-                                                         @PathParam("id") String reportId) {
+  public AuthorizedReportDefinitionResponseDto getReport(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String reportId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedReportDefinitionResponseDto reportDefinition = reportService.getReportDefinition(reportId, userId);
-    reportRestMapper.prepareLocalizedRestResponse(reportDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+    AuthorizedReportDefinitionResponseDto reportDefinition =
+        reportService.getReportDefinition(reportId, userId);
+    reportRestMapper.prepareLocalizedRestResponse(
+        reportDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return reportDefinition;
   }
 
@@ -151,62 +157,65 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedReportEvaluationResponseDto evaluateReportByIdWithFilters(@Context ContainerRequestContext requestContext,
-                                                                             @PathParam("id") String reportId,
-                                                                             @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
-                                                                             AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
+  public AuthorizedReportEvaluationResponseDto evaluateReportByIdWithFilters(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String reportId,
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
-      reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
-        userId,
-        timezone,
-        reportId,
-        reportEvaluationFilter,
-        PaginationDto.fromPaginationRequest(paginationRequestDto)
-      );
+        reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
+            userId,
+            timezone,
+            reportId,
+            reportEvaluationFilter,
+            PaginationDto.fromPaginationRequest(paginationRequestDto));
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
-      reportEvaluationResult,
-      requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
-    );
+        reportEvaluationResult, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @POST
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public AuthorizedReportEvaluationResponseDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
-                                                                      @Valid @NotNull ReportDefinitionDto reportDefinitionDto,
-                                                                      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+  public AuthorizedReportEvaluationResponseDto evaluateProvidedReport(
+      @Context ContainerRequestContext requestContext,
+      @Valid @NotNull ReportDefinitionDto reportDefinitionDto,
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
-      && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
+        && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
+            .getData()
+            .isManagementReport()) {
       throw new OptimizeValidationException("Unsaved Management Reports cannot be evaluated");
     }
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
-      reportEvaluationService.evaluateUnsavedReport(
-        userId,
-        timezone,
-        reportDefinitionDto,
-        PaginationDto.fromPaginationRequest(paginationRequestDto)
-      );
+        reportEvaluationService.evaluateUnsavedReport(
+            userId,
+            timezone,
+            reportDefinitionDto,
+            PaginationDto.fromPaginationRequest(paginationRequestDto));
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
-      reportEvaluationResult, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+        reportEvaluationResult, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @PUT
   @Path("/process/single/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateSingleProcessReport(@Context final ContainerRequestContext requestContext,
-                                        @PathParam("id") final String reportId,
-                                        @QueryParam("force") final boolean force,
-                                        @NotNull @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
+  public void updateSingleProcessReport(
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String reportId,
+      @QueryParam("force") final boolean force,
+      @NotNull @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final @Valid ProcessReportDataDto reportData = updatedReport.getData();
-    if (reportData != null && (reportData.isManagementReport() || reportData.isInstantPreviewReport())) {
-      throw new OptimizeValidationException("Existing Reports cannot be set as Management/Instant Preview Reports");
+    if (reportData != null
+        && (reportData.isManagementReport() || reportData.isInstantPreviewReport())) {
+      throw new OptimizeValidationException(
+          "Existing Reports cannot be set as Management/Instant Preview Reports");
     }
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
@@ -218,10 +227,11 @@ public class ReportRestService {
   @Path("/decision/single/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateSingleDecisionReport(@Context final ContainerRequestContext requestContext,
-                                         @PathParam("id") final String reportId,
-                                         @QueryParam("force") final boolean force,
-                                         @NotNull @Valid final SingleDecisionReportDefinitionRequestDto updatedReport) {
+  public void updateSingleDecisionReport(
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String reportId,
+      @QueryParam("force") final boolean force,
+      @NotNull @Valid final SingleDecisionReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
@@ -233,10 +243,11 @@ public class ReportRestService {
   @Path("/process/combined/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateCombinedProcessReport(@Context ContainerRequestContext requestContext,
-                                          @PathParam("id") String reportId,
-                                          @QueryParam("force") boolean force,
-                                          @NotNull CombinedReportDefinitionRequestDto updatedReport) {
+  public void updateCombinedProcessReport(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String reportId,
+      @QueryParam("force") boolean force,
+      @NotNull CombinedReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
@@ -247,8 +258,8 @@ public class ReportRestService {
   @GET
   @Path("/{id}/delete-conflicts")
   @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                                @PathParam("id") String reportId) {
+  public ConflictResponseDto getDeleteConflicts(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String reportId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.getReportDeleteConflictingItems(userId, reportId);
   }
@@ -256,11 +267,11 @@ public class ReportRestService {
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteReport(@Context ContainerRequestContext requestContext,
-                           @PathParam("id") String reportId,
-                           @QueryParam("force") boolean force) {
+  public void deleteReport(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String reportId,
+      @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     reportService.deleteReportAsUser(userId, reportId, force);
   }
-
 }

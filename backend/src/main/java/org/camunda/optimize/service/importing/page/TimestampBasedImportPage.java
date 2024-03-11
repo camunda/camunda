@@ -11,7 +11,8 @@ import java.time.ZoneId;
 
 public class TimestampBasedImportPage implements ImportPage {
 
-  private OffsetDateTime timestampOfLastEntity = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
+  private OffsetDateTime timestampOfLastEntity =
+      OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
 
   public OffsetDateTime getTimestampOfLastEntity() {
     return timestampOfLastEntity;
@@ -20,5 +21,4 @@ public class TimestampBasedImportPage implements ImportPage {
   public void setTimestampOfLastEntity(OffsetDateTime timestampOfLastEntity) {
     this.timestampOfLastEntity = timestampOfLastEntity;
   }
-
 }

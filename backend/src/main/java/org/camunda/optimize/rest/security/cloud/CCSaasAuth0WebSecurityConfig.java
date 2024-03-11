@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.security.cloud;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
@@ -19,8 +20,6 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-
-import java.util.List;
 
 @RequiredArgsConstructor
 @Configuration
@@ -38,30 +37,39 @@ public class CCSaasAuth0WebSecurityConfig {
 
   @Bean
   public OAuth2AuthorizedClientService authorizedClientService() {
-    return new InMemoryOAuth2AuthorizedClientService(
-      clientRegistrationRepository()
-    );
+    return new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository());
   }
 
   @Bean
   public ClientRegistrationRepository clientRegistrationRepository() {
-    final ClientRegistration.Builder builder = ClientRegistration.withRegistrationId(AUTH_0_CLIENT_REGISTRATION_ID)
-      .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-      .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-      // For allowed redirect urls auth0 is not supporting wildcards within the actual path.
-      // Thus the clusterId is passed along as query parameter and will get picked up by the cloud ingress proxy
-      // which redirects the callback to the particular Optimize instance of the cluster the login was issued from.
-      .redirectUri("{baseUrl}" + OAUTH_REDIRECT_ENDPOINT + "?uuid=" + getAuth0Configuration().getClusterId())
-      .authorizationUri(buildAuth0CustomDomainUrl(
-        AUTH0_AUTH_ENDPOINT + "?audience=" + getAuth0Configuration().getUserAccessTokenAudience().orElse("")
-      ))
-      .tokenUri(buildAuth0DomainUrl(AUTH0_TOKEN_ENDPOINT))
-      .userInfoUri(buildAuth0DomainUrl(AUTH0_USERINFO_ENDPOINT))
-      .scope("openid", "profile")
-      .userNameAttributeName(getAuth0Configuration().getUserIdAttributeName())
-      .clientId(getAuth0Configuration().getClientId())
-      .clientSecret(getAuth0Configuration().getClientSecret())
-      .jwkSetUri(String.format(URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT));
+    final ClientRegistration.Builder builder =
+        ClientRegistration.withRegistrationId(AUTH_0_CLIENT_REGISTRATION_ID)
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            // For allowed redirect urls auth0 is not supporting wildcards within the actual path.
+            // Thus the clusterId is passed along as query parameter and will get picked up by the
+            // cloud ingress proxy
+            // which redirects the callback to the particular Optimize instance of the cluster the
+            // login was issued from.
+            .redirectUri(
+                "{baseUrl}"
+                    + OAUTH_REDIRECT_ENDPOINT
+                    + "?uuid="
+                    + getAuth0Configuration().getClusterId())
+            .authorizationUri(
+                buildAuth0CustomDomainUrl(
+                    AUTH0_AUTH_ENDPOINT
+                        + "?audience="
+                        + getAuth0Configuration().getUserAccessTokenAudience().orElse("")))
+            .tokenUri(buildAuth0DomainUrl(AUTH0_TOKEN_ENDPOINT))
+            .userInfoUri(buildAuth0DomainUrl(AUTH0_USERINFO_ENDPOINT))
+            .scope("openid", "profile")
+            .userNameAttributeName(getAuth0Configuration().getUserIdAttributeName())
+            .clientId(getAuth0Configuration().getClientId())
+            .clientSecret(getAuth0Configuration().getClientSecret())
+            .jwkSetUri(
+                String.format(
+                    URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT));
     return new InMemoryClientRegistrationRepository(List.of(builder.build()));
   }
 

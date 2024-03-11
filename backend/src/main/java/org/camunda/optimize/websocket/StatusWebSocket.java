@@ -6,6 +6,8 @@
 package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.ApplicationContextProvider;
@@ -18,29 +20,25 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 @NoArgsConstructor
 @Slf4j
 @WebSocket
 public class StatusWebSocket {
   private static final String ERROR_MESSAGE = "Web socket connection terminated prematurely!";
-  private final StatusCheckingService statusCheckingService = ApplicationContextProvider.getBean(StatusCheckingService.class);
+  private final StatusCheckingService statusCheckingService =
+      ApplicationContextProvider.getBean(StatusCheckingService.class);
   private final ObjectMapper objectMapper = ApplicationContextProvider.getBean(ObjectMapper.class);
-  private final ConfigurationService configurationService = ApplicationContextProvider.getBean(ConfigurationService.class);
-  private final ImportSchedulerManagerService importSchedulerManagerService = ApplicationContextProvider.getBean(ImportSchedulerManagerService.class);
+  private final ConfigurationService configurationService =
+      ApplicationContextProvider.getBean(ConfigurationService.class);
+  private final ImportSchedulerManagerService importSchedulerManagerService =
+      ApplicationContextProvider.getBean(ImportSchedulerManagerService.class);
 
   private final Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
   @OnWebSocketConnect
   public void onOpen(final Session session) {
     if (statusReportJobs.size() < configurationService.getMaxStatusConnections()) {
-      StatusNotifier job = new StatusNotifier(
-        statusCheckingService,
-        objectMapper,
-        session
-      );
+      StatusNotifier job = new StatusNotifier(statusCheckingService, objectMapper, session);
       statusReportJobs.put(session.toString(), job);
       importSchedulerManagerService.subscribeImportObserver(job);
       log.debug("starting to report status for session [{}]", session);
@@ -48,7 +46,6 @@ public class StatusWebSocket {
       log.debug("cannot create status report job for [{}], max connections exceeded", session);
       session.close();
     }
-
   }
 
   @OnWebSocketClose
@@ -73,5 +70,4 @@ public class StatusWebSocket {
     }
     removeSession(session);
   }
-
 }

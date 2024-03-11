@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.process.digest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
@@ -13,6 +18,11 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
 import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
@@ -32,17 +42,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
 public class ProcessDigestNotificationIT extends AbstractPlatformIT {
 
   private static final String DEF_KEY = "aProcessDefKey";
@@ -54,7 +53,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().setNotificationEmailAddress("from@localhost.com");
     embeddedOptimizeExtension.getConfigurationService().setNotificationEmailHostname("127.0.0.1");
     embeddedOptimizeExtension.getConfigurationService().setNotificationEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
-    EmailAuthenticationConfiguration emailAuthenticationConfiguration =
+    final EmailAuthenticationConfiguration emailAuthenticationConfiguration =
       embeddedOptimizeExtension.getConfigurationService().getEmailAuthenticationConfiguration();
     emailAuthenticationConfiguration.setEnabled(false);
     // adjust digest schedule to shorten wait for emails in IT
@@ -252,7 +251,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
       .containsIgnoringWhitespaces(
         "#/report/" + reportId + "?utm_medium=email&utm_source=digest")
-      .containsIgnoringWhitespaces("#/processes");
+      .containsIgnoringWhitespaces("#/");
   }
 
   @Test
@@ -273,7 +272,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
       assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
         .containsIgnoringWhitespaces(
           customContextPath + "/#/report/" + reportId + "?utm_medium=email&utm_source=digest")
-        .containsIgnoringWhitespaces(customContextPath + "/#/processes");
+        .containsIgnoringWhitespaces(customContextPath + "/#/");
     } finally {
       embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
     }
@@ -325,7 +324,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     processOverviewClient.updateProcess(DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto());
     final String reportId = createKpiDurationReport("KPI Report 2");
     runKpiSchedulerAndRefreshIndices();
-    Map<String, String> expectedResultMap = new HashMap<>();
+    final Map<String, String> expectedResultMap = new HashMap<>();
     expectedResultMap.put(reportId, null);
 
     // when the digest is run
@@ -402,7 +401,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(target);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(reportName);
     singleProcessReportDefinitionDto.setData(reportDataDto);
@@ -415,12 +414,12 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
       .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
       .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
-    TargetDto targetDto = new TargetDto();
+    final TargetDto targetDto = new TargetDto();
     targetDto.setValue("999");
     targetDto.setIsBelow(true);
     targetDto.setUnit(TargetValueUnit.HOURS);
     reportDataDto.getConfiguration().getTargetValue().getDurationProgress().setTarget(targetDto);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(reportName);
     singleProcessReportDefinitionDto.setData(reportDataDto);
@@ -433,21 +432,21 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
   }
 
   @SneakyThrows
-  private String readEmailHtmlContent(MimeMessage message) {
-    Object content = message.getContent();
+  private String readEmailHtmlContent(final MimeMessage message) {
+    final Object content = message.getContent();
 
-    if (content instanceof String contentString) {
+    if (content instanceof final String contentString) {
       return contentString;
-    } else if (content instanceof Multipart multipart) {
+    } else if (content instanceof final Multipart multipart) {
       return extractHtmlContentFromMultipart(multipart);
     }
     throw new OptimizeIntegrationTestException("Unsupported email content type.");
   }
 
-  private String extractHtmlContentFromMultipart(Multipart multipart) throws IOException, MessagingException {
+  private String extractHtmlContentFromMultipart(final Multipart multipart) throws IOException, MessagingException {
     for (int i = 0; i < multipart.getCount(); i++) {
-      Part part = multipart.getBodyPart(i);
-      String contentType = part.getContentType();
+      final Part part = multipart.getBodyPart(i);
+      final String contentType = part.getContentType();
       if (contentType != null && contentType.toLowerCase().contains("text/html")) {
         return (String) part.getContent();
       } else if (part.getContent() instanceof Multipart) {

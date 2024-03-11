@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -17,7 +18,9 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
+@Tag(OPENSEARCH_PASSING)
 public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   public static final Comparator<EntityResponseDto> DEFAULT_ENTITIES_COMPARATOR =

@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.writer.ExternalEventWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
 
 @AllArgsConstructor
 @Component
@@ -30,13 +29,14 @@ public class IngestedEventCleanupService extends CleanupService {
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
     final OffsetDateTime endDate = startTime.minus(getCleanupConfiguration().getTtl());
-    log.info("Performing cleanup on external ingested events with a timestamp older than {}", endDate);
+    log.info(
+        "Performing cleanup on external ingested events with a timestamp older than {}", endDate);
     externalEventWriter.deleteEventsOlderThan(endDate);
-    log.info("Finished cleanup on external ingested events with a timestamp older than {}", endDate);
+    log.info(
+        "Finished cleanup on external ingested events with a timestamp older than {}", endDate);
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
-
 }

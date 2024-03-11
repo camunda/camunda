@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
-import lombok.Data;
-import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
-
 import java.util.Map;
 import java.util.function.Function;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 
 @Data
 public class WebhookConfiguration {
@@ -20,17 +19,25 @@ public class WebhookConfiguration {
   private ProxyConfiguration proxy;
 
   public enum Placeholder {
-    // This only works as the link is at the end of the composed text. We would need to refactor this if the webhook
+    // This only works as the link is at the end of the composed text. We would need to refactor
+    // this if the webhook
     // structure of alerts changes in future
-    ALERT_MESSAGE(alertNotificationDto -> alertNotificationDto.getAlertMessage()  + "&utm_medium=webhook"),
+    ALERT_MESSAGE(
+        alertNotificationDto -> alertNotificationDto.getAlertMessage() + "&utm_medium=webhook"),
     ALERT_NAME(notificationDto -> notificationDto.getAlert().getName()),
-    ALERT_REPORT_LINK(alertNotificationDto -> alertNotificationDto.getReportLink() + "&utm_medium=webhook"),
+    ALERT_REPORT_LINK(
+        alertNotificationDto -> alertNotificationDto.getReportLink() + "&utm_medium=webhook"),
     ALERT_CURRENT_VALUE(notificationDto -> String.valueOf(notificationDto.getCurrentValue())),
-    ALERT_THRESHOLD_VALUE(notificationDto -> String.valueOf(notificationDto.getAlert().getThreshold())),
-    ALERT_THRESHOLD_OPERATOR(notificationDto -> notificationDto.getAlert().getThresholdOperator().getId()),
+    ALERT_THRESHOLD_VALUE(
+        notificationDto -> String.valueOf(notificationDto.getAlert().getThreshold())),
+    ALERT_THRESHOLD_OPERATOR(
+        notificationDto -> notificationDto.getAlert().getThresholdOperator().getId()),
     ALERT_TYPE(notificationDto -> notificationDto.getType().getId()),
-    ALERT_INTERVAL(notificationDto -> String.valueOf(notificationDto.getAlert().getCheckInterval().getValue())),
-    ALERT_INTERVAL_UNIT(notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId()),
+    ALERT_INTERVAL(
+        notificationDto ->
+            String.valueOf(notificationDto.getAlert().getCheckInterval().getValue())),
+    ALERT_INTERVAL_UNIT(
+        notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId()),
     ;
 
     private static final String PLACEHOLDER_TEMPLATE = "{{%s}}";

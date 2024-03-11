@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.reader.BackupReader;
@@ -12,10 +15,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Component
@@ -25,30 +24,29 @@ public class BackupReaderOS implements BackupReader {
 
   @Override
   public void validateRepositoryExistsOrFail() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void validateNoDuplicateBackupId(final Long backupId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public Map<Long, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<SnapshotInfo> getAllOptimizeSnapshots() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Long backupId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

@@ -7,5 +7,5 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.NoneDistributedByValueDto;
 
-public class NoneDistributedByDto extends ProcessReportDistributedByDto<NoneDistributedByValueDto> {
-}
+public class NoneDistributedByDto
+    extends ProcessReportDistributedByDto<NoneDistributedByValueDto> {}

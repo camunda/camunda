@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.plugin.security.authentication;
 
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
@@ -12,10 +14,9 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.NewCookie;
-import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -24,12 +25,14 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
 
   private static final String TEST_DEFINITION = "test-definition";

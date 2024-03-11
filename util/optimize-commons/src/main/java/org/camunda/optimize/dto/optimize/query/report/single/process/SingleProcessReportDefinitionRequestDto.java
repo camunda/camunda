@@ -5,19 +5,19 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
+import static java.util.stream.Collectors.toList;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.List;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
-import java.util.List;
-
-import static java.util.stream.Collectors.toList;
-
 @SuperBuilder
-public class SingleProcessReportDefinitionRequestDto extends SingleReportDefinitionDto<ProcessReportDataDto> {
+public class SingleProcessReportDefinitionRequestDto
+    extends SingleReportDefinitionDto<ProcessReportDataDto> {
 
   public SingleProcessReportDefinitionRequestDto() {
     super(new ProcessReportDataDto(), false, ReportType.PROCESS);
@@ -34,8 +34,6 @@ public class SingleProcessReportDefinitionRequestDto extends SingleReportDefinit
 
   @JsonIgnore
   public List<FilterDataDto> getFilterData() {
-    return data.getFilter().stream()
-      .map(ProcessFilterDto::getData)
-      .collect(toList());
+    return data.getFilter().stream().map(ProcessFilterDto::getData).collect(toList());
   }
 }

@@ -7,14 +7,13 @@ package org.camunda.optimize.service.util.configuration.cleanup;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -22,8 +21,10 @@ import java.util.Set;
 public class DecisionCleanupConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
+
   @JsonProperty("perDecisionDefinitionConfig")
-  private Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration = new HashMap<>();
+  private Map<String, DecisionDefinitionCleanupConfiguration>
+      decisionDefinitionSpecificConfiguration = new HashMap<>();
 
   public DecisionCleanupConfiguration(final boolean enabled) {
     this.enabled = enabled;
@@ -34,8 +35,8 @@ public class DecisionCleanupConfiguration {
   }
 
   public void setDecisionDefinitionSpecificConfiguration(
-    Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration) {
-    this.decisionDefinitionSpecificConfiguration = Optional.ofNullable(decisionDefinitionSpecificConfiguration)
-      .orElse(new HashMap<>());
+      Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration) {
+    this.decisionDefinitionSpecificConfiguration =
+        Optional.ofNullable(decisionDefinitionSpecificConfiguration).orElse(new HashMap<>());
   }
 }

@@ -167,3 +167,46 @@ it('should set the axis id for charts', () => {
   expect(horizontalBarData.datasets[0].xAxisID).toBe('axis-0');
   expect(horizontalBarData.datasets[1].xAxisID).toBe('axis-1');
 });
+
+it('should sort all values according the first measure labels', () => {
+  const result = {
+    measures: [
+      {
+        property: 'frequency',
+        data: [
+          {key: 'foo', value: 10},
+          {key: 'bar', value: 20},
+        ],
+      },
+      {
+        property: 'duration',
+        data: [
+          {key: 'bar', value: 11},
+          {key: 'foo', value: 22},
+        ],
+      },
+    ],
+  };
+
+  const chartData = createDefaultChartData({
+    report: {
+      result,
+      data: {
+        configuration: {
+          color: 'testColor',
+          measureVisualizations: {frequency: 'line', duration: 'bar'},
+        },
+        groupBy: {
+          type: '',
+          value: '',
+          view: {properties: ['duration'], entity: 'flowNode'},
+        },
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+      },
+    },
+  });
+
+  expect(chartData.labels).toEqual(['foo', 'bar']);
+  expect(chartData.datasets[0].data).toEqual([10, 20]);
+  expect(chartData.datasets[1].data).toEqual([22, 11]);
+});

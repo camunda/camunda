@@ -22,5 +22,4 @@ public class ImportRequestDto {
   private Object source;
   private RequestType type;
   private int retryNumberOnConflict;
-
 }

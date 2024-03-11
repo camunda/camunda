@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.util.List;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.handler.DefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
@@ -12,15 +13,14 @@ import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.List;
-
 public abstract class DefinitionXmlImportMediator<T extends DefinitionXmlImportIndexHandler, DTO>
-  extends BackoffImportMediator<T, DTO> {
+    extends BackoffImportMediator<T, DTO> {
 
-  protected DefinitionXmlImportMediator(final ConfigurationService configurationService,
-                                        final BackoffCalculator idleBackoffCalculator,
-                                        final T importIndexHandler,
-                                        final ImportService<DTO> importService) {
+  protected DefinitionXmlImportMediator(
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator,
+      final T importIndexHandler,
+      final ImportService<DTO> importService) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
   }
 
@@ -37,7 +37,8 @@ public abstract class DefinitionXmlImportMediator<T extends DefinitionXmlImportI
       List<DTO> entities = getEntities(page);
       if (!entities.isEmpty()) {
         importIndexHandler.updateIndex(page.getIds().size());
-        importService.executeImport(filterEntitiesFromExcludedTenants(entities), importCompleteCallback);
+        importService.executeImport(
+            filterEntitiesFromExcludedTenants(entities), importCompleteCallback);
       } else {
         importCompleteCallback.run();
       }
@@ -46,5 +47,4 @@ public abstract class DefinitionXmlImportMediator<T extends DefinitionXmlImportI
     importCompleteCallback.run();
     return false;
   }
-
 }

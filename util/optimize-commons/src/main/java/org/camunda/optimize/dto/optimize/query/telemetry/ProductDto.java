@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.telemetry;
 
+import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,22 +15,13 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
-
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
 @Builder
 @Data
 public class ProductDto implements OptimizeDto {
-  @NonNull
-  @Builder.Default
-  private String name = "Camunda Optimize";
-  @NonNull
-  @Builder.Default
-  private String version = RAW_VERSION;
-  @NonNull
-  @Builder.Default
-  private String edition = "enterprise";
-  @NonNull
-  private InternalsDto internals;
+  @NonNull @Builder.Default private String name = "Camunda Optimize";
+  @NonNull @Builder.Default private String version = RAW_VERSION;
+  @NonNull @Builder.Default private String edition = "enterprise";
+  @NonNull private InternalsDto internals;
 }

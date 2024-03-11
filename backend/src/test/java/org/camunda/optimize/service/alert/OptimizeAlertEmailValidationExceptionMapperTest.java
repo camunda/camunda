@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.alert;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.Response;
+import java.util.Map;
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.rest.AlertEmailValidationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.rest.providers.OptimizeAlertEmailValidationExceptionMapper;
 import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
 import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class OptimizeAlertEmailValidationExceptionMapperTest {
 
@@ -26,26 +25,28 @@ public class OptimizeAlertEmailValidationExceptionMapperTest {
     // given
     final Set<String> invalidEmails = Set.of("invalid@email.com", "another@bademail.com");
     final OptimizeAlertEmailValidationException emailValidationException =
-      new OptimizeAlertEmailValidationException(invalidEmails);
+        new OptimizeAlertEmailValidationException(invalidEmails);
     final OptimizeAlertEmailValidationExceptionMapper underTest =
-      new OptimizeAlertEmailValidationExceptionMapper();
+        new OptimizeAlertEmailValidationExceptionMapper();
 
     // when
     final Response response = underTest.toResponse(emailValidationException);
-    Map<String, Object> mappedResponse = new ObjectMapper()
-      .convertValue(response.getEntity(), new TypeReference<>() {
-      });
+    Map<String, Object> mappedResponse =
+        new ObjectMapper().convertValue(response.getEntity(), new TypeReference<>() {});
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(mappedResponse.get(ErrorResponseDto.Fields.errorCode)).asString()
-      .isEqualTo(OptimizeAlertEmailValidationException.ERROR_CODE);
-    assertThat(mappedResponse.get(ErrorResponseDto.Fields.errorMessage)).asString()
-      .isEqualTo(OptimizeAlertEmailValidationException.ERROR_MESSAGE + invalidEmails);
-    assertThat(mappedResponse.get(ErrorResponseDto.Fields.detailedMessage)).asString()
-      .isEqualTo(OptimizeAlertEmailValidationException.ERROR_MESSAGE + invalidEmails);
-    assertThat(mappedResponse.get(AlertEmailValidationResponseDto.Fields.invalidAlertEmails)).asString()
-      .isEqualTo(String.join(", ", invalidEmails));
+    assertThat(mappedResponse.get(ErrorResponseDto.Fields.errorCode))
+        .asString()
+        .isEqualTo(OptimizeAlertEmailValidationException.ERROR_CODE);
+    assertThat(mappedResponse.get(ErrorResponseDto.Fields.errorMessage))
+        .asString()
+        .isEqualTo(OptimizeAlertEmailValidationException.ERROR_MESSAGE + invalidEmails);
+    assertThat(mappedResponse.get(ErrorResponseDto.Fields.detailedMessage))
+        .asString()
+        .isEqualTo(OptimizeAlertEmailValidationException.ERROR_MESSAGE + invalidEmails);
+    assertThat(mappedResponse.get(AlertEmailValidationResponseDto.Fields.invalidAlertEmails))
+        .asString()
+        .isEqualTo(String.join(", ", invalidEmails));
   }
-
 }

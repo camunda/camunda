@@ -11,13 +11,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation can be used on REST endpoints to set the Cache-Control header
- * to allow the request to be cached by the browser.
- * <p>
- * It gets consumed by the {@link CacheRequestFilterFactory} provider which then creates
- * the filter that sets the Cache-Control header for the response
+ * This annotation can be used on REST endpoints to set the Cache-Control header to allow the
+ * request to be cached by the browser.
+ *
+ * <p>It gets consumed by the {@link CacheRequestFilterFactory} provider which then creates the
+ * filter that sets the Cache-Control header for the response
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface CacheRequest {
-}
+public @interface CacheRequest {}

@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.group;
 
+import java.time.temporal.ChronoUnit;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-
-import java.time.temporal.ChronoUnit;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregateByDateUnitMapper {

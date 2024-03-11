@@ -26,6 +26,7 @@ import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImp
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,6 +51,7 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
@@ -66,6 +68,7 @@ import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionImportIT extends AbstractImportIT {
 
   private static final String DMN_DIAGRAM_NO_INPUT_TYPE = "dmn/compatibility/NoInputType-DMN.dmn";

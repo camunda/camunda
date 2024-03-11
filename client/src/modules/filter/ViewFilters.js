@@ -5,23 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect} from 'react';
 import {MenuItem} from '@carbon/react';
 import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import classNames from 'classnames';
 
 import {t} from 'translation';
-import {getOptimizeProfile} from 'config';
 
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
-  const [optimizeProfile, setOptimizeProfile] = useState();
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-    })();
-  }, []);
-
   return (
     <MenuDropdown
       size="sm"
@@ -58,20 +48,16 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
         label={t('common.filter.types.incident')}
         onClick={openNewFilterModal('incident')}
       />
-      {optimizeProfile === 'platform' && (
-        <>
-          <MenuItem
-            label={t('report.groupBy.userAssignee')}
-            disabled={processDefinitionIsNotSelected}
-            onClick={openNewFilterModal('assignee')}
-          />
-          <MenuItem
-            label={t('report.groupBy.userGroup')}
-            disabled={processDefinitionIsNotSelected}
-            onClick={openNewFilterModal('candidateGroup')}
-          />
-        </>
-      )}
+      <MenuItem
+        label={t('report.groupBy.userAssignee')}
+        disabled={processDefinitionIsNotSelected}
+        onClick={openNewFilterModal('assignee')}
+      />
+      <MenuItem
+        label={t('report.groupBy.userGroup')}
+        disabled={processDefinitionIsNotSelected}
+        onClick={openNewFilterModal('candidateGroup')}
+      />
       <MenuItem
         label={t('common.filter.types.flowNodeSelection')}
         disabled={processDefinitionIsNotSelected}

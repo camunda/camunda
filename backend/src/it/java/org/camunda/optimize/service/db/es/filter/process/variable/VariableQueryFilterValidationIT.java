@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.filter.process.variable;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -12,13 +13,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.service.db.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
+@Tag(OPENSEARCH_PASSING)
 public class VariableQueryFilterValidationIT extends AbstractFilterIT {
 
   @Test

@@ -4,15 +4,15 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@bpmn-io/dmn-migrate": "^0.4.3",
+    "@bpmn-io/dmn-migrate": "^0.5.0",
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
-    "@camunda/camunda-composite-components": "^0.4.0",
+    "@camunda/camunda-composite-components": "^0.5.0",
     "@camunda/camunda-optimize-composite-components": "^0.0.15-rc4",
     "@carbon/icons-react": "^11.25.0",
     "@carbon/react": "^1.38.0",
     "@lexical/react": "^0.12.0",
     "@ungap/structured-clone": "^1.2.0",
-    "bpmn-js": "16.3.2",
+    "bpmn-js": "16.5.0",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.7",
     "chart.js": "^4.4.0",
     "chartjs-plugin-datalabels": "^2.2.0",
@@ -60,7 +60,7 @@
     "start-backend-sm": "node scripts/start-backend self-managed",
     "restart-backend": "curl http://localhost:8100/api/restartBackend",
     "dependencies": "node scripts/dependencies.js",
-    "prepare": "cd .. && husky install client/.husky"
+    "prepare": "cd .. && husky client/.husky"
   },
   "lint-staged": {
     "src/**/*.scss": [
@@ -85,7 +85,7 @@
     "@types/carbon__icons-react": "^11.26.1",
     "@types/enzyme": "^3.10.13",
     "@types/enzyme-adapter-react-16": "^1.0.6",
-    "@types/jest": "29.5.11",
+    "@types/jest": "29.5.12",
     "@types/node": "^20.6.2",
     "@types/react": "^18.0.11",
     "@types/react-date-range": "^1.4.4",
@@ -103,7 +103,7 @@
     "eslint-plugin-testcafe": "^0.2.1",
     "event-source-polyfill": "^1.0.31",
     "http-proxy-middleware": "^2.0.6",
-    "husky": "^8.0.3",
+    "husky": "^9.0.0",
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^16.0.0",
     "license-checker": "^25.0.1",

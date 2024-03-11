@@ -19,6 +19,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -49,9 +51,6 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import java.util.List;
-import java.util.Map;
-
 @AllArgsConstructor
 @Path("/eventBasedProcess")
 @Component
@@ -68,41 +67,42 @@ public class EventBasedProcessRestService {
   @GET
   @Path("/isEnabled")
   @Produces(MediaType.APPLICATION_JSON)
-  public boolean getIsEnabled(@Context ContainerRequestContext requestContext) {
-    return isUserGrantedEventProcessManagementAccess(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+  public boolean getIsEnabled(@Context final ContainerRequestContext requestContext) {
+    return isUserGrantedEventProcessManagementAccess(
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
   }
 
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public EventProcessMappingResponseDto getEventProcessMapping(@PathParam("id") final String eventProcessId,
-                                                               @Context ContainerRequestContext requestContext) {
+  public EventProcessMappingResponseDto getEventProcessMapping(
+      @PathParam("id") final String eventProcessId,
+      @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
-      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
-    );
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return mapMappingDtoToRestDto(userId, eventProcessService.getEventProcessMapping(userId, eventProcessId));
+    return mapMappingDtoToRestDto(
+        userId, eventProcessService.getEventProcessMapping(userId, eventProcessId));
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<EventProcessMappingResponseDto> getAllEventProcessMappingsOmitXml(
-    @Context final ContainerRequestContext requestContext) {
+      @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
-      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
-    );
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return eventProcessService.getAllEventProcessMappingsOmitXml(userId)
-      .stream()
-      .map(mappingRestDto -> mapMappingDtoToRestDto(userId, mappingRestDto))
-      .toList();
+    return eventProcessService.getAllEventProcessMappingsOmitXml(userId).stream()
+        .map(mappingRestDto -> mapMappingDtoToRestDto(userId, mappingRestDto))
+        .toList();
   }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdResponseDto createEventProcessMapping(@Valid final EventProcessMappingCreateRequestDto createRequestDto,
-                                                 @Context final ContainerRequestContext requestContext) {
+  public IdResponseDto createEventProcessMapping(
+      @Valid final EventProcessMappingCreateRequestDto createRequestDto,
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
     return eventProcessService.createEventProcessMapping(userId, createRequestDto);
@@ -112,9 +112,10 @@ public class EventBasedProcessRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateEventProcessMapping(@PathParam("id") final String eventProcessId,
-                                        @Context final ContainerRequestContext requestContext,
-                                        @Valid final EventProcessMappingRequestDto updateRequestDto) {
+  public void updateEventProcessMapping(
+      @PathParam("id") final String eventProcessId,
+      @Context final ContainerRequestContext requestContext,
+      @Valid final EventProcessMappingRequestDto updateRequestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
     eventProcessService.updateEventProcessMapping(userId, eventProcessId, updateRequestDto);
@@ -123,11 +124,11 @@ public class EventBasedProcessRestService {
   @POST
   @Path("/{id}/_publish")
   @Produces(MediaType.APPLICATION_JSON)
-  public void publishEventProcessMapping(@PathParam("id") final String eventProcessId,
-                                         @Context final ContainerRequestContext requestContext) {
+  public void publishEventProcessMapping(
+      @PathParam("id") final String eventProcessId,
+      @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
-      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
-    );
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     eventProcessService.publishEventProcessMapping(userId, eventProcessId);
   }
@@ -135,11 +136,11 @@ public class EventBasedProcessRestService {
   @POST
   @Path("/{id}/_cancelPublish")
   @Produces(MediaType.APPLICATION_JSON)
-  public void cancelEventProcessPublish(@PathParam("id") final String eventProcessId,
-                                        @Context final ContainerRequestContext requestContext) {
+  public void cancelEventProcessPublish(
+      @PathParam("id") final String eventProcessId,
+      @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
-      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
-    );
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     eventProcessService.cancelPublish(userId, eventProcessId);
   }
@@ -147,26 +148,31 @@ public class EventBasedProcessRestService {
   @GET
   @Path("/{id}/delete-conflicts")
   @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                                @PathParam("id") String eventProcessId) {
-    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+  public ConflictResponseDto getDeleteConflicts(
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String eventProcessId) {
+    validateAccessToEventProcessManagement(
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     return eventProcessService.getDeleteConflictingItems(eventProcessId);
   }
 
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteEventProcess(@PathParam("id") final String eventProcessId,
-                                 @Context final ContainerRequestContext requestContext) {
-    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
-    final boolean wasFoundAndDeleted = eventProcessService.deleteEventProcessMapping(eventProcessId);
+  public void deleteEventProcess(
+      @PathParam("id") final String eventProcessId,
+      @Context final ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    final boolean wasFoundAndDeleted =
+        eventProcessService.deleteEventProcessMapping(eventProcessId);
 
     if (!wasFoundAndDeleted) {
-      final String errorMessage = String.format(
-        "Could not delete event-based process with id [%s]. Event-based process does not exist." +
-          "Maybe it was already deleted by someone else?",
-        eventProcessId
-      );
+      final String errorMessage =
+          String.format(
+              "Could not delete event-based process with id [%s]. Event-based process does not exist. "
+                  + "Maybe it was already deleted by someone else?",
+              eventProcessId);
       throw new NotFoundException(errorMessage);
     }
   }
@@ -175,38 +181,46 @@ public class EventBasedProcessRestService {
   @Path("/{id}/role/")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EventProcessRoleResponseDto> getRoles(@PathParam("id") final String eventProcessId,
-                                                    @Context final ContainerRequestContext requestContext) {
+  public List<EventProcessRoleResponseDto> getRoles(
+      @PathParam("id") final String eventProcessId,
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
-    return eventProcessRoleService.getRoles(eventProcessId)
-      .stream()
-      .filter(eventRole -> identityService.isUserAuthorizedToAccessIdentity(userId, eventRole.getIdentity()))
-      .map(this::mapToEventProcessRoleRestDto)
-      .toList();
+    return eventProcessRoleService.getRoles(eventProcessId).stream()
+        .filter(
+            eventRole ->
+                identityService.isUserAuthorizedToAccessIdentity(userId, eventRole.getIdentity()))
+        .map(this::mapToEventProcessRoleRestDto)
+        .toList();
   }
 
   @PUT
   @Path("/{id}/role/")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public void updateRoles(@PathParam("id") final String eventProcessId,
-                          @NotNull final List<EventProcessRoleRequestDto<IdentityDto>> rolesDtoRequest,
-                          @Context final ContainerRequestContext requestContext) {
+  public void updateRoles(
+      @PathParam("id") final String eventProcessId,
+      @NotNull final List<EventProcessRoleRequestDto<IdentityDto>> rolesDtoRequest,
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
-    final List<EventProcessRoleRequestDto<IdentityDto>> eventRoleDtos = rolesDtoRequest.stream()
-      .map(roleDto -> resolveToEventProcessRoleDto(userId, roleDto))
-      .peek(roleDto -> identityService.validateUserAuthorizedToAccessRoleOrFail(userId, roleDto.getIdentity()))
-      .toList();
+    final List<EventProcessRoleRequestDto<IdentityDto>> eventRoleDtos =
+        rolesDtoRequest.stream()
+            .map(roleDto -> resolveToEventProcessRoleDto(userId, roleDto))
+            .peek(
+                roleDto ->
+                    identityService.validateUserAuthorizedToAccessRoleOrFail(
+                        userId, roleDto.getIdentity()))
+            .toList();
     eventProcessRoleService.updateRoles(eventProcessId, eventRoleDtos, userId);
   }
 
   @POST
   @Path("/_mappingCleanup")
   @Produces(MediaType.APPLICATION_JSON)
-  public Map<String, EventMappingDto> doMappingCleanup(@Context final ContainerRequestContext requestContext,
-                                                       @Valid @NotNull @RequestBody final EventMappingCleanupRequestDto requestDto) {
+  public Map<String, EventMappingDto> doMappingCleanup(
+      @Context final ContainerRequestContext requestContext,
+      @Valid @NotNull @RequestBody final EventMappingCleanupRequestDto requestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
     return eventMappingCleanupService.doMappingCleanup(userId, requestDto);
@@ -215,42 +229,54 @@ public class EventBasedProcessRestService {
   @POST
   @Path("/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
-  public boolean checkEventBasedProcessesHaveConflicts(@Context ContainerRequestContext requestContext,
-                                                       @NotNull @RequestBody List<String> eventBasedProcessIds) {
-    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+  public boolean checkEventBasedProcessesHaveConflicts(
+      @Context final ContainerRequestContext requestContext,
+      @NotNull @RequestBody final List<String> eventBasedProcessIds) {
+    validateAccessToEventProcessManagement(
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     return eventProcessService.hasDeleteConflicts(eventBasedProcessIds);
   }
 
   @POST
   @Path("/delete")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void bulkDeleteEventProcessMappings(@Context ContainerRequestContext requestContext,
-                                             @NotNull @RequestBody List<String> eventBasedProcessIds) {
-    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+  public void bulkDeleteEventProcessMappings(
+      @Context final ContainerRequestContext requestContext,
+      @NotNull @RequestBody final List<String> eventBasedProcessIds) {
+    validateAccessToEventProcessManagement(
+        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     eventProcessService.bulkDeleteEventProcessMappings(eventBasedProcessIds);
   }
 
-  private EventProcessRoleRequestDto<IdentityDto> resolveToEventProcessRoleDto(final String userId,
-                                                                               final EventProcessRoleRequestDto<IdentityDto> eventProcessRoleRestDto) {
+  private EventProcessRoleRequestDto<IdentityDto> resolveToEventProcessRoleDto(
+      final String userId, final EventProcessRoleRequestDto<IdentityDto> eventProcessRoleRestDto) {
     IdentityDto simpleIdentityDto = eventProcessRoleRestDto.getIdentity();
     if (simpleIdentityDto.getType() == null) {
       final String identityId = simpleIdentityDto.getId();
-      simpleIdentityDto = identityService.getIdentityWithMetadataForIdAsUser(userId, identityId)
-        .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
-          String.format("No user or group with ID %s exists in Optimize.", identityId)
-        ))
-        .toIdentityDto();
+      simpleIdentityDto =
+          identityService
+              .getIdentityWithMetadataForIdAsUser(userId, identityId)
+              .orElseThrow(
+                  () ->
+                      new OptimizeUserOrGroupIdNotFoundException(
+                          String.format(
+                              "No user or group with ID %s exists in Optimize.", identityId)))
+              .toIdentityDto();
     }
     return new EventProcessRoleRequestDto<>(simpleIdentityDto);
   }
 
-  private EventProcessRoleResponseDto mapToEventProcessRoleRestDto(final EventProcessRoleRequestDto<IdentityDto> roleDto) {
-    return identityService.getIdentityWithMetadataForId(roleDto.getIdentity().getId())
-      .map(EventProcessRoleResponseDto::new)
-      .orElseThrow(() -> new OptimizeRuntimeException(
-        "Could not map EventProcessRoleDto to EventProcessRoleRestDto, identity ["
-          + roleDto.getIdentity().toString() + "] could not be found."
-      ));
+  private EventProcessRoleResponseDto mapToEventProcessRoleRestDto(
+      final EventProcessRoleRequestDto<IdentityDto> roleDto) {
+    return identityService
+        .getIdentityWithMetadataForId(roleDto.getIdentity().getId())
+        .map(EventProcessRoleResponseDto::new)
+        .orElseThrow(
+            () ->
+                new OptimizeRuntimeException(
+                    "Could not map EventProcessRoleDto to EventProcessRoleRestDto, identity ["
+                        + roleDto.getIdentity().toString()
+                        + "] could not be found."));
   }
 
   private void validateAccessToEventProcessManagement(final String userId) {
@@ -263,34 +289,33 @@ public class EventBasedProcessRestService {
     return authenticationService.hasEventProcessManagementAccess(userId);
   }
 
-  private EventProcessMappingResponseDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
-    final String lastModifierName = identityService.getIdentityNameById(dto.getLastModifier())
-      .orElse(dto.getLastModifier());
+  private EventProcessMappingResponseDto mapMappingDtoToRestDto(
+      final String userId, final EventProcessMappingDto dto) {
+    final String lastModifierName =
+        identityService.getIdentityNameById(dto.getLastModifier()).orElse(dto.getLastModifier());
     return EventProcessMappingResponseDto.from(
-      dto,
-      lastModifierName,
-      mapSourceEntriesToRestDtos(
-        userId,
-        dto.getEventSources()
-      )
-    );
+        dto, lastModifierName, mapSourceEntriesToRestDtos(userId, dto.getEventSources()));
   }
 
-  private List<EventSourceEntryDto<?>> mapSourceEntriesToRestDtos(final String userId,
-                                                                  final List<EventSourceEntryDto<?>> eventSourceDtos) {
+  private List<EventSourceEntryDto<?>> mapSourceEntriesToRestDtos(
+      final String userId, final List<EventSourceEntryDto<?>> eventSourceDtos) {
     return eventSourceDtos.stream()
-      .peek(eventSource -> {
-        if (eventSource instanceof CamundaEventSourceEntryDto) {
-          final CamundaEventSourceConfigDto sourceConfig = (CamundaEventSourceConfigDto) eventSource.getConfiguration();
-          sourceConfig.setProcessDefinitionName(getDefinitionName(userId, sourceConfig.getProcessDefinitionKey()));
-        }
-      })
-      .toList();
+        .peek(
+            eventSource -> {
+              if (eventSource instanceof CamundaEventSourceEntryDto) {
+                final CamundaEventSourceConfigDto sourceConfig =
+                    (CamundaEventSourceConfigDto) eventSource.getConfiguration();
+                sourceConfig.setProcessDefinitionName(
+                    getDefinitionName(userId, sourceConfig.getProcessDefinitionKey()));
+              }
+            })
+        .toList();
   }
 
   private String getDefinitionName(final String userId, final String eventSource) {
-    return definitionService.getDefinitionWithAvailableTenants(DefinitionType.PROCESS, eventSource, userId)
-      .map(DefinitionResponseDto::getName)
-      .orElse(eventSource);
+    return definitionService
+        .getDefinitionWithAvailableTenants(DefinitionType.PROCESS, eventSource, userId)
+        .map(DefinitionResponseDto::getName)
+        .orElse(eventSource);
   }
 }

@@ -6,10 +6,7 @@
   .cds--modal-content {
     display: flex;
     flex-direction: column;
-
-    .nameInput {
-      width: 100%;
-    }
+    overflow: hidden;
 
     .header {
       display: flex;

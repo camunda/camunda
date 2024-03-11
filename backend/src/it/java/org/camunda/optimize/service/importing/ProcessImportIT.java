@@ -24,6 +24,7 @@ import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,6 +52,7 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
@@ -64,6 +66,7 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessImportIT extends AbstractImportIT {
 
   private static final Set<String> PROCESS_INSTANCE_NULLABLE_FIELDS =
@@ -424,6 +427,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .allSatisfy(instance -> assertThat(instance.getState()).isEqualTo(EXTERNALLY_TERMINATED_STATE));
   }
 
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   @Test
   public void runningProcessesIndexedAfterFinish() {
     // given
@@ -465,7 +469,6 @@ public class ProcessImportIT extends AbstractImportIT {
       PROCESS_INSTANCE_NULLABLE_FIELDS
     );
   }
-
 
   @ParameterizedTest
   @MethodSource("engineErrors")

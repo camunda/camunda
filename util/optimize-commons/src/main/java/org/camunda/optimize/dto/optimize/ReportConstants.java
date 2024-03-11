@@ -6,12 +6,11 @@
 package org.camunda.optimize.dto.optimize;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-
-import java.util.Collections;
-import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportConstants {
@@ -137,28 +136,28 @@ public class ReportConstants {
 
   public static final String GROUP_NONE_KEY = "____none";
 
-  public static final List<VariableType> ALL_PRIMITIVE_PROCESS_VARIABLE_TYPES = List.of(
-    VariableType.STRING,
-    VariableType.SHORT,
-    VariableType.LONG,
-    VariableType.DOUBLE,
-    VariableType.INTEGER,
-    VariableType.BOOLEAN,
-    VariableType.DATE
-  );
+  public static final List<VariableType> ALL_PRIMITIVE_PROCESS_VARIABLE_TYPES =
+      List.of(
+          VariableType.STRING,
+          VariableType.SHORT,
+          VariableType.LONG,
+          VariableType.DOUBLE,
+          VariableType.INTEGER,
+          VariableType.BOOLEAN,
+          VariableType.DATE);
 
   public static final List<VariableType> ALL_SUPPORTED_PROCESS_VARIABLE_TYPES =
-    ImmutableList.copyOf(VariableType.values());
+      ImmutableList.copyOf(VariableType.values());
 
-  public static final List<VariableType> ALL_SUPPORTED_DECISION_VARIABLE_TYPES = List.of(
-    VariableType.STRING,
-    VariableType.SHORT,
-    VariableType.LONG,
-    VariableType.DOUBLE,
-    VariableType.INTEGER,
-    VariableType.BOOLEAN,
-    VariableType.DATE
-  );
+  public static final List<VariableType> ALL_SUPPORTED_DECISION_VARIABLE_TYPES =
+      List.of(
+          VariableType.STRING,
+          VariableType.SHORT,
+          VariableType.LONG,
+          VariableType.DOUBLE,
+          VariableType.INTEGER,
+          VariableType.BOOLEAN,
+          VariableType.DATE);
 
   // A report result can have three states in theory for duration reports:
   // * an arbitrary positive value,

@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 
 @AllArgsConstructor
 public enum ComparisonOperator {
-
   LESS_THAN(FilterOperatorConstants.LESS_THAN),
   LESS_THAN_EQUALS(FilterOperatorConstants.LESS_THAN_EQUALS),
   GREATER_THAN(FilterOperatorConstants.GREATER_THAN),
@@ -24,5 +23,4 @@ public enum ComparisonOperator {
   public String getId() {
     return id;
   }
-
 }

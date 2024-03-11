@@ -5,6 +5,18 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.CompletedActivityInstanceImportIndexHandler;
@@ -23,58 +35,46 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class TimestampBasedImportMediatorTest {
 
   // we test using one particular implementation
-  protected TimestampBasedImportMediator
-    <CompletedActivityInstanceImportIndexHandler, HistoricActivityInstanceEngineDto> underTest;
+  protected TimestampBasedImportMediator<
+          CompletedActivityInstanceImportIndexHandler, HistoricActivityInstanceEngineDto>
+      underTest;
 
-  @Mock
-  protected CompletedActivityInstanceImportIndexHandler importIndexHandler;
+  @Mock protected CompletedActivityInstanceImportIndexHandler importIndexHandler;
 
-  @Mock
-  protected CompletedActivityInstanceImportService importService;
+  @Mock protected CompletedActivityInstanceImportService importService;
 
-  @Captor
-  private ArgumentCaptor<List<HistoricActivityInstanceEngineDto>> importEntitiesCaptor;
+  @Captor private ArgumentCaptor<List<HistoricActivityInstanceEngineDto>> importEntitiesCaptor;
 
-  @Mock
-  private CompletedActivityInstanceFetcher engineEntityFetcher;
+  @Mock private CompletedActivityInstanceFetcher engineEntityFetcher;
 
-  @Mock
-  private BackoffCalculator idleBackoffCalculator;
+  @Mock private BackoffCalculator idleBackoffCalculator;
 
-  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+  private ConfigurationService configurationService =
+      ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @BeforeEach
   public void init() {
-    this.underTest = new CompletedActivityInstanceEngineImportMediator(
-      importIndexHandler,
-      engineEntityFetcher,
-      importService,
-      configurationService,
-      idleBackoffCalculator
-    );
+    this.underTest =
+        new CompletedActivityInstanceEngineImportMediator(
+            importIndexHandler,
+            engineEntityFetcher,
+            importService,
+            configurationService,
+            idleBackoffCalculator);
 
-    Mockito.lenient().doAnswer(invocation -> {
-      final Runnable runnable = invocation.getArgument(1);
-      runnable.run();
-      return null;
-    }).when(importService).executeImport(any(), any(Runnable.class));
+    Mockito.lenient()
+        .doAnswer(
+            invocation -> {
+              final Runnable runnable = invocation.getArgument(1);
+              runnable.run();
+              return null;
+            })
+        .when(importService)
+        .executeImport(any(), any(Runnable.class));
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     Mockito.lenient().when(importIndexHandler.getEngineAlias()).thenReturn("camunda-bpm");
   }
@@ -82,8 +82,7 @@ public class TimestampBasedImportMediatorTest {
   @Test
   public void testImportNextEnginePage_returnsFalse() {
     // when
-    final boolean result = underTest.importNextPage(() -> {
-    });
+    final boolean result = underTest.importNextPage(() -> {});
 
     // then
     assertThat(result).isFalse();
@@ -98,8 +97,7 @@ public class TimestampBasedImportMediatorTest {
     configurationService.setEngineImportActivityInstanceMaxPageSize(1);
 
     // when
-    final boolean result = underTest.importNextPage(() -> {
-    });
+    final boolean result = underTest.importNextPage(() -> {});
 
     // then
     assertThat(result).isTrue();
@@ -109,7 +107,8 @@ public class TimestampBasedImportMediatorTest {
   public void testImportNextEnginePageTimestampBased_noNewDataForSameTimestamp_butNewNextPage() {
     // given
     final OffsetDateTime otherEntityTimestamp = OffsetDateTime.now();
-    final OffsetDateTime firstNewPageEntityTimestamp = otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
+    final OffsetDateTime firstNewPageEntityTimestamp =
+        otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
     final OffsetDateTime lastEntityTimestamp = OffsetDateTime.now().plusSeconds(1);
     List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
     entitiesLastTimestamp1.add(createHistoricActivityInstance(otherEntityTimestamp));
@@ -138,7 +137,8 @@ public class TimestampBasedImportMediatorTest {
     verify(importService, times(1)).executeImport(importEntitiesCaptor.capture(), any());
     verify(importIndexHandler, times(1)).updateLastImportExecutionTimestamp();
     verify(importIndexHandler, times(1)).updateTimestampOfLastEntity(any());
-    // but the import batch only contains the next page entities as the count of same timestamp entities is the same
+    // but the import batch only contains the next page entities as the count of same timestamp
+    // entities is the same
     assertThat(importEntitiesCaptor.getValue()).isEqualTo(entitiesNextPage2);
     assertThat(underTest.countOfImportedEntitiesWithLastEntityTimestamp).isEqualTo(1);
   }
@@ -147,7 +147,8 @@ public class TimestampBasedImportMediatorTest {
   public void testImportNextEnginePageTimestampBased_newDataForSameTimestamp_emptyNextPage() {
     // given
     final OffsetDateTime otherEntityTimestamp = OffsetDateTime.now();
-    final OffsetDateTime firstNewPageEntityTimestamp = otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
+    final OffsetDateTime firstNewPageEntityTimestamp =
+        otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
     final OffsetDateTime lastEntityTimestamp = OffsetDateTime.now().plusSeconds(1);
     List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
     entitiesLastTimestamp1.add(createHistoricActivityInstance(otherEntityTimestamp));
@@ -222,7 +223,8 @@ public class TimestampBasedImportMediatorTest {
   public void testImportNextEnginePageTimestampBased_noNewDataForSameTimestamp_emptyNextPage() {
     // given
     final OffsetDateTime otherEntityTimestamp = OffsetDateTime.now();
-    final OffsetDateTime firstNewPageEntityTimestamp = otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
+    final OffsetDateTime firstNewPageEntityTimestamp =
+        otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
     final OffsetDateTime lastEntityTimestamp = OffsetDateTime.now().plusSeconds(1);
     List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
     entitiesLastTimestamp1.add(createHistoricActivityInstance(otherEntityTimestamp));
@@ -329,21 +331,21 @@ public class TimestampBasedImportMediatorTest {
     assertThat(result).isTrue();
   }
 
-  private HistoricActivityInstanceEngineDto createHistoricActivityInstance(final OffsetDateTime endTime) {
-    final HistoricActivityInstanceEngineDto historicActivityInstanceEngineDto = new HistoricActivityInstanceEngineDto();
+  private HistoricActivityInstanceEngineDto createHistoricActivityInstance(
+      final OffsetDateTime endTime) {
+    final HistoricActivityInstanceEngineDto historicActivityInstanceEngineDto =
+        new HistoricActivityInstanceEngineDto();
     historicActivityInstanceEngineDto.setEndTime(endTime);
     return historicActivityInstanceEngineDto;
   }
 
-  private boolean runAndFinishImport(final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp,
-                                     final List<HistoricActivityInstanceEngineDto> entitiesNextPage) {
+  private boolean runAndFinishImport(
+      final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp,
+      final List<HistoricActivityInstanceEngineDto> entitiesNextPage) {
     final CompletableFuture<Void> importCompleteFuture = new CompletableFuture<>();
-    final boolean result = underTest.importNextEnginePageTimestampBased(
-      entitiesLastTimestamp,
-      entitiesNextPage,
-      1,
-      () -> importCompleteFuture.complete(null)
-    );
+    final boolean result =
+        underTest.importNextEnginePageTimestampBased(
+            entitiesLastTimestamp, entitiesNextPage, 1, () -> importCompleteFuture.complete(null));
     assertThat(importCompleteFuture).isCompleted();
     return result;
   }

@@ -7,12 +7,15 @@ package org.camunda.optimize.service.db.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -24,10 +27,6 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-
 @AllArgsConstructor
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
@@ -38,8 +37,11 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
   private final ObjectMapper objectMapper;
 
   @Override
-  public void updateEventSequenceCountsWithAdjustments(final List<EventSequenceCountDto> eventSequenceCountDtos) {
-    log.debug("Making adjustments to [{}] event sequence counts in elasticsearch", eventSequenceCountDtos.size());
+  public void updateEventSequenceCountsWithAdjustments(
+      final List<EventSequenceCountDto> eventSequenceCountDtos) {
+    log.debug(
+        "Making adjustments to [{}] event sequence counts in elasticsearch",
+        eventSequenceCountDtos.size());
     eventSequenceCountDtos.forEach(EventSequenceCountDto::generateIdForEventSequenceCountDto);
 
     final BulkRequest bulkRequest = new BulkRequest();
@@ -51,10 +53,10 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
       try {
         final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
         if (bulkResponse.hasFailures()) {
-          final String errorMessage = String.format(
-            "There were failures while writing event sequence counts. Received error message: %s",
-            bulkResponse.buildFailureMessage()
-          );
+          final String errorMessage =
+              String.format(
+                  "There were failures while writing event sequence counts. Received error message: %s",
+                  bulkResponse.buildFailureMessage());
           throw new OptimizeRuntimeException(errorMessage);
         }
       } catch (IOException e) {
@@ -65,29 +67,36 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
     }
   }
 
-  private UpdateRequest createEventSequenceCountUpsertRequest(final EventSequenceCountDto eventSequenceCountDto) {
+  private UpdateRequest createEventSequenceCountUpsertRequest(
+      final EventSequenceCountDto eventSequenceCountDto) {
     IndexRequest indexRequest = null;
     try {
-      indexRequest = new IndexRequest(getIndexName()).id(eventSequenceCountDto.getId())
-        .source(objectMapper.writeValueAsString(eventSequenceCountDto), XContentType.JSON);
+      indexRequest =
+          new IndexRequest(getIndexName())
+              .id(eventSequenceCountDto.getId())
+              .source(objectMapper.writeValueAsString(eventSequenceCountDto), XContentType.JSON);
     } catch (JsonProcessingException e) {
-      final String errorMessage = "There were errors while json processing of creating of the event sequence counts.";
+      final String errorMessage =
+          "There were errors while json processing of creating of the event sequence counts.";
       log.error(errorMessage, e);
     }
     UpdateRequest updateRequest;
-    updateRequest = new UpdateRequest().index(getIndexName()).id(eventSequenceCountDto.getId())
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.count += params.adjustmentRequired",
-        Collections.singletonMap("adjustmentRequired", eventSequenceCountDto.getCount())
-      ))
-      .upsert(indexRequest);
+    updateRequest =
+        new UpdateRequest()
+            .index(getIndexName())
+            .id(eventSequenceCountDto.getId())
+            .script(
+                new Script(
+                    ScriptType.INLINE,
+                    Script.DEFAULT_SCRIPT_LANG,
+                    "ctx._source.count += params.adjustmentRequired",
+                    Collections.singletonMap(
+                        "adjustmentRequired", eventSequenceCountDto.getCount())))
+            .upsert(indexRequest);
     return updateRequest;
   }
 
   private String getIndexName() {
     return EventSequenceCountIndex.constructIndexName(indexKey);
   }
-
 }

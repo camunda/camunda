@@ -1,4 +1,4 @@
-name: Execute health and deploy images
+name: Execute Optimize health and deploy images
 description: |
   This is an action which executes a smoketest against an Optimize docker image and if successful it deploys this image to a registry.
 inputs:
@@ -26,7 +26,7 @@ runs:
     # If we made it to here, all checks were successful. So let's build it to push. This is not as
     # inefficient as it looks, since docker retrieves the previously generated images from the build cache
     - name: Deploy to Docker Hub / Harbor
-      if: env.DRY_RUN != 'true'
+      if: env.IS_DRY_RUN != 'true'
       env:
         VERSION: ${{ inputs.version }}
         DATE: ${{ inputs.date }}

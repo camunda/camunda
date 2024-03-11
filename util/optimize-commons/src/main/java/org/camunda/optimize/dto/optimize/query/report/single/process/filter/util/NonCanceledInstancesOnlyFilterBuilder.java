@@ -21,7 +21,8 @@ public class NonCanceledInstancesOnlyFilterBuilder {
     return new NonCanceledInstancesOnlyFilterBuilder(filterBuilder);
   }
 
-  public NonCanceledInstancesOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public NonCanceledInstancesOnlyFilterBuilder filterLevel(
+      final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
@@ -32,5 +33,4 @@ public class NonCanceledInstancesOnlyFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

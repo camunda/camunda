@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.group.value;
 
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-
-import java.util.Objects;
 
 @Data
 @AllArgsConstructor

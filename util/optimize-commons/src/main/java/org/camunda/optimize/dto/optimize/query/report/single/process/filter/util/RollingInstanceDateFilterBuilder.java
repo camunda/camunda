@@ -49,11 +49,10 @@ public class RollingInstanceDateFilterBuilder {
 
   public ProcessFilterBuilder add() {
     ProcessFilterDto<DateFilterDataDto<?>> filterDto =
-      type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
+        type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
     filterDto.setData(new RollingDateFilterDataDto(start));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);
     return filterBuilder;
   }
-
 }

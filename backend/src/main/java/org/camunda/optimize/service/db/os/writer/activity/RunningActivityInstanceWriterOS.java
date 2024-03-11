@@ -5,11 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer.activity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -17,18 +14,12 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class RunningActivityInstanceWriterOS extends AbstractActivityInstanceWriterOS implements RunningActivityInstanceWriter {
-
-  public RunningActivityInstanceWriterOS(final OptimizeOpenSearchClient osClient,
-                                         final OpenSearchSchemaManager openSearchSchemaManager,
-                                         final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager, objectMapper);
-  }
+public class RunningActivityInstanceWriterOS extends AbstractActivityInstanceWriterOS
+    implements RunningActivityInstanceWriter {
 
   @Override
   protected String createInlineUpdateScript() {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return "";
   }
-
 }

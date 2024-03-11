@@ -25,5 +25,4 @@ public class ZeebeIncidentImportIndexHandler extends PositionBasedImportIndexHan
   protected String getDatabaseDocID() {
     return ZEEBE_INCIDENT_IMPORT_INDEX_DOC_ID;
   }
-
 }

@@ -5,14 +5,6 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-
-import java.util.Optional;
-
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DATE;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.MULTIVALUE_FIELD_LONG;
@@ -25,6 +17,13 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+import java.util.Optional;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessVariableHelper {
@@ -54,7 +53,8 @@ public class ProcessVariableHelper {
   }
 
   public static String getNestedVariableValueFieldForType(final VariableType type) {
-    switch (Optional.ofNullable(type).orElseThrow(() -> new IllegalArgumentException("No Type provided"))) {
+    switch (Optional.ofNullable(type)
+        .orElseThrow(() -> new IllegalArgumentException("No Type provided"))) {
       case BOOLEAN:
       case STRING:
       case OBJECT:
@@ -72,44 +72,45 @@ public class ProcessVariableHelper {
     }
   }
 
-  public static BoolQueryBuilder createFilterForUndefinedOrNullQueryBuilder(final String variableName,
-                                                                            final VariableType variableType) {
+  public static BoolQueryBuilder createFilterForUndefinedOrNullQueryBuilder(
+      final String variableName, final VariableType variableType) {
     final String variableTypeId = variableType.getId();
     return boolQuery()
-      .should(
-        // undefined
-        boolQuery().mustNot(nestedQuery(
-          VARIABLES,
-          boolQuery()
-            .must(termQuery(getNestedVariableNameField(), variableName))
-            .must(termQuery(getNestedVariableTypeField(), variableTypeId)),
-          ScoreMode.None
-        )))
-      .should(
-        // or null value
-        boolQuery().must(nestedQuery(
-          VARIABLES,
-          boolQuery()
-            .must(termQuery(getNestedVariableNameField(), variableName))
-            .must(termQuery(getNestedVariableTypeField(), variableTypeId))
-            .mustNot(existsQuery(getNestedVariableValueField())),
-          ScoreMode.None
-        )))
-      .minimumShouldMatch(1);
+        .should(
+            // undefined
+            boolQuery()
+                .mustNot(
+                    nestedQuery(
+                        VARIABLES,
+                        boolQuery()
+                            .must(termQuery(getNestedVariableNameField(), variableName))
+                            .must(termQuery(getNestedVariableTypeField(), variableTypeId)),
+                        ScoreMode.None)))
+        .should(
+            // or null value
+            boolQuery()
+                .must(
+                    nestedQuery(
+                        VARIABLES,
+                        boolQuery()
+                            .must(termQuery(getNestedVariableNameField(), variableName))
+                            .must(termQuery(getNestedVariableTypeField(), variableTypeId))
+                            .mustNot(existsQuery(getNestedVariableValueField())),
+                        ScoreMode.None)))
+        .minimumShouldMatch(1);
   }
 
-  public static BoolQueryBuilder createExcludeUndefinedOrNullQueryFilterBuilder(final String variableName,
-                                                                                final VariableType variableType) {
+  public static BoolQueryBuilder createExcludeUndefinedOrNullQueryFilterBuilder(
+      final String variableName, final VariableType variableType) {
     final String variableTypeId = variableType.getId();
     return boolQuery()
-      .must(nestedQuery(
-        VARIABLES,
-        boolQuery()
-          .must(termQuery(getNestedVariableNameField(), variableName))
-          .must(termQuery(getNestedVariableTypeField(), variableTypeId))
-          .must(existsQuery(getNestedVariableValueField())),
-        ScoreMode.None
-      ));
+        .must(
+            nestedQuery(
+                VARIABLES,
+                boolQuery()
+                    .must(termQuery(getNestedVariableNameField(), variableName))
+                    .must(termQuery(getNestedVariableTypeField(), variableTypeId))
+                    .must(existsQuery(getNestedVariableValueField())),
+                ScoreMode.None));
   }
-
 }

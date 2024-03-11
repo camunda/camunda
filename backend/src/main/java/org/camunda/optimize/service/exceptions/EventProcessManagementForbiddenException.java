@@ -11,9 +11,9 @@ import jakarta.ws.rs.ForbiddenException;
 @SuppressWarnings("squid:MaximumInheritanceDepth")
 public class EventProcessManagementForbiddenException extends ForbiddenException {
   public EventProcessManagementForbiddenException(String userId) {
-    super(String.format(
-      "The user %s is not authorized to use the event process management features of the API",
-      userId
-    ));
+    super(
+        String.format(
+            "The user %s is not authorized to use the event process management features of the API",
+            userId));
   }
 }

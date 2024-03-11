@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.util.configuration.engine;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

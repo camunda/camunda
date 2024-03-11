@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.exceptions.conflict;
 
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 
 public class OptimizeReportConflictException extends OptimizeConflictException {
 

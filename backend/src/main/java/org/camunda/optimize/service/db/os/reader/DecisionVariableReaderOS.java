@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
@@ -14,9 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -24,31 +23,32 @@ import java.util.List;
 public class DecisionVariableReaderOS implements DecisionVariableReader {
 
   @Override
-  public List<DecisionVariableNameResponseDto> getInputVariableNames(final String decisionDefinitionKey,
-                                                                     final List<String> decisionDefinitionVersions,
-                                                                     final List<String> tenantIds) {
-    //todo will be handled in the OPT-7230
+  public List<DecisionVariableNameResponseDto> getInputVariableNames(
+      final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds) {
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
-                                                                      final List<String> decisionDefinitionVersions,
-                                                                      final List<String> tenantIds) {
-    //todo will be handled in the OPT-7230
+  public List<DecisionVariableNameResponseDto> getOutputVariableNames(
+      final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds) {
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<String> getInputVariableValues(final DecisionVariableValueRequestDto requestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<String> getOutputVariableValues(final DecisionVariableValueRequestDto requestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

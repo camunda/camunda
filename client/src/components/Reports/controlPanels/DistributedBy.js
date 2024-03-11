@@ -6,24 +6,14 @@
  */
 
 import classnames from 'classnames';
-import {useState, useEffect} from 'react';
 import {Close} from '@carbon/icons-react';
 import {Button} from '@carbon/react';
 
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 import {CarbonSelect} from 'components';
-import {getOptimizeProfile} from 'config';
 
 export default function DistributedBy({report, onChange, variables}) {
-  const [optimizeProfile, setOptimizeProfile] = useState();
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-    })();
-  }, []);
-
   if (!report.groupBy) {
     return null;
   }
@@ -33,12 +23,7 @@ export default function DistributedBy({report, onChange, variables}) {
   const hasDistribution = selectedOption.key !== 'none';
 
   const options = distributions
-    .filter(
-      ({visible, key}) =>
-        visible(report) &&
-        key !== 'none' &&
-        (optimizeProfile === 'platform' ? true : !['assignee', 'candidateGroup'].includes(key))
-    )
+    .filter(({visible, key}) => visible(report) && key !== 'none')
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
         return (

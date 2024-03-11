@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
 @Provider
 @Slf4j
-public class OptimizeValidationExceptionMapper implements ExceptionMapper<OptimizeValidationException> {
+public class OptimizeValidationExceptionMapper
+    implements ExceptionMapper<OptimizeValidationException> {
 
   private final LocalizationService localizationService;
 
@@ -30,11 +30,10 @@ public class OptimizeValidationExceptionMapper implements ExceptionMapper<Optimi
   public Response toResponse(final OptimizeValidationException validationException) {
     log.info("Mapping OptimizeValidationException");
 
-    return Response
-      .status(Response.Status.BAD_REQUEST)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(getErrorResponseDto(validationException))
-      .build();
+    return Response.status(Response.Status.BAD_REQUEST)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .entity(getErrorResponseDto(validationException))
+        .build();
   }
 
   private ErrorResponseDto getErrorResponseDto(OptimizeValidationException exception) {

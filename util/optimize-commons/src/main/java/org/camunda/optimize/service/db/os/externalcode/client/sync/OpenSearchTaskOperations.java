@@ -5,22 +5,20 @@
  */
 package org.camunda.optimize.service.db.os.externalcode.client.sync;
 
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.Info;
 
-import java.util.List;
-import java.util.Map;
-
-
 public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
-  public OpenSearchTaskOperations(OpenSearchClient openSearchClient,
-                                  final OptimizeIndexNameService indexNameService) {
+  public OpenSearchTaskOperations(
+      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
-  private static  String defaultTaskErrorMessage(String id) {
+  private static String defaultTaskErrorMessage(String id) {
     return String.format("Failed to fetch task %s", id);
   }
 
@@ -30,7 +28,11 @@ public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
   }
 
   @Override
-  public Map<String, Info> tasksWithActions(List<String> actions){
-    return safe(() -> super.tasksWithActions(actions), e -> defaultTaskErrorMessage(String.format("Failed to fetch tasksWithActions for actions %s", actions)));
+  public Map<String, Info> tasksWithActions(List<String> actions) {
+    return safe(
+        () -> super.tasksWithActions(actions),
+        e ->
+            defaultTaskErrorMessage(
+                String.format("Failed to fetch tasksWithActions for actions %s", actions)));
   }
 }

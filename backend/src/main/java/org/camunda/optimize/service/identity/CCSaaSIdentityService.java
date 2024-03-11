@@ -5,10 +5,19 @@
  */
 package org.camunda.optimize.service.identity;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
@@ -17,24 +26,19 @@ import org.camunda.optimize.rest.cloud.CloudUsersService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CCSaaSIdentityService extends AbstractIdentityService {
+public class CCSaaSIdentityService extends AbstractIdentityService
+    implements UserTaskIdentityService {
 
   private final CloudUsersService usersService;
 
-  public CCSaaSIdentityService(final ConfigurationService configurationService, final CloudUsersService usersService) {
+  public CCSaaSIdentityService(
+      final ConfigurationService configurationService, final CloudUsersService usersService) {
     super(configurationService);
     this.usersService = usersService;
   }
@@ -45,7 +49,8 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
   }
 
   @Override
-  public Optional<UserDto> getCurrentUserById(final String userId, final ContainerRequestContext requestContext) {
+  public Optional<UserDto> getCurrentUserById(
+      final String userId, final ContainerRequestContext requestContext) {
     return getUserById(userId);
   }
 
@@ -65,43 +70,66 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
   }
 
   @Override
-  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
-                                                                   final String searchString,
-                                                                   final int maxResults,
-                                                                   final boolean excludeUserGroups) {
-    final String lowerCasedSearchString = searchString.toLowerCase();
+  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(
+      final String userId,
+      final String searchString,
+      final int maxResults,
+      final boolean excludeUserGroups) {
+    final String lowerCasedSearchString = searchString.toLowerCase(Locale.ENGLISH);
     try {
-      final List<IdentityWithMetadataResponseDto> users = usersService.getAllUsers()
-        .stream()
-        .filter(cloudUser -> cloudUser.getName().toLowerCase().contains(lowerCasedSearchString)
-          || cloudUser.getEmail().toLowerCase().contains(lowerCasedSearchString))
-        .limit(maxResults)
-        .map(this::mapToUserDto)
-        .collect(Collectors.toList());
+      final List<IdentityWithMetadataResponseDto> users =
+          usersService.getAllUsers().stream()
+              .filter(
+                  cloudUser ->
+                      cloudUser
+                              .getName()
+                              .toLowerCase(Locale.ENGLISH)
+                              .contains(lowerCasedSearchString)
+                          || cloudUser
+                              .getEmail()
+                              .toLowerCase(Locale.ENGLISH)
+                              .contains(lowerCasedSearchString))
+              .limit(maxResults)
+              .map(this::mapToUserDto)
+              .collect(Collectors.toList());
       return new IdentitySearchResultResponseDto(users);
-    } catch (OptimizeRuntimeException e) {
+    } catch (final OptimizeRuntimeException e) {
       log.warn("Failed retrieving users.", e);
       return new IdentitySearchResultResponseDto(Collections.emptyList());
     }
   }
 
   public List<UserDto> getUsersByEmail(final List<String> emails) {
-    final Set<String> lowerCasedEmails = emails.stream().map(String::toLowerCase).collect(Collectors.toSet());
+    final Set<String> lowerCasedEmails =
+        emails.stream().map(email -> email.toLowerCase(Locale.ENGLISH)).collect(Collectors.toSet());
     try {
-      return usersService.getAllUsers()
-        .stream()
-        .filter(cloudUser -> lowerCasedEmails.contains(cloudUser.getEmail().toLowerCase()))
-        .map(this::mapToUserDto)
-        .collect(Collectors.toList());
-    } catch (OptimizeRuntimeException e) {
+      return usersService.getAllUsers().stream()
+          .filter(
+              cloudUser ->
+                  lowerCasedEmails.contains(cloudUser.getEmail().toLowerCase(Locale.ENGLISH)))
+          .map(this::mapToUserDto)
+          .collect(Collectors.toList());
+    } catch (final OptimizeRuntimeException e) {
       log.warn("Failed retrieving users.", e);
       return Collections.emptyList();
     }
   }
 
-  @NotNull
-  private UserDto mapToUserDto(final CloudUserDto cloudUser) {
-    return new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail(), cloudUser.getRoles());
+  @Override
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
+      final String id, final IdentityType type) {
+    return Optional.empty(); // TODO with #11655
   }
 
+  @Override
+  public List<IdentityWithMetadataResponseDto> getIdentities(
+      final Collection<IdentityDto> identities) {
+    return Collections.emptyList(); // TODO to be implemented with #11655
+  }
+
+  @NotNull
+  private UserDto mapToUserDto(final CloudUserDto cloudUser) {
+    return new UserDto(
+        cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail(), cloudUser.getRoles());
+  }
 }

@@ -10,5 +10,4 @@ import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 
 @EqualsAndHashCode(callSuper = true)
-public class ZeebeVariableRecordDto extends ZeebeRecordDto<ZeebeVariableDataDto, VariableIntent> {
-}
+public class ZeebeVariableRecordDto extends ZeebeRecordDto<ZeebeVariableDataDto, VariableIntent> {}

@@ -6,19 +6,14 @@
 package org.camunda.optimize.upgrade.plan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-@Data
-public class UpgradeExecutionDependencies {
-
-  protected final ConfigurationService configurationService;
-  protected final OptimizeIndexNameService indexNameService;
-  protected final OptimizeElasticsearchClient esClient;
-  protected final ObjectMapper objectMapper;
-  protected final ElasticSearchMetadataService metadataService;
-
-}
+public record UpgradeExecutionDependencies(
+    ConfigurationService configurationService,
+    OptimizeIndexNameService indexNameService,
+    OptimizeElasticsearchClient esClient,
+    ObjectMapper objectMapper,
+    ElasticSearchMetadataService metadataService) {}

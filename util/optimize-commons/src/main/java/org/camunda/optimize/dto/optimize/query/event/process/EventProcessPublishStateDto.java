@@ -6,6 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.event.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,11 +18,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
@@ -26,19 +25,16 @@ import java.util.Map;
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EventProcessPublishStateDto {
-  @EqualsAndHashCode.Include
-  private String id;
+  @EqualsAndHashCode.Include private String id;
   private String processMappingId;
   private String name;
   private OffsetDateTime publishDateTime;
   private EventProcessState state;
   private Double publishProgress;
-  @Builder.Default
-  private Boolean deleted = false;
+  @Builder.Default private Boolean deleted = false;
   private String xml;
   private Map<String, EventMappingDto> mappings;
-  @Builder.Default
-  private List<EventImportSourceDto> eventImportSources = new ArrayList<>();
+  @Builder.Default private List<EventImportSourceDto> eventImportSources = new ArrayList<>();
 
   @JsonIgnore
   public String getProcessKey() {

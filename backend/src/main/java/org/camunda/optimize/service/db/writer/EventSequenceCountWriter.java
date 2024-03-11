@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
-
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 
 public interface EventSequenceCountWriter {
 
-  void updateEventSequenceCountsWithAdjustments(final List<EventSequenceCountDto> eventSequenceCountDtos);
-
+  void updateEventSequenceCountsWithAdjustments(
+      final List<EventSequenceCountDto> eventSequenceCountDtos);
 }

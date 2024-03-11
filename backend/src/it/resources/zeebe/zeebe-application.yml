@@ -34,6 +34,7 @@ zeebe:
             signal: false
             signalSubscription: false
             timer: false
+            userTask: true
             variable: true
             variableDocument: false
             processInstance: true

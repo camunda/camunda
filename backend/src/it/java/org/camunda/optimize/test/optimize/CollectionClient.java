@@ -383,12 +383,6 @@ public class CollectionClient {
     return executor.execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public ConflictResponseDto getDeleteCollectionConflicts(final String collectionId) {
-    return getRequestExecutor()
-      .buildGetCollectionDeleteConflictsRequest(collectionId)
-      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
-  }
-
   public ConflictResponseDto getScopeDeletionConflicts(final String collectionId, final String scopeEntryId) {
     return getRequestExecutor()
       .buildGetScopeDeletionConflictsRequest(collectionId, scopeEntryId)

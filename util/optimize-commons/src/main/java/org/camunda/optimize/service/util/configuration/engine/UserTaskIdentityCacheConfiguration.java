@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.util.configuration.engine;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

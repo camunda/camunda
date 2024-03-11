@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.dto.optimize.OnboardingStateDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
 import java.io.IOException;
+import org.camunda.optimize.dto.optimize.OnboardingStateDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class OnboardingStateIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 2;
@@ -29,19 +28,18 @@ public abstract class OnboardingStateIndex<TBuilder> extends DefaultIndexMapping
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(OnboardingStateDto.Fields.id)
+        .startObject(OnboardingStateDto.Fields.id)
         .field("type", "keyword")
-      .endObject()
-      .startObject(OnboardingStateDto.Fields.key)
+        .endObject()
+        .startObject(OnboardingStateDto.Fields.key)
         .field("type", "keyword")
-      .endObject()
-      .startObject(OnboardingStateDto.Fields.userId)
+        .endObject()
+        .startObject(OnboardingStateDto.Fields.userId)
         .field("type", "keyword")
-      .endObject()
-      .startObject(OnboardingStateDto.Fields.seen)
+        .endObject()
+        .startObject(OnboardingStateDto.Fields.seen)
         .field("type", "boolean")
-      .endObject();
+        .endObject();
     // @formatter:on
   }
-
 }

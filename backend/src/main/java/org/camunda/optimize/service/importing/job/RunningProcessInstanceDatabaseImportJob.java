@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.CamundaEventImportService;
@@ -13,35 +15,34 @@ import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class RunningProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessInstanceDto> {
 
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final CamundaEventImportService camundaEventImportService;
   private final ConfigurationService configurationService;
 
-  public RunningProcessInstanceDatabaseImportJob(final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                                 final CamundaEventImportService camundaEventImportService,
-                                                 final ConfigurationService configurationService,
-                                                 final Runnable callback,
-                                                 final DatabaseClient databaseClient) {
+  public RunningProcessInstanceDatabaseImportJob(
+      final RunningProcessInstanceWriter runningProcessInstanceWriter,
+      final CamundaEventImportService camundaEventImportService,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventImportService = camundaEventImportService;
     this.configurationService = configurationService;
   }
 
-  protected void persistEntities(List<ProcessInstanceDto> runningProcessInstances) {
-    List<ImportRequestDto> importBulks = new ArrayList<>();
-    importBulks.addAll(runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances));
-    importBulks.addAll(camundaEventImportService.generateRunningProcessInstanceImports(runningProcessInstances));
+  @Override
+  protected void persistEntities(final List<ProcessInstanceDto> runningProcessInstances) {
+    final List<ImportRequestDto> importBulks = new ArrayList<>();
+    importBulks.addAll(
+        runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances));
+    importBulks.addAll(
+        camundaEventImportService.generateRunningProcessInstanceImports(runningProcessInstances));
     databaseClient.executeImportRequestsAsBulk(
-      "Running process instances",
-      importBulks,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "Running process instances",
+        importBulks,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
-
 }

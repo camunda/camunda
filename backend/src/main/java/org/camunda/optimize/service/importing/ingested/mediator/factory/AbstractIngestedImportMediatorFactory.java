@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator.factory;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
-
-import java.util.List;
 
 @AllArgsConstructor
 public abstract class AbstractIngestedImportMediatorFactory {

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.rest.report.measure;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
-
-import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder

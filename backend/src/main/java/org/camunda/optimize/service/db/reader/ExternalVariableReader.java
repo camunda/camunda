@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
-
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 
 public interface ExternalVariableReader {
 
-  List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(final Long ingestTimestamp, final int limit);
+  List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
+      final Long ingestTimestamp, final int limit);
 
   List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp);
-
 }

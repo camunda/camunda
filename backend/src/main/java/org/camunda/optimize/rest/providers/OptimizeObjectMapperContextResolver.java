@@ -6,11 +6,10 @@
 package org.camunda.optimize.rest.providers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Provider
@@ -21,5 +20,4 @@ public class OptimizeObjectMapperContextResolver implements ContextResolver<Obje
   public ObjectMapper getContext(Class<?> type) {
     return optimizeObjectMapper;
   }
-
 }

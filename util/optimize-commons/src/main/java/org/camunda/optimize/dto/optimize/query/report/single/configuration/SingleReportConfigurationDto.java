@@ -7,6 +7,11 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Optional;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,80 +27,69 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.targe
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Optional;
-import java.util.Set;
-
 @AllArgsConstructor
 @Builder
 @Data
 @FieldNameConstants
 @NoArgsConstructor
 public class SingleReportConfigurationDto implements Combinable {
-  @Builder.Default
-  private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
+  @Builder.Default private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
+
   @Builder.Default
   private Set<AggregationDto> aggregationTypes =
-    new LinkedHashSet<>(Collections.singletonList(new AggregationDto(AggregationType.AVERAGE)));
+      new LinkedHashSet<>(Collections.singletonList(new AggregationDto(AggregationType.AVERAGE)));
+
   @Builder.Default
   private Set<UserTaskDurationTime> userTaskDurationTimes =
-    new LinkedHashSet<>(Collections.singletonList(UserTaskDurationTime.TOTAL));
-  @Builder.Default
-  private Boolean showInstanceCount = false;
-  @Builder.Default
-  private Boolean pointMarkers = true;
-  @Builder.Default
-  private Integer precision = null;
-  @Builder.Default
-  private Boolean hideRelativeValue = false;
-  @Builder.Default
-  private Boolean hideAbsoluteValue = false;
+      new LinkedHashSet<>(Collections.singletonList(UserTaskDurationTime.TOTAL));
+
+  @Builder.Default private Boolean showInstanceCount = false;
+  @Builder.Default private Boolean pointMarkers = true;
+  @Builder.Default private Integer precision = null;
+  @Builder.Default private Boolean hideRelativeValue = false;
+  @Builder.Default private Boolean hideAbsoluteValue = false;
+
   @Builder.Default
   // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
   @JsonProperty("yLabel")
   private String yLabel = "";
+
   @Builder.Default
   // needed to ensure the name is serialized properly, see https://stackoverflow.com/a/30207335
   @JsonProperty("xLabel")
   private String xLabel = "";
-  @Builder.Default
-  private Boolean alwaysShowRelative = false;
-  @Builder.Default
-  private Boolean alwaysShowAbsolute = false;
-  @Builder.Default
-  private Boolean showGradientBars = true;
-  @Builder.Default
-  private String xml = null;
-  @Builder.Default
-  private TableColumnDto tableColumns = new TableColumnDto();
+
+  @Builder.Default private Boolean alwaysShowRelative = false;
+  @Builder.Default private Boolean alwaysShowAbsolute = false;
+  @Builder.Default private Boolean showGradientBars = true;
+  @Builder.Default private String xml = null;
+  @Builder.Default private TableColumnDto tableColumns = new TableColumnDto();
+
   @Builder.Default
   private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
-  @Builder.Default
-  private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
-  @Builder.Default
-  @NonNull
+
+  @Builder.Default private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
+
+  @Builder.Default @NonNull
   private AggregateByDateUnit groupByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
-  @Builder.Default
-  @NonNull
+
+  @Builder.Default @NonNull
   private AggregateByDateUnit distributeByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
-  @Builder.Default
-  private CustomBucketDto customBucket = CustomBucketDto.builder().build();
+
+  @Builder.Default private CustomBucketDto customBucket = CustomBucketDto.builder().build();
+
   @Builder.Default
   private CustomBucketDto distributeByCustomBucket = CustomBucketDto.builder().build();
-  @Builder.Default
-  private ReportSortingDto sorting = null;
-  @Builder.Default
-  private ProcessPartDto processPart = null;
+
+  @Builder.Default private ReportSortingDto sorting = null;
+  @Builder.Default private ProcessPartDto processPart = null;
+
   @Builder.Default
   private MeasureVisualizationsDto measureVisualizations = new MeasureVisualizationsDto();
-  @Builder.Default
-  private Boolean stackedBar = false;
-  @Builder.Default
-  private Boolean horizontalBar = false;
-  @Builder.Default
-  private Boolean logScale = false;
+
+  @Builder.Default private Boolean stackedBar = false;
+  @Builder.Default private Boolean horizontalBar = false;
+  @Builder.Default private Boolean logScale = false;
 
   @JsonIgnore
   public String createCommandKey() {
@@ -110,8 +104,10 @@ public class SingleReportConfigurationDto implements Combinable {
     final SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
     final int aggregationTypesAmount = getAggregationTypes().size();
     final int userTaskDurationTimesAmount = getUserTaskDurationTimes().size();
-    return aggregationTypesAmount <= 1 && aggregationTypesAmount == that.getAggregationTypes().size()
-      && userTaskDurationTimesAmount <= 1 && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
+    return aggregationTypesAmount <= 1
+        && aggregationTypesAmount == that.getAggregationTypes().size()
+        && userTaskDurationTimesAmount <= 1
+        && userTaskDurationTimesAmount == that.getUserTaskDurationTimes().size();
   }
 
   public void setAggregationTypes(final AggregationDto... aggregationTypes) {

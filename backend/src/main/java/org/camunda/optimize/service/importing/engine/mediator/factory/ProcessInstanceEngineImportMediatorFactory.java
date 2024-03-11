@@ -6,9 +6,11 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -25,78 +27,78 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+public class ProcessInstanceEngineImportMediatorFactory
+    extends AbstractEngineImportMediatorFactory {
 
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ProcessInstanceRepository processInstanceRepository;
 
-  public ProcessInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                    final ConfigurationService configurationService,
-                                                    final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
-                                                    final CompletedProcessInstanceWriter completedProcessInstanceWriter,
-                                                    final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                                    final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
-                                                    final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                    final DatabaseClient databaseClient) {
+  public ProcessInstanceEngineImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
+      final CompletedProcessInstanceWriter completedProcessInstanceWriter,
+      final RunningProcessInstanceWriter runningProcessInstanceWriter,
+      final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final DatabaseClient databaseClient,
+      final ProcessInstanceRepository processInstanceRepository) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.businessKeyImportAdapterProvider = businessKeyImportAdapterProvider;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.processInstanceRepository = processInstanceRepository;
   }
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(
-      createCompletedProcessInstanceEngineImportMediator(engineContext),
-      createRunningProcessInstanceEngineImportMediator(engineContext)
-    );
+        createCompletedProcessInstanceEngineImportMediator(engineContext),
+        createRunningProcessInstanceEngineImportMediator(engineContext));
   }
 
-  public CompletedProcessInstanceEngineImportMediator createCompletedProcessInstanceEngineImportMediator(
-    EngineContext engineContext) {
+  public CompletedProcessInstanceEngineImportMediator
+      createCompletedProcessInstanceEngineImportMediator(EngineContext engineContext) {
     return new CompletedProcessInstanceEngineImportMediator(
-      importIndexHandlerRegistry.getCompletedProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(CompletedProcessInstanceFetcher.class, engineContext),
-      new CompletedProcessInstanceImportService(
+        importIndexHandlerRegistry.getCompletedProcessInstanceImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(CompletedProcessInstanceFetcher.class, engineContext),
+        new CompletedProcessInstanceImportService(
+            configurationService,
+            engineContext,
+            businessKeyImportAdapterProvider,
+            completedProcessInstanceWriter,
+            camundaEventImportServiceFactory.createCamundaEventService(engineContext),
+            processDefinitionResolverService,
+            databaseClient,
+            processInstanceRepository),
         configurationService,
-        engineContext,
-        businessKeyImportAdapterProvider,
-        completedProcessInstanceWriter,
-        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
 
-  public RunningProcessInstanceEngineImportMediator createRunningProcessInstanceEngineImportMediator(
-    EngineContext engineContext) {
+  public RunningProcessInstanceEngineImportMediator
+      createRunningProcessInstanceEngineImportMediator(EngineContext engineContext) {
     return new RunningProcessInstanceEngineImportMediator(
-      importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(RunningProcessInstanceFetcher.class, engineContext),
-      new RunningProcessInstanceImportService(
+        importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(RunningProcessInstanceFetcher.class, engineContext),
+        new RunningProcessInstanceImportService(
+            configurationService,
+            engineContext,
+            businessKeyImportAdapterProvider,
+            runningProcessInstanceWriter,
+            camundaEventImportServiceFactory.createCamundaEventService(engineContext),
+            processDefinitionResolverService,
+            databaseClient),
         configurationService,
-        engineContext,
-        businessKeyImportAdapterProvider,
-        runningProcessInstanceWriter,
-        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
-
 }

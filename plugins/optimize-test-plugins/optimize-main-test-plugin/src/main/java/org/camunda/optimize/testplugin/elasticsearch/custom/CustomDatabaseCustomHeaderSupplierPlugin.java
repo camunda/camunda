@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.testplugin.elasticsearch.custom;
 
-
 import org.camunda.optimize.plugin.elasticsearch.CustomHeader;
 import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 
@@ -15,5 +14,4 @@ public class CustomDatabaseCustomHeaderSupplierPlugin implements DatabaseCustomH
   public CustomHeader getElasticsearchCustomHeader() {
     return new CustomHeader("CustomHeader", "customValue");
   }
-
 }

@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
@@ -34,6 +36,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINI
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
+@Tag(OPENSEARCH_PASSING)
 public class CollectionRestServiceReportsIT extends AbstractPlatformIT {
 
   private static Stream<DefinitionType> definitionTypes() {

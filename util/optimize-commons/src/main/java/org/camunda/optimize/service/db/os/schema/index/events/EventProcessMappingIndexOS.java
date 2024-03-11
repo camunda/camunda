@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.os.schema.index.events;
 
-import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public class EventProcessMappingIndexOS extends EventProcessMappingIndex<IndexSettings.Builder> {
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     return OptimizeOpenSearchUtil.addStaticSetting(key, value, contentBuilder);
   }
 }

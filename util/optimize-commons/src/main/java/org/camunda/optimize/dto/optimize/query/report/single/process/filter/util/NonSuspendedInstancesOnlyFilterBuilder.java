@@ -21,7 +21,8 @@ public class NonSuspendedInstancesOnlyFilterBuilder {
     return new NonSuspendedInstancesOnlyFilterBuilder(filterBuilder);
   }
 
-  public NonSuspendedInstancesOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public NonSuspendedInstancesOnlyFilterBuilder filterLevel(
+      final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }

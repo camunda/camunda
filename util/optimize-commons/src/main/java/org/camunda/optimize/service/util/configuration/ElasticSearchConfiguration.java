@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
+import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.Data;
 import org.camunda.optimize.service.util.configuration.db.DatabaseBackup;
 import org.camunda.optimize.service.util.configuration.db.DatabaseConnection;
 import org.camunda.optimize.service.util.configuration.db.DatabaseSecurity;
 import org.camunda.optimize.service.util.configuration.db.DatabaseSettings;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
-import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 
 @Data
 public class ElasticSearchConfiguration {
@@ -120,11 +119,10 @@ public class ElasticSearchConfiguration {
 
   @JsonIgnore
   public List<String> getSecuritySSLCertificateAuthorities() {
-    List<String> securitySSLCertificateAuthorities = security.getSsl()
-      .getCertificateAuthorities()
-      .stream()
-      .map(a -> resolvePathAsAbsoluteUrl(a).getPath())
-      .toList();
+    List<String> securitySSLCertificateAuthorities =
+        security.getSsl().getCertificateAuthorities().stream()
+            .map(a -> resolvePathAsAbsoluteUrl(a).getPath())
+            .toList();
     return Optional.ofNullable(securitySSLCertificateAuthorities).orElse(new ArrayList<>());
   }
 
@@ -172,5 +170,4 @@ public class ElasticSearchConfiguration {
   public void setNestedDocumentsLimit(final int nestedDocumentLimit) {
     settings.getIndex().setNestedDocumentsLimit(nestedDocumentLimit);
   }
-
 }

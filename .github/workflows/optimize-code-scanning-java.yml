@@ -1,0 +1,54 @@
+name: Optimize Java code scan
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "maintenance/**"
+      - "release/**"
+    paths:
+      - "backend/src/**/*.java"
+      - "util/**/*.java"
+  schedule:
+    - cron: "30 2 * * 1-5"
+  workflow_dispatch: # can be used to trigger the workflow manually
+
+jobs:
+  codeql-analysis-java:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@a727ce205a9e187cf179d30796762854cac9c231
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@8a470fddafa5cbb6266ee11b37ef4d8aae19c571 # v3
+        with:
+          languages: java
+          queries: security-and-quality
+
+      - name: Compile
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: compile -DskipTests -Dskip.docker
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@8a470fddafa5cbb6266ee11b37ef4d8aae19c571 # v3

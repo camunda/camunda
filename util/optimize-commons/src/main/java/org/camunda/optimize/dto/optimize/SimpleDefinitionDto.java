@@ -6,6 +6,9 @@
 package org.camunda.optimize.dto.optimize;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,29 +16,23 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleDefinitionDto {
-  @EqualsAndHashCode.Include
-  @NonNull
-  private String key;
+  @EqualsAndHashCode.Include @NonNull private String key;
   private String name;
-  @EqualsAndHashCode.Include
-  @NonNull
-  private DefinitionType type;
-  @JsonIgnore
-  private Boolean isEventProcess = false;
-  @NonNull
-  private Set<String> engines = new HashSet<>();
+  @EqualsAndHashCode.Include @NonNull private DefinitionType type;
+  @JsonIgnore private Boolean isEventProcess = false;
+  @NonNull private Set<String> engines = new HashSet<>();
 
-  public SimpleDefinitionDto(@NonNull final String key, final String name, @NonNull final DefinitionType type,
-                             final Boolean isEventProcess, @NonNull String engine) {
+  public SimpleDefinitionDto(
+      @NonNull final String key,
+      final String name,
+      @NonNull final DefinitionType type,
+      final Boolean isEventProcess,
+      @NonNull String engine) {
     this.key = key;
     this.name = name;
     this.type = type;

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
@@ -17,31 +18,36 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class StorePositionBasedImportProgressMediatorFactory extends AbstractZeebeImportMediatorFactory {
+public class StorePositionBasedImportProgressMediatorFactory
+    extends AbstractZeebeImportMediatorFactory {
 
   private final PositionBasedImportIndexWriter importIndexWriter;
 
-  public StorePositionBasedImportProgressMediatorFactory(final BeanFactory beanFactory,
-                                                           final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                           final ConfigurationService configurationService,
-                                                           final PositionBasedImportIndexWriter importIndexWriter,
-                                                           final ObjectMapper objectMapper,
-                                                           final DatabaseClient databaseClient) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, databaseClient);
+  public StorePositionBasedImportProgressMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final PositionBasedImportIndexWriter importIndexWriter,
+      final ObjectMapper objectMapper,
+      final DatabaseClient databaseClient) {
+    super(
+        beanFactory,
+        importIndexHandlerRegistry,
+        configurationService,
+        objectMapper,
+        databaseClient);
     this.importIndexWriter = importIndexWriter;
   }
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto dataSourceDto) {
-    return List.of(new StorePositionBasedImportProgressMediator(
-      importIndexHandlerRegistry,
-      new StorePositionBasedIndexImportService(configurationService, importIndexWriter, databaseClient),
-      configurationService,
-      dataSourceDto
-    ));
+    return List.of(
+        new StorePositionBasedImportProgressMediator(
+            importIndexHandlerRegistry,
+            new StorePositionBasedIndexImportService(
+                configurationService, importIndexWriter, databaseClient),
+            configurationService,
+            dataSourceDto));
   }
-
 }

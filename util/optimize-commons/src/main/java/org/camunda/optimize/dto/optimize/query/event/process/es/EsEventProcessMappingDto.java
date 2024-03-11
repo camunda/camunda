@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process.es;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,11 +22,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -30,8 +29,7 @@ import java.util.stream.Collectors;
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EsEventProcessMappingDto implements OptimizeDto {
-  @EqualsAndHashCode.Include
-  private String id;
+  @EqualsAndHashCode.Include private String id;
   private String name;
   private String xml;
   private OffsetDateTime lastModified;
@@ -40,49 +38,53 @@ public class EsEventProcessMappingDto implements OptimizeDto {
   private List<EventSourceEntryDto<?>> eventSources;
   private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
-  public static EsEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
+  public static EsEventProcessMappingDto fromEventProcessMappingDto(
+      final EventProcessMappingDto eventMappingDto) {
     return EsEventProcessMappingDto.builder()
-      .id(eventMappingDto.getId())
-      .name(eventMappingDto.getName())
-      .xml(eventMappingDto.getXml())
-      .lastModified(eventMappingDto.getLastModified())
-      .lastModifier(eventMappingDto.getLastModifier())
-      .mappings(
-        Optional.ofNullable(eventMappingDto.getMappings())
-          .map(mappings -> mappings.keySet()
-            .stream()
-            .map(flowNodeId -> EsEventMappingDto.fromEventMappingDto(
-              flowNodeId,
-              eventMappingDto.getMappings().get(flowNodeId)
-            ))
-            .collect(Collectors.toList()))
-          .orElse(null)
-      )
-      .eventSources(eventMappingDto.getEventSources())
-      .roles(eventMappingDto.getRoles())
-      .build();
+        .id(eventMappingDto.getId())
+        .name(eventMappingDto.getName())
+        .xml(eventMappingDto.getXml())
+        .lastModified(eventMappingDto.getLastModified())
+        .lastModifier(eventMappingDto.getLastModifier())
+        .mappings(
+            Optional.ofNullable(eventMappingDto.getMappings())
+                .map(
+                    mappings ->
+                        mappings.keySet().stream()
+                            .map(
+                                flowNodeId ->
+                                    EsEventMappingDto.fromEventMappingDto(
+                                        flowNodeId, eventMappingDto.getMappings().get(flowNodeId)))
+                            .collect(Collectors.toList()))
+                .orElse(null))
+        .eventSources(eventMappingDto.getEventSources())
+        .roles(eventMappingDto.getRoles())
+        .build();
   }
 
   public EventProcessMappingDto toEventProcessMappingDto() {
     return EventProcessMappingDto.builder()
-      .id(this.id)
-      .name(this.name)
-      .xml(this.xml)
-      .lastModified(this.lastModified)
-      .lastModifier(this.lastModifier)
-      .mappings(
-        Optional.ofNullable(this.mappings)
-          .map(mappingList -> mappingList.stream()
-            .collect(Collectors.toMap(
-              EsEventMappingDto::getFlowNodeId,
-              mapping -> EventMappingDto.builder()
-                .start(mapping.getStart())
-                .end(mapping.getEnd()).build()
-            ))).orElse(null)
-      )
-      .eventSources(this.eventSources)
-      .roles(this.roles)
-      .build();
+        .id(this.id)
+        .name(this.name)
+        .xml(this.xml)
+        .lastModified(this.lastModified)
+        .lastModifier(this.lastModifier)
+        .mappings(
+            Optional.ofNullable(this.mappings)
+                .map(
+                    mappingList ->
+                        mappingList.stream()
+                            .collect(
+                                Collectors.toMap(
+                                    EsEventMappingDto::getFlowNodeId,
+                                    mapping ->
+                                        EventMappingDto.builder()
+                                            .start(mapping.getStart())
+                                            .end(mapping.getEnd())
+                                            .build())))
+                .orElse(null))
+        .eventSources(this.eventSources)
+        .roles(this.roles)
+        .build();
   }
-
 }

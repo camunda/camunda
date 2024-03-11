@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.importing.event.service;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
-import org.camunda.optimize.service.importing.job.EventCountAndTracesImportJob;
 import org.camunda.optimize.service.events.EventTraceStateService;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.importing.job.EventCountAndTracesImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-
-import java.util.List;
 
 @Slf4j
 public class EventTraceImportService implements ImportService<EventDto> {
@@ -23,26 +22,25 @@ public class EventTraceImportService implements ImportService<EventDto> {
   private final EventTraceStateService eventTraceStateService;
   private final DatabaseClient databaseClient;
 
-  public EventTraceImportService(final ConfigurationService configurationService,
-                                 final EventTraceStateService eventTraceStateService,
-                                 final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
-      getClass().getSimpleName(), configurationService
-    );
+  public EventTraceImportService(
+      final ConfigurationService configurationService,
+      final EventTraceStateService eventTraceStateService,
+      final DatabaseClient databaseClient) {
+    this.databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.eventTraceStateService = eventTraceStateService;
     this.databaseClient = databaseClient;
   }
 
   @Override
-  public void executeImport(final List<EventDto> pageOfEvents, final Runnable importCompleteCallback) {
+  public void executeImport(
+      final List<EventDto> pageOfEvents, final Runnable importCompleteCallback) {
     log.trace("Importing external event traces.");
 
     boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
-      databaseImportJobExecutor.executeImportJob(createDatabaseImportJob(
-        pageOfEvents,
-        importCompleteCallback
-      ));
+      databaseImportJobExecutor.executeImportJob(
+          createDatabaseImportJob(pageOfEvents, importCompleteCallback));
     } else {
       importCompleteCallback.run();
     }
@@ -53,13 +51,11 @@ public class EventTraceImportService implements ImportService<EventDto> {
     return databaseImportJobExecutor;
   }
 
-  private EventCountAndTracesImportJob createDatabaseImportJob(final List<EventDto> events,
-                                                               final Runnable callback) {
-    final EventCountAndTracesImportJob importJob = new EventCountAndTracesImportJob(
-      eventTraceStateService, callback, databaseClient
-    );
+  private EventCountAndTracesImportJob createDatabaseImportJob(
+      final List<EventDto> events, final Runnable callback) {
+    final EventCountAndTracesImportJob importJob =
+        new EventCountAndTracesImportJob(eventTraceStateService, callback, databaseClient);
     importJob.setEntitiesToImport(events);
     return importJob;
   }
-
 }

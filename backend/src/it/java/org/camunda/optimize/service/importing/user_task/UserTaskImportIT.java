@@ -39,11 +39,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static jakarta.ws.rs.HttpMethod.POST;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;

@@ -17,8 +17,10 @@ import lombok.NoArgsConstructor;
 public class AnalyticsConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
+
   @JsonProperty("mixpanel")
   private MixpanelConfiguration mixpanel;
+
   @JsonProperty("osano")
   private OsanoConfiguration osano;
 }

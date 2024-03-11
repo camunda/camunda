@@ -5,23 +5,24 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
-
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 
 @Provider
 @Slf4j
-public class OptimizeUserOrGroupIdNotFoundExceptionMapper implements ExceptionMapper<OptimizeUserOrGroupIdNotFoundException> {
+public class OptimizeUserOrGroupIdNotFoundExceptionMapper
+    implements ExceptionMapper<OptimizeUserOrGroupIdNotFoundException> {
   private final LocalizationService localizationService;
 
-  public OptimizeUserOrGroupIdNotFoundExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeUserOrGroupIdNotFoundExceptionMapper(
+      @Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
@@ -29,11 +30,10 @@ public class OptimizeUserOrGroupIdNotFoundExceptionMapper implements ExceptionMa
   public Response toResponse(final OptimizeUserOrGroupIdNotFoundException idNotFoundException) {
     log.info("Mapping OptimizeIdNotFoundException");
 
-    return Response
-      .status(Response.Status.BAD_REQUEST)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(getErrorResponseDto(idNotFoundException))
-      .build();
+    return Response.status(Response.Status.BAD_REQUEST)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .entity(getErrorResponseDto(idNotFoundException))
+        .build();
   }
 
   private ErrorResponseDto getErrorResponseDto(OptimizeUserOrGroupIdNotFoundException exception) {

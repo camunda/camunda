@@ -14,14 +14,12 @@ public class DmnHelper {
 
   public static DmnModelInstance createSimpleDmnModel(final String decisionKey) {
     // @formatter:off
-    return DmnModelGenerator
-      .create()
+    return DmnModelGenerator.create()
         .decision()
-          .decisionDefinitionKey(decisionKey)
-          .addOutput("output", DecisionTypeRef.STRING)
+        .decisionDefinitionKey(decisionKey)
+        .addOutput("output", DecisionTypeRef.STRING)
         .buildDecision()
-      .build();
+        .build();
     // @formatter:on
   }
-
 }

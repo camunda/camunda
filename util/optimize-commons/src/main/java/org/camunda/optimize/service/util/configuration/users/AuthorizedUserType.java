@@ -8,8 +8,9 @@ package org.camunda.optimize.service.util.configuration.users;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum AuthorizedUserType {
-
-  ALL, SUPERUSER, NONE;
+  ALL,
+  SUPERUSER,
+  NONE;
 
   @JsonValue
   public String getId() {
@@ -20,5 +21,4 @@ public enum AuthorizedUserType {
   public String toString() {
     return getId();
   }
-
 }

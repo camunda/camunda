@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.rest.export.report;
 
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
+
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,25 +17,22 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
 
-import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExportDto {
-  @NotNull
-  private DecisionReportDataDto data;
+  @NotNull private DecisionReportDataDto data;
 
-  public SingleDecisionReportDefinitionExportDto(final SingleDecisionReportDefinitionRequestDto reportDefinition) {
+  public SingleDecisionReportDefinitionExportDto(
+      final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(
-      reportDefinition.getId(),
-      SINGLE_DECISION_REPORT,
-      SingleDecisionReportIndex.VERSION,
-      reportDefinition.getName(),
-      reportDefinition.getDescription(),
-      reportDefinition.getCollectionId()
-    );
+        reportDefinition.getId(),
+        SINGLE_DECISION_REPORT,
+        SingleDecisionReportIndex.VERSION,
+        reportDefinition.getName(),
+        reportDefinition.getDescription(),
+        reportDefinition.getCollectionId());
     this.data = reportDefinition.getData();
   }
 

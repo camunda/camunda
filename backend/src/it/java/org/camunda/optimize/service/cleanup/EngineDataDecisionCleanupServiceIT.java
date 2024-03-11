@@ -8,12 +8,11 @@ package org.camunda.optimize.service.cleanup;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
 import org.camunda.optimize.util.DmnModels;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,10 +22,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.DECISION_INSTANCE_ID;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
+@Tag(OPENSEARCH_PASSING)
 public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
   @RegisterExtension
@@ -76,7 +74,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoDecisionInstanceDataExists(instanceIdsToCleanup);
-    assertDecisionInstancesExistInEs(unaffectedDecisionDefinitionsIds);
+    assertDecisionInstancesExistInDatabase(unaffectedDecisionDefinitionsIds);
   }
 
   @Test
@@ -127,7 +125,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then data clear up has succeeded as expected
-    assertDecisionInstancesExistInEs(unaffectedDecisionDefinitionsIds);
+    assertDecisionInstancesExistInDatabase(unaffectedDecisionDefinitionsIds);
     // and the misconfigured process is logged
     cleanupServiceLogs.assertContains(String.format(
       "History Cleanup Configuration contains definition keys for which there is no "
@@ -136,25 +134,16 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
   @SneakyThrows
   protected void assertNoDecisionInstanceDataExists(final List<String> decisionInstanceIds) {
-    assertThat(getDecisionInstancesById(decisionInstanceIds).getHits().getTotalHits().value).isZero();
+    assertThat(getDecisionInstancesById(decisionInstanceIds)).isEmpty();
   }
 
-  protected void assertDecisionInstancesExistInEs(List<String> decisionInstanceIds) throws IOException {
-    SearchResponse idsResp = getDecisionInstancesById(decisionInstanceIds);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(decisionInstanceIds.size());
+  protected void assertDecisionInstancesExistInDatabase(List<String> decisionInstanceIds) throws IOException {
+    List<DecisionInstanceDto> idsResp = getDecisionInstancesById(decisionInstanceIds);
+    assertThat(idsResp).hasSameSizeAs(decisionInstanceIds);
   }
 
-  protected SearchResponse getDecisionInstancesById(List<String> decisionInstanceIds) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termsQuery(DECISION_INSTANCE_ID, decisionInstanceIds))
-      .trackTotalHits(true)
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(DECISION_INSTANCE_MULTI_ALIAS)
-      .source(searchSourceBuilder);
-
-    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
+  protected List<DecisionInstanceDto> getDecisionInstancesById(List<String> decisionInstanceIds) throws IOException {
+    return databaseIntegrationTestExtension.getDecisionInstancesById(decisionInstanceIds);
   }
 
   @SneakyThrows

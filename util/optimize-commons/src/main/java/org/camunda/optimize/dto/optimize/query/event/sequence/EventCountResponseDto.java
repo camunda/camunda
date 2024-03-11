@@ -19,13 +19,9 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants
 public class EventCountResponseDto {
   private String group;
-  @NonNull
-  private String source;
-  @NonNull
-  private String eventName;
+  @NonNull private String source;
+  @NonNull private String eventName;
   private String eventLabel;
   private Long count;
-  @Builder.Default
-  private boolean suggested = false;
-
+  @Builder.Default private boolean suggested = false;
 }

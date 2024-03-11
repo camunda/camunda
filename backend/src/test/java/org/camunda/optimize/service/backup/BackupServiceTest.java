@@ -5,7 +5,16 @@
  */
 package org.camunda.optimize.service.backup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+
 import jakarta.ws.rs.NotFoundException;
+import java.util.Collections;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.BackupService;
@@ -28,33 +37,18 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class BackupServiceTest {
 
-  @Mock
-  private BackupReader backupReader;
+  @Mock private BackupReader backupReader;
 
-  @Mock
-  private BackupWriter backupWriter;
+  @Mock private BackupWriter backupWriter;
 
-  @Mock
-  private ElasticSearchConfiguration databaseConfiguration;
+  @Mock private ElasticSearchConfiguration databaseConfiguration;
 
-  @Mock
-  private ConfigurationService configurationService;
+  @Mock private ConfigurationService configurationService;
 
-  @InjectMocks
-  private BackupService backupService;
+  @InjectMocks private BackupService backupService;
   private static MockedStatic<StringUtils> stringUtils;
 
   @BeforeAll
@@ -77,13 +71,12 @@ public class BackupServiceTest {
     // given mock no repository in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
     // when/then
-    final OptimizeConfigurationException thrown = assertThrows(
-      OptimizeConfigurationException.class,
-      () -> backupService.triggerBackup(123L)
-    );
-    assertThat(thrown.getMessage()).isEqualTo(
-      "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
-        "configuration.");
+    final OptimizeConfigurationException thrown =
+        assertThrows(OptimizeConfigurationException.class, () -> backupService.triggerBackup(123L));
+    assertThat(thrown.getMessage())
+        .isEqualTo(
+            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+                + "configuration.");
   }
 
   @Test
@@ -91,15 +84,17 @@ public class BackupServiceTest {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
-    doThrow(new OptimizeSnapshotRepositoryNotFoundException("No repository with name [does_not_exist] could be found."))
-      .when(backupReader).validateRepositoryExistsOrFail();
+    doThrow(
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
+        .when(backupReader)
+        .validateRepositoryExistsOrFail();
 
     // when/then
-    final OptimizeRuntimeException thrown = assertThrows(
-      OptimizeRuntimeException.class,
-      () -> backupService.triggerBackup(123L)
-    );
-    assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
+    final OptimizeRuntimeException thrown =
+        assertThrows(OptimizeRuntimeException.class, () -> backupService.triggerBackup(123L));
+    assertThat(thrown.getMessage())
+        .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
 
   @SneakyThrows
@@ -110,18 +105,19 @@ public class BackupServiceTest {
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doNothing().when(backupReader).validateRepositoryExistsOrFail();
     // Mock existence of other backup with the same ID
-    doThrow(new OptimizeConflictException(
-      "A backup with ID [123] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
-      .when(backupReader).validateNoDuplicateBackupId(any());
+    doThrow(
+            new OptimizeConflictException(
+                "A backup with ID [123] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
+        .when(backupReader)
+        .validateNoDuplicateBackupId(any());
 
     // when
-    final OptimizeConflictException thrown = assertThrows(
-      OptimizeConflictException.class,
-      () -> backupService.triggerBackup(123L)
-    );
-    assertThat(thrown.getMessage()).isEqualTo(
-      "A backup with ID [123] already exists. Found snapshots: " +
-        "[existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]");
+    final OptimizeConflictException thrown =
+        assertThrows(OptimizeConflictException.class, () -> backupService.triggerBackup(123L));
+    assertThat(thrown.getMessage())
+        .isEqualTo(
+            "A backup with ID [123] already exists. Found snapshots: "
+                + "[existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]");
   }
 
   @Test
@@ -130,13 +126,13 @@ public class BackupServiceTest {
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
 
     // when/then
-    final OptimizeConfigurationException thrown = assertThrows(
-      OptimizeConfigurationException.class,
-      () -> backupService.getSingleBackupInfo(123L)
-    );
-    assertThat(thrown.getMessage()).isEqualTo(
-      "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
-        "configuration.");
+    final OptimizeConfigurationException thrown =
+        assertThrows(
+            OptimizeConfigurationException.class, () -> backupService.getSingleBackupInfo(123L));
+    assertThat(thrown.getMessage())
+        .isEqualTo(
+            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+                + "configuration.");
   }
 
   @Test
@@ -144,15 +140,17 @@ public class BackupServiceTest {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
-    doThrow(new OptimizeSnapshotRepositoryNotFoundException("No repository with name [does_not_exist] could be found."))
-      .when(backupReader).validateRepositoryExistsOrFail();
+    doThrow(
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
+        .when(backupReader)
+        .validateRepositoryExistsOrFail();
 
     // when/then
-    final OptimizeRuntimeException thrown = assertThrows(
-      OptimizeRuntimeException.class,
-      () -> backupService.getSingleBackupInfo(123L)
-    );
-    assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
+    final OptimizeRuntimeException thrown =
+        assertThrows(OptimizeRuntimeException.class, () -> backupService.getSingleBackupInfo(123L));
+    assertThat(thrown.getMessage())
+        .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
 
   @Test
@@ -161,13 +159,12 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doNothing().when(backupReader).validateRepositoryExistsOrFail();
-    when(backupReader.getOptimizeSnapshotsForBackupId(anyLong())).thenReturn(Collections.emptyList());
+    when(backupReader.getOptimizeSnapshotsForBackupId(anyLong()))
+        .thenReturn(Collections.emptyList());
 
     // when/then
-    final NotFoundException thrown = assertThrows(
-      NotFoundException.class,
-      () -> backupService.getSingleBackupInfo(123L)
-    );
+    final NotFoundException thrown =
+        assertThrows(NotFoundException.class, () -> backupService.getSingleBackupInfo(123L));
     assertThat(thrown.getMessage()).isEqualTo("No Optimize backup with ID [123] could be found.");
   }
 
@@ -177,13 +174,12 @@ public class BackupServiceTest {
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
 
     // when/then
-    final OptimizeConfigurationException thrown = assertThrows(
-      OptimizeConfigurationException.class,
-      () -> backupService.getAllBackupInfo()
-    );
-    assertThat(thrown.getMessage()).isEqualTo(
-      "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
-        "configuration.");
+    final OptimizeConfigurationException thrown =
+        assertThrows(OptimizeConfigurationException.class, () -> backupService.getAllBackupInfo());
+    assertThat(thrown.getMessage())
+        .isEqualTo(
+            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+                + "configuration.");
   }
 
   @Test
@@ -191,15 +187,17 @@ public class BackupServiceTest {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
-    doThrow(new OptimizeSnapshotRepositoryNotFoundException("No repository with name [does_not_exist] could be found."))
-      .when(backupReader).validateRepositoryExistsOrFail();
+    doThrow(
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
+        .when(backupReader)
+        .validateRepositoryExistsOrFail();
 
     // when/then
-    final OptimizeRuntimeException thrown = assertThrows(
-      OptimizeRuntimeException.class,
-      () -> backupService.getAllBackupInfo()
-    );
-    assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
+    final OptimizeRuntimeException thrown =
+        assertThrows(OptimizeRuntimeException.class, () -> backupService.getAllBackupInfo());
+    assertThat(thrown.getMessage())
+        .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
 
   @Test
@@ -220,13 +218,12 @@ public class BackupServiceTest {
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
 
     // when/then
-    final OptimizeConfigurationException thrown = assertThrows(
-      OptimizeConfigurationException.class,
-      () -> backupService.deleteBackup(123L)
-    );
-    assertThat(thrown.getMessage()).isEqualTo(
-      "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
-        "configuration.");
+    final OptimizeConfigurationException thrown =
+        assertThrows(OptimizeConfigurationException.class, () -> backupService.deleteBackup(123L));
+    assertThat(thrown.getMessage())
+        .isEqualTo(
+            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+                + "configuration.");
   }
 
   @Test
@@ -234,15 +231,16 @@ public class BackupServiceTest {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
-    doThrow(new OptimizeSnapshotRepositoryNotFoundException("No repository with name [does_not_exist] could be found."))
-      .when(backupReader).validateRepositoryExistsOrFail();
+    doThrow(
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
+        .when(backupReader)
+        .validateRepositoryExistsOrFail();
 
     // when/then
-    final OptimizeRuntimeException thrown = assertThrows(
-      OptimizeRuntimeException.class,
-      () -> backupService.deleteBackup(123L)
-    );
-    assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
+    final OptimizeRuntimeException thrown =
+        assertThrows(OptimizeRuntimeException.class, () -> backupService.deleteBackup(123L));
+    assertThat(thrown.getMessage())
+        .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
-
 }

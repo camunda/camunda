@@ -16,14 +16,19 @@ import lombok.NoArgsConstructor;
 public class OnboardingConfiguration {
   @Property("enabled")
   private boolean enabled;
+
   @Property("appCuesScriptUrl")
   private String appCuesScriptUrl;
+
   @Property("scheduleProcessOnboardingChecks")
   private boolean scheduleProcessOnboardingChecks;
+
   @Property("enableOnboardingEmails")
   private boolean enableOnboardingEmails;
+
   @Property("intervalForCheckingTriggerForOnboardingEmails")
   private int intervalForCheckingTriggerForOnboardingEmails;
+
   @JsonProperty("properties")
   private Properties properties;
 
@@ -33,6 +38,7 @@ public class OnboardingConfiguration {
   public static class Properties {
     @JsonProperty("organizationId")
     private String organizationId;
+
     @JsonProperty("clusterId")
     private String clusterId;
   }

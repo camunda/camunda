@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useMemo} from 'react';
+import {ReactNode, useMemo} from 'react';
 import {useLocation} from 'react-router-dom';
 import {FilterableMultiSelect} from '@carbon/react';
 
@@ -22,6 +22,8 @@ interface MultiDefinitionSelectionProps {
   resetSelection: (selection: {}) => void;
   selectedDefinitions: Definition[];
   onChange: (selectedDefinitions: Definition[]) => void;
+  invalid?: boolean;
+  invalidText?: ReactNode;
 }
 
 type Item = {
@@ -36,6 +38,8 @@ function MultiDefinitionSelection({
   resetSelection,
   selectedDefinitions,
   onChange,
+  invalid,
+  invalidText,
 }: MultiDefinitionSelectionProps): JSX.Element {
   const location = useLocation();
   const {mightFail} = useErrorHandling();
@@ -96,6 +100,8 @@ function MultiDefinitionSelection({
         placeholder={t('common.select')}
         titleText={t('common.definitionSelection.select.multiProcess')}
         size="sm"
+        invalid={invalid}
+        invalidText={invalidText}
       />
     </div>
   );

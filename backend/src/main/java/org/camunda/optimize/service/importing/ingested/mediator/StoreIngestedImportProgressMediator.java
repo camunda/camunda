@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
@@ -17,22 +21,19 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
 public class StoreIngestedImportProgressMediator
-  extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService> implements ImportMediator {
+    extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService>
+    implements ImportMediator {
 
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
 
-  public StoreIngestedImportProgressMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                             final StoreIndexesEngineImportService importService,
-                                             final ConfigurationService configurationService) {
+  public StoreIngestedImportProgressMediator(
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final StoreIndexesEngineImportService importService,
+      final ConfigurationService configurationService) {
     super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
   }
@@ -42,12 +43,12 @@ public class StoreIngestedImportProgressMediator
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
-      final List<EngineImportIndexDto> importIndexes = importIndexHandlerRegistry.getAllIngestedImportHandlers()
-        .stream()
-        .map(ImportIndexHandler::getIndexStateDto)
-        .filter(Objects::nonNull)
-        .map(EngineImportIndexDto.class::cast)
-        .collect(Collectors.toList());
+      final List<EngineImportIndexDto> importIndexes =
+          importIndexHandlerRegistry.getAllIngestedImportHandlers().stream()
+              .map(ImportIndexHandler::getIndexStateDto)
+              .filter(Objects::nonNull)
+              .map(EngineImportIndexDto.class::cast)
+              .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
     } catch (Exception e) {
@@ -56,5 +57,4 @@ public class StoreIngestedImportProgressMediator
     }
     return importCompleted;
   }
-
 }

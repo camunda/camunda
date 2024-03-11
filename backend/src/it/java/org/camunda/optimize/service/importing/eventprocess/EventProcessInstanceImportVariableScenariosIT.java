@@ -53,7 +53,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -92,7 +92,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -131,7 +131,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -181,7 +181,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {

@@ -131,7 +131,9 @@ describe('getLabel', () => {
   });
 
   it('should return label with user task duration', () => {
-    expect(getLabel({property: 'duration', userTaskDurationTime: 'idle'})).toBe('Idle Duration');
+    expect(getLabel({property: 'duration', userTaskDurationTime: 'idle'})).toBe(
+      'Unassigned Duration'
+    );
   });
 });
 

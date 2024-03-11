@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.dmn4;
 
-import org.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapter;
-import org.camunda.optimize.plugin.importing.variable.PluginDecisionOutputDto;
-
 import java.util.List;
 import java.util.UUID;
+import org.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapter;
+import org.camunda.optimize.plugin.importing.variable.PluginDecisionOutputDto;
 
 public class AddNewOutput implements DecisionOutputImportAdapter {
   @Override

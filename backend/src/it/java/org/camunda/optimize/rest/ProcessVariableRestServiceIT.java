@@ -9,6 +9,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -16,8 +17,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
 
   @Test

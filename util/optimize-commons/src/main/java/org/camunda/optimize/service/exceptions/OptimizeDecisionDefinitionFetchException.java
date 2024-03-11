@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-
 public class OptimizeDecisionDefinitionFetchException extends OptimizeRuntimeException {
 
   public OptimizeDecisionDefinitionFetchException(String message) {
     super(message);
   }
-
 }

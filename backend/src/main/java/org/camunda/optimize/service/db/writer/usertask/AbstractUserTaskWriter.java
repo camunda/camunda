@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.writer.usertask;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 
-import java.util.List;
-
 public interface AbstractUserTaskWriter {
 
-  List<ImportRequestDto> generateUserTaskImports(final String importItemName,
-                                                 final DatabaseClient databaseClient,
-                                                 final List<FlowNodeInstanceDto> userTaskInstances);
-
+  List<ImportRequestDto> generateUserTaskImports(
+      final String importItemName,
+      final DatabaseClient databaseClient,
+      final List<FlowNodeInstanceDto> userTaskInstances);
 }

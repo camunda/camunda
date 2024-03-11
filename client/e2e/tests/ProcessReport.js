@@ -827,13 +827,13 @@ test('should be able to select how the time of the user task is calculated', asy
   await u.selectVisualization(t, 'Table');
 
   await t.click(e.aggregationTypeSelect);
-  await t.click(e.aggregationOption('Idle'));
+  await t.click(e.aggregationOption('Unassigned'));
   await t.click(e.aggregationOption('Total'));
 
   await t.expect(e.reportTable.visible).ok();
 
-  await t.click(e.aggregationOption('Work'));
-  await t.click(e.aggregationOption('Idle'));
+  await t.click(e.aggregationOption('Assigned'));
+  await t.click(e.aggregationOption('Unassigned'));
 
   await t.expect(e.reportTable.visible).ok();
 });
@@ -1063,13 +1063,13 @@ test('multi-aggregation reports', async (t) => {
 
   await u.selectView(t, 'User task', 'Duration');
   await t.click(e.aggregationTypeSelect);
-  await t.click(e.aggregationOption('Work'));
+  await t.click(e.aggregationOption('Assigned'));
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Total Duration - Avg');
   await t.expect(e.reportRenderer.textContent).contains('Total Duration - Max');
-  await t.expect(e.reportRenderer.textContent).contains('Work Duration - Avg');
-  await t.expect(e.reportRenderer.textContent).contains('Work Duration - Max');
+  await t.expect(e.reportRenderer.textContent).contains('Assigned Duration - Avg');
+  await t.expect(e.reportRenderer.textContent).contains('Assigned Duration - Max');
 
   await u.selectVisualization(t, 'Bar chart');
   await t.expect(e.reportChart.visible).ok();
@@ -1083,8 +1083,8 @@ test('multi-aggregation reports', async (t) => {
   await t.hover(e.flowNode('ConductPhoneInterview'));
   await t.expect(e.tooltip.textContent).contains('Avg (Total)');
   await t.expect(e.tooltip.textContent).contains('Max (Total)');
-  await t.expect(e.tooltip.textContent).contains('Avg (Work)');
-  await t.expect(e.tooltip.textContent).contains('Max (Work)');
+  await t.expect(e.tooltip.textContent).contains('Avg (Assigned)');
+  await t.expect(e.tooltip.textContent).contains('Max (Assigned)');
 });
 
 test('distributed multi-measure reports', async (t) => {

@@ -5,6 +5,16 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static java.lang.String.format;
+import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.searchRequestBuilder;
+
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -17,17 +27,6 @@ import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Optional;
-
-import static java.lang.String.format;
-import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
-import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
-import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
-import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.searchRequestBuilder;
 
 @RequiredArgsConstructor
 @Component
@@ -47,9 +46,8 @@ public class AlertReaderOS implements AlertReader {
   public List<AlertDefinitionDto> getStoredAlerts() {
     log.debug("getting all stored alerts");
 
-    SearchRequest.Builder requestBuilder = searchRequestBuilder(ALERT_INDEX_NAME)
-      .query(matchAll())
-      .size(LIST_FETCH_LIMIT);
+    SearchRequest.Builder requestBuilder =
+        searchRequestBuilder(ALERT_INDEX_NAME).query(matchAll()).size(LIST_FETCH_LIMIT);
 
     return osClient.scrollValues(requestBuilder, AlertDefinitionDto.class);
   }
@@ -59,7 +57,8 @@ public class AlertReaderOS implements AlertReader {
     log.debug("Fetching alert with id [{}]", alertId);
 
     String errorMsg = format("Could not fetch alert with id [%s]", alertId);
-    GetResponse<AlertDefinitionDto> result = osClient.get(ALERT_INDEX_NAME, alertId, AlertDefinitionDto.class, errorMsg);
+    GetResponse<AlertDefinitionDto> result =
+        osClient.get(ALERT_INDEX_NAME, alertId, AlertDefinitionDto.class, errorMsg);
 
     return result.found() ? Optional.ofNullable(result.source()) : Optional.empty();
   }
@@ -68,9 +67,10 @@ public class AlertReaderOS implements AlertReader {
   public List<AlertDefinitionDto> getAlertsForReport(String reportId) {
     log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
-    SearchRequest.Builder requestBuilder = searchRequestBuilder(ALERT_INDEX_NAME)
-      .query(term(AlertIndex.REPORT_ID, reportId))
-      .size(LIST_FETCH_LIMIT);
+    SearchRequest.Builder requestBuilder =
+        searchRequestBuilder(ALERT_INDEX_NAME)
+            .query(term(AlertIndex.REPORT_ID, reportId))
+            .size(LIST_FETCH_LIMIT);
 
     return osClient.searchValues(requestBuilder, AlertDefinitionDto.class);
   }
@@ -79,11 +79,11 @@ public class AlertReaderOS implements AlertReader {
   public List<AlertDefinitionDto> getAlertsForReports(List<String> reportIds) {
     log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
-    SearchRequest.Builder requestBuilder = searchRequestBuilder(ALERT_INDEX_NAME)
-      .query(stringTerms(AlertIndex.REPORT_ID, reportIds))
-      .size(LIST_FETCH_LIMIT);
+    SearchRequest.Builder requestBuilder =
+        searchRequestBuilder(ALERT_INDEX_NAME)
+            .query(stringTerms(AlertIndex.REPORT_ID, reportIds))
+            .size(LIST_FETCH_LIMIT);
 
     return osClient.searchValues(requestBuilder, AlertDefinitionDto.class);
   }
-
 }

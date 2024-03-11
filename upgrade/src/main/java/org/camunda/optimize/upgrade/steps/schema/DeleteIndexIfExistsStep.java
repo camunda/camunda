@@ -29,7 +29,7 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
     final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(index);
     schemaUpgradeClient.getAliasMap(indexAlias).keySet().stream()
-      .filter(indexName -> indexName.contains(index.getIndexName()))
-      .forEach(schemaUpgradeClient::deleteIndexIfExists);
+        .filter(indexName -> indexName.contains(index.getIndexName()))
+        .forEach(schemaUpgradeClient::deleteIndexIfExists);
   }
 }

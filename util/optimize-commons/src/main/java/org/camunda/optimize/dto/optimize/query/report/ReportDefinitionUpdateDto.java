@@ -6,9 +6,8 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-
 import java.time.OffsetDateTime;
+import lombok.Data;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
@@ -22,5 +21,4 @@ public class ReportDefinitionUpdateDto {
   protected String owner;
   protected String lastModifier;
   protected String collectionId;
-
 }

@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import java.time.ZoneId;
 import lombok.Builder;
 import lombok.Value;
-
-import java.time.ZoneId;
 
 @Builder
 @Value

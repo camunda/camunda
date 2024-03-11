@@ -2,13 +2,9 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
     // Base configs for renovate
-    "config:base",
+    "config:recommended",
     // Pins github actions digests
     "helpers:pinGitHubActionDigests",
-    // Pins docker digests
-    "docker:pinDigests",
-    // Enables Dependency Dahboard issue to control renovate
-    ":dependencyDashboard",
     // Sets the automerge type to 'pr'
     ":automergePr",
     // Enables automerging for patch version updates
@@ -18,7 +14,7 @@
     // Create separate PRs for patch releases
     ":separatePatchReleases",
     // Default labels added to event renovate PR
-    ":labels(renovate,dependencies)",
+    ":labels(dependencies)",
     // add renovate/ prefix to every renovate branch
     ":renovatePrefix",
     // Enables semantic commits
@@ -26,7 +22,7 @@
     // Sets the commit message to start with chore()
     ":semanticCommitTypeAll(chore)",
     // Raise PR when vulnerability alerts are detected
-    ":enableVulnerabilityAlertsWithLabel(security)",
+    ":enableVulnerabilityAlertsWithLabel(dependencies-security)",
     // Groups together all Typescript deps
     "group:definitelyTyped",
   ],
@@ -47,13 +43,14 @@
   ],
   // Branches to be checked
   baseBranches: [
+    "/^release\\/.*/",
     "maintenance/3.12",
     "maintenance/3.11",
     "maintenance/3.10",
     "maintenance/3.9",
     "master",
   ],
-  // This ignores are the ones comming by default from config:base with exception to **/test/**
+  // This ignores are the ones coming by default from config:base with exception to **/test/**
   // We do this to be able to test files in docker/test directory
   ignorePaths: [
     "**/node_modules/**",
@@ -90,7 +87,7 @@
   packageRules: [
     // Ignore deps
     {
-      matchPackageNames: [
+      matchDepNames: [
         "org.camunda.optimize:optimize-data-generator",
         "org.camunda.optimize:camunda-optimize",
         "org.camunda.optimize:util",
@@ -113,37 +110,29 @@
     // Frontend deps
     {
       addLabels: ["component:frontend"],
-      languages: ["js"],
+      matchCategories: ["js"],
     },
     // Backend deps
     {
       addLabels: ["component:backend"],
-      languages: ["java"],
+      matchCategories: ["java"],
     },
     // Infra deps
     {
-      addLabels: ["component:infra"],
-      managers: ["docker-compose", "dockerfile", "github-actions"],
+      addLabels: ["component:ci"],
+      matchManagers: ["docker-compose", "dockerfile", "github-actions"],
     },
     // Docker deps
     {
       matchManagers: "dockerfile",
       separateMajorMinor: true,
       separateMinorPatch: true,
+      pinDigests: true,
       prPriority: 100,
-    },
-    {
-      matchDatasources: ["docker"],
-      matchPackagePatterns: ["alpine", "docker.io/library/alpine"],
-      // Group all docker updates into one PR
-      groupName: "Alpine dependencies",
-      separateMajorMinor: true,
     },
     // Settings for patch versions update
     {
       matchUpdateTypes: ["patch"],
-      addLabels: ["patch"],
-      // Group all patch updates into one PR
       groupName: "Patch dependencies",
     },
     // Disable major and minor updates for maintenance branches
@@ -153,9 +142,10 @@
       enabled: false,
     },
   ],
-  regexManagers: [
+  customManagers: [
     // These two regex managers are checking for alpine image versions in files other than Dockerfile
     {
+      customType: "regex",
       fileMatch: [
         ".github/scripts/build-docker-images.sh",
         ".github/scripts/build-release-docker-images.sh",
@@ -167,12 +157,13 @@
       datasourceTemplate: "docker",
     },
     {
+      customType: "regex",
       fileMatch: [
         "docker/test/verify.sh",
         "docker/test/docker-labels.golden.json",
       ],
       matchStrings: [
-        "(?<depName>docker.io/library/alpine):(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "(?<depName>docker\\.io\\/library\\/alpine):(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
       datasourceTemplate: "docker",
     },
@@ -186,5 +177,5 @@
   digest: {
     automerge: true,
   },
-  platformAutomerge: false,
+  platformAutomerge: true,
 }

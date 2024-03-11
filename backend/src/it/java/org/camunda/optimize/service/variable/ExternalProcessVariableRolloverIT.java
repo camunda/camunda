@@ -159,7 +159,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
     final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    return embeddedOptimizeExtension.getOptimizeElasticSearchClient().getAlias(aliasesRequest).getAliases();
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient().getAlias(aliasesRequest).getAliases();
   }
 
   private List<String> extractIndicesWithWriteAlias(final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {

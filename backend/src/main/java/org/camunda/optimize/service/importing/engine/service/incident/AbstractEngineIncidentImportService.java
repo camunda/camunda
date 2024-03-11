@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.engine.service.incident;
 
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
@@ -12,20 +16,16 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
-import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 @Slf4j
-public abstract class AbstractEngineIncidentImportService implements ImportService<HistoricIncidentEngineDto> {
+public abstract class AbstractEngineIncidentImportService
+    implements ImportService<HistoricIncidentEngineDto> {
 
   protected DatabaseImportJobExecutor databaseImportJobExecutor;
   protected EngineContext engineContext;
@@ -33,14 +33,13 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
   protected final DatabaseClient databaseClient;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-
-  protected AbstractEngineIncidentImportService(final ConfigurationService configurationService,
-                                                final EngineContext engineContext,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
-      getClass().getSimpleName(), configurationService
-    );
+  protected AbstractEngineIncidentImportService(
+      final ConfigurationService configurationService,
+      final EngineContext engineContext,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final DatabaseClient databaseClient) {
+    this.databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
@@ -48,15 +47,16 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
   }
 
   @Override
-  public void executeImport(List<HistoricIncidentEngineDto> pageOfEngineEntities,
-                            Runnable importCompleteCallback) {
+  public void executeImport(
+      List<HistoricIncidentEngineDto> pageOfEngineEntities, Runnable importCompleteCallback) {
     log.trace("Importing incidents from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<IncidentDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
+      List<IncidentDto> newOptimizeEntities =
+          mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       DatabaseImportJob<IncidentDto> databaseImportJob =
-        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+          createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
@@ -69,32 +69,33 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
-  private List<IncidentDto> mapEngineEntitiesToOptimizeEntities(List<HistoricIncidentEngineDto> engineIncidents) {
+  private List<IncidentDto> mapEngineEntitiesToOptimizeEntities(
+      List<HistoricIncidentEngineDto> engineIncidents) {
     logIncidentsToBeSkipped(engineIncidents);
-    return engineIncidents
-      .stream()
-      .filter(this::containsProcessInstanceId)
-      .map(this::mapEngineEntityToOptimizeEntity)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toList());
+    return engineIncidents.stream()
+        .filter(this::containsProcessInstanceId)
+        .map(this::mapEngineEntityToOptimizeEntity)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toList());
   }
 
-  protected abstract DatabaseImportJob<IncidentDto> createDatabaseImportJob(List<IncidentDto> incidents,
-                                                                                 Runnable callback);
+  protected abstract DatabaseImportJob<IncidentDto> createDatabaseImportJob(
+      List<IncidentDto> incidents, Runnable callback);
 
   private void logIncidentsToBeSkipped(List<HistoricIncidentEngineDto> engineIncidents) {
-    List<String> incidentIdsWithoutProcessInstanceId = engineIncidents.stream()
-      .filter(incident -> !containsProcessInstanceId(incident))
-      .map(HistoricIncidentEngineDto::getId)
-      .collect(Collectors.toList());
+    List<String> incidentIdsWithoutProcessInstanceId =
+        engineIncidents.stream()
+            .filter(incident -> !containsProcessInstanceId(incident))
+            .map(HistoricIncidentEngineDto::getId)
+            .collect(Collectors.toList());
 
     if (!incidentIdsWithoutProcessInstanceId.isEmpty()) {
-      final String message = String.format(
-        "Incidents with ID's %s aren't associated with any process instance ID and will be skipped. Usually, that " +
-          "can happen if history cleanup job or a timer start event job run out of retries.",
-        incidentIdsWithoutProcessInstanceId
-      );
+      final String message =
+          String.format(
+              "Incidents with ID's %s aren't associated with any process instance ID and will be skipped. Usually, that "
+                  + "can happen if history cleanup job or a timer start event job run out of retries.",
+              incidentIdsWithoutProcessInstanceId);
       log.info(message);
     }
   }
@@ -103,24 +104,29 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
     return incident.getProcessInstanceId() != null;
   }
 
-  private Optional<IncidentDto> mapEngineEntityToOptimizeEntity(final HistoricIncidentEngineDto engineEntity) {
-    return processDefinitionResolverService.getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
-      .map(definition -> new IncidentDto(
-        engineEntity.getProcessInstanceId(),
-        definition.getKey(),
-        definition.getVersion(),
-        engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)),
-        engineContext.getEngineAlias(),
-        engineEntity.getId(),
-        engineEntity.getCreateTime(),
-        engineEntity.getEndTime(),
-        getDuration(engineEntity),
-        IncidentType.valueOfId(engineEntity.getIncidentType()),
-        engineEntity.getActivityId(),
-        engineEntity.getFailedActivityId(),
-        engineEntity.getIncidentMessage(),
-        extractIncidentStatus(engineEntity)
-      ));
+  private Optional<IncidentDto> mapEngineEntityToOptimizeEntity(
+      final HistoricIncidentEngineDto engineEntity) {
+    return processDefinitionResolverService
+        .getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
+        .map(
+            definition ->
+                new IncidentDto(
+                    engineEntity.getProcessInstanceId(),
+                    definition.getKey(),
+                    definition.getVersion(),
+                    engineEntity
+                        .getTenantId()
+                        .orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)),
+                    engineContext.getEngineAlias(),
+                    engineEntity.getId(),
+                    engineEntity.getCreateTime(),
+                    engineEntity.getEndTime(),
+                    getDuration(engineEntity),
+                    IncidentType.valueOfId(engineEntity.getIncidentType()),
+                    engineEntity.getActivityId(),
+                    engineEntity.getFailedActivityId(),
+                    engineEntity.getIncidentMessage(),
+                    extractIncidentStatus(engineEntity)));
   }
 
   private Long getDuration(final HistoricIncidentEngineDto engineEntity) {
@@ -139,9 +145,8 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
       return IncidentStatus.DELETED;
     } else {
       throw new OptimizeRuntimeException(
-        "Incident with id [{}] that has been fetched from the engine has an invalid incident state. It's neither " +
-          "resolved, open nor deleted.");
+          "Incident with id [{}] that has been fetched from the engine has an invalid incident state. It's neither "
+              + "resolved, open nor deleted.");
     }
   }
-
 }

@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
+
+import java.util.Collections;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
-
-import java.util.Collections;
-
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 
 @Slf4j
 @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
@@ -24,7 +23,9 @@ public class Main {
     SpringApplication optimize = new SpringApplication(Main.class);
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();
-    optimize.setDefaultProperties(Collections.singletonMap(ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort()));
+    optimize.setDefaultProperties(
+        Collections.singletonMap(
+            ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort()));
 
     optimize.run(args);
   }

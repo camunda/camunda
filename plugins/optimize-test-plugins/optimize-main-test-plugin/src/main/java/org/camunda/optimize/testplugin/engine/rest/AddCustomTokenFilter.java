@@ -6,15 +6,14 @@
 package org.camunda.optimize.testplugin.engine.rest;
 
 import jakarta.ws.rs.client.ClientRequestContext;
-import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
-
 import java.io.IOException;
+import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 
 public class AddCustomTokenFilter implements EngineRestFilter {
 
   @Override
-  public void filter(ClientRequestContext requestContext, String engineAlias, String engineName) throws IOException {
+  public void filter(ClientRequestContext requestContext, String engineAlias, String engineName)
+      throws IOException {
     requestContext.getHeaders().add("Custom-Token", "SomeCustomToken");
   }
-
 }

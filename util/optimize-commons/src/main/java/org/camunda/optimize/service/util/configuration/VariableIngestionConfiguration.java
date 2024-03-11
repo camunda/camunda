@@ -12,6 +12,7 @@ import lombok.Data;
 public class VariableIngestionConfiguration {
   @JsonProperty("maxBatchRequestBytes")
   private long maxBatchRequestBytes;
+
   @JsonProperty("maxRequests")
   private int maxRequests;
 }

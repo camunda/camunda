@@ -19,14 +19,9 @@ export const saveButton = Selector('.save-button');
 export const processName = Selector('.ProcessView .name');
 export const addSource = Selector('button.addProcess');
 export const processTypeahead = Selector('.DefinitionSelection input[type=text]');
-export const variableTypeahead = Selector('.FormGroup .Typeahead');
-export const optionsButton = (typeahead) => typeahead.find('.optionsButton');
-export const typeaheadInput = (typeahead) => typeahead.find('input');
-export const typeaheadOption = (typeahead, text) =>
-  typeahead.find('.DropdownOption').withText(text);
+export const variableTypeahead = Selector('.variablesSelector');
 export const externalEvents = Selector('.cds--tabs button').withText('External events');
 export const startNode = Selector('g[data-element-id=StartEvent_1]');
-export const startAndEndEvents = Selector('input[type=radio]').nth(3);
 export const startEvent = Selector('.StartEvent_1 .cds--table-column-checkbox label');
 export const activity = Selector('g[data-element-id=Activity_1s5va7f]');
 export const bankStart = Selector('.BankTransferStart .cds--table-column-checkbox label');
@@ -39,10 +34,14 @@ export const permissionButton = Selector('.permission button');
 export const addEventSourceBtn = Selector('.GenerationModal button').withText('Add event source');
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');
-export const businessKey = Selector('.label').withText('Business key').prevSibling();
 export const externalEventsTab = Selector('.tabList a').withText('External events');
+export const batchDeleteButton = Selector('.cds--action-list button').withText('Delete');
 export const eventCheckbox = (index) =>
   Selector('.Table tbody tr').nth(index).find('.cds--table-column-checkbox label');
-export const batchDeleteButton = Selector('.cds--action-list button').withText('Delete');
 export const externalEventgroup = (index) =>
   Selector('.ExternalSource tr .cds--table-column-checkbox').nth(index);
+export const sourceMenuButton = (sourceName) =>
+  Selector('.SourceMenuButton button').withText(sourceName);
+export const editingNotification = Selector('.editingWarning').withText(
+  'Changing the process definition may add or remove events.'
+);

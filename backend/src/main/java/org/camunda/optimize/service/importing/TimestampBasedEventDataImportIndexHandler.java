@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Scope;
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class TimestampBasedEventDataImportIndexHandler
-  extends TimestampBasedDataSourceImportIndexHandler<EventsDataSourceDto> {
+    extends TimestampBasedDataSourceImportIndexHandler<EventsDataSourceDto> {
 
   @Override
   public String getEngineAlias() {
@@ -25,5 +25,4 @@ public abstract class TimestampBasedEventDataImportIndexHandler
   public EventsDataSourceDto getDataSource() {
     return new EventsDataSourceDto(getEngineAlias());
   }
-
 }

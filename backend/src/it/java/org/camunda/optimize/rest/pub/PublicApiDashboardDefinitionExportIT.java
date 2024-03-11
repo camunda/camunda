@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefiniti
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.dashboard.AbstractDashboardDefinitionExportIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -22,7 +23,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiDashboardDefinitionExportIT extends AbstractDashboardDefinitionExportIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 

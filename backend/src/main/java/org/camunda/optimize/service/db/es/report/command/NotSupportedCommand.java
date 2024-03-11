@@ -23,19 +23,20 @@ public class NotSupportedCommand implements Command<Object, ReportDefinitionDto<
   private final ObjectMapper objectMapper;
 
   @Override
-  public CommandEvaluationResult<Object> evaluate(final ReportEvaluationContext<ReportDefinitionDto<?>> reportEvaluationContext) {
+  public CommandEvaluationResult<Object> evaluate(
+      final ReportEvaluationContext<ReportDefinitionDto<?>> reportEvaluationContext) {
     // Error should contain the report Name
     try {
       log.warn(
-        "The following settings combination of the report data is not supported in Optimize: \n" +
-          "{} \n " +
-          "Therefore returning error result.",
-        objectMapper.writeValueAsString(reportEvaluationContext.getReportDefinition())
-      );
+          "The following settings combination of the report data is not supported in Optimize: \n"
+              + "{} \n "
+              + "Therefore returning error result.",
+          objectMapper.writeValueAsString(reportEvaluationContext.getReportDefinition()));
     } catch (JsonProcessingException e) {
       log.error("can't serialize report data", e);
     }
-    throw new OptimizeValidationException("This combination of the settings of the report builder is not supported!");
+    throw new OptimizeValidationException(
+        "This combination of the settings of the report builder is not supported!");
   }
 
   @Override

@@ -43,7 +43,8 @@ public class ProcessDistributedByCreator {
     return new UserTaskDistributedByDto();
   }
 
-  public static VariableDistributedByDto createDistributedByVariable(String variableName, VariableType variableType) {
+  public static VariableDistributedByDto createDistributedByVariable(
+      String variableName, VariableType variableType) {
     VariableDistributedByValueDto distributedByValueDto = new VariableDistributedByValueDto();
     distributedByValueDto.setName(variableName);
     distributedByValueDto.setType(variableType);
@@ -52,7 +53,8 @@ public class ProcessDistributedByCreator {
     return distributedByDto;
   }
 
-  public static StartDateDistributedByDto createDistributedByStartDateDto(AggregateByDateUnit dateInterval) {
+  public static StartDateDistributedByDto createDistributedByStartDateDto(
+      AggregateByDateUnit dateInterval) {
     StartDateDistributedByDto distributedBy = new StartDateDistributedByDto();
     DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
     distributedByValueDto.setUnit(dateInterval);
@@ -60,7 +62,8 @@ public class ProcessDistributedByCreator {
     return distributedBy;
   }
 
-  public static EndDateDistributedByDto createDistributedByEndDateDto(AggregateByDateUnit dateInterval) {
+  public static EndDateDistributedByDto createDistributedByEndDateDto(
+      AggregateByDateUnit dateInterval) {
     EndDateDistributedByDto distributedBy = new EndDateDistributedByDto();
     DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
     distributedByValueDto.setUnit(dateInterval);

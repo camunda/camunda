@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.distributed_by;
 
+import java.util.HashMap;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -19,33 +21,30 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.HashMap;
-import java.util.List;
-
 public abstract class DistributedByPart<Data extends SingleReportDataDto> {
 
-  @Setter
-  @Getter
-  protected ViewPart<Data> viewPart;
+  @Setter @Getter protected ViewPart<Data> viewPart;
 
   public abstract boolean isKeyOfNumericType(final ExecutionContext<Data> context);
 
   public boolean isFlownodeReport() {
     return viewPart instanceof ProcessViewFlowNodeFrequency
-      || viewPart instanceof ProcessViewFlowNodeDuration;
+        || viewPart instanceof ProcessViewFlowNodeDuration;
   }
 
-  public void adjustSearchRequest(final SearchRequest searchRequest,
-                                  final BoolQueryBuilder baseQuery,
-                                  final ExecutionContext<Data> context) {
+  public void adjustSearchRequest(
+      final SearchRequest searchRequest,
+      final BoolQueryBuilder baseQuery,
+      final ExecutionContext<Data> context) {
     viewPart.adjustSearchRequest(searchRequest, baseQuery, context);
   }
 
   public abstract List<AggregationBuilder> createAggregations(final ExecutionContext<Data> context);
 
-  public abstract List<DistributedByResult> retrieveResult(final SearchResponse response,
-                                                           final Aggregations aggregations,
-                                                           final ExecutionContext<Data> context);
+  public abstract List<DistributedByResult> retrieveResult(
+      final SearchResponse response,
+      final Aggregations aggregations,
+      final ExecutionContext<Data> context);
 
   public abstract List<DistributedByResult> createEmptyResult(final ExecutionContext<Data> context);
 
@@ -55,8 +54,7 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
   }
 
   public void enrichContextWithAllExpectedDistributedByKeys(
-    final ExecutionContext<Data> context,
-    final Aggregations aggregations) {
+      final ExecutionContext<Data> context, final Aggregations aggregations) {
     context.setAllDistributedByKeysAndLabels(new HashMap<>());
   }
 

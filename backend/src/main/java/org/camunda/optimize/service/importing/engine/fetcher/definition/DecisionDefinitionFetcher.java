@@ -5,17 +5,15 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.definition;
 
+import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_ENDPOINT;
+
+import jakarta.ws.rs.core.GenericType;
+import java.util.List;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import jakarta.ws.rs.core.GenericType;
-import java.util.List;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_ENDPOINT;
-
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -27,8 +25,7 @@ public class DecisionDefinitionFetcher extends DefinitionFetcher<DecisionDefinit
 
   @Override
   protected GenericType<List<DecisionDefinitionEngineDto>> getResponseType() {
-    return new GenericType<>() {
-    };
+    return new GenericType<>() {};
   }
 
   @Override

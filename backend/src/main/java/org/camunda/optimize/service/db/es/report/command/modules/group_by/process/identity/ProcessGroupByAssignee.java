@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.identity;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
+
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
@@ -16,17 +18,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByAssignee extends ProcessGroupByIdentity {
 
-  public ProcessGroupByAssignee(final ConfigurationService configurationService,
-                                final LocalizationService localizationService,
-                                final DefinitionService definitionService,
-                                final AssigneeCandidateGroupService assigneeCandidateGroupService) {
-    super(configurationService, localizationService, definitionService, assigneeCandidateGroupService);
+  public ProcessGroupByAssignee(
+      final ConfigurationService configurationService,
+      final LocalizationService localizationService,
+      final DefinitionService definitionService,
+      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    super(
+        configurationService,
+        localizationService,
+        definitionService,
+        assigneeCandidateGroupService);
   }
 
   @Override
@@ -40,7 +45,8 @@ public class ProcessGroupByAssignee extends ProcessGroupByIdentity {
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new AssigneeGroupByDto());
   }
 }

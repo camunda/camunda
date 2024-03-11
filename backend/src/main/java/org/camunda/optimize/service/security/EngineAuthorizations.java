@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.security;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @AllArgsConstructor
 @RequiredArgsConstructor

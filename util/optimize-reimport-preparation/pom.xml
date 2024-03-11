@@ -13,7 +13,6 @@
 
   <properties>
     <skipTests>false</skipTests>
-    <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <dependencies>

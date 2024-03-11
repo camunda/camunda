@@ -14,9 +14,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTil
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -24,7 +23,6 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,6 +31,7 @@ import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
@@ -41,6 +40,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class DashboardHandlingIT extends AbstractPlatformIT {
 
   @AfterEach
@@ -49,16 +49,18 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  public void dashboardIsWrittenToElasticsearch() throws IOException {
+  public void dashboardIsWrittenToDatabase() {
     // given
     String id = addEmptyPrivateDashboard();
 
     // when
-    GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(id);
-    GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().get(getRequest);
+    final DashboardDefinitionRestDto dashboardDto = databaseIntegrationTestExtension
+      .getDatabaseEntryById(DASHBOARD_INDEX_NAME, id, DashboardDefinitionRestDto.class
+    ).orElse(null);
 
     // then
-    assertThat(getResponse.isExists()).isTrue();
+    assertThat(dashboardDto).isNotNull();
+    assertThat(dashboardDto.getId()).isEqualTo(id);
   }
 
   @Test

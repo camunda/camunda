@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
@@ -19,6 +21,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -47,11 +51,6 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
-
 @AllArgsConstructor
 @Path("/collection")
 @Component
@@ -67,33 +66,29 @@ public class CollectionRestService {
   private final AlertRestMapper alertRestMapper;
   private final EntityRestMapper entityRestMapper;
 
-  /**
-   * Creates a new collection.
-   */
+  /** Creates a new collection. */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdResponseDto createNewCollection(@Context ContainerRequestContext requestContext,
-                                           PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
+  public IdResponseDto createNewCollection(
+      @Context ContainerRequestContext requestContext,
+      PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionService.createNewCollectionAndReturnId(
-      userId,
-      Optional.ofNullable(partialCollectionDefinitionDto)
-        .orElse(new PartialCollectionDefinitionRequestDto())
-    );
+        userId,
+        Optional.ofNullable(partialCollectionDefinitionDto)
+            .orElse(new PartialCollectionDefinitionRequestDto()));
   }
 
-  /**
-   * Retrieve the collection to the specified id.
-   */
+  /** Retrieve the collection to the specified id. */
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedCollectionDefinitionRestDto getCollection(@Context ContainerRequestContext requestContext,
-                                                             @PathParam("id") String collectionId) {
+  public AuthorizedCollectionDefinitionRestDto getCollection(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     AuthorizedCollectionDefinitionRestDto authorizedCollectionDefinitionRestDto =
-      collectionService.getCollectionDefinitionRestDto(userId, collectionId);
+        collectionService.getCollectionDefinitionRestDto(userId, collectionId);
     collectionRestMapper.prepareRestResponse(authorizedCollectionDefinitionRestDto);
     return authorizedCollectionDefinitionRestDto;
   }
@@ -101,63 +96,53 @@ public class CollectionRestService {
   /**
    * Updates the name and/or configuration of a collection
    *
-   * @param collectionId      the id of the collection
-   * @param updatedCollection collection that needs to be updated. Only the fields that are defined here are actually
-   *                          updated.
+   * @param collectionId the id of the collection
+   * @param updatedCollection collection that needs to be updated. Only the fields that are defined
+   *     here are actually updated.
    */
   @PUT
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateCollectionPartial(@Context ContainerRequestContext requestContext,
-                                      @PathParam("id") String collectionId,
-                                      @NotNull PartialCollectionDefinitionRequestDto updatedCollection) {
+  public void updateCollectionPartial(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @NotNull PartialCollectionDefinitionRequestDto updatedCollection) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updatePartialCollection(userId, collectionId, updatedCollection);
   }
 
-  /**
-   * Delete the collection to the specified id.
-   */
+  /** Delete the collection to the specified id. */
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteCollection(@Context ContainerRequestContext requestContext,
-                               @PathParam("id") String collectionId,
-                               @QueryParam("force") boolean force) {
+  public void deleteCollection(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.deleteCollection(userId, collectionId, force);
-  }
-
-  /**
-   * Retrieve the conflicting items that would occur on performing a delete.
-   */
-  @GET
-  @Path("/{id}/delete-conflicts")
-  @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                                @PathParam("id") String collectionId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getDeleteConflictingItems(userId, collectionId);
   }
 
   @PUT
   @Path("/{id}/scope")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public void addScopeEntries(@Context ContainerRequestContext requestContext,
-                              @PathParam("id") String collectionId,
-                              @NotNull List<CollectionScopeEntryDto> scopeUpdates) {
+  public void addScopeEntries(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @NotNull List<CollectionScopeEntryDto> scopeUpdates) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionScopeService.addScopeEntriesToCollection(userId, collectionId, scopeUpdates);
   }
 
   @DELETE
   @Path("/{id}/scope/{scopeEntryId}")
-  public void deleteScopeEntry(@Context ContainerRequestContext requestContext,
-                               @PathParam("id") String collectionId,
-                               @PathParam("scopeEntryId") String scopeEntryId,
-                               @QueryParam("force") boolean force) {
+  public void deleteScopeEntry(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @PathParam("scopeEntryId") String scopeEntryId,
+      @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionScopeService.deleteScopeEntry(userId, collectionId, scopeEntryId, force);
   }
@@ -165,23 +150,24 @@ public class CollectionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{id}/scope/{scopeEntryId}/delete-conflicts")
-  public ConflictResponseDto getScopeDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                                     @PathParam("id") String collectionId,
-                                                     @PathParam("scopeEntryId") String scopeEntryId) {
+  public ConflictResponseDto getScopeDeleteConflicts(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @PathParam("scopeEntryId") String scopeEntryId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return new ConflictResponseDto(
-      collectionScopeService.getAllConflictsOnScopeDeletion(userId, collectionId, scopeEntryId)
-    );
+        collectionScopeService.getAllConflictsOnScopeDeletion(userId, collectionId, scopeEntryId));
   }
 
   @PUT
   @Path("/{id}/scope/{scopeEntryId}")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateScopeEntry(@Context ContainerRequestContext requestContext,
-                               @PathParam("id") String collectionId,
-                               @NotNull CollectionScopeEntryUpdateDto entryDto,
-                               @PathParam("scopeEntryId") String scopeEntryId,
-                               @QueryParam("force") boolean force) {
+  public void updateScopeEntry(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @NotNull CollectionScopeEntryUpdateDto entryDto,
+      @PathParam("scopeEntryId") String scopeEntryId,
+      @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionScopeService.updateScopeEntry(userId, collectionId, entryDto, scopeEntryId, force);
   }
@@ -190,8 +176,8 @@ public class CollectionRestService {
   @Path("/{id}/scope")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<CollectionScopeEntryResponseDto> getScopes(@Context ContainerRequestContext requestContext,
-                                                         @PathParam("id") String collectionId) {
+  public List<CollectionScopeEntryResponseDto> getScopes(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionScopeService.getCollectionScope(userId, collectionId);
   }
@@ -200,8 +186,8 @@ public class CollectionRestService {
   @Path("/{id}/role/")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<CollectionRoleResponseDto> getRoles(@Context ContainerRequestContext requestContext,
-                                                  @PathParam("id") String collectionId) {
+  public List<CollectionRoleResponseDto> getRoles(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionRoleService.getAllRolesOfCollectionSorted(userId, collectionId);
   }
@@ -209,9 +195,10 @@ public class CollectionRestService {
   @POST
   @Path("/{id}/role/")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void addRoles(@Context ContainerRequestContext requestContext,
-                       @PathParam("id") String collectionId,
-                       @NotNull List<CollectionRoleRequestDto> rolesToAdd) {
+  public void addRoles(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @NotNull List<CollectionRoleRequestDto> rolesToAdd) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionRoleService.addRolesToCollection(userId, collectionId, rolesToAdd);
   }
@@ -220,21 +207,24 @@ public class CollectionRestService {
   @Path("/{id}/role/{roleEntryId}")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public void updateRole(@Context ContainerRequestContext requestContext,
-                         @PathParam("id") String collectionId,
-                         @PathParam("roleEntryId") String roleEntryId,
-                         @NotNull CollectionRoleUpdateRequestDto roleUpdateDto) {
+  public void updateRole(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @PathParam("roleEntryId") String roleEntryId,
+      @NotNull CollectionRoleUpdateRequestDto roleUpdateDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(userId, collectionId, roleEntryId);
+    authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(
+        userId, collectionId, roleEntryId);
     collectionRoleService.updateRoleOfCollection(userId, collectionId, roleEntryId, roleUpdateDto);
   }
 
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdResponseDto copyCollection(@Context ContainerRequestContext requestContext,
-                                      @PathParam("id") String collectionId,
-                                      @QueryParam("name") String newCollectionName) {
+  public IdResponseDto copyCollection(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @QueryParam("name") String newCollectionName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionService.copyCollection(userId, collectionId, newCollectionName);
   }
@@ -242,21 +232,25 @@ public class CollectionRestService {
   @DELETE
   @Path("/{id}/role/{roleEntryId}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void removeRole(@Context ContainerRequestContext requestContext,
-                         @PathParam("id") String collectionId,
-                         @PathParam("roleEntryId") String roleEntryId) {
+  public void removeRole(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @PathParam("roleEntryId") String roleEntryId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(userId, collectionId, roleEntryId);
-    collectionRoleService.removeRoleFromCollectionUnlessIsLastManager(userId, collectionId, roleEntryId);
+    authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(
+        userId, collectionId, roleEntryId);
+    collectionRoleService.removeRoleFromCollectionUnlessIsLastManager(
+        userId, collectionId, roleEntryId);
   }
 
   @GET
   @Path("/{id}/alerts/")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<AlertDefinitionDto> getAlerts(@Context ContainerRequestContext requestContext,
-                                            @PathParam("id") String collectionId) {
+  public List<AlertDefinitionDto> getAlerts(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<AlertDefinitionDto> alerts = collectionEntityService.getStoredAlertsForCollection(userId, collectionId);
+    List<AlertDefinitionDto> alerts =
+        collectionEntityService.getStoredAlertsForCollection(userId, collectionId);
     alerts.forEach(alertRestMapper::prepareRestResponse);
     return alerts;
   }
@@ -264,31 +258,29 @@ public class CollectionRestService {
   @GET
   @Path("/{id}/reports/")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<AuthorizedReportDefinitionResponseDto> getReports(@Context ContainerRequestContext requestContext,
-                                                                @PathParam("id") String collectionId) {
+  public List<AuthorizedReportDefinitionResponseDto> getReports(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<AuthorizedReportDefinitionResponseDto> reports = collectionEntityService.findAndFilterReports(
-      userId,
-      collectionId
-    );
+    List<AuthorizedReportDefinitionResponseDto> reports =
+        collectionEntityService.findAndFilterReports(userId, collectionId);
     reports.forEach(
-      authorizedReportDefinitionDto ->
-        reportRestMapper.prepareLocalizedRestResponse(
-          authorizedReportDefinitionDto,
-          requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
-        )
-    );
+        authorizedReportDefinitionDto ->
+            reportRestMapper.prepareLocalizedRestResponse(
+                authorizedReportDefinitionDto,
+                requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)));
     return reports;
   }
 
   @GET
   @Path("/{id}/entities")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EntityResponseDto> getEntities(@Context ContainerRequestContext requestContext,
-                                             @PathParam("id") String collectionId,
-                                             @BeanParam final EntitySorter entitySorter) {
+  public List<EntityResponseDto> getEntities(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @BeanParam final EntitySorter entitySorter) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<EntityResponseDto> entities = collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
+    List<EntityResponseDto> entities =
+        collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
   }
@@ -296,19 +288,22 @@ public class CollectionRestService {
   @POST
   @Path("/{id}/scope/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
-  public boolean checkCollectionScopeConflicts(@Context ContainerRequestContext requestContext,
-                                               @PathParam("id") String collectionId,
-                                               @RequestBody List<String> collectionScopeIds) {
+  public boolean checkCollectionScopeConflicts(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @RequestBody List<String> collectionScopeIds) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionScopeService.hasConflictsForCollectionScopeDelete(userId, collectionId, collectionScopeIds);
+    return collectionScopeService.hasConflictsForCollectionScopeDelete(
+        userId, collectionId, collectionScopeIds);
   }
 
   @POST
   @Path("/{id}/roles/delete")
   @Produces(MediaType.APPLICATION_JSON)
-  public void bulkRemoveCollectionRoles(@Context ContainerRequestContext requestContext,
-                                        @PathParam("id") String collectionId,
-                                        @NotNull @RequestBody List<String> roleEntryIds) {
+  public void bulkRemoveCollectionRoles(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @NotNull @RequestBody List<String> roleEntryIds) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionRoleService.removeRolesFromCollection(userId, collectionId, roleEntryIds);
   }
@@ -316,9 +311,10 @@ public class CollectionRestService {
   @POST
   @Path("/{id}/scope/delete")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void bulkDeleteCollectionScopes(@Context ContainerRequestContext requestContext,
-                                         @PathParam("id") String collectionId,
-                                         @NotNull @RequestBody List<String> collectionScopeIds) {
+  public void bulkDeleteCollectionScopes(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String collectionId,
+      @NotNull @RequestBody List<String> collectionScopeIds) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionScopeService.bulkDeleteCollectionScopes(userId, collectionId, collectionScopeIds);
   }

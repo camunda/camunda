@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.RELATIVE_OPERATORS;
+
+import java.time.ZoneId;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
@@ -16,32 +20,40 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 
-import java.time.ZoneId;
-import java.util.List;
-
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.RELATIVE_OPERATORS;
-
 @Slf4j
 public abstract class AbstractVariableQueryFilter {
-  protected void validateMultipleValuesFilterDataDto(final OperatorMultipleValuesVariableFilterDataDto dto) {
+  protected void validateMultipleValuesFilterDataDto(
+      final OperatorMultipleValuesVariableFilterDataDto dto) {
     if (CollectionUtils.isEmpty(dto.getData().getValues())) {
       throw new OptimizeValidationException("Filter values are not allowed to be empty.");
     }
 
-    if (RELATIVE_OPERATORS.contains(dto.getData().getOperator()) && dto.getData().getValues().contains(null)) {
+    if (RELATIVE_OPERATORS.contains(dto.getData().getOperator())
+        && dto.getData().getValues().contains(null)) {
       throw new OptimizeValidationException(
-        "Filter values are not allowed to contain `null` if a relative operator is used."
-      );
+          "Filter values are not allowed to contain `null` if a relative operator is used.");
     }
   }
 
-  protected abstract QueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final StringVariableFilterDataDto dto);
-  protected abstract BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final String variableName, final List<String> values);
-  protected abstract QueryBuilder createContainsGivenStringQuery(final String variableId, final String valueToContain);
-  protected abstract QueryBuilder createEqualsOneOrMoreValuesQueryBuilder(final OperatorMultipleValuesVariableFilterDataDto dto);
+  protected abstract QueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(
+      final StringVariableFilterDataDto dto);
+
+  protected abstract BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(
+      final String variableName, final List<String> values);
+
+  protected abstract QueryBuilder createContainsGivenStringQuery(
+      final String variableId, final String valueToContain);
+
+  protected abstract QueryBuilder createEqualsOneOrMoreValuesQueryBuilder(
+      final OperatorMultipleValuesVariableFilterDataDto dto);
+
   protected abstract QueryBuilder createBooleanQueryBuilder(final BooleanVariableFilterDataDto dto);
-  protected abstract QueryBuilder createNumericQueryBuilder(OperatorMultipleValuesVariableFilterDataDto dto);
-  protected abstract QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto, final ZoneId timezone);
+
+  protected abstract QueryBuilder createNumericQueryBuilder(
+      OperatorMultipleValuesVariableFilterDataDto dto);
+
+  protected abstract QueryBuilder createDateQueryBuilder(
+      final DateVariableFilterDataDto dto, final ZoneId timezone);
 
   protected QueryBuilder createStringQueryBuilder(final StringVariableFilterDataDto stringVarDto) {
     validateMultipleValuesFilterDataDto(stringVarDto);
@@ -51,10 +63,10 @@ public abstract class AbstractVariableQueryFilter {
     } else if (stringVarDto.hasEqualsOperation()) {
       return createEqualsOneOrMoreValuesQueryBuilder(stringVarDto);
     } else {
-      final String message = String.format(
-        "String variable operator [%s] is not supported!",
-        stringVarDto.getData().getOperator().getId()
-      );
+      final String message =
+          String.format(
+              "String variable operator [%s] is not supported!",
+              stringVarDto.getData().getOperator().getId());
       log.debug(message);
       throw new OptimizeRuntimeException(message);
     }

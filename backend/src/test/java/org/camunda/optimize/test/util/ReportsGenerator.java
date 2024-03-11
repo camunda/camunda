@@ -5,6 +5,19 @@
  */
 package org.camunda.optimize.test.util;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+
+import java.io.ByteArrayInputStream;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -47,48 +60,36 @@ import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 
-import java.io.ByteArrayInputStream;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
-import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
-
 @Slf4j
 public class ReportsGenerator {
 
   private static final Random randomGen = new Random();
   private static final String DOUBLE_VAR = "doubleVar";
-  private static final SimpleEngineClient client = new SimpleEngineClient(
-    IntegrationTestConfigurationUtil.getEngineRestEndpoint() + "default"
-  );
+  private static final SimpleEngineClient client =
+      new SimpleEngineClient(IntegrationTestConfigurationUtil.getEngineRestEndpoint() + "default");
 
   public static List<SingleReportDataDto> createAllReportTypesForAllDefinitions() {
-    final List<ProcessDefinitionEngineDto> processDefinitions = client.getLatestProcessDefinitions();
-    final List<DecisionDefinitionEngineDto> decisionDefinitions = client.getLatestDecisionDefinitions();
+    final List<ProcessDefinitionEngineDto> processDefinitions =
+        client.getLatestProcessDefinitions();
+    final List<DecisionDefinitionEngineDto> decisionDefinitions =
+        client.getLatestDecisionDefinitions();
     return createAllReportTypesForDefinitions(processDefinitions, decisionDefinitions);
   }
 
-  public static List<SingleReportDataDto> createAllReportTypesForDefinitions(final List<ProcessDefinitionEngineDto> processDefinitions,
-                                                                             final List<DecisionDefinitionEngineDto> decisionDefinitions) {
-    final List<DecisionReportDataDto> decisionReportDataDtos = decisionDefinitions
-      .stream()
-      .map(ReportsGenerator::createDecisionReportsFromDefinition)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toList());
+  public static List<SingleReportDataDto> createAllReportTypesForDefinitions(
+      final List<ProcessDefinitionEngineDto> processDefinitions,
+      final List<DecisionDefinitionEngineDto> decisionDefinitions) {
+    final List<DecisionReportDataDto> decisionReportDataDtos =
+        decisionDefinitions.stream()
+            .map(ReportsGenerator::createDecisionReportsFromDefinition)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
 
-    final List<ProcessReportDataDto> processReportDataDtos = processDefinitions
-      .stream()
-      .map(ReportsGenerator::createProcessReportsFromDefinition)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toList());
+    final List<ProcessReportDataDto> processReportDataDtos =
+        processDefinitions.stream()
+            .map(ReportsGenerator::createProcessReportsFromDefinition)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
 
     final List<SingleReportDataDto> reports = new ArrayList<>();
     reports.addAll(decisionReportDataDtos);
@@ -96,22 +97,23 @@ public class ReportsGenerator {
     return reports;
   }
 
-  private static List<ProcessReportDataDto> createProcessReportsFromDefinition(ProcessDefinitionEngineDto definition) {
+  private static List<ProcessReportDataDto> createProcessReportsFromDefinition(
+      ProcessDefinitionEngineDto definition) {
     List<ProcessReportDataDto> reports = new ArrayList<>();
     ProcessPartDto processPart = createProcessPart(definition);
     for (ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
-      TemplatedProcessReportDataBuilder reportDataBuilder = TemplatedProcessReportDataBuilder.createReportData()
-        .setReportDataType(reportDataType)
-        .setProcessDefinitionKey(definition.getKey())
-        .setProcessDefinitionVersion(definition.getVersionAsString())
-        .setVariableName(DOUBLE_VAR)
-        .setVariableType(VariableType.DOUBLE)
-        .setGroupByDateInterval(AggregateByDateUnit.WEEK)
-        .setStartFlowNodeId(processPart.getStart())
-        .setEndFlowNodeId(processPart.getEnd())
-        .setFilter(createProcessFilter());
-      ProcessReportDataDto reportDataLatestDefinitionVersion =
-        reportDataBuilder.build();
+      TemplatedProcessReportDataBuilder reportDataBuilder =
+          TemplatedProcessReportDataBuilder.createReportData()
+              .setReportDataType(reportDataType)
+              .setProcessDefinitionKey(definition.getKey())
+              .setProcessDefinitionVersion(definition.getVersionAsString())
+              .setVariableName(DOUBLE_VAR)
+              .setVariableType(VariableType.DOUBLE)
+              .setGroupByDateInterval(AggregateByDateUnit.WEEK)
+              .setStartFlowNodeId(processPart.getStart())
+              .setEndFlowNodeId(processPart.getEnd())
+              .setFilter(createProcessFilter());
+      ProcessReportDataDto reportDataLatestDefinitionVersion = reportDataBuilder.build();
       reports.add(reportDataLatestDefinitionVersion);
       reportDataBuilder.setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS);
       ProcessReportDataDto reportDataAllDefinitionVersions = reportDataBuilder.build();
@@ -120,29 +122,33 @@ public class ReportsGenerator {
     return reports;
   }
 
-  private static List<DecisionReportDataDto> createDecisionReportsFromDefinition(DecisionDefinitionEngineDto definition) {
+  private static List<DecisionReportDataDto> createDecisionReportsFromDefinition(
+      DecisionDefinitionEngineDto definition) {
     DmnFilterData dmnFilterData = retrieveVariablesForDecision(definition);
     List<DecisionFilterDto<?>> decisionFilters = createDecisionFilters(dmnFilterData);
     return Arrays.stream(DecisionReportDataType.values())
-      .map(type -> DecisionReportDataBuilder.create().setReportDataType(type)
-        .setDecisionDefinitionKey(definition.getKey())
-        .setDecisionDefinitionVersion(definition.getVersionAsString())
-        .setDateInterval(AggregateByDateUnit.DAY)
-        .setVariableName(DOUBLE_VAR)
-        .setVariableType(VariableType.DOUBLE)
-        .setVariableId(INPUT_AMOUNT_ID)
-        .setFilter(decisionFilters)
-        .build())
-      .collect(Collectors.toList());
+        .map(
+            type ->
+                DecisionReportDataBuilder.create()
+                    .setReportDataType(type)
+                    .setDecisionDefinitionKey(definition.getKey())
+                    .setDecisionDefinitionVersion(definition.getVersionAsString())
+                    .setDateInterval(AggregateByDateUnit.DAY)
+                    .setVariableName(DOUBLE_VAR)
+                    .setVariableType(VariableType.DOUBLE)
+                    .setVariableId(INPUT_AMOUNT_ID)
+                    .setFilter(decisionFilters)
+                    .build())
+        .collect(Collectors.toList());
   }
 
   private static ProcessPartDto createProcessPart(ProcessDefinitionEngineDto definition) {
-    String xml = client
-      .getProcessDefinitionXml(definition.getId())
-      .getBpmn20Xml();
+    String xml = client.getProcessDefinitionXml(definition.getId()).getBpmn20Xml();
     ModelInstance model = Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
-    String startFlowNodeId = model.getModelElementsByType(StartEvent.class).stream().findFirst().get().getId();
-    String endFlowNodeId = model.getModelElementsByType(EndEvent.class).stream().findFirst().get().getId();
+    String startFlowNodeId =
+        model.getModelElementsByType(StartEvent.class).stream().findFirst().get().getId();
+    String endFlowNodeId =
+        model.getModelElementsByType(EndEvent.class).stream().findFirst().get().getId();
     ProcessPartDto processPart = new ProcessPartDto();
     processPart.setStart(startFlowNodeId);
     processPart.setEnd(endFlowNodeId);
@@ -155,11 +161,8 @@ public class ReportsGenerator {
     result.add(createInputVariableFilter(data));
     result.add(createOutputVariableFilter(data));
     result.add(
-      DecisionFilterUtilHelper.createFixedEvaluationDateFilter(
-        OffsetDateTime.now().minusYears(200L),
-        OffsetDateTime.now().plusYears(100L)
-      )
-    );
+        DecisionFilterUtilHelper.createFixedEvaluationDateFilter(
+            OffsetDateTime.now().minusYears(200L), OffsetDateTime.now().plusYears(100L)));
 
     return result;
   }
@@ -168,32 +171,27 @@ public class ReportsGenerator {
     switch (filterData.getInputType()) {
       case STRING:
         return DecisionFilterUtilHelper.createStringInputVariableFilter(
-          filterData.getInputName(),
-          FilterOperator.IN,
-          filterData.getPossibleInputValue()
-        );
+            filterData.getInputName(), FilterOperator.IN, filterData.getPossibleInputValue());
       case BOOLEAN:
         return DecisionFilterUtilHelper.createBooleanInputVariableFilter(
-          filterData.getInputName(), true
-        );
+            filterData.getInputName(), true);
       case DOUBLE:
       case INTEGER:
       case LONG:
       case SHORT:
         return DecisionFilterUtilHelper.createNumericInputVariableFilter(
-          filterData.getInputName(),
-          filterData.getInputType(),
-          FilterOperator.LESS_THAN,
-          Collections.singletonList("100")
-        );
+            filterData.getInputName(),
+            filterData.getInputType(),
+            FilterOperator.LESS_THAN,
+            Collections.singletonList("100"));
       case DATE:
         return DecisionFilterUtilHelper.createFixedDateInputVariableFilter(
-          filterData.getInputName(),
-          OffsetDateTime.now().minusYears(200L),
-          OffsetDateTime.now().plusYears(100L)
-        );
+            filterData.getInputName(),
+            OffsetDateTime.now().minusYears(200L),
+            OffsetDateTime.now().plusYears(100L));
       default:
-        throw new OptimizeRuntimeException("Unknown input variable type to create decision filter for.");
+        throw new OptimizeRuntimeException(
+            "Unknown input variable type to create decision filter for.");
     }
   }
 
@@ -201,36 +199,32 @@ public class ReportsGenerator {
     switch (filterData.getOutputType()) {
       case STRING:
         return DecisionFilterUtilHelper.createStringOutputVariableFilter(
-          filterData.getInputName(),
-          FilterOperator.IN,
-          filterData.getPossibleOutputValue()
-        );
+            filterData.getInputName(), FilterOperator.IN, filterData.getPossibleOutputValue());
       case BOOLEAN:
         return DecisionFilterUtilHelper.createBooleanOutputVariableFilter(
-          filterData.getOutputName(), Collections.singletonList(true)
-        );
+            filterData.getOutputName(), Collections.singletonList(true));
       case DOUBLE:
       case INTEGER:
       case LONG:
       case SHORT:
         return DecisionFilterUtilHelper.createNumericOutputVariableFilter(
-          filterData.getOutputName(),
-          filterData.getOutputType(),
-          FilterOperator.LESS_THAN,
-          Collections.singletonList("100")
-        );
+            filterData.getOutputName(),
+            filterData.getOutputType(),
+            FilterOperator.LESS_THAN,
+            Collections.singletonList("100"));
       case DATE:
         return DecisionFilterUtilHelper.createFixedDateOutputVariableFilter(
-          filterData.getOutputName(),
-          OffsetDateTime.now().minusYears(200L),
-          OffsetDateTime.now().plusYears(100L)
-        );
+            filterData.getOutputName(),
+            OffsetDateTime.now().minusYears(200L),
+            OffsetDateTime.now().plusYears(100L));
       default:
-        throw new OptimizeRuntimeException("Unknown output variable type to create decision filter for.");
+        throw new OptimizeRuntimeException(
+            "Unknown output variable type to create decision filter for.");
     }
   }
 
-  private static DmnFilterData retrieveVariablesForDecision(DecisionDefinitionEngineDto definition) {
+  private static DmnFilterData retrieveVariablesForDecision(
+      DecisionDefinitionEngineDto definition) {
     DmnFilterData resultData = new DmnFilterData();
 
     DecisionTable decisionTable = getDecisionTableForDefinition(definition);
@@ -256,37 +250,22 @@ public class ReportsGenerator {
   }
 
   private static void assignInputTypeAndName(DmnFilterData resultData, Input input) {
-    InputExpression inputExpression = input.getChildElementsByType(InputExpression.class)
-      .stream()
-      .findFirst()
-      .get();
+    InputExpression inputExpression =
+        input.getChildElementsByType(InputExpression.class).stream().findFirst().get();
 
-    String inputTypeString = inputExpression
-      .getAttributeValue("typeRef");
+    String inputTypeString = inputExpression.getAttributeValue("typeRef");
     VariableType inputType = VariableType.getTypeForId(inputTypeString);
     resultData.setInputType(inputType);
 
-    String inputName = inputExpression
-      .getUniqueChildElementByType(Text.class)
-      .getTextContent();
+    String inputName = inputExpression.getUniqueChildElementByType(Text.class).getTextContent();
     resultData.setInputName(inputName);
   }
 
-  private static void assignPossibleVariableValues(DmnFilterData resultData, DecisionTable decisionTable) {
-    Rule rule = decisionTable.getRules()
-      .stream()
-      .findFirst()
-      .get();
-    InputEntry inputEntry = rule
-      .getInputEntries()
-      .stream()
-      .findFirst()
-      .get();
-    OutputEntry outputEntry = rule
-      .getOutputEntries()
-      .stream()
-      .findFirst()
-      .get();
+  private static void assignPossibleVariableValues(
+      DmnFilterData resultData, DecisionTable decisionTable) {
+    Rule rule = decisionTable.getRules().stream().findFirst().get();
+    InputEntry inputEntry = rule.getInputEntries().stream().findFirst().get();
+    OutputEntry outputEntry = rule.getOutputEntries().stream().findFirst().get();
 
     String possibleInputValue = inputEntry.getTextContent();
     String possibleOutputValue = outputEntry.getTextContent();
@@ -295,7 +274,8 @@ public class ReportsGenerator {
     resultData.setPossibleOutputValue(possibleOutputValue);
   }
 
-  private static DecisionTable getDecisionTableForDefinition(DecisionDefinitionEngineDto definition) {
+  private static DecisionTable getDecisionTableForDefinition(
+      DecisionDefinitionEngineDto definition) {
     String xml = client.getDecisionDefinitionXml(definition.getId()).getDmnXml();
     DmnModelInstance model = Dmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
 
@@ -307,22 +287,22 @@ public class ReportsGenerator {
 
   private static List<ProcessFilterDto<?>> createProcessFilter() {
     // @formatter:off
-    return ProcessFilterBuilder
-      .filter()
+    return ProcessFilterBuilder.filter()
         .variable()
         .booleanType()
         .values(Collections.singletonList(String.valueOf(randomGen.nextBoolean())))
         .name("boolVar")
-      .add()
+        .add()
         .completedInstancesOnly()
-      .add()
+        .add()
         .duration()
         .unit(DurationUnit.MONTHS)
         .value((long) 100)
         .operator(LESS_THAN)
-      .add()
-      .buildList();
+        .add()
+        .buildList();
   }
+
   // @formatter:on
 
   @NoArgsConstructor

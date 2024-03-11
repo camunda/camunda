@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
+
+import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
@@ -18,6 +21,11 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import java.time.ZoneId;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -41,16 +49,6 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import jakarta.validation.Valid;
-
-import java.time.ZoneId;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
-
 @AllArgsConstructor
 @Slf4j
 @Path(PublicApiRestService.PUBLIC_PATH)
@@ -67,10 +65,12 @@ public class PublicApiRestService {
   private static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
   private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
   private static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
-  private static final String REPORT_EXPORT_DATA_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
-  public static final String REPORT_EXPORT_DEFINITION_SUB_PATH = REPORT_EXPORT_PATH + "/definition/json";
-  public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH = EXPORT_SUB_PATH + DASHBOARD_SUB_PATH +
-    "/definition/json";
+  private static final String REPORT_EXPORT_DATA_SUB_PATH =
+      REPORT_EXPORT_BY_ID_PATH + "/result/json";
+  public static final String REPORT_EXPORT_DEFINITION_SUB_PATH =
+      REPORT_EXPORT_PATH + "/definition/json";
+  public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH =
+      EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
 
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
@@ -84,8 +84,9 @@ public class PublicApiRestService {
   @Path(REPORT_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @SneakyThrows
-  public List<IdResponseDto> getReportIds(final @Context ContainerRequestContext requestContext,
-                                          final @QueryParam("collectionId") String collectionId) {
+  public List<IdResponseDto> getReportIds(
+      final @Context ContainerRequestContext requestContext,
+      final @QueryParam("collectionId") String collectionId) {
     validateCollectionIdNotNull(collectionId);
     return reportService.getAllReportIdsInCollection(collectionId);
   }
@@ -94,8 +95,9 @@ public class PublicApiRestService {
   @Path(DASHBOARD_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @SneakyThrows
-  public List<IdResponseDto> getDashboardIds(final @Context ContainerRequestContext requestContext,
-                                             final @QueryParam("collectionId") String collectionId) {
+  public List<IdResponseDto> getDashboardIds(
+      final @Context ContainerRequestContext requestContext,
+      final @QueryParam("collectionId") String collectionId) {
     validateCollectionIdNotNull(collectionId);
     return dashboardService.getAllDashboardIdsInCollection(collectionId);
   }
@@ -104,26 +106,26 @@ public class PublicApiRestService {
   @Path(REPORT_EXPORT_DATA_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @SneakyThrows
-  public PaginatedDataExportDto exportReportData(@Context ContainerRequestContext requestContext,
-                                                 @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") String reportId,
-                                                 @BeanParam @Valid final PaginationScrollableRequestDto paginationRequestDto) {
+  public PaginatedDataExportDto exportReportData(
+      @Context ContainerRequestContext requestContext,
+      @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") String reportId,
+      @BeanParam @Valid final PaginationScrollableRequestDto paginationRequestDto) {
     final ZoneId timezone = ZoneId.of("UTC");
     try {
       return jsonReportResultExportService.getJsonForEvaluatedReportResult(
-        reportId,
-        timezone,
-        PaginationScrollableDto.fromPaginationRequest(paginationRequestDto)
-      );
-      //TODO this would be handled in the OPT-7236
+          reportId, timezone, PaginationScrollableDto.fromPaginationRequest(paginationRequestDto));
+      // TODO this would be handled in the OPT-7236
     } catch (ElasticsearchStatusException e) {
-      // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier valid, but now
-      // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful information so
+      // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier
+      // valid, but now
+      // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful
+      // information so
       // that the user gets an appropriate response.
       throw Optional.ofNullable(e.getCause())
-        .filter(pag -> pag.getMessage().contains("search_context_missing_exception"))
-        .map(pag -> (Exception) new BadRequestException(pag.getMessage()))
-        // In case the exception happened for another reason, just re-throw it as is
-        .orElse(e);
+          .filter(pag -> pag.getMessage().contains("search_context_missing_exception"))
+          .map(pag -> (Exception) new BadRequestException(pag.getMessage()))
+          // In case the exception happened for another reason, just re-throw it as is
+          .orElse(e);
     }
   }
 
@@ -131,53 +133,62 @@ public class PublicApiRestService {
   @Path(REPORT_EXPORT_DEFINITION_SUB_PATH)
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ReportDefinitionExportDto> exportReportDefinition(final @Context ContainerRequestContext requestContext,
-                                                                final @RequestBody Set<String> reportIds) {
-    return entityExportService.getReportExportDtos(Optional.ofNullable(reportIds).orElse(Collections.emptySet()));
+  public List<ReportDefinitionExportDto> exportReportDefinition(
+      final @Context ContainerRequestContext requestContext,
+      final @RequestBody Set<String> reportIds) {
+    return entityExportService.getReportExportDtos(
+        Optional.ofNullable(reportIds).orElse(Collections.emptySet()));
   }
 
   @POST
   @Path(DASHBOARD_EXPORT_DEFINITION_SUB_PATH)
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<OptimizeEntityExportDto> exportDashboardDefinition(final @Context ContainerRequestContext requestContext,
-                                                                 final @RequestBody Set<String> dashboardIds) {
-    return entityExportService.getDashboardExportDtos(Optional.ofNullable(dashboardIds).orElse(Collections.emptySet()));
+  public List<OptimizeEntityExportDto> exportDashboardDefinition(
+      final @Context ContainerRequestContext requestContext,
+      final @RequestBody Set<String> dashboardIds) {
+    return entityExportService.getDashboardExportDtos(
+        Optional.ofNullable(dashboardIds).orElse(Collections.emptySet()));
   }
 
   @POST
   @Path(IMPORT_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<EntityIdResponseDto> importEntities(@Context final ContainerRequestContext requestContext,
-                                                  @QueryParam("collectionId") String collectionId,
-                                                  final String exportedDtoJson) {
+  public List<EntityIdResponseDto> importEntities(
+      @Context final ContainerRequestContext requestContext,
+      @QueryParam("collectionId") String collectionId,
+      final String exportedDtoJson) {
     validateCollectionIdNotNull(collectionId);
-    final Set<OptimizeEntityExportDto> exportDtos = entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
+    final Set<OptimizeEntityExportDto> exportDtos =
+        entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
     return entityImportService.importEntities(collectionId, exportDtos);
   }
 
   @DELETE
   @Path(REPORT_BY_ID_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteReportDefinition(final @Context ContainerRequestContext requestContext,
-                                     final @PathParam("reportId") String reportId) {
+  public void deleteReportDefinition(
+      final @Context ContainerRequestContext requestContext,
+      final @PathParam("reportId") String reportId) {
     reportService.deleteReport(reportId);
   }
 
   @DELETE
   @Path(DASHBOARD_BY_ID_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteDashboardDefinition(final @Context ContainerRequestContext requestContext,
-                                        final @PathParam("dashboardId") String dashboardId) {
+  public void deleteDashboardDefinition(
+      final @Context ContainerRequestContext requestContext,
+      final @PathParam("dashboardId") String dashboardId) {
     dashboardService.deleteDashboard(dashboardId);
   }
 
   @POST
   @Path(LABELS_SUB_PATH)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
-                                   @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+  public void modifyVariableLabels(
+      @Context ContainerRequestContext requestContext,
+      @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 

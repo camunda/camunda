@@ -10,9 +10,11 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 
 @SuperBuilder
-public abstract class SingleReportDefinitionDto<RD extends SingleReportDataDto> extends ReportDefinitionDto<RD> {
+public abstract class SingleReportDefinitionDto<RD extends SingleReportDataDto>
+    extends ReportDefinitionDto<RD> {
 
-  protected SingleReportDefinitionDto(final RD data, final Boolean combined, final ReportType reportType) {
+  protected SingleReportDefinitionDto(
+      final RD data, final Boolean combined, final ReportType reportType) {
     super(data, combined, reportType);
   }
 }

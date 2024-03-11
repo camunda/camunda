@@ -52,12 +52,18 @@ jobs:
         - uses: actions/checkout@v3
         - id: define-values
           uses: ./.github/actions/git-environment
-
-  sonarqube:
-    name: SonarQube - Java
-    runs-on: ubuntu-latest
-    needs: ['environment']
-    if: ${{ needs.environment.outputs.is_main_or_maintenance_branch }}
-    steps:
-        ...
+    ...
+    release:
+      name: Perform the release
+      runs-on: ubuntu-latest
+      needs: ['environment']
+      steps:
+        - uses: actions/checkout@v3
+        - name: Expose common variables as Env
+          run: |
+            {
+            echo "VERSION=$RELEASE_VERSION"
+            echo "REVISION=${{ needs.environment.define-values.outputs.git_commit_hash }}"
+            } >> "$GITHUB_ENV"
+    ...
 ```

@@ -11,11 +11,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 
 @NoArgsConstructor
 public class AuthorizedProcessReportEvaluationResponseDto<T>
-  extends AuthorizedSingleReportEvaluationResponseDto<T, SingleProcessReportDefinitionRequestDto> {
+    extends AuthorizedSingleReportEvaluationResponseDto<
+        T, SingleProcessReportDefinitionRequestDto> {
 
-  public AuthorizedProcessReportEvaluationResponseDto(final RoleType currentUserRole,
-                                                      final ReportResultResponseDto<T> reportResult,
-                                                      final SingleProcessReportDefinitionRequestDto reportDefinition) {
+  public AuthorizedProcessReportEvaluationResponseDto(
+      final RoleType currentUserRole,
+      final ReportResultResponseDto<T> reportResult,
+      final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(currentUserRole, reportResult, reportDefinition);
   }
 }

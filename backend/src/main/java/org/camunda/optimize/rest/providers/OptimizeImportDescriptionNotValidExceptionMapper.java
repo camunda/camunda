@@ -18,12 +18,13 @@ import org.camunda.optimize.service.exceptions.OptimizeImportDescriptionNotValid
 @Provider
 @Slf4j
 public class OptimizeImportDescriptionNotValidExceptionMapper
-  implements ExceptionMapper<OptimizeImportDescriptionNotValidException> {
+    implements ExceptionMapper<OptimizeImportDescriptionNotValidException> {
   public static final String ERROR_CODE = "importDescriptionInvalid";
 
   private final LocalizationService localizationService;
 
-  public OptimizeImportDescriptionNotValidExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeImportDescriptionNotValidExceptionMapper(
+      @Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
@@ -31,14 +32,14 @@ public class OptimizeImportDescriptionNotValidExceptionMapper
   public Response toResponse(final OptimizeImportDescriptionNotValidException exception) {
     log.info("Mapping OptimizeImportDescriptionNotValidException");
 
-    return Response
-      .status(Response.Status.BAD_REQUEST)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(getDescriptionNotValidResponseDto(exception))
-      .build();
+    return Response.status(Response.Status.BAD_REQUEST)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .entity(getDescriptionNotValidResponseDto(exception))
+        .build();
   }
 
-  private ErrorResponseDto getDescriptionNotValidResponseDto(OptimizeImportDescriptionNotValidException exception) {
+  private ErrorResponseDto getDescriptionNotValidResponseDto(
+      OptimizeImportDescriptionNotValidException exception) {
     String errorCode = exception.getErrorCode();
     String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
     String detailedErrorMessage = exception.getMessage();

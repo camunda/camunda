@@ -5,20 +5,21 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
-import java.util.List;
-
-public class DecisionDefinitionDatabaseImportJob extends DatabaseImportJob<DecisionDefinitionOptimizeDto> {
+public class DecisionDefinitionDatabaseImportJob
+    extends DatabaseImportJob<DecisionDefinitionOptimizeDto> {
 
   private final DecisionDefinitionWriter decisionDefinitionWriter;
 
-  public DecisionDefinitionDatabaseImportJob(final DecisionDefinitionWriter decisionDefinitionWriter,
-                                             final Runnable importCompleteCallback,
-                                             final DatabaseClient databaseClient) {
+  public DecisionDefinitionDatabaseImportJob(
+      final DecisionDefinitionWriter decisionDefinitionWriter,
+      final Runnable importCompleteCallback,
+      final DatabaseClient databaseClient) {
     super(importCompleteCallback, databaseClient);
     this.decisionDefinitionWriter = decisionDefinitionWriter;
   }
@@ -27,5 +28,4 @@ public class DecisionDefinitionDatabaseImportJob extends DatabaseImportJob<Decis
   protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
     decisionDefinitionWriter.importDecisionDefinitions(newOptimizeEntities);
   }
-
 }

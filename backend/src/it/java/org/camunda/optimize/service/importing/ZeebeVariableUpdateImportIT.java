@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -35,7 +35,6 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJE
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
@@ -460,14 +459,15 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
 
   private void waitUntilMinimumVariableDocumentsWithIntentExportedCount(final int minExportedEventCount,
                                                                         final VariableIntent intent) {
-    BoolQueryBuilder variableBoolQueryBuilder = boolQuery().must(termsQuery(
+    TermsQueryContainer variableBoolQuery = new TermsQueryContainer();
+    variableBoolQuery.addTermQuery(
       ZeebeVariableRecordDto.Fields.intent,
       intent.name()
-    ));
+    );
     waitUntilMinimumDataExportedCount(
       minExportedEventCount,
       DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME,
-      variableBoolQueryBuilder
+      variableBoolQuery
     );
   }
 

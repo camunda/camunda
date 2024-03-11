@@ -5,6 +5,18 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.GenericType;
+import java.util.ArrayList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -19,32 +31,21 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.Invocation;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.GenericType;
-import java.util.ArrayList;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class DecisionInstanceFetcherTest {
 
-  private final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+  private final ConfigurationService configurationService =
+      ConfigurationServiceBuilder.createDefaultConfiguration();
 
-  @Mock
-  private EngineContext engineContext;
-  @Mock
-  private BackoffCalculator backoffCalculator;
+  @Mock private EngineContext engineContext;
+  @Mock private BackoffCalculator backoffCalculator;
+
   @Mock(answer = Answers.RETURNS_SELF)
   private Client engineClient;
+
   @Mock(answer = Answers.RETURNS_SELF)
   private WebTarget target;
+
   @Mock(answer = Answers.RETURNS_SELF)
   private Invocation.Builder requestBuilder;
 
@@ -59,7 +60,7 @@ public class DecisionInstanceFetcherTest {
 
     when(engineContext.getEngineClient()).thenReturn(engineClient);
     when(engineContext.getEngineAlias())
-      .thenReturn(configurationService.getConfiguredEngines().keySet().iterator().next());
+        .thenReturn(configurationService.getConfiguredEngines().keySet().iterator().next());
     when(engineClient.target(anyString())).thenReturn(target);
     when(target.request(anyString())).thenReturn(requestBuilder);
     when(requestBuilder.get(any(GenericType.class))).thenReturn(new ArrayList<>());
@@ -72,6 +73,7 @@ public class DecisionInstanceFetcherTest {
 
     underTest.fetchHistoricDecisionInstances(new TimestampBasedImportPage());
 
-    verify(target, times(1)).queryParam(eq(EngineConstants.MAX_RESULTS_TO_RETURN), eq((long) maxPageSize));
+    verify(target, times(1))
+        .queryParam(eq(EngineConstants.MAX_RESULTS_TO_RETURN), eq((long) maxPageSize));
   }
 }

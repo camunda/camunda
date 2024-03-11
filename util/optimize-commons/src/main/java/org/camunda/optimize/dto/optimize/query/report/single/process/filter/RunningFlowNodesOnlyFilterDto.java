@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.RunningFlowNodesOnlyFilterDataDto;
-
 import java.util.Collections;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.RunningFlowNodesOnlyFilterDataDto;
 
-public class RunningFlowNodesOnlyFilterDto extends ProcessFilterDto<RunningFlowNodesOnlyFilterDataDto> {
+public class RunningFlowNodesOnlyFilterDto
+    extends ProcessFilterDto<RunningFlowNodesOnlyFilterDataDto> {
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.VIEW);

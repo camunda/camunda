@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.importing.event.handler;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.importing.TimestampBasedEventDataImportIndexHandler;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.importing.TimestampBasedEventDataImportIndexHandler;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

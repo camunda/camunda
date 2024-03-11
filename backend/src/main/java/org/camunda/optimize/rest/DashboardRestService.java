@@ -5,12 +5,13 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
+
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -21,6 +22,13 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -34,17 +42,6 @@ import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
-
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
-import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
 @AllArgsConstructor
 @Path(DashboardRestService.DASHBOARD_PATH)
@@ -60,25 +57,32 @@ public class DashboardRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdResponseDto createNewDashboard(@Context final ContainerRequestContext requestContext,
-                                          @Valid DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public IdResponseDto createNewDashboard(
+      @Context final ContainerRequestContext requestContext,
+      @Valid DashboardDefinitionRestDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (dashboardDefinitionDto != null) {
-      if (dashboardDefinitionDto.isManagementDashboard() || dashboardDefinitionDto.isInstantPreviewDashboard()) {
-        throw new OptimizeValidationException("Management and Instant preview dashboards cannot be created");
+      if (dashboardDefinitionDto.isManagementDashboard()
+          || dashboardDefinitionDto.isInstantPreviewDashboard()) {
+        throw new OptimizeValidationException(
+            "Management and Instant preview dashboards cannot be created");
       }
       validateDashboard(dashboardDefinitionDto);
     }
     return dashboardService.createNewDashboardAndReturnId(
-      userId, Optional.ofNullable(dashboardDefinitionDto).orElseGet(DashboardDefinitionRestDto::new));
+        userId,
+        Optional.ofNullable(dashboardDefinitionDto).orElseGet(DashboardDefinitionRestDto::new));
   }
 
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdResponseDto copyDashboard(@Context UriInfo uriInfo, @Context ContainerRequestContext requestContext,
-                                     @PathParam("id") String dashboardId, @QueryParam("collectionId") String collectionId,
-                                     @QueryParam("name") String newDashboardName) {
+  public IdResponseDto copyDashboard(
+      @Context UriInfo uriInfo,
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String dashboardId,
+      @QueryParam("collectionId") String collectionId,
+      @QueryParam("name") String newDashboardName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     if (collectionId == null) {
@@ -86,44 +90,50 @@ public class DashboardRestService {
     } else {
       // 'null' or collectionId value provided
       collectionId = normalizeNullStringValue(collectionId);
-      return dashboardService.copyAndMoveDashboard(dashboardId, userId, collectionId, newDashboardName);
+      return dashboardService.copyAndMoveDashboard(
+          dashboardId, userId, collectionId, newDashboardName);
     }
   }
 
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedDashboardDefinitionResponseDto getDashboard(@Context ContainerRequestContext requestContext,
-                                                               @PathParam("id") String dashboardId) {
+  public AuthorizedDashboardDefinitionResponseDto getDashboard(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
-    dashboardRestMapper.prepareRestResponse(dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+        dashboardService.getDashboardDefinition(dashboardId, userId);
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
   @GET
   @Path(INSTANT_PREVIEW_PATH + "/{procDefKey}")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(@Context ContainerRequestContext requestContext,
-                                                                      @PathParam("procDefKey") String processDefinitionKey,
-                                                                      @QueryParam("template") String dashboardJsonTemplateFilename) {
+  public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("procDefKey") String processDefinitionKey,
+      @QueryParam("template") String dashboardJsonTemplateFilename) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
-    dashboardDefinition = instantPreviewDashboardService.getInstantPreviewDashboard(
-      processDefinitionKey,
-      dashboardJsonTemplateFilename,
-      userId
-    );
-    dashboardRestMapper.prepareRestResponse(dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+    dashboardDefinition =
+        instantPreviewDashboardService.getInstantPreviewDashboard(
+            processDefinitionKey, dashboardJsonTemplateFilename, userId);
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
   @GET
   @Path("/management")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(@Context ContainerRequestContext requestContext) {
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition = dashboardService.getManagementDashboard();
-    dashboardRestMapper.prepareRestResponse(dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+  public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(
+      @Context ContainerRequestContext requestContext) {
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+        dashboardService.getManagementDashboard();
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
@@ -131,8 +141,10 @@ public class DashboardRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateDashboard(@Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId,
-                              @Valid DashboardDefinitionRestDto updatedDashboard) {
+  public void updateDashboard(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("id") String dashboardId,
+      @Valid DashboardDefinitionRestDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateDashboard(updatedDashboard);
@@ -142,22 +154,26 @@ public class DashboardRestService {
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteDashboard(@Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId) {
+  public void deleteDashboard(
+      @Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     dashboardService.deleteDashboardAsUser(dashboardId, userId);
   }
 
   private void validateDashboardTileTypes(final DashboardDefinitionRestDto dashboardDefinitionDto) {
-    dashboardDefinitionDto.getTiles()
-      .forEach(report -> {
-        if (report.getType() == DashboardTileType.OPTIMIZE_REPORT) {
-          if (StringUtils.isEmpty(report.getId())) {
-            throw new OptimizeValidationException("All Optimize Reports must have an ID");
-          }
-        } else if (!StringUtils.isEmpty(report.getId())) {
-          throw new OptimizeValidationException("Text and external URL tiles must not have an ID");
-        }
-      });
+    dashboardDefinitionDto
+        .getTiles()
+        .forEach(
+            report -> {
+              if (report.getType() == DashboardTileType.OPTIMIZE_REPORT) {
+                if (StringUtils.isEmpty(report.getId())) {
+                  throw new OptimizeValidationException("All Optimize Reports must have an ID");
+                }
+              } else if (!StringUtils.isEmpty(report.getId())) {
+                throw new OptimizeValidationException(
+                    "Text and external URL tiles must not have an ID");
+              }
+            });
   }
 
   private void validateDashboard(final DashboardDefinitionRestDto updatedDashboard) {
@@ -166,22 +182,25 @@ public class DashboardRestService {
     dashboardService.validateDashboardDescription(updatedDashboard.getDescription());
   }
 
-  private void validateExternalDashboardLinks(final DashboardDefinitionRestDto dashboardDefinitionDto) {
-    final List<String> invalidExternalLinks = dashboardDefinitionDto.getTiles()
-      .stream()
-      .filter(dashboard -> dashboard.getType() == DashboardTileType.EXTERNAL_URL)
-      .map(DashboardReportTileDto::getConfiguration)
-      .filter(Objects::nonNull)
-      .filter(Map.class::isInstance)
-      .map(Map.class::cast)
-      .map(reportConfig -> reportConfig.get("external"))
-      .filter(Objects::nonNull)
-      .filter(String.class::isInstance)
-      .map(String.class::cast)
-      .filter(externalLinkString -> !isValidURL(externalLinkString))
-      .toList();
+  private void validateExternalDashboardLinks(
+      final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    final List<String> invalidExternalLinks =
+        dashboardDefinitionDto.getTiles().stream()
+            .filter(dashboard -> dashboard.getType() == DashboardTileType.EXTERNAL_URL)
+            .map(DashboardReportTileDto::getConfiguration)
+            .filter(Objects::nonNull)
+            .filter(Map.class::isInstance)
+            .map(Map.class::cast)
+            .map(reportConfig -> reportConfig.get("external"))
+            .filter(Objects::nonNull)
+            .filter(String.class::isInstance)
+            .map(String.class::cast)
+            .filter(externalLinkString -> !isValidURL(externalLinkString))
+            .toList();
     if (!invalidExternalLinks.isEmpty()) {
-      throw new OptimizeValidationException("Cannot save dashboard as the following external links are invalid: " + invalidExternalLinks);
+      throw new OptimizeValidationException(
+          "Cannot save dashboard as the following external links are invalid: "
+              + invalidExternalLinks);
     }
   }
 
@@ -193,6 +212,4 @@ public class DashboardRestService {
       return false;
     }
   }
-
 }
-

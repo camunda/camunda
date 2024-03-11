@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -17,8 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public abstract class AbstractProcessDefinitionWriterOS {
@@ -29,20 +29,18 @@ public abstract class AbstractProcessDefinitionWriterOS {
 
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 
-  public BulkOperation addImportProcessDefinitionToRequest(final ProcessDefinitionOptimizeDto processDefinitionDto) {
+  public BulkOperation addImportProcessDefinitionToRequest(
+      final ProcessDefinitionOptimizeDto processDefinitionDto) {
     final Script updateScript = createUpdateScript(processDefinitionDto);
 
     final UpdateOperation<ProcessDefinitionOptimizeDto> request =
-      new UpdateOperation.Builder<ProcessDefinitionOptimizeDto>()
-        .id(processDefinitionDto.getId())
-        .script(updateScript)
-        .upsert(processDefinitionDto)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-        .build();
+        new UpdateOperation.Builder<ProcessDefinitionOptimizeDto>()
+            .id(processDefinitionDto.getId())
+            .script(updateScript)
+            .upsert(processDefinitionDto)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+            .build();
 
-    return new BulkOperation.Builder()
-      .update(request)
-      .build();
+    return new BulkOperation.Builder().update(request).build();
   }
-
 }

@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
-import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+import static org.camunda.optimize.service.util.importing.EngineConstants.COMPLETED_INCIDENT_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FINISHED_AFTER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FINISHED_AT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ws.rs.core.GenericType;
@@ -18,16 +16,16 @@ import jakarta.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.COMPLETED_INCIDENT_ENDPOINT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.FINISHED_AFTER;
-import static org.camunda.optimize.service.util.importing.EngineConstants.FINISHED_AT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
+import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class CompletedIncidentFetcher
-  extends RetryBackoffEngineEntityFetcher {
+public class CompletedIncidentFetcher extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 
@@ -42,65 +40,61 @@ public class CompletedIncidentFetcher
 
   public List<HistoricIncidentEngineDto> fetchCompletedIncidents(TimestampBasedImportPage page) {
     return fetchCompletedIncidents(
-      page.getTimestampOfLastEntity(),
-      configurationService.getEngineImportIncidentMaxPageSize()
-    );
+        page.getTimestampOfLastEntity(), configurationService.getEngineImportIncidentMaxPageSize());
   }
 
-  public List<HistoricIncidentEngineDto> fetchCompletedIncidentsForTimestamp(OffsetDateTime endTimeOfLastIncident) {
+  public List<HistoricIncidentEngineDto> fetchCompletedIncidentsForTimestamp(
+      OffsetDateTime endTimeOfLastIncident) {
     logger.debug("Fetching completed incidents ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricIncidentEngineDto> secondEntries =
-      fetchWithRetry(() -> performCompletedIncidentFinishedAtRequest(endTimeOfLastIncident));
+        fetchWithRetry(() -> performCompletedIncidentFinishedAtRequest(endTimeOfLastIncident));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic incidents for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
+        "Fetched [{}] historic incidents for set end time within [{}] ms",
+        secondEntries.size(),
+        requestEnd - requestStart);
     return secondEntries;
   }
 
-  private List<HistoricIncidentEngineDto> fetchCompletedIncidents(OffsetDateTime timeStamp,
-                                                                  long pageSize) {
+  private List<HistoricIncidentEngineDto> fetchCompletedIncidents(
+      OffsetDateTime timeStamp, long pageSize) {
     logger.debug("Fetching historic incidents ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricIncidentEngineDto> entries =
-      fetchWithRetry(() -> performCompletedIncidentFinishedAfterRequest(timeStamp, pageSize));
+        fetchWithRetry(() -> performCompletedIncidentFinishedAfterRequest(timeStamp, pageSize));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic incidents which ended after set timestamp with page size [{}] within [{}] ms",
-      entries.size(),
-      pageSize,
-      requestEnd - requestStart
-    );
+        "Fetched [{}] historic incidents which ended after set timestamp with page size [{}] within [{}] ms",
+        entries.size(),
+        pageSize,
+        requestEnd - requestStart);
 
     return entries;
   }
 
-  private List<HistoricIncidentEngineDto> performCompletedIncidentFinishedAfterRequest(OffsetDateTime finishedAfterTimestamp,
-                                                                                       long pageSize) {
+  private List<HistoricIncidentEngineDto> performCompletedIncidentFinishedAfterRequest(
+      OffsetDateTime finishedAfterTimestamp, long pageSize) {
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(COMPLETED_INCIDENT_ENDPOINT)
-      .queryParam(FINISHED_AFTER, dateTimeFormatter.format(finishedAfterTimestamp))
-      .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get(new GenericType<>() {
-      });
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(COMPLETED_INCIDENT_ENDPOINT)
+        .queryParam(FINISHED_AFTER, dateTimeFormatter.format(finishedAfterTimestamp))
+        .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get(new GenericType<>() {});
   }
 
-  private List<HistoricIncidentEngineDto> performCompletedIncidentFinishedAtRequest(OffsetDateTime finishedAtTimestamp) {
+  private List<HistoricIncidentEngineDto> performCompletedIncidentFinishedAtRequest(
+      OffsetDateTime finishedAtTimestamp) {
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(COMPLETED_INCIDENT_ENDPOINT)
-      .queryParam(FINISHED_AT, dateTimeFormatter.format(finishedAtTimestamp))
-      .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportIncidentMaxPageSize())
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get(new GenericType<>() {
-      });
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(COMPLETED_INCIDENT_ENDPOINT)
+        .queryParam(FINISHED_AT, dateTimeFormatter.format(finishedAtTimestamp))
+        .queryParam(
+            MAX_RESULTS_TO_RETURN, configurationService.getEngineImportIncidentMaxPageSize())
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get(new GenericType<>() {});
   }
-
 }

@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.dto.optimize.query.MetadataDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
 import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
   public static final String ID = "1";
 
   public static final String SCHEMA_VERSION = MetadataDto.Fields.schemaVersion.name();
-  private static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();
+  protected static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();
+  private static final String OPTIMIZE_MODE = MetadataDto.Fields.optimizeProfile.name();
 
   @Override
   public String getIndexName() {
@@ -34,12 +34,15 @@ public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(SCHEMA_VERSION)
+        .startObject(SCHEMA_VERSION)
         .field("type", "keyword")
-      .endObject()
-      .startObject(INSTALLATION_ID)
+        .endObject()
+        .startObject(INSTALLATION_ID)
         .field("type", "keyword")
-      .endObject();
+        .endObject()
+        .startObject(OPTIMIZE_MODE)
+        .field("type", "keyword")
+        .endObject();
     // @formatter:on
   }
 }

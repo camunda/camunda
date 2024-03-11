@@ -5,21 +5,21 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.UserAndGroupProvider;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class LeadQualificationDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/lead-qualification.bpmn";
 
-  public LeadQualificationDataGenerator(final SimpleEngineClient engineClient,
-                                        final Integer nVersions,
-                                        final UserAndGroupProvider userAndGroupProvider) {
+  public LeadQualificationDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
@@ -40,5 +40,4 @@ public class LeadQualificationDataGenerator extends ProcessDataGenerator {
     variables.put("dcOutcome", ThreadLocalRandom.current().nextDouble());
     return variables;
   }
-
 }

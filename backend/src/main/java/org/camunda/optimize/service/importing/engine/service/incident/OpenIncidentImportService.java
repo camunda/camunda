@@ -5,38 +5,39 @@
  */
 package org.camunda.optimize.service.importing.engine.service.incident;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.importing.job.OpenIncidentDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.importing.job.OpenIncidentDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-
-import java.util.List;
 
 @Slf4j
 public class OpenIncidentImportService extends AbstractEngineIncidentImportService {
 
   private final OpenIncidentWriter openIncidentWriter;
 
-  public OpenIncidentImportService(final ConfigurationService configurationService,
-                                   final OpenIncidentWriter openIncidentWriter,
-                                   final EngineContext engineContext,
-                                   final ProcessDefinitionResolverService processDefinitionResolverService,
-                                   final DatabaseClient databaseClient) {
+  public OpenIncidentImportService(
+      final ConfigurationService configurationService,
+      final OpenIncidentWriter openIncidentWriter,
+      final EngineContext engineContext,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final DatabaseClient databaseClient) {
     super(configurationService, engineContext, processDefinitionResolverService, databaseClient);
     this.openIncidentWriter = openIncidentWriter;
   }
 
-  protected DatabaseImportJob<IncidentDto> createDatabaseImportJob(List<IncidentDto> incidents,
-                                                                        Runnable callback) {
-    OpenIncidentDatabaseImportJob incidentImportJob =
-      new OpenIncidentDatabaseImportJob(openIncidentWriter, configurationService, callback, databaseClient);
+  @Override
+  protected DatabaseImportJob<IncidentDto> createDatabaseImportJob(
+      final List<IncidentDto> incidents, final Runnable callback) {
+    final OpenIncidentDatabaseImportJob incidentImportJob =
+        new OpenIncidentDatabaseImportJob(
+            openIncidentWriter, configurationService, callback, databaseClient);
     incidentImportJob.setEntitiesToImport(incidents);
     return incidentImportJob;
   }
-
 }

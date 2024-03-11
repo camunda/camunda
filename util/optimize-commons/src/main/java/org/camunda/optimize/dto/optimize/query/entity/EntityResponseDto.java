@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.entity;
 
+import java.time.OffsetDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,8 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-
-import java.time.OffsetDateTime;
 
 @FieldNameConstants
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -33,29 +32,56 @@ public class EntityResponseDto {
   private ReportType reportType;
   private RoleType currentUserRole;
 
-  public EntityResponseDto(final String id, final String name, final String description, final OffsetDateTime lastModified,
-                           final OffsetDateTime created, final String owner, final String lastModifier,
-                           final EntityType entityType, final EntityData data, final RoleType currentUserRole) {
-    this(id, name, description, lastModified, created, owner, lastModifier, entityType, data, null, null, currentUserRole);
+  public EntityResponseDto(
+      final String id,
+      final String name,
+      final String description,
+      final OffsetDateTime lastModified,
+      final OffsetDateTime created,
+      final String owner,
+      final String lastModifier,
+      final EntityType entityType,
+      final EntityData data,
+      final RoleType currentUserRole) {
+    this(
+        id,
+        name,
+        description,
+        lastModified,
+        created,
+        owner,
+        lastModifier,
+        entityType,
+        data,
+        null,
+        null,
+        currentUserRole);
   }
 
-  public EntityResponseDto(final String id, final String name, final String description, final OffsetDateTime lastModified,
-                           final OffsetDateTime created, final String owner, final String lastModifier,
-                           final EntityType entityType, final Boolean combined,
-                           final ReportType reportType, final RoleType currentUserRole) {
+  public EntityResponseDto(
+      final String id,
+      final String name,
+      final String description,
+      final OffsetDateTime lastModified,
+      final OffsetDateTime created,
+      final String owner,
+      final String lastModifier,
+      final EntityType entityType,
+      final Boolean combined,
+      final ReportType reportType,
+      final RoleType currentUserRole) {
     this(
-      id,
-      name,
-      description,
-      lastModified,
-      created,
-      owner,
-      lastModifier,
-      entityType,
-      new EntityData(),
-      combined,
-      reportType,
-      currentUserRole
-    );
+        id,
+        name,
+        description,
+        lastModified,
+        created,
+        owner,
+        lastModifier,
+        entityType,
+        new EntityData(),
+        combined,
+        reportType,
+        currentUserRole);
   }
 }

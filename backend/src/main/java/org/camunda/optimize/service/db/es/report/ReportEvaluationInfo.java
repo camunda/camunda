@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report;
 
+import java.time.ZoneId;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,9 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.report.ReportService;
 
-import java.time.ZoneId;
-import java.util.Optional;
-
 @Getter
 @Setter(AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -29,7 +28,7 @@ public class ReportEvaluationInfo {
 
   private String userId;
   private AdditionalProcessReportEvaluationFilterDto additionalFilters =
-    new AdditionalProcessReportEvaluationFilterDto();
+      new AdditionalProcessReportEvaluationFilterDto();
   private ZoneId timezone = ZoneId.systemDefault();
   private PaginationDto pagination;
   private boolean isCsvExport;
@@ -74,7 +73,8 @@ public class ReportEvaluationInfo {
       return this;
     }
 
-    public ReportEvaluationInfoBuilder additionalFilters(final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    public ReportEvaluationInfoBuilder additionalFilters(
+        final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
       this.reportEvaluationInfo.setAdditionalFilters(additionalFilters);
       return this;
     }
@@ -107,7 +107,5 @@ public class ReportEvaluationInfo {
     public ReportEvaluationInfo build() {
       return this.reportEvaluationInfo;
     }
-
   }
-
 }

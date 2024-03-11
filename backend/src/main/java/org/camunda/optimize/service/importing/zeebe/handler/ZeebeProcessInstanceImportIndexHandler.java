@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeProcessInstanceImportIndexHandler extends PositionBasedImportIndexHandler {
 
-  private static final String ZEEBE_PROC_INST_IMPORT_INDEX_DOC_ID = "zeebeProcessInstanceImportIndex";
+  private static final String ZEEBE_PROC_INST_IMPORT_INDEX_DOC_ID =
+      "zeebeProcessInstanceImportIndex";
 
   public ZeebeProcessInstanceImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
     this.dataSource = dataSourceDto;
@@ -25,5 +26,4 @@ public class ZeebeProcessInstanceImportIndexHandler extends PositionBasedImportI
   protected String getDatabaseDocID() {
     return ZEEBE_PROC_INST_IMPORT_INDEX_DOC_ID;
   }
-
 }

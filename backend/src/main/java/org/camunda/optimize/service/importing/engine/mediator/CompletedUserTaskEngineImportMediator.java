@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedUserTaskInstanceFetcher;
@@ -16,27 +18,27 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedUserTaskEngineImportMediator
-  extends TimestampBasedImportMediator<CompletedUserTaskInstanceImportIndexHandler, HistoricUserTaskInstanceDto> {
+    extends TimestampBasedImportMediator<
+        CompletedUserTaskInstanceImportIndexHandler, HistoricUserTaskInstanceDto> {
 
   private final CompletedUserTaskInstanceFetcher engineEntityFetcher;
 
-  public CompletedUserTaskEngineImportMediator(final CompletedUserTaskInstanceImportIndexHandler importIndexHandler,
-                                               final CompletedUserTaskInstanceFetcher engineEntityFetcher,
-                                               final CompletedUserTaskInstanceImportService importService,
-                                               final ConfigurationService configurationService,
-                                               final BackoffCalculator idleBackoffCalculator) {
+  public CompletedUserTaskEngineImportMediator(
+      final CompletedUserTaskInstanceImportIndexHandler importIndexHandler,
+      final CompletedUserTaskInstanceFetcher engineEntityFetcher,
+      final CompletedUserTaskInstanceImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+  protected OffsetDateTime getTimestamp(
+      final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     return historicUserTaskInstanceDto.getEndTime();
   }
 
@@ -47,7 +49,8 @@ public class CompletedUserTaskEngineImportMediator
 
   @Override
   protected List<HistoricUserTaskInstanceDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchCompletedUserTaskInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    return engineEntityFetcher.fetchCompletedUserTaskInstancesForTimestamp(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
@@ -59,5 +62,4 @@ public class CompletedUserTaskEngineImportMediator
   public MediatorRank getRank() {
     return MediatorRank.INSTANCE_SUB_ENTITIES;
   }
-
 }

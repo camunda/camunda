@@ -12,5 +12,4 @@ public class DatabaseConnectionNodeConfiguration {
 
   private String host;
   private Integer httpPort;
-
 }

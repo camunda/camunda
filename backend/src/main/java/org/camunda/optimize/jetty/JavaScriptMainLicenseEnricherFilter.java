@@ -6,10 +6,6 @@
 package org.camunda.optimize.jetty;
 
 import com.google.common.io.CharStreams;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -23,13 +19,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 @NoArgsConstructor
 public class JavaScriptMainLicenseEnricherFilter implements Filter {
   public static final String LICENSE_PATH = "OPTIMIZE-LICENSE.txt";
   private static final Pattern MAIN_JS_PATTERN = Pattern.compile(".*/main\\..*\\.chunk\\.js");
 
-  // used as means to cache the main js content enriched with the license as its content is static anyway
+  // used as means to cache the main js content enriched with the license as its content is static
+  // anyway
   private String licensedContent;
 
   @Override
@@ -38,15 +38,18 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
   }
 
   @Override
-  public void doFilter(final ServletRequest servletRequest,
-                       final ServletResponse servletResponse,
-                       final FilterChain filterChain) throws IOException, ServletException {
+  public void doFilter(
+      final ServletRequest servletRequest,
+      final ServletResponse servletResponse,
+      final FilterChain filterChain)
+      throws IOException, ServletException {
     final HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
     final String requestPath = httpServletRequest.getServletPath();
     if (MAIN_JS_PATTERN.matcher(requestPath).matches()) {
-      // this wrapper allows to capture any response content written before writing the actual response
+      // this wrapper allows to capture any response content written before writing the actual
+      // response
       final ContentCachingResponseWrapper cachingResponseWrapper =
-        new ContentCachingResponseWrapper((HttpServletResponse) servletResponse);
+          new ContentCachingResponseWrapper((HttpServletResponse) servletResponse);
       try {
         // let the request processing continue so the response content is available after
         filterChain.doFilter(servletRequest, cachingResponseWrapper);
@@ -66,11 +69,13 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
     // nothing to do here
   }
 
-  private void enrichWithLicense(final ContentCachingResponseWrapper cachingResponseWrapper) throws IOException {
+  private void enrichWithLicense(final ContentCachingResponseWrapper cachingResponseWrapper)
+      throws IOException {
     if (licensedContent == null) {
       // no synchronization needed as in worst case multiple threads may update the field
       // but following calls will make use of the preprocessed value
-      final String originalContent = new String(cachingResponseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
+      final String originalContent =
+          new String(cachingResponseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
       this.licensedContent = readLicense() + originalContent;
     }
     cachingResponseWrapper.resetBuffer();
@@ -79,9 +84,10 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
 
   @SneakyThrows
   private String readLicense() {
-    final InputStream inputStream = this.getClass()
-      .getClassLoader()
-      .getResourceAsStream(JavaScriptMainLicenseEnricherFilter.LICENSE_PATH);
+    final InputStream inputStream =
+        this.getClass()
+            .getClassLoader()
+            .getResourceAsStream(JavaScriptMainLicenseEnricherFilter.LICENSE_PATH);
 
     if (inputStream == null) {
       return "";

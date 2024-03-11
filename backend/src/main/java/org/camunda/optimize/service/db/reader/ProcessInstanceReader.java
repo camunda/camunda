@@ -5,36 +5,34 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.PageResultDto;
-
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.query.PageResultDto;
 
 public interface ProcessInstanceReader {
 
-  PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey,
-                                                                                        final OffsetDateTime endDate,
-                                                                                        final Integer limit);
+  PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+      final String processDefinitionKey, final OffsetDateTime endDate, final Integer limit);
 
-  PageResultDto<String> getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey,
-                                                                                       final OffsetDateTime endDate,
-                                                                                       final Integer limit,
-                                                                                       final PageResultDto<String> previousPage);
+  PageResultDto<String> getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+      final String processDefinitionKey,
+      final OffsetDateTime endDate,
+      final Integer limit,
+      final PageResultDto<String> previousPage);
 
-  PageResultDto<String> getFirstPageOfProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
-                                                                        final OffsetDateTime endDate,
-                                                                        final Integer limit);
+  PageResultDto<String> getFirstPageOfProcessInstanceIdsThatEndedBefore(
+      final String processDefinitionKey, final OffsetDateTime endDate, final Integer limit);
 
-  PageResultDto<String> getNextPageOfProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
-                                                                       final OffsetDateTime endDate,
-                                                                       final Integer limit,
-                                                                       final PageResultDto<String> previousPage);
+  PageResultDto<String> getNextPageOfProcessInstanceIdsThatEndedBefore(
+      final String processDefinitionKey,
+      final OffsetDateTime endDate,
+      final Integer limit,
+      final PageResultDto<String> previousPage);
 
   Set<String> getExistingProcessDefinitionKeysFromInstances();
 
   Optional<String> getProcessDefinitionKeysForInstanceId(final String instanceId);
 
   boolean processDefinitionHasStartedInstances(final String processDefinitionKey);
-
 }

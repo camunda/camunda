@@ -5,11 +5,6 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.decision;
 
-import org.apache.commons.lang3.RandomUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -19,6 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class BerStatusDateInputDecisionDataGenerator extends DecisionDataGenerator {
 
@@ -27,26 +26,28 @@ public class BerStatusDateInputDecisionDataGenerator extends DecisionDataGenerat
   private final Pair<String, String> inputVarNames = Pair.of("flightDestination", "date");
   private final List<Pair<String, Date>> possibleInputCombinations;
 
-  public BerStatusDateInputDecisionDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public BerStatusDateInputDecisionDataGenerator(
+      SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
 
     // create some date vars within the last 10 years and the last
     // 10 mins for date variable reports with different groupBy units
     possibleInputCombinations = new ArrayList<>();
     IntStream.range(0, 10)
-      .forEach(
-        i -> {
-          final long tenMinsAgo = ZonedDateTime.now().minusMinutes(10).toInstant().toEpochMilli();
-          final long tenYearsAgo = ZonedDateTime.now().minusYears(10).toInstant().toEpochMilli();
-          final long randomWithinLastTenYears = ThreadLocalRandom.current()
-            .nextLong(tenYearsAgo, Instant.now().toEpochMilli());
-          final long randomWithinLastTenMins = ThreadLocalRandom.current()
-            .nextLong(tenMinsAgo, Instant.now().toEpochMilli());
-          possibleInputCombinations.add(Pair.of("Glasgow", new Date(randomWithinLastTenYears)));
-          possibleInputCombinations.add(Pair.of("Omran", new Date(randomWithinLastTenYears)));
-          possibleInputCombinations.add(Pair.of("Malaga", new Date(randomWithinLastTenMins)));
-        }
-      );
+        .forEach(
+            i -> {
+              final long tenMinsAgo =
+                  ZonedDateTime.now().minusMinutes(10).toInstant().toEpochMilli();
+              final long tenYearsAgo =
+                  ZonedDateTime.now().minusYears(10).toInstant().toEpochMilli();
+              final long randomWithinLastTenYears =
+                  ThreadLocalRandom.current().nextLong(tenYearsAgo, Instant.now().toEpochMilli());
+              final long randomWithinLastTenMins =
+                  ThreadLocalRandom.current().nextLong(tenMinsAgo, Instant.now().toEpochMilli());
+              possibleInputCombinations.add(Pair.of("Glasgow", new Date(randomWithinLastTenYears)));
+              possibleInputCombinations.add(Pair.of("Omran", new Date(randomWithinLastTenYears)));
+              possibleInputCombinations.add(Pair.of("Malaga", new Date(randomWithinLastTenMins)));
+            });
   }
 
   @Override

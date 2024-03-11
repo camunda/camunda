@@ -5,8 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.rest.export;
 
+import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.COMBINED_REPORT;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.DASHBOARD;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_DECISION_REPORT_STRING;
+import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_PROCESS_REPORT_STRING;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,33 +22,31 @@ import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessRepor
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 
-import jakarta.validation.constraints.NotNull;
-
-import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.COMBINED_REPORT;
-import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.DASHBOARD;
-import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_DECISION_REPORT_STRING;
-import static org.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_PROCESS_REPORT_STRING;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants
 @Data
 @JsonTypeInfo(
-  use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "exportEntityType", visible = true
-)
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "exportEntityType",
+    visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = SingleProcessReportDefinitionExportDto.class, name = SINGLE_PROCESS_REPORT_STRING),
-  @JsonSubTypes.Type(value = SingleDecisionReportDefinitionExportDto.class, name = SINGLE_DECISION_REPORT_STRING),
-  @JsonSubTypes.Type(value = CombinedProcessReportDefinitionExportDto.class, name = COMBINED_REPORT),
+  @JsonSubTypes.Type(
+      value = SingleProcessReportDefinitionExportDto.class,
+      name = SINGLE_PROCESS_REPORT_STRING),
+  @JsonSubTypes.Type(
+      value = SingleDecisionReportDefinitionExportDto.class,
+      name = SINGLE_DECISION_REPORT_STRING),
+  @JsonSubTypes.Type(
+      value = CombinedProcessReportDefinitionExportDto.class,
+      name = COMBINED_REPORT),
   @JsonSubTypes.Type(value = DashboardDefinitionExportDto.class, name = DASHBOARD),
 })
 public abstract class OptimizeEntityExportDto {
-  @NotNull
-  private String id;
-  @NotNull
-  private ExportEntityType exportEntityType;
-  @NotNull
-  private String name;
+  @NotNull private String id;
+  @NotNull private ExportEntityType exportEntityType;
+  @NotNull private String name;
   private String description;
   private int sourceIndexVersion;
 }

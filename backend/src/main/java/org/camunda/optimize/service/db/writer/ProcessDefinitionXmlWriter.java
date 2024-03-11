@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-
 import java.util.List;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 
 public interface ProcessDefinitionXmlWriter {
 
-  void importProcessDefinitionXmls(List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos);
-
+  void importProcessDefinitionXmls(
+      List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos);
 }

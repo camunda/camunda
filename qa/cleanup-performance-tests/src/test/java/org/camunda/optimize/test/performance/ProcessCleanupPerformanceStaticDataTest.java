@@ -5,13 +5,23 @@
  */
 package org.camunda.optimize.test.performance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+
+import java.time.Period;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.db.es.report.MinMaxStatDto;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,19 +34,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.time.Period;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-
 @Slf4j
 @Tag("engine-cleanup")
 @Tag("event-cleanup")
@@ -48,7 +45,8 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
-    // Note that when these tests run on jenkins, data is usually imported already during the "import" stage of the job
+    // Note that when these tests run on jenkins, data is usually imported already during the
+    // "import" stage of the job
     importEngineData();
   }
 
@@ -58,10 +56,13 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
     // given TTL of 0
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setEnabled(true);
     getCleanupConfiguration().setTtl(Period.parse("P0D"));
-    getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
+    getCleanupConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setCleanupMode(CleanupMode.VARIABLES);
     embeddedOptimizeExtension.reloadConfiguration();
     final int processInstanceCount = getCamundaProcessInstanceCount();
-    // we assert there is some data as a precondition as data is expected to be provided by the environment
+    // we assert there is some data as a precondition as data is expected to be provided by the
+    // environment
     assertThat(processInstanceCount).isPositive();
     assertThat(getFinishedProcessInstanceVariableCount()).isPositive();
     // and run the cleanup
@@ -84,7 +85,8 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setEnabled(true);
     getCleanupConfiguration().setTtl(Period.parse("P0D"));
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
-    // we assert there is some data as a precondition as data is expected to be provided by the environment
+    // we assert there is some data as a precondition as data is expected to be provided by the
+    // environment
     assertThat(getCamundaProcessInstanceCount()).isPositive();
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
@@ -104,57 +106,62 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   @SneakyThrows
   private void verifyThatAllCamundaVariableUpdatesAreRelatedToRunningInstancesOnly() {
     verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*", VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID
-    );
+        VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*", VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID);
   }
 
   @SneakyThrows
   private void verifyThatAllCamundaActivityEventsAreRelatedToRunningInstancesOnly() {
     verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*", CamundaActivityEventIndex.PROCESS_INSTANCE_ID
-    );
+        CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*", CamundaActivityEventIndex.PROCESS_INSTANCE_ID);
   }
 
   @SneakyThrows
   private void verifyThatAllBusinessKeyEntriesAreRelatedToRunningInstancesOnly() {
     verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      BUSINESS_KEY_INDEX_NAME + "*", BusinessKeyIndex.PROCESS_INSTANCE_ID
-    );
+        BUSINESS_KEY_INDEX_NAME + "*", BusinessKeyIndex.PROCESS_INSTANCE_ID);
   }
 
   @SneakyThrows
-  private void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(final String entityIndex,
-                                                                             final String processInstanceField) {
-    final SearchRequest variableUpdateSearchRequest = new SearchRequest()
-      .indices(entityIndex)
-      .source(
-        new SearchSourceBuilder()
-          .query(matchAllQuery())
-          .fetchSource(processInstanceField, null)
-          .size(10_000)
-      );
+  private void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
+      final String entityIndex, final String processInstanceField) {
+    final SearchRequest variableUpdateSearchRequest =
+        new SearchRequest()
+            .indices(entityIndex)
+            .source(
+                new SearchSourceBuilder()
+                    .query(matchAllQuery())
+                    .fetchSource(processInstanceField, null)
+                    .size(10_000));
 
-    SearchResponse camundaActivityEventsResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-      .search(variableUpdateSearchRequest.scroll(SCROLL_KEEP_ALIVE));
+    SearchResponse camundaActivityEventsResponse =
+        databaseIntegrationTestExtension
+            .getOptimizeElasticsearchClient()
+            .search(variableUpdateSearchRequest.scroll(SCROLL_KEEP_ALIVE));
 
     while (camundaActivityEventsResponse.getHits().getHits().length > 0) {
-      final Set<Object> processInstanceIds = Arrays.stream(camundaActivityEventsResponse.getHits().getHits())
-        .map(SearchHit::getSourceAsMap)
-        .map(hit -> hit.get(processInstanceField))
-        .collect(Collectors.toSet());
+      final Set<Object> processInstanceIds =
+          Arrays.stream(camundaActivityEventsResponse.getHits().getHits())
+              .map(SearchHit::getSourceAsMap)
+              .map(hit -> hit.get(processInstanceField))
+              .collect(Collectors.toSet());
 
       // all of these instances should be running
-      final Integer finishedProcessInstanceCount = countFinishedProcessInstancedById(processInstanceIds);
+      final Integer finishedProcessInstanceCount =
+          countFinishedProcessInstancedById(processInstanceIds);
       assertThat(finishedProcessInstanceCount).isZero();
 
-      camundaActivityEventsResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().scroll(
-        new SearchScrollRequest(camundaActivityEventsResponse.getScrollId()).scroll(SCROLL_KEEP_ALIVE)
-      );
+      camundaActivityEventsResponse =
+          databaseIntegrationTestExtension
+              .getOptimizeElasticsearchClient()
+              .scroll(
+                  new SearchScrollRequest(camundaActivityEventsResponse.getScrollId())
+                      .scroll(SCROLL_KEEP_ALIVE));
     }
   }
 
   private Integer countFinishedProcessInstancedById(final Set<Object> processInstanceIds) {
-    return databaseIntegrationTestExtension.getCountOfCompletedInstancesWithIdsIn(processInstanceIds);
+    return databaseIntegrationTestExtension.getCountOfCompletedInstancesWithIdsIn(
+        processInstanceIds);
   }
 
   private Integer getCamundaProcessInstanceCount() {
@@ -166,7 +173,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   }
 
   private Integer getFinishedProcessInstanceVariableCount() {
-    return databaseIntegrationTestExtension.getVariableInstanceCountForAllCompletedProcessInstances();
+    return databaseIntegrationTestExtension
+        .getVariableInstanceCountForAllCompletedProcessInstances();
   }
-
 }

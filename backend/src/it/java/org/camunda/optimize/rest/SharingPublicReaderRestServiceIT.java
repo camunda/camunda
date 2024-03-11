@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
@@ -34,6 +36,7 @@ import static org.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 
 
+@Tag(OPENSEARCH_PASSING)
 public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
 
   private static final String EXTERNAL_API_PATH = REST_API_PATH + EXTERNAL_SUB_PATH;

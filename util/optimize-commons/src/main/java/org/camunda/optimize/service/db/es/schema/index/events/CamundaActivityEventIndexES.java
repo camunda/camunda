@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.schema.index.events;
 
-import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.SORT_FIELD_SETTING;
 import static org.camunda.optimize.service.db.DatabaseConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.service.db.DatabaseConstants.SORT_SETTING;
+
+import java.io.IOException;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public class CamundaActivityEventIndexES extends CamundaActivityEventIndex<XContentBuilder> {
 
@@ -22,21 +21,23 @@ public class CamundaActivityEventIndexES extends CamundaActivityEventIndex<XCont
   }
 
   @Override
-  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                           ConfigurationService configurationService) throws IOException {
+  public XContentBuilder getStaticSettings(
+      XContentBuilder xContentBuilder, ConfigurationService configurationService)
+      throws IOException {
     // @formatter:off
-    final XContentBuilder newXContentBuilder = super.getStaticSettings(xContentBuilder, configurationService);
+    final XContentBuilder newXContentBuilder =
+        super.getStaticSettings(xContentBuilder, configurationService);
     return newXContentBuilder
-      .startObject(SORT_SETTING)
+        .startObject(SORT_SETTING)
         .field(SORT_FIELD_SETTING, TIMESTAMP)
         .field(SORT_ORDER_SETTING, "asc")
-      .endObject();
+        .endObject();
     // @formatter:on
   }
 
   @Override
-  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
     return contentBuilder.field(key, value);
   }
-
 }

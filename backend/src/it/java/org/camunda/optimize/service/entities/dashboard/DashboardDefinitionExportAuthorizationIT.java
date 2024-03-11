@@ -5,17 +5,19 @@
  */
 package org.camunda.optimize.service.entities.dashboard;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.util.SuperUserType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
@@ -23,6 +25,7 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
  * These are authIT for the export via UI with user authorization. For the public API, please refer to
  * PublicJsonExportRestServiceIT.
  */
+@Tag(OPENSEARCH_PASSING)
 public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest

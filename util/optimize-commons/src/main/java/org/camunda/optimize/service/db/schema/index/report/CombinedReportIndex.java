@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.schema.index.report;
 
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
+
+import java.io.IOException;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
 
@@ -34,31 +33,32 @@ public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<
   }
 
   @Override
-  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder) throws IOException {
+  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder)
+      throws IOException {
     // @formatter:off
-    return xContentBuilder.
-      startObject(DATA)
-      .field("type", "nested")
-      .startObject("properties")
-      .startObject(CONFIGURATION)
-      .field(MAPPING_ENABLED_SETTING, false)
-      .endObject()
-      .startObject(VISUALIZATION)
-      .field("type", "keyword")
-      .endObject()
-      .startObject(REPORTS)
-      .field("type", "nested")
-      .startObject("properties")
-      .startObject(REPORT_ITEM_ID)
-      .field("type", "keyword")
-      .endObject()
-      .startObject(REPORT_ITEM_COLOR)
-      .field("type", "keyword")
-      .endObject()
-      .endObject()
-      .endObject()
-      .endObject()
-      .endObject();
+    return xContentBuilder
+        .startObject(DATA)
+        .field("type", "nested")
+        .startObject("properties")
+        .startObject(CONFIGURATION)
+        .field(MAPPING_ENABLED_SETTING, false)
+        .endObject()
+        .startObject(VISUALIZATION)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(REPORTS)
+        .field("type", "nested")
+        .startObject("properties")
+        .startObject(REPORT_ITEM_ID)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(REPORT_ITEM_COLOR)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject()
+        .endObject()
+        .endObject();
     // @formatter:on
   }
 }

@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 
 import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class DecisionDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
@@ -40,18 +39,17 @@ public abstract class DecisionDefinitionIndex<TBuilder> extends AbstractDefiniti
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return super.addProperties(xContentBuilder)
-      .startObject(INPUT_VARIABLE_NAMES)
+        .startObject(INPUT_VARIABLE_NAMES)
         .field(MAPPING_ENABLED_SETTING, "false")
-      .endObject()
-      .startObject(OUTPUT_VARIABLE_NAMES)
+        .endObject()
+        .startObject(OUTPUT_VARIABLE_NAMES)
         .field(MAPPING_ENABLED_SETTING, "false")
-      .endObject()
-      .startObject(DECISION_DEFINITION_XML)
+        .endObject()
+        .startObject(DECISION_DEFINITION_XML)
         .field("type", "text")
         .field("index", true)
         .field("analyzer", "is_present_analyzer")
-      .endObject();
+        .endObject();
     // @formatter:on
   }
-
 }

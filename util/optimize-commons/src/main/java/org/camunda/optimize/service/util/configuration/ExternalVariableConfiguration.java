@@ -12,6 +12,7 @@ import lombok.Data;
 public class ExternalVariableConfiguration {
   private VariableIngestionConfiguration variableIngestion;
   private IndexRolloverConfiguration variableIndexRollover;
+
   @JsonProperty("import")
   private ExternalVariableImportConfiguration importConfiguration;
 }

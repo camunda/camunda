@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.group;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.FlowNodesGroupByValueDto;
-
 import java.util.Objects;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.FlowNodesGroupByValueDto;
 
 public class FlowNodesGroupByDto extends ProcessGroupByDto<FlowNodesGroupByValueDto> {
 
@@ -17,6 +16,7 @@ public class FlowNodesGroupByDto extends ProcessGroupByDto<FlowNodesGroupByValue
 
   @Override
   protected boolean isTypeCombinable(final ProcessGroupByDto<?> that) {
-    return Objects.equals(type, that.type) || Objects.equals(that.type, ProcessGroupByType.USER_TASKS);
+    return Objects.equals(type, that.type)
+        || Objects.equals(that.type, ProcessGroupByType.USER_TASKS);
   }
 }

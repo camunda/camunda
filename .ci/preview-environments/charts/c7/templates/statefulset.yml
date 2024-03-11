@@ -79,6 +79,8 @@ spec:
           value: "localhost"
         - name: CAMUNDA_OPTIMIZE_EMAIL_PORT
           value: "1025"
+        - name: CAMUNDA_OPTIMIZE_IMPORT_CUSTOMER_ONBOARDING
+          value: "true"
         ports:
         - containerPort: 8090
           name: optimize-http

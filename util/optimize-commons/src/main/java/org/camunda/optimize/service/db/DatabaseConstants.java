@@ -98,6 +98,7 @@ public class DatabaseConstants {
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   public static final String ZEEBE_VARIABLE_INDEX_NAME = "variable";
   public static final String ZEEBE_INCIDENT_INDEX_NAME = "incident";
+  public static final String ZEEBE_USER_TASK_INDEX_NAME = "user-task";
 
   public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
   public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME = "event-process-publish-state";
@@ -122,7 +123,8 @@ public class DatabaseConstants {
 
   public static final String TOO_MANY_BUCKETS_EXCEPTION_TYPE = "too_many_buckets_exception";
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
-  public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE = "resource_already_exists_exception";
+  public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE =
+      "resource_already_exists_exception";
 
   // used to reference Optimize as the source "engine" of imported data
   public static final String ENGINE_ALIAS_OPTIMIZE = "optimize";
@@ -137,5 +139,4 @@ public class DatabaseConstants {
 
   // Units
   public static final String GB_UNIT = "gb";
-
 }

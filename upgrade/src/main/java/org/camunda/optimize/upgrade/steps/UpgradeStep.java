@@ -21,5 +21,4 @@ public abstract class UpgradeStep {
   public abstract UpgradeStepType getType();
 
   public abstract void execute(SchemaUpgradeClient schemaUpgradeClient);
-
 }

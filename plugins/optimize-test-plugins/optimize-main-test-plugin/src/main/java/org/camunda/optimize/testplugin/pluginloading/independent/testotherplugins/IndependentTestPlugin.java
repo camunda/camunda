@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.testplugin.pluginloading.independent.testotherplugins;
 
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.testplugin.pluginloading.IndependentNewVariableDto;
-
-import java.util.Collections;
-import java.util.List;
 
 public class IndependentTestPlugin implements VariableImportAdapter {
 
@@ -24,5 +23,4 @@ public class IndependentTestPlugin implements VariableImportAdapter {
       return Collections.emptyList();
     }
   }
-
 }

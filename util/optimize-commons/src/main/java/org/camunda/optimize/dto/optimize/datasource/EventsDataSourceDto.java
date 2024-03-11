@@ -22,5 +22,4 @@ public class EventsDataSourceDto extends DataSourceDto {
   public EventsDataSourceDto(final String name) {
     super(DataImportSourceType.EVENTS, name);
   }
-
 }

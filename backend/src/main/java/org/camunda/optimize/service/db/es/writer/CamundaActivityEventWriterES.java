@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -24,14 +29,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -44,65 +41,68 @@ public class CamundaActivityEventWriterES implements CamundaActivityEventWriter 
   private final CamundaActivityEventReader camundaActivityEventReader;
 
   @Override
-  public List<ImportRequestDto> generateImportRequests(List<CamundaActivityEventDto> camundaActivityEvents) {
+  public List<ImportRequestDto> generateImportRequests(
+      List<CamundaActivityEventDto> camundaActivityEvents) {
     String importItemName = "camunda activity events";
     log.debug("Creating imports for {} [{}].", camundaActivityEvents.size(), importItemName);
 
-    final List<String> processDefinitionKeysInBatch = camundaActivityEvents
-      .stream()
-      .map(CamundaActivityEventDto::getProcessDefinitionKey)
-      .collect(Collectors.toList());
+    final List<String> processDefinitionKeysInBatch =
+        camundaActivityEvents.stream()
+            .map(CamundaActivityEventDto::getProcessDefinitionKey)
+            .collect(Collectors.toList());
 
     createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
 
     return camundaActivityEvents.stream()
-      .map(entry -> createIndexRequestForActivityEvent(entry, importItemName))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toList());
+        .map(entry -> createIndexRequestForActivityEvent(entry, importItemName))
+        .toList();
   }
 
   @Override
-  public void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds) {
-    log.debug("Deleting camunda activity events for [{}] processInstanceIds", processInstanceIds.size());
+  public void deleteByProcessInstanceIds(
+      final String definitionKey, final List<String> processInstanceIds) {
+    log.debug(
+        "Deleting camunda activity events for [{}] processInstanceIds", processInstanceIds.size());
 
-    final BoolQueryBuilder filterQuery = boolQuery()
-      .filter(termsQuery(CamundaActivityEventIndex.PROCESS_INSTANCE_ID, processInstanceIds));
+    final BoolQueryBuilder filterQuery =
+        boolQuery()
+            .filter(termsQuery(CamundaActivityEventIndex.PROCESS_INSTANCE_ID, processInstanceIds));
 
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-      esClient,
-      filterQuery,
-      String.format("camunda activity events of %d process instances", processInstanceIds.size()),
-      false,
-      // use wildcarded index name to catch all indices that exist after potential rollover
-      esClient.getIndexNameService()
-        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new CamundaActivityEventIndexES(definitionKey))
-    );
+        esClient,
+        filterQuery,
+        String.format("camunda activity events of %d process instances", processInstanceIds.size()),
+        false,
+        // use wildcarded index name to catch all indices that exist after potential rollover
+        esClient
+            .getIndexNameService()
+            .getOptimizeIndexNameWithVersionWithWildcardSuffix(
+                new CamundaActivityEventIndexES(definitionKey)));
   }
 
-  private Optional<ImportRequestDto> createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto, final String importName) {
-    try {
-      return Optional.of(ImportRequestDto.builder()
-                           .indexName(CamundaActivityEventIndex.constructIndexName(camundaActivityEventDto.getProcessDefinitionKey()))
-                           .id(IdGenerator.getNextId())
-                           .type(RequestType.INDEX)
-                           .source(objectMapper.writeValueAsString(camundaActivityEventDto))
-                           .importName(importName)
-                           .build());
-    } catch (JsonProcessingException e) {
-      log.warn("Could not serialize Camunda Activity Event: {}", camundaActivityEventDto, e);
-      return Optional.empty();
-    }
+  private ImportRequestDto createIndexRequestForActivityEvent(
+      CamundaActivityEventDto camundaActivityEventDto, final String importName) {
+    return ImportRequestDto.builder()
+        .indexName(
+            CamundaActivityEventIndex.constructIndexName(
+                camundaActivityEventDto.getProcessDefinitionKey()))
+        .id(IdGenerator.getNextId())
+        .type(RequestType.INDEX)
+        .source(camundaActivityEventDto)
+        .importName(importName)
+        .build();
   }
 
-  private void createMissingActivityIndicesForProcessDefinitions(List<String> processDefinitionKeys) {
+  private void createMissingActivityIndicesForProcessDefinitions(
+      List<String> processDefinitionKeys) {
     final Set<String> currentProcessDefinitions =
-      camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
+        camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
     processDefinitionKeys.removeAll(currentProcessDefinitions);
     processDefinitionKeys.stream()
-      .distinct()
-      .map(CamundaActivityEventIndexES::new)
-      .forEach(activityIndex -> elasticSearchSchemaManager.createIndexIfMissing(esClient, activityIndex));
+        .distinct()
+        .map(CamundaActivityEventIndexES::new)
+        .forEach(
+            activityIndex ->
+                elasticSearchSchemaManager.createIndexIfMissing(esClient, activityIndex));
   }
-
 }

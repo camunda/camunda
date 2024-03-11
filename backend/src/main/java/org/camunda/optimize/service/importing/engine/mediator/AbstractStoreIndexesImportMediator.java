@@ -5,25 +5,25 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-
 @Component
 @Slf4j
-public abstract class AbstractStoreIndexesImportMediator<T extends ImportService> implements ImportMediator {
+public abstract class AbstractStoreIndexesImportMediator<T extends ImportService>
+    implements ImportMediator {
 
   protected T importService;
   protected OffsetDateTime dateUntilJobCreationIsBlocked;
   private ConfigurationService configurationService;
 
-  protected AbstractStoreIndexesImportMediator(T importService,
-                                               ConfigurationService configurationService) {
+  protected AbstractStoreIndexesImportMediator(
+      T importService, ConfigurationService configurationService) {
     this.configurationService = configurationService;
     this.dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     this.importService = importService;
@@ -62,7 +62,7 @@ public abstract class AbstractStoreIndexesImportMediator<T extends ImportService
   }
 
   protected OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
-    return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
+    return OffsetDateTime.now()
+        .plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }
-
 }

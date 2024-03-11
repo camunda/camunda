@@ -27,7 +27,10 @@ public class CombinedReportDefinitionRequestDto extends ReportDefinitionDto<Comb
   @Override
   public EntityResponseDto toEntityDto(final RoleType roleType) {
     final EntityResponseDto entityDto = super.toEntityDto(roleType);
-    entityDto.getData().setSubEntityCounts(ImmutableMap.of(EntityType.REPORT, (long) getData().getReports().size()));
+    entityDto
+        .getData()
+        .setSubEntityCounts(
+            ImmutableMap.of(EntityType.REPORT, (long) getData().getReports().size()));
     return entityDto;
   }
 }

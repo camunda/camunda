@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator.factory;
 
+import java.util.List;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -15,19 +16,19 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class StoreIngestedImportProgressMediatorFactory extends AbstractIngestedImportMediatorFactory {
+public class StoreIngestedImportProgressMediatorFactory
+    extends AbstractIngestedImportMediatorFactory {
 
   private final ImportIndexWriter importIndexWriter;
   private final DatabaseClient databaseClient;
 
-  public StoreIngestedImportProgressMediatorFactory(final BeanFactory beanFactory,
-                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                    final ConfigurationService configurationService,
-                                                    final ImportIndexWriter importIndexWriter,
-                                                    final DatabaseClient databaseClient) {
+  public StoreIngestedImportProgressMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final ImportIndexWriter importIndexWriter,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.importIndexWriter = importIndexWriter;
     this.databaseClient = databaseClient;
@@ -35,11 +36,11 @@ public class StoreIngestedImportProgressMediatorFactory extends AbstractIngested
 
   @Override
   public List<ImportMediator> createMediators() {
-    return List.of(new StoreIngestedImportProgressMediator(
-      importIndexHandlerRegistry,
-      new StoreIndexesEngineImportService(configurationService, importIndexWriter, databaseClient),
-      configurationService
-    ));
+    return List.of(
+        new StoreIngestedImportProgressMediator(
+            importIndexHandlerRegistry,
+            new StoreIndexesEngineImportService(
+                configurationService, importIndexWriter, databaseClient),
+            configurationService));
   }
-
 }

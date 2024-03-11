@@ -26,21 +26,23 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
 
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
+
   private IdentityWithMetadataResponseDto identity;
   private RoleType role;
 
   public CollectionRoleResponseDto(CollectionRoleResponseDto oldRole) {
     if (oldRole.getIdentity().getType().equals(IdentityType.USER)) {
       UserDto oldUserDto = (UserDto) oldRole.getIdentity();
-      this.identity = new UserDto(
-        oldUserDto.getId(),
-        oldUserDto.getFirstName(),
-        oldUserDto.getLastName(),
-        oldUserDto.getEmail()
-      );
+      this.identity =
+          new UserDto(
+              oldUserDto.getId(),
+              oldUserDto.getFirstName(),
+              oldUserDto.getLastName(),
+              oldUserDto.getEmail());
     } else {
       GroupDto oldGroupDto = (GroupDto) oldRole.getIdentity();
-      this.identity = new GroupDto(oldGroupDto.getId(), oldGroupDto.getName(), oldGroupDto.getMemberCount());
+      this.identity =
+          new GroupDto(oldGroupDto.getId(), oldGroupDto.getName(), oldGroupDto.getMemberCount());
     }
 
     this.role = oldRole.role;
@@ -68,8 +70,8 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
     return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
   }
 
-  public static <T extends IdentityWithMetadataResponseDto> CollectionRoleResponseDto from(final CollectionRoleRequestDto roleDto,
-                                                                                           T identityWithMetaData) {
+  public static <T extends IdentityWithMetadataResponseDto> CollectionRoleResponseDto from(
+      final CollectionRoleRequestDto roleDto, T identityWithMetaData) {
     return new CollectionRoleResponseDto(identityWithMetaData, roleDto.getRole());
   }
 }

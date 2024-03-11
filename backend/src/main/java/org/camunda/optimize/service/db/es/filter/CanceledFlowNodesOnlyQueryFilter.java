@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createCanceledFlowNodesOnlyFilterQuery;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+
+import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodesOnlyFilterDataDto;
@@ -12,24 +18,22 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createCanceledFlowNodesOnlyFilterQuery;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-
 @Component
-public class CanceledFlowNodesOnlyQueryFilter implements QueryFilter<CanceledFlowNodesOnlyFilterDataDto> {
+public class CanceledFlowNodesOnlyQueryFilter
+    implements QueryFilter<CanceledFlowNodesOnlyFilterDataDto> {
 
   @Override
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<CanceledFlowNodesOnlyFilterDataDto> canceledFlowNodesFilterData,
-                         final FilterContext filterContext) {
+  public void addFilters(
+      final BoolQueryBuilder query,
+      final List<CanceledFlowNodesOnlyFilterDataDto> canceledFlowNodesFilterData,
+      final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(canceledFlowNodesFilterData)) {
       List<QueryBuilder> filters = query.filter();
-      filters.add(nestedQuery(FLOW_NODE_INSTANCES, createCanceledFlowNodesOnlyFilterQuery(boolQuery()), ScoreMode.None));
+      filters.add(
+          nestedQuery(
+              FLOW_NODE_INSTANCES,
+              createCanceledFlowNodesOnlyFilterQuery(boolQuery()),
+              ScoreMode.None));
     }
   }
-
 }

@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.alert;
 
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -18,27 +24,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class MixpanelNotificationServiceTest {
-  @Mock
-  private AlertDefinitionDto alertDefinitionDto;
-  @Mock
-  private AlertNotificationDto alertNotificationDto;
-  @Mock
-  private MixpanelReportingService reportingService;
-  @InjectMocks
-  private MixpanelNotificationService underTest;
+  @Mock private AlertDefinitionDto alertDefinitionDto;
+  @Mock private AlertNotificationDto alertNotificationDto;
+  @Mock private MixpanelReportingService reportingService;
+  @InjectMocks private MixpanelNotificationService underTest;
 
   @ParameterizedTest
   @MethodSource("alertTypeAndExpectedMixPanelEvent")
-  public void notifyWithCorrectEventName(final AlertNotificationType type, final EventReportingEvent eventName) {
+  public void notifyWithCorrectEventName(
+      final AlertNotificationType type, final EventReportingEvent eventName) {
     // given
     final String alertId = "id";
     when(alertDefinitionDto.getId()).thenReturn(alertId);
@@ -49,16 +45,14 @@ public class MixpanelNotificationServiceTest {
     underTest.notify(alertNotificationDto);
 
     // then
-    verify(reportingService, times(1))
-      .sendEntityEvent(eventName, alertId);
+    verify(reportingService, times(1)).sendEntityEvent(eventName, alertId);
   }
 
   private static Stream<Arguments> alertTypeAndExpectedMixPanelEvent() {
     return Stream.of(
-      arguments(AlertNotificationType.NEW, EventReportingEvent.ALERT_NEW_TRIGGERED),
-      arguments(AlertNotificationType.REMINDER, EventReportingEvent.ALERT_REMINDER_TRIGGERED),
-      arguments(AlertNotificationType.RESOLVED, EventReportingEvent.ALERT_RESOLVED_TRIGGERED),
-      arguments(null, EventReportingEvent.ALERT_NEW_TRIGGERED)
-    );
+        arguments(AlertNotificationType.NEW, EventReportingEvent.ALERT_NEW_TRIGGERED),
+        arguments(AlertNotificationType.REMINDER, EventReportingEvent.ALERT_REMINDER_TRIGGERED),
+        arguments(AlertNotificationType.RESOLVED, EventReportingEvent.ALERT_RESOLVED_TRIGGERED),
+        arguments(null, EventReportingEvent.ALERT_NEW_TRIGGERED));
   }
 }

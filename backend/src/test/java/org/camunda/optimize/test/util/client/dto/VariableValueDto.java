@@ -17,5 +17,4 @@ public class VariableValueDto {
 
   private Object value;
   private VariableType type;
-
 }

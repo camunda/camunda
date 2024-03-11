@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.view;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
@@ -15,13 +16,12 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.List;
-
 public abstract class ViewPart<Data extends SingleReportDataDto> {
 
-  public void adjustSearchRequest(final SearchRequest searchRequest,
-                                  final BoolQueryBuilder baseQuery,
-                                  final ExecutionContext<Data> context) {
+  public void adjustSearchRequest(
+      final SearchRequest searchRequest,
+      final BoolQueryBuilder baseQuery,
+      final ExecutionContext<Data> context) {
     // by default don't do anything
   }
 
@@ -29,9 +29,8 @@ public abstract class ViewPart<Data extends SingleReportDataDto> {
 
   public abstract List<AggregationBuilder> createAggregations(final ExecutionContext<Data> context);
 
-  public abstract ViewResult retrieveResult(final SearchResponse response,
-                                            final Aggregations aggs,
-                                            final ExecutionContext<Data> context);
+  public abstract ViewResult retrieveResult(
+      final SearchResponse response, final Aggregations aggs, final ExecutionContext<Data> context);
 
   public abstract void addViewAdjustmentsForCommandKeyGeneration(Data dataForCommandKey);
 

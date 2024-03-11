@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.service.importing.event;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+
 import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
@@ -15,13 +21,6 @@ import org.camunda.optimize.service.importing.event.mediator.EventTraceImportMed
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @AllArgsConstructor
 @Component
@@ -46,17 +45,18 @@ public class EventTraceImportMediatorManager implements ConfigurationReloadable 
 
   private void refreshMediators() {
     mediators.computeIfAbsent(
-      EXTERNAL_EVENTS_INDEX_SUFFIX,
-      key -> eventTraceImportMediatorFactory.createExternalEventTraceImportMediator()
-    );
+        EXTERNAL_EVENTS_INDEX_SUFFIX,
+        key -> eventTraceImportMediatorFactory.createExternalEventTraceImportMediator());
 
     final Set<String> definitionKeysOfActivityEvents =
-      camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
-    definitionKeysOfActivityEvents
-      .stream()
-      .filter(definitionKey -> !mediators.containsKey(definitionKey))
-      .forEach(definitionKey -> mediators.put(
-        definitionKey, eventTraceImportMediatorFactory.createCamundaEventTraceImportMediator(definitionKey)
-      ));
+        camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
+    definitionKeysOfActivityEvents.stream()
+        .filter(definitionKey -> !mediators.containsKey(definitionKey))
+        .forEach(
+            definitionKey ->
+                mediators.put(
+                    definitionKey,
+                    eventTraceImportMediatorFactory.createCamundaEventTraceImportMediator(
+                        definitionKey)));
   }
 }

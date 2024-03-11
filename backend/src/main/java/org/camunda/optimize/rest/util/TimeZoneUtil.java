@@ -5,9 +5,7 @@
  */
 package org.camunda.optimize.rest.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import java.time.OffsetDateTime;
@@ -15,8 +13,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -30,26 +29,23 @@ public class TimeZoneUtil {
       return ZoneId.of(headerString);
     } else if (headerString != null) {
       log.warn(
-        "The provided timezone [{}] was not recognized. Falling back to server timezone [{}] instead.",
-        headerString,
-        ZoneId.systemDefault().getId()
-      );
+          "The provided timezone [{}] was not recognized. Falling back to server timezone [{}] instead.",
+          headerString,
+          ZoneId.systemDefault().getId());
     }
     // uses server timezone if unknown
     return ZoneId.systemDefault();
   }
 
-  public static String formatToCorrectTimezone(final String dateAsString,
-                                               final ZoneId timezone,
-                                               final DateTimeFormatter dateTimeFormatter) {
+  public static String formatToCorrectTimezone(
+      final String dateAsString, final ZoneId timezone, final DateTimeFormatter dateTimeFormatter) {
     final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
     OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
     return dateTimeFormatter.format(dateWithAdjustedTimezone);
   }
 
-  public static String formatToCorrectTimezone(final ZonedDateTime date,
-                                               final ZoneId timezone,
-                                               final DateTimeFormatter dateTimeFormatter) {
+  public static String formatToCorrectTimezone(
+      final ZonedDateTime date, final ZoneId timezone, final DateTimeFormatter dateTimeFormatter) {
     return date.withZoneSameInstant(timezone).format(dateTimeFormatter);
   }
 }

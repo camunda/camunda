@@ -18,14 +18,19 @@ import lombok.NoArgsConstructor;
 public class MixpanelConfiguration {
   @JsonProperty("apiHost")
   private String apiHost;
+
   @JsonProperty("importPath")
   private String importPath;
+
   @JsonProperty("token")
   private String token;
+
   @JsonProperty("projectId")
   private String projectId;
+
   @JsonProperty("properties")
   private TrackingProperties properties;
+
   @JsonProperty("serviceAccount")
   private ServiceAccount serviceAccount;
 
@@ -40,8 +45,10 @@ public class MixpanelConfiguration {
   public static class TrackingProperties {
     @JsonProperty("stage")
     private String stage;
+
     @JsonProperty("organizationId")
     private String organizationId;
+
     @JsonProperty("clusterId")
     private String clusterId;
   }
@@ -52,6 +59,7 @@ public class MixpanelConfiguration {
   public static class ServiceAccount {
     @JsonProperty("username")
     private String username;
+
     @JsonProperty("secret")
     private String secret;
   }

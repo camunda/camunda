@@ -5,17 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.schema.index;
 
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.index.DashboardShareIndex;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
 
 public class DashboardShareIndexES extends DashboardShareIndex<XContentBuilder> {
 
   @Override
-  public XContentBuilder addStaticSetting(final String key,
-                                          final int value,
-                                          final XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
     return contentBuilder.field(key, value);
   }
 }

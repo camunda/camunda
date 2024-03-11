@@ -6,11 +6,10 @@
 package org.camunda.optimize.dto.optimize.rest.pagination;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Collection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Collection;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,5 +33,4 @@ public class PaginatedDataExportDto {
       this.numberOfRecordsInResponse = 1;
     }
   }
-
 }

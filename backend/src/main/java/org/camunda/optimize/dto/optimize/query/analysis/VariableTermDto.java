@@ -20,4 +20,3 @@ public class VariableTermDto {
   private Double nonOutlierRatio;
   private Double outlierToAllInstancesRatio;
 }
-

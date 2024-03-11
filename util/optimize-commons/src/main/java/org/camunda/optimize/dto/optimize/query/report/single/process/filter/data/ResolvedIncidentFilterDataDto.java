@@ -7,5 +7,4 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.dat
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
-public class ResolvedIncidentFilterDataDto implements FilterDataDto {
-}
+public class ResolvedIncidentFilterDataDto implements FilterDataDto {}

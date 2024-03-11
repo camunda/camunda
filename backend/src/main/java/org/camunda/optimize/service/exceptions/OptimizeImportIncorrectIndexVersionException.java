@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 
 public class OptimizeImportIncorrectIndexVersionException extends OptimizeValidationException {
 
   private final Set<ImportIndexMismatchDto> mismatchingIndices;
 
-  public OptimizeImportIncorrectIndexVersionException(final String message,
-                                                      final Set<ImportIndexMismatchDto> mismatchingIndices) {
+  public OptimizeImportIncorrectIndexVersionException(
+      final String message, final Set<ImportIndexMismatchDto> mismatchingIndices) {
     super(message);
     this.mismatchingIndices = mismatchingIndices;
   }

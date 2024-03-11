@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.DefinitionType;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 
 public interface DefinitionInstanceReader {
 
   Set<String> getAllExistingDefinitionKeys(final DefinitionType type);
 
-  Set<String> getAllExistingDefinitionKeys(final DefinitionType type,
-                                                  final Set<String> instanceIds);
+  Set<String> getAllExistingDefinitionKeys(
+      final DefinitionType type, final Set<String> instanceIds);
 }

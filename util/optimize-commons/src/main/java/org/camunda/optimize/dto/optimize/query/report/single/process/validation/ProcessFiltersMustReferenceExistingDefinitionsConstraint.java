@@ -14,11 +14,11 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy= ProcessFiltersMustReferenceExistingDefinitionsConstraintValidator.class)
+@Constraint(validatedBy = ProcessFiltersMustReferenceExistingDefinitionsConstraintValidator.class)
 public @interface ProcessFiltersMustReferenceExistingDefinitionsConstraint {
   String message() default "invalid.filter.appliedTo.value";
 
-  Class<?>[] groups() default { };
+  Class<?>[] groups() default {};
 
-  Class<? extends Payload>[] payload() default { };
+  Class<? extends Payload>[] payload() default {};
 }

@@ -5,35 +5,40 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.validation;
 
-import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
 public class ProcessFiltersMustReferenceExistingDefinitionsConstraintValidator
-  implements ConstraintValidator<ProcessFiltersMustReferenceExistingDefinitionsConstraint, ProcessReportDataDto> {
+    implements ConstraintValidator<
+        ProcessFiltersMustReferenceExistingDefinitionsConstraint, ProcessReportDataDto> {
 
   @Override
-  public void initialize(final ProcessFiltersMustReferenceExistingDefinitionsConstraint constraintAnnotation) {
+  public void initialize(
+      final ProcessFiltersMustReferenceExistingDefinitionsConstraint constraintAnnotation) {
     ConstraintValidator.super.initialize(constraintAnnotation);
   }
 
   @Override
-  public boolean isValid(final ProcessReportDataDto value, final ConstraintValidatorContext context) {
-    final Set<String> validIdentifiers = value.getDefinitions()
-      .stream()
-      .map(ReportDataDefinitionDto::getIdentifier)
-      .collect(Collectors.toSet());
+  public boolean isValid(
+      final ProcessReportDataDto value, final ConstraintValidatorContext context) {
+    final Set<String> validIdentifiers =
+        value.getDefinitions().stream()
+            .map(ReportDataDefinitionDto::getIdentifier)
+            .collect(Collectors.toSet());
     return value.getFilter().stream()
-      .map(ProcessFilterDto::getAppliedTo)
-      .flatMap(Collection::stream)
-      .allMatch(appliedTo -> APPLIED_TO_ALL_DEFINITIONS.equals(appliedTo) || validIdentifiers.contains(appliedTo));
+        .map(ProcessFilterDto::getAppliedTo)
+        .flatMap(Collection::stream)
+        .allMatch(
+            appliedTo ->
+                APPLIED_TO_ALL_DEFINITIONS.equals(appliedTo)
+                    || validIdentifiers.contains(appliedTo));
   }
 }

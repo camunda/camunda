@@ -5,16 +5,14 @@
  */
 package org.camunda.optimize.service.db.writer.activity;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-
-import java.util.List;
 
 public interface AbstractActivityInstanceWriter {
 
   List<ImportRequestDto> generateActivityInstanceImports(List<FlowNodeEventDto> activityInstances);
 
   FlowNodeInstanceDto fromActivityInstance(final FlowNodeEventDto activityInstance);
-
 }

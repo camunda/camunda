@@ -23,15 +23,15 @@ public class PaginationScrollableDto extends PaginationDto {
     PaginationScrollableDto paginationObject = new PaginationScrollableDto();
     paginationObject.limit = pagination.getLimit();
     paginationObject.offset = pagination.getOffset();
-    if(pagination instanceof PaginationScrollableDto)
-    {
-      paginationObject.scrollId = ((PaginationScrollableDto)pagination).getScrollId();
-      paginationObject.scrollTimeout = ((PaginationScrollableDto)pagination).getScrollTimeout();
+    if (pagination instanceof PaginationScrollableDto) {
+      paginationObject.scrollId = ((PaginationScrollableDto) pagination).getScrollId();
+      paginationObject.scrollTimeout = ((PaginationScrollableDto) pagination).getScrollTimeout();
     }
     return paginationObject;
   }
 
-  public static PaginationDto fromPaginationRequest(final PaginationScrollableRequestDto paginationRequestDto) {
+  public static PaginationDto fromPaginationRequest(
+      final PaginationScrollableRequestDto paginationRequestDto) {
     final PaginationScrollableDto paginationDto = new PaginationScrollableDto();
     paginationDto.setLimit(paginationRequestDto.getLimit());
     paginationDto.setOffset(null);
@@ -43,8 +43,8 @@ public class PaginationScrollableDto extends PaginationDto {
   @JsonIgnore
   @Override
   public boolean isValid() {
-    return limit != null &&
-      ((offset != null && scrollTimeout == null && scrollId == null)
-      || (offset == null && scrollTimeout != null));
+    return limit != null
+        && ((offset != null && scrollTimeout == null && scrollId == null)
+            || (offset == null && scrollTimeout != null));
   }
 }

@@ -15,8 +15,8 @@ public class TooManyBucketsException extends ReportEvaluationException {
     return ERROR_CODE;
   }
 
-  public TooManyBucketsException(AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {
+  public TooManyBucketsException(
+      AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {
     super(reportDefinition, e);
   }
-
 }

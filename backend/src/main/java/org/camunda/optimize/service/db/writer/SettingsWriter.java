@@ -10,5 +10,4 @@ import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 public interface SettingsWriter {
 
   void upsertSettings(final SettingsResponseDto settingsDto);
-
 }

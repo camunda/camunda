@@ -17,5 +17,4 @@ import lombok.NoArgsConstructor;
 public class ExternalVariableCleanupConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
-
 }

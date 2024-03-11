@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.OpenIncidentFetcher;
@@ -16,21 +18,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class OpenIncidentEngineImportMediator
-  extends TimestampBasedImportMediator<OpenIncidentImportIndexHandler, HistoricIncidentEngineDto> {
+    extends TimestampBasedImportMediator<
+        OpenIncidentImportIndexHandler, HistoricIncidentEngineDto> {
 
   private final OpenIncidentFetcher engineEntityFetcher;
 
-  public OpenIncidentEngineImportMediator(final OpenIncidentImportIndexHandler importIndexHandler,
-                                          final OpenIncidentFetcher engineEntityFetcher,
-                                          final OpenIncidentImportService importService,
-                                          final ConfigurationService configurationService,
-                                          final BackoffCalculator idleBackoffCalculator) {
+  public OpenIncidentEngineImportMediator(
+      final OpenIncidentImportIndexHandler importIndexHandler,
+      final OpenIncidentFetcher engineEntityFetcher,
+      final OpenIncidentImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
@@ -47,7 +48,8 @@ public class OpenIncidentEngineImportMediator
 
   @Override
   protected List<HistoricIncidentEngineDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchOpenIncidentsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    return engineEntityFetcher.fetchOpenIncidentsForTimestamp(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override

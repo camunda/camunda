@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.dto.zeebe.definition;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
-
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 @EqualsAndHashCode
 @Data
@@ -35,8 +35,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
     return false;
   }
 
-  public String getTenantId(){
+  public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }
-
 }

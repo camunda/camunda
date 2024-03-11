@@ -7,9 +7,11 @@ package org.camunda.optimize.service.db.es.report;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class MinMaxStatDto {
 
   private double min;
@@ -21,12 +23,12 @@ public class MinMaxStatDto {
   public MinMaxStatDto(final double min, final double max) {
     this.min = min;
     this.max = max;
-    this.minAsString = Double.toString(min);
-    this.maxAsString = Double.toString(max);
+    minAsString = Double.toString(min);
+    maxAsString = Double.toString(max);
   }
 
-  public MinMaxStatDto(final double min, final double max,
-                       final String minAsString, final String maxAsString) {
+  public MinMaxStatDto(
+      final double min, final double max, final String minAsString, final String maxAsString) {
     this.min = min;
     this.max = max;
     this.minAsString = minAsString;
@@ -46,15 +48,11 @@ public class MinMaxStatDto {
   }
 
   public boolean isValidRange() {
-    return isMinValid()
-      && isMaxValid()
-      && min != max;
+    return isMinValid() && isMaxValid() && min != max;
   }
 
   public boolean isEmpty() {
     // occurs when there is no data to be evaluated for min and max fields
-    return !isMinValid()
-      && !isMaxValid();
+    return !isMinValid() && !isMaxValid();
   }
-
 }

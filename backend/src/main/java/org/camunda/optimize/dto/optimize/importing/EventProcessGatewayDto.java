@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @Builder
@@ -18,5 +17,4 @@ public class EventProcessGatewayDto {
   private String type;
   private List<String> previousNodeIds;
   private List<String> nextNodeIds;
-
 }

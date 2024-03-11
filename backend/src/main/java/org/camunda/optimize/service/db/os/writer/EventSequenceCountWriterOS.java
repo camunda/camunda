@@ -6,15 +6,14 @@
 package org.camunda.optimize.service.db.os.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
-import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Slf4j
@@ -26,8 +25,8 @@ public class EventSequenceCountWriterOS implements EventSequenceCountWriter {
   private final ObjectMapper objectMapper;
 
   @Override
-  public void updateEventSequenceCountsWithAdjustments(final List<EventSequenceCountDto> eventSequenceCountDtos) {
-    //todo will be handled in the OPT-7376
+  public void updateEventSequenceCountsWithAdjustments(
+      final List<EventSequenceCountDto> eventSequenceCountDtos) {
+    log.error("Functionality not implemented for OpenSearch");
   }
-
 }

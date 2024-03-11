@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.report.command.aggregations;
 
+import static org.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
+
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.Avg;
 import org.elasticsearch.search.aggregations.metrics.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
-
-import static org.camunda.optimize.service.db.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
 
 public class AvgAggregation extends AggregationStrategy<AvgAggregationBuilder> {
 
@@ -26,7 +26,8 @@ public class AvgAggregation extends AggregationStrategy<AvgAggregationBuilder> {
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<AvgAggregationBuilder> createAggregationBuilderForAggregation(final String customIdentifier) {
+  public ValuesSourceAggregationBuilder<AvgAggregationBuilder>
+      createAggregationBuilderForAggregation(final String customIdentifier) {
     return avg(createAggregationName(customIdentifier, AVG_AGGREGATION));
   }
 
@@ -34,5 +35,4 @@ public class AvgAggregation extends AggregationStrategy<AvgAggregationBuilder> {
   public AggregationDto getAggregationType() {
     return new AggregationDto(AggregationType.AVERAGE);
   }
-
 }

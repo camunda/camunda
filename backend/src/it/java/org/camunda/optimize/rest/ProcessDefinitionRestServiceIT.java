@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -13,23 +14,25 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
 
   private static final String KEY = "testKey";
@@ -41,6 +44,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     return Stream.of(EVENT_BASED, NOT_EVENT_BASED);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitions(final String processDefinitionType) {
@@ -75,6 +79,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       });
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getProcessDefinitionsReturnOnlyThoseAuthorizedToSeeAndAllEventProcessDefinitions() {
     // given
@@ -117,6 +122,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest(name = "Get {0} process definitions with XML.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionsWithXml(final String processDefinitionType) {
@@ -139,6 +145,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(definitions.get(0).getBpmn20Xml()).isEqualTo(processDefinitionOptimizeDto.getBpmn20Xml());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest(name = "Get XML of {0} process definition.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionXml(final String processDefinitionType) {
@@ -152,6 +159,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(actualXml).isEqualTo(expectedDto.getBpmn20Xml());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest(name = "Get the latest XML of {0} process definition for ALL version selection.")
   @MethodSource("processDefinitionTypes")
   public void getAllProcessDefinitionXml(final String processDefinitionType) {
@@ -166,6 +174,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(actualXml).isEqualTo(expectedDto2.getBpmn20Xml());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest(name = "Get the latest XML of {0} process definition for LATEST version selection.")
   @MethodSource("processDefinitionTypes")
   public void getLatestProcessDefinitionXml(final String processDefinitionType) {
@@ -220,6 +229,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(actualXml).isEqualTo(secondTenantDefinition.getBpmn20Xml());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest(name = "Get XML of {0} process definition for null tenant.")
   @MethodSource("processDefinitionTypes")
   public void getSharedProcessDefinitionXmlByTenantWithNoSpecificDefinition(final String processDefinitionType) {

@@ -126,7 +126,7 @@ it('should show an error when loading more than the first 10.000 instances', asy
   runAllEffects();
 
   await node.find('Table').prop('fetchData')({pageIndex: 11, pageSize: 1000});
-  expect(node.find('Table').prop('error')).toBeDefined();
+  expect(node.find('Table').prop('errorInPage')).toBeDefined();
   expect(spy).not.toHaveBeenCalled();
 });
 

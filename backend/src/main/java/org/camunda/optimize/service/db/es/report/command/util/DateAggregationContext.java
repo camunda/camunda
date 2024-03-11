@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.command.util;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Optional;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -20,35 +25,27 @@ import org.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.db.es.report.MinMaxStatDto;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Optional;
-
 @Builder
 @Getter
 public class DateAggregationContext {
 
-  @NonNull
-  @Setter
-  private AggregateByDateUnit aggregateByDateUnit;
-  @NonNull
-  private final String dateField;
-  private final String runningDateReportEndDateField; // used for range filter aggregation in running date reports only
+  @NonNull @Setter private AggregateByDateUnit aggregateByDateUnit;
+  @NonNull private final String dateField;
+  private final String
+      runningDateReportEndDateField; // used for range filter aggregation in running date reports
+  // only
 
-  @NonNull
-  private final MinMaxStatDto minMaxStats;
-  // extendBoundsToMinMaxStats true is used for distrBy date reports which require extended bounds even when no date
-  // filters are applied. If date filters are applied, extendedBounds may be overwritten by the filter bounds.
-  // This serves a similar purpose as <allDistributedByKeys> in the ExecutionContext for non-histogram aggregations.
-  @Builder.Default
-  private final boolean extendBoundsToMinMaxStats = false;
+  @NonNull private final MinMaxStatDto minMaxStats;
+  // extendBoundsToMinMaxStats true is used for distrBy date reports which require extended bounds
+  // even when no date
+  // filters are applied. If date filters are applied, extendedBounds may be overwritten by the
+  // filter bounds.
+  // This serves a similar purpose as <allDistributedByKeys> in the ExecutionContext for
+  // non-histogram aggregations.
+  @Builder.Default private final boolean extendBoundsToMinMaxStats = false;
 
-  @NonNull
-  private final ZoneId timezone;
-  @NonNull
-  private final List<AggregationBuilder> subAggregations;
+  @NonNull private final ZoneId timezone;
+  @NonNull private final List<AggregationBuilder> subAggregations;
 
   private final String dateAggregationName;
 
@@ -59,15 +56,16 @@ public class DateAggregationContext {
   private final DistributedByType distributedByType;
   private final List<ProcessFilterDto<?>> processFilters;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
-  @NonNull
-  private final FilterContext filterContext;
+  @NonNull private final FilterContext filterContext;
 
   public ZonedDateTime getEarliestDate() {
-    return ZonedDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), timezone);
+    return ZonedDateTime.ofInstant(
+        Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), timezone);
   }
 
   public ZonedDateTime getLatestDate() {
-    return ZonedDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMax())), timezone);
+    return ZonedDateTime.ofInstant(
+        Instant.ofEpochMilli(Math.round(minMaxStats.getMax())), timezone);
   }
 
   public Optional<String> getDateAggregationName() {
@@ -81,5 +79,4 @@ public class DateAggregationContext {
       return DistributedByType.START_DATE.equals(distributedByType);
     }
   }
-
 }

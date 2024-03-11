@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.tenant;
 
-import org.camunda.optimize.dto.optimize.TenantDto;
-
 import java.util.List;
+import org.camunda.optimize.dto.optimize.TenantDto;
 
 public interface TenantService {
 
@@ -20,5 +19,4 @@ public interface TenantService {
   boolean isMultiTenantEnvironment();
 
   List<TenantDto> getTenantsForUser(final String userId);
-
 }

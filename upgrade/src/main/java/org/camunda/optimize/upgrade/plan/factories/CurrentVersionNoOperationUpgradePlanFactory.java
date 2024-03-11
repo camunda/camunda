@@ -15,9 +15,9 @@ public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanF
 
   public UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion(PreviousVersion.PREVIOUS_VERSION_MAJOR_MINOR)
-      .toVersion(Version.VERSION)
-      .build();
+        .fromVersion(PreviousVersion.PREVIOUS_VERSION_MAJOR_MINOR)
+        .toVersion(Version.VERSION)
+        .build();
   }
 
   @Override

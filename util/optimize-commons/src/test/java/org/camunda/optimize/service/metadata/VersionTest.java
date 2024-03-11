@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.metadata;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 public class VersionTest {
 
@@ -25,5 +25,4 @@ public class VersionTest {
   public void testStripAlreadyCleanVersion() {
     assertThat(Version.stripToPlainVersion("2.2.0")).isEqualTo("2.2.0");
   }
-
 }

@@ -5,17 +5,17 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.util.List;
 import org.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class DecisionOutputImportAdapterProvider extends PluginProvider<DecisionOutputImportAdapter> {
+public class DecisionOutputImportAdapterProvider
+    extends PluginProvider<DecisionOutputImportAdapter> {
 
-  public DecisionOutputImportAdapterProvider(final ConfigurationService configurationService,
-                                             final PluginJarFileLoader pluginJarLoader) {
+  public DecisionOutputImportAdapterProvider(
+      final ConfigurationService configurationService, final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 

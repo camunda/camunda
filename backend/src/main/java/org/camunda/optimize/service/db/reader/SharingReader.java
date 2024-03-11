@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.REPORT_SHARE_INDEX_NAME;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.REPORT_SHARE_INDEX_NAME;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 
 public interface SharingReader {
 
@@ -38,5 +37,4 @@ public interface SharingReader {
   default long getReportShareCount() {
     return getShareCount(REPORT_SHARE_INDEX_NAME);
   }
-
 }

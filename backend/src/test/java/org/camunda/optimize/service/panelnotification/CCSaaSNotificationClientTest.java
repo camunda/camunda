@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.panelnotification;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.cloud.TokenResponseDto;
@@ -18,26 +23,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class CCSaaSNotificationClientTest {
-  @Mock
-  private CCSaaSM2MTokenProvider m2mTokenProvider;
+  @Mock private CCSaaSM2MTokenProvider m2mTokenProvider;
   private CCSaaSNotificationClient underTest;
 
   @BeforeEach
   public void setup() {
-    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+    final ConfigurationService configurationService =
+        ConfigurationServiceBuilder.createDefaultConfiguration();
     configurationService.getPanelNotificationConfiguration().setM2mTokenAudience("someAudience");
-    underTest = new CCSaaSNotificationClient(
-      new ObjectMapper(),
-      configurationService,
-      m2mTokenProvider
-    );
+    underTest =
+        new CCSaaSNotificationClient(new ObjectMapper(), configurationService, m2mTokenProvider);
   }
 
   @Test
@@ -52,7 +49,8 @@ public class CCSaaSNotificationClientTest {
     // when
     underTest.refreshAccessTokenIfRequired();
 
-    // then the first time the token is refreshed because the client was initialised with an already expired timestamp
+    // then the first time the token is refreshed because the client was initialised with an already
+    // expired timestamp
     verify(m2mTokenProvider, times(1)).retrieveM2MToken(any());
 
     // when refreshing for the second time after a fast expiring token was returned
@@ -74,7 +72,8 @@ public class CCSaaSNotificationClientTest {
     // when
     underTest.refreshAccessTokenIfRequired();
 
-    // then the first time the token is refreshed because the client was initialised with an already expired timestamp
+    // then the first time the token is refreshed because the client was initialised with an already
+    // expired timestamp
     verify(m2mTokenProvider, times(1)).retrieveM2MToken(any());
 
     // when refreshing for the second time after a token was returned that hasn't expired yet

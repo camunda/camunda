@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
-import org.camunda.optimize.service.status.StatusCheckingService;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
+import org.camunda.optimize.service.status.StatusCheckingService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(StatusRestService.STATUS_PATH)
@@ -24,13 +23,12 @@ public class StatusRestService {
   private final StatusCheckingService statusCheckingService;
 
   /**
-   * States if optimize is still importing
-   * also includes connection status to Elasticsearch and the Engine
+   * States if optimize is still importing also includes connection status to Elasticsearch and the
+   * Engine
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public StatusResponseDto getImportStatus() {
     return statusCheckingService.getStatusResponse();
   }
-
 }

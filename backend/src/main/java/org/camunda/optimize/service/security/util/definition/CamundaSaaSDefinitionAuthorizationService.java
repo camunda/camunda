@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.security.util.definition;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -15,45 +20,40 @@ import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT;
-
 @RequiredArgsConstructor
 @Conditional(CCSaaSCondition.class)
 @Component
-public class CamundaSaaSDefinitionAuthorizationService implements DataSourceDefinitionAuthorizationService {
+public class CamundaSaaSDefinitionAuthorizationService
+    implements DataSourceDefinitionAuthorizationService {
 
   @Override
-  public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
-                                                            final SimpleDefinitionDto definitionDto,
-                                                            final List<String> tenantIds,
-                                                            final Set<String> engines) {
+  public List<TenantDto> resolveAuthorizedTenantsForProcess(
+      final String userId,
+      final SimpleDefinitionDto definitionDto,
+      final List<String> tenantIds,
+      final Set<String> engines) {
     return Collections.singletonList(ZEEBE_DEFAULT_TENANT);
   }
 
   @Override
-  public boolean isAuthorizedToAccessDefinition(final String identityId,
-                                                final IdentityType identityType,
-                                                final String definitionKey,
-                                                final DefinitionType definitionType,
-                                                final List<String> tenantIds) {
+  public boolean isAuthorizedToAccessDefinition(
+      final String identityId,
+      final IdentityType identityType,
+      final String definitionKey,
+      final DefinitionType definitionType,
+      final List<String> tenantIds) {
     return true;
   }
 
   @Override
-  public boolean isAuthorizedToAccessDefinition(final String userId,
-                                                final String tenantId,
-                                                final SimpleDefinitionDto definition) {
+  public boolean isAuthorizedToAccessDefinition(
+      final String userId, final String tenantId, final SimpleDefinitionDto definition) {
     return true;
   }
 
   @Override
-  public <T extends DefinitionOptimizeResponseDto> boolean isAuthorizedToAccessDefinition(final String userId,
-                                                                                          final T definition) {
+  public <T extends DefinitionOptimizeResponseDto> boolean isAuthorizedToAccessDefinition(
+      final String userId, final T definition) {
     return true;
   }
-
 }

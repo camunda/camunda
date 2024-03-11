@@ -22,5 +22,4 @@ public class RollingDateFilterStartDto {
 
   protected Long value;
   protected DateUnit unit;
-
 }

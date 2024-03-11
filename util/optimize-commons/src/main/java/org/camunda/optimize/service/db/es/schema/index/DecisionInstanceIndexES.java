@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.schema.index;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
+
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
 public class DecisionInstanceIndexES extends DecisionInstanceIndex<XContentBuilder> {
 
@@ -20,16 +19,18 @@ public class DecisionInstanceIndexES extends DecisionInstanceIndex<XContentBuild
   }
 
   @Override
-  public XContentBuilder addStaticSetting(final String key,
-                                          final int value,
-                                          final XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
     return contentBuilder.field(key, value);
   }
 
   @Override
-  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                           ConfigurationService configurationService) throws IOException {
-    return addStaticSetting(NUMBER_OF_SHARDS_SETTING, configurationService.getElasticSearchConfiguration().getNumberOfShards(), xContentBuilder);
+  public XContentBuilder getStaticSettings(
+      XContentBuilder xContentBuilder, ConfigurationService configurationService)
+      throws IOException {
+    return addStaticSetting(
+        NUMBER_OF_SHARDS_SETTING,
+        configurationService.getElasticSearchConfiguration().getNumberOfShards(),
+        xContentBuilder);
   }
-
 }

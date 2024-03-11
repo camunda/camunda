@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.security.AuthCookieService;
-
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.security.AuthCookieService;
 
 @Provider
 @Slf4j
@@ -25,8 +24,9 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
   private final AuthCookieService cookieService;
   private static final String NOT_AUTHORIZED_ERROR_CODE = "notAuthorizedError";
 
-  public NotAuthorizedExceptionMapper(@Context final LocalizationService localizationService,
-                                      @Context final AuthCookieService cookieService) {
+  public NotAuthorizedExceptionMapper(
+      @Context final LocalizationService localizationService,
+      @Context final AuthCookieService cookieService) {
     this.localizationService = localizationService;
     this.cookieService = cookieService;
   }
@@ -35,18 +35,18 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
   public Response toResponse(NotAuthorizedException notAuthorizedException) {
     log.debug("Mapping NotAuthorizedException");
 
-    return Response
-      .status(Response.Status.UNAUTHORIZED)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .cookie(cookieService.createDeleteOptimizeAuthNewCookie(true))
-      .entity(getErrorResponseDto(notAuthorizedException)).build();
+    return Response.status(Response.Status.UNAUTHORIZED)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .cookie(cookieService.createDeleteOptimizeAuthNewCookie(true))
+        .entity(getErrorResponseDto(notAuthorizedException))
+        .build();
   }
 
   private ErrorResponseDto getErrorResponseDto(NotAuthorizedException exception) {
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(NOT_AUTHORIZED_ERROR_CODE);
+    String errorMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(NOT_AUTHORIZED_ERROR_CODE);
     String detailedErrorMessage = exception.getMessage();
 
     return new ErrorResponseDto(NOT_AUTHORIZED_ERROR_CODE, errorMessage, detailedErrorMessage);
   }
-
 }

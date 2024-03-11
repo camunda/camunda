@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.db.writer;
 
 import jakarta.ws.rs.NotFoundException;
+import java.util.List;
+import java.util.Optional;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -17,14 +19,12 @@ import org.camunda.optimize.service.util.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Optional;
-
 public interface CollectionWriter {
 
   String DEFAULT_COLLECTION_NAME = "New Collection";
 
-  String UPDATE_ENTITY_SCRIPT_CODE = """
+  String UPDATE_ENTITY_SCRIPT_CODE =
+      """
     Map newScopes = ctx._source.data.scope.stream()
       .collect(Collectors.toMap(s -> s.id, Function.identity()));
     params.scopeEntriesToUpdate
@@ -42,14 +42,16 @@ public interface CollectionWriter {
     ctx._source.lastModified = params.lastModified;
     """;
 
-  String REMOVE_SCOPE_ENTRY_FROM_COLLECTION_SCRIPT_CODE = """
+  String REMOVE_SCOPE_ENTRY_FROM_COLLECTION_SCRIPT_CODE =
+      """
     def scopes = ctx._source.data.scope;
     if(scopes != null) {
        scopes.removeIf(scope -> scope.id.equals(params.scopeEntryIdToRemove));
     }
     """;
 
-  String REMOVE_SCOPE_ENTRY_SCRIPT_CODE = """
+  String REMOVE_SCOPE_ENTRY_SCRIPT_CODE =
+      """
     boolean removed = ctx._source.data.scope.removeIf(scope -> scope.id.equals(params.id));
     if (removed) {
       ctx._source.lastModifier = params.lastModifier;
@@ -59,7 +61,8 @@ public interface CollectionWriter {
     }
     """;
 
-  String REMOVE_SCOPE_ENTRIES_SCRIPT_CODE = """
+  String REMOVE_SCOPE_ENTRIES_SCRIPT_CODE =
+      """
     for (id in params.ids) {
       ctx._source.data.scope.removeIf(scope -> scope.id.equals(id));
     }
@@ -67,7 +70,8 @@ public interface CollectionWriter {
     ctx._source.lastModified = params.lastModified;
     """;
 
-  String UPDATE_SCOPE_ENTITY_SCRIPT_CODE = """
+  String UPDATE_SCOPE_ENTITY_SCRIPT_CODE =
+      """
     def optionalEntry = ctx._source.data.scope.stream()
       .filter(s -> s.id.equals(params.entryId))
       .findFirst();
@@ -81,7 +85,8 @@ public interface CollectionWriter {
     }
     """;
 
-  String ADD_ROLE_TO_COLLECTION_SCRIPT_CODE = """
+  String ADD_ROLE_TO_COLLECTION_SCRIPT_CODE =
+      """
     def newRoles = new ArrayList();
     for (roleToAdd in params.rolesToAdd) {
         boolean exists = ctx._source.data.roles.stream()
@@ -99,7 +104,8 @@ public interface CollectionWriter {
     }
     """;
 
-  String UPDATE_ROLE_IN_COLLECTION_SCRIPT_CODE = """
+  String UPDATE_ROLE_IN_COLLECTION_SCRIPT_CODE =
+      """
     def optionalExistingEntry = ctx._source.data.roles.stream()
     .filter(dto -> dto.id.equals(params.roleEntryId))
     .findFirst();
@@ -123,7 +129,8 @@ public interface CollectionWriter {
     }
     """;
 
-  String REMOVE_ROLE_FROM_COLLECTION_SCRIPT_CODE = """
+  String REMOVE_ROLE_FROM_COLLECTION_SCRIPT_CODE =
+      """
     def optionalExistingEntry = ctx._source.data.roles.stream()
     .filter(dto -> dto.id.equals(params.roleEntryId))
     .findFirst();
@@ -141,7 +148,8 @@ public interface CollectionWriter {
     }
     """;
 
-  String REMOVE_ROLE_FROM_COLLECTION_UNLESS_IS_LAST_MANAGER = """
+  String REMOVE_ROLE_FROM_COLLECTION_UNLESS_IS_LAST_MANAGER =
+      """
     def optionalExistingEntry = ctx._source.data.roles.stream()
     .filter(dto -> dto.id.equals(params.roleEntryId))
     .findFirst();
@@ -171,15 +179,18 @@ public interface CollectionWriter {
 
   Logger log = LoggerFactory.getLogger(CollectionWriter.class);
 
-  default IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
-                                                       @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
-    return createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto, IdGenerator.getNextId(), false);
+  default IdResponseDto createNewCollectionAndReturnId(
+      @NonNull String userId,
+      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
+    return createNewCollectionAndReturnId(
+        userId, partialCollectionDefinitionDto, IdGenerator.getNextId(), false);
   }
 
-  default IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
-                                                       @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
-                                                       @NonNull String id,
-                                                       boolean automaticallyCreated) {
+  default IdResponseDto createNewCollectionAndReturnId(
+      @NonNull String userId,
+      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
+      @NonNull String id,
+      boolean automaticallyCreated) {
     log.debug("Writing new collection to Database");
     CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
     collectionDefinitionDto.setId(id);
@@ -188,14 +199,19 @@ public interface CollectionWriter {
     collectionDefinitionDto.setOwner(userId);
     collectionDefinitionDto.setLastModifier(userId);
     collectionDefinitionDto.setAutomaticallyCreated(automaticallyCreated);
-    collectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName())
-                                      .orElse(DEFAULT_COLLECTION_NAME));
+    collectionDefinitionDto.setName(
+        Optional.ofNullable(partialCollectionDefinitionDto.getName())
+            .orElse(DEFAULT_COLLECTION_NAME));
 
     final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
-    newCollectionDataDto.getRoles()
-      .add(new CollectionRoleRequestDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
+    newCollectionDataDto
+        .getRoles()
+        .add(
+            new CollectionRoleRequestDto(
+                new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
     if (partialCollectionDefinitionDto.getData() != null) {
-      newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
+      newCollectionDataDto.setConfiguration(
+          partialCollectionDefinitionDto.getData().getConfiguration());
     }
     collectionDefinitionDto.setData(newCollectionDataDto);
     persistCollection(id, collectionDefinitionDto);
@@ -210,35 +226,38 @@ public interface CollectionWriter {
 
   void deleteCollection(String collectionId);
 
-  void addScopeEntriesToCollection(final String userId,
-                                   final String collectionId,
-                                   final List<CollectionScopeEntryDto> scopeUpdates);
+  void addScopeEntriesToCollection(
+      final String userId,
+      final String collectionId,
+      final List<CollectionScopeEntryDto> scopeUpdates);
 
   void deleteScopeEntryFromAllCollections(final String scopeEntryId);
 
-  void updateScopeEntity(String collectionId,
-                         CollectionScopeEntryUpdateDto scopeEntry,
-                         String userId,
-                         String scopeEntryId);
+  void updateScopeEntity(
+      String collectionId,
+      CollectionScopeEntryUpdateDto scopeEntry,
+      String userId,
+      String scopeEntryId);
 
-  void removeScopeEntries(String collectionId, List<String> scopeEntryIds, String userId) throws NotFoundException;
+  void removeScopeEntries(String collectionId, List<String> scopeEntryIds, String userId)
+      throws NotFoundException;
 
-  void removeScopeEntry(String collectionId, String scopeEntryId, String userId) throws NotFoundException;
+  void removeScopeEntry(String collectionId, String scopeEntryId, String userId)
+      throws NotFoundException;
 
+  void addRoleToCollection(
+      String collectionId, List<CollectionRoleRequestDto> rolesToAdd, String userId);
 
-  void addRoleToCollection(String collectionId, List<CollectionRoleRequestDto> rolesToAdd, String userId);
-
-  void updateRoleInCollection(final String collectionId,
-                              final String roleEntryId,
-                              final CollectionRoleUpdateRequestDto roleUpdateDto,
-                              final String userId);
+  void updateRoleInCollection(
+      final String collectionId,
+      final String roleEntryId,
+      final CollectionRoleUpdateRequestDto roleUpdateDto,
+      final String userId);
 
   void removeRoleFromCollection(final String collectionId, final String roleEntryId);
 
-
-  void removeRoleFromCollectionUnlessIsLastManager(final String collectionId, final String roleEntryId,
-                                                   final String userId);
+  void removeRoleFromCollectionUnlessIsLastManager(
+      final String collectionId, final String roleEntryId, final String userId);
 
   void persistCollection(String id, CollectionDefinitionDto collectionDefinitionDto);
-
 }

@@ -13,6 +13,7 @@ import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,8 +23,12 @@ import java.util.List;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
+
+// Passes locally, but fails on CI
+//@Tag(OPENSEARCH_PASSING)
 public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
   public static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "customer_onboarding_test_process_instances.json";
@@ -124,7 +129,8 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     assertThat(processDefinitionDocuments).hasSize(1);
     assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains(
-      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json file.");
+      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance " +
+        "json file.");
   }
 
   @Test
@@ -145,7 +151,8 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     assertThat(processDefinitionDocuments).hasSize(1);
     assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains(
-      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json file.");
+      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance " +
+        "json file.");
   }
 
   @Test
@@ -204,7 +211,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     assertThat(processInstanceDto)
       .singleElement()
       .satisfies(instance -> {
-        assertThat(instance.getFlowNodeInstances()).singleElement().satisfies(flowNode ->  {
+        assertThat(instance.getFlowNodeInstances()).singleElement().satisfies(flowNode -> {
           assertThat(flowNode.getStartDate()).isEqualTo(newFlowNodeStartDate);
           assertThat(flowNode.getEndDate()).isEqualTo(newFlowNodeEndDate);
         });

@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.util.mapper;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
@@ -30,7 +29,8 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
   }
 
   @Override
-  public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+  public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider)
+      throws IOException {
     final String timezone = (String) provider.getAttribute(X_OPTIMIZE_CLIENT_TIMEZONE);
     OffsetDateTime timeZoneAdjustedDateTime = value;
     if (timezone != null) {
@@ -39,9 +39,8 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
         timeZoneAdjustedDateTime = zonedDateTime.toOffsetDateTime();
       } else {
         log.warn(
-          "The provided timezone [{}] not recognized. Falling back to server timezone instead.",
-          timezone
-        );
+            "The provided timezone [{}] not recognized. Falling back to server timezone instead.",
+            timezone);
       }
     }
     gen.writeString(timeZoneAdjustedDateTime.format(this.formatter));

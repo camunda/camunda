@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
-
 import java.util.List;
 import java.util.Map;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 
 public interface VariableLabelReader {
 
-  Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(final List<String> processDefinitionKeys);
-
+  Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
+      final List<String> processDefinitionKeys);
 }

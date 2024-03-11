@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.sequence;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-
-import java.util.Optional;
 
 @Builder
 @Data
@@ -39,18 +38,19 @@ public class EventSequenceCountDto implements OptimizeDto {
 
   public void generateIdForEventSequenceCountDto() {
     if (id == null) {
-      id = generateIdForEventType(sourceEvent) + ID_EVENT_SEPARATOR + generateIdForEventType(targetEvent);
+      id =
+          generateIdForEventType(sourceEvent)
+              + ID_EVENT_SEPARATOR
+              + generateIdForEventType(targetEvent);
     }
   }
 
   private String generateIdForEventType(EventTypeDto eventTypeDto) {
     final Optional<EventTypeDto> eventType = Optional.ofNullable(eventTypeDto);
     return String.join(
-      ID_FIELD_SEPARATOR,
-      eventType.map(EventTypeDto::getGroup).orElse(null),
-      eventType.map(EventTypeDto::getSource).orElse(null),
-      eventType.map(EventTypeDto::getEventName).orElse(null)
-    );
+        ID_FIELD_SEPARATOR,
+        eventType.map(EventTypeDto::getGroup).orElse(null),
+        eventType.map(EventTypeDto::getSource).orElse(null),
+        eventType.map(EventTypeDto::getEventName).orElse(null));
   }
-
 }

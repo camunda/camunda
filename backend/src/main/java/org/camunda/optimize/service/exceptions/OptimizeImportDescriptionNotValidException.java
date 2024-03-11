@@ -5,22 +5,21 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-import lombok.Getter;
-
 import java.util.Set;
+import lombok.Getter;
 
 @SuppressWarnings("squid:MaximumInheritanceDepth")
 public class OptimizeImportDescriptionNotValidException extends OptimizeValidationException {
 
   public static final String ERROR_CODE = "importDescriptionInvalid";
 
-  @Getter
-  private final Set<String> invalidEntityIds;
+  @Getter private final Set<String> invalidEntityIds;
 
   public OptimizeImportDescriptionNotValidException(Set<String> invalidEntityIds) {
     super(
-      "Could not apply action due to invalid descriptions. Descriptions must be null or not greater than 400 characters. " +
-        "Invalid entities: " + invalidEntityIds);
+        "Could not apply action due to invalid descriptions. Descriptions must be null or not greater than 400 characters. "
+            + "Invalid entities: "
+            + invalidEntityIds);
     this.invalidEntityIds = invalidEntityIds;
   }
 
@@ -28,5 +27,4 @@ public class OptimizeImportDescriptionNotValidException extends OptimizeValidati
   public String getErrorCode() {
     return ERROR_CODE;
   }
-
 }

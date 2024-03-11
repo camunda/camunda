@@ -8,7 +8,8 @@ package org.camunda.optimize.service.db.schema.index.events;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 
-public abstract class EventProcessDefinitionIndex<TBuilder> extends ProcessDefinitionIndex<TBuilder> {
+public abstract class EventProcessDefinitionIndex<TBuilder>
+    extends ProcessDefinitionIndex<TBuilder> {
 
   public static final int VERSION = 5;
 
@@ -21,5 +22,4 @@ public abstract class EventProcessDefinitionIndex<TBuilder> extends ProcessDefin
   public int getVersion() {
     return VERSION;
   }
-
 }

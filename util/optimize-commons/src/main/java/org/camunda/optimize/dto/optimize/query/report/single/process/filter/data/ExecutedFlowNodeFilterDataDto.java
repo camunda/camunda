@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.data;
 
+import java.util.List;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
-
-import java.util.List;
 
 @Data
 public class ExecutedFlowNodeFilterDataDto implements FilterDataDto {

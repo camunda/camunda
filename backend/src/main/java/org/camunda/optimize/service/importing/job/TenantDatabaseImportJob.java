@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.TenantWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
-import java.util.List;
-
 public class TenantDatabaseImportJob extends DatabaseImportJob<TenantDto> {
 
   private final TenantWriter tenantWriter;
 
-  public TenantDatabaseImportJob(final TenantWriter tenantWriter,
-                                 final Runnable importCompleteCallback,
-                                 final DatabaseClient databaseClient) {
+  public TenantDatabaseImportJob(
+      final TenantWriter tenantWriter,
+      final Runnable importCompleteCallback,
+      final DatabaseClient databaseClient) {
     super(importCompleteCallback, databaseClient);
     this.tenantWriter = tenantWriter;
   }
@@ -27,5 +27,4 @@ public class TenantDatabaseImportJob extends DatabaseImportJob<TenantDto> {
   protected void persistEntities(final List<TenantDto> newOptimizeEntities) {
     tenantWriter.writeTenants(newOptimizeEntities);
   }
-
 }

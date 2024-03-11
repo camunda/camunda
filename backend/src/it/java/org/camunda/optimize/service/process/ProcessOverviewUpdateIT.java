@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewRe
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
@@ -31,6 +33,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessOverviewUpdateIT extends AbstractPlatformIT {
 
   private static final String DEF_KEY = "def_key";
@@ -63,6 +66,7 @@ public class ProcessOverviewUpdateIT extends AbstractPlatformIT {
     return Stream.of(null, DEFAULT_USERNAME, KERMIT_USER);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("validOwnerIds")
   public void updateProcess_setOwner(final String ownerId) {
@@ -82,6 +86,7 @@ public class ProcessOverviewUpdateIT extends AbstractPlatformIT {
     assertExpectedProcessOwner(DEF_KEY, ownerId);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("validOwnerIds")
   public void updateProcess_replaceExistingOwner(final String ownerId) {

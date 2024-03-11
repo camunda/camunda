@@ -24,21 +24,29 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
   private String collectionId;
 
-  protected ReportDefinitionExportDto(final String id, final ExportEntityType exportEntityType,
-                                      final int sourceIndexVersion, final String name, final String description,
-                                      final String collectionId) {
+  protected ReportDefinitionExportDto(
+      final String id,
+      final ExportEntityType exportEntityType,
+      final int sourceIndexVersion,
+      final String name,
+      final String description,
+      final String collectionId) {
     super(id, exportEntityType, name, description, sourceIndexVersion);
     this.collectionId = collectionId;
   }
 
-  public static ReportDefinitionExportDto mapReportDefinitionToExportDto(final ReportDefinitionDto<?> reportDef) {
+  public static ReportDefinitionExportDto mapReportDefinitionToExportDto(
+      final ReportDefinitionDto<?> reportDef) {
     if (ReportType.PROCESS.equals(reportDef.getReportType())) {
       if (reportDef.isCombined()) {
-        return new CombinedProcessReportDefinitionExportDto((CombinedReportDefinitionRequestDto) reportDef);
+        return new CombinedProcessReportDefinitionExportDto(
+            (CombinedReportDefinitionRequestDto) reportDef);
       }
-      return new SingleProcessReportDefinitionExportDto((SingleProcessReportDefinitionRequestDto) reportDef);
+      return new SingleProcessReportDefinitionExportDto(
+          (SingleProcessReportDefinitionRequestDto) reportDef);
     } else {
-      return new SingleDecisionReportDefinitionExportDto((SingleDecisionReportDefinitionRequestDto) reportDef);
+      return new SingleDecisionReportDefinitionExportDto(
+          (SingleDecisionReportDefinitionRequestDto) reportDef);
     }
   }
 }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
+import java.util.List;
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
@@ -21,8 +22,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
 
@@ -32,15 +31,16 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ObjectVariableService objectVariableService;
 
-  public VariableUpdateEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                   final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                   final ConfigurationService configurationService,
-                                                   final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
-                                                   final ProcessVariableUpdateWriter variableWriter,
-                                                   final VariableImportAdapterProvider variableImportAdapterProvider,
-                                                   final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                   final ObjectVariableService objectVariableService,
-                                                   final DatabaseClient databaseClient) {
+  public VariableUpdateEngineImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
+      final ProcessVariableUpdateWriter variableWriter,
+      final VariableImportAdapterProvider variableImportAdapterProvider,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final ObjectVariableService objectVariableService,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.variableWriter = variableWriter;
@@ -55,22 +55,21 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
   }
 
   public VariableUpdateEngineImportMediator createVariableUpdateEngineImportMediator(
-    final EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new VariableUpdateEngineImportMediator(
-      importIndexHandlerRegistry.getVariableUpdateInstanceImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext),
-      new VariableUpdateInstanceImportService(
+        importIndexHandlerRegistry.getVariableUpdateInstanceImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext),
+        new VariableUpdateInstanceImportService(
+            configurationService,
+            variableImportAdapterProvider,
+            variableWriter,
+            camundaEventImportServiceFactory.createCamundaEventService(engineContext),
+            engineContext,
+            processDefinitionResolverService,
+            objectVariableService,
+            databaseClient),
         configurationService,
-        variableImportAdapterProvider,
-        variableWriter,
-        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        engineContext,
-        processDefinitionResolverService,
-        objectVariableService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
 }

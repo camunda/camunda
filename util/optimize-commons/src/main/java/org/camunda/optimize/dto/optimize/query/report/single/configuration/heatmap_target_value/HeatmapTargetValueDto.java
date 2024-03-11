@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value;
 
-import lombok.Data;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class HeatmapTargetValueDto {
 
   private Boolean active = false;
   private Map<String, HeatmapTargetValueEntryDto> values = new HashMap<>();
-
 }

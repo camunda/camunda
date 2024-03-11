@@ -8,13 +8,12 @@ package org.camunda.optimize.service.importing.engine.fetcher.instance;
 import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 
 public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngineEntityFetcher {
 
@@ -31,16 +30,16 @@ public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngine
   public List<T> fetchXmlsForDefinitions(IdSetBasedImportPage page) {
     logger.debug("Fetching definition xml ...");
     final long requestStart = System.currentTimeMillis();
-    final List<T> xmls = page.getIds().stream()
-      .distinct()
-      .map(this::fetchWithRetryIgnoreClientError)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toList());
+    final List<T> xmls =
+        page.getIds().stream()
+            .distinct()
+            .map(this::fetchWithRetryIgnoreClientError)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
     final long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] definition xmls within [{}] ms", xmls.size(), requestEnd - requestStart
-    );
+        "Fetched [{}] definition xmls within [{}] ms", xmls.size(), requestEnd - requestStart);
     return xmls;
   }
 
@@ -64,7 +63,8 @@ public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngine
         result = performGetDefinitionXmlRequest(definitionId);
         fetched = true;
       } catch (ClientErrorException ex) {
-        // We get a 404 if the definition has been deleted. In this case, we mark the definition as deleted in Optimize
+        // We get a 404 if the definition has been deleted. In this case, we mark the definition as
+        // deleted in Optimize
         if (ex.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
           markDefinitionAsDeleted(definitionId);
         }
@@ -84,11 +84,10 @@ public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngine
 
   private T performGetDefinitionXmlRequest(final String definitionId) {
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(getRequestPath())
-      .resolveTemplate("id", definitionId)
-      .request(MediaType.APPLICATION_JSON)
-      .get(getOptimizeClassForDefinitionResponse());
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(getRequestPath())
+        .resolveTemplate("id", definitionId)
+        .request(MediaType.APPLICATION_JSON)
+        .get(getOptimizeClassForDefinitionResponse());
   }
-
 }

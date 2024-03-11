@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing;
 
+import jakarta.annotation.PostConstruct;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.db.reader.ImportIndexReader;
@@ -15,40 +17,37 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import jakarta.annotation.PostConstruct;
-import java.util.Optional;
-
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AllEntitiesBasedImportIndexHandler
-  implements EngineImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
+    implements EngineImportIndexHandler<
+        AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
-  @Autowired
-  protected ImportIndexReader importIndexReader;
+  @Autowired protected ImportIndexReader importIndexReader;
 
-  @Autowired
-  protected ConfigurationService configurationService;
+  @Autowired protected ConfigurationService configurationService;
 
   private long importIndex = 0;
 
   public void readIndexFromDatabase() {
-    Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(DatabaseHelper.constructKey(getDatabaseImportIndexType(), getEngineAlias()));
+    final Optional<AllEntitiesBasedImportIndexDto> storedIndex =
+        importIndexReader.getImportIndex(
+            DatabaseHelper.constructKey(getDatabaseImportIndexType(), getEngineAlias()));
     storedIndex.ifPresent(
-      allEntitiesBasedImportIndexDto -> importIndex =
-        allEntitiesBasedImportIndexDto.getImportIndex()
-    );
+        allEntitiesBasedImportIndexDto ->
+            importIndex = allEntitiesBasedImportIndexDto.getImportIndex());
   }
 
   @Override
   public AllEntitiesBasedImportIndexDto getIndexStateDto() {
-    AllEntitiesBasedImportIndexDto indexToStore = new AllEntitiesBasedImportIndexDto();
+    final AllEntitiesBasedImportIndexDto indexToStore = new AllEntitiesBasedImportIndexDto();
     indexToStore.setImportIndex(importIndex);
     indexToStore.setEsTypeIndexRefersTo(getDatabaseImportIndexType());
     indexToStore.setEngine(getEngineAlias());
     return indexToStore;
   }
 
+  @Override
   public void resetImportIndex() {
     importIndex = 0;
   }
@@ -64,8 +63,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   protected abstract String getDatabaseImportIndexType();
 
-  protected void moveImportIndex(long units) {
+  protected void moveImportIndex(final long units) {
     importIndex += units;
   }
-
 }

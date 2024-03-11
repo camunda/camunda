@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process;
 
+import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+
+import java.util.Map;
+import java.util.function.Function;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -16,19 +22,12 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.function.Function;
-
-import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDistributedByFlowNode extends ProcessDistributedByModelElement {
 
-  public ProcessDistributedByFlowNode(final ConfigurationService configurationService,
-                                      final DefinitionService definitionService) {
+  public ProcessDistributedByFlowNode(
+      final ConfigurationService configurationService, final DefinitionService definitionService) {
     super(configurationService, definitionService);
   }
 
@@ -38,15 +37,14 @@ public class ProcessDistributedByFlowNode extends ProcessDistributedByModelEleme
   }
 
   @Override
-  protected Map<String, FlowNodeDataDto> extractModelElementData(DefinitionOptimizeResponseDto def) {
-    return ((ProcessDefinitionOptimizeDto) def).getFlowNodeData()
-      .stream()
-      .collect(toMap(FlowNodeDataDto::getId, Function.identity()));
+  protected Map<String, FlowNodeDataDto> extractModelElementData(
+      DefinitionOptimizeResponseDto def) {
+    return ((ProcessDefinitionOptimizeDto) def)
+        .getFlowNodeData().stream().collect(toMap(FlowNodeDataDto::getId, Function.identity()));
   }
 
   @Override
   protected ProcessReportDistributedByDto getDistributedBy() {
     return new FlowNodeDistributedByDto();
   }
-
 }

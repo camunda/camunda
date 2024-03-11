@@ -12,7 +12,8 @@ public class DatabaseImportJobExecutor extends ImportJobExecutor {
 
   private final ConfigurationService configurationService;
 
-  public DatabaseImportJobExecutor(final String name, final ConfigurationService configurationService) {
+  public DatabaseImportJobExecutor(
+      final String name, final ConfigurationService configurationService) {
     super(name);
     this.configurationService = configurationService;
     startExecutingImportJobs();
@@ -27,5 +28,4 @@ public class DatabaseImportJobExecutor extends ImportJobExecutor {
   protected int getMaxQueueSize() {
     return configurationService.getJobExecutorQueueSize();
   }
-
 }

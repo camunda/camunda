@@ -9,6 +9,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.camunda.optimize.util.SuperUserType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -17,10 +18,12 @@ import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
+@Tag(OPENSEARCH_PASSING)
 public class SettingsRestServiceIT extends AbstractPlatformIT {
   public final String GROUP_ID = "someGroup";
 

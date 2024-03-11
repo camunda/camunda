@@ -8,23 +8,23 @@
 import {Modal, DurationChart} from 'components';
 import {t} from 'translation';
 
-import {AnalysisProcessDefinitionParameters, SelectedNode, getOutlierSummary} from './service';
+import {AnalysisProcessDefinitionParameters, OutlierNode, getOutlierSummary} from './service';
 import VariablesTable from './VariablesTable';
 
 import './OutlierDetailsModal.scss';
 
 interface OutlierDetailsModalProps {
-  selectedNode: SelectedNode;
+  selectedOutlierNode: OutlierNode;
   onClose: () => void;
   config: AnalysisProcessDefinitionParameters;
 }
 
 export default function OutlierDetailsModal({
-  selectedNode,
+  selectedOutlierNode,
   onClose,
   config,
 }: OutlierDetailsModalProps) {
-  const {name, higherOutlier, data, totalCount} = selectedNode;
+  const {name, higherOutlier, data, totalCount} = selectedOutlierNode;
   const {count, relation} = higherOutlier;
 
   return (
@@ -41,7 +41,7 @@ export default function OutlierDetailsModal({
           colors={data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'))}
         />
         <h2>{t('analysis.task.detailsModal.variablesTable')}</h2>
-        <VariablesTable config={config} selectedNode={selectedNode} />
+        <VariablesTable config={config} selectedOutlierNode={selectedOutlierNode} />
       </Modal.Content>
     </Modal>
   );

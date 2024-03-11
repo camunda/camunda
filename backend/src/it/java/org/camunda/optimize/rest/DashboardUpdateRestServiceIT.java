@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -14,18 +15,20 @@ import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.util.MarkdownUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
+@Tag(OPENSEARCH_PASSING)
 public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT {
 
   @Test
@@ -143,6 +146,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
 
   @ParameterizedTest
   @MethodSource("validFilterCombinations")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void updateDashboardFilterSpecification(List<DashboardFilterDto<?>> dashboardFilterDtos) {
     // given
     final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
@@ -175,6 +179,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void updateDashboardWithFilterSpecification_dashboardContainsExternalReport() {
     // given a dashboard with a variable filter
     final List<DashboardFilterDto<?>> dashboardFilters = variableFilter();

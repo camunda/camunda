@@ -5,16 +5,11 @@
  */
 package org.camunda.optimize.data.generation;
 
+import static java.util.stream.Collectors.toList;
+
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.data.generation.generators.DataGenerator;
-import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
-import org.springframework.util.ClassUtils;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
@@ -28,8 +23,12 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.stream.Collectors.toList;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.data.generation.generators.DataGenerator;
+import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import org.springframework.util.ClassUtils;
 
 @Slf4j
 public class DataGenerationExecutor {
@@ -52,8 +51,9 @@ public class DataGenerationExecutor {
   private void init() {
     final int queueSize = 100;
     final BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(queueSize);
-    importExecutor = new ThreadPoolExecutor(
-      1, 1, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
+    importExecutor =
+        new ThreadPoolExecutor(
+            1, 1, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
     engineClient = new SimpleEngineClient(dataGenerationInformation.getEngineRestEndpoint());
     engineClient.initializeStandardUserAndGroupAuthorizations();
@@ -66,64 +66,75 @@ public class DataGenerationExecutor {
 
   private void initGenerators() {
     userAndGroupGenerator = new UserAndGroupGenerator(engineClient);
-    List<DataGenerator<?>> processDataGenerators = createGenerators(
-      dataGenerationInformation.getProcessDefinitionsAndNumberOfVersions(),
-      dataGenerationInformation.getProcessInstanceCountToGenerate()
-    );
+    List<DataGenerator<?>> processDataGenerators =
+        createGenerators(
+            dataGenerationInformation.getProcessDefinitionsAndNumberOfVersions(),
+            dataGenerationInformation.getProcessInstanceCountToGenerate());
     log.info(
-      "Created the following process instance generators: {}",
-      processDataGenerators.stream().map(Object::getClass).map(Class::getSimpleName).collect(toList())
-    );
-    List<DataGenerator<?>> decisionDataGenerators = createGenerators(
-      dataGenerationInformation.getDecisionDefinitionsAndNumberOfVersions(),
-      dataGenerationInformation.getDecisionInstanceCountToGenerate()
-    );
+        "Created the following process instance generators: {}",
+        processDataGenerators.stream()
+            .map(Object::getClass)
+            .map(Class::getSimpleName)
+            .collect(toList()));
+    List<DataGenerator<?>> decisionDataGenerators =
+        createGenerators(
+            dataGenerationInformation.getDecisionDefinitionsAndNumberOfVersions(),
+            dataGenerationInformation.getDecisionInstanceCountToGenerate());
     log.info(
-      "Created the following decision instance generators: {}",
-      decisionDataGenerators.stream().map(Object::getClass).map(Class::getSimpleName).collect(toList())
-    );
+        "Created the following decision instance generators: {}",
+        decisionDataGenerators.stream()
+            .map(Object::getClass)
+            .map(Class::getSimpleName)
+            .collect(toList()));
     allDataGenerators.addAll(processDataGenerators);
     allDataGenerators.addAll(decisionDataGenerators);
   }
 
-  private List<DataGenerator<?>> createGenerators(final Map<String, Integer> definitions,
-                                                  final Long instanceCountToGenerate) {
+  private List<DataGenerator<?>> createGenerators(
+      final Map<String, Integer> definitions, final Long instanceCountToGenerate) {
     final List<DataGenerator<?>> dataGenerators = new ArrayList<>();
-    try (ScanResult scanResult = new ClassGraph()
-      .enableClassInfo()
-      .acceptPackages(DataGenerator.class.getPackage().getName())
-      .scan()) {
+    try (ScanResult scanResult =
+        new ClassGraph()
+            .enableClassInfo()
+            .acceptPackages(DataGenerator.class.getPackage().getName())
+            .scan()) {
       scanResult.getSubclasses(DataGenerator.class.getName()).stream()
-        .filter(g -> definitions.containsKey(g.getSimpleName()))
-        .forEach(s -> createAndAddGeneratorInstance(definitions, dataGenerators, s));
+          .filter(g -> definitions.containsKey(g.getSimpleName()))
+          .forEach(s -> createAndAddGeneratorInstance(definitions, dataGenerators, s));
     }
     addInstanceCountToGenerators(dataGenerators, instanceCountToGenerate);
     return dataGenerators;
   }
 
   @SneakyThrows
-  private void createAndAddGeneratorInstance(final Map<String, Integer> definitions,
-                                             final List<DataGenerator<?>> dataGenerators,
-                                             final ClassInfo s) {
-    if (ClassUtils.hasConstructor(s.loadClass(), SimpleEngineClient.class, Integer.class, UserAndGroupProvider.class)) {
-      dataGenerators.add((DataGenerator<?>) s.loadClass()
-        .getConstructor(SimpleEngineClient.class, Integer.class, UserAndGroupProvider.class)
-        .newInstance(engineClient, definitions.get(s.getSimpleName()), userAndGroupGenerator));
+  private void createAndAddGeneratorInstance(
+      final Map<String, Integer> definitions,
+      final List<DataGenerator<?>> dataGenerators,
+      final ClassInfo s) {
+    if (ClassUtils.hasConstructor(
+        s.loadClass(), SimpleEngineClient.class, Integer.class, UserAndGroupProvider.class)) {
+      dataGenerators.add(
+          (DataGenerator<?>)
+              s.loadClass()
+                  .getConstructor(
+                      SimpleEngineClient.class, Integer.class, UserAndGroupProvider.class)
+                  .newInstance(
+                      engineClient, definitions.get(s.getSimpleName()), userAndGroupGenerator));
     } else {
-      dataGenerators.add((DataGenerator<?>) s.loadClass()
-        .getConstructor(SimpleEngineClient.class, Integer.class)
-        .newInstance(engineClient, definitions.get(s.getSimpleName())));
+      dataGenerators.add(
+          (DataGenerator<?>)
+              s.loadClass()
+                  .getConstructor(SimpleEngineClient.class, Integer.class)
+                  .newInstance(engineClient, definitions.get(s.getSimpleName())));
     }
   }
 
-  private void addInstanceCountToGenerators(final List<DataGenerator<?>> dataGenerators,
-                                            final Long instanceCountToGenerate) {
+  private void addInstanceCountToGenerators(
+      final List<DataGenerator<?>> dataGenerators, final Long instanceCountToGenerate) {
     int nGenerators = dataGenerators.size();
     int stepSize = instanceCountToGenerate.intValue() / nGenerators;
     int missingCount = instanceCountToGenerate.intValue() % nGenerators;
-    dataGenerators.forEach(
-      generator -> generator.setInstanceCountToGenerate(stepSize)
-    );
+    dataGenerators.forEach(generator -> generator.setInstanceCountToGenerate(stepSize));
     dataGenerators.get(0).addToInstanceCount(missingCount);
   }
 
@@ -139,7 +150,8 @@ public class DataGenerationExecutor {
   public void awaitDataGenerationTermination() {
     importExecutor.shutdown();
     try {
-      boolean finishedGeneration = importExecutor.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS);
+      boolean finishedGeneration =
+          importExecutor.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS);
       if (!finishedGeneration) {
         log.error("Could not finish data generation in time. Trying to interrupt!");
         importExecutor.shutdownNow();
@@ -160,37 +172,39 @@ public class DataGenerationExecutor {
 
   private ScheduledExecutorService reportDataGenerationProgress() {
     ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-    Runnable reportFunc = () -> {
-      RuntimeMXBean rb = ManagementFactory.getRuntimeMXBean();
-      log.info("Progress report for running data generators (total: {} generators)", allDataGenerators.size());
-      int totalInstancesToGenerate = 0;
-      int finishedInstances = 0;
-      for (DataGenerator<?> dataGenerator : allDataGenerators) {
-        totalInstancesToGenerate += dataGenerator.getInstanceCountToGenerate();
-        finishedInstances += dataGenerator.getStartedInstanceCount();
-        if (dataGenerator.getStartedInstanceCount() > 0
-          && dataGenerator.getInstanceCountToGenerate() != dataGenerator.getStartedInstanceCount()) {
+    Runnable reportFunc =
+        () -> {
+          RuntimeMXBean rb = ManagementFactory.getRuntimeMXBean();
           log.info(
-            "[{}/{}] {}",
-            dataGenerator.getStartedInstanceCount(),
-            dataGenerator.getInstanceCountToGenerate(),
-            dataGenerator.getClass().getSimpleName().replaceAll("DataGenerator", "")
-          );
-        }
-      }
-      double finishedAmountInPercentage =
-        Math.round((double) finishedInstances / (double) totalInstancesToGenerate * 1000.0) / 10.0;
-      long timeETAFromNow =
-        Math.round(((double) rb.getUptime() / finishedAmountInPercentage) * (100.0 - finishedAmountInPercentage));
-      Date timeETA = new Date(System.currentTimeMillis() + timeETAFromNow);
-      log.info(
-        "Overall data generation progress: {}% ({}/{}) ETA: {}",
-        finishedAmountInPercentage,
-        finishedInstances,
-        totalInstancesToGenerate,
-        timeETA
-      );
-    };
+              "Progress report for running data generators (total: {} generators)",
+              allDataGenerators.size());
+          int totalInstancesToGenerate = 0;
+          int finishedInstances = 0;
+          for (DataGenerator<?> dataGenerator : allDataGenerators) {
+            totalInstancesToGenerate += dataGenerator.getInstanceCountToGenerate();
+            finishedInstances += dataGenerator.getStartedInstanceCount();
+            if (dataGenerator.getStartedInstanceCount() > 0
+                && dataGenerator.getInstanceCountToGenerate()
+                    != dataGenerator.getStartedInstanceCount()) {
+              log.info(
+                  "[{}/{}] {}",
+                  dataGenerator.getStartedInstanceCount(),
+                  dataGenerator.getInstanceCountToGenerate(),
+                  dataGenerator.getClass().getSimpleName().replaceAll("DataGenerator", ""));
+            }
+          }
+          double finishedAmountInPercentage =
+              Math.round((double) finishedInstances / (double) totalInstancesToGenerate * 1000.0)
+                  / 10.0;
+          long timeETAFromNow =
+              Math.round(
+                  ((double) rb.getUptime() / finishedAmountInPercentage)
+                      * (100.0 - finishedAmountInPercentage));
+          Date timeETA = new Date(System.currentTimeMillis() + timeETAFromNow);
+          log.info(
+              "Overall data generation progress: {}% ({}/{}) ETA: {}",
+              finishedAmountInPercentage, finishedInstances, totalInstancesToGenerate, timeETA);
+        };
 
     exec.scheduleAtFixedRate(reportFunc, 0, 30, TimeUnit.SECONDS);
     reportFunc.run();
@@ -206,7 +220,5 @@ public class DataGenerationExecutor {
         log.error("interrupted generation", e);
       }
     }
-
   }
-
 }

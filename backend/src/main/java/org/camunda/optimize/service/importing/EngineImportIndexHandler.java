@@ -8,8 +8,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.service.importing.page.ImportPage;
 
 public interface EngineImportIndexHandler<PAGE extends ImportPage, INDEX_DTO>
-  extends ImportIndexHandler<PAGE, INDEX_DTO> {
+    extends ImportIndexHandler<PAGE, INDEX_DTO> {
 
   String getEngineAlias();
-
 }

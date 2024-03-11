@@ -7,10 +7,10 @@ package org.camunda.optimize.service.db.es.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.reader.EventSequenceCountReaderES;
 import org.camunda.optimize.service.db.events.EventSequenceCountReaderFactory;
+import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Conditional;
@@ -28,10 +28,6 @@ public class EventSequenceCountReaderFactoryES implements EventSequenceCountRead
   @Override
   public EventSequenceCountReader createEventSequenceCountReader(final String eventSuffix) {
     return new EventSequenceCountReaderES(
-      eventSuffix,
-      esClient,
-      objectMapper,
-      configurationService
-    );
+        eventSuffix, esClient, objectMapper, configurationService);
   }
 }

@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class MultiInstanceSubprocessRequestDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/multi-instance.bpmn";
 
-  public MultiInstanceSubprocessRequestDataGenerator(final SimpleEngineClient engineClient,
-                                                     final Integer nVersions,
-                                                     final UserAndGroupProvider userAndGroupProvider) {
+  public MultiInstanceSubprocessRequestDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
@@ -30,5 +30,4 @@ public class MultiInstanceSubprocessRequestDataGenerator extends ProcessDataGene
   protected Map<String, Object> createVariables() {
     return new HashMap<>();
   }
-
 }

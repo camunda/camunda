@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,23 +16,36 @@ import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EventsDataSourceDto;
 
-import java.util.List;
-import java.util.Map;
-
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
 
   @Builder(builderMethodName = "eventProcessBuilder")
-  public EventProcessDefinitionDto(@NonNull final String id, @NonNull final String key,
-                                   @NonNull final String version,
-                                   final String versionTag, @NonNull final String name,
-                                   final String tenantId, @NonNull final String bpmn20Xml, final boolean deleted,
-                                   final boolean onboarded, @NonNull final List<FlowNodeDataDto> flowNodeData,
-                                   @NonNull final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, new EventsDataSourceDto(),
-          tenantId, bpmn20Xml, deleted, onboarded, flowNodeData, userTaskNames
-    );
+  public EventProcessDefinitionDto(
+      @NonNull final String id,
+      @NonNull final String key,
+      @NonNull final String version,
+      final String versionTag,
+      @NonNull final String name,
+      final String tenantId,
+      @NonNull final String bpmn20Xml,
+      final boolean deleted,
+      final boolean onboarded,
+      @NonNull final List<FlowNodeDataDto> flowNodeData,
+      @NonNull final Map<String, String> userTaskNames) {
+    super(
+        id,
+        key,
+        version,
+        versionTag,
+        name,
+        new EventsDataSourceDto(),
+        tenantId,
+        bpmn20Xml,
+        deleted,
+        onboarded,
+        flowNodeData,
+        userTaskNames);
   }
 }

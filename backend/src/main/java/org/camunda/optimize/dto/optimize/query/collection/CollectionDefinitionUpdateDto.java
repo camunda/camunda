@@ -6,9 +6,8 @@
 package org.camunda.optimize.dto.optimize.query.collection;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-
 import java.time.OffsetDateTime;
+import lombok.Data;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data

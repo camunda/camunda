@@ -6,18 +6,16 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.UserDto;
 
-import java.util.List;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class UserResponseDto {
-  @JsonUnwrapped
-  private UserDto userDto;
+  @JsonUnwrapped private UserDto userDto;
   private List<AuthorizationType> authorizations;
 }

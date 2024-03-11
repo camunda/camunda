@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,9 +15,6 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @AllArgsConstructor
 @Data
@@ -30,11 +29,12 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     setType(DefinitionType.DECISION);
   }
 
-  public DecisionDefinitionOptimizeDto(final String id,
-                                       final EngineDataSourceDto dataSource,
-                                       final String dmn10Xml,
-                                       final List<DecisionVariableNameResponseDto> inputVariableNames,
-                                       final List<DecisionVariableNameResponseDto> outputVariableNames) {
+  public DecisionDefinitionOptimizeDto(
+      final String id,
+      final EngineDataSourceDto dataSource,
+      final String dmn10Xml,
+      final List<DecisionVariableNameResponseDto> inputVariableNames,
+      final List<DecisionVariableNameResponseDto> outputVariableNames) {
     super(id, dataSource);
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
@@ -42,18 +42,20 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
   }
 
   @Builder
-  public DecisionDefinitionOptimizeDto(final String id,
-                                       final String key,
-                                       final String version,
-                                       final String versionTag,
-                                       final String name,
-                                       final DataSourceDto dataSource,
-                                       final String tenantId,
-                                       final String dmn10Xml,
-                                       final boolean deleted,
-                                       final List<DecisionVariableNameResponseDto> inputVariableNames,
-                                       final List<DecisionVariableNameResponseDto> outputVariableNames) {
-    super(id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.DECISION);
+  public DecisionDefinitionOptimizeDto(
+      final String id,
+      final String key,
+      final String version,
+      final String versionTag,
+      final String name,
+      final DataSourceDto dataSource,
+      final String tenantId,
+      final String dmn10Xml,
+      final boolean deleted,
+      final List<DecisionVariableNameResponseDto> inputVariableNames,
+      final List<DecisionVariableNameResponseDto> outputVariableNames) {
+    super(
+        id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.DECISION);
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
     this.outputVariableNames = outputVariableNames;

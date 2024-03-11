@@ -32,5 +32,4 @@ public class CanceledInstancesOnlyFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

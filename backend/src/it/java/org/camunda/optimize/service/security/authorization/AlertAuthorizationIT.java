@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -12,13 +13,14 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
@@ -27,6 +29,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
+@Tag(OPENSEARCH_PASSING)
 public class AlertAuthorizationIT extends AbstractAlertIT {
 
   private final String PROCESS_DEFINITION_KEY = "processDefinition";

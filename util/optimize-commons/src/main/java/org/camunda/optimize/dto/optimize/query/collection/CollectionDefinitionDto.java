@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
+
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -12,20 +20,17 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityData;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.counting;
-import static java.util.stream.Collectors.groupingBy;
-
 @NoArgsConstructor
 public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
 
-  public CollectionDefinitionDto(CollectionDataDto data, OffsetDateTime created, String id, String name,
-                                 OffsetDateTime lastModified, String lastModifier, String owner) {
+  public CollectionDefinitionDto(
+      CollectionDataDto data,
+      OffsetDateTime created,
+      String id,
+      String name,
+      OffsetDateTime lastModified,
+      String lastModifier,
+      String owner) {
     super();
     this.data = data;
     this.created = created;
@@ -39,17 +44,16 @@ public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<Collect
 
   public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(
-      getId(),
-      getName(),
-      null,
-      getLastModified(),
-      getCreated(),
-      getOwner(),
-      getLastModifier(),
-      EntityType.COLLECTION,
-      getEntityDtoData(),
-      roleType
-    );
+        getId(),
+        getName(),
+        null,
+        getLastModified(),
+        getCreated(),
+        getOwner(),
+        getLastModifier(),
+        EntityType.COLLECTION,
+        getEntityDtoData(),
+        roleType);
   }
 
   private EntityData getEntityDtoData() {
@@ -62,10 +66,15 @@ public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<Collect
   }
 
   private Map<IdentityType, Long> getRoleCounts() {
-    final Map<IdentityType, Long> result = Optional.ofNullable(data)
-      .map(CollectionDataDto::getRoles)
-      .map(roles -> roles.stream().collect(groupingBy(roleDto -> roleDto.getIdentity().getType(), counting())))
-      .orElseGet(HashMap::new);
+    final Map<IdentityType, Long> result =
+        Optional.ofNullable(data)
+            .map(CollectionDataDto::getRoles)
+            .map(
+                roles ->
+                    roles.stream()
+                        .collect(
+                            groupingBy(roleDto -> roleDto.getIdentity().getType(), counting())))
+            .orElseGet(HashMap::new);
     Stream.of(IdentityType.values()).forEach(identityType -> result.putIfAbsent(identityType, 0L));
     return result;
   }

@@ -6,12 +6,6 @@
 package org.camunda.optimize.jetty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.eclipse.jetty.http.MimeTypes;
-
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -24,6 +18,11 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.eclipse.jetty.http.MimeTypes;
 
 @Slf4j
 @AllArgsConstructor
@@ -40,8 +39,9 @@ public class MaxRequestSizeFilter implements Filter {
   }
 
   @Override
-  public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
-    throws IOException, ServletException {
+  public void doFilter(
+      final ServletRequest request, final ServletResponse response, final FilterChain chain)
+      throws IOException, ServletException {
     final HttpServletRequest httpRequest = (HttpServletRequest) request;
     final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
@@ -50,17 +50,20 @@ public class MaxRequestSizeFilter implements Filter {
       final long contentLength = optionalContentLength.get();
       final double maxContentLength = getMaxContentLength();
       if (maxContentLength < contentLength) {
-        final String errorMessage = String.format(
-          "Request too large [%s], maximum content length is [%s].", contentLength, maxContentLength
-        );
+        final String errorMessage =
+            String.format(
+                "Request too large [%s], maximum content length is [%s].",
+                contentLength, maxContentLength);
         logWarnWithUrlPath(httpRequest, errorMessage);
-        writeErrorResponse(httpResponse, errorMessage, Response.Status.REQUEST_ENTITY_TOO_LARGE.getStatusCode());
+        writeErrorResponse(
+            httpResponse, errorMessage, Response.Status.REQUEST_ENTITY_TOO_LARGE.getStatusCode());
       } else {
         chain.doFilter(httpRequest, httpResponse);
       }
     } else {
       logWarnWithUrlPath(httpRequest, MESSAGE_NO_CONTENT_LENGTH);
-      writeErrorResponse(httpResponse, MESSAGE_NO_CONTENT_LENGTH, Response.Status.LENGTH_REQUIRED.getStatusCode());
+      writeErrorResponse(
+          httpResponse, MESSAGE_NO_CONTENT_LENGTH, Response.Status.LENGTH_REQUIRED.getStatusCode());
     }
   }
 
@@ -75,12 +78,13 @@ public class MaxRequestSizeFilter implements Filter {
   }
 
   @SneakyThrows
-  public void writeErrorResponse(final HttpServletResponse httpResponse,
-                                 final String errorMessage,
-                                 final int statusCode) {
+  public void writeErrorResponse(
+      final HttpServletResponse httpResponse, final String errorMessage, final int statusCode) {
     httpResponse.reset();
     httpResponse.setContentType(MimeTypes.Type.APPLICATION_JSON_UTF_8.toString());
-    httpResponse.getWriter().write(objectMapperProvider.call().writeValueAsString(new ErrorResponseDto(errorMessage)));
+    httpResponse
+        .getWriter()
+        .write(objectMapperProvider.call().writeValueAsString(new ErrorResponseDto(errorMessage)));
     httpResponse.setStatus(statusCode);
   }
 
@@ -90,7 +94,8 @@ public class MaxRequestSizeFilter implements Filter {
 
   private Optional<Long> getContentLength(final HttpServletRequest httpRequest) {
     final Integer contentLength = httpRequest.getContentLength();
-    // -1 is default value if no header is present, see java doc of HttpServletRequest#getContentLength
+    // -1 is default value if no header is present, see java doc of
+    // HttpServletRequest#getContentLength
     return Optional.of(contentLength).filter(value -> value != -1).map(Integer::longValue);
   }
 }

@@ -32,5 +32,4 @@ public class OpenIncidentImportIndexHandler extends TimestampBasedEngineImportIn
   protected String getDatabaseDocID() {
     return OPEN_INCIDENT_IMPORT_INDEX_DOC_ID;
   }
-
 }

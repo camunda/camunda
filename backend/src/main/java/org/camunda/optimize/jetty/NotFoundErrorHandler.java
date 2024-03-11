@@ -5,45 +5,50 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
-
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NotFoundErrorHandler extends ErrorHandler {
   private static final String INDEX_PAGE = "/index.html";
-  private static final Logger logger = Log.getLogger(NotFoundErrorHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(NotFoundErrorHandler.class);
 
   @Override
-  public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-    throws IOException {
+  public void handle(
+      final String target,
+      final Request baseRequest,
+      final HttpServletRequest request,
+      final HttpServletResponse response)
+      throws IOException {
 
     response.setHeader(HttpHeader.CONTENT_ENCODING.toString(), null);
 
-    String requestUri = request.getRequestURI();
-    boolean notApiOrPage = !requestUri.startsWith(REST_API_PATH) &&
-      (requestUri.endsWith(".html") || requestUri.split("\\.").length == 1);
+    final String requestUri = request.getRequestURI();
+    final boolean notApiOrPage =
+        !requestUri.startsWith(REST_API_PATH)
+            && (requestUri.endsWith(".html") || requestUri.split("\\.").length == 1);
 
     if (notApiOrPage && Response.Status.NOT_FOUND.getStatusCode() == response.getStatus()) {
       response.setStatus(Response.Status.OK.getStatusCode());
       response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
-      Dispatcher dispatcher = (Dispatcher) ((Request) request).getErrorContext().getRequestDispatcher(INDEX_PAGE);
+      final Dispatcher dispatcher =
+          (Dispatcher) ((Request) request).getErrorContext().getRequestDispatcher(INDEX_PAGE);
 
       try {
         dispatcher.forward(request, response);
-      } catch (ServletException e) {
-        logger.debug(e);
+      } catch (final ServletException e) {
+        logger.debug("Exception", e);
       }
     }
   }

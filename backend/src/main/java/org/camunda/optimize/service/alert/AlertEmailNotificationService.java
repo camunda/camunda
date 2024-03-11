@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.alert;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,6 @@ import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Component
@@ -27,11 +26,10 @@ public class AlertEmailNotificationService implements AlertNotificationService {
   public void notify(@NonNull final AlertNotificationDto notification) {
     final List<String> recipients = notification.getAlert().getEmails();
     log.info(
-      "Sending email of type {} to {} recipients for alert with ID {}",
-      notification.getType(),
-      recipients.size(),
-      notification.getAlert().getId()
-    );
+        "Sending email of type {} to {} recipients for alert with ID {}",
+        notification.getType(),
+        recipients.size(),
+        notification.getAlert().getId());
     notify(notification.getAlertMessage(), recipients);
   }
 
@@ -41,14 +39,17 @@ public class AlertEmailNotificationService implements AlertNotificationService {
   }
 
   private void notify(String text, final List<String> recipients) {
-    // This only works as the link is at the end of the composed text. We would need to refactor this if the email
+    // This only works as the link is at the end of the composed text. We would need to refactor
+    // this if the email
     // structure of alerts changes in future
     String textWithTracking = text + "&utm_medium=email";
-    recipients.forEach(recipient -> emailService.sendEmailWithErrorHandling(
-      recipient,
-      textWithTracking,
-      "[" + configurationService.getNotificationEmailCompanyBranding() + "-Optimize] - Report status"
-    ));
+    recipients.forEach(
+        recipient ->
+            emailService.sendEmailWithErrorHandling(
+                recipient,
+                textWithTracking,
+                "["
+                    + configurationService.getNotificationEmailCompanyBranding()
+                    + "-Optimize] - Report status"));
   }
-
 }

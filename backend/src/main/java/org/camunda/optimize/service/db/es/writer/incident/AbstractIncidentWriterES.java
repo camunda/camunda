@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.writer.incident;
 
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -18,81 +26,59 @@ import org.camunda.optimize.service.db.es.writer.AbstractProcessInstanceDataWrit
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.incident.AbstractIncidentWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-
 @Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
-public abstract class AbstractIncidentWriterES extends AbstractProcessInstanceDataWriterES<IncidentDto>
-  implements AbstractIncidentWriter {
+public abstract class AbstractIncidentWriterES
+    extends AbstractProcessInstanceDataWriterES<IncidentDto> implements AbstractIncidentWriter {
 
   private final ObjectMapper objectMapper;
 
-  protected AbstractIncidentWriterES(final OptimizeElasticsearchClient esClient,
-                                     final ElasticSearchSchemaManager elasticSearchSchemaManager,
-                                     final ObjectMapper objectMapper) {
+  protected AbstractIncidentWriterES(
+      final OptimizeElasticsearchClient esClient,
+      final ElasticSearchSchemaManager elasticSearchSchemaManager,
+      final ObjectMapper objectMapper) {
     super(esClient, elasticSearchSchemaManager);
     this.objectMapper = objectMapper;
   }
 
   @Override
-  public ImportRequestDto createImportRequestForIncident(Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance,
-                                                          final String importName) {
+  public ImportRequestDto createImportRequestForIncident(
+      Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance, final String importName) {
     final List<IncidentDto> incidents = incidentsByProcessInstance.getValue();
     final String processInstanceId = incidentsByProcessInstance.getKey();
     final String processDefinitionKey = incidents.get(0).getDefinitionKey();
 
     final Map<String, Object> params = new HashMap<>();
 
-    try {
-      params.put(INCIDENTS, incidents);
-      final ScriptData updateScript = DatabaseWriterUtil.createScriptData(
-        createInlineUpdateScript(),
-        params,
-        objectMapper
-      );
+    params.put(INCIDENTS, incidents);
+    final ScriptData updateScript =
+        DatabaseWriterUtil.createScriptData(createInlineUpdateScript(), params, objectMapper);
 
-      final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
-        .processInstanceId(processInstanceId)
-        .dataSource(new EngineDataSourceDto(incidents.get(0).getEngineAlias()))
-        .incidents(incidents)
-        .build();
-      String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-      return ImportRequestDto.builder()
+    final ProcessInstanceDto procInst =
+        ProcessInstanceDto.builder()
+            .processInstanceId(processInstanceId)
+            .dataSource(new EngineDataSourceDto(incidents.get(0).getEngineAlias()))
+            .incidents(incidents)
+            .build();
+    return ImportRequestDto.builder()
         .indexName(getProcessInstanceIndexAliasName(processDefinitionKey))
         .id(processInstanceId)
         .importName(importName)
         .type(RequestType.UPDATE)
         .scriptData(updateScript)
-        .source(newEntryIfAbsent)
+        .source(procInst)
         .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
         .build();
-    } catch (IOException e) {
-      String reason = String.format(
-        "Error while processing JSON for incidents for process instance with ID [%s].",
-        processInstanceId
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
   }
 
   @Override
   public void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
-    createInstanceIndicesIfMissing(incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet()));
+    createInstanceIndicesIfMissing(
+        incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet()));
   }
-
 }

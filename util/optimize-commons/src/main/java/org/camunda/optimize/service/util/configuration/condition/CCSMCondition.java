@@ -14,6 +14,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 public class CCSMCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    return ConfigurationService.getOptimizeProfile(context.getEnvironment()).equals(OptimizeProfile.CCSM);
+    return ConfigurationService.getOptimizeProfile(context.getEnvironment())
+        .equals(OptimizeProfile.CCSM);
   }
 }

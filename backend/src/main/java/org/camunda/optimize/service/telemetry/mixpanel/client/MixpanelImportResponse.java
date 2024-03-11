@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 public class MixpanelImportResponse {
   @JsonProperty("error")
   private String error;
+
   @JsonProperty("num_records_imported")
   private int numberOfRecordsImported;
 

@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
-
-import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor

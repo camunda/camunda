@@ -13,5 +13,4 @@ public class SecurityConfiguration {
   private AuthConfiguration auth;
   private LicenseConfiguration license;
   private ResponseHeadersConfiguration responseHeaders;
-
 }

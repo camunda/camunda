@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+
+import java.util.Optional;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -24,15 +32,6 @@ import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
-import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -44,40 +43,43 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
 
   @Override
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
-    final BoolQuery query = new BoolQuery.Builder()
-      .must(QueryDSL.matchAll())
-      .must(QueryDSL.term(PROCESS_DEFINITION_ID, definitionId))
-      .build();
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true)
-      .stream()
-      .findFirst()
-      .map(ProcessDefinitionOptimizeDto.class::cast);
+    final BoolQuery query =
+        new BoolQuery.Builder()
+            .must(QueryDSL.matchAll())
+            .must(QueryDSL.term(PROCESS_DEFINITION_ID, definitionId))
+            .build();
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true).stream()
+        .findFirst()
+        .map(ProcessDefinitionOptimizeDto.class::cast);
   }
 
   @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     final String defKeyAgg = "keyAgg";
-    Query query = new BoolQuery.Builder()
-      .must(QueryDSL.term(ProcessDefinitionIndex.ONBOARDED, false))
-      .must(QueryDSL.term(DEFINITION_DELETED, false))
-      .should(QueryDSL.exists(PROCESS_DEFINITION_XML))
-      .build()
-      ._toQuery();
+    final Query query =
+        new BoolQuery.Builder()
+            .must(QueryDSL.term(ProcessDefinitionIndex.ONBOARDED, false))
+            .must(QueryDSL.term(DEFINITION_DELETED, false))
+            .should(QueryDSL.exists(PROCESS_DEFINITION_XML))
+            .build()
+            .toQuery();
 
-    SearchRequest.Builder searchRequest = new SearchRequest.Builder()
-      .index(PROCESS_DEFINITION_INDEX_NAME)
-      .size(MAX_RESPONSE_SIZE_LIMIT)
-      .query(query)
-      .aggregations(defKeyAgg, new TermsAggregation.Builder()
-        .field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY)
-        .build().
-        _toAggregation())
-      .source(new SourceConfig.Builder()
-                .fetch(false)
-                .build());
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(PROCESS_DEFINITION_INDEX_NAME)
+            .size(MAX_RESPONSE_SIZE_LIMIT)
+            .query(query)
+            .aggregations(
+                defKeyAgg,
+                new TermsAggregation.Builder()
+                    .field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY)
+                    .build()
+                    ._toAggregation())
+            .source(new SourceConfig.Builder().fetch(false).build());
 
     final String errorMessage = "Was not able to fetch non-onboarded process definition keys.";
-    SearchResponse<String> searchResponse = osClient.search(searchRequest, String.class, errorMessage);
+    final SearchResponse<String> searchResponse =
+        osClient.search(searchRequest, String.class, errorMessage);
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse, defKeyAgg);
   }
 
@@ -85,5 +87,4 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
   public DefinitionReader getDefinitionReader() {
     return definitionReader;
   }
-
 }

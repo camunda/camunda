@@ -13,6 +13,7 @@ import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.testplugin.pluginloading.SharedTestPluginVariableDto;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -22,9 +23,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
 
+@Tag(OPENSEARCH_PASSING)
 public class PluginLoadingIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;

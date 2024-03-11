@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.fetcher.instance;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
+import java.util.function.Supplier;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher;
@@ -16,13 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import java.util.function.Supplier;
-
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class RetryBackoffEngineEntityFetcher extends EngineEntityFetcher {
 
-  @Autowired
-  protected BackoffCalculator backoffCalculator;
+  @Autowired protected BackoffCalculator backoffCalculator;
 
   protected RetryBackoffEngineEntityFetcher(final EngineContext engineContext) {
     super(engineContext);
@@ -57,17 +55,15 @@ public abstract class RetryBackoffEngineEntityFetcher extends EngineEntityFetche
 
   protected void logDebugSleepInformation(long sleepTime) {
     logger.debug(
-      "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
-      sleepTime
-    );
+        "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.", sleepTime);
   }
 
   protected void logError(Exception e) {
     StringBuilder errorMessageBuilder = new StringBuilder();
-    errorMessageBuilder.append(String.format(
-      "Error during fetching of entities. Please check the connection with [%s]!",
-      engineContext.getEngineAlias()
-    ));
+    errorMessageBuilder.append(
+        String.format(
+            "Error during fetching of entities. Please check the connection with [%s]!",
+            engineContext.getEngineAlias()));
     if (e instanceof NotFoundException || e instanceof ForbiddenException) {
       errorMessageBuilder.append(" Make sure all required engine authorizations exist");
     } else if (e instanceof NotAuthorizedException) {
@@ -76,5 +72,4 @@ public abstract class RetryBackoffEngineEntityFetcher extends EngineEntityFetche
     final String msg = errorMessageBuilder.toString();
     logger.error(msg, e);
   }
-
 }

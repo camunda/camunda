@@ -24,10 +24,7 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
   public static final String STATUS_WEBSOCKET_PATH = "/ws/status";
 
   public static final ImmutableList<String> NO_CACHE_RESOURCES =
-    ImmutableList.<String>builder()
-      .add(INDEX_PAGE)
-      .add(INDEX_HTML_PAGE)
-      .build();
+      ImmutableList.<String>builder().add(INDEX_PAGE).add(INDEX_HTML_PAGE).build();
   public static final String ACTUATOR_PORT_PROPERTY_KEY = "management.server.port";
   public static final String ACTUATOR_PORT_DEFAULT = "8092";
   public static String ACTUATOR_ENDPOINT;
@@ -45,6 +42,10 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(ApplicationContext context) {
-    setActuatorPortStatic(Integer.parseInt(context.getEnvironment().getProperty(ACTUATOR_PORT_PROPERTY_KEY, ACTUATOR_PORT_DEFAULT)));
+    setActuatorPortStatic(
+        Integer.parseInt(
+            context
+                .getEnvironment()
+                .getProperty(ACTUATOR_PORT_PROPERTY_KEY, ACTUATOR_PORT_DEFAULT)));
   }
 }

@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.definition;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,11 +20,8 @@ import java.util.Optional;
 @Builder
 public class AssigneeCandidateGroupReportSearchRequestDto {
   private String terms;
-  @Builder.Default
-  private int limit = 25;
-  @NotNull
-  @NotEmpty
-  private List<String> reportIds;
+  @Builder.Default private int limit = 25;
+  @NotNull @NotEmpty private List<String> reportIds;
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);

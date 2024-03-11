@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 
 @Provider
 @Slf4j
@@ -30,11 +29,10 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
   public Response toResponse(OptimizeConflictException conflictException) {
     log.info("Mapping OptimizeConflictException");
 
-    return Response
-      .status(Response.Status.CONFLICT)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(getConflictResponseDto(conflictException))
-      .build();
+    return Response.status(Response.Status.CONFLICT)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .entity(getConflictResponseDto(conflictException))
+        .build();
   }
 
   private ConflictResponseDto getConflictResponseDto(OptimizeConflictException conflictException) {
@@ -43,11 +41,6 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
     String detailedErrorMessage = conflictException.getMessage();
 
     return new ConflictResponseDto(
-      errorCode,
-      errorMessage,
-      detailedErrorMessage,
-      conflictException.getConflictedItems()
-    );
+        errorCode, errorMessage, detailedErrorMessage, conflictException.getConflictedItems());
   }
-
 }

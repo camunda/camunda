@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.db.schema.index.index;
 
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
 import java.io.IOException;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class ImportIndexIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -37,12 +36,12 @@ public abstract class ImportIndexIndex<TBuilder> extends DefaultIndexMappingCrea
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(ENGINE)
+        .startObject(ENGINE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(IMPORT_INDEX)
+        .endObject()
+        .startObject(IMPORT_INDEX)
         .field("type", "long")
-      .endObject();
+        .endObject();
     // @formatter:on
   }
 }

@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
+
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -18,11 +21,6 @@ import org.opensearch.client.opensearch.core.bulk.DeleteOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -35,32 +33,24 @@ public class BusinessKeyWriterOS implements BusinessKeyWriter {
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
     String importItemName = "business keys";
     osClient.doImportBulkRequestWithList(
-      importItemName,
-      processInstanceIds,
-      this::addDeleteRequest,
-      false,
-      BUSINESS_KEY_INDEX_NAME
-    );
+        importItemName, processInstanceIds, this::addDeleteRequest, false, BUSINESS_KEY_INDEX_NAME);
   }
 
   private BulkOperation addDeleteRequest(final String processInstanceId) {
-    final DeleteOperation deleteReq = new DeleteOperation.Builder()
-      .id(processInstanceId)
-      .build();
+    final DeleteOperation deleteReq = new DeleteOperation.Builder().id(processInstanceId).build();
 
     return new BulkOperation.Builder().delete(deleteReq).build();
   }
 
   @Override
-  public Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
-                                                                     final String importItemName) {
-    return Optional.ofNullable(ImportRequestDto.builder()
-                                 .indexName(BUSINESS_KEY_INDEX_NAME)
-                                 .id(businessKeyDto.getProcessInstanceId())
-                                 .source(businessKeyDto)
-                                 .importName(importItemName)
-                                 .type(RequestType.INDEX)
-                                 .build());
+  public ImportRequestDto createIndexRequestForBusinessKey(
+      final BusinessKeyDto businessKeyDto, final String importItemName) {
+    return ImportRequestDto.builder()
+        .indexName(BUSINESS_KEY_INDEX_NAME)
+        .id(businessKeyDto.getProcessInstanceId())
+        .source(businessKeyDto)
+        .importName(importItemName)
+        .type(RequestType.INDEX)
+        .build();
   }
-
 }

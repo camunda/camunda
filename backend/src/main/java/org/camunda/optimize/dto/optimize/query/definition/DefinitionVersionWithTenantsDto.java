@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.definition;
 
+import static java.util.Comparator.naturalOrder;
+
+import java.util.Comparator;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,21 +18,14 @@ import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 
-import java.util.Comparator;
-import java.util.List;
-
-import static java.util.Comparator.naturalOrder;
-
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
-  @NonNull
-  private String version;
+  @NonNull private String version;
   private String versionTag;
-  @NonNull
-  private List<TenantDto> tenants;
+  @NonNull private List<TenantDto> tenants;
 
   public void sort() {
     tenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));

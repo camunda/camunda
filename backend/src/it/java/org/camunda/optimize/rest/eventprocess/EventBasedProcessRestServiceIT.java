@@ -35,6 +35,7 @@ import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -67,13 +68,13 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
@@ -112,6 +113,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void getIsEventBasedProcessesEnabled() {
     // when
     boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
@@ -121,6 +123,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void getIsEventBasedProcessesEnabledWithUserNotGrantedEventBasedProcessAccessReturnsFalse() {
     // given
     embeddedOptimizeExtension.getConfigurationService()
@@ -136,6 +139,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void getIsEventBasedProcessEnabledWithUserNotAuthorizedButInAuthorizedGroup() {
     // given only group authorization exists containing user
     final EventBasedProcessConfiguration eventBasedProcessConfiguration =
@@ -154,6 +158,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void getIsEventBasedProcessEnabledWithNoAuthorizedUsersOrGroups() {
     // given
     final EventBasedProcessConfiguration eventBasedProcessConfiguration =
@@ -169,6 +174,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void getIsEventBasedProcessEnabledWithUserInGroupNotAuthorized() {
     // given user exists in group not authorized for access
     final EventBasedProcessConfiguration eventBasedProcessConfiguration =
@@ -187,6 +193,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void getIsEventBasedProcessEnabledWithAuthorizedUserAndInAuthorizedGroup() {
     // given user is authorized and is in authorized group
     final EventBasedProcessConfiguration eventBasedProcessConfiguration =
@@ -205,6 +212,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @ParameterizedTest
   @MethodSource("getAllEndpointsThatNeedEventAuthorization")
+  @Tag(OPENSEARCH_PASSING)
   public void callingEventBasedProcessApiWithUserNotGrantedEventBasedProcessAccessReturnsForbidden(final String method,
                                                                                                    final String path,
                                                                                                    final Object payload) {
@@ -316,6 +324,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void createEventProcessMapping_withEventMappingIdNotExistInXml() {
     // given event mappings with ID does not exist in XML
     EventProcessMappingDto eventProcessMappingDto =
@@ -358,6 +367,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void createEventProcessMapping_withEventMappingsAndXmlNotPresent() {
     // given event mappings but no XML provided
     EventProcessMappingDto eventProcessMappingDto =
@@ -378,6 +388,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void createEventProcessMapping_withNullStartAndEndEventMappings() {
     // given event mapping entry but neither start nor end is mapped
     EventProcessMappingDto eventProcessMappingDto =
@@ -394,6 +405,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void createEventProcessMapping_withInvalidEventMappings() {
     // given event mappings but mapped events have fields missing
     EventTypeDto invalidEventTypeDto = EventTypeDto.builder()
@@ -435,6 +447,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void createEventProcessMapping_invalidModelXml() {
     // when
     Response response = eventProcessClient
@@ -448,6 +461,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void createEventProcessMapping_camundaSourceHasNoEventsImported() {
     // given
     final ProcessDefinitionEngineDto processDefinitionEngineDto =
@@ -534,6 +548,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void getEventProcessMappingWithIdNotExists() {
     // when
     Response response = eventProcessClient
@@ -900,7 +915,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(storedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
 
     final Optional<EventProcessPublishStateDto> publishStateDto =
-      getEventProcessPublishStateDtoFromElasticsearch(
+      getEventProcessPublishStateDtoFromDatabase(
         eventProcessId);
     assertThat(publishStateDto).get()
       .usingRecursiveComparison().ignoringFields(
@@ -970,7 +985,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(republishedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(republishedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.xml, updateDto.getXml())
       .hasFieldOrPropertyWithValue(
         EventProcessPublishStateDto.Fields.publishDateTime,
@@ -998,7 +1013,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.UNMAPPED);
     assertThat(actual.getPublishingProgress()).isNull();
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).isEmpty();
   }
 
   @Test
@@ -1024,11 +1039,12 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(actual.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishDateTime, firstPublishDate);
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void publishedEventProcessMapping_failsIfNotExists() {
     // given
 
@@ -1059,7 +1075,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
     assertThat(actual.getPublishingProgress()).isNull();
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).isEmpty();
   }
 
   @Test
@@ -1095,6 +1111,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_PASSING)
   public void cancelPublishedEventProcessMapping_failsIfNotExists() {
     // given
 
@@ -1109,7 +1126,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @NonNull
   private OffsetDateTime getPublishedDateForEventProcessMappingOrFail(final String eventProcessId) {
-    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)
+    return getEventProcessPublishStateDtoFromDatabase(eventProcessId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Failed reading first publish date"))
       .getPublishDateTime();
   }

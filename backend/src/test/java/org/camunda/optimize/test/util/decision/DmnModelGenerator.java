@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.test.util.decision;
 
-
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.HitPolicy;
@@ -23,15 +24,11 @@ import org.camunda.bpm.model.dmn.instance.Rule;
 import org.camunda.bpm.model.dmn.instance.Text;
 import org.camunda.optimize.service.util.IdGenerator;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * A generator class to build DMN tables/models in a programmatic way.
- * <p>
- * Note: do not reuse a generator instance two create different kinds
- * of dmn tables, since the model instance is shared between the generator instances
- * and cloned each time it is passed on.
+ *
+ * <p>Note: do not reuse a generator instance two create different kinds of dmn tables, since the
+ * model instance is shared between the generator instances and cloned each time it is passed on.
  */
 public class DmnModelGenerator {
 
@@ -61,7 +58,7 @@ public class DmnModelGenerator {
 
   public DmnModelInstance build() {
     final Definitions definitions =
-      generateNamedElement(Definitions.class, decisionRequirementDiagramName, modelInstance);
+        generateNamedElement(Definitions.class, decisionRequirementDiagramName, modelInstance);
     definitions.setId(decisionRequirementDiagramKey);
     definitions.setNamespace(TEST_NAMESPACE);
     decisions.forEach(definitions::addChildElement);
@@ -74,17 +71,15 @@ public class DmnModelGenerator {
     return new DmnModelGenerator();
   }
 
-
-  private static <E extends NamedElement> E generateNamedElement(final Class<E> elementClass,
-                                                                 final String name,
-                                                                 final DmnModelInstance modelInstance) {
+  private static <E extends NamedElement> E generateNamedElement(
+      final Class<E> elementClass, final String name, final DmnModelInstance modelInstance) {
     E element = generateElement(elementClass, modelInstance);
     element.setName(name);
     return element;
   }
 
-  private static <E extends DmnElement> E generateElement(final Class<E> elementClass,
-                                                          final DmnModelInstance modelInstance) {
+  private static <E extends DmnElement> E generateElement(
+      final Class<E> elementClass, final DmnModelInstance modelInstance) {
     E element = modelInstance.newInstance(elementClass);
     String identifier = elementClass.getSimpleName();
     identifier = Character.toLowerCase(identifier.charAt(0)) + identifier.substring(1);
@@ -108,7 +103,8 @@ public class DmnModelGenerator {
     private List<Rule> rules = new ArrayList<>();
     private HitPolicy hitPolicy = HitPolicy.UNIQUE;
 
-    public DecisionGenerator(final DmnModelGenerator dmnModelGenerator, final DmnModelInstance modelInstance) {
+    public DecisionGenerator(
+        final DmnModelGenerator dmnModelGenerator, final DmnModelInstance modelInstance) {
       this.dmnModelGenerator = dmnModelGenerator;
       this.modelInstance = modelInstance;
       decisionDefinitionKey = DEFAULT_DECISION_DEFINITION_KEY + dmnModelGenerator.decisions.size();
@@ -130,8 +126,11 @@ public class DmnModelGenerator {
       return this;
     }
 
-    public DecisionGenerator addInput(String label, String inputIdClause, String camInputVariable,
-                                      DecisionTypeRef decisionTypeRef) {
+    public DecisionGenerator addInput(
+        String label,
+        String inputIdClause,
+        String camInputVariable,
+        DecisionTypeRef decisionTypeRef) {
       Input input = generateElement(Input.class, modelInstance);
       input.setId(inputIdClause);
       input.setLabel(label);
@@ -146,16 +145,21 @@ public class DmnModelGenerator {
       return this;
     }
 
-    public DecisionGenerator addInput(String label, String camInputVariable, DecisionTypeRef decisionTypeRef) {
-      return addInput(label, "InputClause_" + IdGenerator.getNextId(), camInputVariable, decisionTypeRef);
+    public DecisionGenerator addInput(
+        String label, String camInputVariable, DecisionTypeRef decisionTypeRef) {
+      return addInput(
+          label, "InputClause_" + IdGenerator.getNextId(), camInputVariable, decisionTypeRef);
     }
 
     public DecisionGenerator addInput(String label, DecisionTypeRef decisionTypeRef) {
       return addInput(label, "CamInputVariable_" + IdGenerator.getNextId(), decisionTypeRef);
     }
 
-    public DecisionGenerator addOutput(String label, String outputClauseId, String camOutputVariable,
-                                       DecisionTypeRef decisionTypeRef) {
+    public DecisionGenerator addOutput(
+        String label,
+        String outputClauseId,
+        String camOutputVariable,
+        DecisionTypeRef decisionTypeRef) {
       Output output = generateElement(Output.class, modelInstance);
       output.setId(outputClauseId);
       output.setLabel(label);
@@ -165,8 +169,10 @@ public class DmnModelGenerator {
       return this;
     }
 
-    public DecisionGenerator addOutput(String label, String camOutputVariable, DecisionTypeRef decisionTypeRef) {
-      return addOutput(label, "OutputClause_" + IdGenerator.getNextId(), camOutputVariable, decisionTypeRef);
+    public DecisionGenerator addOutput(
+        String label, String camOutputVariable, DecisionTypeRef decisionTypeRef) {
+      return addOutput(
+          label, "OutputClause_" + IdGenerator.getNextId(), camOutputVariable, decisionTypeRef);
     }
 
     public DecisionGenerator addOutput(String label, DecisionTypeRef decisionTypeRef) {
@@ -188,7 +194,8 @@ public class DmnModelGenerator {
     }
 
     public DmnModelGenerator buildDecision() {
-      Decision decision = generateNamedElement(Decision.class, decisionDefinitionName, modelInstance);
+      Decision decision =
+          generateNamedElement(Decision.class, decisionDefinitionName, modelInstance);
       decision.setId(decisionDefinitionKey);
       decision.setVersionTag(decisionDefinitionVersionTag);
 
@@ -204,7 +211,6 @@ public class DmnModelGenerator {
       dmnModelGenerator.decisions.add(decision);
       return dmnModelGenerator;
     }
-
   }
 
   public class RuleGenerator {
@@ -256,6 +262,5 @@ public class DmnModelGenerator {
       this.decisionGenerator.rules.add(rule);
       return this.decisionGenerator;
     }
-
   }
 }

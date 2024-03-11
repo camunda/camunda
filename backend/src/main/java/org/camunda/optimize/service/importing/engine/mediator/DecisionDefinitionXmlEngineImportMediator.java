@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.util.List;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
@@ -16,21 +17,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionXmlEngineImportMediator
-  extends DefinitionXmlImportMediator<DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
+    extends DefinitionXmlImportMediator<
+        DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
 
   private final DecisionDefinitionXmlFetcher engineEntityFetcher;
 
-
-  public DecisionDefinitionXmlEngineImportMediator(final DecisionDefinitionXmlImportIndexHandler importIndexHandler,
-                                                   final DecisionDefinitionXmlFetcher engineEntityFetcher,
-                                                   final DecisionDefinitionXmlImportService importService,
-                                                   final ConfigurationService configurationService,
-                                                   final BackoffCalculator idleBackoffCalculator) {
+  public DecisionDefinitionXmlEngineImportMediator(
+      final DecisionDefinitionXmlImportIndexHandler importIndexHandler,
+      final DecisionDefinitionXmlFetcher engineEntityFetcher,
+      final DecisionDefinitionXmlImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
@@ -44,5 +44,4 @@ public class DecisionDefinitionXmlEngineImportMediator
   public MediatorRank getRank() {
     return MediatorRank.DEFINITION_XML;
   }
-
 }

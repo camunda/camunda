@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.externalcode.client.dsl;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
@@ -19,6 +26,7 @@ import org.opensearch.client.opensearch._types.query_dsl.IdsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchNoneQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
+import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch._types.query_dsl.PrefixQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -29,63 +37,57 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-
 public interface QueryDSL {
   String DEFAULT_SCRIPT_LANG = "painless";
 
   private static <A> List<A> nonNull(A[] items) {
     return nonNull(Arrays.asList(items));
   }
+
   private static <A> List<A> nonNull(Collection<A> items) {
     return items.stream().filter(Objects::nonNull).toList();
   }
 
   private static Map<String, JsonData> jsonParams(Map<String, Object> params) {
-    return params.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    return params.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
   }
 
   static Query and(Query... queries) {
-    return BoolQuery.of(q -> q.must(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.must(nonNull(queries))).toQuery();
   }
 
   static Query constantScore(Query query) {
-    return ConstantScoreQuery.of(q -> q.filter(query))._toQuery();
+    return ConstantScoreQuery.of(q -> q.filter(query)).toQuery();
   }
 
   static Query exists(String field) {
-    return ExistsQuery.of(q -> q.field(field))._toQuery();
+    return ExistsQuery.of(q -> q.field(field)).toQuery();
   }
 
   static <A> Query gt(String field, A gt) {
-    return RangeQuery.of(q -> q.field(field).gte(json(gt)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gte(json(gt))).toQuery();
   }
 
   static <A> Query gteLte(String field, A gte, A lte) {
-    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lte(json(lte))).toQuery();
   }
 
   static <A> Query gtLte(String field, A gt, A lte) {
-    return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte))).toQuery();
   }
 
   static Query hasChildQuery(String type, Query query) {
-    return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))._toQuery();
+    return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))
+        .toQuery();
   }
 
   static Query ids(List<String> ids) {
-    return IdsQuery.of(q -> q.values(nonNull(ids)))._toQuery();
+    return IdsQuery.of(q -> q.values(nonNull(ids))).toQuery();
   }
 
   static Query ids(Collection<String> ids) {
-    return IdsQuery.of(q -> q.values(ids.stream().toList()))._toQuery();
+    return IdsQuery.of(q -> q.values(ids.stream().toList())).toQuery();
   }
 
   static Query ids(String... ids) {
@@ -106,18 +108,26 @@ public interface QueryDSL {
 
   static <A> Query terms(String field, Collection<A> values, Function<A, FieldValue> toFieldValue) {
     final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
-    return TermsQuery.of(q -> q
-      .field(field)
-      .terms(TermsQueryField.of(f -> f.value(fieldValues)))
-    )._toQuery();
+    return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
+        .toQuery();
+  }
+
+  static <A> Query lt(String field, A lt) {
+    return RangeQuery.of(q -> q.field(field).lte(json(lt))).toQuery();
   }
 
   static <A> Query lte(String field, A lte) {
-    return RangeQuery.of(q -> q.field(field).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).lte(json(lte))).toQuery();
   }
 
-  static <A> Query match(String field, A value, Operator operator, Function<A, FieldValue> toFieldValue) {
-    return new MatchQuery.Builder().field(field).query(toFieldValue.apply(value)).operator(operator) .build()._toQuery();
+  static <A> Query match(
+      String field, A value, Operator operator, Function<A, FieldValue> toFieldValue) {
+    return new MatchQuery.Builder()
+        .field(field)
+        .query(toFieldValue.apply(value))
+        .operator(operator)
+        .build()
+        .toQuery();
   }
 
   static Query match(String field, String value, Operator operator) {
@@ -125,23 +135,27 @@ public interface QueryDSL {
   }
 
   static Query matchAll() {
-    return new MatchAllQuery.Builder().build()._toQuery();
+    return new MatchAllQuery.Builder().build().toQuery();
   }
 
   static Query matchNone() {
-    return new MatchNoneQuery.Builder().build()._toQuery();
+    return new MatchNoneQuery.Builder().build().toQuery();
+  }
+
+  static Query nested(String path, Query query, ChildScoreMode scoreMode) {
+    return NestedQuery.of(q -> q.path(path).query(query).scoreMode(scoreMode)).toQuery();
   }
 
   static Query not(Query... queries) {
-    return BoolQuery.of(q -> q.mustNot(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.mustNot(nonNull(queries))).toQuery();
   }
 
   static Query or(Query... queries) {
-    return BoolQuery.of(q -> q.should(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.should(nonNull(queries))).toQuery();
   }
 
   static Query prefix(String field, String value) {
-    return PrefixQuery.of(q -> q.field(field).value(value))._toQuery();
+    return PrefixQuery.of(q -> q.field(field).value(value)).toQuery();
   }
 
   static SortOrder reverseOrder(final SortOrder sortOrder) {
@@ -153,11 +167,9 @@ public interface QueryDSL {
   }
 
   static Script scriptFromJsonData(String script, Map<String, JsonData> params) {
-    return new Script.Builder().inline(b -> b
-      .source(script)
-      .params(params)
-      .lang(DEFAULT_SCRIPT_LANG)
-    ).build();
+    return new Script.Builder()
+        .inline(b -> b.source(script).params(params).lang(DEFAULT_SCRIPT_LANG))
+        .build();
   }
 
   static SortOptions sortOptions(String field, SortOrder sortOrder) {
@@ -165,7 +177,9 @@ public interface QueryDSL {
   }
 
   static SortOptions sortOptions(String field, SortOrder sortOrder, String missing) {
-    return SortOptions.of(so -> so.field(sf -> sf.field(field).order(sortOrder).missing(m -> m.stringValue(missing))));
+    return SortOptions.of(
+        so ->
+            so.field(sf -> sf.field(field).order(sortOrder).missing(m -> m.stringValue(missing))));
   }
 
   static SourceConfig sourceInclude(String... fields) {
@@ -205,10 +219,10 @@ public interface QueryDSL {
   }
 
   static <A> Query term(String field, A value, Function<A, FieldValue> toFieldValue) {
-    return TermQuery.of(q -> q.field(field).value(toFieldValue.apply(value)))._toQuery();
+    return TermQuery.of(q -> q.field(field).value(toFieldValue.apply(value))).toQuery();
   }
 
   static Query wildcardQuery(String field, String value) {
-    return WildcardQuery.of(q -> q.field(field).value(value))._toQuery();
+    return WildcardQuery.of(q -> q.field(field).value(value)).toQuery();
   }
 }

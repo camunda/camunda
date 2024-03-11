@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.importing.zeebe.mediator;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
@@ -18,26 +24,21 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
 public class StorePositionBasedImportProgressMediator
-  extends AbstractStoreIndexesImportMediator<StorePositionBasedIndexImportService> implements ImportMediator {
+    extends AbstractStoreIndexesImportMediator<StorePositionBasedIndexImportService>
+    implements ImportMediator {
 
   private ImportIndexHandlerRegistry importIndexHandlerRegistry;
   private ZeebeDataSourceDto dataSource;
 
-  public StorePositionBasedImportProgressMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                  final StorePositionBasedIndexImportService importService,
-                                                  final ConfigurationService configurationService,
-                                                  final ZeebeDataSourceDto zeebeDataSourceDto) {
+  public StorePositionBasedImportProgressMediator(
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final StorePositionBasedIndexImportService importService,
+      final ConfigurationService configurationService,
+      final ZeebeDataSourceDto zeebeDataSourceDto) {
     super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
     this.dataSource = zeebeDataSourceDto;
@@ -49,12 +50,14 @@ public class StorePositionBasedImportProgressMediator
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
       final List<PositionBasedImportIndexDto> importIndexes =
-        Optional.ofNullable(importIndexHandlerRegistry.getPositionBasedHandlers(dataSource.getPartitionId())).stream()
-          .flatMap(Collection::stream)
-          .map(ZeebeImportIndexHandler::getIndexStateDto)
-          .filter(Objects::nonNull)
-          .map(PositionBasedImportIndexDto.class::cast)
-          .collect(Collectors.toList());
+          Optional.ofNullable(
+                  importIndexHandlerRegistry.getPositionBasedHandlers(dataSource.getPartitionId()))
+              .stream()
+              .flatMap(Collection::stream)
+              .map(ZeebeImportIndexHandler::getIndexStateDto)
+              .filter(Objects::nonNull)
+              .map(PositionBasedImportIndexDto.class::cast)
+              .collect(Collectors.toList());
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
     } catch (Exception e) {
       log.error("Could not execute import for storing zeebe position based index information!", e);
@@ -62,5 +65,4 @@ public class StorePositionBasedImportProgressMediator
     }
     return importCompleted;
   }
-
 }

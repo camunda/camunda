@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 
 public class OptimizeImportForbiddenException extends OptimizeRuntimeException {
   public static final String ERROR_CODE = "importDefinitionForbidden";
 
   private final Set<DefinitionExceptionItemDto> forbiddenDefinitions;
 
-  public OptimizeImportForbiddenException(final String message,
-                                          final Set<DefinitionExceptionItemDto> forbiddenDefinitions) {
+  public OptimizeImportForbiddenException(
+      final String message, final Set<DefinitionExceptionItemDto> forbiddenDefinitions) {
     super(message);
     this.forbiddenDefinitions = forbiddenDefinitions;
   }

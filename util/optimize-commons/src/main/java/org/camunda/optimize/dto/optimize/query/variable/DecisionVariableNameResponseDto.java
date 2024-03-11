@@ -17,5 +17,4 @@ public class DecisionVariableNameResponseDto {
   protected String id;
   protected String name;
   protected VariableType type;
-
 }

@@ -6,38 +6,38 @@
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
 import jakarta.ws.rs.BadRequestException;
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
 @NoArgsConstructor
 public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
 
-  private static final Map<String, Comparator<ProcessOverviewResponseDto>> sortComparators = Map.of(
-    ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase(),
-    Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName),
-    ProcessOverviewResponseDto.Fields.owner.toLowerCase(),
-    Comparator.comparing(
-      processOverviewResponseDto -> processOverviewResponseDto.getOwner().getName(),
-      Comparator.nullsLast(Comparator.naturalOrder())
-    )
-  );
+  private static final Map<String, Comparator<ProcessOverviewResponseDto>> sortComparators =
+      Map.of(
+          ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase(),
+          Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName),
+          ProcessOverviewResponseDto.Fields.owner.toLowerCase(),
+          Comparator.comparing(
+              processOverviewResponseDto -> processOverviewResponseDto.getOwner().getName(),
+              Comparator.nullsLast(Comparator.naturalOrder())));
 
   private static final Comparator<ProcessOverviewResponseDto> DEFAULT_PROCESS_OVERVIEW_COMPARATOR =
-    sortComparators.get(ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase())
-      .thenComparing(ProcessOverviewResponseDto::getProcessDefinitionKey);
+      sortComparators
+          .get(ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase())
+          .thenComparing(ProcessOverviewResponseDto::getProcessDefinitionKey);
 
   public ProcessOverviewSorter(final String sortBy, final SortOrder sortOrder) {
     this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
 
   @Override
-  public List<ProcessOverviewResponseDto> applySort(final List<ProcessOverviewResponseDto> processOverviewResponseDtos) {
+  public List<ProcessOverviewResponseDto> applySort(
+      final List<ProcessOverviewResponseDto> processOverviewResponseDtos) {
     final Optional<SortOrder> sortOrderOpt = getSortOrder();
     final Optional<String> sortByOpt = getSortBy();
 
@@ -47,8 +47,10 @@ public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
       if (!sortComparators.containsKey(sortBy.toLowerCase())) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       } else {
-        processOverviewSorterComparator = sortComparators.get(sortBy.toLowerCase())
-          .thenComparing(DEFAULT_PROCESS_OVERVIEW_COMPARATOR);
+        processOverviewSorterComparator =
+            sortComparators
+                .get(sortBy.toLowerCase())
+                .thenComparing(DEFAULT_PROCESS_OVERVIEW_COMPARATOR);
         if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
           processOverviewSorterComparator = processOverviewSorterComparator.reversed();
         }
@@ -60,5 +62,4 @@ public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
       return processOverviewResponseDtos;
     }
   }
-
 }

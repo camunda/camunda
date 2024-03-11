@@ -5,8 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.FIXED_DATE_FILTER;
+import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FILTER;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,14 +20,10 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.FIXED_DATE_FILTER;
-import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FILTER;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
-
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = FixedFlowNodeDateFilterDataDto.class, name = FIXED_DATE_FILTER),
   @JsonSubTypes.Type(value = RollingFlowNodeDateFilterDataDto.class, name = ROLLING_DATE_FILTER),
@@ -35,8 +37,11 @@ public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto
 
   protected List<String> flowNodeIds;
 
-  protected FlowNodeDateFilterDataDto(final List<String> flowNodeIds, final DateFilterType type,
-                                      final START start, final OffsetDateTime end) {
+  protected FlowNodeDateFilterDataDto(
+      final List<String> flowNodeIds,
+      final DateFilterType type,
+      final START start,
+      final OffsetDateTime end) {
     super(type, start, end);
     this.flowNodeIds = flowNodeIds;
   }

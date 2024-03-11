@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.upgrade.indices;
 
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
 
 public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<XContentBuilder> {
 
@@ -27,21 +26,20 @@ public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<XCon
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
-      .startObject("password")
+        .startObject("password")
         .field("type", "keyword")
-      .endObject()
-      .startObject("username")
+        .endObject()
+        .startObject("username")
         .field("type", "keyword")
-      .endObject()
-      .startObject("email")
+        .endObject()
+        .startObject("email")
         .field("type", "keyword")
-      .endObject();
+        .endObject();
   }
 
   @Override
-  public XContentBuilder addStaticSetting(final String key,
-                                          final int value,
-                                          final XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
     return contentBuilder.field(key, value);
   }
 }

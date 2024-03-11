@@ -6,26 +6,28 @@
 package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import jakarta.ws.rs.core.Response;
 
 import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.READ_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
+@Tag(OPENSEARCH_PASSING)
 public class IdentityAuthorizationIT extends AbstractPlatformIT {
 
   private static Stream<String> relevantPermissions() {

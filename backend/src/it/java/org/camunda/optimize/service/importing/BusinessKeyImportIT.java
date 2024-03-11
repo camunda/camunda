@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -19,10 +20,12 @@ import java.util.List;
 
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
+@Tag(OPENSEARCH_PASSING)
 public class BusinessKeyImportIT extends AbstractImportIT {
 
   @BeforeEach

@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.aggregations;
 
+import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
+
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -14,8 +16,6 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 import org.elasticsearch.search.aggregations.metrics.PercentilesAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
-
-import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,21 +27,25 @@ public class PercentileAggregation extends AggregationStrategy<PercentilesAggreg
 
   @Override
   public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final ParsedTDigestPercentiles percentiles = aggs.get(createAggregationName(
-      customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION
-    ));
-    return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(percentiles, percentileValue);
+    final ParsedTDigestPercentiles percentiles =
+        aggs.get(
+            createAggregationName(
+                customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION));
+    return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(
+        percentiles, percentileValue);
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<PercentilesAggregationBuilder> createAggregationBuilderForAggregation(final String customIdentifier) {
-    return percentiles(createAggregationName(customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
-      .percentiles(percentileValue);
+  public ValuesSourceAggregationBuilder<PercentilesAggregationBuilder>
+      createAggregationBuilderForAggregation(final String customIdentifier) {
+    return percentiles(
+            createAggregationName(
+                customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
+        .percentiles(percentileValue);
   }
 
   @Override
   public AggregationDto getAggregationType() {
     return new AggregationDto(AggregationType.PERCENTILE, percentileValue);
   }
-
 }

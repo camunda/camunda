@@ -15,10 +15,11 @@ public class MixpanelEntityEventProperties extends MixpanelEventProperties {
   @JsonProperty("entityId")
   private String entityId;
 
-  public MixpanelEntityEventProperties(final String entityId,
-                                       final String stage,
-                                       final String organizationId,
-                                       final String clusterId) {
+  public MixpanelEntityEventProperties(
+      final String entityId,
+      final String stage,
+      final String organizationId,
+      final String clusterId) {
     super(stage, organizationId, clusterId);
     this.entityId = entityId;
   }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.entity;
 
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityType;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,5 +23,4 @@ public class EntityData {
   public EntityData(final Map<EntityType, Long> subEntityCounts) {
     this.subEntityCounts = subEntityCounts;
   }
-
 }

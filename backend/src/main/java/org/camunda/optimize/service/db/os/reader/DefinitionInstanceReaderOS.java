@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -12,9 +14,6 @@ import org.camunda.optimize.service.db.reader.DefinitionInstanceReader;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -24,14 +23,14 @@ public class DefinitionInstanceReaderOS implements DefinitionInstanceReader {
 
   @Override
   public Set<String> getAllExistingDefinitionKeys(final DefinitionType type) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 
   @Override
-  public Set<String> getAllExistingDefinitionKeys(final DefinitionType type, final Set<String> instanceIds) {
-    //todo will be handled in the OPT-7230
+  public Set<String> getAllExistingDefinitionKeys(
+      final DefinitionType type, final Set<String> instanceIds) {
+    log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
-
 }

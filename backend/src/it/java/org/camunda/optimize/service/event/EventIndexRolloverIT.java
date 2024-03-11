@@ -353,7 +353,7 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
       .getOptimizeIndexAliasForIndex(indexName);
 
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    Map<String, Set<AliasMetadata>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticSearchClient()
+    Map<String, Set<AliasMetadata>> aliasMap = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .getAlias(aliasesRequest).getAliases();
 
     return aliasMap.keySet()

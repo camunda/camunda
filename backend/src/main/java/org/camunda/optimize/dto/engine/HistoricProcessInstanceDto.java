@@ -6,10 +6,9 @@
 package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
@@ -39,5 +38,4 @@ public class HistoricProcessInstanceDto implements TenantSpecificEngineDto {
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }
-
 }

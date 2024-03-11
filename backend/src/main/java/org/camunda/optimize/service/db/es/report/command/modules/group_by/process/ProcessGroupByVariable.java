@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
@@ -20,20 +24,18 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessReportDataDto> {
 
-  public ProcessGroupByVariable(final VariableAggregationService variableAggregationService,
-                                final DefinitionService definitionService) {
+  public ProcessGroupByVariable(
+      final VariableAggregationService variableAggregationService,
+      final DefinitionService definitionService) {
     super(variableAggregationService, definitionService);
   }
 
-  private VariableGroupByValueDto getVariableGroupByDto(final ExecutionContext<ProcessReportDataDto> context) {
+  private VariableGroupByValueDto getVariableGroupByDto(
+      final ExecutionContext<ProcessReportDataDto> context) {
     return ((VariableGroupByDto) context.getReportData().getGroupBy()).getValue();
   }
 
@@ -73,14 +75,16 @@ public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessRepor
   }
 
   @Override
-  protected BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<ProcessReportDataDto> context) {
+  protected BoolQueryBuilder getVariableUndefinedOrNullQuery(
+      final ExecutionContext<ProcessReportDataDto> context) {
     final VariableGroupByValueDto variable = getVariableGroupByDto(context);
-    return ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder(variable.getName(), variable.getType());
+    return ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder(
+        variable.getName(), variable.getType());
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setGroupBy(new VariableGroupByDto());
   }
-
 }

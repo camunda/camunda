@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import java.util.Collection;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
@@ -13,9 +15,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.List;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -23,13 +22,13 @@ import java.util.List;
 public class EventProcessDefinitionWriterOS implements EventProcessDefinitionWriter {
 
   @Override
-  public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
-    //todo will be handled in the OPT-7376
+  public void importEventProcessDefinitions(
+      final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
-
 }

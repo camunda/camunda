@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.rest.export.report;
 
+import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
+
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,27 +17,22 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 
-import jakarta.validation.constraints.NotNull;
-
-import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
-  @NotNull
-  private ProcessReportDataDto data;
+  @NotNull private ProcessReportDataDto data;
 
-  public SingleProcessReportDefinitionExportDto(final SingleProcessReportDefinitionRequestDto reportDefinition) {
+  public SingleProcessReportDefinitionExportDto(
+      final SingleProcessReportDefinitionRequestDto reportDefinition) {
     super(
-      reportDefinition.getId(),
-      SINGLE_PROCESS_REPORT,
-      SingleProcessReportIndex.VERSION,
-      reportDefinition.getName(),
-      reportDefinition.getDescription(),
-      reportDefinition.getCollectionId()
-    );
+        reportDefinition.getId(),
+        SINGLE_PROCESS_REPORT,
+        SingleProcessReportIndex.VERSION,
+        reportDefinition.getName(),
+        reportDefinition.getDescription(),
+        reportDefinition.getCollectionId());
     this.data = reportDefinition.getData();
   }
 
@@ -43,4 +41,3 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
     return SINGLE_PROCESS_REPORT;
   }
 }
-

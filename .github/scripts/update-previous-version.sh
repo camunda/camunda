@@ -21,11 +21,11 @@ if [ "$IS_PATCH" = "false" ]; then
   if [ $diff_result -ne 0 ]; then
     git commit -m "chore(release): update previousVersion to new release version ${RELEASE_VERSION}"
     echo "pushing to branch ${BRANCH}"
-    if [ "$DRY_RUN" = "true" ]; then
-        echo "not pushing to branch ${BRANCH} in dry run mode"
+    if [ "$IS_DRY_RUN" = "true" ]; then
+      echo "not pushing to branch ${BRANCH} in dry run mode"
     else
-        echo "pushing to branch ${BRANCH}"
-        git push origin ${BRANCH}
+      echo "pushing to branch ${BRANCH}"
+      git push origin ${BRANCH}
     fi
   else
     echo "Release version ${RELEASE_VERSION} did not change. Nothing to commit."

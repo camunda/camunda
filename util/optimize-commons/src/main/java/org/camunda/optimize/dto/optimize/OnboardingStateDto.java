@@ -17,8 +17,7 @@ import lombok.experimental.FieldNameConstants;
 public class OnboardingStateDto {
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
-  @NonNull
-  private String id;
+  @NonNull private String id;
   private String key;
   private String userId;
   private boolean seen;
@@ -27,7 +26,8 @@ public class OnboardingStateDto {
     this(key, userId, false);
   }
 
-  public OnboardingStateDto(@NonNull final String key, @NonNull final String userId, final boolean seen) {
+  public OnboardingStateDto(
+      @NonNull final String key, @NonNull final String userId, final boolean seen) {
     this.id = convertToId(userId, key);
     this.userId = userId;
     this.key = key;

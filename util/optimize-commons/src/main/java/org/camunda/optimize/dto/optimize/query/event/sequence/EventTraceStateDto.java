@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.sequence;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.util.List;
 
 @Builder
 @Data
@@ -23,5 +22,4 @@ public class EventTraceStateDto implements OptimizeDto {
 
   private String traceId;
   private List<TracedEventDto> eventTrace;
-
 }

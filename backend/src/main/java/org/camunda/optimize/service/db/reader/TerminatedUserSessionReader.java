@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
-import java.io.IOException;
 
 @Slf4j
 public abstract class TerminatedUserSessionReader {
@@ -18,10 +17,10 @@ public abstract class TerminatedUserSessionReader {
     try {
       return sessionIdExists(sessionId);
     } catch (Exception e) {
-      throw new OptimizeRuntimeException("Was not able to check for terminated session existence!", e);
+      throw new OptimizeRuntimeException(
+          "Was not able to check for terminated session existence!", e);
     }
   }
 
   protected abstract boolean sessionIdExists(final String sessionId) throws IOException;
-
 }

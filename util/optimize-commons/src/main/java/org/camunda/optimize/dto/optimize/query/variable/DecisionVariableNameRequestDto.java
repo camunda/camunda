@@ -5,30 +5,29 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
+import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
-import jakarta.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
-
 @AllArgsConstructor
 @Data
 @NoArgsConstructor
 public class DecisionVariableNameRequestDto {
-  @NotNull
-  private String decisionDefinitionKey;
+  @NotNull private String decisionDefinitionKey;
   private List<String> decisionDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
 
-  public DecisionVariableNameRequestDto(@NotNull final String key, final String version, final String tenantId) {
+  public DecisionVariableNameRequestDto(
+      @NotNull final String key, final String version, final String tenantId) {
     this.decisionDefinitionKey = key;
     this.decisionDefinitionVersions = Collections.singletonList(version);
     this.tenantIds = Collections.singletonList(tenantId);

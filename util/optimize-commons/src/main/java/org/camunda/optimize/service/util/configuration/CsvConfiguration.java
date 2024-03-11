@@ -14,9 +14,10 @@ public class CsvConfiguration {
 
   @JsonProperty("limit")
   private Integer exportCsvLimit;
+
   @JsonProperty("delimiter")
   private Character exportCsvDelimiter;
+
   @JsonProperty("authorizedUsers")
   private AuthorizedUserType authorizedUserType;
-
 }

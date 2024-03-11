@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
+
+import java.util.List;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -13,13 +19,6 @@ import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
-import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
-import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -31,12 +30,15 @@ public class CollectionScopeEntryDto {
   @EqualsAndHashCode.Include
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
+
   private DefinitionType definitionType;
   private String definitionKey;
   private List<String> tenants = ReportConstants.DEFAULT_TENANT_IDS;
 
   public CollectionScopeEntryDto(final String id) {
-    this(DefinitionType.valueOf(id.split(ID_SEGMENT_SEPARATOR)[0].toUpperCase()), id.split(ID_SEGMENT_SEPARATOR)[1]);
+    this(
+        DefinitionType.valueOf(id.split(ID_SEGMENT_SEPARATOR)[0].toUpperCase()),
+        id.split(ID_SEGMENT_SEPARATOR)[1]);
   }
 
   public CollectionScopeEntryDto(CollectionScopeEntryDto oldEntry) {
@@ -50,9 +52,8 @@ public class CollectionScopeEntryDto {
     this(definitionType, definitionKey, ReportConstants.DEFAULT_TENANT_IDS);
   }
 
-  public CollectionScopeEntryDto(final DefinitionType definitionType,
-                                 final String definitionKey,
-                                 final List<String> tenants) {
+  public CollectionScopeEntryDto(
+      final DefinitionType definitionType, final String definitionKey, final List<String> tenants) {
     this.id = convertTypeAndKeyToScopeEntryId(definitionType, definitionKey);
     this.definitionType = definitionType;
     this.definitionKey = definitionKey;
@@ -60,12 +61,12 @@ public class CollectionScopeEntryDto {
   }
 
   public String getId() {
-    return Optional.ofNullable(id).orElse(convertTypeAndKeyToScopeEntryId(definitionType, definitionKey));
+    return Optional.ofNullable(id)
+        .orElse(convertTypeAndKeyToScopeEntryId(definitionType, definitionKey));
   }
 
-  public ScopeComplianceType getComplianceType(final DefinitionType definitionType,
-                                               final String definitionKey,
-                                               final List<String> tenants) {
+  public ScopeComplianceType getComplianceType(
+      final DefinitionType definitionType, final String definitionKey, final List<String> tenants) {
     if (!isInDefinitionScope(definitionType, definitionKey)) {
       return NON_DEFINITION_COMPLIANT;
     } else if (!isInTenantScope(tenants)) {
@@ -74,19 +75,17 @@ public class CollectionScopeEntryDto {
     return COMPLIANT;
   }
 
-  private boolean isInDefinitionScope(final DefinitionType definitionType,
-                                      final String definitionKey) {
-    return this.definitionType.equals(definitionType) &&
-      this.definitionKey.equals(definitionKey);
+  private boolean isInDefinitionScope(
+      final DefinitionType definitionType, final String definitionKey) {
+    return this.definitionType.equals(definitionType) && this.definitionKey.equals(definitionKey);
   }
 
   private boolean isInTenantScope(final List<String> givenTenants) {
     return givenTenants != null && this.tenants.containsAll(givenTenants);
   }
 
-  public static String convertTypeAndKeyToScopeEntryId(final DefinitionType definitionType,
-                                                       final String definitionKey) {
+  public static String convertTypeAndKeyToScopeEntryId(
+      final DefinitionType definitionType, final String definitionKey) {
     return definitionType.getId() + ID_SEGMENT_SEPARATOR + definitionKey;
   }
 }
-

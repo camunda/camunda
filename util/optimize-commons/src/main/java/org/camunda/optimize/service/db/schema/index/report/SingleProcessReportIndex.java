@@ -5,11 +5,6 @@
  */
 package org.camunda.optimize.service.db.schema.index.report;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.DYNAMIC_PROPERTY_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
@@ -18,10 +13,15 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
+import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.elasticsearch.xcontent.XContentBuilder;
+
 public abstract class SingleProcessReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
 
   public static final String MANAGEMENT_REPORT = ProcessReportDataDto.Fields.managementReport;
-  public static final String INSTANT_PREVIEW_REPORT = ProcessReportDataDto.Fields.instantPreviewReport;
+  public static final String INSTANT_PREVIEW_REPORT =
+      ProcessReportDataDto.Fields.instantPreviewReport;
 
   public static final int VERSION = 11;
 
@@ -36,49 +36,49 @@ public abstract class SingleProcessReportIndex<TBuilder> extends AbstractReportI
   }
 
   @Override
-  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder) throws IOException {
+  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder)
+      throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(DATA)
+        .startObject(DATA)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .field(DYNAMIC_PROPERTY_TYPE, true)
         .startObject("properties")
-          .startObject(ProcessReportDataDto.Fields.view)
-            .field(MAPPING_ENABLED_SETTING, false)
-          .endObject()
-          .startObject(ProcessReportDataDto.Fields.groupBy)
-            .field(MAPPING_ENABLED_SETTING, false)
-          .endObject()
-          .startObject(ProcessReportDataDto.Fields.distributedBy)
-            .field(MAPPING_ENABLED_SETTING, false)
-          .endObject()
-          .startObject(ProcessReportDataDto.Fields.filter)
-            .field(MAPPING_ENABLED_SETTING, false)
-          .endObject()
-          .startObject(MANAGEMENT_REPORT)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-          .endObject()
-          .startObject(INSTANT_PREVIEW_REPORT)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-          .endObject()
-          .startObject(CONFIGURATION)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-            .field(DYNAMIC_PROPERTY_TYPE, true)
-            .startObject("properties")
-              .startObject(XML)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
-                .field("index", true)
-                .field("analyzer", "is_present_analyzer")
-              .endObject()
-              .startObject(AGGREGATION_TYPES)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-                .field(DYNAMIC_PROPERTY_TYPE, true)
-              .endObject()
-            .endObject()
-          .endObject()
+        .startObject(ProcessReportDataDto.Fields.view)
+        .field(MAPPING_ENABLED_SETTING, false)
         .endObject()
-      .endObject();
+        .startObject(ProcessReportDataDto.Fields.groupBy)
+        .field(MAPPING_ENABLED_SETTING, false)
+        .endObject()
+        .startObject(ProcessReportDataDto.Fields.distributedBy)
+        .field(MAPPING_ENABLED_SETTING, false)
+        .endObject()
+        .startObject(ProcessReportDataDto.Fields.filter)
+        .field(MAPPING_ENABLED_SETTING, false)
+        .endObject()
+        .startObject(MANAGEMENT_REPORT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
+        .endObject()
+        .startObject(INSTANT_PREVIEW_REPORT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
+        .endObject()
+        .startObject(CONFIGURATION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+        .field(DYNAMIC_PROPERTY_TYPE, true)
+        .startObject("properties")
+        .startObject(XML)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+        .field("index", true)
+        .field("analyzer", "is_present_analyzer")
+        .endObject()
+        .startObject(AGGREGATION_TYPES)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+        .field(DYNAMIC_PROPERTY_TYPE, true)
+        .endObject()
+        .endObject()
+        .endObject()
+        .endObject()
+        .endObject();
     // @formatter:on
   }
-
 }

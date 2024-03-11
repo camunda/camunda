@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {DefinitionSelection} from 'components';
 import {loadVariables} from 'services';
 
-import EventsSourceModalWithErrorHandling from './EventsSourceModal';
+import EventsSourceModal from './EventsSourceModal';
 import ExternalSource from './ExternalSource';
 
 jest.mock('services', () => {
@@ -21,7 +21,11 @@ jest.mock('services', () => {
 
 jest.mock('request', () => ({post: jest.fn().mockReturnValue({json: jest.fn()})}));
 
-const EventsSourceModal = EventsSourceModalWithErrorHandling.WrappedComponent;
+jest.mock('hooks', () => ({
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
 const allExternalGroups = {type: 'external', configuration: {includeAllGroups: true, group: null}};
 
@@ -48,10 +52,10 @@ beforeEach(() => {
   loadVariables.mockClear();
 });
 
-it('should disable the submit button if no definition selected', () => {
+it('should disable the confirm button if no definition selected', () => {
   const node = shallow(<EventsSourceModal {...props} />);
 
-  expect(node.find('Button').at(1)).toBeDisabled();
+  expect(node.find('.confirm')).toBeDisabled();
 });
 
 it('should disable definition selection in editing mode', () => {
@@ -60,10 +64,19 @@ it('should disable definition selection in editing mode', () => {
   expect(node.find(DefinitionSelection).props('disabledDefinition')).toBeTruthy();
 });
 
+it('should preselect variable in editing mode', () => {
+  loadVariables.mockReturnValueOnce([{name: 'var'}]);
+  const node = shallow(<EventsSourceModal {...props} initialSource={testSource} />);
+
+  runAllEffects();
+
+  expect(node.find('ComboBox').prop('selectedItem')).toEqual({name: 'var'});
+});
+
 it('should hide event type button group in editing', () => {
   const node = shallow(<EventsSourceModal {...props} initialSource={testSource} />);
 
-  expect(node.find('.ButtonGroup')).not.toExist();
+  expect(node.find('Tabs').prop('showButtons')).toBe(false);
 });
 
 it('load variables after selecting a process definition', () => {
@@ -88,7 +101,12 @@ it('load variables after selecting a process definition', () => {
 it('should apply the source to the state when editing a source', () => {
   const node = shallow(<EventsSourceModal {...props} initialSource={testSource} />);
 
-  expect(node.state().source).toMatchSnapshot();
+  const {tenants, versions, processDefinitionKey} = testSource.configuration;
+  const definitionSelection = node.find(DefinitionSelection);
+  expect(definitionSelection.prop('definitionKey')).toBe(processDefinitionKey);
+  expect(definitionSelection.prop('versions')).toBe(versions);
+  expect(definitionSelection.prop('tenants')).toBe(tenants);
+  expect(definitionSelection).not.toBeDisabled();
 });
 
 it('should edit a source when clicking confirm', () => {
@@ -102,9 +120,9 @@ it('should edit a source when clicking confirm', () => {
     />
   );
 
-  node.find({type: 'radio'}).at(1).simulate('change');
+  node.find('RadioButton').at(0).simulate('click');
 
-  node.find('Button').at(1).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith(
     [
@@ -136,11 +154,11 @@ it('should add a source when clicking confirm', () => {
     tenantIds: ['a', 'b'],
   });
 
-  node.find('Typeahead').prop('onChange')('boolVar');
+  node.find('ComboBox').prop('onChange')({selectedItem: {name: 'boolVar'}});
 
-  node.find({type: 'radio'}).at(2).simulate('change');
+  node.find('RadioButton').at(2).simulate('click');
 
-  node.find('Button').at(1).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith(
     [
@@ -164,6 +182,8 @@ it('should add a source when clicking confirm', () => {
 it('should show an error when adding already existing source', async () => {
   const node = await shallow(<EventsSourceModal {...props} existingSources={[testSource]} />);
 
+  runAllEffects();
+
   node.find(DefinitionSelection).prop('onChange')({
     key: testSource.configuration.processDefinitionKey,
     name: testSource.configuration.processDefinitionName,
@@ -171,7 +191,7 @@ it('should show an error when adding already existing source', async () => {
     tenantIds: testSource.configuration.tenants,
   });
 
-  expect(node.find({error: true})).toExist();
+  expect(node.find(DefinitionSelection).prop('invalid')).toBe(true);
 });
 
 it('should add selected external sources', () => {
@@ -183,7 +203,7 @@ it('should add selected external sources', () => {
   const testSource = {type: 'external', configuration: {group: 'testGroup'}};
   node.find(ExternalSource).prop('onChange')([testSource]);
 
-  node.find('Button').at(1).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([testSource], false);
 });
@@ -200,7 +220,7 @@ it('should add new external sources to already existing ones', () => {
   const newGroupSource = {type: 'external', configuration: {group: 'testGroup'}};
   node.find(ExternalSource).prop('onChange')([newGroupSource]);
 
-  node.find('Button').at(1).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([newGroupSource, existingGroupSource], true);
 });
@@ -215,7 +235,7 @@ it('should not include existing groups if all external groups is selected', () =
   node.find('Tabs').prop('onChange')('external');
   node.find(ExternalSource).prop('onChange')([allExternalGroups]);
 
-  node.find('Button').at(1).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([allExternalGroups], true);
 });
@@ -226,7 +246,7 @@ it('should add all external groups in auto generation', () => {
 
   node.find('Tabs').prop('onChange')('external');
 
-  node.find('Button').at(1).simulate('click');
+  node.find('.confirm').simulate('click');
 
   expect(node.find(ExternalSource)).not.toExist();
   expect(node.find('.addExternalInfo')).toExist();

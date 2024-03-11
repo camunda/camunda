@@ -5,6 +5,19 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
@@ -20,49 +33,31 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class DefinitionXmlImportMediatorTest {
 
-  @InjectMocks
-  private DecisionDefinitionXmlEngineImportMediator underTest;
+  @InjectMocks private DecisionDefinitionXmlEngineImportMediator underTest;
 
-  @Mock
-  private DecisionDefinitionXmlFetcher engineEntityFetcher;
+  @Mock private DecisionDefinitionXmlFetcher engineEntityFetcher;
 
-  @Mock
-  private DecisionDefinitionXmlImportIndexHandler importIndexHandler;
+  @Mock private DecisionDefinitionXmlImportIndexHandler importIndexHandler;
 
-  @Mock
-  private DecisionDefinitionXmlImportService importService;
+  @Mock private DecisionDefinitionXmlImportService importService;
 
-  @Mock
-  private BackoffCalculator idleBackoffCalculator;
+  @Mock private BackoffCalculator idleBackoffCalculator;
 
-  private final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+  private final ConfigurationService configurationService =
+      ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @BeforeEach
   public void init() {
-    this.underTest = new DecisionDefinitionXmlEngineImportMediator(
-      importIndexHandler,
-      engineEntityFetcher,
-      importService,
-      configurationService,
-      idleBackoffCalculator
-    );
+    this.underTest =
+        new DecisionDefinitionXmlEngineImportMediator(
+            importIndexHandler,
+            engineEntityFetcher,
+            importService,
+            configurationService,
+            idleBackoffCalculator);
   }
 
   @Test
@@ -73,8 +68,7 @@ public class DefinitionXmlImportMediatorTest {
     when(importIndexHandler.getNextPage()).thenReturn(page);
 
     // when
-    final boolean result = underTest.importNextPage(() -> {
-    });
+    final boolean result = underTest.importNextPage(() -> {});
 
     // then
     assertThat(result).isFalse();
@@ -94,12 +88,10 @@ public class DefinitionXmlImportMediatorTest {
 
     List<DecisionDefinitionXmlEngineDto> resultList = new ArrayList<>();
     resultList.add(new DecisionDefinitionXmlEngineDto());
-    when(engineEntityFetcher.fetchXmlsForDefinitions(page))
-      .thenReturn(resultList);
+    when(engineEntityFetcher.fetchXmlsForDefinitions(page)).thenReturn(resultList);
 
     // when
-    final Runnable importCompleteCallback = () -> {
-    };
+    final Runnable importCompleteCallback = () -> {};
     final boolean result = underTest.importNextPage(importCompleteCallback);
 
     // then
@@ -107,5 +99,4 @@ public class DefinitionXmlImportMediatorTest {
     verify(importIndexHandler, times(1)).updateIndex(testIds.size());
     verify(importService, times(1)).executeImport(resultList, importCompleteCallback);
   }
-
 }

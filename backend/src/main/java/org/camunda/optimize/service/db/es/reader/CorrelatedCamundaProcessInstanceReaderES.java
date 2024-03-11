@@ -5,7 +5,41 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.TENANT_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
+import static org.elasticsearch.core.TimeValue.timeValueSeconds;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.functionScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -15,9 +49,9 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.CorrelatedCamundaProcessInstanceReader;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -35,46 +69,12 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.TENANT_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.functionScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamundaProcessInstanceReader {
+public class CorrelatedCamundaProcessInstanceReaderES
+    implements CorrelatedCamundaProcessInstanceReader {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -83,10 +83,12 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
   private final ProcessDefinitionReader processDefinitionReader;
 
   @Override
-  public List<String> getCorrelationValueSampleForEventSources(final List<CamundaEventSourceEntryDto> eventSources) {
-    final List<CamundaEventSourceEntryDto> camundaSources = eventSources.stream()
-      .filter(eventSource -> EventSourceType.CAMUNDA.equals(eventSource.getSourceType()))
-      .collect(Collectors.toList());
+  public List<String> getCorrelationValueSampleForEventSources(
+      final List<CamundaEventSourceEntryDto> eventSources) {
+    final List<CamundaEventSourceEntryDto> camundaSources =
+        eventSources.stream()
+            .filter(eventSource -> EventSourceType.CAMUNDA.equals(eventSource.getSourceType()))
+            .collect(Collectors.toList());
     if (camundaSources.isEmpty()) {
       log.debug("There are no Camunda sources to fetch sample correlation values for");
       return Collections.emptyList();
@@ -96,16 +98,22 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
 
     final BoolQueryBuilder completedInstanceQuery = boolQuery().must(existsQuery(END_DATE));
     final BoolQueryBuilder matchesSourceQuery = boolQuery().minimumShouldMatch(1);
-    camundaSources.forEach(source -> matchesSourceQuery.should(queryForEventSourceInstances(source)));
+    camundaSources.forEach(
+        source -> matchesSourceQuery.should(queryForEventSourceInstances(source)));
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(boolQuery()
-               .filter(completedInstanceQuery)
-               .filter(matchesSourceQuery)
-               .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
-      .size(0);
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(
+                boolQuery()
+                    .filter(completedInstanceQuery)
+                    .filter(matchesSourceQuery)
+                    .must(
+                        functionScoreQuery(
+                            matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
+            .size(0);
 
-    SearchRequest searchRequest = new SearchRequest(getInstanceIndexNames(eventSources)).source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(getInstanceIndexNames(eventSources)).source(searchSourceBuilder);
     addCorrelationValuesAggregation(searchSourceBuilder, camundaSources);
 
     SearchResponse searchResponse;
@@ -117,8 +125,9 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.warn("Was not able to fetch sample correlation values because no instance indices exist. " +
-                   "Returning empty list.");
+        log.warn(
+            "Was not able to fetch sample correlation values because no instance indices exist. "
+                + "Returning empty list.");
         return Collections.emptyList();
       }
       throw e;
@@ -128,35 +137,43 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
   }
 
   @Override
-  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(final List<CamundaEventSourceEntryDto> camundaSources,
-                                                                                 final List<String> correlationValues) {
+  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
+      final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues) {
     if (camundaSources.isEmpty()) {
       log.debug("There are no Camunda sources to fetch correlated process instances for");
       return Collections.emptyList();
     }
 
     log.debug(
-      "Fetching correlated process instances for correlation value sample size {} for {} event sources",
-      correlationValues.size(),
-      camundaSources.size()
-    );
+        "Fetching correlated process instances for correlation value sample size {} for {} event sources",
+        correlationValues.size(),
+        camundaSources.size());
 
     final BoolQueryBuilder completedInstanceQuery = boolQuery().must(existsQuery(END_DATE));
     final BoolQueryBuilder matchesSourceQuery = boolQuery().minimumShouldMatch(1);
-    camundaSources.forEach(eventSource -> matchesSourceQuery.should(queryForEventSourceInstancesWithCorrelationValues(
-      eventSource,
-      correlationValues
-    )));
+    camundaSources.forEach(
+        eventSource ->
+            matchesSourceQuery.should(
+                queryForEventSourceInstancesWithCorrelationValues(eventSource, correlationValues)));
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(boolQuery()
-               .filter(completedInstanceQuery)
-               .filter(matchesSourceQuery)
-               .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
-      .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(getInstanceIndexNames(camundaSources))
-      .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(
+                boolQuery()
+                    .filter(completedInstanceQuery)
+                    .filter(matchesSourceQuery)
+                    .must(
+                        functionScoreQuery(
+                            matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
+            .size(MAX_RESPONSE_SIZE_LIMIT);
+    SearchRequest searchRequest =
+        new SearchRequest(getInstanceIndexNames(camundaSources))
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -167,113 +184,124 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info("Was not able to fetch instances for correlation values because no instance indices exist. " +
-                   "Returning empty list.");
+        log.info(
+            "Was not able to fetch instances for correlation values because no instance indices exist. "
+                + "Returning empty list.");
         return Collections.emptyList();
       }
       throw e;
     }
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      searchResponse,
-      CorrelatableProcessInstanceDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
-    );
+        searchResponse,
+        CorrelatableProcessInstanceDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
-  private List<String> extractCorrelationValues(final Aggregations aggregations,
-                                                final List<CamundaEventSourceEntryDto> eventSources) {
+  private List<String> extractCorrelationValues(
+      final Aggregations aggregations, final List<CamundaEventSourceEntryDto> eventSources) {
     final Terms valuesByProcessDefinition = aggregations.get(EVENT_SOURCE_AGG);
     List<String> correlationValues = new ArrayList<>();
     for (Terms.Bucket eventSourceBucket : valuesByProcessDefinition.getBuckets()) {
-      CamundaEventSourceEntryDto eventSourceForCurrentBucket = eventSources.stream()
-        .filter(source -> source.getConfiguration()
-          .getProcessDefinitionKey()
-          .equals(eventSourceBucket.getKeyAsString()))
-        .findFirst()
-        .orElseThrow(() -> new OptimizeRuntimeException(String.format(
-          "Could not find event source for bucket with key %s when sampling for correlation values",
-          eventSourceBucket.getKeyAsString()
-        )));
+      CamundaEventSourceEntryDto eventSourceForCurrentBucket =
+          eventSources.stream()
+              .filter(
+                  source ->
+                      source
+                          .getConfiguration()
+                          .getProcessDefinitionKey()
+                          .equals(eventSourceBucket.getKeyAsString()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new OptimizeRuntimeException(
+                          String.format(
+                              "Could not find event source for bucket with key %s when sampling for correlation values",
+                              eventSourceBucket.getKeyAsString())));
       ParsedTopHits topHits = eventSourceBucket.getAggregations().get(BUCKET_HITS_AGG);
       for (SearchHit hit : topHits.getHits().getHits()) {
         try {
-          final CorrelationValueDto correlationValueDto = objectMapper.readValue(
-            hit.getSourceAsString(),
-            CorrelationValueDto.class
-          );
+          final CorrelationValueDto correlationValueDto =
+              objectMapper.readValue(hit.getSourceAsString(), CorrelationValueDto.class);
           Optional<String> correlationValueToAdd;
-          final CamundaEventSourceConfigDto eventSourceConfig = eventSourceForCurrentBucket.getConfiguration();
+          final CamundaEventSourceConfigDto eventSourceConfig =
+              eventSourceForCurrentBucket.getConfiguration();
           if (eventSourceConfig.isTracedByBusinessKey()) {
             correlationValueToAdd = Optional.ofNullable(correlationValueDto.getBusinessKey());
           } else if (eventSourceConfig.getTraceVariable() != null) {
-            final Map<String, SimpleProcessVariableDto> variablesByName = correlationValueDto.getVariables()
-              .stream()
-              .collect(Collectors.toMap(SimpleProcessVariableDto::getName, Function.identity()));
+            final Map<String, SimpleProcessVariableDto> variablesByName =
+                correlationValueDto.getVariables().stream()
+                    .collect(
+                        Collectors.toMap(SimpleProcessVariableDto::getName, Function.identity()));
             correlationValueToAdd =
-              variablesByName.get(eventSourceConfig.getTraceVariable()).getValue().stream().findFirst();
+                variablesByName.get(eventSourceConfig.getTraceVariable()).getValue().stream()
+                    .findFirst();
           } else {
             throw new OptimizeRuntimeException(
-              "Cannot get variable sample values for event source with no tracing variable");
+                "Cannot get variable sample values for event source with no tracing variable");
           }
           if (correlationValueToAdd.isPresent()) {
             correlationValues.add(correlationValueToAdd.get());
           } else {
-            log.warn("Could not find correlation value to use in sample from {}", correlationValueDto);
+            log.warn(
+                "Could not find correlation value to use in sample from {}", correlationValueDto);
           }
         } catch (IOException e) {
-          final String reason = String.format(
-            "It was not possible to deserialize a hit to class %s from from Elasticsearch: %s",
-            CorrelationValueDto.class.getSimpleName(),
-            hit.getSourceAsString()
-          );
+          final String reason =
+              String.format(
+                  "It was not possible to deserialize a hit to class %s from from Elasticsearch: %s",
+                  CorrelationValueDto.class.getSimpleName(), hit.getSourceAsString());
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason);
         }
-
       }
     }
     return correlationValues;
   }
 
-  private void addCorrelationValuesAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                               final List<CamundaEventSourceEntryDto> eventSources) {
-    TermsAggregationBuilder correlationValuesAggregation = terms(EVENT_SOURCE_AGG)
-      .field(PROCESS_DEFINITION_KEY)
-      .size(eventSources.size())
-      .subAggregation(
-        // We use top hits only to access the documents in the bucket, which will be random rather than scored
-        topHits(BUCKET_HITS_AGG)
-          .size(MAX_HITS)
-          .fetchSource(CORRELATABLE_FIELDS, null));
+  private void addCorrelationValuesAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final List<CamundaEventSourceEntryDto> eventSources) {
+    TermsAggregationBuilder correlationValuesAggregation =
+        terms(EVENT_SOURCE_AGG)
+            .field(PROCESS_DEFINITION_KEY)
+            .size(eventSources.size())
+            .subAggregation(
+                // We use top hits only to access the documents in the bucket, which will be random
+                // rather than scored
+                topHits(BUCKET_HITS_AGG).size(MAX_HITS).fetchSource(CORRELATABLE_FIELDS, null));
     searchSourceBuilder.aggregation(correlationValuesAggregation);
   }
 
-  private BoolQueryBuilder queryForEventSourceInstances(final CamundaEventSourceEntryDto eventSource) {
-    return boolQuery()
-      .filter(versionsQuery(eventSource))
-      .filter(tenantsQuery(eventSource));
+  private BoolQueryBuilder queryForEventSourceInstances(
+      final CamundaEventSourceEntryDto eventSource) {
+    return boolQuery().filter(versionsQuery(eventSource)).filter(tenantsQuery(eventSource));
   }
 
-  private BoolQueryBuilder queryForEventSourceInstancesWithCorrelationValues(final CamundaEventSourceEntryDto eventSource,
-                                                                             final List<String> correlationValues) {
-    final BoolQueryBuilder eventSourceQuery = boolQuery()
-      .filter(termQuery(PROCESS_DEFINITION_KEY, eventSource.getConfiguration().getProcessDefinitionKey()))
-      .filter(versionsQuery(eventSource))
-      .filter(tenantsQuery(eventSource));
+  private BoolQueryBuilder queryForEventSourceInstancesWithCorrelationValues(
+      final CamundaEventSourceEntryDto eventSource, final List<String> correlationValues) {
+    final BoolQueryBuilder eventSourceQuery =
+        boolQuery()
+            .filter(
+                termQuery(
+                    PROCESS_DEFINITION_KEY,
+                    eventSource.getConfiguration().getProcessDefinitionKey()))
+            .filter(versionsQuery(eventSource))
+            .filter(tenantsQuery(eventSource));
     if (eventSource.getConfiguration().isTracedByBusinessKey()) {
       eventSourceQuery.filter(termsQuery(BUSINESS_KEY, correlationValues));
     } else {
       eventSourceQuery.filter(
-        nestedQuery(
-          VARIABLES,
-          boolQuery()
-            .filter(termQuery(getNestedVariableNameField(), eventSource.getConfiguration().getTraceVariable()))
-            .filter(termsQuery(getNestedVariableValueField(), correlationValues)),
-          ScoreMode.None
-        )
-      );
+          nestedQuery(
+              VARIABLES,
+              boolQuery()
+                  .filter(
+                      termQuery(
+                          getNestedVariableNameField(),
+                          eventSource.getConfiguration().getTraceVariable()))
+                  .filter(termsQuery(getNestedVariableValueField(), correlationValues)),
+              ScoreMode.None));
     }
     return eventSourceQuery;
   }
@@ -282,10 +310,11 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
     final CamundaEventSourceConfigDto eventSourceConfig = eventSource.getConfiguration();
     final BoolQueryBuilder versionQuery = boolQuery();
     if (isDefinitionVersionSetToLatest(eventSourceConfig.getVersions())) {
-      versionQuery.must(termQuery(
-        PROCESS_DEFINITION_VERSION,
-        processDefinitionReader.getLatestVersionToKey(eventSource.getConfiguration().getProcessDefinitionKey())
-      ));
+      versionQuery.must(
+          termQuery(
+              PROCESS_DEFINITION_VERSION,
+              processDefinitionReader.getLatestVersionToKey(
+                  eventSource.getConfiguration().getProcessDefinitionKey())));
     } else if (!isDefinitionVersionSetToAll(eventSourceConfig.getVersions())) {
       versionQuery.must(termsQuery(PROCESS_DEFINITION_VERSION, eventSourceConfig.getVersions()));
     } else if (eventSourceConfig.getVersions().isEmpty()) {
@@ -300,8 +329,10 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
     if (eventSourceConfig.getTenants().contains(null) || eventSourceConfig.getTenants().isEmpty()) {
       tenantQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
     }
-    final List<String> nonNullTenants = eventSourceConfig.getTenants().
-      stream().filter(Objects::nonNull).collect(Collectors.toList());
+    final List<String> nonNullTenants =
+        eventSourceConfig.getTenants().stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     if (!nonNullTenants.isEmpty()) {
       tenantQuery.should(termsQuery(TENANT_ID, nonNullTenants));
     }
@@ -310,8 +341,10 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
 
   private String[] getInstanceIndexNames(final List<CamundaEventSourceEntryDto> eventSources) {
     return eventSources.stream()
-      .map(source -> getProcessInstanceIndexAliasName(source.getConfiguration().getProcessDefinitionKey()))
-      .toArray(String[]::new);
+        .map(
+            source ->
+                getProcessInstanceIndexAliasName(
+                    source.getConfiguration().getProcessDefinitionKey()))
+        .toArray(String[]::new);
   }
-
 }

@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query;
 
-import lombok.Data;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
-
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 @Data
 public class LicenseInformationResponseDto implements OptimizeDto, Serializable {

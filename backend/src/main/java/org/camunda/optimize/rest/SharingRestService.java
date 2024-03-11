@@ -5,6 +5,24 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+
+import jakarta.validation.Valid;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.time.ZoneId;
+import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -25,25 +43,6 @@ import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.telemetry.EventReportingService;
 import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEvent;
 import org.springframework.stereotype.Component;
-
-import jakarta.validation.Valid;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import java.time.ZoneId;
-import java.util.function.Supplier;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
-import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
 @Path(SharingRestService.SHARE_PATH)
@@ -66,26 +65,28 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path(REPORT_SUB_PATH)
-  public IdResponseDto createNewReportShare(@Context ContainerRequestContext requestContext,
-                                            ReportShareRestDto createSharingDto) {
+  public IdResponseDto createNewReportShare(
+      @Context ContainerRequestContext requestContext, ReportShareRestDto createSharingDto) {
     return executeIfSharingEnabled(
-      () -> sharingService.createNewReportShareIfAbsent(
-        createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(requestContext)),
-      EventReportingEvent.REPORT_SHARE_ENABLED, "Sharing of reports is disabled per Optimize configuration"
-    );
+        () ->
+            sharingService.createNewReportShareIfAbsent(
+                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(requestContext)),
+        EventReportingEvent.REPORT_SHARE_ENABLED,
+        "Sharing of reports is disabled per Optimize configuration");
   }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path(DASHBOARD_SUB_PATH)
-  public IdResponseDto createNewDashboardShare(@Context ContainerRequestContext requestContext,
-                                               DashboardShareRestDto createSharingDto) {
+  public IdResponseDto createNewDashboardShare(
+      @Context ContainerRequestContext requestContext, DashboardShareRestDto createSharingDto) {
     return executeIfSharingEnabled(
-      () -> sharingService.createNewDashboardShare(
-        createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(requestContext)),
-      EventReportingEvent.DASHBOARD_SHARE_ENABLED, "Sharing of dashboards is disabled per Optimize configuration"
-    );
+        () ->
+            sharingService.createNewDashboardShare(
+                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(requestContext)),
+        EventReportingEvent.DASHBOARD_SHARE_ENABLED,
+        "Sharing of dashboards is disabled per Optimize configuration");
   }
 
   @DELETE
@@ -101,7 +102,8 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteDashboardShare(@PathParam("shareId") String dashboardShareId) {
     sharingService.deleteDashboardShare(dashboardShareId);
-    eventReportingService.sendEntityEvent(EventReportingEvent.DASHBOARD_SHARE_DISABLED, dashboardShareId);
+    eventReportingService.sendEntityEvent(
+        EventReportingEvent.DASHBOARD_SHARE_DISABLED, dashboardShareId);
   }
 
   @GET
@@ -121,64 +123,62 @@ public class SharingRestService {
   @POST
   @Path(REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedReportEvaluationResponseDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                                              @PathParam("shareId") String reportShareId,
-                                                              @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+  public AuthorizedReportEvaluationResponseDto evaluateReport(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("shareId") String reportShareId,
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     final ZoneId timezone = extractTimezone(requestContext);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
-      sharingService.evaluateReportShare(
-        reportShareId,
-        timezone,
-        PaginationDto.fromPaginationRequest(paginationRequestDto)
-      ),
-      requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
-    );
+        sharingService.evaluateReportShare(
+            reportShareId, timezone, PaginationDto.fromPaginationRequest(paginationRequestDto)),
+        requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @POST
   @Path(DASHBOARD_SUB_PATH + "/{shareId}" + REPORT_SUB_PATH + "/{reportId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public AuthorizedReportEvaluationResponseDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                                              @PathParam("shareId") String dashboardShareId,
-                                                              @PathParam("reportId") String reportId,
-                                                              AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
-                                                              @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+  public AuthorizedReportEvaluationResponseDto evaluateReport(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("shareId") String dashboardShareId,
+      @PathParam("reportId") String reportId,
+      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     final ZoneId timezone = extractTimezone(requestContext);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
-      sharingService.evaluateReportForSharedDashboard(
-        dashboardShareId,
-        reportId,
-        timezone,
-        reportEvaluationFilter,
-        PaginationDto.fromPaginationRequest(paginationRequestDto)
-      ),
-      requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
-    );
+        sharingService.evaluateReportForSharedDashboard(
+            dashboardShareId,
+            reportId,
+            timezone,
+            reportEvaluationFilter,
+            PaginationDto.fromPaginationRequest(paginationRequestDto)),
+        requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @GET
   @Path(DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardDefinitionRestDto evaluateDashboard(@Context ContainerRequestContext requestContext,
-                                                      @PathParam("shareId") String dashboardShareId) {
-    DashboardDefinitionRestDto dashboardDefinitionDto = sharingService.evaluateDashboard(dashboardShareId).orElse(null);
-    dashboardRestMapper.prepareRestResponse(dashboardDefinitionDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+  public DashboardDefinitionRestDto evaluateDashboard(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("shareId") String dashboardShareId) {
+    DashboardDefinitionRestDto dashboardDefinitionDto =
+        sharingService.evaluateDashboard(dashboardShareId).orElse(null);
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinitionDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinitionDto;
   }
 
   /**
-   * Returns status code
-   * - 200: if user that performs the request is allowed to share the dashboard
-   * - 403: if the user does not have the authorization to share the dashboard
-   * - 404: if the dashboard for the id does not exist
-   * - 500: if there were problems checking the authorizations.
+   * Returns status code - 200: if user that performs the request is allowed to share the dashboard
+   * - 403: if the user does not have the authorization to share the dashboard - 404: if the
+   * dashboard for the id does not exist - 500: if there were problems checking the authorizations.
    */
   @GET
   @Path(DASHBOARD_SUB_PATH + "/{dashboardId}/isAuthorizedToShare")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response isAuthorizedToShareDashboard(@Context ContainerRequestContext requestContext,
-                                               @PathParam("dashboardId") String dashboardId) {
+  public Response isAuthorizedToShareDashboard(
+      @Context ContainerRequestContext requestContext,
+      @PathParam("dashboardId") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     sharingService.validateAndCheckAuthorization(dashboardId, userId);
     // if no error was thrown
@@ -193,17 +193,20 @@ public class SharingRestService {
     return sharingService.checkShareStatus(searchRequest);
   }
 
-  private IdResponseDto executeIfSharingEnabled(Supplier<IdResponseDto> supplier,
-                                                final EventReportingEvent eventName,
-                                                final String sharingDisabledMessage) {
-    return settingsService.getSettings().getSharingEnabled()
-      .filter(Boolean::booleanValue)
-      .map(isEnabled -> {
-        final IdResponseDto responseDto = supplier.get();
-        eventReportingService.sendEntityEvent(eventName, responseDto.getId());
-        return responseDto;
-      })
-      .orElseThrow(() -> new SharingNotAllowedException(sharingDisabledMessage));
+  private IdResponseDto executeIfSharingEnabled(
+      Supplier<IdResponseDto> supplier,
+      final EventReportingEvent eventName,
+      final String sharingDisabledMessage) {
+    return settingsService
+        .getSettings()
+        .getSharingEnabled()
+        .filter(Boolean::booleanValue)
+        .map(
+            isEnabled -> {
+              final IdResponseDto responseDto = supplier.get();
+              eventReportingService.sendEntityEvent(eventName, responseDto.getId());
+              return responseDto;
+            })
+        .orElseThrow(() -> new SharingNotAllowedException(sharingDisabledMessage));
   }
-
 }

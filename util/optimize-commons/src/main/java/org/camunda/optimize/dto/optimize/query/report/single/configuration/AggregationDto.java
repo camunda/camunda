@@ -21,5 +21,4 @@ public class AggregationDto implements OptimizeDto {
 
   AggregationType type;
   Double value;
-
 }

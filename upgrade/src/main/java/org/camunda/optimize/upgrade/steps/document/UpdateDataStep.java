@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.upgrade.steps.document;
 
+import java.util.Map;
+import java.util.concurrent.Callable;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
@@ -13,9 +15,6 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 import org.elasticsearch.index.query.QueryBuilder;
 
-import java.util.Map;
-import java.util.concurrent.Callable;
-
 @EqualsAndHashCode(callSuper = true)
 public class UpdateDataStep extends UpgradeStep {
   private final QueryBuilder query;
@@ -23,18 +22,25 @@ public class UpdateDataStep extends UpgradeStep {
   private Map<String, Object> parameters;
   private final Callable<Map<String, Object>> paramMapProvider;
 
-  public UpdateDataStep(final IndexMappingCreator index, final QueryBuilder query, final String updateScript) {
+  public UpdateDataStep(
+      final IndexMappingCreator index, final QueryBuilder query, final String updateScript) {
     this(index, query, updateScript, null, null);
   }
 
-  public UpdateDataStep(final IndexMappingCreator index, final QueryBuilder query, final String updateScript,
-                        final Map<String, Object> parameters) {
+  public UpdateDataStep(
+      final IndexMappingCreator index,
+      final QueryBuilder query,
+      final String updateScript,
+      final Map<String, Object> parameters) {
     this(index, query, updateScript, parameters, null);
   }
 
-  public UpdateDataStep(final IndexMappingCreator index, final QueryBuilder query, final String updateScript,
-                        final Map<String, Object> parameters,
-                        final Callable<Map<String, Object>> paramMapProvider) {
+  public UpdateDataStep(
+      final IndexMappingCreator index,
+      final QueryBuilder query,
+      final String updateScript,
+      final Map<String, Object> parameters,
+      final Callable<Map<String, Object>> paramMapProvider) {
     super(index);
     this.query = query;
     this.updateScript = updateScript;

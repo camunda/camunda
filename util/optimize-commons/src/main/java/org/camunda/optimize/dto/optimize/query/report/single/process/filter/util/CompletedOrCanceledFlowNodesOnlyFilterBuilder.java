@@ -17,20 +17,22 @@ public class CompletedOrCanceledFlowNodesOnlyFilterBuilder {
     this.filterBuilder = filterBuilder;
   }
 
-  static CompletedOrCanceledFlowNodesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static CompletedOrCanceledFlowNodesOnlyFilterBuilder construct(
+      ProcessFilterBuilder filterBuilder) {
     return new CompletedOrCanceledFlowNodesOnlyFilterBuilder(filterBuilder);
   }
 
-  public CompletedOrCanceledFlowNodesOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public CompletedOrCanceledFlowNodesOnlyFilterBuilder filterLevel(
+      final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
 
   public ProcessFilterBuilder add() {
-    final CompletedOrCanceledFlowNodesOnlyFilterDto filter = new CompletedOrCanceledFlowNodesOnlyFilterDto();
+    final CompletedOrCanceledFlowNodesOnlyFilterDto filter =
+        new CompletedOrCanceledFlowNodesOnlyFilterDto();
     filter.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

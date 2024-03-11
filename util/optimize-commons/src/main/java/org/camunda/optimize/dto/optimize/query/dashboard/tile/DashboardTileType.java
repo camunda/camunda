@@ -8,7 +8,6 @@ package org.camunda.optimize.dto.optimize.query.dashboard.tile;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum DashboardTileType {
-
   OPTIMIZE_REPORT("optimize_report"),
   EXTERNAL_URL("external_url"),
   TEXT("text");
@@ -28,5 +27,4 @@ public enum DashboardTileType {
   public String toString() {
     return getId();
   }
-
 }

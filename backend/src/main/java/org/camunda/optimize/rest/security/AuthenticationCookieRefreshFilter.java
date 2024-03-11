@@ -5,6 +5,16 @@
  */
 package org.camunda.optimize.rest.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.HttpHeaders;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
@@ -19,17 +29,6 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.core.HttpHeaders;
-import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Optional;
-
 @AllArgsConstructor
 @Component
 @Conditional(CamundaPlatformCondition.class)
@@ -41,31 +40,39 @@ public class AuthenticationCookieRefreshFilter extends GenericFilterBean {
   private final AuthCookieService authCookieService;
 
   @Override
-  public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
-    throws IOException, ServletException {
+  public void doFilter(
+      final ServletRequest request, final ServletResponse response, final FilterChain chain)
+      throws IOException, ServletException {
 
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication instanceof PreAuthenticatedAuthenticationToken) {
       Optional.of((String) authentication.getCredentials())
-        .filter(token -> sessionService.getExpiresAtLocalDateTime(token)
-          .map(expiresAt -> {
-            final LocalDateTime now = LocalDateUtil.getCurrentLocalDateTime();
-            return expiresAt.isAfter(now)
-              // token reached last third of lifeTime => refresh
-              &&
-              Duration.between(now, expiresAt).toMinutes()
-                <= (configurationService.getAuthConfiguration().getTokenLifeTimeMinutes() / 3);
-          })
-          .orElse(false)
-        )
-        .flatMap(sessionService::refreshAuthToken)
-        .ifPresent(newToken -> ((HttpServletResponse) response).setHeader(
-          HttpHeaders.SET_COOKIE,
-          authCookieService.createNewOptimizeAuthCookie(newToken, request.getScheme())
-        ));
+          .filter(
+              token ->
+                  sessionService
+                      .getExpiresAtLocalDateTime(token)
+                      .map(
+                          expiresAt -> {
+                            final LocalDateTime now = LocalDateUtil.getCurrentLocalDateTime();
+                            return expiresAt.isAfter(now)
+                                // token reached last third of lifeTime => refresh
+                                && Duration.between(now, expiresAt).toMinutes()
+                                    <= (configurationService
+                                            .getAuthConfiguration()
+                                            .getTokenLifeTimeMinutes()
+                                        / 3);
+                          })
+                      .orElse(false))
+          .flatMap(sessionService::refreshAuthToken)
+          .ifPresent(
+              newToken ->
+                  ((HttpServletResponse) response)
+                      .setHeader(
+                          HttpHeaders.SET_COOKIE,
+                          authCookieService.createNewOptimizeAuthCookie(
+                              newToken, request.getScheme())));
     }
 
     chain.doFilter(request, response);
   }
-
 }

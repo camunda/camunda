@@ -18,5 +18,4 @@ public class EntityNameResponseDto {
   private String dashboardName;
   private String reportName;
   private String eventBasedProcessName;
-
 }

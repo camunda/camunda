@@ -6,10 +6,9 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.util.Objects;
 
 @Data
 @AllArgsConstructor

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.eventprocess.service;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
@@ -16,11 +20,6 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 @AllArgsConstructor
 @Component
 public class EventProcessDefinitionImportService {
@@ -31,56 +30,65 @@ public class EventProcessDefinitionImportService {
 
   public void syncPublishedEventProcessDefinitions() {
     final Set<String> publishedStateProcessIds = new HashSet<>();
-    final List<EventProcessPublishStateDto> publishedEventProcesses = eventProcessInstanceIndexManager
-      .getPublishedInstanceStates()
-      .stream()
-      .filter(eventProcessPublishStateDto -> EventProcessState.PUBLISHED.equals(eventProcessPublishStateDto.getState()))
-      .peek(eventProcessPublishStateDto -> publishedStateProcessIds.add(eventProcessPublishStateDto.getId()))
-      .toList();
+    final List<EventProcessPublishStateDto> publishedEventProcesses =
+        eventProcessInstanceIndexManager.getPublishedInstanceStates().stream()
+            .filter(
+                eventProcessPublishStateDto ->
+                    EventProcessState.PUBLISHED.equals(eventProcessPublishStateDto.getState()))
+            .peek(
+                eventProcessPublishStateDto ->
+                    publishedStateProcessIds.add(eventProcessPublishStateDto.getId()))
+            .toList();
 
     final Set<String> existingEventProcessDefinitionIds =
-      eventProcessDefinitionService.getAllEventProcessesDefinitionsOmitXml()
-        .stream()
-        .map(EventProcessDefinitionDto::getId)
-        .collect(Collectors.toSet());
+        eventProcessDefinitionService.getAllEventProcessesDefinitionsOmitXml().stream()
+            .map(EventProcessDefinitionDto::getId)
+            .collect(Collectors.toSet());
 
-    final List<EventProcessDefinitionDto> newOrUpdatedDefinitions = publishedEventProcesses.stream()
-      .filter(eventProcessPublishStateDto -> !existingEventProcessDefinitionIds.contains(eventProcessPublishStateDto.getId()))
-      .map(this::createEventProcessDefinitionDto)
-      .toList();
+    final List<EventProcessDefinitionDto> newOrUpdatedDefinitions =
+        publishedEventProcesses.stream()
+            .filter(
+                eventProcessPublishStateDto ->
+                    !existingEventProcessDefinitionIds.contains(
+                        eventProcessPublishStateDto.getId()))
+            .map(this::createEventProcessDefinitionDto)
+            .toList();
     if (!newOrUpdatedDefinitions.isEmpty()) {
       eventProcessDefinitionService.importEventProcessDefinitions(newOrUpdatedDefinitions);
       updateDefinitionXmlsInReports(newOrUpdatedDefinitions);
     }
 
-    final Set<String> definitionIdsToDelete = existingEventProcessDefinitionIds.stream()
-      .filter(definitionId -> !publishedStateProcessIds.contains(definitionId))
-      .collect(Collectors.toSet());
+    final Set<String> definitionIdsToDelete =
+        existingEventProcessDefinitionIds.stream()
+            .filter(definitionId -> !publishedStateProcessIds.contains(definitionId))
+            .collect(Collectors.toSet());
     if (!definitionIdsToDelete.isEmpty()) {
       eventProcessDefinitionService.deleteEventProcessDefinitions(definitionIdsToDelete);
     }
   }
 
   private void updateDefinitionXmlsInReports(final List<EventProcessDefinitionDto> definitions) {
-    definitions.forEach(eventProcessDefinitionDto -> reportService.updateDefinitionXmlOfProcessReports(
-      eventProcessDefinitionDto.getKey(), eventProcessDefinitionDto.getBpmn20Xml()
-    ));
+    definitions.forEach(
+        eventProcessDefinitionDto ->
+            reportService.updateDefinitionXmlOfProcessReports(
+                eventProcessDefinitionDto.getKey(), eventProcessDefinitionDto.getBpmn20Xml()));
   }
 
-  private EventProcessDefinitionDto createEventProcessDefinitionDto(final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    final BpmnModelInstance bpmnModelInstance = BpmnModelUtil.parseBpmnModel(eventProcessPublishStateDto.getXml());
+  private EventProcessDefinitionDto createEventProcessDefinitionDto(
+      final EventProcessPublishStateDto eventProcessPublishStateDto) {
+    final BpmnModelInstance bpmnModelInstance =
+        BpmnModelUtil.parseBpmnModel(eventProcessPublishStateDto.getXml());
     return EventProcessDefinitionDto.eventProcessBuilder()
-      .id(eventProcessPublishStateDto.getId())
-      .key(eventProcessPublishStateDto.getProcessMappingId())
-      .version("1")
-      .name(eventProcessPublishStateDto.getName())
-      .tenantId(null)
-      .bpmn20Xml(eventProcessPublishStateDto.getXml())
-      .deleted(false)
-      .onboarded(true)
-      .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmnModelInstance))
-      .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmnModelInstance))
-      .build();
+        .id(eventProcessPublishStateDto.getId())
+        .key(eventProcessPublishStateDto.getProcessMappingId())
+        .version("1")
+        .name(eventProcessPublishStateDto.getName())
+        .tenantId(null)
+        .bpmn20Xml(eventProcessPublishStateDto.getXml())
+        .deleted(false)
+        .onboarded(true)
+        .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmnModelInstance))
+        .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmnModelInstance))
+        .build();
   }
-
 }

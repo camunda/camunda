@@ -5,22 +5,21 @@
  */
 package org.camunda.optimize.service.events.rollover;
 
-import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.stereotype.Component;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 
 import java.util.Collections;
 import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.stereotype.Component;
 
 @Component
 public class ExternalProcessVariableIndexRolloverService extends AbstractIndexRolloverService {
 
   private final ConfigurationService configurationService;
 
-  protected ExternalProcessVariableIndexRolloverService(final DatabaseClient databaseClient,
-                                                     final ConfigurationService configurationService) {
+  protected ExternalProcessVariableIndexRolloverService(
+      final DatabaseClient databaseClient, final ConfigurationService configurationService) {
     super(databaseClient);
     this.configurationService = configurationService;
   }
@@ -37,7 +36,8 @@ public class ExternalProcessVariableIndexRolloverService extends AbstractIndexRo
 
   @Override
   protected int getScheduleIntervalInMinutes() {
-    return configurationService.getVariableIndexRolloverConfiguration().getScheduleIntervalInMinutes();
+    return configurationService
+        .getVariableIndexRolloverConfiguration()
+        .getScheduleIntervalInMinutes();
   }
-
 }

@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.dashboard.filter.data;
 
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-
-import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -21,12 +20,15 @@ public class DashboardIntegerVariableFilterDataDto extends DashboardVariableFilt
     this(null, new DashboardVariableFilterSubDataDto(null, null, false));
   }
 
-  public DashboardIntegerVariableFilterDataDto(final String name, final DashboardVariableFilterSubDataDto data) {
+  public DashboardIntegerVariableFilterDataDto(
+      final String name, final DashboardVariableFilterSubDataDto data) {
     this(name, data, null);
   }
 
-  public DashboardIntegerVariableFilterDataDto(final String name, final DashboardVariableFilterSubDataDto data,
-                                               final List<String> defaultValues) {
+  public DashboardIntegerVariableFilterDataDto(
+      final String name,
+      final DashboardVariableFilterSubDataDto data,
+      final List<String> defaultValues) {
     super(VariableType.INTEGER, name, data);
     this.defaultValues = defaultValues;
   }

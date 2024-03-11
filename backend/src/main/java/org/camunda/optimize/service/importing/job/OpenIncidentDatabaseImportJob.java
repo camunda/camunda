@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.service.db.DatabaseClient;
@@ -12,18 +14,16 @@ import org.camunda.optimize.service.db.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class OpenIncidentDatabaseImportJob extends DatabaseImportJob<IncidentDto> {
 
   private final OpenIncidentWriter openIncidentWriter;
   private final ConfigurationService configurationService;
 
-  public OpenIncidentDatabaseImportJob(final OpenIncidentWriter openIncidentWriter,
-                                       final ConfigurationService configurationService,
-                                       final Runnable callback,
-                                       final DatabaseClient databaseClient) {
+  public OpenIncidentDatabaseImportJob(
+      final OpenIncidentWriter openIncidentWriter,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.openIncidentWriter = openIncidentWriter;
     this.configurationService = configurationService;
@@ -32,12 +32,10 @@ public class OpenIncidentDatabaseImportJob extends DatabaseImportJob<IncidentDto
   @Override
   protected void persistEntities(List<IncidentDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests =
-      new ArrayList<>(openIncidentWriter.generateIncidentImports(newOptimizeEntities));
+        new ArrayList<>(openIncidentWriter.generateIncidentImports(newOptimizeEntities));
     databaseClient.executeImportRequestsAsBulk(
-      "Open incidents",
-      importRequests,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "Open incidents",
+        importRequests,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
-
 }

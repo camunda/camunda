@@ -5,19 +5,20 @@
  */
 package org.camunda.optimize.service.db.es.report.command.aggregations;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 public abstract class AggregationStrategy<T extends ValuesSourceAggregationBuilder<T>> {
 
-  protected abstract ValuesSourceAggregationBuilder<T> createAggregationBuilderForAggregation(final String customIdentifier);
+  protected abstract ValuesSourceAggregationBuilder<T> createAggregationBuilderForAggregation(
+      final String customIdentifier);
 
-  protected abstract Double getValueForAggregation(final String customIdentifier, final Aggregations aggs);
+  protected abstract Double getValueForAggregation(
+      final String customIdentifier, final Aggregations aggs);
 
   public abstract AggregationDto getAggregationType();
 
@@ -40,5 +41,4 @@ public abstract class AggregationStrategy<T extends ValuesSourceAggregationBuild
   protected String createAggregationName(final String... segments) {
     return Arrays.stream(segments).filter(Objects::nonNull).collect(Collectors.joining("_"));
   }
-
 }

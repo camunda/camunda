@@ -7,13 +7,12 @@ package org.camunda.optimize.dto.optimize.query.analysis;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
-import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.service.util.TenantListHandlingUtil;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 @Data
 public class BranchAnalysisRequestDto {

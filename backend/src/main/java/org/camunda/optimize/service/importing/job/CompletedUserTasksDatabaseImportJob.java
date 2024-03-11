@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
@@ -12,17 +13,16 @@ import org.camunda.optimize.service.db.writer.usertask.CompletedUserTaskInstance
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.List;
-
 public class CompletedUserTasksDatabaseImportJob extends DatabaseImportJob<FlowNodeInstanceDto> {
 
   private final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
   private final ConfigurationService configurationService;
 
-  public CompletedUserTasksDatabaseImportJob(final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter,
-                                             final ConfigurationService configurationService,
-                                             final Runnable callback,
-                                             final DatabaseClient databaseClient) {
+  public CompletedUserTasksDatabaseImportJob(
+      final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
     this.configurationService = configurationService;
@@ -30,12 +30,11 @@ public class CompletedUserTasksDatabaseImportJob extends DatabaseImportJob<FlowN
 
   @Override
   protected void persistEntities(List<FlowNodeInstanceDto> newOptimizeEntities) {
-    final List<ImportRequestDto> importRequests = completedUserTaskInstanceWriter.generateUserTaskImports(
-      newOptimizeEntities);
+    final List<ImportRequestDto> importRequests =
+        completedUserTaskInstanceWriter.generateUserTaskImports(newOptimizeEntities);
     databaseClient.executeImportRequestsAsBulk(
-      "Completed user tasks",
-      importRequests,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "Completed user tasks",
+        importRequests,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 }

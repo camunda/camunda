@@ -6,6 +6,8 @@
 package org.camunda.optimize.upgrade.plan;
 
 import com.vdurmont.semver4j.Semver;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,20 +15,12 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @Slf4j
 public class UpgradePlan {
-  @Getter
-  private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
-  @Getter
-  @Setter
-  private Semver toVersion;
-  @Getter
-  @Setter
-  private Semver fromVersion;
+  @Getter private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
+  @Getter @Setter private Semver toVersion;
+  @Getter @Setter private Semver fromVersion;
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
     this.upgradeSteps.add(upgradeStep);
@@ -35,5 +29,4 @@ public class UpgradePlan {
   public void addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
     this.upgradeSteps.addAll(upgradeSteps);
   }
-
 }

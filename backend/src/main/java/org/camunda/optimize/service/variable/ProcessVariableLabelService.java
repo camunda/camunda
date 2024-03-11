@@ -7,6 +7,7 @@ package org.camunda.optimize.service.variable;
 
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -14,8 +15,6 @@ import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabels
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.db.writer.VariableLabelWriter;
 import org.springframework.stereotype.Component;
-
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
@@ -26,28 +25,31 @@ public class ProcessVariableLabelService {
   private final DefinitionService definitionService;
 
   public void storeVariableLabels(final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
-    definitionVariableLabelsDto.getLabels()
-      .stream()
-      .collect(Collectors.groupingBy(
-        label -> label.getVariableName() + label.getVariableType(),
-        Collectors.counting()
-      )).values().forEach(count -> {
-        if (count > 1) {
-          throw new BadRequestException("Each variable can only have a single label!");
-        }
-      });
+    definitionVariableLabelsDto.getLabels().stream()
+        .collect(
+            Collectors.groupingBy(
+                label -> label.getVariableName() + label.getVariableType(), Collectors.counting()))
+        .values()
+        .forEach(
+            count -> {
+              if (count > 1) {
+                throw new BadRequestException("Each variable can only have a single label!");
+              }
+            });
 
-    if (definitionService.definitionExists(DefinitionType.PROCESS, definitionVariableLabelsDto.getDefinitionKey())) {
+    if (definitionService.definitionExists(
+        DefinitionType.PROCESS, definitionVariableLabelsDto.getDefinitionKey())) {
       variableLabelWriter.createVariableLabelUpsertRequest(definitionVariableLabelsDto);
     } else {
       throw new NotFoundException(
-        "The process definition with id " + definitionVariableLabelsDto.getDefinitionKey() + " has not yet been " +
-          "imported to Optimize");
+          "The process definition with id "
+              + definitionVariableLabelsDto.getDefinitionKey()
+              + " has not yet been "
+              + "imported to Optimize");
     }
   }
 
   public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
     variableLabelWriter.deleteVariableLabelsForDefinition(processDefinitionKey);
   }
-
 }

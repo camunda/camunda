@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ExternalDependencies">
+    <plugin id="software.xdev.saveactions" />
+    <plugin id="google-java-format" min-version="1.16.0.0" />
+  </component>
+</project>

@@ -21,7 +21,8 @@ public class InstancesContainingUserTasksFilterBuilder {
     return new InstancesContainingUserTasksFilterBuilder(filterBuilder);
   }
 
-  public InstancesContainingUserTasksFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public InstancesContainingUserTasksFilterBuilder filterLevel(
+      final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }

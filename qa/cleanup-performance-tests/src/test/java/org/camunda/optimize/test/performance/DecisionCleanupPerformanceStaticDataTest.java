@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.test.performance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+
+import java.time.Period;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.time.Period;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 
 @Tag("engine-cleanup")
 public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanupTest {
@@ -21,7 +20,8 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
-    // Note that when these tests run on jenkins, data is usually imported already during the "import" stage of the job
+    // Note that when these tests run on jenkins, data is usually imported already during the
+    // "import" stage of the job
     importEngineData();
   }
 
@@ -30,7 +30,8 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
     // given ttl of 0
     getCleanupConfiguration().getDecisionCleanupConfiguration().setEnabled(true);
     getCleanupConfiguration().setTtl(Period.parse("P0D"));
-    // we assert there is some data as a precondition as data is expected to be provided by the environment
+    // we assert there is some data as a precondition as data is expected to be provided by the
+    // environment
     assertThat(getDecisionInstanceCount()).isPositive();
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
@@ -44,5 +45,4 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
   private Integer getDecisionInstanceCount() {
     return databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS);
   }
-
 }

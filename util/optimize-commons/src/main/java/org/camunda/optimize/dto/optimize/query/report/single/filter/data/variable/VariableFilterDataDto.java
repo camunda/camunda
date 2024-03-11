@@ -5,13 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
-
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE_LOWERCASE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_TYPE;
@@ -27,7 +20,16 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.SHORT_TYPE_LOWER
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE_LOWERCASE;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = StringVariableFilterDataDto.class, name = STRING_TYPE),
   @JsonSubTypes.Type(value = StringVariableFilterDataDto.class, name = STRING_TYPE_LOWERCASE),

@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.os.schema.index;
 
-import org.camunda.optimize.service.db.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
+import org.camunda.optimize.service.db.schema.index.DashboardShareIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public class DashboardShareIndexOS extends DashboardShareIndex<IndexSettings.Builder> {
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     return OptimizeOpenSearchUtil.addStaticSetting(key, value, contentBuilder);
   }
 }

@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
-
-import java.util.List;
 
 @Data
 @AllArgsConstructor

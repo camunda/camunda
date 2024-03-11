@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -22,8 +23,6 @@ import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @AllArgsConstructor
 @Component
 public class ReportAuthorizationService {
@@ -37,62 +36,81 @@ public class ReportAuthorizationService {
     return getAuthorizedRole(userId, report).isPresent();
   }
 
-  public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto<?> report) {
+  public Optional<RoleType> getAuthorizedRole(
+      final String userId, final ReportDefinitionDto<?> report) {
     final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
-    final Optional<RoleType> authorizedRole = isSuperUser
-      ? Optional.of(RoleType.EDITOR)
-      : getAuthorizedReportRole(userId, report);
+    final Optional<RoleType> authorizedRole =
+        isSuperUser ? Optional.of(RoleType.EDITOR) : getAuthorizedReportRole(userId, report);
     return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, report));
   }
 
-  private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto<?> report) {
+  private Optional<RoleType> getAuthorizedReportRole(
+      final String userId, final ReportDefinitionDto<?> report) {
     RoleType role = null;
     if (report.getCollectionId() != null) {
-      role = collectionAuthorizationService.getUsersCollectionResourceRole(userId, report.getCollectionId())
-        .orElse(null);
-    } else if (report.getData() instanceof ProcessReportDataDto &&
-               ((ProcessReportDataDto) report.getData()).isInstantPreviewReport()) {
-      role = isAuthorizedToAccessProcessReportDefinition(userId, (ProcessReportDataDto) report.getData()) ?
-        RoleType.VIEWER : null;
-    } else if (Optional.ofNullable(report.getOwner()).map(owner -> owner.equals(userId)).orElse(true)) {
+      role =
+          collectionAuthorizationService
+              .getUsersCollectionResourceRole(userId, report.getCollectionId())
+              .orElse(null);
+    } else if (report.getData() instanceof ProcessReportDataDto
+        && ((ProcessReportDataDto) report.getData()).isInstantPreviewReport()) {
+      role =
+          isAuthorizedToAccessProcessReportDefinition(
+                  userId, (ProcessReportDataDto) report.getData())
+              ? RoleType.VIEWER
+              : null;
+    } else if (Optional.ofNullable(report.getOwner())
+        .map(owner -> owner.equals(userId))
+        .orElse(true)) {
       role = RoleType.EDITOR;
     }
     return Optional.ofNullable(role);
   }
 
-  public boolean isAuthorizedToAccessReportDefinition(final String userId,
-                                                      final ReportDefinitionDto<?> report) {
+  public boolean isAuthorizedToAccessReportDefinition(
+      final String userId, final ReportDefinitionDto<?> report) {
     final boolean authorizedToAccessDefinition;
     if (report instanceof SingleProcessReportDefinitionRequestDto) {
-      final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionRequestDto) report).getData();
-      authorizedToAccessDefinition = isAuthorizedToAccessProcessReportDefinition(userId, reportData);
+      final ProcessReportDataDto reportData =
+          ((SingleProcessReportDefinitionRequestDto) report).getData();
+      authorizedToAccessDefinition =
+          isAuthorizedToAccessProcessReportDefinition(userId, reportData);
     } else if (report instanceof SingleDecisionReportDefinitionRequestDto) {
-      final DecisionReportDataDto reportData = ((SingleDecisionReportDefinitionRequestDto) report).getData();
-      authorizedToAccessDefinition = isAuthorizedToAccessDecisionReportDefinition(userId, reportData);
+      final DecisionReportDataDto reportData =
+          ((SingleDecisionReportDefinitionRequestDto) report).getData();
+      authorizedToAccessDefinition =
+          isAuthorizedToAccessDecisionReportDefinition(userId, reportData);
     } else if (report instanceof CombinedReportDefinitionRequestDto) {
-      final CombinedReportDataDto reportData = ((CombinedReportDefinitionRequestDto) report).getData();
-      authorizedToAccessDefinition = reportReader.getAllSingleProcessReportsForIdsOmitXml(reportData.getReportIds())
-        .stream()
-        .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(userId, r.getData()));
+      final CombinedReportDataDto reportData =
+          ((CombinedReportDefinitionRequestDto) report).getData();
+      authorizedToAccessDefinition =
+          reportReader.getAllSingleProcessReportsForIdsOmitXml(reportData.getReportIds()).stream()
+              .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(userId, r.getData()));
     } else {
-      throw new OptimizeRuntimeException("Unsupported report type: " + report.getClass().getSimpleName());
+      throw new OptimizeRuntimeException(
+          "Unsupported report type: " + report.getClass().getSimpleName());
     }
     return authorizedToAccessDefinition;
   }
 
-  private boolean isAuthorizedToAccessDecisionReportDefinition(@NonNull final String userId,
-                                                               @NonNull final DecisionReportDataDto reportData) {
+  private boolean isAuthorizedToAccessDecisionReportDefinition(
+      @NonNull final String userId, @NonNull final DecisionReportDataDto reportData) {
     return definitionAuthorizationService.isAuthorizedToAccessDefinition(
-      userId, DefinitionType.DECISION, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
-    );
+        userId,
+        DefinitionType.DECISION,
+        reportData.getDecisionDefinitionKey(),
+        reportData.getTenantIds());
   }
 
-  private boolean isAuthorizedToAccessProcessReportDefinition(@NonNull final String userId,
-                                                              @NonNull final ProcessReportDataDto reportData) {
+  private boolean isAuthorizedToAccessProcessReportDefinition(
+      @NonNull final String userId, @NonNull final ProcessReportDataDto reportData) {
     return reportData.getDefinitions().stream()
-      .allMatch(definition -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
-        userId, DefinitionType.PROCESS, definition.getKey(), definition.getTenantIds()
-      ));
+        .allMatch(
+            definition ->
+                definitionAuthorizationService.isAuthorizedToAccessDefinition(
+                    userId,
+                    DefinitionType.PROCESS,
+                    definition.getKey(),
+                    definition.getTenantIds()));
   }
-
 }

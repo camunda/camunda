@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
-public abstract class TerminatedUserSessionIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+import java.io.IOException;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
+
+public abstract class TerminatedUserSessionIndex<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 3;
 
@@ -23,14 +23,14 @@ public abstract class TerminatedUserSessionIndex<TBuilder> extends DefaultIndexM
   @Override
   public XContentBuilder addProperties(final XContentBuilder builder) throws IOException {
     // @formatter:off
-    return  builder
-      .startObject(ID)
+    return builder
+        .startObject(ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(TERMINATION_TIMESTAMP)
+        .endObject()
+        .startObject(TERMINATION_TIMESTAMP)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject();
+        .endObject();
     // @formatter:on
   }
 

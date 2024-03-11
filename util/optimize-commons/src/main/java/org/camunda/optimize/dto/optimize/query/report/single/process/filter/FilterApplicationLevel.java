@@ -25,5 +25,4 @@ public enum FilterApplicationLevel {
   public String toString() {
     return getId();
   }
-
 }

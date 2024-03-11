@@ -5,13 +5,17 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
-import org.camunda.optimize.service.db.schema.index.SettingsIndex;
-import org.camunda.optimize.service.db.reader.SettingsReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.SettingsReader;
+import org.camunda.optimize.service.db.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -19,11 +23,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -46,11 +45,12 @@ public class SettingsReaderES implements SettingsReader {
       final GetResponse getResponse = esClient.get(getRequest);
       if (getResponse.isExists()) {
         result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsResponseDto.class);
-        if(result.getSharingEnabled().isEmpty()) {
+        if (result.getSharingEnabled().isEmpty()) {
           result.setSharingEnabled(configurationService.getSharingEnabled());
         }
-        if(result.getMetadataTelemetryEnabled().isEmpty()) {
-          result.setMetadataTelemetryEnabled(configurationService.getTelemetryConfiguration().isInitializeTelemetry());
+        if (result.getMetadataTelemetryEnabled().isEmpty()) {
+          result.setMetadataTelemetryEnabled(
+              configurationService.getTelemetryConfiguration().isInitializeTelemetry());
         }
       }
     } catch (IOException e) {
@@ -61,5 +61,4 @@ public class SettingsReaderES implements SettingsReader {
 
     return Optional.ofNullable(result);
   }
-
 }

@@ -20,19 +20,19 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRe
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
 
-  @JsonUnwrapped
-  private CollectionDefinitionRestDto definitionDto;
+  @JsonUnwrapped private CollectionDefinitionRestDto definitionDto;
 
-  public AuthorizedCollectionDefinitionRestDto(final RoleType currentUserRole,
-                                               final CollectionDefinitionRestDto definitionDto) {
+  public AuthorizedCollectionDefinitionRestDto(
+      final RoleType currentUserRole, final CollectionDefinitionRestDto definitionDto) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }
 
   public static AuthorizedCollectionDefinitionRestDto from(
-    final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
+      final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
 
-    final CollectionDefinitionDto collectionDefinitionDto = authorizedCollectionDto.getDefinitionDto();
+    final CollectionDefinitionDto collectionDefinitionDto =
+        authorizedCollectionDto.getDefinitionDto();
     final CollectionDefinitionRestDto resolvedCollection = new CollectionDefinitionRestDto();
     resolvedCollection.setId(collectionDefinitionDto.getId());
     resolvedCollection.setName(collectionDefinitionDto.getName());
@@ -44,7 +44,6 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
 
     resolvedCollection.setData(collectionDefinitionDto.getData());
     return new AuthorizedCollectionDefinitionRestDto(
-      authorizedCollectionDto.getCurrentUserRole(), resolvedCollection
-    );
+        authorizedCollectionDto.getCurrentUserRole(), resolvedCollection);
   }
 }

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
@@ -13,11 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Out
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @RequiredArgsConstructor
 @Component
@@ -28,19 +27,17 @@ public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<Decision
   private final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter;
 
   @Override
-  public void addFilterToQuery(final BoolQueryBuilder query,
-                               final List<DecisionFilterDto<?>> filter,
-                               final FilterContext filterContext) {
+  public void addFilterToQuery(
+      final BoolQueryBuilder query,
+      final List<DecisionFilterDto<?>> filter,
+      final FilterContext filterContext) {
     if (filter != null) {
       evaluationDateQueryFilter.addFilters(
-        query, extractFilters(filter, EvaluationDateFilterDto.class), filterContext
-      );
+          query, extractFilters(filter, EvaluationDateFilterDto.class), filterContext);
       decisionInputVariableQueryFilter.addFilters(
-        query, extractFilters(filter, InputVariableFilterDto.class), filterContext
-      );
+          query, extractFilters(filter, InputVariableFilterDto.class), filterContext);
       decisionOutputVariableQueryFilter.addFilters(
-        query, extractFilters(filter, OutputVariableFilterDto.class), filterContext
-      );
+          query, extractFilters(filter, OutputVariableFilterDto.class), filterContext);
     }
   }
 
@@ -49,13 +46,12 @@ public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<Decision
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  public <T extends FilterDataDto> List<T> extractFilters(final List<DecisionFilterDto<?>> filter,
-                                                          final Class<? extends DecisionFilterDto<?>> filterClass) {
-    return filter
-      .stream()
-      .filter(filterClass::isInstance)
-      .map(dateFilter -> (T) dateFilter.getData())
-      .collect(Collectors.toList());
+  public <T extends FilterDataDto> List<T> extractFilters(
+      final List<DecisionFilterDto<?>> filter,
+      final Class<? extends DecisionFilterDto<?>> filterClass) {
+    return filter.stream()
+        .filter(filterClass::isInstance)
+        .map(dateFilter -> (T) dateFilter.getData())
+        .collect(Collectors.toList());
   }
-
 }

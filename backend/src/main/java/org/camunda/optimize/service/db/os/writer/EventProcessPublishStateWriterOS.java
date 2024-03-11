@@ -21,26 +21,28 @@ import org.springframework.stereotype.Component;
 public class EventProcessPublishStateWriterOS implements EventProcessPublishStateWriter {
 
   @Override
-  public IdResponseDto createEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    //todo will be handled in the OPT-7376
+  public IdResponseDto createEventProcessPublishState(
+      final EventProcessPublishStateDto eventProcessPublishStateDto) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public void updateEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    //todo will be handled in the OPT-7376
+  public void updateEventProcessPublishState(
+      final EventProcessPublishStateDto eventProcessPublishStateDto) {
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
-  public boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
-    //todo will be handled in the OPT-7376
+  public boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(
+      final String eventProcessMappingId) {
+    log.error("Functionality not implemented for OpenSearch");
     return false;
   }
 
   @Override
-  public void markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(final String eventProcessMappingId,
-                                                                                        final String publishStateIdToExclude) {
-    //todo will be handled in the OPT-7376
+  public void markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(
+      final String eventProcessMappingId, final String publishStateIdToExclude) {
+    log.error("Functionality not implemented for OpenSearch");
   }
-
 }

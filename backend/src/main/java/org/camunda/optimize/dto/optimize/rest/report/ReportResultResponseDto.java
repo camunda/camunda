@@ -6,15 +6,14 @@
 package org.camunda.optimize.dto.optimize.rest.report;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -43,5 +42,4 @@ public class ReportResultResponseDto<T> {
   public ResultType getType() {
     return getMeasures().stream().findFirst().map(MeasureResponseDto::getType).orElse(null);
   }
-
 }

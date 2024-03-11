@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -14,11 +18,6 @@ import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(callSuper = true)
@@ -27,6 +26,7 @@ import java.util.Map;
 public class EventProcessInstanceDto extends ProcessInstanceDto {
   @Builder.Default
   private List<FlowNodeInstanceUpdateDto> pendingFlowNodeInstanceUpdates = new ArrayList<>();
+
   @Builder.Default
   private Map<String, EventCorrelationStateDto> correlatedEventsById = new HashMap<>();
 }

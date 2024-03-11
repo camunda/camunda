@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.security.collection;
 
+import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,13 +24,13 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +42,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
@@ -49,6 +51,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 // we need to create the test instance per class since this allows
 // the @MethodSource method to be non-static.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag(OPENSEARCH_PASSING)
 public class ReportCollectionScopeEnforcementIT extends AbstractPlatformIT {
 
   private static final String DEFINITION_KEY_1 = "KEY_1";

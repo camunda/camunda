@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.MultipleVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class MultipleVariableFilterBuilder {
 
@@ -36,17 +35,18 @@ public class MultipleVariableFilterBuilder {
   }
 
   public MultipleVariableFilterBuilder variableFilters(List<VariableFilterDto> variableFilters) {
-    this.variableFilters = variableFilters.stream().map(ProcessFilterDto::getData).collect(Collectors.toList());
+    this.variableFilters =
+        variableFilters.stream().map(ProcessFilterDto::getData).collect(Collectors.toList());
     return this;
   }
 
   public ProcessFilterBuilder add() {
-    MultipleVariableFilterDataDto variableFilterDataDto = new MultipleVariableFilterDataDto(variableFilters);
+    MultipleVariableFilterDataDto variableFilterDataDto =
+        new MultipleVariableFilterDataDto(variableFilters);
     MultipleVariableFilterDto variableFilterDto = new MultipleVariableFilterDto();
     variableFilterDto.setData(variableFilterDataDto);
     variableFilterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(variableFilterDto);
     return filterBuilder;
   }
-
 }

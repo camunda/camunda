@@ -5,43 +5,28 @@
  */
 package org.camunda.optimize.service.db.os.writer.usertask;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.AbstractUserTaskWriter;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
-import org.camunda.optimize.service.db.os.writer.AbstractProcessInstanceDataWriterOS;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 
-import java.util.Collections;
-import java.util.List;
-
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public abstract class AbstractUserTaskWriterOS extends AbstractProcessInstanceDataWriterOS<FlowNodeInstanceDto>
-  implements AbstractUserTaskWriter {
-
-  protected final ObjectMapper objectMapper;
-
-  protected AbstractUserTaskWriterOS(final OptimizeOpenSearchClient osClient,
-                                     final OpenSearchSchemaManager openSearchSchemaManager,
-                                     final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager);
-    this.objectMapper = objectMapper;
-  }
+public abstract class AbstractUserTaskWriterOS implements AbstractUserTaskWriter {
 
   protected abstract String createInlineUpdateScript();
 
   @Override
-  public List<ImportRequestDto> generateUserTaskImports(final String importItemName,
-                                                        final DatabaseClient databaseClient,
-                                                        final List<FlowNodeInstanceDto> userTaskInstances) {
-    //todo will be handled in the OPT-7376
+  public List<ImportRequestDto> generateUserTaskImports(
+      final String importItemName,
+      final DatabaseClient databaseClient,
+      final List<FlowNodeInstanceDto> userTaskInstances) {
+    log.error("Functionality not implemented for OpenSearch");
     return Collections.emptyList();
   }
-
 }

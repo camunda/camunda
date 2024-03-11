@@ -11,10 +11,6 @@
   <artifactId>qa</artifactId>
   <packaging>pom</packaging>
 
-  <properties>
-    <sonar.skip>true</sonar.skip>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>

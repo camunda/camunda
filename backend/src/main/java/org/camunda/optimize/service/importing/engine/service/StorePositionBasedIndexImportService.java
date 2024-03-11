@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
@@ -14,36 +15,36 @@ import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.job.StorePositionBasedIndexDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.List;
-
 /**
- * Write all information of the current import index to elasticsearch.
- * If Optimize is restarted the import index can thus be restored again.
+ * Write all information of the current import index to elasticsearch. If Optimize is restarted the
+ * import index can thus be restored again.
  */
 @AllArgsConstructor
 @Slf4j
-public class StorePositionBasedIndexImportService implements ImportService<PositionBasedImportIndexDto> {
+public class StorePositionBasedIndexImportService
+    implements ImportService<PositionBasedImportIndexDto> {
 
   private final PositionBasedImportIndexWriter importIndexWriter;
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final DatabaseClient databaseClient;
 
-  public StorePositionBasedIndexImportService(final ConfigurationService configurationService,
-                                              final PositionBasedImportIndexWriter importIndexWriter,
-                                              final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
-      getClass().getSimpleName(), configurationService
-    );
+  public StorePositionBasedIndexImportService(
+      final ConfigurationService configurationService,
+      final PositionBasedImportIndexWriter importIndexWriter,
+      final DatabaseClient databaseClient) {
+    databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.importIndexWriter = importIndexWriter;
     this.databaseClient = databaseClient;
   }
 
-  public void executeImport(final List<PositionBasedImportIndexDto> importIndexesToStore,
-                            final Runnable importCompleteCallback) {
+  @Override
+  public void executeImport(
+      final List<PositionBasedImportIndexDto> importIndexesToStore,
+      final Runnable importCompleteCallback) {
     final StorePositionBasedIndexDatabaseImportJob storeIndexesImportJob =
-      new StorePositionBasedIndexDatabaseImportJob(
-        importIndexWriter, importCompleteCallback, databaseClient
-      );
+        new StorePositionBasedIndexDatabaseImportJob(
+            importIndexWriter, importCompleteCallback, databaseClient);
     storeIndexesImportJob.setEntitiesToImport(importIndexesToStore);
     databaseImportJobExecutor.executeImportJob(storeIndexesImportJob);
   }
@@ -52,5 +53,4 @@ public class StorePositionBasedIndexImportService implements ImportService<Posit
   public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
     return databaseImportJobExecutor;
   }
-
 }

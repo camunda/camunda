@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.jetty;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
+
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -16,14 +20,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
-import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
-
 /**
- * After an upgrade of Optimize the browser might load old resources
- * from the browser cache. This filter adds the no store
- * cookie to the response to prevent those caching issues after the upgrade.
+ * After an upgrade of Optimize the browser might load old resources from the browser cache. This
+ * filter adds the no store cookie to the response to prevent those caching issues after the
+ * upgrade.
  */
 public class NoCachingFilter implements Filter {
 
@@ -33,13 +33,12 @@ public class NoCachingFilter implements Filter {
   }
 
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
-                                                                                            IOException,
-                                                                                            ServletException {
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+      throws IOException, ServletException {
     HttpServletRequest servletRequest = (HttpServletRequest) request;
     String requestPath = servletRequest.getServletPath();
     boolean isStaticResourceThatShouldNotBeCached =
-      NO_CACHE_RESOURCES.stream().anyMatch(requestPath::endsWith);
+        NO_CACHE_RESOURCES.stream().anyMatch(requestPath::endsWith);
     if (isStaticResourceThatShouldNotBeCached || isApiRestCall(requestPath)) {
       ((HttpServletResponse) response).setHeader(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
     }

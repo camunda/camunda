@@ -15,6 +15,7 @@ import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheC
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.SuppressionConstants;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
@@ -42,6 +44,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
 
   @Test

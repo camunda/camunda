@@ -10,24 +10,21 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import com.google.common.collect.Lists;
-import lombok.NoArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Objects;
+import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @NoArgsConstructor
 public class LoggingConfigurationReader {
 
-  private final LinkedList<String> loggingConfigNames = Lists.newLinkedList(Arrays.asList(
-    "environment-logback.xml",
-    "logback-test.xml",
-    "logback.xml"
-  ));
+  private final LinkedList<String> loggingConfigNames =
+      Lists.newLinkedList(
+          Arrays.asList("environment-logback.xml", "logback-test.xml", "logback.xml"));
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -40,7 +37,7 @@ public class LoggingConfigurationReader {
       configurator.doConfigure(configStream); // loads logback file
       Objects.requireNonNull(configStream).close();
     } catch (JoranException | IOException e) {
-      //since logging setup broke, print it in standard error stream
+      // since logging setup broke, print it in standard error stream
       e.printStackTrace();
     }
     enableElasticsearchRequestLogging(loggerContext);
@@ -51,7 +48,8 @@ public class LoggingConfigurationReader {
       // this allows to enable logging of Elasticsearch requests when
       // Optimize log level is set to trace
       // for more information:
-      // - https://www.elastic.co/guide/en/elasticsearch/client/java-rest/6.5/java-rest-low-usage-logging.html
+      // -
+      // https://www.elastic.co/guide/en/elasticsearch/client/java-rest/6.5/java-rest-low-usage-logging.html
       // - https://guzalexander.com/2018/09/30/es-rest-client-trace-logging.html
       loggerContext.getLogger("tracer").setLevel(Level.TRACE);
     }
@@ -59,9 +57,9 @@ public class LoggingConfigurationReader {
 
   private InputStream getLogbackConfigurationFileStream() {
     return loggingConfigNames.stream()
-      .map(config -> this.getClass().getClassLoader().getResourceAsStream(config))
-      .filter(Objects::nonNull)
-      .findFirst()
-      .orElse(null);
+        .map(config -> this.getClass().getClassLoader().getResourceAsStream(config))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
   }
 }

@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import jakarta.validation.Valid;
 
 @Builder
 @Data
@@ -21,9 +20,6 @@ import jakarta.validation.Valid;
 @FieldNameConstants
 public class EventMappingDto implements OptimizeDto {
 
-  @Valid
-  EventTypeDto start;
-  @Valid
-  EventTypeDto end;
-
+  @Valid EventTypeDto start;
+  @Valid EventTypeDto end;
 }

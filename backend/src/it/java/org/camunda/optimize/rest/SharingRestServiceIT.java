@@ -20,16 +20,19 @@ import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
@@ -321,6 +324,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateSharedDashboard() {
     // given
     String reportId = createReportWithInstance();

@@ -222,3 +222,13 @@ it('should default loading state columns and rows count', () => {
   expect(skeleton.prop('columnCount')).toBe(3);
   expect(skeleton.prop('rowCount')).toBe(3);
 });
+
+it('should display error in page if specified', () => {
+  const node = mount(
+    <Table head={['a']} body={generateData(21)} errorInPage={<div className="test" />} />
+  );
+
+  expect(node.find('.cds--pagination')).toExist();
+  expect(node.find('.test')).toExist();
+  expect(node.find('tbody')).not.toExist();
+});

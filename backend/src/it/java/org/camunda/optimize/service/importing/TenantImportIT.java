@@ -5,18 +5,18 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 
+@Tag(OPENSEARCH_PASSING)
 public class TenantImportIT extends AbstractImportIT {
 
   @Test

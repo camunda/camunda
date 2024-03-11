@@ -5,6 +5,26 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ReportType;
@@ -40,27 +60,6 @@ import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
-import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
-import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
-import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
-import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -71,15 +70,18 @@ public class ReportReaderOS implements ReportReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public Optional<ReportDefinitionDto> getReport(String reportId) {
+  public Optional<ReportDefinitionDto> getReport(final String reportId) {
     log.debug("Fetching report with id [{}]", reportId);
-    MgetResponse<ReportDefinitionDto> multiGetItemResponses = performMultiGetReportRequest(reportId);
+    final MgetResponse<ReportDefinitionDto> multiGetItemResponses =
+        performMultiGetReportRequest(reportId);
 
     Optional<ReportDefinitionDto> result = Optional.empty();
 
-    for (MultiGetResponseItem<ReportDefinitionDto> itemResponse : multiGetItemResponses.docs()) {
-      GetResult<ReportDefinitionDto> response = itemResponse.result();
-      Optional<ReportDefinitionDto> reportDefinitionDto = OpensearchReaderUtil.processGetResponse(response);
+    for (final MultiGetResponseItem<ReportDefinitionDto> itemResponse :
+        multiGetItemResponses.docs()) {
+      final GetResult<ReportDefinitionDto> response = itemResponse.result();
+      final Optional<ReportDefinitionDto> reportDefinitionDto =
+          OpensearchReaderUtil.processGetResponse(response);
       if (reportDefinitionDto.isPresent()) {
         result = reportDefinitionDto;
         break;
@@ -89,14 +91,17 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(final String reportId) {
+  public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(
+      final String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
-    GetRequest.Builder getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
+    final GetRequest.Builder getRequest =
+        getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
 
-    String errorMessage = String.format("Could not fetch single process report with id [%s]", reportId);
+    final String errorMessage =
+        String.format("Could not fetch single process report with id [%s]", reportId);
 
-    GetResponse<SingleProcessReportDefinitionRequestDto> getResponse =
-      osClient.get(getRequest, SingleProcessReportDefinitionRequestDto.class, errorMessage);
+    final GetResponse<SingleProcessReportDefinitionRequestDto> getResponse =
+        osClient.get(getRequest, SingleProcessReportDefinitionRequestDto.class, errorMessage);
 
     if (!getResponse.found()) {
       return Optional.empty();
@@ -106,14 +111,17 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(final String reportId) {
+  public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(
+      final String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
-    GetRequest.Builder getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
+    final GetRequest.Builder getRequest =
+        getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
-    String errorMessage = String.format("Could not fetch single decision report with id [%s]", reportId);
+    final String errorMessage =
+        String.format("Could not fetch single decision report with id [%s]", reportId);
 
-    GetResponse<SingleDecisionReportDefinitionRequestDto> getResponse =
-      osClient.get(getRequest, SingleDecisionReportDefinitionRequestDto.class, errorMessage);
+    final GetResponse<SingleDecisionReportDefinitionRequestDto> getResponse =
+        osClient.get(getRequest, SingleDecisionReportDefinitionRequestDto.class, errorMessage);
 
     if (!getResponse.found()) {
       return Optional.empty();
@@ -130,21 +138,25 @@ public class ReportReaderOS implements ReportReader {
     }
     log.debug("Fetching all report definitions for Ids {}", reportIds);
     final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
-    Query reportIdsQuery = QueryDSL.ids(reportIdsAsArray);
+    final Query reportIdsQuery = QueryDSL.ids(reportIdsAsArray);
 
-    SearchRequest.Builder searchRequest = getSearchRequestOmitXml(
-      reportIdsQuery,
-      ALL_REPORT_INDICES,
-      LIST_FETCH_LIMIT
-    ).scroll(new Time.Builder()
-               .time(String.valueOf(configurationService.getOpenSearchConfiguration()
-                                      .getScrollTimeoutInSeconds())).build());
+    final SearchRequest.Builder searchRequest =
+        getSearchRequestOmitXml(reportIdsQuery, ALL_REPORT_INDICES, LIST_FETCH_LIMIT)
+            .scroll(
+                new Time.Builder()
+                    .time(
+                        String.valueOf(
+                            configurationService
+                                .getOpenSearchConfiguration()
+                                .getScrollTimeoutInSeconds()))
+                    .build());
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
     try {
       searchResponse = osClient.retrieveAllScrollResults(searchRequest, ReportDefinitionDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch all reports definitions for ids [%s]", reportIds);
+    } catch (final IOException e) {
+      final String reason =
+          String.format("Was not able to fetch all reports definitions for ids [%s]", reportIds);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -152,13 +164,14 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(final String definitionKey) {
-    final List<ReportDefinitionDto> processReportsForKey = getAllProcessReportsForDefinitionKeyOmitXml(definitionKey);
-    final List<String> processReportIds = processReportsForKey.stream()
-      .map(ReportDefinitionDto::getId)
-      .toList();
+  public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(
+      final String definitionKey) {
+    final List<ReportDefinitionDto> processReportsForKey =
+        getAllProcessReportsForDefinitionKeyOmitXml(definitionKey);
+    final List<String> processReportIds =
+        processReportsForKey.stream().map(ReportDefinitionDto::getId).toList();
     final List<CombinedReportDefinitionRequestDto> combinedReports =
-      getCombinedReportsForSimpleReports(processReportIds);
+        getCombinedReportsForSimpleReports(processReportIds);
     processReportsForKey.addAll(combinedReports);
     return processReportsForKey;
   }
@@ -167,27 +180,30 @@ public class ReportReaderOS implements ReportReader {
   public List<ReportDefinitionDto> getAllPrivateReportsOmitXml() {
     log.debug("Fetching all available private reports");
 
-    Query privateReportsQuery =
-      new BoolQuery.Builder()
-        .mustNot(QueryDSL.exists(COLLECTION_ID))
-        .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
-        .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
-        .build()
-        ._toQuery();
+    final Query privateReportsQuery =
+        new BoolQuery.Builder()
+            .mustNot(QueryDSL.exists(COLLECTION_ID))
+            .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
+            .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
+            .build()
+            .toQuery();
 
-    SearchRequest.Builder searchRequest = getSearchRequestOmitXml(
-      privateReportsQuery,
-      ALL_REPORT_INDICES,
-      LIST_FETCH_LIMIT
-    ).scroll(new Time.Builder()
-               .time(String.valueOf(configurationService.getOpenSearchConfiguration()
-                                      .getScrollTimeoutInSeconds())).build());
+    final SearchRequest.Builder searchRequest =
+        getSearchRequestOmitXml(privateReportsQuery, ALL_REPORT_INDICES, LIST_FETCH_LIMIT)
+            .scroll(
+                new Time.Builder()
+                    .time(
+                        String.valueOf(
+                            configurationService
+                                .getOpenSearchConfiguration()
+                                .getScrollTimeoutInSeconds()))
+                    .build());
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
     try {
       searchResponse = osClient.retrieveAllScrollResults(searchRequest, ReportDefinitionDto.class);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch all private reports";
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch all private reports";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -195,9 +211,10 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(final List<String> reportIds) {
+  public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
+      final List<String> reportIds) {
     log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
-    final String[] indices = new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME};
+    final String[] indices = new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME};
     return getReportDefinitionDtos(reportIds, indices);
   }
 
@@ -212,206 +229,208 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReport(String simpleReportId) {
+  public List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReport(
+      final String simpleReportId) {
     return getCombinedReportsForSimpleReports(Collections.singletonList(simpleReportId));
   }
 
   @Override
   public long getReportCount(final ReportType reportType) {
-    final String errorMessage = String.format("Was not able to retrieve %s report counts!", reportType);
+    final String errorMessage =
+        String.format("Was not able to retrieve %s report counts!", reportType);
     if (ReportType.PROCESS.equals(reportType)) {
-      Query query = new BoolQuery.Builder()
-        .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
-        .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
-        .build()._toQuery();
-      return osClient.count(new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME}, query, errorMessage);
+      final Query query =
+          new BoolQuery.Builder()
+              .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
+              .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
+              .build()
+              .toQuery();
+      return osClient.count(new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME}, query, errorMessage);
     } else {
-      return osClient.count(new String[]{SINGLE_DECISION_REPORT_INDEX_NAME}, QueryDSL.matchAll(), errorMessage);
+      return osClient.count(
+          new String[] {SINGLE_DECISION_REPORT_INDEX_NAME}, QueryDSL.matchAll(), errorMessage);
     }
   }
 
-  private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(final String definitionKey) {
-    log.debug("Fetching all available process reports for process definition key {}", definitionKey);
+  private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(
+      final String definitionKey) {
+    log.debug(
+        "Fetching all available process reports for process definition key {}", definitionKey);
 
-    final Query processReportQuery = new BoolQuery.Builder()
-      .must(QueryDSL.term(
-        String.join(".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key),
-        definitionKey
-      ))
-      .build()
-      ._toQuery();
+    final Query processReportQuery =
+        new BoolQuery.Builder()
+            .must(
+                QueryDSL.term(
+                    String.join(
+                        ".",
+                        DATA,
+                        SingleReportDataDto.Fields.definitions,
+                        ReportDataDefinitionDto.Fields.key),
+                    definitionKey))
+            .build()
+            .toQuery();
 
-    SearchRequest.Builder searchRequest = getSearchRequestOmitXml(
-      processReportQuery,
-      new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
-      LIST_FETCH_LIMIT
-    )
-      .scroll(new Time.Builder()
-                .time(String.valueOf(configurationService.getOpenSearchConfiguration().getScrollTimeoutInSeconds()))
-                .build());
+    final SearchRequest.Builder searchRequest =
+        getSearchRequestOmitXml(
+                processReportQuery,
+                new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME},
+                LIST_FETCH_LIMIT)
+            .scroll(
+                new Time.Builder()
+                    .time(
+                        String.valueOf(
+                            configurationService
+                                .getOpenSearchConfiguration()
+                                .getScrollTimeoutInSeconds()))
+                    .build());
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
     try {
       searchResponse = osClient.retrieveAllScrollResults(searchRequest, ReportDefinitionDto.class);
-    } catch (IOException e) {
-      String reason = String.format(
-        "Was not able to fetch all process reports for definition key [%s]",
-        definitionKey
-      );
+    } catch (final IOException e) {
+      final String reason =
+          String.format(
+              "Was not able to fetch all process reports for definition key [%s]", definitionKey);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);
   }
 
-  private List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReports(List<String> simpleReportIds) {
+  private List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReports(
+      final List<String> simpleReportIds) {
     log.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
 
-    final Query inner = new NestedQuery.Builder().
-      path(String.join(".", DATA, REPORTS))
-      .query(QueryDSL.terms(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), simpleReportIds, FieldValue::of))
-      .scoreMode(ChildScoreMode.None)
-      .build()._toQuery();
+    final Query inner =
+        new NestedQuery.Builder()
+            .path(String.join(".", DATA, REPORTS))
+            .query(
+                QueryDSL.terms(
+                    String.join(".", DATA, REPORTS, REPORT_ITEM_ID),
+                    simpleReportIds,
+                    FieldValue::of))
+            .scoreMode(ChildScoreMode.None)
+            .build()
+            .toQuery();
 
-    final Query getCombinedReportsBySimpleReportIdQuery = new NestedQuery.Builder().
-      path(DATA)
-      .query(inner)
-      .scoreMode(ChildScoreMode.None)
-      .build()._toQuery();
+    final Query getCombinedReportsBySimpleReportIdQuery =
+        new NestedQuery.Builder()
+            .path(DATA)
+            .query(inner)
+            .scoreMode(ChildScoreMode.None)
+            .build()
+            .toQuery();
 
-    SearchRequest.Builder searchRequest = getSearchRequestOmitXml(
-      getCombinedReportsBySimpleReportIdQuery,
-      new String[]{COMBINED_REPORT_INDEX_NAME}
-    );
+    final SearchRequest.Builder searchRequest =
+        getSearchRequestOmitXml(
+            getCombinedReportsBySimpleReportIdQuery, new String[] {COMBINED_REPORT_INDEX_NAME});
 
-    final String errorMessage = String.format(
-      "Was not able to fetch combined reports that contain reports with ids [%s]",
-      simpleReportIds
-    );
-    SearchResponse<CombinedReportDefinitionRequestDto> searchResponse = osClient.search(
-      searchRequest,
-      CombinedReportDefinitionRequestDto.class,
-      errorMessage
-    );
+    final String errorMessage =
+        String.format(
+            "Was not able to fetch combined reports that contain reports with ids [%s]",
+            simpleReportIds);
+    final SearchResponse<CombinedReportDefinitionRequestDto> searchResponse =
+        osClient.search(searchRequest, CombinedReportDefinitionRequestDto.class, errorMessage);
 
     return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
-  private List<ReportDefinitionDto> getReportsForCollection(final String collectionId, final boolean includeXml) {
+  private List<ReportDefinitionDto> getReportsForCollection(
+      final String collectionId, final boolean includeXml) {
     log.debug("Fetching reports using collection with id {}", collectionId);
 
-    Query reportByCollectionQuery =
-      new BoolQuery.Builder()
-        .must(QueryDSL.term(COLLECTION_ID, collectionId))
-        .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
-        .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
-        .build()
-        ._toQuery();
+    final Query reportByCollectionQuery =
+        new BoolQuery.Builder()
+            .must(QueryDSL.term(COLLECTION_ID, collectionId))
+            .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
+            .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
+            .build()
+            .toQuery();
 
-    SearchRequest.Builder searchRequest;
+    final SearchRequest.Builder searchRequest;
     if (includeXml) {
       searchRequest = getSearchRequestIncludingXml(reportByCollectionQuery, ALL_REPORT_INDICES);
     } else {
       searchRequest = getSearchRequestOmitXml(reportByCollectionQuery, ALL_REPORT_INDICES);
     }
 
-    final String errorMessage = String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
-    SearchResponse<ReportDefinitionDto> searchResponse = osClient.search(searchRequest, ReportDefinitionDto.class, errorMessage);
+    final String errorMessage =
+        String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
+    final SearchResponse<ReportDefinitionDto> searchResponse =
+        osClient.search(searchRequest, ReportDefinitionDto.class, errorMessage);
     return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
-  private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,
-                                                                          final String[] indices) {
+  private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(
+      final List<String> reportIds, final String[] indices) {
     if (reportIds.isEmpty()) {
       return Collections.emptyList();
     }
     final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
-    Query qb = QueryDSL.ids(reportIdsAsArray);
+    final Query qb = QueryDSL.ids(reportIdsAsArray);
 
-    final SearchResponse<T> searchResponse = performGetReportRequestOmitXml(
-      qb,
-      indices,
-      reportIdsAsArray.length
-    );
-    return OpensearchReaderUtil.extractResponseValues(searchResponse)
-      .stream()
-      // make sure that the order of the reports corresponds to the one from the single report ids list
-      .sorted(Comparator.comparingInt(element -> reportIds.indexOf(element.getId())))
-      .collect(Collectors.toList());
+    final SearchResponse<T> searchResponse =
+        performGetReportRequestOmitXml(qb, indices, reportIdsAsArray.length);
+    return OpensearchReaderUtil.extractResponseValues(searchResponse).stream()
+        // make sure that the order of the reports corresponds to the one from the single report ids
+        // list
+        .sorted(Comparator.comparingInt(element -> reportIds.indexOf(element.getId())))
+        .collect(Collectors.toList());
   }
 
   private GetRequest.Builder getGetRequestOmitXml(final String index, final String reportId) {
     return new GetRequest.Builder()
-      .index(index)
-      .id(reportId)
-      .sourceExcludes(Arrays.asList(REPORT_LIST_EXCLUDES));
+        .index(index)
+        .id(reportId)
+        .sourceExcludes(Arrays.asList(REPORT_LIST_EXCLUDES));
   }
 
   private SearchRequest.Builder getSearchRequestOmitXml(final Query query, final String[] indices) {
     return getSearchRequestOmitXml(query, indices, LIST_FETCH_LIMIT);
   }
 
-  private SearchRequest.Builder getSearchRequestIncludingXml(final Query query, final String[] indices) {
-    return getSearchRequest(query, indices, LIST_FETCH_LIMIT, new String[]{});
+  private SearchRequest.Builder getSearchRequestIncludingXml(
+      final Query query, final String[] indices) {
+    return getSearchRequest(query, indices, LIST_FETCH_LIMIT, new String[] {});
   }
 
-  private SearchRequest.Builder getSearchRequestOmitXml(final Query query,
-                                                        final String[] indices,
-                                                        final int size) {
+  private SearchRequest.Builder getSearchRequestOmitXml(
+      final Query query, final String[] indices, final int size) {
     return getSearchRequest(query, indices, size, REPORT_LIST_EXCLUDES);
   }
 
-  private SearchRequest.Builder getSearchRequest(final Query query, final String[] indices,
-                                                 final int size, final String[] excludeFields) {
-    SourceConfig.Builder sourceConfig = new SourceConfig.Builder();
+  private SearchRequest.Builder getSearchRequest(
+      final Query query, final String[] indices, final int size, final String[] excludeFields) {
+    final SourceConfig.Builder sourceConfig = new SourceConfig.Builder();
 
     if (excludeFields.length == 0) {
       sourceConfig.fetch(true);
     } else {
-      SourceFilter filter = new SourceFilter.Builder()
-        .excludes(Arrays.asList(excludeFields))
-        .build();
+      final SourceFilter filter =
+          new SourceFilter.Builder().excludes(Arrays.asList(excludeFields)).build();
       sourceConfig.filter(filter);
     }
     return new SearchRequest.Builder()
-      .index(Arrays.asList(indices))
-      .query(query)
-      .size(size)
-      .source(sourceConfig.build());
+        .index(Arrays.asList(indices))
+        .query(query)
+        .size(size)
+        .source(sourceConfig.build());
   }
 
-  private SearchResponse performGetReportRequestOmitXml(final Query query, final String[] indices,
-                                                        final int size) {
-    SearchRequest.Builder searchRequest = getSearchRequestOmitXml(
-      query,
-      indices,
-      size
-    );
-    String errorMessage = "Was not able to retrieve reports!";
+  private SearchResponse performGetReportRequestOmitXml(
+      final Query query, final String[] indices, final int size) {
+    final SearchRequest.Builder searchRequest = getSearchRequestOmitXml(query, indices, size);
+    final String errorMessage = "Was not able to retrieve reports!";
     return osClient.search(searchRequest, ReportDefinitionDto.class, errorMessage);
   }
 
-  private MgetResponse<ReportDefinitionDto> performMultiGetReportRequest(String reportId) {
-    String errorMessage = String.format("Could not fetch report with id [%s]", reportId);
+  private MgetResponse<ReportDefinitionDto> performMultiGetReportRequest(final String reportId) {
+    final String errorMessage = String.format("Could not fetch report with id [%s]", reportId);
 
-    Map<String, String> indexesToEntitiesId = new HashMap<>();
-    indexesToEntitiesId.put(
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      reportId
-    );
-    indexesToEntitiesId.put(
-      SINGLE_DECISION_REPORT_INDEX_NAME,
-      reportId
-    );
-    indexesToEntitiesId.put(
-      COMBINED_REPORT_INDEX_NAME,
-      reportId
-    );
-    return osClient.mget(
-      ReportDefinitionDto.class,
-      errorMessage,
-      indexesToEntitiesId
-    );
+    final Map<String, String> indexesToEntitiesId = new HashMap<>();
+    indexesToEntitiesId.put(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
+    indexesToEntitiesId.put(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
+    indexesToEntitiesId.put(COMBINED_REPORT_INDEX_NAME, reportId);
+    return osClient.mget(ReportDefinitionDto.class, errorMessage, indexesToEntitiesId);
   }
-
 }

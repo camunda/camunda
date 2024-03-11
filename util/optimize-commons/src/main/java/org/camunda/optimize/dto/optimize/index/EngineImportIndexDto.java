@@ -12,5 +12,4 @@ public interface EngineImportIndexDto extends OptimizeDto {
   String getEngine();
 
   String getEsTypeIndexRefersTo();
-
 }

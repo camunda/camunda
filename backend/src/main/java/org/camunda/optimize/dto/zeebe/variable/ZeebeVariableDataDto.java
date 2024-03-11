@@ -5,14 +5,12 @@
  */
 package org.camunda.optimize.dto.zeebe.variable;
 
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.apache.commons.lang3.StringUtils;
-
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
-@EqualsAndHashCode
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
+
 @Data
 public class ZeebeVariableDataDto implements VariableRecordValue {
 
@@ -29,6 +27,7 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  @Override
   public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }

@@ -5,6 +5,7 @@
  */
 package org.camunda.bpm.platform.database;
 
+import java.sql.SQLException;
 import org.camunda.bpm.application.PostDeploy;
 import org.camunda.bpm.application.PreUndeploy;
 import org.camunda.bpm.application.ProcessApplication;
@@ -13,15 +14,14 @@ import org.h2.tools.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;
-
 /**
  * Creates a tcp server that enables the connection to the h2 in memory database from other hosts.
  */
 @ProcessApplication
 public class DatabaseConnectionProcessApplication extends ServletProcessApplication {
 
-  private static Logger logger = LoggerFactory.getLogger(DatabaseConnectionProcessApplication.class);
+  private static Logger logger =
+      LoggerFactory.getLogger(DatabaseConnectionProcessApplication.class);
 
   @PostDeploy
   public void postDeploy() {
@@ -29,9 +29,8 @@ public class DatabaseConnectionProcessApplication extends ServletProcessApplicat
     try {
       Server.createTcpServer("-tcpPort", "9092", "-tcpAllowOthers").start();
     } catch (SQLException e) {
-      logger.error("Was not able to start tcp server!" , e);
+      logger.error("Was not able to start tcp server!", e);
     }
-
   }
 
   @PreUndeploy
@@ -46,6 +45,4 @@ public class DatabaseConnectionProcessApplication extends ServletProcessApplicat
       logger.debug("There was no server to shutdown", e);
     }
   }
-
-
 }

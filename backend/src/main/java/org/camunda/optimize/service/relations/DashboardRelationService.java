@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.relations;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class DashboardRelationService {

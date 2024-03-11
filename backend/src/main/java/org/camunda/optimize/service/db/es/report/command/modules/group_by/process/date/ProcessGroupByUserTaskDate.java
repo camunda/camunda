@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.date;
 
+import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
+import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.DefinitionService;
@@ -13,24 +17,23 @@ import org.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.db.es.report.command.service.DateAggregationService;
 import org.elasticsearch.index.query.QueryBuilder;
 
-import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
-import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-
 @Slf4j
 public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByModelElementDate {
 
   private final DefinitionService definitionService;
 
-  ProcessGroupByUserTaskDate(final DateAggregationService dateAggregationService,
-                             final MinMaxStatsService minMaxStatsService, final DefinitionService definitionService) {
+  ProcessGroupByUserTaskDate(
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final DefinitionService definitionService) {
     super(dateAggregationService, minMaxStatsService);
     this.definitionService = definitionService;
   }
 
   @Override
   protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto> context) {
-    return createModelElementAggregationFilter(context.getReportData(), context.getFilterContext(), definitionService);
+    return createModelElementAggregationFilter(
+        context.getReportData(), context.getFilterContext(), definitionService);
   }
 
   protected QueryBuilder getModelElementTypeFilterQuery() {
@@ -41,5 +44,4 @@ public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByM
   protected String getPathToElementField() {
     return FLOW_NODE_INSTANCES;
   }
-
 }

@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.engine;
 
-import lombok.Data;
-
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import lombok.Data;
 
 @Data
 public class HistoricActivityInstanceEngineDto implements TenantSpecificEngineDto {
@@ -37,5 +36,4 @@ public class HistoricActivityInstanceEngineDto implements TenantSpecificEngineDt
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }
-
 }

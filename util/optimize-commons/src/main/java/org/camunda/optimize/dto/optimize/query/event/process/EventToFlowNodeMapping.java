@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,8 +14,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
-import java.util.List;
-
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -22,8 +21,7 @@ import java.util.List;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants
 public class EventToFlowNodeMapping {
-  @EqualsAndHashCode.Include
-  private String eventIdentifier;
+  @EqualsAndHashCode.Include private String eventIdentifier;
   private MappedEventType mappedAs;
   private String flowNodeId;
   private String flowNodeType;

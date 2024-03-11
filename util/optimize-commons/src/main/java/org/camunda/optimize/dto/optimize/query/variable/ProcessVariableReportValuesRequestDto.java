@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
-import lombok.Data;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 import java.util.List;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import lombok.Data;
 
 @Data
 public class ProcessVariableReportValuesRequestDto {
@@ -20,5 +19,4 @@ public class ProcessVariableReportValuesRequestDto {
   private String valueFilter;
   private Integer resultOffset = 0;
   private Integer numResults = MAX_RESPONSE_SIZE_LIMIT;
-
 }

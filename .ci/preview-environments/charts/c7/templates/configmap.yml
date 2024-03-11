@@ -56,7 +56,7 @@ data:
       accessToken: secret
 
     import:
-      customer-onboarding: false
+      customer-onboarding: true
 
     container:
       # A host name or IP address, to identify a specific network interface on

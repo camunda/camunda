@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance;
 
+import java.time.OffsetDateTime;
 import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
-
-import java.time.OffsetDateTime;
 
 @EqualsAndHashCode(callSuper = true)
 public class FixedDateFilterDataDto extends DateFilterDataDto<OffsetDateTime> {

@@ -6,15 +6,14 @@
 package org.camunda.optimize.service.db.os.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-import org.camunda.optimize.service.db.reader.EventTraceStateReader;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.camunda.optimize.service.db.reader.EventTraceStateReader;
 
 @AllArgsConstructor
 @Slf4j
@@ -26,22 +25,22 @@ public class EventTraceStateReaderOS implements EventTraceStateReader {
 
   @Override
   public List<EventTraceStateDto> getEventTraceStateForTraceIds(final List<String> traceIds) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
-                                                                             final List<EventTypeDto> endEvents,
-                                                                             final int maxResultsSize) {
-    //todo will be handled in the OPT-7230
+  public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(
+      final List<EventTypeDto> startEvents,
+      final List<EventTypeDto> endEvents,
+      final int maxResultsSize) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
-  
 }

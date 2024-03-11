@@ -32,5 +32,4 @@ public class RunningInstancesOnlyFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

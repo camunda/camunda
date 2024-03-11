@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-
-import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -22,6 +21,7 @@ public class EventProcessRoleRequestDto<T extends IdentityDto> {
 
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
+
   private T identity;
 
   public EventProcessRoleRequestDto(final T identity) {
@@ -35,7 +35,7 @@ public class EventProcessRoleRequestDto<T extends IdentityDto> {
 
   private String convertIdentityToRoleId(final T identity) {
     return identity.getType() == null
-      ? "UNKNOWN" + ID_SEGMENT_SEPARATOR + identity.getId()
-      : identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+        ? "UNKNOWN" + ID_SEGMENT_SEPARATOR + identity.getId()
+        : identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
   }
 }

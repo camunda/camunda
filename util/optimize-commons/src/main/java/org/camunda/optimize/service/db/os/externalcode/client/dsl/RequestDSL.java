@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.os.externalcode.client.dsl;
 
+import static org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Time;
@@ -30,32 +35,33 @@ import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
-
 public interface RequestDSL {
   enum QueryType {
     ONLY_RUNTIME,
     ALL
   }
 
-  static CreateIndexRequest.Builder createIndexRequestBuilder(String index, IndexState patternIndex) {
+  static CreateIndexRequest.Builder createIndexRequestBuilder(
+      String index, IndexState patternIndex) {
     return new CreateIndexRequest.Builder()
-      .index(index)
-      .aliases(patternIndex.aliases())
-      .mappings(patternIndex.mappings())
-      .settings(s -> s.index(i -> i
-        .numberOfReplicas(patternIndex.settings().index().numberOfReplicas())
-        .numberOfShards(patternIndex.settings().index().numberOfShards())
-        .analysis(patternIndex.settings().index().analysis())
-      ));
+        .index(index)
+        .aliases(patternIndex.aliases())
+        .mappings(patternIndex.mappings())
+        .settings(
+            s ->
+                s.index(
+                    i ->
+                        i.numberOfReplicas(patternIndex.settings().index().numberOfReplicas())
+                            .numberOfShards(patternIndex.settings().index().numberOfShards())
+                            .analysis(patternIndex.settings().index().analysis())));
   }
 
-  static CreateSnapshotRequest.Builder createSnapshotRequestBuilder(String repository, String snapshot, List<String> indices) {
-    return new CreateSnapshotRequest.Builder().repository(repository).snapshot(snapshot).indices(indices);
+  static CreateSnapshotRequest.Builder createSnapshotRequestBuilder(
+      String repository, String snapshot, List<String> indices) {
+    return new CreateSnapshotRequest.Builder()
+        .repository(repository)
+        .snapshot(snapshot)
+        .indices(indices);
   }
 
   static DeleteRequest.Builder deleteRequestBuilder(String index, String id) {
@@ -74,7 +80,8 @@ public interface RequestDSL {
     return new UpdateByQueryRequest.Builder().index(indexes);
   }
 
-  static DeleteSnapshotRequest.Builder deleteSnapshotRequestBuilder(String repositoryName, String snapshotName) {
+  static DeleteSnapshotRequest.Builder deleteSnapshotRequestBuilder(
+      String repositoryName, String snapshotName) {
     return new DeleteSnapshotRequest.Builder().repository(repositoryName).snapshot(snapshotName);
   }
 
@@ -90,23 +97,23 @@ public interface RequestDSL {
     return new PutComponentTemplateRequest.Builder().name(name);
   }
 
-  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, Query srcQuery, String dstIndex) {
+  static ReindexRequest.Builder reindexRequestBuilder(
+      String srcIndex, Query srcQuery, String dstIndex) {
     return new ReindexRequest.Builder()
-      .source(Source.of(b -> b.index(srcIndex).query(srcQuery)))
-      .dest(Destination.of(b -> b.index(dstIndex)));
+        .source(Source.of(b -> b.index(srcIndex).query(srcQuery)))
+        .dest(Destination.of(b -> b.index(dstIndex)));
   }
 
-  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, String dstIndex, String script,
-                                                      Map<String, Object> scriptParams) {
-    var jsonParams = scriptParams.entrySet().stream().collect(Collectors.toMap(
-      Map.Entry::getKey,
-      e -> JsonData.of(e.getValue())
-    ));
+  static ReindexRequest.Builder reindexRequestBuilder(
+      String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) {
+    var jsonParams =
+        scriptParams.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
 
     return new ReindexRequest.Builder()
-      .source(Source.of(b -> b.index(srcIndex)))
-      .dest(Destination.of(b -> b.index(dstIndex)))
-      .script(b -> b.inline(i -> i.source(script).params(jsonParams)));
+        .source(Source.of(b -> b.index(srcIndex)))
+        .dest(Destination.of(b -> b.index(dstIndex)))
+        .script(b -> b.inline(i -> i.source(script).params(jsonParams)));
   }
 
   static GetRepositoryRequest.Builder repositoryRequestBuilder(String name) {
@@ -134,10 +141,7 @@ public interface RequestDSL {
   }
 
   static ScrollRequest scrollRequest(String scrollId, String time) {
-    return new ScrollRequest.Builder()
-      .scrollId(scrollId)
-      .scroll(time(time))
-      .build();
+    return new ScrollRequest.Builder().scrollId(scrollId).scroll(time(time)).build();
   }
 
   static ScrollRequest scrollRequest(String scrollId) {
@@ -151,5 +155,4 @@ public interface RequestDSL {
   static Time time(String value) {
     return Time.of(b -> b.time(value));
   }
-
 }

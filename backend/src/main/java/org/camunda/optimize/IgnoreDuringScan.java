@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * This annotation is used to ignore annotated classes during component-scan.
- * 
+ *
  * Sample usage:
  * <pre>{@code
  * @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
@@ -19,5 +19,4 @@ import java.lang.annotation.RetentionPolicy;
  * }</pre>
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface IgnoreDuringScan {
-}
+public @interface IgnoreDuringScan {}

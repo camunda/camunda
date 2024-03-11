@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.importing;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,19 +18,13 @@ import org.camunda.optimize.service.AbstractScheduledService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
 @RequiredArgsConstructor
 @Slf4j
-public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends AbstractScheduledService {
+public abstract class AbstractImportScheduler<T extends SchedulerConfig>
+    extends AbstractScheduledService {
 
   protected final List<ImportMediator> importMediators;
-  @Getter
-  protected final T dataImportSourceDto;
+  @Getter protected final T dataImportSourceDto;
   protected boolean isImporting = false;
 
   @Override
@@ -67,10 +66,10 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends
   }
 
   public Future<Void> runImportRound(final boolean forceImport) {
-    List<ImportMediator> currentImportRound = importMediators
-      .stream()
-      .filter(mediator -> forceImport || mediator.canImport())
-      .collect(Collectors.toList());
+    List<ImportMediator> currentImportRound =
+        importMediators.stream()
+            .filter(mediator -> forceImport || mediator.canImport())
+            .collect(Collectors.toList());
     if (nothingToBeImported(currentImportRound)) {
       this.isImporting = false;
       if (!forceImport) {
@@ -86,27 +85,30 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends
   public Future<Void> executeImportRound(List<ImportMediator> currentImportRound) {
     if (log.isDebugEnabled()) {
       log.debug(
-        "Scheduling import round for {}",
-        currentImportRound.stream()
-          .map(mediator1 -> mediator1.getClass().getSimpleName())
-          .collect(Collectors.joining(","))
-      );
+          "Scheduling import round for {}",
+          currentImportRound.stream()
+              .map(mediator1 -> mediator1.getClass().getSimpleName())
+              .collect(Collectors.joining(",")));
     }
 
-    final CompletableFuture<?>[] importTaskFutures = currentImportRound
-      .stream()
-      .map(mediator -> {
-        try {
-          return mediator.runImport();
-        } catch (IllegalStateException e) {
-          log.warn("Got into illegal state, will abort import round.", e);
-          throw e;
-        } catch (Exception e) {
-          log.error("Was not able to execute import of [{}]", mediator.getClass().getSimpleName(), e);
-          return CompletableFuture.completedFuture(null);
-        }
-      })
-      .toArray(CompletableFuture[]::new);
+    final CompletableFuture<?>[] importTaskFutures =
+        currentImportRound.stream()
+            .map(
+                mediator -> {
+                  try {
+                    return mediator.runImport();
+                  } catch (IllegalStateException e) {
+                    log.warn("Got into illegal state, will abort import round.", e);
+                    throw e;
+                  } catch (Exception e) {
+                    log.error(
+                        "Was not able to execute import of [{}]",
+                        mediator.getClass().getSimpleName(),
+                        e);
+                    return CompletableFuture.completedFuture(null);
+                  }
+                })
+            .toArray(CompletableFuture[]::new);
 
     return CompletableFuture.allOf(importTaskFutures);
   }
@@ -120,9 +122,7 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends
   }
 
   protected boolean hasActiveImportJobs() {
-    return importMediators
-      .stream()
-      .anyMatch(ImportMediator::hasPendingImportJobs);
+    return importMediators.stream().anyMatch(ImportMediator::hasPendingImportJobs);
   }
 
   protected boolean nothingToBeImported(List<?> currentImportRound) {
@@ -130,11 +130,11 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends
   }
 
   protected void doBackoff() {
-    long timeToSleep = importMediators
-      .stream()
-      .map(ImportMediator::getBackoffTimeInMs)
-      .min(Long::compare)
-      .orElse(5000L);
+    long timeToSleep =
+        importMediators.stream()
+            .map(ImportMediator::getBackoffTimeInMs)
+            .min(Long::compare)
+            .orElse(5000L);
     try {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
@@ -143,5 +143,4 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends
       Thread.currentThread().interrupt();
     }
   }
-
 }

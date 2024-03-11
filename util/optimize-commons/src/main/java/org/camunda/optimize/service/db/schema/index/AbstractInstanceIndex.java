@@ -5,11 +5,6 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.FORMAT_PROPERTY_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_CHAR_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.IGNORE_ABOVE_SETTING;
@@ -23,6 +18,10 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DOUBLE;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
+
+import java.io.IOException;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -41,34 +40,34 @@ public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappin
   protected XContentBuilder addValueMultifields(XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
-      // search relevant fields
-      .startObject(N_GRAM_FIELD)
+        // search relevant fields
+        .startObject(N_GRAM_FIELD)
         .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
         .field("analyzer", LOWERCASE_NGRAM)
-      .endObject()
-      .startObject(LOWERCASE_FIELD)
+        .endObject()
+        .startObject(LOWERCASE_FIELD)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
         .field("normalizer", LOWERCASE_NORMALIZER)
         .field(IGNORE_ABOVE_SETTING, IGNORE_ABOVE_CHAR_LIMIT)
-      .endObject()
-      // multi type fields
-      .startObject(MULTIVALUE_FIELD_DATE)
+        .endObject()
+        // multi type fields
+        .startObject(MULTIVALUE_FIELD_DATE)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
         .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
         .field(IGNORE_MALFORMED, true)
-      .endObject()
-      .startObject(MULTIVALUE_FIELD_LONG)
+        .endObject()
+        .startObject(MULTIVALUE_FIELD_LONG)
         .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
         .field(IGNORE_MALFORMED, true)
-      .endObject()
-      .startObject(MULTIVALUE_FIELD_DOUBLE)
+        .endObject()
+        .startObject(MULTIVALUE_FIELD_DOUBLE)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DOUBLE)
         .field(IGNORE_MALFORMED, true)
-      .endObject()
-      // boolean is not supported to be ignored if malformed, see https://github.com/elastic/elasticsearch/pull/29522
-      // it is enough tough to just filter on the default string value with true/false at query time
-      ;
+        .endObject()
+    // boolean is not supported to be ignored if malformed, see
+    // https://github.com/elastic/elasticsearch/pull/29522
+    // it is enough tough to just filter on the default string value with true/false at query time
+    ;
     // @formatter:on
   }
-
 }

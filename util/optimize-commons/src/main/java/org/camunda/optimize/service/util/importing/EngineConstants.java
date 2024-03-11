@@ -43,15 +43,21 @@ public class EngineConstants {
 
   // endpoints in the engines to fetch the data for Optimize import
   public static final String VARIABLE_UPDATE_ENDPOINT = "/optimize/variable-update";
-  public static final String COMPLETED_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/completed";
-  public static final String RUNNING_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/running";
+  public static final String COMPLETED_ACTIVITY_INSTANCE_ENDPOINT =
+      "/optimize/activity-instance/completed";
+  public static final String RUNNING_ACTIVITY_INSTANCE_ENDPOINT =
+      "/optimize/activity-instance/running";
   public static final String OPEN_INCIDENT_ENDPOINT = "/optimize/incident/open";
   public static final String COMPLETED_INCIDENT_ENDPOINT = "/optimize/incident/completed";
-  public static final String COMPLETED_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/completed";
-  public static final String RUNNING_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/running";
+  public static final String COMPLETED_PROCESS_INSTANCE_ENDPOINT =
+      "/optimize/process-instance/completed";
+  public static final String RUNNING_PROCESS_INSTANCE_ENDPOINT =
+      "/optimize/process-instance/running";
   public static final String DECISION_INSTANCE_ENDPOINT = "/optimize/decision-instance";
-  public static final String COMPLETED_USER_TASK_INSTANCE_ENDPOINT = "/optimize/task-instance/completed";
-  public static final String RUNNING_USER_TASK_INSTANCE_ENDPOINT = "/optimize/task-instance/running";
+  public static final String COMPLETED_USER_TASK_INSTANCE_ENDPOINT =
+      "/optimize/task-instance/completed";
+  public static final String RUNNING_USER_TASK_INSTANCE_ENDPOINT =
+      "/optimize/task-instance/running";
   public static final String IDENTITY_LINK_LOG_ENDPOINT = "/optimize/identity-link-log";
   public static final String USER_OPERATION_LOG_ENDPOINT = "/optimize/user-operation";
 
@@ -61,10 +67,12 @@ public class EngineConstants {
   public static final String PROCESS_INSTANCE_ENDPOINT_TEMPLATE = "/history/process-instance/{id}";
   public static final String PROCESS_DEFINITION_ENDPOINT = "/process-definition";
   public static final String PROCESS_DEFINITION_ENDPOINT_TEMPLATE = "/process-definition/{id}";
-  public static final String PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE = "/process-definition/{id}/xml";
+  public static final String PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE =
+      "/process-definition/{id}/xml";
   public static final String DECISION_DEFINITION_ENDPOINT = "/decision-definition";
   public static final String DECISION_DEFINITION_ENDPOINT_TEMPLATE = "/decision-definition/{id}";
-  public static final String DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE = "/decision-definition/{id}/xml";
+  public static final String DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE =
+      "/decision-definition/{id}/xml";
   public static final String DEPLOYMENT_ENDPOINT_TEMPLATE = "/deployment/{id}";
   public static final String USER_VALIDATION_ENDPOINT = "/identity/verify";
   public static final String AUTHORIZATION_ENDPOINT = "/authorization";
@@ -93,7 +101,6 @@ public class EngineConstants {
   public static final int AUTHORIZATION_TYPE_GRANT = 1;
   public static final int AUTHORIZATION_TYPE_REVOKE = 2;
 
-
   public static final String OPTIMIZE_APPLICATION_RESOURCE_ID = "optimize";
   public static final String ALL_RESOURCES_RESOURCE_ID = "*";
 
@@ -105,7 +112,8 @@ public class EngineConstants {
   public static final String PROCESS_INSTANCE_ENTITY_TYPE = "ProcessInstance";
   public static final String SUSPEND_PROCESS_DEFINITION_OPERATION = "SuspendProcessDefinition";
   public static final String ACTIVATE_PROCESS_DEFINITION_OPERATION = "ActivateProcessDefinition";
-  public static final String INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD = "includeProcessInstances";
+  public static final String INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD =
+      "includeProcessInstances";
   public static final String SUSPEND_VIA_BATCH_OPERATION_TYPE = "SuspendJob";
   public static final String ACTIVATE_VIA_BATCH_OPERATION_TYPE = "ActivateJob";
 
@@ -121,5 +129,4 @@ public class EngineConstants {
   // flownode types, relates to engine ActivityTypes enum
   public static final String FLOW_NODE_TYPE_USER_TASK = "userTask";
   public static final String FLOW_NODE_TYPE_MI_BODY = "multiInstanceBody";
-
 }

@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision.group;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_EVALUATION_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_INPUT_VARIABLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_MATCHED_RULE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_OUTPUT_VARIABLE_TYPE;
+
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum DecisionGroupByType {
   EVALUATION_DATE(GROUP_BY_EVALUATION_DATE_TYPE),

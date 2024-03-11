@@ -15,5 +15,4 @@ public class EngineGroupDto {
   private String id;
   private String name;
   private String type;
-
 }

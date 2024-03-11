@@ -29,5 +29,4 @@ public class InsertDataStep extends UpgradeStep {
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     schemaUpgradeClient.insertDataByIndexName(index, data);
   }
-
 }

@@ -40,6 +40,7 @@ export class ReportEdit extends React.Component {
     serverError: this.props.error,
     shouldAutoReloadPreview: sessionStorage.getItem('shouldAutoReloadPreview') === 'true',
     frozenReport: this.props.report,
+    runButtonLoading: false,
   };
 
   componentDidMount() {
@@ -274,6 +275,12 @@ export class ReportEdit extends React.Component {
     sessionStorage.setItem('shouldAutoReloadPreview', shouldReload);
   };
 
+  runReportPreviewUpdate = async () => {
+    this.setState({runButtonLoading: true});
+    await this.reEvaluateReport(this.state.report.data);
+    this.setState({runButtonLoading: false});
+  };
+
   render() {
     const {
       report,
@@ -283,6 +290,7 @@ export class ReportEdit extends React.Component {
       redirect,
       shouldAutoReloadPreview,
       frozenReport,
+      runButtonLoading,
     } = this.state;
     const {name, description, data, combined, reportType} = report;
 
@@ -310,7 +318,7 @@ export class ReportEdit extends React.Component {
                 size="md"
                 className="RunPreviewButton"
                 disabled={this.state.loadingReportData || !this.isReportComplete(report)}
-                onClick={() => this.reEvaluateReport(report.data)}
+                onClick={this.runReportPreviewUpdate}
               >
                 {t('report.updateReportPreview.buttonLabel')}
               </Button>
@@ -350,7 +358,7 @@ export class ReportEdit extends React.Component {
 
             {!combined && this.isReportComplete(report) && <ReportWarnings report={report} />}
 
-            {loadingReportData ? (
+            {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
               <Loading withOverlay={false} className="loading" />
             ) : (
               <ReportRenderer

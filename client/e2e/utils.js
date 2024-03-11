@@ -73,11 +73,11 @@ export async function selectVersion(t, selector, version) {
   await t.click('.VersionPopover');
 
   if (typeof version === 'string') {
-    await t.click(Selector('.label').withText(version));
+    await t.click(Common.radioButton(version));
   } else {
-    await t.click(Selector('.label').withText('Specific versions'));
+    await t.click(Common.radioButton('Specific versions'));
     for (let i = 0; i < version.length; i++) {
-      await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
+      await t.click(Common.checkbox(`${version[i]}`));
     }
   }
 
@@ -106,12 +106,12 @@ export async function selectDefinition(t, name, version = 'Specific version') {
   await t.click('.VersionPopover');
 
   if (typeof version === 'string') {
-    await t.click(Selector('.label').withText(version));
+    await t.click(Common.radioButton(version));
   } else {
-    await t.click(Selector('.label').withText('Specific versions'));
-    await t.click(Selector('.specificVersions input[type="checkbox"]').nth(0));
+    await t.click(Common.radioButton('Specific versions'));
+    await t.click(Common.checkbox(`${version[0]}`));
     for (let i = 0; i < version.length; i++) {
-      await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
+      await t.click(Common.checkbox(`${version[i]}`));
     }
   }
 

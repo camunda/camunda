@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
@@ -17,33 +21,30 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateEngineImportMediator
-  extends TimestampBasedImportMediator<ExternalVariableUpdateImportIndexHandler, ExternalProcessVariableDto> {
+    extends TimestampBasedImportMediator<
+        ExternalVariableUpdateImportIndexHandler, ExternalProcessVariableDto> {
 
   private final ExternalVariableUpdateInstanceFetcher entityFetcher;
 
-  public ExternalVariableUpdateEngineImportMediator(final ExternalVariableUpdateImportIndexHandler importIndexHandler,
-                                                    final ExternalVariableUpdateInstanceFetcher entityFetcher,
-                                                    final ExternalVariableUpdateImportService importService,
-                                                    final ConfigurationService configurationService,
-                                                    final BackoffCalculator idleBackoffCalculator) {
+  public ExternalVariableUpdateEngineImportMediator(
+      final ExternalVariableUpdateImportIndexHandler importIndexHandler,
+      final ExternalVariableUpdateInstanceFetcher entityFetcher,
+      final ExternalVariableUpdateImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.entityFetcher = entityFetcher;
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final ExternalProcessVariableDto historicVariableUpdateInstanceDto) {
+  protected OffsetDateTime getTimestamp(
+      final ExternalProcessVariableDto historicVariableUpdateInstanceDto) {
     return OffsetDateTime.ofInstant(
-      Instant.ofEpochMilli(historicVariableUpdateInstanceDto.getIngestionTimestamp()),
-      ZoneId.systemDefault()
-    );
+        Instant.ofEpochMilli(historicVariableUpdateInstanceDto.getIngestionTimestamp()),
+        ZoneId.systemDefault());
   }
 
   @Override
@@ -53,17 +54,20 @@ public class ExternalVariableUpdateEngineImportMediator
 
   @Override
   protected List<ExternalProcessVariableDto> getEntitiesLastTimestamp() {
-    return entityFetcher.fetchVariableInstanceUpdates(importIndexHandler.getTimestampOfLastEntity());
+    return entityFetcher.fetchVariableInstanceUpdates(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
   protected int getMaxPageSize() {
-    return configurationService.getExternalVariableConfiguration().getImportConfiguration().getMaxPageSize();
+    return configurationService
+        .getExternalVariableConfiguration()
+        .getImportConfiguration()
+        .getMaxPageSize();
   }
 
   @Override
   public MediatorRank getRank() {
     return MediatorRank.INSTANCE_SUB_ENTITIES;
   }
-
 }

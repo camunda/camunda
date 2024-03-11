@@ -5,16 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
-import org.camunda.optimize.service.AssigneeCandidateGroupService;
-import org.camunda.optimize.service.security.SessionService;
-import org.springframework.stereotype.Component;
+import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
 
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -29,8 +20,16 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
+import org.camunda.optimize.service.AssigneeCandidateGroupService;
+import org.camunda.optimize.service.security.SessionService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(ASSIGNEE_RESOURCE_PATH)
@@ -52,15 +51,17 @@ public class AssigneeRestService {
     if (StringUtils.isEmpty(commaSeparatedIdn)) {
       return Collections.emptyList();
     }
-    return assigneeCandidateGroupService.getAssigneesByIds(Arrays.asList(commaSeparatedIdn.split(",")));
+    return assigneeCandidateGroupService.getAssigneesByIds(
+        Arrays.asList(commaSeparatedIdn.split(",")));
   }
 
   @POST
   @Path(ASSIGNEE_DEFINITION_SEARCH_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdentitySearchResultResponseDto searchAssignees(@Context final ContainerRequestContext requestContext,
-                                                         @Valid final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+  public IdentitySearchResultResponseDto searchAssignees(
+      @Context final ContainerRequestContext requestContext,
+      @Valid final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return assigneeCandidateGroupService.searchForAssigneesAsUser(userId, requestDto);
   }
@@ -69,10 +70,10 @@ public class AssigneeRestService {
   @Path(ASSIGNEE_REPORTS_SEARCH_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdentitySearchResultResponseDto searchAssignees(@Context final ContainerRequestContext requestContext,
-                                                         @Valid final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+  public IdentitySearchResultResponseDto searchAssignees(
+      @Context final ContainerRequestContext requestContext,
+      @Valid final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return assigneeCandidateGroupService.searchForAssigneesAsUser(userId, requestDto);
   }
-
 }

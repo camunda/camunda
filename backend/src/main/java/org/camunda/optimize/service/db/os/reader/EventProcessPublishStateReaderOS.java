@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
@@ -13,10 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -24,21 +23,22 @@ import java.util.Optional;
 public class EventProcessPublishStateReaderOS implements EventProcessPublishStateReader {
 
   @Override
-  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(final String eventProcessMappingId) {
-    //todo will be handled in the OPT-7230
+  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
+      final String eventProcessMappingId) {
+    log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
 
   @Override
   public List<EventProcessPublishStateDto> getAllEventProcessPublishStates() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(final boolean deleted) {
-    //todo will be handled in the OPT-7230
+  public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(
+      final boolean deleted) {
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

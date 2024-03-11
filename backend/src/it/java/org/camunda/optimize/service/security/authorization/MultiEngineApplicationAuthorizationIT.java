@@ -5,18 +5,20 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.model.HttpError;
 
-import jakarta.ws.rs.core.Response;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.security.EngineAuthenticationProvider.INVALID_CREDENTIALS_ERROR_MESSAGE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT {
 
   private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);

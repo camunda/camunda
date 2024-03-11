@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -17,9 +18,9 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportVal
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -35,6 +37,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
@@ -181,6 +184,7 @@ public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getVariableNamesForReports_canOnlySeeVariableNamesFromAuthorizedReports() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -224,6 +228,7 @@ public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getVariableValuesForReports_canOnlySeeVariableValuesFromAuthorizedReports() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
