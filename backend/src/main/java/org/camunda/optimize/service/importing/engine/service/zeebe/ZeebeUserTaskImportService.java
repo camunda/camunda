@@ -9,6 +9,7 @@ import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATED;
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.UNCLAIM_OPERATION_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
@@ -20,6 +21,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +45,7 @@ public class ZeebeUserTaskImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeUserTaskRecordDto> {
 
   public static final Set<UserTaskIntent> INTENTS_TO_IMPORT =
-      Set.of(CREATING, ASSIGNED, COMPLETED, CANCELED);
+      Set.of(CREATING, ASSIGNED, UPDATED, COMPLETED, CANCELED);
 
   public ZeebeUserTaskImportService(
       final ConfigurationService configurationService,
@@ -96,11 +98,11 @@ public class ZeebeUserTaskImportService
   private void updateUserTaskData(
       final ProcessInstanceDto instanceToAdd,
       final List<ZeebeUserTaskRecordDto> userTaskRecordsForInstance) {
-    Map<Long, FlowNodeInstanceDto> userTaskInstancesByKey = new HashMap<>();
+    final Map<Long, FlowNodeInstanceDto> userTaskInstancesByKey = new HashMap<>();
     userTaskRecordsForInstance.forEach(
         zeebeUserTaskInstanceRecord -> {
           final long recordKey = zeebeUserTaskInstanceRecord.getKey();
-          FlowNodeInstanceDto userTaskForKey =
+          final FlowNodeInstanceDto userTaskForKey =
               userTaskInstancesByKey.getOrDefault(
                   recordKey,
                   createSkeletonUserTaskInstance(zeebeUserTaskInstanceRecord.getValue()));
@@ -119,6 +121,9 @@ public class ZeebeUserTaskImportService
             updateUserTaskAssigneeOperations(zeebeUserTaskInstanceRecord, userTaskForKey);
           }
           userTaskForKey.setAssignee(parseAssignee(zeebeUserTaskInstanceRecord.getValue()));
+          userTaskForKey.setCandidateGroups(
+              parseCandidateGroupsList(zeebeUserTaskInstanceRecord.getValue()));
+          userTaskForKey.setDueDate(zeebeUserTaskInstanceRecord.getValue().getDateForDueDate());
           userTaskInstancesByKey.put(recordKey, userTaskForKey);
         });
     userTaskInstancesByKey.values().forEach(this::updateUserTaskDurations);
@@ -136,8 +141,7 @@ public class ZeebeUserTaskImportService
         .setDefinitionKey(userTaskData.getBpmnProcessId())
         .setDefinitionVersion(String.valueOf(userTaskData.getProcessDefinitionVersion()))
         .setTenantId(userTaskData.getTenantId())
-        .setUserTaskInstanceId(String.valueOf(userTaskData.getUserTaskKey()))
-        .setDueDate(userTaskData.getDateForDueDate());
+        .setUserTaskInstanceId(String.valueOf(userTaskData.getUserTaskKey()));
   }
 
   private void updateUserTaskDurations(final FlowNodeInstanceDto userTaskToAdd) {
@@ -196,8 +200,8 @@ public class ZeebeUserTaskImportService
         // (unclaim_n+1 - claim_n)
         // Note the startDate is the first unclaim, so can be disregarded for this calculation
         for (int i = 0; i < allUnclaimTimestamps.size() - 1 && i < allClaimTimestamps.size(); i++) {
-          OffsetDateTime claimDate = allClaimTimestamps.get(i);
-          OffsetDateTime unclaimDate = allUnclaimTimestamps.get(i + 1);
+          final OffsetDateTime claimDate = allClaimTimestamps.get(i);
+          final OffsetDateTime unclaimDate = allUnclaimTimestamps.get(i + 1);
           totalWorkTimeInMs += Duration.between(claimDate, unclaimDate).toMillis();
           workTimeHasChanged = true;
         }
@@ -206,8 +210,9 @@ public class ZeebeUserTaskImportService
         // unclaims than claims)
         // --> add time between end and last "real" unclaim as idle time
         if (allUnclaimTimestamps.size() - allClaimTimestamps.size() == 2) {
-          OffsetDateTime lastUnclaim = allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);
-          OffsetDateTime secondToLastUnclaim =
+          final OffsetDateTime lastUnclaim =
+              allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);
+          final OffsetDateTime secondToLastUnclaim =
               allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 2);
           totalIdleTimeInMs += Duration.between(lastUnclaim, secondToLastUnclaim).toMillis();
           idleTimeHasChanged = true;
@@ -262,5 +267,10 @@ public class ZeebeUserTaskImportService
     return StringUtil.isNullOrEmpty(zeebeUserTaskData.getAssignee())
         ? null
         : zeebeUserTaskData.getAssignee();
+  }
+
+  private List<String> parseCandidateGroupsList(final ZeebeUserTaskDataDto zeebeUserTaskData) {
+    return Optional.ofNullable(zeebeUserTaskData.getCandidateGroupsList())
+        .orElseGet(Collections::emptyList);
   }
 }

@@ -16,6 +16,7 @@ import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_D
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcessWithAssignee;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcessWithCandidateGroups;
 
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -37,6 +38,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   private static final String TEST_PROCESS = "aProcess";
   private static final String DUE_DATE = "2023-11-01T12:00:00+05:00";
   private static final String ASSIGNEE_ID = "assigneeId";
+  private static final String CANDIDATE_GROUP = "candidateGroup";
 
   @Test
   public void importRunningZeebeUserTaskData() {
@@ -313,7 +315,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     zeebeExtension.cancelProcessInstance(instance.getProcessInstanceKey());
     waitUntilUserTaskRecordWithElementIdAndIntentExported(
         USER_TASK, UserTaskIntent.CANCELED.name());
-    updateCancelUserTaskRecordToSimulateAssignee(ASSIGNEE_ID);
+    updateCancelUserTaskRecordToSimulateAssignee();
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
@@ -381,7 +383,10 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     zeebeExtension.cancelProcessInstance(instance.getProcessInstanceKey());
     waitUntilUserTaskRecordWithElementIdAndIntentExported(
         USER_TASK, UserTaskIntent.CANCELED.name());
-    updateCancelUserTaskRecordToSimulateAssignee(ASSIGNEE_ID);
+    updateCancelUserTaskRecordToSimulateAssignee();
+    waitUntilUserTaskRecordWithElementIdAndIntentExported(
+        USER_TASK, UserTaskIntent.CANCELED.name());
+    updateCancelUserTaskRecordToSimulateAssignee();
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
@@ -661,7 +666,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void importAssigneeFromCreationRecord() {
+  public void importAssignee_fromCreationRecord() {
     // given a process that was started with an assignee already present in the model
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(
@@ -705,6 +710,122 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                                       .setOperationType(CLAIM_OPERATION_TYPE.toString())
                                       .setTimestamp(
                                           getExpectedStartDateForUserTaskEvents(exportedEvents)))));
+            });
+  }
+
+  @Test
+  public void importUpdateCandidateGroupRecord_viaWriter() {
+    // given
+    final ProcessInstanceEvent instance =
+        deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
+    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
+    updateCreatedUserTaskRecordToSimulateUpdate();
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance -> {
+              assertThat(savedInstance.getProcessInstanceId())
+                  .isEqualTo(String.valueOf(instance.getProcessInstanceKey()));
+              assertThat(savedInstance.getProcessDefinitionId())
+                  .isEqualTo(String.valueOf(instance.getProcessDefinitionKey()));
+              assertThat(savedInstance.getProcessDefinitionKey())
+                  .isEqualTo(instance.getBpmnProcessId());
+              assertThat(savedInstance.getDataSource().getName())
+                  .isEqualTo(getConfiguredZeebeName());
+              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+              assertThat(savedInstance.getFlowNodeInstances())
+                  .singleElement() // only userTask was imported because all other records were
+                  // removed
+                  .isEqualTo(
+                      createRunningUserTaskInstance(instance, exportedEvents)
+                          .setDueDate(OffsetDateTime.parse(DUE_DATE))
+                          .setCandidateGroups(List.of(CANDIDATE_GROUP)));
+            });
+  }
+
+  @Test
+  public void importUpdateCandidateGroupRecord_viaUpdateScript() {
+    // given
+    final ProcessInstanceEvent instance =
+        deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
+    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
+    importAllZeebeEntitiesFromScratch();
+    updateCreatedUserTaskRecordToSimulateUpdate();
+
+    // when
+    importAllZeebeEntitiesFromLastIndex();
+
+    // then
+    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance -> {
+              assertThat(savedInstance.getProcessInstanceId())
+                  .isEqualTo(String.valueOf(instance.getProcessInstanceKey()));
+              assertThat(savedInstance.getProcessDefinitionId())
+                  .isEqualTo(String.valueOf(instance.getProcessDefinitionKey()));
+              assertThat(savedInstance.getProcessDefinitionKey())
+                  .isEqualTo(instance.getBpmnProcessId());
+              assertThat(savedInstance.getDataSource().getName())
+                  .isEqualTo(getConfiguredZeebeName());
+              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+              assertThat(savedInstance.getFlowNodeInstances())
+                  .singleElement() // only userTask was imported because all other records were
+                  // removed
+                  .isEqualTo(
+                      createRunningUserTaskInstance(instance, exportedEvents)
+                          .setDueDate(OffsetDateTime.parse(DUE_DATE))
+                          .setCandidateGroups(List.of(CANDIDATE_GROUP)));
+            });
+  }
+
+  @Test
+  public void importCandidateGroup_fromCreationRecord() {
+    // given a process that was started with a candidateGroup already present in the model
+    final ProcessInstanceEvent instance =
+        deployAndStartInstanceForProcess(
+            createSimpleNativeUserTaskProcessWithCandidateGroups(
+                TEST_PROCESS, DUE_DATE, CANDIDATE_GROUP));
+    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance -> {
+              assertThat(savedInstance.getProcessInstanceId())
+                  .isEqualTo(String.valueOf(instance.getProcessInstanceKey()));
+              assertThat(savedInstance.getProcessDefinitionId())
+                  .isEqualTo(String.valueOf(instance.getProcessDefinitionKey()));
+              assertThat(savedInstance.getProcessDefinitionKey())
+                  .isEqualTo(instance.getBpmnProcessId());
+              assertThat(savedInstance.getDataSource().getName())
+                  .isEqualTo(getConfiguredZeebeName());
+              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+              assertThat(savedInstance.getFlowNodeInstances())
+                  .singleElement() // only userTask was imported because all other records were
+                  // removed
+                  .isEqualTo(
+                      createRunningUserTaskInstance(instance, exportedEvents)
+                          .setDueDate(OffsetDateTime.parse(DUE_DATE))
+                          .setCandidateGroups(List.of(CANDIDATE_GROUP)));
             });
   }
 
@@ -773,12 +894,12 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         zeebeExtension.getZeebeRecordPrefix(),
         ZEEBE_USER_TASK_INDEX_NAME,
         """
-        if (ctx._source.intent == "CREATED") {
-          ctx._source.intent = "COMPLETED";
-          ctx._source.timestamp = ctx._source.timestamp + 1000; // this will be the userTask endDate
-          ctx._source.sequence = ctx._source.sequence + 10;
-        }
-        """);
+            if (ctx._source.intent == "CREATED") {
+              ctx._source.intent = "COMPLETED";
+              ctx._source.timestamp = ctx._source.timestamp + 1000; // this will be the userTask endDate
+              ctx._source.sequence = ctx._source.sequence + 10;
+            }
+            """);
   }
 
   private void updateCreatedUserTaskRecordToSimulateAssign(final String assigneeId) {
@@ -786,26 +907,42 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         zeebeExtension.getZeebeRecordPrefix(),
         ZEEBE_USER_TASK_INDEX_NAME,
         """
-        if (ctx._source.intent == "CREATED") {
-          ctx._source.intent = "ASSIGNED";
-          ctx._source.timestamp = ctx._source.timestamp + 1000;
-          ctx._source.sequence = ctx._source.sequence + 1;
-          ctx._source.value.assignee = "%s";
-        }
-        """
+            if (ctx._source.intent == "CREATED") {
+              ctx._source.intent = "ASSIGNED";
+              ctx._source.timestamp = ctx._source.timestamp + 1000;
+              ctx._source.sequence = ctx._source.sequence + 1;
+              ctx._source.value.assignee = "%s";
+            }
+            """
             .formatted(assigneeId));
   }
 
-  private void updateCancelUserTaskRecordToSimulateAssignee(final String assigneeId) {
+  private void updateCreatedUserTaskRecordToSimulateUpdate() {
     databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
         zeebeExtension.getZeebeRecordPrefix(),
         ZEEBE_USER_TASK_INDEX_NAME,
         """
-        if (ctx._source.intent == "CANCELED") {
-          ctx._source.value.assignee = "%s";
-        }
+            if (ctx._source.intent == "CREATED") {
+              ctx._source.intent = "UPDATED";
+              ctx._source.timestamp = ctx._source.timestamp + 1000;
+              ctx._source.sequence = ctx._source.sequence + 1;
+              ctx._source.value.candidateGroupsList = ["%s"];
+              ctx._source.value.changedAttributes = ["candidateGroupsList"];
+            }
+            """
+            .formatted(CANDIDATE_GROUP));
+  }
+
+  private void updateCancelUserTaskRecordToSimulateAssignee() {
+    databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
+        zeebeExtension.getZeebeRecordPrefix(),
+        ZEEBE_USER_TASK_INDEX_NAME,
         """
-            .formatted(assigneeId));
+            if (ctx._source.intent == "CANCELED") {
+              ctx._source.value.assignee = "%s";
+            }
+            """
+            .formatted(ASSIGNEE_ID));
   }
 
   private List<ZeebeUserTaskRecordDto> getZeebeExportedUserTaskEvents() {
