@@ -25,7 +25,7 @@
   <properties>
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
+    <openapi.spec>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/rest-api.yaml</openapi.spec>
   </properties>
 
   <dependencies>
@@ -268,7 +268,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>java</generatorName>
-              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <inputSpec>${openapi.spec}</inputSpec>
               <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
               <generateApis>false</generateApis>
               <generateApiTests>false</generateApiTests>
@@ -310,6 +310,16 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <id>openapi-windows</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <properties>
+        <openapi.spec>${maven.multiModuleProjectDirectory}\zeebe\gateway-protocol\src\main\proto\rest-api.yaml</openapi.spec>
+      </properties>
     </profile>
   </profiles>
 </project>

@@ -22,7 +22,7 @@
   <properties>
     <zbctl.force>false</zbctl.force>
     <zbctl.rootDir>${maven.multiModuleProjectDirectory}</zbctl.rootDir>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
+    <openapi.spec>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/rest-api.yaml</openapi.spec>
   </properties>
 
   <dependencies>
@@ -229,7 +229,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
-              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <inputSpec>${openapi.spec}</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
               <schemaMappings>ProblemDetail=org.springframework.http.ProblemDetail</schemaMappings>
               <generateApis>false</generateApis>
@@ -262,5 +262,17 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>openapi-windows</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <properties>
+        <openapi.spec>${maven.multiModuleProjectDirectory}\zeebe\gateway-protocol\src\main\proto\rest-api.yaml</openapi.spec>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>
