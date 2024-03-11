@@ -33,8 +33,11 @@ public class OperateSession implements Session {
 
   private boolean changed;
 
-  public OperateSession(String id) {
+  private boolean polling;
+
+  public OperateSession(final String id) {
     delegate = new MapSession(id);
+    polling = false;
   }
 
   boolean isChanged() {
@@ -45,33 +48,46 @@ public class OperateSession implements Session {
     changed = false;
   }
 
+  @Override
   public String getId() {
     return delegate.getId();
   }
 
-  public OperateSession setId(String id) {
+  public OperateSession setId(final String id) {
     delegate.setId(id);
     return this;
   }
 
-  public <T> T getAttribute(String attributeName) {
+  @Override
+  public String changeSessionId() {
+    final String newId = delegate.changeSessionId();
+    changed = true;
+    return newId;
+  }
+
+  @Override
+  public <T> T getAttribute(final String attributeName) {
     return delegate.getAttribute(attributeName);
   }
 
+  @Override
   public Set<String> getAttributeNames() {
     return delegate.getAttributeNames();
   }
 
-  public void setAttribute(String attributeName, Object attributeValue) {
+  @Override
+  public void setAttribute(final String attributeName, final Object attributeValue) {
     delegate.setAttribute(attributeName, attributeValue);
     changed = true;
   }
 
-  public void removeAttribute(String attributeName) {
+  @Override
+  public void removeAttribute(final String attributeName) {
     delegate.removeAttribute(attributeName);
     changed = true;
   }
 
+  @Override
   public Instant getCreationTime() {
     return delegate.getCreationTime();
   }
@@ -80,40 +96,14 @@ public class OperateSession implements Session {
     delegate.setCreationTime(creationTime);
     changed = true;
   }
-
-  public Instant getLastAccessedTime() {
-    return delegate.getLastAccessedTime();
-  }
-
-  public void setLastAccessedTime(final Instant lastAccessedTime) {
-    delegate.setLastAccessedTime(lastAccessedTime);
-    changed = true;
-  }
-
-  public Duration getMaxInactiveInterval() {
-    return delegate.getMaxInactiveInterval();
-  }
-
-  @Override
-  public void setMaxInactiveInterval(final Duration interval) {
-    delegate.setMaxInactiveInterval(interval);
-    changed = true;
-  }
-
-  public boolean isExpired() {
-    return delegate.isExpired();
-  }
-
-  public boolean containsAuthentication() {
+public boolean containsAuthentication() {
     return getAuthentication() != null;
   }
-
   public boolean isAuthenticated() {
     final var authentication = getAuthentication();
     return (authentication != null && authentication.isAuthenticated());
   }
-
-  private Authentication getAuthentication() {
+private Authentication getAuthentication() {
     final var securityContext =
         (SecurityContext) delegate.getAttribute(SPRING_SECURITY_CONTEXT_KEY);
     final Authentication authentication;
@@ -126,33 +116,75 @@ public class OperateSession implements Session {
 
     return authentication;
   }
-
   @Override
-  public String changeSessionId() {
-    final String newId = delegate.changeSessionId();
-    changed = true;
-    return newId;
+  public int hashCode() {
+    return Objects.hash(getId());
   }
-
-  @Override
-  public String toString() {
-    return String.format("OperateSession: %s ", getId());
-  }
-
-  @Override
-  public boolean equals(Object o) {
+@Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OperateSession session = (OperateSession) o;
+    final OperateSession session = (OperateSession) o;
     return Objects.equals(getId(), session.getId());
+  }
+    @Override
+  public String toString() {
+    return String.format("OperateSession: %s ", getId());
+  }@Override
+  public Instant getLastAccessedTime() {
+    return delegate.getLastAccessedTime();
+  }
+
+public boolean isPolling() {
+    return polling;
+  }
+
+public OperateSession setPolling(final boolean polling) {
+    this.polling = polling;
+    return this;
+  }
+
+
+
+  @Override
+  public void setLastAccessedTime(final Instant lastAccessedTime) {
+    delegate.setLastAccessedTime(lastAccessedTime);
+    changed = true;
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(getId());
+  public Duration getMaxInactiveInterval() {
+    return delegate.getMaxInactiveInterval();
   }
+
+  @Override
+  public void setMaxInactiveInterval(final Duration interval) {
+    delegate.setMaxInactiveInterval(interval);
+    changed = true;
+  }
+
+    @Override
+  public boolean isExpired() {
+    return delegate.isExpired();
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
