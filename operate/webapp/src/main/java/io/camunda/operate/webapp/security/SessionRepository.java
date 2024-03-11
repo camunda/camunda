@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SessionRepository {
+
+  String POLLING_HEADER = "x-is-polling";
+
   List<String> getExpiredSessionIds();
 
   void save(OperateSession session);
