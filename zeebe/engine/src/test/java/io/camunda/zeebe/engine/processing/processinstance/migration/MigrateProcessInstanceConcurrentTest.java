@@ -5,8 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.processinstance;
+package io.camunda.zeebe.engine.processing.processinstance.migration;
 
+import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -894,14 +894,5 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
-  }
-
-  private static long extractProcessDefinitionKeyByProcessId(
-      final Record<DeploymentRecordValue> deployment, final String processId) {
-    return deployment.getValue().getProcessesMetadata().stream()
-        .filter(p -> p.getBpmnProcessId().equals(processId))
-        .findAny()
-        .orElseThrow()
-        .getProcessDefinitionKey();
   }
 }
