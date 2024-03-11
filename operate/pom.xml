@@ -5,7 +5,7 @@
   <name>Operate Parent</name>
   <groupId>io.camunda</groupId>
   <artifactId>operate-parent</artifactId>
-  <version>8.5.0-SNAPSHOT</version>
+  <version>8.5.0-alpha2</version>
   <packaging>pom</packaging>
 
   <parent>
@@ -452,7 +452,7 @@
                 <exclude>**/target/**/*.md</exclude>
                 <exclude>**/node_modules/**/*.md</exclude>
               </excludes>
-              <flexmark></flexmark>
+              <flexmark />
             </markdown>
           </configuration>
           <dependencies>
@@ -498,7 +498,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration></configuration>
+              <configuration />
             </execution>
           </executions>
         </plugin>
@@ -692,4 +692,8 @@
 
   </repositories>
 
+
+  <scm>
+    <tag>8.5.0-alpha2</tag>
+  </scm>
 </project>
