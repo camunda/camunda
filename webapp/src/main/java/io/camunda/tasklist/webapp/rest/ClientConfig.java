@@ -22,6 +22,7 @@ public class ClientConfig {
   public boolean canLogout;
   public boolean isLoginDelegated;
   public String contextPath;
+
   // Cloud related properties for mixpanel events
   @Value("${CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID:#{null}}")
   public String organizationId;

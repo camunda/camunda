@@ -421,8 +421,8 @@ public class VariableService {
 
     final List<VariableDTO> vars = new ArrayList<>();
     switch (task.getState()) {
-      case CREATED -> vars.addAll(
-          VariableDTO.createFrom(getRuntimeVariablesDTOPerTaskId(requests)));
+      case CREATED ->
+          vars.addAll(VariableDTO.createFrom(getRuntimeVariablesDTOPerTaskId(requests)));
       case COMPLETED -> {
         final Map<String, List<TaskVariableEntity>> variablesByTaskIds =
             variableStore.getTaskVariablesPerTaskId(requests);

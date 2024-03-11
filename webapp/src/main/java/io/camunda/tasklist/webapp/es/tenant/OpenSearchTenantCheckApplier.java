@@ -81,9 +81,9 @@ public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRe
         searchRequest.query(finalQuery);
       }
       case TENANT_ACCESS_NONE -> // no data must be returned
-      searchRequest.query(OpenSearchUtil.createMatchNoneQuery());
+          searchRequest.query(OpenSearchUtil.createMatchNoneQuery());
       case TENANT_ACCESS_ALL -> // return without changing anything in the query
-      searchRequest.query(actualQuery);
+          searchRequest.query(actualQuery);
       default -> {
         final var message =
             String.format("Unexpected tenant check query type %s", tenantCheckQueryType);

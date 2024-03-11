@@ -149,6 +149,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
 
     return findBy(Optional.empty());
   }
+
   /** Returns all steps for an index that are not applied yet. */
   @Override
   public List<Step> findNotAppliedFor(final String indexName) {

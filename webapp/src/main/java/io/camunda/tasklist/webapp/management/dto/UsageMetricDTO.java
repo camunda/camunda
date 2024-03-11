@@ -13,6 +13,7 @@ import java.util.Objects;
 public class UsageMetricDTO {
   /** Uniquely assigned users */
   private List<String> assignees;
+
   /** Total amount retrived in the current search */
   private int total;
 

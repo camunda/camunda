@@ -98,4 +98,4 @@ start-e2e:
 
 .PHONY: lint
 lint:
-	@mvn com.coveo:fmt-maven-plugin:format
+	@mvn spotless:apply

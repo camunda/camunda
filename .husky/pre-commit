@@ -7,7 +7,7 @@ if [ $? -eq 1 ]; then
   echo "Found errors in checkstyle."
   exit 1
 fi
-mvn com.coveo:fmt-maven-plugin:check
+mvn spotless:check
 if [ $? -eq 1 ]; then
   echo "Found errors in formatting. Reformat ..."
   mvn com.coveo:fmt-maven-plugin:format

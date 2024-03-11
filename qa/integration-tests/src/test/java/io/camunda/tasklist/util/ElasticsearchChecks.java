@@ -240,6 +240,7 @@ public class ElasticsearchChecks {
       }
     };
   }
+
   /**
    * Checks whether the task for given args[0] processInstanceKey (Long) and given args[1]
    * flowNodeBpmnId (String) exists and is in state COMPLETED.

@@ -204,13 +204,15 @@ public class ProcessInternalController extends ApiErrorController {
 
     return switch (processInstanceStore.deleteProcessInstance(processInstanceId)) {
       case DELETED -> ResponseEntity.noContent().build();
-      case NOT_FOUND -> throw new NotFoundApiException(
-          String.format(
-              "The process with processInstanceId: '%s' is not found", processInstanceId));
-      default -> throw new TasklistRuntimeException(
-          String.format(
-              "The deletion of process with processInstanceId: '%s' could not be deleted",
-              processInstanceId));
+      case NOT_FOUND ->
+          throw new NotFoundApiException(
+              String.format(
+                  "The process with processInstanceId: '%s' is not found", processInstanceId));
+      default ->
+          throw new TasklistRuntimeException(
+              String.format(
+                  "The deletion of process with processInstanceId: '%s' could not be deleted",
+                  processInstanceId));
     };
   }
 

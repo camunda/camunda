@@ -154,17 +154,21 @@ public class JobZeebeRecordProcessorElasticSearch {
     LOGGER.debug("Intent {}", intent);
 
     switch (intent) {
-      case CANCELED -> entity
-          .setState(TaskState.CANCELED)
-          .setCompletionTime(
-              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      case COMPLETED -> entity
-          .setState(TaskState.COMPLETED)
-          .setCompletionTime(
-              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      case CREATED -> entity
-          .setState(TaskState.CREATED)
-          .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      case CANCELED ->
+          entity
+              .setState(TaskState.CANCELED)
+              .setCompletionTime(
+                  DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      case COMPLETED ->
+          entity
+              .setState(TaskState.COMPLETED)
+              .setCompletionTime(
+                  DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      case CREATED ->
+          entity
+              .setState(TaskState.CREATED)
+              .setCreationTime(
+                  DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       case MIGRATED, RECURRED_AFTER_BACKOFF -> entity.setState(TaskState.CREATED);
       case FAILED -> {
         if (recordValue.getRetries() > 0) {

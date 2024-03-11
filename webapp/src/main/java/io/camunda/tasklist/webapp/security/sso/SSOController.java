@@ -93,6 +93,7 @@ public class SSOController {
       res.sendRedirect(ROOT);
     }
   }
+
   /** Is called when there was an in authentication or authorization */
   @RequestMapping(value = NO_PERMISSION)
   @ResponseBody

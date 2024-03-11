@@ -21,6 +21,7 @@ public class ArchiverProperties {
   private String rolloverDateFormat = "yyyy-MM-dd";
 
   private String elsRolloverDateFormat = "date";
+
   /**
    * Interval description for "date histogram" aggregation, which is used to group finished
    * instances.
@@ -38,6 +39,7 @@ public class ArchiverProperties {
   private boolean ilmEnabled = false; // default due to usage of curator
 
   private String ilmMinAgeForDeleteArchivedIndices = "30d";
+
   /**
    * In case archiver runs without delays, two subsequent runs may try to process the same process
    * entities (because of Elasticsearch refresh behaviour). In general, it's fine, but there are two

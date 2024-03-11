@@ -63,13 +63,17 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
     return new SemanticVersion(version);
   }
 
-  /** @return The textual representation of the version. */
+  /**
+   * @return The textual representation of the version.
+   */
   @Override
   public String toString() {
     return displayText;
   }
 
-  /** @return Numeric version as String */
+  /**
+   * @return Numeric version as String
+   */
   public String getVersion() {
     return displayText;
   }
@@ -138,12 +142,16 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
     return getMajor().compareTo(otherVersion.getMajor()) > 0;
   }
 
-  /** @return The major version. */
+  /**
+   * @return The major version.
+   */
   public Integer getMajor() {
     return versionParts.get(0);
   }
 
-  /** @return The major version as a string. */
+  /**
+   * @return The major version as a string.
+   */
   public String getMajorAsString() {
     return versionParts.get(0).toString();
   }
@@ -155,7 +163,9 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
     return versionParts.get(1);
   }
 
-  /** @return The minor version as a string. */
+  /**
+   * @return The minor version as a string.
+   */
   public String getMinorAsString() {
     if (versionParts.size() == 1) {
       return "0";

@@ -15,9 +15,9 @@ mvn clean install
 This command runs also all the test suite, that you can skip using the
 option `-DskipTests=true`.
 
-## Environment variables 
+## Environment variables
 
-In order to Setup the Webapp locally, after to start the docker images (See Tasklist READ.ME), it is necessary configurate the env. variables over the Spring Profile, this is the minimum requirement: 
+In order to Setup the Webapp locally, after to start the docker images (See Tasklist READ.ME), it is necessary configurate the env. variables over the Spring Profile, this is the minimum requirement:
 
 * `CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test;`
 * `CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://localhost:9200;`
@@ -37,7 +37,7 @@ This is the minimum requirement, in case to setup the identity:
 * `CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform;`
 * `CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true;`
 
-Do not forget to make sure that all services are up on Docker. 
+Do not forget to make sure that all services are up on Docker.
 
 ## Run modules separately
 
@@ -68,10 +68,13 @@ There are two sets of data, defined in two different Spring profiles:
 Ways to activated profiles:
 
 - when running via `make env-up` or `docker-compose`: edit `docker-compose.yml`, section `services.tasklist.environment` (always leave `dev` profile active)
+
 ```text
 - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
 ```
+
 - when running from distribution via `tasklist` shell script or `tasklist.bat`:
+
 ```text
 JAVA_OPTS=-Dspring.profiles.active=dev-data ./tasklist
 or 

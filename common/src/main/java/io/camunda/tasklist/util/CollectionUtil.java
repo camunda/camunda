@@ -132,7 +132,9 @@ public abstract class CollectionUtil {
     return aCollection != null && !aCollection.isEmpty();
   }
 
-  /** @param subsetId starts from 0 */
+  /**
+   * @param subsetId starts from 0
+   */
   public static <E> List<E> splitAndGetSublist(List<E> list, int subsetCount, int subsetId) {
     if (subsetId >= subsetCount) {
       return new ArrayList<>();

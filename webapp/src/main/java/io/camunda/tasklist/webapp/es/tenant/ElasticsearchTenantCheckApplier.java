@@ -69,7 +69,7 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Searc
         searchRequest.source().query(finalQuery);
       }
       case TENANT_ACCESS_NONE -> // no data must be returned
-      searchRequest.source().query(ElasticsearchUtil.createMatchNoneQuery());
+          searchRequest.source().query(ElasticsearchUtil.createMatchNoneQuery());
       case TENANT_ACCESS_ALL -> searchRequest.source().query(actualQuery);
       default -> {
         final var message =

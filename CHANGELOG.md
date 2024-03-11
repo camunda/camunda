@@ -1,9 +1,14 @@
 # v8.5.0-alpha2
+
 ## 🧹 Chore
+
 * updating configuration for Tasklist distro - Spring 3.2.2 ([#4648](https://github.com/camunda/tasklist/issues/4648))
 * update CHANGELOG.md
+
 # v8.5.0-alpha1
+
 ## 🚀 New Features
+
 * add a control which allows tasklist to automatically select the first task ([#4325](https://github.com/camunda/tasklist/issues/4325))
 * Add share button to copy the start process URL ([#4311](https://github.com/camunda/tasklist/issues/4311))
 * adding CAMUNDA_TASKLIST_IMPORTER_USE_ONLY_POSITION ([#4332](https://github.com/camunda/tasklist/issues/4332))
@@ -12,6 +17,7 @@
 * Tasklist API: update Search Task Variables API to allow disabling variable truncation ([#4203](https://github.com/camunda/tasklist/issues/4203))
 
 ## 💊 Bugfixes
+
 * Multiple processes in single bpmn file are displayed incorrectly in Tasklist ([#4407](https://github.com/camunda/tasklist/issues/4407))
 * add nullcheck for the attributes property (implicit null check) ([#4432](https://github.com/camunda/tasklist/issues/4432))
 * ERR_TOO_MANY_REDIRECTS when session is expired ([#4422](https://github.com/camunda/tasklist/issues/4422))
@@ -25,6 +31,7 @@
 * **api**: return non-truncated variable values when rendering a form ([#4253](https://github.com/camunda/tasklist/issues/4253))
 
 ## 🧹 Chore
+
 * Update to ES 8 ([#4406](https://github.com/camunda/tasklist/issues/4406))
 * **deps**: update alpine:3.19.1 docker digest to c5b1261 (master) ([#4433](https://github.com/camunda/tasklist/issues/4433))
 * fix line returns markups for swagger ([#4429](https://github.com/camunda/tasklist/issues/4429))
@@ -61,7 +68,7 @@
 * **deps**: update all non-major dependencies (master) ([#4341](https://github.com/camunda/tasklist/issues/4341))
 * **deps**: update all non-major dependencies (master) ([#4340](https://github.com/camunda/tasklist/issues/4340))
 * **deps**: update dependency jsdom to v24 (master) ([#4338](https://github.com/camunda/tasklist/issues/4338))
-* **deps**: update dependency vite to v5.0.12 [security] (master) ([#4324](https://github.com/camunda/tasklist/issues/4324))
+* **deps**: update dependency vite to v5.0.12 [security](master) ([#4324](https://github.com/camunda/tasklist/issues/4324))
 * fix CVE-2023-4043 ([#4327](https://github.com/camunda/tasklist/issues/4327))
 * **deps**: update dependency @carbon/react to v1.48.0 (master) ([#4329](https://github.com/camunda/tasklist/issues/4329))
 * **deps**: update dependency @carbon/elements to v11.37.0 (master) ([#4328](https://github.com/camunda/tasklist/issues/4328))
@@ -129,14 +136,20 @@
 * Bump form-js@1.6.3 ([#4222](https://github.com/camunda/tasklist/issues/4222))
 * Revert 8.5.0-SNAPSHOT bumping ([#4223](https://github.com/camunda/tasklist/issues/4223))
 * update CHANGELOG.md
+
 # v8.4.0
+
 ## 🧹 Chore
+
 * change dockerfile uid and gid ([#4220](https://github.com/camunda/tasklist/issues/4220))
 * Bump form-js@1.6.3 ([#4222](https://github.com/camunda/tasklist/pull/4222))
 * Revert release 8.4 automation commits for rebuild ([#4219](https://github.com/camunda/tasklist/issues/4219))
 * update CHANGELOG.md
+
 # v8.4.0-alpha2
+
 ## 🚀 New Features
+
 * support for ES 8.9 ([#3900](https://github.com/camunda/tasklist/issues/3900))
 * Implement User Group Retrieval and Access Restrictions in Tasklist (Self Management) ([#3868](https://github.com/camunda/tasklist/issues/3868))
 * Extend Task Search API to Include Task Variables ([#3786](https://github.com/camunda/tasklist/issues/3786))
@@ -147,6 +160,7 @@
 * add the java event for the form deletion  ([#3746](https://github.com/camunda/tasklist/issues/3746))
 
 ## 💊 Bugfixes
+
 * Some Identity configuration parameters are not taken from CAMUND… ([#3967](https://github.com/camunda/tasklist/issues/3967))
 * temporar fix for clear scroll for AWS opensearch ([#3955](https://github.com/camunda/tasklist/issues/3955))
 * creating aliases in case they don't exist ([#3904](https://github.com/camunda/tasklist/issues/3904))
@@ -161,6 +175,7 @@
 * treat null values for forms in Tasks ([#3755](https://github.com/camunda/tasklist/issues/3755))
 
 ## 🧹 Chore
+
 * Revert es 8.9 java client - application still supports ES 8.9 ([#3972](https://github.com/camunda/tasklist/issues/3972))
 * bump versions to alpha2 ([#3963](https://github.com/camunda/tasklist/issues/3963))
 * **deps**: fix CVE-2023-46589 and CVE-2023-34055 ([#3929](https://github.com/camunda/tasklist/issues/3929))
@@ -222,8 +237,11 @@
 * **deps**: update dependency prettier to v3.1.0 ([#3784](https://github.com/camunda/tasklist/issues/3784))
 * **deps**: update dependency @carbon/react to v1.42.0 ([#3781](https://github.com/camunda/tasklist/issues/3781))
 * update CHANGELOG.md
+
 # v8.4.0-alpha1
+
 ## 🚀 New Features
+
 * adding ISM to OpenSearch ([#3731](https://github.com/camunda/tasklist/issues/3731))
 * Add support for deployed forms in tasks ([#3716](https://github.com/camunda/tasklist/issues/3716))
 * add isDeleted to Form API Response ([#3723](https://github.com/camunda/tasklist/issues/3723))
@@ -234,6 +252,7 @@
 * Add Unit and Integration tests for OpenAPI ([#3574](https://github.com/camunda/tasklist/issues/3574))
 
 ## 💊 Bugfixes
+
 * Update OpenSearchBulkProcessor.java version ([#3777](https://github.com/camunda/tasklist/issues/3777))
 * auth0 claims ([#3764](https://github.com/camunda/tasklist/issues/3764))
 * Fix start form submission error positioning ([#3717](https://github.com/camunda/tasklist/issues/3717))
@@ -251,6 +270,7 @@
 * Fix JSON modal editor theme ([#3609](https://github.com/camunda/tasklist/issues/3609))
 
 ## 🧹 Chore
+
 * **deps**: bump version 8.4.0-alpha1 ([#3771](https://github.com/camunda/tasklist/issues/3771))
 * bump deps 8.4.0-alpha1 ([#3769](https://github.com/camunda/tasklist/issues/3769))
 * **deps**: update camunda/zeebe docker tag to v8.3.2 ([#3765](https://github.com/camunda/tasklist/issues/3765))
@@ -322,20 +342,30 @@
 * Update version on package.json
 * Revert failed release
 * update CHANGELOG.md
+
 # v8.3.0
+
 ## 💊 Bugfixes
+
 * Importer not working on SaaS due do missing bean dependency ([#3594](https://github.com/camunda/tasklist/issues/3594))
 
 ## 🧹 Chore
+
 * Update Browserlist DB
 * update CHANGELOG.md
+
 # v8.3.0-alpha6
+
 ## 🧹 Chore
+
 * Bump Identity and Zeebe to 8.3.0-alpha6 ([#3432](https://github.com/camunda/tasklist/issues/3432))
 * Fix dev version
 * update CHANGELOG.md
+
 # v8.3.0-alpha5
+
 ## 🚀 New Features
+
 * ES/OS - filter task by variables ([#3371](https://github.com/camunda/tasklist/issues/3371))
 * Add raw filters from Tasklist API ([#3382](https://github.com/camunda/tasklist/issues/3382))
 * implement schema migration for `OpenSearch` ([#3347](https://github.com/camunda/tasklist/issues/3347))
@@ -347,6 +377,7 @@
 * making docker image rootless ([#3286](https://github.com/camunda/tasklist/issues/3286))
 
 ## 💊 Bugfixes
+
 * remove not used code  ([#3420](https://github.com/camunda/tasklist/issues/3420))
 * **preview-env**: Run the cleanup job only on 'pull_request' events ([#3411](https://github.com/camunda/tasklist/issues/3411))
 * **deps**: update dependency @carbon/elements to v11.29.0 ([#3394](https://github.com/camunda/tasklist/issues/3394))
@@ -376,6 +407,7 @@
 * **deps**: update dependency mobx to v6.10.0 ([#3236](https://github.com/camunda/tasklist/issues/3236))
 
 ## 🧹 Chore
+
 * Bump Identity and Zeebe to 8.3.0-alpha5 ([#3422](https://github.com/camunda/tasklist/issues/3422))
 * Update Renovate config to always use chore prefix ([#3417](https://github.com/camunda/tasklist/issues/3417))
 * **deps**: update dependency @types/lodash to v4.14.198 ([#3406](https://github.com/camunda/tasklist/issues/3406))
@@ -418,7 +450,7 @@
 * add reviewers to renovate.json ([#3325](https://github.com/camunda/tasklist/issues/3325))
 * spring version
 * Remove reference to Testcafe
-* cleanup Jenkins jobs [master] ([#3280](https://github.com/camunda/tasklist/issues/3280))
+* cleanup Jenkins jobs [master]([#3280](https://github.com/camunda/tasklist/issues/3280))
 * adding empty file to create folder
 * adding configuration to /home/tasklist ([#3309](https://github.com/camunda/tasklist/issues/3309))
 * **deps**: bump version.micrometer from 1.10.3 to 1.10.5 ([#2735](https://github.com/camunda/tasklist/issues/2735))
@@ -433,8 +465,11 @@
 * **deps**: update actions/add-to-project digest to 99cf218 ([#3225](https://github.com/camunda/tasklist/issues/3225))
 * Fix e2e tests ([#3288](https://github.com/camunda/tasklist/issues/3288))
 * update CHANGELOG.md
+
 # v8.3.0-alpha4
+
 ## 🚀 New Features
+
 * be-302-identity ([#3266](https://github.com/camunda/tasklist/issues/3266))
 * abstract Identity Setup for SSO Profile and OAuth + ProcessReader Adaptation ([#3256](https://github.com/camunda/tasklist/issues/3256))
 * readme - update Readme with env variables ([#3233](https://github.com/camunda/tasklist/issues/3233))
@@ -444,6 +479,7 @@
 * update internal start process endpoint and tests  ([#3169](https://github.com/camunda/tasklist/issues/3169))
 
 ## 💊 Bugfixes
+
 * Refine jacoco plugin ([#3251](https://github.com/camunda/tasklist/issues/3251))
 * fixing billing tab ([#3235](https://github.com/camunda/tasklist/issues/3235))
 * Fix makefile and docker for entity up ([#3232](https://github.com/camunda/tasklist/issues/3232))
@@ -455,6 +491,7 @@
 * **deps**: update all non-major dependencies ([#3177](https://github.com/camunda/tasklist/issues/3177))
 
 ## 🧹 Chore
+
 * Bump form-js ([#3262](https://github.com/camunda/tasklist/issues/3262))
 * Processes Page Tests Added ([#3242](https://github.com/camunda/tasklist/issues/3242))
 * increase identity test coverage ([#3243](https://github.com/camunda/tasklist/issues/3243))
@@ -479,14 +516,18 @@
 * Task Panel Tests refactored with POM ([#3170](https://github.com/camunda/tasklist/issues/3170))
 * Task Details Tests refactored with POM ([#3165](https://github.com/camunda/tasklist/issues/3165))
 * update CHANGELOG.md
+
 # v8.3.0-alpha3
+
 ## 🚀 New Features
+
 * **backend**: adding config for act and view users ([#3139](https://github.com/camunda/tasklist/issues/3139))
 * Use async submit button public start form ([#3098](https://github.com/camunda/tasklist/issues/3098))
 * Remove public start form header ([#3095](https://github.com/camunda/tasklist/issues/3095))
 * adding devUtil ([#3039](https://github.com/camunda/tasklist/issues/3039))
 
 ## 💊 Bugfixes
+
 * returning the correct user for jwt ([#3180](https://github.com/camunda/tasklist/issues/3180))
 * removing limit to return processes ([#3176](https://github.com/camunda/tasklist/issues/3176))
 * **deps**: update all non-major dependencies to v4.29.19 ([#3125](https://github.com/camunda/tasklist/issues/3125))
@@ -509,6 +550,7 @@
 * new asking for authentication ([#3070](https://github.com/camunda/tasklist/issues/3070))
 
 ## 🧹 Chore
+
 * bumping identity/zeebe 8.3.0-alpha3 ([#3182](https://github.com/camunda/tasklist/issues/3182))
 * Login Tests Refactored with POM ([#3159](https://github.com/camunda/tasklist/issues/3159))
 * **deps**: update actions/add-to-project digest to a800ee6 ([#3166](https://github.com/camunda/tasklist/issues/3166))
@@ -545,8 +587,11 @@
 * add workflow for running backup/restore tests ([#3036](https://github.com/camunda/tasklist/issues/3036))
 * Task Details tests migrated from TestCafe to Playwright ([#3029](https://github.com/camunda/tasklist/issues/3029))
 * update CHANGELOG.md
+
 # v8.3.0-alpha2
+
 ## 🚀 New Features
+
 * support draft variables ([#3009](https://github.com/camunda/tasklist/issues/3009))
 * Add success and error messages to public start page ([#3032](https://github.com/camunda/tasklist/issues/3032))
 * Implement form submission on public form start ([#3018](https://github.com/camunda/tasklist/issues/3018))
@@ -565,6 +610,7 @@
 * import fields from Zeebe to start Process by Form ([#2891](https://github.com/camunda/tasklist/issues/2891))
 
 ## 💊 Bugfixes
+
 * Sort completed tasks by completion ([#3055](https://github.com/camunda/tasklist/issues/3055))
 * Show ellipsis for long texts on left panel ([#3057](https://github.com/camunda/tasklist/issues/3057))
 * Use fixed submit button ([#3047](https://github.com/camunda/tasklist/issues/3047))
@@ -600,6 +646,7 @@
 * **deps**: update dependency date-fns to v2.30.0 ([#2856](https://github.com/camunda/tasklist/issues/2856))
 
 ## 🧹 Chore
+
 * **backend**: bumping Zeebe/Identity versions for release ([#3065](https://github.com/camunda/tasklist/issues/3065))
 * Skip flaky E2E test
 * **deps**: update actions/add-to-project digest to 65dd57f ([#3058](https://github.com/camunda/tasklist/issues/3058))
@@ -670,8 +717,11 @@
 * **els/session**: remove exists requests ([#2882](https://github.com/camunda/tasklist/issues/2882))
 * bump maven-release-plugin from 2.5.3 to 3.0.0 ([#2880](https://github.com/camunda/tasklist/issues/2880))
 * update CHANGELOG.md
+
 # v8.3.0-alpha1
+
 ## 🚀 New Features
+
 * Consume form-js Carbonisation ([#2872](https://github.com/camunda/tasklist/issues/2872))
 * Enable processes menu item on all saas versions ([#2833](https://github.com/camunda/tasklist/issues/2833))
 * re-enabling processes for saas ([#2840](https://github.com/camunda/tasklist/issues/2840))
@@ -679,6 +729,7 @@
 * **backend**: consume tasklist identity `redirect_root_url` from env variables ([#2739](https://github.com/camunda/tasklist/issues/2739))
 
 ## 💊 Bugfixes
+
 * **backend**: process duplications properly ([#2825](https://github.com/camunda/tasklist/issues/2825))
 * Fix labels ([#2817](https://github.com/camunda/tasklist/issues/2817))
 * changing dateformat to accept zoned ([#2807](https://github.com/camunda/tasklist/issues/2807))
@@ -697,6 +748,7 @@
 * **deps**: update dependency @carbon/react to v1.26.0 ([#2722](https://github.com/camunda/tasklist/issues/2722))
 
 ## 🧹 Chore
+
 * **els/repo**: remove not needed refresh when getting session ([#2875](https://github.com/camunda/tasklist/issues/2875))
 * updating dependencies to 8.3.0-alpha1 ([#2878](https://github.com/camunda/tasklist/issues/2878))
 * Make visual regression tests more reliable
@@ -735,8 +787,11 @@
 * **deps**: update hashicorp/vault-action digest to 1d767e3 ([#2725](https://github.com/camunda/tasklist/issues/2725))
 * **deps**: update actions/add-to-project digest to 80dff83 ([#2714](https://github.com/camunda/tasklist/issues/2714))
 * update CHANGELOG.md
+
 # v8.2.0
+
 ## 🚀 New Features
+
 * adding flag RESOURCE_PERMISSIONS_ENABLED ([#2727](https://github.com/camunda/tasklist/issues/2727))
 * Enable processes tab for self managed users ([#2716](https://github.com/camunda/tasklist/issues/2716))
 * Remove feature flag (Enable follow up and due dates and candidate groups) ([#2701](https://github.com/camunda/tasklist/issues/2701))
@@ -751,6 +806,7 @@
 * Add sorting button to left panel ([#2578](https://github.com/camunda/tasklist/issues/2578))
 
 ## 💊 Bugfixes
+
 * **backend**: upgrade `springdoc` to support SpringBoot v3 ([#2742](https://github.com/camunda/tasklist/issues/2742))
 * Use image tags that exist ([#2741](https://github.com/camunda/tasklist/issues/2741))
 * Fix overflow form-js overflow on small screens ([#2733](https://github.com/camunda/tasklist/issues/2733))
@@ -789,6 +845,7 @@
 * **chore**: add git config ([#2608](https://github.com/camunda/tasklist/issues/2608))
 
 ## 🧹 Chore
+
 * fixing docker version for zeebe ([#2745](https://github.com/camunda/tasklist/issues/2745))
 * Update form-js to 0.14.0 ([#2743](https://github.com/camunda/tasklist/issues/2743))
 * **backend**: update Zeebe and Identity to 8.2.0 ([#2740](https://github.com/camunda/tasklist/issues/2740))
@@ -823,8 +880,11 @@
 * **deps**: update all non-major dependencies ([#2582](https://github.com/camunda/tasklist/issues/2582))
 * **deps**: update dependency eslint-config-prettier to v8.7.0 ([#2590](https://github.com/camunda/tasklist/issues/2590))
 * update CHANGELOG.md
+
 # v8.2.0-alpha5
+
 ## 🚀 New Features
+
 * **backend**: use sequence field for import ([#2512](https://github.com/camunda/tasklist/issues/2512))
 * improve error handling when invalid auth token provided ([#2591](https://github.com/camunda/tasklist/issues/2591))
 * Update left panel layout ([#2545](https://github.com/camunda/tasklist/issues/2545))
@@ -833,6 +893,7 @@
 * use runtime indexes for searching CREATED tasks ([#2476](https://github.com/camunda/tasklist/issues/2476))
 
 ## 💊 Bugfixes
+
 * invalid operate token ([#2571](https://github.com/camunda/tasklist/issues/2571))
 * **deps**: update dependency @apollo/client to v3.7.10 ([#2593](https://github.com/camunda/tasklist/issues/2593))
 * **deps**: update dependency @camunda/camunda-composite-components to v0.0.30 ([#2575](https://github.com/camunda/tasklist/issues/2575))
@@ -844,11 +905,12 @@
 * Fix empty assignee field for restricted users ([#2526](https://github.com/camunda/tasklist/issues/2526))
 * resolve GraphQL vulnerability ([#2509](https://github.com/camunda/tasklist/issues/2509))
 * get processes returning duplicated processes ([#2514](https://github.com/camunda/tasklist/issues/2514))
-* fix vulnerability issues [snakeyaml] ([#2488](https://github.com/camunda/tasklist/issues/2488))
+* fix vulnerability issues [snakeyaml]([#2488](https://github.com/camunda/tasklist/issues/2488))
 * Fix form-js placeholder color ([#2511](https://github.com/camunda/tasklist/issues/2511))
 * **deps**: update dependency mobx to v6.8.0 ([#2497](https://github.com/camunda/tasklist/issues/2497))
 
 ## 🧹 Chore
+
 * **backend**: update Zeebe and Identity to 8.2.0-alpha5
 * **backend**: update Zeebe and Identity to 8.2.0-alpha5 ([#2605](https://github.com/camunda/tasklist/issues/2605))
 * **deps**: update dependency testcafe to v2.4.0 ([#2596](https://github.com/camunda/tasklist/issues/2596))
@@ -883,8 +945,11 @@
 * Update visual regression setup ([#2487](https://github.com/camunda/tasklist/issues/2487))
 * **deps**: update all non-major dependencies ([#2463](https://github.com/camunda/tasklist/issues/2463))
 * update CHANGELOG.md
+
 # v8.2.0-alpha4
+
 ## 🚀 New Features
+
 * Replace feature flag with conditional rendering of processes menu item ([#2485](https://github.com/camunda/tasklist/issues/2485))
 * **feature-flagged**: Implement process tile logic ([#2482](https://github.com/camunda/tasklist/issues/2482))
 * **feature-flagged**: Implement first time modal for processes page ([#2481](https://github.com/camunda/tasklist/issues/2481))
@@ -901,6 +966,7 @@
 * adding a new form to test-data-generator ([#2398](https://github.com/camunda/tasklist/issues/2398))
 
 ## 💊 Bugfixes
+
 * session not expiring ([#2459](https://github.com/camunda/tasklist/issues/2459))
 * adding write permission to startProcess ([#2489](https://github.com/camunda/tasklist/issues/2489))
 * **deps**: update dependency @carbon/elements to v11.19.0 ([#2469](https://github.com/camunda/tasklist/issues/2469))
@@ -919,6 +985,7 @@
 * **chore**: use mvn for start app ([#2370](https://github.com/camunda/tasklist/issues/2370))
 
 ## 🧹 Chore
+
 * **backend**: update Zeebe and Identity to 8.2.0-alpha4 ([#2490](https://github.com/camunda/tasklist/issues/2490))
 * **deps**: update dependency @types/node to v18.13.0 ([#2475](https://github.com/camunda/tasklist/issues/2475))
 * **deps**: update dependency monaco-editor to v0.35.0 ([#2480](https://github.com/camunda/tasklist/issues/2480))
@@ -968,8 +1035,11 @@
 * **deps**: update all non-major dependencies ([#2381](https://github.com/camunda/tasklist/issues/2381))
 * Update Browserlist DB
 * update CHANGELOG.md
+
 # v8.2.0-alpha3
+
 ## 🚀 New Features
+
 * **backend**: return 502 in case of Elastic connection error ([#2365](https://github.com/camunda/tasklist/issues/2365))
 * **backend**: endpoint to list backups ([#2364](https://github.com/camunda/tasklist/issues/2364))
 * Migrate Tasklist to Carbon design ([#2347](https://github.com/camunda/tasklist/issues/2347))
@@ -977,6 +1047,7 @@
 * **backend**: delete backup endpoint ([#2335](https://github.com/camunda/tasklist/issues/2335))
 
 ## 💊 Bugfixes
+
 * Fix adornements styles
 * **backend**: rename `backup` endpoint to `backups` ([#2372](https://github.com/camunda/tasklist/issues/2372))
 * **deps**: update dependency react-router-dom to v6.6.1 ([#2354](https://github.com/camunda/tasklist/issues/2354))
@@ -987,6 +1058,7 @@
 * Show footer on task details ([#2328](https://github.com/camunda/tasklist/issues/2328))
 
 ## 🧹 Chore
+
 * **backend**: expose `backups` actuator endpoint
 * **backend**: update Zeebe abd identity to 8.2.0-alpha3 ([#2373](https://github.com/camunda/tasklist/issues/2373))
 * **deps**: update node.js to v16.19.0 ([#2343](https://github.com/camunda/tasklist/issues/2343))
@@ -1008,14 +1080,18 @@
 * Update Browserlist DB
 * **deps**: update actions/add-to-project digest to 2558057 ([#2331](https://github.com/camunda/tasklist/issues/2331))
 * **deps**: update actions/add-to-project digest to f8f1995 ([#2329](https://github.com/camunda/tasklist/issues/2329))
+
 # v8.2.0-alpha2
+
 ## 🚀 New Features
+
 * Implement App switcher ([#2319](https://github.com/camunda/tasklist/issues/2319))
 * **backend**: add c8Links to User object ([#2309](https://github.com/camunda/tasklist/issues/2309))
 * **backend**: migrate assignee ([#2291](https://github.com/camunda/tasklist/issues/2291))
 * **backend**: add optional parameter `allowOverrideAssignment` ([#2247](https://github.com/camunda/tasklist/issues/2247))
 
 ## 💊 Bugfixes
+
 * **deps**: update dependency @carbon/elements to v11.15.0 ([#2302](https://github.com/camunda/tasklist/issues/2302))
 * **deps**: update dependency @carbon/react to v1.18.0 ([#2303](https://github.com/camunda/tasklist/issues/2303))
 * Fix Mixpanel loading ([#2307](https://github.com/camunda/tasklist/issues/2307))
@@ -1028,6 +1104,7 @@
 * **deps**: update dependency sass to v1.56.0 ([#2229](https://github.com/camunda/tasklist/issues/2229))
 
 ## 🧹 Chore
+
 * **deps**: update actions/add-to-project digest to 31901d2 ([#2327](https://github.com/camunda/tasklist/issues/2327))
 * Bump @camunda/camunda-composite-components
 * **project**: update Zeebe and Identity versions to 8.2.0-alpha2 ([#2324](https://github.com/camunda/tasklist/issues/2324))
@@ -1076,8 +1153,11 @@
 * bump version.elasticsearch from 7.17.6 to 7.17.7 ([#2196](https://github.com/camunda/tasklist/issues/2196))
 * bump jib-maven-plugin from 3.3.0 to 3.3.1 ([#2211](https://github.com/camunda/tasklist/issues/2211))
 * Update Browserlist DB
+
 # v8.2.0-alpha1
+
 ## 💊 Bugfixes
+
 * **backend**: Use email, username as assignee ([#2158](https://github.com/camunda/tasklist/issues/2158))
 * **deps**: update all non-major dependencies ([#2173](https://github.com/camunda/tasklist/issues/2173))
 * **deps**: update dependency @carbon/react to v1.15.0 ([#2166](https://github.com/camunda/tasklist/issues/2166))
@@ -1094,6 +1174,7 @@
 * Revert dep update
 
 ## 🧹 Chore
+
 * **backend**: update Zeebe abd Identity to 8.2.0-alpha1 ([#2225](https://github.com/camunda/tasklist/issues/2225))
 * **pom**: update Spring Boot to 2.6.13 ([#2223](https://github.com/camunda/tasklist/issues/2223))
 * **Dockerfile**: update Docker base image to be temurin 17 ([#2208](https://github.com/camunda/tasklist/issues/2208))
@@ -1141,8 +1222,11 @@
 * **preview-env**: Split the deploy-preview actions into create and destroy actions ([#2134](https://github.com/camunda/tasklist/issues/2134))
 * Fix version on package.json
 * **deps**: update definitelytyped ([#2049](https://github.com/camunda/tasklist/issues/2049))
+
 # v8.1.0
+
 ## 🚀 New Features
+
 * **backend**: Get backup state endpoint ([#2117](https://github.com/camunda/tasklist/issues/2117))
 * **backend**: Create Backup endpoint ([#2112](https://github.com/camunda/tasklist/issues/2112))
 * run Zeebe Importer multi-threaded ([#2089](https://github.com/camunda/tasklist/issues/2089))
@@ -1150,6 +1234,7 @@
 * **metrics**: measure time to import Zeebe records ([#2073](https://github.com/camunda/tasklist/issues/2073))
 
 ## 💊 Bugfixes
+
 * **chore**: add Spring JWT settings for API access via Identity ([#2094](https://github.com/camunda/tasklist/issues/2094))
 * gh deployment ref was wrong for PRs ([#2100](https://github.com/camunda/tasklist/issues/2100))
 * **deps**: update dependency @carbon/elements to v11.10.0 ([#2090](https://github.com/camunda/tasklist/issues/2090))
@@ -1161,6 +1246,7 @@
 * **deps**: update all non-major dependencies ([#2040](https://github.com/camunda/tasklist/issues/2040))
 
 ## 🧹 Chore
+
 * Revert wrong CHANGELOG
 * Use action to avoid errors with unescaped characters ([#2131](https://github.com/camunda/tasklist/issues/2131))
 * update CHANGELOG.md
@@ -1187,6 +1273,7 @@
 * bump version.micrometer from 1.9.3 to 1.9.4 ([#2071](https://github.com/camunda/tasklist/issues/2071))
 * Update Browserlist DB
 * update CHANGELOG.md
+
 # v8.1.0-alpha5
 
 ## 🚀 New Features
@@ -1412,3 +1499,4 @@
 - create changelog workflows ([#1764](https://github.com/camunda-cloud/tasklist/issues/1764))
 - **deps**: update definitelytyped (major) ([#1774](https://github.com/camunda-cloud/tasklist/issues/1774))
 - **deps**: update dependency jest-junit to v13.1.0 ([#1767](https://github.com/camunda-cloud/tasklist/issues/1767))
+

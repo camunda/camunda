@@ -34,6 +34,7 @@ public class TasklistProperties {
   private boolean webappEnabled = true;
 
   private boolean persistentSessionsEnabled = false;
+
   /** Indicates, whether CSRF prevention is enabled. */
   @Deprecated private boolean csrfPreventionEnabled = true;
 

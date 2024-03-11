@@ -70,8 +70,11 @@
     <skip.fe.build>false</skip.fe.build>
 
     <plugin.version.license>4.3</plugin.version.license>
+    <version.checkstyle>10.13.0</version.checkstyle>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
-    <plugin.version.fmt>2.13</plugin.version.fmt>
+    <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
+    <plugin.version.google-java-format>1.19.2</plugin.version.google-java-format>
+
     <license.header>${project.baseUri}/../license/license-header</license.header>
 
     <!-- Auth0 Dependencies -->
@@ -615,7 +618,7 @@
           <artifactId>maven-checkstyle-plugin</artifactId>
           <version>${plugin.version.checkstyle}</version>
           <configuration>
-            <configLocation>build-tools/check/.checkstyle.xml</configLocation>
+            <configLocation>check/.checkstyle.xml</configLocation>
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
             <encoding>UTF-8</encoding>
             <failOnViolation>true</failOnViolation>
@@ -625,33 +628,67 @@
             </sourceDirectories>
             <excludes>**/GetCustomSnapshotResponse.java</excludes>
           </configuration>
+          <!-- dependency on build tool to reference the checkstyle cfg -->
+          <dependencies>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${version.zeebe}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>${version.checkstyle}</version>
+            </dependency>
+          </dependencies>
           <executions>
             <execution>
               <id>validate-java</id>
-              <phase>validate</phase>
               <goals>
                 <goal>check</goal>
               </goals>
-              <configuration>
-              </configuration>
+              <phase>validate</phase>
+              <configuration></configuration>
             </execution>
           </executions>
         </plugin>
 
-
-        <!--         Google code format plugin -->
+        <!-- Google code format plugin -->
         <plugin>
-          <groupId>com.coveo</groupId>
-          <artifactId>fmt-maven-plugin</artifactId>
-          <version>${plugin.version.fmt}</version>
-          <executions>
-            <execution>
-              <goals>
-                <goal>format</goal>
-              </goals>
-            </execution>
-          </executions>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.43.0</version>
+          <configuration>
+            <java>
+              <googleJavaFormat>
+                <version>${plugin.version.google-java-format}</version>
+                <style>GOOGLE</style>
+              </googleJavaFormat>
+            </java>
+			<!-- While other files are generally placed in a special directory, markdown 
+				files are not. To make sure all markdown files are formatted, we need to 
+				rely on the **/*.md pattern. This pattern will match all *.md files in all 
+				subdirectories (also in all submodules). -->
+			<markdown>
+			  <includes>
+				<include>**/*.md</include>
+			  </includes>
+			  <excludes>
+				<exclude>**/target/**/*.md</exclude>
+				<exclude>**/node_modules/**/*.md</exclude>
+			  </excludes>
+			  <flexmark></flexmark>
+			</markdown>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.google.googlejavaformat</groupId>
+              <artifactId>google-java-format</artifactId>
+              <version>${plugin.version.google-java-format}</version>
+            </dependency>
+          </dependencies>
         </plugin>
+
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
@@ -666,14 +703,6 @@
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
-      <plugin>
-        <groupId>com.coveo</groupId>
-        <artifactId>fmt-maven-plugin</artifactId>
-      </plugin>
-      <!--      <plugin>-->
-      <!--        <groupId>org.apache.maven.plugins</groupId>-->
-      <!--        <artifactId>maven-checkstyle-plugin</artifactId>-->
-      <!--      </plugin>-->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
@@ -724,6 +753,62 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+
+    <!-- profile to auto format -->
+    <profile>
+      <id>autoFormat</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-format</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+
+    <!-- profile to perform strict validation checks -->
+    <profile>
+      <id>checkFormat</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-checkstyle-plugin</artifactId>
+          </plugin>
+       </plugins>
+      </build>
+    </profile>
+
+  </profiles>
 
   <distributionManagement>
     <snapshotRepository>

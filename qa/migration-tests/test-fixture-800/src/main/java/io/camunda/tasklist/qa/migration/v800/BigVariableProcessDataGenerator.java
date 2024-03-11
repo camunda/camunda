@@ -42,6 +42,7 @@ public class BigVariableProcessDataGenerator {
   public static final String SMALL_VAR_VALUE = "\"smallVarValue\"";
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BigVariableProcessDataGenerator.class);
+
   /**
    * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.

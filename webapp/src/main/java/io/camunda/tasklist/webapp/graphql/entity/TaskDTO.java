@@ -25,12 +25,15 @@ public final class TaskDTO {
 
   private String id;
   private String processInstanceId;
+
   /** Field is used to resolve task name. */
   private String flowNodeBpmnId;
 
   private String flowNodeInstanceId;
+
   /** Field is used to resolve process name. */
   private String processDefinitionId;
+
   /** Fallback value for process name. */
   private String bpmnProcessId;
 
