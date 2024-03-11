@@ -266,11 +266,18 @@ public class BpmnCompensationSubscriptionBehaviour {
       final ExecutableActivity compensationActivity, final BpmnElementContext context) {
     final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
 
-    final Set<CompensationSubscription> subscriptions =
+    // ignore subscriptions that are already triggered
+    final var notTriggeredSubscriptions =
         compensationSubscriptionState
             .findSubscriptionsByProcessInstanceKey(
                 context.getTenantId(), context.getProcessInstanceKey())
             .stream()
+            .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
+            .toList();
+
+    // filter subscriptions by given activity
+    final var subscriptionsForActivity =
+        notTriggeredSubscriptions.stream()
             .filter(
                 subscription ->
                     subscription
@@ -281,19 +288,28 @@ public class BpmnCompensationSubscriptionBehaviour {
                 subscription ->
                     subscription.getRecord().getCompensableActivityScopeKey()
                         == context.getFlowScopeKey())
-            .filter(
-                compensationSubscription ->
-                    compensationSubscription.getRecord().getThrowEventId().isEmpty())
-            .collect(Collectors.toSet());
+            .toList();
 
-    if (subscriptions.isEmpty()) {
+    if (subscriptionsForActivity.isEmpty()) {
       return false;
     }
 
-    subscriptions.forEach(
+    subscriptionsForActivity.forEach(
         subscription -> {
+          // mark the subscription as triggered
           appendCompensationSubscriptionTriggerEvent(context, subscription);
-          activateCompensationHandler(context, subscription.getRecord().getCompensableActivityId());
+
+          // invoke the compensation handler if present
+          if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
+            activateCompensationHandler(
+                context, subscription.getRecord().getCompensableActivityId());
+          }
+
+          // propagate the compensation to the subprocesses if the activity is a subprocess
+          triggerCompensationFromTopToBottom(
+              context,
+              notTriggeredSubscriptions,
+              subscription.getRecord().getCompensableActivityInstanceKey());
         });
 
     return true;
