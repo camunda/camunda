@@ -286,6 +286,35 @@ final class ClusterTopologyManagerTest {
     assertThat(oldTopology.get()).isEqualTo(initialTopology);
   }
 
+  @Test
+  void shouldNotDetectInconsistencyWhenLocalMemberHasLeft() {
+    final CompletableFuture<Void> listenerCalled = new CompletableFuture<>();
+    final InconsistentTopologyListener listener =
+        (received, old) -> {
+          listenerCalled.complete(null);
+        };
+    final var topologyWithMemberLeft =
+        initialTopology.updateMember(localMemberId, MemberState::toLeft);
+    final ClusterTopologyManagerImpl clusterTopologyManager =
+        startTopologyManager(() -> CompletableActorFuture.completed(topologyWithMemberLeft)).join();
+    clusterTopologyManager.registerTopologyChangedListener(listener);
+
+    // when
+    final var topologyWithoutMember = topologyWithMemberLeft.updateMember(localMemberId, m -> null);
+    final var notConflictingTopology =
+        new ClusterTopology(
+            topologyWithoutMember.version() + 1,
+            topologyWithoutMember.members(),
+            topologyWithoutMember.lastChange(),
+            topologyWithoutMember.pendingChanges());
+    clusterTopologyManager.onGossipReceived(notConflictingTopology);
+
+    // then
+    assertThat(clusterTopologyManager.getClusterTopology().join())
+        .isEqualTo(notConflictingTopology);
+    assertThat(listenerCalled).describedAs("Inconsistency listener is never invoked").isNotDone();
+  }
+
   private static final class TestMemberLeaver implements TopologyChangeAppliers {
 
     @Override

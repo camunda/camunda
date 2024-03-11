@@ -14,6 +14,7 @@ import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics.OperationObserver;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
@@ -194,9 +195,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
                 final var oldTopology = persistedClusterTopology.getTopology();
                 final var isConflictingTopology =
-                    !Objects.equals(
-                        mergedTopology.getMember(localMemberId),
-                        oldTopology.getMember(localMemberId));
+                    isConflictingTopology(mergedTopology, oldTopology);
                 persistedClusterTopology.update(mergedTopology);
 
                 if (isConflictingTopology && onInconsistentTopologyDetected != null) {
@@ -215,6 +214,19 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                 error);
           }
         });
+  }
+
+  private boolean isConflictingTopology(
+      final ClusterTopology mergedTopology, final ClusterTopology oldTopology) {
+    if (!mergedTopology.hasMember(localMemberId)
+        && oldTopology.hasMember(localMemberId)
+        && oldTopology.getMember(localMemberId).state() == State.LEFT) {
+      // If the member has left, it's state will be removed from the topology by another member. See
+      // ClusterTopology#advance()
+      return false;
+    }
+    return !Objects.equals(
+        mergedTopology.getMember(localMemberId), oldTopology.getMember(localMemberId));
   }
 
   private boolean shouldApplyTopologyChangeOperation(final ClusterTopology mergedTopology) {
