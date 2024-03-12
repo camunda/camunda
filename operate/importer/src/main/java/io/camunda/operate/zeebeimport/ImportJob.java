@@ -43,7 +43,7 @@ public class ImportJob implements Callable<Boolean> {
 
   public static final String ZEEBE_INDEX_DELIMITER = "_";
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportJob.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportJob.class);
   private final ImportPositionEntity previousPosition;
   private final OffsetDateTime creationTime;
   private ImportBatch importBatch;
@@ -90,6 +90,7 @@ public class ImportJob implements Callable<Boolean> {
     return true;
   }
 
+  @SuppressWarnings("checkstyle:NestedIfDepth")
   private void processPossibleIndexChange() {
     // if there was index change, comparing with previous batch, or there are more than one index in
     // current batch, refresh Zeebe indices
@@ -105,7 +106,7 @@ public class ImportJob implements Callable<Boolean> {
       if (recordsReader != null) {
         try {
           final ImportBatch newImportBatch;
-          if (useOnlyPosition == false && previousPosition.getSequence() > 0) {
+          if (!useOnlyPosition && previousPosition.getSequence() > 0) {
             newImportBatch =
                 recordsReader.readNextBatchBySequence(
                     previousPosition.getSequence(),
@@ -141,10 +142,10 @@ public class ImportJob implements Callable<Boolean> {
           }
           importBatch = newImportBatch;
         } catch (final NoSuchIndexException ex) {
-          logger.warn("Indices are not found" + importBatch.toString());
+          LOGGER.warn("Indices are not found" + importBatch.toString());
         }
       } else {
-        logger.warn(
+        LOGGER.warn(
             "Unable to find records reader for partitionId {} and ImportValueType {}",
             importBatch.getPartitionId(),
             importBatch.getImportValueType());
@@ -160,7 +161,7 @@ public class ImportJob implements Callable<Boolean> {
       importBatchProcessor.performImport(subBatch);
       return true;
     } catch (final Exception ex) {
-      logger.error(ex.getMessage(), ex);
+      LOGGER.error(ex.getMessage(), ex);
       return false;
     }
   }

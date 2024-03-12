@@ -34,10 +34,10 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     matchIfMissing = true)
 public class ImportModuleConfiguration {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportModuleConfiguration.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportModuleConfiguration.class);
 
   @PostConstruct
   public void logModule() {
-    logger.info("Starting module: importer");
+    LOGGER.info("Starting module: importer");
   }
 }

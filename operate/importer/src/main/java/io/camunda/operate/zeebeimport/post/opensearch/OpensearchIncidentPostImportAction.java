@@ -72,7 +72,7 @@ import org.springframework.stereotype.Component;
 public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImportAction
     implements PostImportAction {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchIncidentPostImportAction.class);
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
@@ -167,7 +167,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
       absentIncidents.removeAll(
           incidents.stream().map(i -> i.getKey()).collect(Collectors.toSet()));
       if (operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
-        logger.warn(
+        LOGGER.warn(
             "Not all incidents are yet imported for post processing: "
                 + absentIncidents
                 + ". This post processor records will be ignored.");
@@ -263,7 +263,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
                   "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
                   incident.getId(), incident.getProcessInstanceKey()));
         } else {
-          logger.warn(
+          LOGGER.warn(
               String.format(
                   "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s. Ignoring.",
                   incident.getId(), incident.getProcessInstanceKey()));
@@ -588,7 +588,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
       if (piTreePath == null || piTreePath.isEmpty()) {
         // check whether DELETE_PROCESS_INSTANCE operation exists
         if (processInstanceWasDeleted(i.getProcessInstanceKey())) {
-          logger.debug(
+          LOGGER.debug(
               "Process instance with the key {} was deleted. Incident post processing will be skipped for id {}.",
               i.getProcessInstanceKey(),
               i.getId());
@@ -604,7 +604,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
             countMissingInstance++;
             piTreePath =
                 new TreePath().startTreePath(String.valueOf(i.getProcessInstanceKey())).toString();
-            logger.warn(
+            LOGGER.warn(
                 String.format(
                     "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s. Ignoring.",
                     i.getId(), i.getProcessInstanceKey()));

@@ -81,7 +81,7 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchRecordsReader implements RecordsReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRecordsReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRecordsReader.class);
 
   /** Partition id. */
   private final int partitionId;
@@ -171,11 +171,11 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       final ImportPositionEntity latestPosition =
           importPositionHolder.getLatestScheduledPosition(
               importValueType.getAliasTemplate(), partitionId);
-      if (useOnlyPosition == false && latestPosition != null && latestPosition.getSequence() > 0) {
-        logger.debug("Use import for {} ( {} ) by sequence", importValueType.name(), partitionId);
+      if (!useOnlyPosition && latestPosition != null && latestPosition.getSequence() > 0) {
+        LOGGER.debug("Use import for {} ( {} ) by sequence", importValueType.name(), partitionId);
         importBatch = readNextBatchBySequence(latestPosition.getSequence());
       } else {
-        logger.debug("Use import for {} ( {} ) by position", importValueType.name(), partitionId);
+        LOGGER.debug("Use import for {} ( {} ) by position", importValueType.name(), partitionId);
         importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
       }
       Integer nextRunDelay = null;
@@ -204,7 +204,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         rescheduleReader(readerBackoff);
       }
     } catch (final Exception ex) {
-      logger.error(ex.getMessage(), ex);
+      LOGGER.error(ex.getMessage(), ex);
       if (autoContinue) {
         rescheduleReader(null);
       }
@@ -218,7 +218,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     final int batchSize = batchSizeThrottle.get();
     if (batchSize != batchSizeThrottle.getOriginal()) {
-      logger.warn(
+      LOGGER.warn(
           "Use new batch size {} (original {})", batchSize, batchSizeThrottle.getOriginal());
     }
     final long lessThanEqualsSequence;
@@ -228,7 +228,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       // in worst case all the records are duplicated
       maxNumberOfHits = (int) ((lastSequence - sequence) * 2);
       lessThanEqualsSequence = lastSequence;
-      logger.debug(
+      LOGGER.debug(
           "Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
           importValueType,
           partitionId,
@@ -240,7 +240,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (countEmptyRuns == operateProperties.getImporter().getMaxEmptyRuns()) {
         lessThanEqualsSequence = maxPossibleSequence;
         countEmptyRuns = 0;
-        logger.debug(
+        LOGGER.debug(
             "Max empty runs reached. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
             importValueType,
             partitionId,
@@ -286,7 +286,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
-        logger.info(
+        LOGGER.info(
             "{}. Will decrease batch size for {}-{}",
             e.getMessage(),
             importValueType.name(),
@@ -494,7 +494,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     if (positionTo == null) {
       searchSourceBuilder = searchSourceBuilder.size(batchSizeThrottle.get());
     } else {
-      logger.debug(
+      LOGGER.debug(
           "Import batch reread was called. Data type {}, partitionId {}, positionFrom {}, positionTo {}.",
           importValueType,
           partitionId,
@@ -569,7 +569,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         }
         return imported;
       } catch (final Exception ex) {
-        logger.error("Exception occurred when importing data: " + ex.getMessage(), ex);
+        LOGGER.error("Exception occurred when importing data: " + ex.getMessage(), ex);
         // retry the same job
         sleepFor(2000L);
         execute(active);
@@ -579,17 +579,18 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private void executeNext() {
-    if ((active = importJobs.poll()) != null) {
+    active = importJobs.poll();
+    if (active != null) {
       importExecutor.submit(active);
       // TODO what to do with failing jobs
-      logger.debug("Submitted next job");
+      LOGGER.debug("Submitted next job");
     }
   }
 
   private void execute(final Callable<Boolean> job) {
     importExecutor.submit(job);
     // TODO what to do with failing jobs
-    logger.debug("Submitted the same job");
+    LOGGER.debug("Submitted the same job");
   }
 
   private void rescheduleRecordsReaderIfNecessary() {

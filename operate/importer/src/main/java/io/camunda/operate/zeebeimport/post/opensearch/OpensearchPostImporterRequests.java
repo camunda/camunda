@@ -69,7 +69,7 @@ class OpensearchPostImporterRequests {
       RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties)
       throws PersistenceException {
 
-    BulkRequest bulkRequest =
+    final BulkRequest bulkRequest =
         BulkRequest.of(
             b -> {
               listViewRequests.values().forEach(u -> b.operations(o -> o.update(u)));
