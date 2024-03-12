@@ -1,5 +1,5 @@
 ---
-name: teardown-preview-env
+name: Tasklist teardown-preview-env
 on:
   delete:
     branches:

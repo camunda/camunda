@@ -10,7 +10,7 @@
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
 
-name: CI Reusable
+name: Tasklist CI Reusable
 
 on:
   workflow_call:
@@ -72,7 +72,7 @@ jobs:
 
       #########################################################################
       # Setup and configure Maven, Docker, and settings
-      - uses: ./.github/actions/build-setup
+      - uses: ./.github/actions/build-tasklist-setup
         name: Build setup
         with:
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
@@ -109,7 +109,7 @@ jobs:
       #########################################################################
       # Build Docker image
       - name: Build Docker image
-        uses: ./.github/actions/build-docker
+        uses: ./.github/actions/build-tasklist-docker
         with:
           tags: ${{ steps.meta.outputs.tags }}
           push: true
@@ -127,7 +127,7 @@ jobs:
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_MASTER_BRANCH == 'true' }}
-        uses: ./.github/actions/build-docker
+        uses: ./.github/actions/build-tasklist-docker
         with:
           tags: |
             camunda/tasklist:SNAPSHOT

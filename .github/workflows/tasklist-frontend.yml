@@ -1,4 +1,4 @@
-name: Frontend
+name: Tasklist Frontend
 on:
   push:
     branches:

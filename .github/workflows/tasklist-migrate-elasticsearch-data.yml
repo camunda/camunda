@@ -1,5 +1,5 @@
 # Migrates elasticsearch data from one to another version.
-name: Migrate elasticsearch data
+name: Tasklist Migrate elasticsearch data
 
 on:
   workflow_dispatch:

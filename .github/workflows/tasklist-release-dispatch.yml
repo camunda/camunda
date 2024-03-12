@@ -1,6 +1,6 @@
 # This GitHub Actions (GHA) workflow performs a release process in response to a repository dispatch event of type 'trigger_tasklist_release'.
 #
-# The workflow listens for dispatch events and triggers a release using the reusable release workflow (./.github/workflows/release-reusable.yml).
+# The workflow listens for dispatch events and triggers a release using the reusable release workflow (./.github/workflows/tasklist-release-reusable.yml).
 #
 # It takes several parameters that should be provided through the dispatch event payload.
 # - 'branch': the branch from which to build the release.
@@ -38,7 +38,7 @@
 # Replace '<branch_name>', '<release_version>', '<next_dev_version>' and '<java_version>' with your actual values.
 # Replace '<true_or_false>' with the respective boolean values for 'dryRun', 'githubUploadRelease', and 'isLatest'.
 
-name: Release dispatch
+name: Tasklist Release dispatch
 
 on:
   repository_dispatch:
@@ -47,7 +47,7 @@ on:
 jobs:
   release:
     name: "release v${{ github.event.client_payload.releaseVersion }}"
-    uses: ./.github/workflows/release-reusable.yml
+    uses: ./.github/workflows/tasklist-release-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.event.client_payload.branch }}

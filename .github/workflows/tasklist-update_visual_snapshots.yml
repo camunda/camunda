@@ -1,12 +1,17 @@
-name: a11y tests
-on: push
+name: Tasklist Update Visual Regression Snapshots
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
 
 jobs:
-  test:
+  update-snapshots:
+    if: github.event.pull_request.state != 'closed' && (github.event.label.name == 'update-snapshots' || contains( github.event.pull_request.labels.*.name, 'update-snapshots'))
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.40.1
       options: --user 1001:1000
+
     steps:
       - name: Check out repository code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
@@ -21,16 +26,15 @@ jobs:
         run: yarn
       - name: Build frontend
         working-directory: ./client
-        run: yarn build
+        run: yarn build:visual-regression
       - name: Start server
         working-directory: ./client
         run: yarn start:visual-regression &
-      - name: Run A11y tests
+      - name: Update snapshots
         working-directory: ./client
-        run: yarn playwright a11y
-      - uses: actions/upload-artifact@v4
-        if: always()
+        run: yarn playwright e2e/visual --update-snapshots
+      - name: Commit screenshots
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: Playwright report
-          path: client/playwright-report/
-          retention-days: 30
+          commit_message: "chore: updated snapshots"
+          file_pattern: "client/**/*.png"

@@ -1,5 +1,5 @@
 ---
-name: Collect test artifacts
+name: Collect Tasklist test artifacts
 
 description: Collects test outputs and uploads them as artifact
 

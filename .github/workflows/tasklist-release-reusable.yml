@@ -20,7 +20,7 @@
 # - If specified, uploads the Docker image to the Docker registry.
 # - If the release process fails, sends a notification to a (#tasklist-release-alerts) Slack channel.
 
-name: Release (reusable workflow)
+name: Tasklist Release (reusable workflow)
 
 on:
   workflow_call:
@@ -204,7 +204,7 @@ jobs:
             latest,enable=${{ inputs.isLatest }}
       - name: Upload Docker image
         if: ${{ inputs.dryRun == false }}
-        uses: ./.github/actions/build-docker
+        uses: ./.github/actions/build-tasklist-docker
         with:
           tags: ${{ steps.meta.outputs.tags }}
           push: true

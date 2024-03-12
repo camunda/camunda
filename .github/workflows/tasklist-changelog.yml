@@ -1,4 +1,4 @@
-name: Create changelog
+name: Tasklist Create changelog
 
 on:
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
         with:
           from: ${{ github.event.inputs.commit }}
           to: HEAD
-          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
+          config-file: "${{ github.workspace }}/.github/workflows/tasklist-defaultChangelogConfig.json"
 
       - name: Prepend to CHANGELOG.md
         uses: "vsgoulart/write-file-action@master"

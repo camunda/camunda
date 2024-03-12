@@ -1,4 +1,4 @@
-name: Visual regression tests
+name: Tasklist Visual regression tests
 on: push
 
 jobs:

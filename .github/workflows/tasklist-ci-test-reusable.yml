@@ -14,7 +14,7 @@
 # Triggers on a workflow_call event and accepts inputs for branch name and fork count
 # Performs integration tests for the tasklist service with parallel execution.
 
-name: CI IT test reusable
+name: Tasklist CI IT test reusable
 
 on:
   workflow_call:
@@ -74,7 +74,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_PSW;
 
       # Setup: configure Java, Maven, settings.xml
-      - uses: ./.github/actions/build-setup
+      - uses: ./.github/actions/build-tasklist-setup
         name: Build setup
         with:
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}

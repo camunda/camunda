@@ -1,5 +1,5 @@
 # This is a reusable workflow for running 'Backup and Restore' tests.
-name: Backup and restore tests (reusable)
+name: Tasklist Backup and restore tests (reusable)
 
 on:
   workflow_call:

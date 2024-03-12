@@ -1,4 +1,4 @@
-name: "Lint PR"
+name: "Tasklist Lint PR"
 
 on:
   pull_request_target:

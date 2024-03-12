@@ -1,4 +1,4 @@
-name: Backport merged pull request
+name: Tasklist Backport merged pull request
 on:
   pull_request_target:
     types: [closed]

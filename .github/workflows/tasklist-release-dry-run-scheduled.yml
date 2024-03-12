@@ -4,13 +4,13 @@
 #
 # For each run, it iterates over a matrix of branches and their associated release versions.
 #
-# Each iteration invokes the reusable release workflow (./.github/workflows/release-reusable.yml)
+# Each iteration invokes the reusable release workflow (./.github/workflows/tasklist-release-reusable.yml)
 # in dry-run mode (no changes or artifacts are pushed).
 #
 # This dry-run scheduled workflow is designed to provide an assurance check that the release process will execute as expected when performed live.
 
 
-name: Release dry-run scheduled
+name: Tasklist Release dry-run scheduled
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ on:
 jobs:
   dry-run-release:
     name: "dry run release v${{ matrix.releaseVersion }}"
-    uses: ./.github/workflows/release-reusable.yml
+    uses: ./.github/workflows/tasklist-release-reusable.yml
     secrets: inherit
     strategy:
       fail-fast: false

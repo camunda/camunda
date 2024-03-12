@@ -1,4 +1,4 @@
-name: Update Browserlist DB
+name: Tasklist Update Browserlist DB
 on:
   schedule:
     - cron: "0 10 * * MON"
