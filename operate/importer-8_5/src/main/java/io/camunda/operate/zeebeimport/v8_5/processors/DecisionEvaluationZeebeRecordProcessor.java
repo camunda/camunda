@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionEvaluationZeebeRecordProcessor {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(DecisionEvaluationZeebeRecordProcessor.class);
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -64,7 +64,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
       throws PersistenceException {
     final List<DecisionInstanceEntity> decisionEntities =
         createEntities(record, decisionEvaluation);
-    logger.debug(
+    LOGGER.debug(
         "Decision evaluation: key {}, decisionId {}",
         record.getKey(),
         decisionEvaluation.getDecisionId());
