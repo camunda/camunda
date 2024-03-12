@@ -91,6 +91,13 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
+  protected static boolean isZeebeVersionPre85() {
+    final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*|8.4.*");
+    return zeebeVersionPattern
+        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
+        .matches();
+  }
+
   protected static boolean isZeebeVersionWithMultiTenancy() {
     return !isZeebeVersionPre83();
   }
@@ -337,10 +344,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
       final TermsQueryContainer queryForProcessableEvents,
       final Class<T> zeebeRecordClass) {
     return databaseIntegrationTestExtension.getZeebeExportedRecordsByQuery(
-      exportIndex,
-      queryForProcessableEvents,
-      zeebeRecordClass
-    );
+        exportIndex, queryForProcessableEvents, zeebeRecordClass);
   }
 
   private TermsQueryContainer getQueryForProcessableUserTaskEvents() {
