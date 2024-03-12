@@ -49,7 +49,7 @@ import org.springframework.util.StringUtils;
 @Component
 public class IncidentZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(IncidentZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentZeebeRecordProcessor.class);
 
   @Autowired private OperateProperties operateProperties;
 
@@ -155,9 +155,10 @@ public class IncidentZeebeRecordProcessor {
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
           .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-      logger.debug("Index incident: id {}", incident.getId());
+      LOGGER.debug("Index incident: id {}", incident.getId());
 
       final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, incident);
+      // we only insert incidents but never update -> update will be performed in post importer
       batchRequest.upsert(
           incidentTemplate.getFullQualifiedName(),
           String.valueOf(incident.getKey()),
