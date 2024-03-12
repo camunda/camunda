@@ -1,0 +1,66 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+
+.custom-gutter-Vertical {
+  padding: 0 !important;
+  height: 0;
+  width: 100%;
+  position: relative;
+  cursor: ns-resize !important;
+}
+
+.custom-gutter-Vertical:after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  top: 0;
+  background-color: var(--cds-border-subtle-01);
+}
+
+.custom-dragger-Vertical {
+  width: 100% !important;
+  height: 10px !important;
+}
+
+.nsResizing .VerticalPanel {
+  cursor: ns-resize;
+}
+
+.nsResizing .custom-gutter-Vertical:after {
+  background-color: var(--cds-border-interactive);
+}
+
+.custom-gutter-Horizontal {
+  padding: 0 !important;
+  height: 100%;
+  width: 0;
+  position: relative;
+  cursor: ew-resize !important;
+}
+
+.custom-gutter-Horizontal:after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  right: 0;
+  background-color: var(--cds-border-subtle-01);
+}
+
+.custom-dragger-Horizontal {
+  height: 100% !important;
+  width: 10px !important;
+}
+
+.ewResizing .HorizontalPanel {
+  cursor: ew-resize;
+}
+
+.ewResizing .custom-gutter-Horizontal:after {
+  background-color: var(--cds-border-interactive);
+}

@@ -1,0 +1,9 @@
+#!/bin/sh
+[ -n "$CI" ] && exit 0
+
+if command -v yarn &> /dev/null
+then
+  yarn --cwd operate/client lint-staged && yarn --cwd operate/client coverage
+else
+  echo "No yarn found. Skip web app linting"
+fi
