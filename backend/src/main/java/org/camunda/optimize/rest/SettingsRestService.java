@@ -29,7 +29,7 @@ public class SettingsRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public SettingsResponseDto getSettings(@Context final ContainerRequestContext requestContext) {
+  public SettingsResponseDto getSettings() {
     return settingsService.getSettings();
   }
 
