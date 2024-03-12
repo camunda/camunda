@@ -19,15 +19,19 @@ package io.atomix.raft.protocol;
 import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /** Test server protocol. */
-public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServerProtocol {
+public class TestRaftServerProtocol implements RaftServerProtocol {
+
+  private static final long REQUEST_TIMEOUT_MS = 1000;
 
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
@@ -37,12 +41,12 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
   private final Set<MemberId> partitions = Sets.newCopyOnWriteArraySet();
+  private final Map<Class<?>, Consumer<?>> interceptors = new ConcurrentHashMap<>();
+  private final Map<MemberId, TestRaftServerProtocol> servers;
 
   public TestRaftServerProtocol(
-      final MemberId memberId,
-      final Map<MemberId, TestRaftServerProtocol> servers,
-      final ThreadContext context) {
-    super(servers, context);
+      final MemberId memberId, final Map<MemberId, TestRaftServerProtocol> servers) {
+    this.servers = servers;
     servers.put(memberId, this);
   }
 
@@ -54,54 +58,73 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
     partitions.remove(target);
   }
 
-  @Override
   TestRaftServerProtocol server(final MemberId memberId) {
     if (partitions.contains(memberId)) {
       return null;
     }
-    return super.server(memberId);
+    return servers.get(memberId);
   }
 
   @Override
   public CompletableFuture<ConfigureResponse> configure(
       final MemberId memberId, final ConfigureRequest request) {
-    return scheduleTimeout(
-        getServer(memberId).thenCompose(listener -> listener.configure(request)));
+    intercept(request, ConfigureRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.configure(request))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final MemberId memberId, final ReconfigureRequest request) {
-    return scheduleTimeout(
-        getServer(memberId).thenCompose(listener -> listener.reconfigure(request)));
+    intercept(request, ReconfigureRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.reconfigure(request))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.install(request)));
+    intercept(request, InstallRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.install(request))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
   public CompletableFuture<TransferResponse> transfer(
       final MemberId memberId, final TransferRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.transfer(request)));
+    intercept(request, TransferRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.transfer(request))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.poll(request)));
+    intercept(request, PollRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.poll(request))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
   public CompletableFuture<VoteResponse> vote(final MemberId memberId, final VoteRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.vote(request)));
+    intercept(request, VoteRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.vote(request))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.append(request)));
+    intercept(request, AppendRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.append(request))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
   }
 
   @Override
@@ -243,6 +266,18 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       return configureHandler.apply(request);
     } else {
       return Futures.exceptionalFuture(new ConnectException());
+    }
+  }
+
+  public <T> void interceptRequest(final Class<T> requestType, final Consumer<T> interceptor) {
+    interceptors.put(requestType, interceptor);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> void intercept(final T request, final Class<T> requestType) {
+    final var interceptor = (Consumer<T>) interceptors.get(requestType);
+    if (interceptor != null) {
+      interceptor.accept(request);
     }
   }
 }
