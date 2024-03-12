@@ -62,7 +62,7 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_BPMN_PROCESS_ID = "bpmnProcessId";
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
-  private static final Logger logger = LoggerFactory.getLogger(IncidentNotifier.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentNotifier.class);
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private ObjectMapper objectMapper;
@@ -80,23 +80,23 @@ public class IncidentNotifier {
       HttpStatusCode status = notifyOnIncidents(incidents, m2mTokenManager.getToken());
 
       if (status.is2xxSuccessful()) {
-        logger.debug("Incident notification is sent");
+        LOGGER.debug("Incident notification is sent");
       } else if (status.isSameCodeAs(HttpStatus.UNAUTHORIZED)) {
-        logger.debug("Incident notification recieved 401 response");
+        LOGGER.debug("Incident notification recieved 401 response");
         // retry
         status = notifyOnIncidents(incidents, m2mTokenManager.getToken(true));
         if (status.is2xxSuccessful()) {
-          logger.debug("Incident notification is sent");
+          LOGGER.debug("Incident notification is sent");
         } else {
-          logger.error("Failed to send incident notification. Response status: " + status);
+          LOGGER.error("Failed to send incident notification. Response status: " + status);
         }
       } else {
-        logger.error("Failed to send incident notification. Response status: " + status);
+        LOGGER.error("Failed to send incident notification. Response status: " + status);
       }
     } catch (final JsonProcessingException e) {
-      logger.error("Failed to create incident notification request: " + e.getMessage(), e);
+      LOGGER.error("Failed to create incident notification request: " + e.getMessage(), e);
     } catch (final Exception e) {
-      logger.error("Failed to notify on incidents: " + e.getMessage(), e);
+      LOGGER.error("Failed to notify on incidents: " + e.getMessage(), e);
     }
   }
 
