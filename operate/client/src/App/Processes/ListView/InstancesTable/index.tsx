@@ -40,6 +40,8 @@ import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from './BatchModificationFooter';
+import {useEffect} from 'react';
+import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 
 const ROW_HEIGHT = 34;
 
@@ -77,6 +79,45 @@ const InstancesTable: React.FC = observer(() => {
 
     return 'content';
   };
+
+  const {
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+    state: {selectionMode},
+  } = processInstancesSelectionStore;
+
+  const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
+
+  useEffect(() => {
+    if (!isBatchModificationEnabled) {
+      return;
+    }
+
+    if (
+      selectionMode === 'INCLUDE' &&
+      selectedProcessInstanceIds.length === 0
+    ) {
+      processStatisticsBatchModificationStore.setStatistics([]);
+      return;
+    }
+
+    const requestFilterParameters = {
+      ids: selectedProcessInstanceIds,
+      excludeIds: excludedProcessInstanceIds,
+      finished: false,
+      completed: false,
+      canceled: false,
+    };
+
+    processStatisticsBatchModificationStore.fetchProcessStatistics(
+      requestFilterParameters,
+    );
+  }, [
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+    isBatchModificationEnabled,
+    selectionMode,
+  ]);
 
   const getEmptyListMessage = () => {
     return {

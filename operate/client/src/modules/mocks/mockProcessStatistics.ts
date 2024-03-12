@@ -50,4 +50,32 @@ const mockProcessStatisticsWithFinished = [
   },
 ];
 
-export {mockProcessStatistics, mockProcessStatisticsWithFinished};
+const mockProcessStatisticsWithActiveAndIncidents = [
+  {
+    activityId: 'userTask',
+    active: 1,
+    canceled: 2,
+    incidents: 3,
+    completed: 4,
+  },
+  {
+    activityId: 'endEvent',
+    active: 5,
+    canceled: 0,
+    incidents: 3,
+    completed: 0,
+  },
+  {
+    activityId: 'startEvent',
+    active: 0,
+    canceled: 0,
+    incidents: 0,
+    completed: 0,
+  },
+];
+
+export {
+  mockProcessStatistics,
+  mockProcessStatisticsWithFinished,
+  mockProcessStatisticsWithActiveAndIncidents,
+};

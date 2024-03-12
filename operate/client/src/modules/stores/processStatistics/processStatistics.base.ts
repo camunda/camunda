@@ -60,6 +60,8 @@ class ProcessStatistics extends NetworkReconnectionHandler {
       reset: override,
       statistics: computed,
       setStatistics: action,
+      setStatus: action,
+      startFetching: action,
       flowNodeStates: computed,
       resetState: action,
       overlaysData: computed,
@@ -67,7 +69,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
   }
 
   startFetching = () => {
-    this.state.status = 'fetching';
+    this.setStatus('fetching');
     this.state.statistics = [];
   };
 
@@ -83,18 +85,20 @@ class ProcessStatistics extends NetworkReconnectionHandler {
 
       if (response.isSuccess) {
         this.setStatistics(response.data);
-        this.state.status = 'fetched';
       } else {
-        this.state.status = 'error';
         this.handleFetchError();
       }
     },
   );
 
+  setStatus = (status: State['status']) => {
+    this.state.status = status;
+  };
+
   handleFetchError = (error?: unknown) => {
     logger.error('Failed to fetch diagram statistics');
     if (error !== undefined) {
-      this.state.status = 'error';
+      this.setStatus('error');
       logger.error(error);
     }
   };
@@ -104,6 +108,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
   }
 
   setStatistics = (statistics: ProcessInstancesStatisticsDto[]) => {
+    this.setStatus('fetched');
     this.state.statistics = statistics;
   };
 

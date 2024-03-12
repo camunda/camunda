@@ -15,22 +15,48 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {processInstancesStore} from '../processInstances';
-import {ProcessStatistics as ProcessStatisticsBase} from './processStatistics.base';
+import {observer} from 'mobx-react';
 
-class ProcessStatistics extends ProcessStatisticsBase {
-  init = () => {
-    processInstancesStore.addCompletedOperationsHandler(() => {
-      const filters = getProcessInstancesRequestFilters();
-      const processIds = filters?.processIds ?? [];
-      if (processIds.length > 0) {
-        this.fetchProcessStatistics();
-      }
-    });
-  };
-}
+import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
+import pluralSuffix from 'modules/utils/pluralSuffix';
+import {InlineNotification} from './styled';
 
-const processStatisticsStore = new ProcessStatistics();
+type Props = {
+  sourceFlowNodeId?: string;
+  targetFlowNodeId?: string;
+};
 
-export {processStatisticsStore};
+const BatchModificationNotification: React.FC<Props> = observer(
+  ({sourceFlowNodeId, targetFlowNodeId}) => {
+    const instancesCount =
+      processStatisticsBatchModificationStore.getInstancesCount(
+        sourceFlowNodeId,
+      );
+    const sourceFlowNodeName = sourceFlowNodeId
+      ? processXmlStore.getFlowNodeName(sourceFlowNodeId)
+      : undefined;
+    const targetFlowNodeName = targetFlowNodeId
+      ? processXmlStore.getFlowNodeName(targetFlowNodeId)
+      : undefined;
+
+    return (
+      <InlineNotification
+        hideCloseButton
+        lowContrast
+        kind="info"
+        title=""
+        subtitle={
+          sourceFlowNodeName === undefined || targetFlowNodeName === undefined
+            ? 'Please select where you want to move the selected instances on the diagram.'
+            : `Modification scheduled: Move ${pluralSuffix(
+                instancesCount,
+                'instance',
+              )} from “${sourceFlowNodeName}” to “${targetFlowNodeName}”. Press “Apply Modification” button to confirm.`
+        }
+      />
+    );
+  },
+);
+
+export {BatchModificationNotification};

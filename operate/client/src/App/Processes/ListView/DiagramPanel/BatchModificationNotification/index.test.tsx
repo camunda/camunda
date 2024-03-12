@@ -15,34 +15,84 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {ElementType, BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import {getFlowNodes} from '..';
+import {render, screen} from 'modules/testing-library';
+import {MemoryRouter} from 'react-router-dom';
+import {groupedProcessesMock} from 'modules/testUtils';
+import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
+import {useEffect} from 'react';
+import {Paths} from 'modules/Routes';
+import {BatchModificationNotification} from '.';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockProcessStatisticsWithActiveAndIncidents} from 'modules/mocks/mockProcessStatistics';
 
-const createElement = (
-  type: ElementType,
-  id: string = 'FlowNode',
-): BusinessObject => {
-  return {
-    id,
-    name: 'Element',
-    $type: type,
-    $instanceOf: () => type === 'bpmn:ServiceTask',
+jest.mock('modules/utils/bpmn');
+
+const notificationText1 =
+  'Please select where you want to move the selected instances on the diagram.';
+
+const notificationText2 =
+  'Modification scheduled: Move 4 instances from “userTask” to “endEvent”. Press “Apply Modification” button to confirm.';
+
+function getWrapper(initialPath: string = Paths.dashboard()) {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        processStatisticsBatchModificationStore.reset();
+        batchModificationStore.reset();
+      };
+    }, []);
+
+    return (
+      <MemoryRouter initialEntries={[initialPath]}>
+        {children}
+        <button
+          onClick={() => {
+            processStatisticsBatchModificationStore.fetchProcessStatistics();
+          }}
+        >
+          Fetch modification statistics
+        </button>
+      </MemoryRouter>
+    );
   };
-};
 
-describe('getFlowNodes', () => {
-  it('should get flow nodes', () => {
-    const Task1 = createElement('bpmn:ServiceTask', 'Task1');
-    const Root = createElement('bpmn:Process', 'Root');
-    const SequenceFlow1 = createElement('bpmn:SequenceFlow', 'SequenceFlow1');
+  return Wrapper;
+}
 
-    const elements = {task1: Task1, root: Root, sequenceFlow1: SequenceFlow1};
-
-    expect(getFlowNodes(elements)).toEqual([Task1]);
+describe('DiagramPanel', () => {
+  beforeEach(() => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessInstancesStatistics().withSuccess(
+      mockProcessStatisticsWithActiveAndIncidents,
+    );
   });
 
-  it('should get empty objects', () => {
-    expect(getFlowNodes({})).toEqual([]);
-    expect(getFlowNodes()).toEqual([]);
+  it('should initially render batch modification notification', async () => {
+    render(<BatchModificationNotification />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByText(notificationText1)).toBeInTheDocument();
+  });
+
+  it('should initially render batch modification notification', async () => {
+    const {user} = render(
+      <BatchModificationNotification
+        sourceFlowNodeId="userTask"
+        targetFlowNodeId="endEvent"
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /Fetch modification statistics/i}),
+    );
+
+    expect(await screen.findByText(notificationText2)).toBeInTheDocument();
+    expect(screen.queryByText(notificationText1)).not.toBeInTheDocument();
   });
 });

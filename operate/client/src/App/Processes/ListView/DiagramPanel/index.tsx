@@ -25,7 +25,7 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {Restricted} from 'modules/components/Restricted';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ProcessOperations} from '../ProcessOperations';
-import {InlineNotification, PanelHeader, Section} from './styled';
+import {PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
@@ -36,6 +36,16 @@ import {processStatisticsStore} from 'modules/stores/processStatistics/processSt
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
+import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
+import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
+import {BatchModificationNotification} from './BatchModificationNotification';
+
+const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
+
+type ModificationBadgePayload = {
+  newTokenCount: number;
+  cancelledTokenCount: number;
+};
 
 function setSearchParam(
   location: Location,
@@ -72,6 +82,11 @@ const DiagramPanel: React.FC = observer(() => {
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
   );
+
+  const batchModificationBadgeOverlays =
+    diagramOverlaysStore.state.overlays.filter(
+      ({type}) => type === OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE,
+    );
 
   const processId = processesStore.getProcessId({process, tenant, version});
 
@@ -180,7 +195,13 @@ const DiagramPanel: React.FC = observer(() => {
                       flowNodeId ?? null,
                     );
                   },
-                  overlaysData: processStatisticsStore.overlaysData,
+                  overlaysData: [
+                    ...processStatisticsStore.overlaysData,
+                    ...processStatisticsBatchModificationStore.getOverlaysData({
+                      sourceFlowNodeId: flowNodeId,
+                      targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
+                    }),
+                  ],
                   // All flow nodes that can be a move modification target,
                   // except the source flow node
                   selectableFlowNodes: processXmlStore.selectableIds.filter(
@@ -188,9 +209,7 @@ const DiagramPanel: React.FC = observer(() => {
                       selectedFlowNodeId !== flowNodeId &&
                       selectedFlowNodeId !== undefined &&
                       isMoveModificationTarget(
-                        processXmlStore.state.diagramModel?.elementsById[
-                          selectedFlowNodeId
-                        ],
+                        processXmlStore.getFlowNode(selectedFlowNodeId),
                       ),
                   ),
                 }
@@ -225,16 +244,24 @@ const DiagramPanel: React.FC = observer(() => {
                 />
               );
             })}
+            {batchModificationBadgeOverlays?.map((overlay) => {
+              const payload = overlay.payload as ModificationBadgePayload;
+              return (
+                <ModificationBadgeOverlay
+                  key={overlay.flowNodeId}
+                  container={overlay.container}
+                  newTokenCount={payload.newTokenCount}
+                  cancelledTokenCount={payload.cancelledTokenCount}
+                />
+              );
+            })}
           </Diagram>
         )}
       </DiagramShell>
       {batchModificationStore.state.isEnabled && (
-        <InlineNotification
-          hideCloseButton
-          lowContrast
-          kind="info"
-          title=""
-          subtitle="Please select where you want to move the selected instances on the diagram."
+        <BatchModificationNotification
+          sourceFlowNodeId={flowNodeId}
+          targetFlowNodeId={selectedTargetFlowNodeId || undefined}
         />
       )}
     </Section>

@@ -15,22 +15,26 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {processInstancesStore} from '../processInstances';
-import {ProcessStatistics as ProcessStatisticsBase} from './processStatistics.base';
+import styled from 'styled-components';
+import {InlineNotification as BaseInlineNotification} from '@carbon/react';
 
-class ProcessStatistics extends ProcessStatisticsBase {
-  init = () => {
-    processInstancesStore.addCompletedOperationsHandler(() => {
-      const filters = getProcessInstancesRequestFilters();
-      const processIds = filters?.processIds ?? [];
-      if (processIds.length > 0) {
-        this.fetchProcessStatistics();
-      }
-    });
-  };
-}
+// custom styling to set height to 32px
+const InlineNotification = styled(BaseInlineNotification)`
+  min-block-size: 32px;
+  max-block-size: 32px;
+  max-inline-size: unset;
 
-const processStatisticsStore = new ProcessStatistics();
+  .cds--inline-notification__icon {
+    margin-block-start: unset;
+  }
 
-export {processStatisticsStore};
+  .cds--inline-notification__text-wrapper {
+    padding: unset;
+  }
+
+  .cds--inline-notification__details {
+    align-items: center;
+  }
+`;
+
+export {InlineNotification};

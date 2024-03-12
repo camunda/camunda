@@ -20,7 +20,9 @@ import isNil from 'lodash/isNil';
 import {isWithinMultiInstance} from './isWithinMultiInstance';
 import {isAttachedToAnEventBasedGateway} from './isAttachedToAnEventBasedGateway';
 
-const isMoveModificationTarget = (businessObject: BusinessObject | null) => {
+const isMoveModificationTarget = (
+  businessObject: BusinessObject | null | undefined,
+) => {
   return (
     !isNil(businessObject) &&
     !isWithinMultiInstance(businessObject) &&

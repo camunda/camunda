@@ -15,22 +15,66 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {processInstancesStore} from '../processInstances';
+import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import {ProcessStatistics as ProcessStatisticsBase} from './processStatistics.base';
 
-class ProcessStatistics extends ProcessStatisticsBase {
-  init = () => {
-    processInstancesStore.addCompletedOperationsHandler(() => {
-      const filters = getProcessInstancesRequestFilters();
-      const processIds = filters?.processIds ?? [];
-      if (processIds.length > 0) {
-        this.fetchProcessStatistics();
-      }
-    });
+class ProcessStatisticsBatchModification extends ProcessStatisticsBase {
+  getInstancesCount(flowNodeId?: string) {
+    const flowNodeStatistics = this.statistics.find(
+      (statistics) => statistics.activityId === flowNodeId,
+    );
+
+    if (flowNodeStatistics === undefined) {
+      return 0;
+    }
+
+    return flowNodeStatistics.active + flowNodeStatistics.incidents;
+  }
+
+  getOverlaysData = ({
+    sourceFlowNodeId,
+    targetFlowNodeId,
+  }: {
+    sourceFlowNodeId?: string;
+    targetFlowNodeId?: string;
+  }) => {
+    if (
+      targetFlowNodeId === undefined ||
+      sourceFlowNodeId === undefined ||
+      this.state.status !== 'fetched' ||
+      this.statistics.length === 0
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        payload: {
+          cancelledTokenCount:
+            processStatisticsBatchModificationStore.getInstancesCount(
+              sourceFlowNodeId,
+            ),
+        },
+        type: 'batchModificationsBadge',
+        flowNodeId: sourceFlowNodeId,
+        position: MODIFICATIONS,
+      },
+      {
+        payload: {
+          newTokenCount:
+            processStatisticsBatchModificationStore.getInstancesCount(
+              sourceFlowNodeId,
+            ),
+        },
+        type: 'batchModificationsBadge',
+        flowNodeId: targetFlowNodeId,
+        position: MODIFICATIONS,
+      },
+    ];
   };
 }
 
-const processStatisticsStore = new ProcessStatistics();
+const processStatisticsBatchModificationStore =
+  new ProcessStatisticsBatchModification();
 
-export {processStatisticsStore};
+export {processStatisticsBatchModificationStore};

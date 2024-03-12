@@ -324,6 +324,6 @@ describe('DiagramPanel', () => {
       screen.getByRole('button', {name: /enable batch modification mode/i}),
     );
 
-    expect(screen.getByText(notificationText)).toBeInTheDocument();
+    expect(await screen.findByText(notificationText)).toBeInTheDocument();
   });
 });

@@ -20,6 +20,8 @@ declare module 'bpmn-js/lib/util/ModelUtil' {
 }
 
 declare module 'bpmn-moddle' {
+  import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+
   export type DiagramModel = {
     elementsById: {
       [id: string]: BusinessObject;

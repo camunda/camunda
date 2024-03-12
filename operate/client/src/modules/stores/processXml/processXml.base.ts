@@ -86,6 +86,14 @@ class ProcessXmlBase extends NetworkReconnectionHandler {
     return this.selectableFlowNodes.map(({id}) => id);
   }
 
+  getFlowNode = (flowNodeId: string) => {
+    return this.state.diagramModel?.elementsById[flowNodeId];
+  };
+
+  getFlowNodeName = (flowNodeId: string) => {
+    return this.getFlowNode(flowNodeId)?.name ?? flowNodeId;
+  };
+
   startFetching = () => {
     this.state.status = 'fetching';
   };
