@@ -40,6 +40,8 @@ import reactor.core.publisher.Mono;
     webEnvironment = WebEnvironment.RANDOM_PORT)
 public class ErrorMapperTest {
 
+  private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
+
   @MockBean BrokerClient brokerClient;
   Supplier<CompletableFuture<BrokerResponse<Object>>> brokerResponseFutureSupplier;
 
@@ -67,12 +69,12 @@ public class ErrorMapperTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Just an error");
     expectedBody.setTitle(ErrorCode.PROCESS_NOT_FOUND.name());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -97,12 +99,12 @@ public class ErrorMapperTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, "Just an error");
     expectedBody.setTitle(ErrorCode.RESOURCE_EXHAUSTED.name());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -127,12 +129,12 @@ public class ErrorMapperTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
     expectedBody.setTitle(ErrorCode.PARTITION_LEADER_MISMATCH.name());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -171,12 +173,12 @@ public class ErrorMapperTest {
                 + errorCode
                 + ", message: Just an error");
     expectedBody.setTitle(errorCode.name());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -203,12 +205,12 @@ public class ErrorMapperTest {
             HttpStatus.INTERNAL_SERVER_ERROR,
             "Unexpected error occurred during the request processing: Just an error");
     expectedBody.setTitle(NullPointerException.class.getName());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)

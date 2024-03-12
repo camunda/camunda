@@ -53,6 +53,8 @@ import reactor.core.publisher.Mono;
     webEnvironment = WebEnvironment.RANDOM_PORT)
 public class UserTaskControllerTest {
 
+  private static final String USER_TASKS_BASE_URL = "v1/user-tasks";
+
   @MockBean BrokerClient brokerClient;
   Supplier<CompletableFuture<BrokerResponse<Object>>> brokerResponseFutureSupplier;
 
@@ -71,7 +73,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/2251799813685732/completion")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
@@ -96,7 +98,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -123,7 +125,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -152,7 +154,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -177,7 +179,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -214,7 +216,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -250,7 +252,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -277,7 +279,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(
@@ -311,7 +313,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -338,7 +340,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(
@@ -378,7 +380,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -413,12 +415,12 @@ public class UserTaskControllerTest {
             "No update data provided. Provide at least an \"action\" or a non-null value "
                 + "for a supported attribute in the \"changeset\".");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1"));
 
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
@@ -445,12 +447,12 @@ public class UserTaskControllerTest {
             "No update data provided. Provide at least an \"action\" or a non-null value "
                 + "for a supported attribute in the \"changeset\".");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1"));
 
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -474,12 +476,12 @@ public class UserTaskControllerTest {
             "No update data provided. Provide at least an \"action\" or a non-null value "
                 + "for a supported attribute in the \"changeset\".");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1"));
 
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(BodyInserters.fromValue("{ \"changeset\": {\"elementInstanceKey\": 123456}}"))
@@ -514,12 +516,12 @@ public class UserTaskControllerTest {
             HttpStatus.NOT_FOUND,
             "Command 'COMPLETE' rejected with code 'NOT_FOUND': Task not found");
     expectedBody.setTitle("NOT_FOUND");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -559,12 +561,12 @@ public class UserTaskControllerTest {
             HttpStatus.CONFLICT,
             "Command 'COMPLETE' rejected with code 'INVALID_STATE': Task is not in state CREATED");
     expectedBody.setTitle("INVALID_STATE");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -604,12 +606,12 @@ public class UserTaskControllerTest {
             HttpStatus.BAD_REQUEST,
             "Command 'COMPLETE' rejected with code '" + rejectionType + "': Just an error");
     expectedBody.setTitle(rejectionType.name());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -649,12 +651,12 @@ public class UserTaskControllerTest {
             HttpStatus.INTERNAL_SERVER_ERROR,
             "Command 'COMPLETE' rejected with code '" + rejectionType + "': Just an error");
     expectedBody.setTitle(rejectionType.name());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/completion")
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskCompletionRequest.class)
@@ -681,7 +683,7 @@ public class UserTaskControllerTest {
 
     webClient
         .post()
-        .uri("api/v1/user-tasks/2251799813685732/assignment")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskAssignmentRequest.class)
@@ -709,7 +711,7 @@ public class UserTaskControllerTest {
 
     webClient
         .post()
-        .uri("api/v1/user-tasks/2251799813685732/assignment")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskAssignmentRequest.class)
@@ -740,7 +742,7 @@ public class UserTaskControllerTest {
 
     webClient
         .post()
-        .uri("api/v1/user-tasks/2251799813685732/assignment")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskAssignmentRequest.class)
@@ -771,7 +773,7 @@ public class UserTaskControllerTest {
 
     webClient
         .post()
-        .uri("api/v1/user-tasks/2251799813685732/assignment")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskAssignmentRequest.class)
@@ -799,7 +801,7 @@ public class UserTaskControllerTest {
 
     webClient
         .post()
-        .uri("api/v1/user-tasks/2251799813685732/assignment")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskAssignmentRequest.class)
@@ -827,7 +829,7 @@ public class UserTaskControllerTest {
 
     webClient
         .post()
-        .uri("api/v1/user-tasks/2251799813685732/assignment")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskAssignmentRequest.class)
@@ -855,12 +857,12 @@ public class UserTaskControllerTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "No assignee provided");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/assignment"));
+    expectedBody.setInstance(URI.create("/v1/user-tasks/1/assignment"));
 
     // when / then
     webClient
         .post()
-        .uri("api/v1/user-tasks/1/assignment")
+        .uri(USER_TASKS_BASE_URL + "/1/assignment")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskAssignmentRequest.class)
@@ -880,7 +882,7 @@ public class UserTaskControllerTest {
     // when / then
     webClient
         .delete()
-        .uri("api/v1/user-tasks/2251799813685732/assignee")
+        .uri(USER_TASKS_BASE_URL + "/2251799813685732/assignee")
         .exchange()
         .expectStatus()
         .isNoContent()

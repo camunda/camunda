@@ -37,6 +37,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     webEnvironment = WebEnvironment.RANDOM_PORT)
 public class TopologyControllerTest {
 
+  private static final String TOPOLOGY_BASE_URL = "v1/topology";
+
   @MockBean BrokerClient brokerClient;
   @MockBean BrokerTopologyManager topologyManager;
 
@@ -66,7 +68,7 @@ public class TopologyControllerTest {
     // when / then
     webClient
         .get()
-        .uri("api/v1/topology")
+        .uri(TOPOLOGY_BASE_URL)
         .headers(h -> h.setAccept(List.of(MediaType.APPLICATION_JSON)))
         .exchange()
         .expectStatus()
@@ -85,7 +87,7 @@ public class TopologyControllerTest {
     // when / then
     webClient
         .get()
-        .uri("api/v1/topology")
+        .uri(TOPOLOGY_BASE_URL)
         .headers(h -> h.setAccept(List.of(MediaType.APPLICATION_JSON)))
         .exchange()
         .expectStatus()

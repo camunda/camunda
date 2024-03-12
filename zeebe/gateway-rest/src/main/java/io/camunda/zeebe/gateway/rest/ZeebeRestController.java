@@ -20,5 +20,5 @@ import org.springframework.web.bind.annotation.RestController;
 @Documented
 @ConditionalOnRestGatewayEnabled
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/v1")
 public @interface ZeebeRestController {}

@@ -11,7 +11,7 @@ externalDocs:
   url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/
 
 servers:
-  - url: "{schema}://{host}:{port}/api/v1"
+  - url: "{schema}://{host}:{port}/v1"
     variables:
       host:
         default: localhost

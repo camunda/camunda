@@ -41,7 +41,7 @@ import org.apache.hc.core5.util.Timeout;
 
 public class HttpClientFactory {
 
-  private static final String REST_API_PATH = "/api/v1";
+  private static final String REST_API_PATH = "/v1";
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   private final ZeebeClientConfiguration config;
