@@ -28,7 +28,6 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
 
   @ParameterizedTest
   @MethodSource(ACCESS_IDENTITY_ROLES)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionKeys_FilterByCollectionId_ForAuthorizedCollection(final AbstractCollectionRoleIT.IdentityAndRole accessIdentityRolePairs) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

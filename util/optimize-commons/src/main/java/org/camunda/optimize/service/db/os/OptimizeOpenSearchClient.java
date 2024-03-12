@@ -9,6 +9,7 @@ import static java.lang.String.format;
 import static org.camunda.optimize.service.db.DatabaseConstants.GB_UNIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequestBuilder;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.scrollRequest;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.exceptions.ExceptionHelper.safe;
@@ -96,6 +97,7 @@ import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.MgetResponse;
+import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
@@ -410,6 +412,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().scrollValues(requestBuilder, entityClass);
   }
 
+  public <R> ScrollResponse<R> scroll(String scrollId, String timeout, Class<R> entityClass)
+      throws IOException {
+    return richOpenSearchClient.doc().scroll(scrollRequest(scrollId, timeout), entityClass);
+  }
+
   @Override
   public org.elasticsearch.action.search.SearchResponse scroll(
       final SearchScrollRequest scrollRequest) throws IOException {
@@ -450,6 +457,16 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public <R> List<R> searchValues(
       final SearchRequest.Builder requestBuilder, final Class<R> entityClass) {
     return richOpenSearchClient.doc().searchValues(requestBuilder, entityClass);
+  }
+
+  public void clearScroll(final String scrollId, Function<Exception, String> errorMessageSupplier) {
+    safe(
+        () -> {
+          richOpenSearchClient.doc().clearScroll(scrollId);
+          return null;
+        },
+        errorMessageSupplier,
+        log);
   }
 
   @Override

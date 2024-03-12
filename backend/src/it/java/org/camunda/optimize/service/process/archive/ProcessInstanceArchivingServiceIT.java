@@ -47,8 +47,7 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
 
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   /**
-   * Fails due to missing implementation in
-   * org.camunda.optimize.service.db.os.reader.ProcessInstanceReaderOS#getExistingProcessDefinitionKeysFromInstances()
+   * Fails due to missing implementation in CompletedActivityInstanceWriterOS and DefinitionInstanceReaderOS
    */
   @Test
   public void processInstanceArchiverCreatesMissingArchiveIndices() {

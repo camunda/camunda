@@ -49,6 +49,8 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.MgetRequest;
 import org.opensearch.client.opensearch.core.MgetResponse;
+import org.opensearch.client.opensearch.core.ScrollRequest;
+import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
@@ -84,7 +86,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return format("Failed to persist index: %s", index);
   }
 
-  private void clearScroll(String scrollId) {
+  public void clearScroll(String scrollId) {
     if (scrollId != null) {
       try {
         openSearchClient.clearScroll(clearScrollRequest(scrollId));
@@ -115,6 +117,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return retry
         ? executeWithRetries(() -> scrollWith(request, hitsConsumer, hitsMetadataConsumer, clazz))
         : scrollWith(request, hitsConsumer, hitsMetadataConsumer, clazz);
+  }
+
+  public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, final Class<R> clazz)
+      throws IOException {
+    return openSearchClient.scroll(scrollRequest, clazz);
   }
 
   private <R> Map<String, Aggregate> scrollWith(

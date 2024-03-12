@@ -26,6 +26,7 @@ import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -34,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.importing.CustomerOnboardingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
 import static org.camunda.optimize.service.importing.CustomerOnboardingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
@@ -42,6 +44,7 @@ import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificatio
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
+@Tag(OPENSEARCH_PASSING)
 public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;

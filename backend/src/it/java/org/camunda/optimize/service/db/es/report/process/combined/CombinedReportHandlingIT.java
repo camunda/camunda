@@ -107,6 +107,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
     LocalDateUtil.reset();
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void reportIsWrittenToDatabase() {
     // given
@@ -125,7 +126,6 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("getUncombinableSingleReports")
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void combineUncombinableSingleReports(List<SingleProcessReportDefinitionRequestDto> singleReports) {
     // given
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
@@ -466,7 +466,6 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("reportUpdateScenarios")
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void updatePrivateCombinedReportReportCannotBeAddedToCollectionCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -576,8 +575,8 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Test
   public void savedReportEvaluationWithPaginationReturnsError() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
