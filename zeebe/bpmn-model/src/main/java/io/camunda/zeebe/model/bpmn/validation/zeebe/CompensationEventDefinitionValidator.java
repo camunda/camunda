@@ -48,21 +48,30 @@ public class CompensationEventDefinitionValidator
       }
 
     } else {
-      if (!isValidCompensationActivity(referencedActivity)) {
-        validationResultCollector.addError(
-            0,
-            String.format(
-                "The referenced compensation activity '%s' must have either a compensation boundary event or be a subprocess",
-                activityRef));
-      }
+      validateReferencedActivity(
+          compensateEventDefinition, validationResultCollector, referencedActivity);
+    }
+  }
 
-      if (referencedActivity.getScope() != compensateEventDefinition.getScope()) {
-        validationResultCollector.addError(
-            0,
-            String.format(
-                "The referenced compensation activity '%s' must be in the same scope as the compensation throw event",
-                activityRef));
-      }
+  private static void validateReferencedActivity(
+      final CompensateEventDefinition compensateEventDefinition,
+      final ValidationResultCollector validationResultCollector,
+      final Activity referencedActivity) {
+
+    if (!isValidCompensationActivity(referencedActivity)) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "The referenced compensation activity '%s' must have either a compensation boundary event or be a subprocess",
+              referencedActivity.getId()));
+    }
+
+    if (referencedActivity.getScope() != compensateEventDefinition.getScope()) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "The referenced compensation activity '%s' must be in the same scope as the compensation throw event",
+              referencedActivity.getId()));
     }
   }
 
