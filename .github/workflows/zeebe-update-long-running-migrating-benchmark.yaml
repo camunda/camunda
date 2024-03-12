@@ -1,0 +1,28 @@
+on:
+  workflow_dispatch: { }
+  release:
+    types: [published]
+
+jobs:
+  setup-mixed-benchmark:
+    name: Update Long Running Migrating Benchmark with mixed load
+    uses: ./.github/workflows/zeebe-benchmark.yml
+    secrets: inherit
+    with:
+      name: long-running-migrating-benchmark
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: main # we run the latest changes
+      publish:
+      benchmark-load: >
+        --set starter.rate=5
+        --set worker.replicas=1
+        --set timer.replicas=1
+        --set timer.rate=5
+        --set publisher.replicas=1
+        --set publisher.rate=5
+        --set camunda-platform.operate.enabled=true
+        --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
+        --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
+        --set camunda-platform.elasticsearch.master.persistence.size=128Gi
+        --set camunda-platform.zeebe.retention.minimumAge=1d
