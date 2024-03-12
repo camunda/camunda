@@ -296,16 +296,15 @@ public class BpmnCompensationSubscriptionBehaviour {
                         == context.getFlowScopeKey())
             .toList();
 
-    if (!subscriptionsForActivity.isEmpty()) {
-      // trigger the compensation for the given activity
-      subscriptionsForActivity.forEach(
-          subscription ->
-              triggerCompensationForSubscription(context, notTriggeredSubscriptions, subscription));
-      return true;
-
-    } else {
-      return false;
+    if (subscriptionsForActivity.isEmpty()) {
+      return false; // no subscriptions are triggered
     }
+
+    // trigger the compensation for the given activity
+    subscriptionsForActivity.forEach(
+        subscription ->
+            triggerCompensationForSubscription(context, notTriggeredSubscriptions, subscription));
+    return true;
   }
 
   public void completeCompensationHandler(final BpmnElementContext context) {
