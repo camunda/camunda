@@ -70,7 +70,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchArchiverRepository implements ArchiverRepository {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchArchiverRepository.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchArchiverRepository.class);
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
@@ -192,7 +192,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
             .addPolicyToIndex(destinationIndexName, OPERATE_DELETE_ARCHIVED_INDICES);
       }
     } catch (final Exception e) {
-      logger.warn(
+      LOGGER.warn(
           "Could not set ILM policy {} for index {}: {}",
           OPERATE_DELETE_ARCHIVED_INDICES,
           destinationIndexName,

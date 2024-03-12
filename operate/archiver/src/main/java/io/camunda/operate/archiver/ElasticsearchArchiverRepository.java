@@ -79,7 +79,7 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchArchiverRepository implements ArchiverRepository {
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
       30000; // this scroll timeout value is used for reindex and delete queries
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
 
   @Autowired
@@ -178,7 +178,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                 RequestOptions.DEFAULT);
       }
     } catch (final Exception e) {
-      logger.warn(
+      LOGGER.warn(
           "Could not set ILM policy {} for index {}: {}",
           OPERATE_DELETE_ARCHIVED_INDICES,
           destinationIndexName,
@@ -263,7 +263,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                     .sort(BatchOperationTemplate.END_DATE, SortOrder.ASC))
             .requestCache(false); // we don't need to cache this, as each time we need new data
 
-    logger.debug(
+    LOGGER.debug(
         "Finished batch operations for archiving request: \n{}\n and aggregation: \n{}",
         q.toString(),
         agg.toString());
@@ -327,7 +327,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                     .sort(ListViewTemplate.END_DATE, SortOrder.ASC))
             .requestCache(false); // we don't need to cache this, as each time we need new data
 
-    logger.debug(
+    LOGGER.debug(
         "Finished process instances for archiving request: \n{}\n and aggregation: \n{}",
         q.toString(),
         agg.toString());
