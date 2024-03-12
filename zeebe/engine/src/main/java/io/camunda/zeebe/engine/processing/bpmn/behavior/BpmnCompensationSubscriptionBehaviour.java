@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -58,10 +59,11 @@ public class BpmnCompensationSubscriptionBehaviour {
   public void createCompensationSubscription(
       final ExecutableActivity element, final BpmnElementContext context) {
 
+    final var elementId = BufferUtil.bufferAsString(element.getId());
+
     if (hasCompensationBoundaryEvent(element) || isFlowScopeWithSubscriptions(context)) {
 
       final var key = keyGenerator.nextKey();
-      final var elementId = BufferUtil.bufferAsString(element.getId());
       final var flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
 
       final var compensation =
@@ -204,12 +206,17 @@ public class BpmnCompensationSubscriptionBehaviour {
   private ExecutableBoundaryEvent getCompensationBoundaryEvent(
       final BpmnElementContext context, final String elementId) {
 
-    final var activityToCompensate =
+    var activityToCompensate =
         processState.getFlowElement(
             context.getProcessDefinitionKey(),
             context.getTenantId(),
             BufferUtil.wrapString(elementId),
             ExecutableActivity.class);
+
+    if (activityToCompensate.getFlowScope()
+        instanceof final ExecutableMultiInstanceBody multiInstanceBody) {
+      activityToCompensate = multiInstanceBody;
+    }
 
     return activityToCompensate.getBoundaryEvents().stream()
         .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
@@ -263,8 +270,7 @@ public class BpmnCompensationSubscriptionBehaviour {
         .filter(
             subscription ->
                 subscription.getRecord().getCompensationHandlerId().equals(compensationHandlerId))
-        .findFirst()
-        .ifPresent(compensation -> completeSubscription(context, compensation));
+        .forEach(compensation -> completeSubscription(context, compensation));
   }
 
   private void completeSubscription(

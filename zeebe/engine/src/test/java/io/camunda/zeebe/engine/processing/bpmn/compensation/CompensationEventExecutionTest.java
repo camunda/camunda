@@ -1316,6 +1316,117 @@ public class CompensationEventExecutionTest {
             tuple(processInstanceKey, "global", "2"));
   }
 
+  @Test
+  public void shouldTriggerCompensationForMultiInstanceActivityOnlyOnce() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-multi-instance-activity.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeJobs(processInstanceKey, SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY, 3);
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTriggerCompensationAfterAllMultiInstanceActivitiesAreCompleted() {
+    // given
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-multi-instance-activity-parallel.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeJobs(processInstanceKey, SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY, 3);
+
+    completeJobs(processInstanceKey, "activity", 1);
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.CREATED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldNotTriggerCompensationIfMultiInstanceActivitiesAreNotCompleted() {
+    // given
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-multi-instance-activity-parallel.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var jobKeys =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+            .limit(3)
+            .map(Record::getKey)
+            .toList();
+
+    // when
+    ENGINE.job().withKey(jobKeys.getFirst()).complete();
+
+    completeJobs(processInstanceKey, "activity", 1);
+
+    // then
+    jobKeys.stream().skip(1).forEach(key -> ENGINE.job().withKey(key).complete());
+
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.CREATED),
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.TRIGGERED));
+  }
+
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
