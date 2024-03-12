@@ -19,10 +19,12 @@ import {makeAutoObservable} from 'mobx';
 
 type State = {
   isEnabled: boolean;
+  selectedTargetFlowNodeId: string | null;
 };
 
 const DEFAULT_STATE: State = {
   isEnabled: false,
+  selectedTargetFlowNodeId: null,
 };
 
 class BatchModification {
@@ -36,8 +38,8 @@ class BatchModification {
     this.state.isEnabled = true;
   };
 
-  disable = () => {
-    this.state.isEnabled = false;
+  selectTargetFlowNode = (flowNodeId: State['selectedTargetFlowNodeId']) => {
+    this.state.selectedTargetFlowNodeId = flowNodeId;
   };
 
   reset = () => {

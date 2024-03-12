@@ -35,6 +35,7 @@ import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 
 function setSearchParam(
   location: Location,
@@ -73,6 +74,8 @@ const DiagramPanel: React.FC = observer(() => {
   );
 
   const processId = processesStore.getProcessId({process, tenant, version});
+
+  const {selectedTargetFlowNodeId} = batchModificationStore.state;
 
   useEffect(() => {
     processStatisticsStore.init();
@@ -162,20 +165,50 @@ const DiagramPanel: React.FC = observer(() => {
         {xml !== null && (
           <Diagram
             xml={xml}
-            selectableFlowNodes={
-              batchModificationStore.state.isEnabled
-                ? []
-                : processXmlStore.selectableIds
-            }
-            selectedFlowNodeIds={flowNodeId ? [flowNodeId] : undefined}
-            onFlowNodeSelection={(flowNodeId) => {
-              if (flowNodeId === null || flowNodeId === undefined) {
-                navigate(deleteSearchParams(location, ['flowNodeId']));
-              } else {
-                navigate(setSearchParam(location, ['flowNodeId', flowNodeId]));
-              }
-            }}
-            overlaysData={processStatisticsStore.overlaysData}
+            {...(batchModificationStore.state.isEnabled
+              ? // Props for batch modification mode
+                {
+                  // Source and target flow node
+                  selectedFlowNodeIds: [
+                    ...(flowNodeId ? [flowNodeId] : []),
+                    ...(selectedTargetFlowNodeId
+                      ? [selectedTargetFlowNodeId]
+                      : []),
+                  ],
+                  onFlowNodeSelection: (flowNodeId) => {
+                    return batchModificationStore.selectTargetFlowNode(
+                      flowNodeId ?? null,
+                    );
+                  },
+                  overlaysData: processStatisticsStore.overlaysData,
+                  // All flow nodes that can be a move modification target,
+                  // except the source flow node
+                  selectableFlowNodes: processXmlStore.selectableIds.filter(
+                    (selectedFlowNodeId) =>
+                      selectedFlowNodeId !== flowNodeId &&
+                      selectedFlowNodeId !== undefined &&
+                      isMoveModificationTarget(
+                        processXmlStore.state.diagramModel?.elementsById[
+                          selectedFlowNodeId
+                        ],
+                      ),
+                  ),
+                }
+              : // Props for regular mode
+                {
+                  selectedFlowNodeIds: flowNodeId ? [flowNodeId] : undefined,
+                  onFlowNodeSelection: (flowNodeId) => {
+                    if (flowNodeId === null || flowNodeId === undefined) {
+                      navigate(deleteSearchParams(location, ['flowNodeId']));
+                    } else {
+                      navigate(
+                        setSearchParam(location, ['flowNodeId', flowNodeId]),
+                      );
+                    }
+                  },
+                  overlaysData: processStatisticsStore.overlaysData,
+                  selectableFlowNodes: processXmlStore.selectableIds,
+                })}
           >
             {statisticsOverlays?.map((overlay) => {
               const payload = overlay.payload as {

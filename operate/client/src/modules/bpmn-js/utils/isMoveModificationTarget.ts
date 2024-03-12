@@ -15,42 +15,19 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import isNil from 'lodash/isNil';
+import {isWithinMultiInstance} from './isWithinMultiInstance';
+import {isAttachedToAnEventBasedGateway} from './isAttachedToAnEventBasedGateway';
 
-const Diagram = styled.div`
-  height: 100%;
-  width: 100%;
-  position: relative;
-`;
+const isMoveModificationTarget = (businessObject: BusinessObject | null) => {
+  return (
+    !isNil(businessObject) &&
+    !isWithinMultiInstance(businessObject) &&
+    !isAttachedToAnEventBasedGateway(businessObject) &&
+    businessObject.$type !== 'bpmn:StartEvent' &&
+    businessObject.$type !== 'bpmn:BoundaryEvent'
+  );
+};
 
-const DiagramCanvas = styled.div`
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  left: 0;
-  top: 0;
-
-  .op-selectable:hover {
-    cursor: pointer;
-  }
-
-  .op-selectable:hover .djs-outline,
-  .op-selected-frame .djs-outline {
-    stroke-width: 2px;
-    stroke: var(--cds-link-inverse);
-  }
-
-  .op-non-selectable {
-    cursor: not-allowed;
-  }
-
-  .op-selected .djs-visual {
-    rect,
-    circle,
-    polygon {
-      fill: var(--cds-highlight) !important;
-    }
-  }
-`;
-
-export {Diagram, DiagramCanvas};
+export {isMoveModificationTarget};

@@ -101,7 +101,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
           <button onClick={batchModificationStore.enable}>
             Enter batch modification mode
           </button>
-          <button onClick={batchModificationStore.disable}>
+          <button onClick={batchModificationStore.reset}>
             Exit batch modification mode
           </button>
         </MemoryRouter>

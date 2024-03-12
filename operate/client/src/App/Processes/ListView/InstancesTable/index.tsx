@@ -105,13 +105,9 @@ const InstancesTable: React.FC = observer(() => {
         selectionType={
           authenticationStore.hasPermission(['write']) ? 'checkbox' : 'none'
         }
-        onSelectAll={
-          processInstancesSelectionStore.selectAllProcessInstancesCarbon
-        }
+        onSelectAll={processInstancesSelectionStore.selectAllProcessInstances}
         onSelect={(rowId) => {
-          return processInstancesSelectionStore.selectProcessInstanceCarbon(
-            rowId,
-          );
+          processInstancesSelectionStore.selectProcessInstance(rowId);
         }}
         checkIsAllSelected={() =>
           processInstancesSelectionStore.state.isAllChecked

@@ -98,17 +98,6 @@ class ProcessInstancesSelection {
   };
 
   selectAllProcessInstances = () => {
-    if (this.state.selectionMode === 'ALL') {
-      this.setMode('INCLUDE');
-      this.setAllChecked(false);
-    } else {
-      this.setMode('ALL');
-      this.setAllChecked(true);
-      this.setselectedProcessInstanceIds([]);
-    }
-  };
-
-  selectAllProcessInstancesCarbon = () => {
     if (
       this.state.selectionMode === 'INCLUDE' &&
       this.selectedProcessInstanceCount === 0
@@ -123,21 +112,6 @@ class ProcessInstancesSelection {
   };
 
   selectProcessInstance = (id: string) => {
-    const {selectionMode, selectedProcessInstanceIds} = this.state;
-
-    if (selectionMode === 'ALL') {
-      this.setMode('EXCLUDE');
-      this.setAllChecked(false);
-    }
-
-    if (selectedProcessInstanceIds.indexOf(id) >= 0) {
-      this.removeFromselectedProcessInstanceIds(id);
-    } else {
-      this.addToselectedProcessInstanceIds(id);
-    }
-  };
-
-  selectProcessInstanceCarbon = (id: string) => {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
 
     if (selectionMode === 'ALL') {
@@ -180,11 +154,12 @@ class ProcessInstancesSelection {
   get hasSelectedRunningInstances() {
     const {
       selectedProcessInstanceIds,
-      state: {isAllChecked},
+      state: {isAllChecked, selectionMode},
     } = this;
 
     return (
       isAllChecked ||
+      selectionMode === 'EXCLUDE' ||
       processInstancesStore.state.processInstances.some((processInstance) => {
         return (
           selectedProcessInstanceIds.includes(processInstance.id) &&

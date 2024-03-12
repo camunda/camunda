@@ -30,14 +30,12 @@ import {parseDiagramXML} from 'modules/utils/bpmn';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {isFlowNode} from 'modules/utils/flowNodes';
-import {NON_APPENDABLE_FLOW_NODES} from 'modules/constants';
 import {modificationsStore} from '../modifications';
-import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/utils/isAttachedToAnEventBasedGateway';
 import {processInstanceDetailsStatisticsStore} from '../processInstanceDetailsStatistics';
-import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 
 type State = {
@@ -216,10 +214,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
         isCancellable:
           flowNodeState !== undefined &&
           (flowNodeState.active > 0 || flowNodeState.incidents > 0),
-        isAppendable: !NON_APPENDABLE_FLOW_NODES.includes(flowNode.$type),
-        hasMultiInstanceParent: isWithinMultiInstance(flowNode),
-        isAttachedToAnEventBasedGateway:
-          isAttachedToAnEventBasedGateway(flowNode),
+        isMoveModificationTarget: isMoveModificationTarget(flowNode),
         hasMultipleScopes: this.hasMultipleScopes(flowNode.$parent),
       };
     });
@@ -229,9 +224,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return this.flowNodes
       .filter(
         (flowNode) =>
-          !flowNode.hasMultiInstanceParent &&
-          !flowNode.isAttachedToAnEventBasedGateway &&
-          flowNode.isAppendable &&
+          flowNode.isMoveModificationTarget &&
           ((IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED &&
             modificationsStore.state.status !== 'moving-token') ||
             !flowNode.hasMultipleScopes),

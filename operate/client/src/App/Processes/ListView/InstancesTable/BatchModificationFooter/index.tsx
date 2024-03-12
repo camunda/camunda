@@ -24,17 +24,14 @@ import {Stack} from './styled';
 const BatchModificationFooter: React.FC = observer(() => {
   return (
     <Stack orientation="horizontal" gap={5}>
-      <Button
-        kind="secondary"
-        size="sm"
-        onClick={batchModificationStore.disable}
-      >
+      <Button kind="secondary" size="sm" onClick={batchModificationStore.reset}>
         Exit
       </Button>
       <Button
         size="sm"
         disabled={
-          processInstancesSelectionStore.selectedProcessInstanceCount < 1
+          processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
+          batchModificationStore.state.selectedTargetFlowNodeId === null
         }
       >
         Apply Modification
