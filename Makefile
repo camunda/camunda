@@ -53,7 +53,7 @@ env-identity-up:
        CAMUNDA_IDENTITY_CLIENT_ID=operate \
        CAMUNDA_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
        CAMUNDA_IDENTITY_AUDIENCE=operate-api \
-       CAMUNDA_OPERATE_PERSISTENT_SESSIONS_ENABLED=true \
+       CAMUNDA_OPERATE_PERSISTENT_SESSIONS_ENABLED=false \
        SERVER_SERVLET_CONTEXT_PATH=/operate \
        SERVER_PORT=8081 \
 	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
