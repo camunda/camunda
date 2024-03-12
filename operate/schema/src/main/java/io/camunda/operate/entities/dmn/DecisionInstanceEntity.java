@@ -55,7 +55,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
+
   @JsonIgnore private Object[] sortValues;
 
   public static Long extractKey(String id) {
@@ -295,10 +295,16 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    DecisionInstanceEntity that = (DecisionInstanceEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DecisionInstanceEntity that = (DecisionInstanceEntity) o;
     return decisionRequirementsKey == that.decisionRequirementsKey
         && processDefinitionKey == that.processDefinitionKey
         && processInstanceKey == that.processInstanceKey

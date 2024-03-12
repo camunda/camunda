@@ -164,10 +164,16 @@ public class FlowNodeInstanceForListViewEntity
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
     return incident == that.incident
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(activityId, that.activityId)

@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
         + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class OpensearchUserStore implements UserStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchUserStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchUserStore.class);
 
   @Autowired protected OpenSearchClient openSearchClient;
 
@@ -63,13 +63,13 @@ public class OpensearchUserStore implements UserStore {
   @Override
   public UserEntity getById(String id) {
     try {
-      var response =
+      final var response =
           openSearchClient.search(
               r ->
                   r.index(userIndex.getAlias())
                       .query(q -> q.term(t -> t.field(UserIndex.USER_ID).value(FieldValue.of(id)))),
               UserEntity.class);
-      var hits = response.hits().total().value();
+      final var hits = response.hits().total().value();
       if (hits == 1) {
         return response.hits().hits().get(0).source();
       } else if (hits > 1) {
@@ -88,12 +88,12 @@ public class OpensearchUserStore implements UserStore {
   @Override
   public void save(UserEntity user) {
     try {
-      var response =
+      final var response =
           openSearchClient.index(
               r -> r.index(userIndex.getFullQualifiedName()).id(user.getId()).document(user));
-      logger.info("User {} {}", user.getUserId(), response.result());
+      LOGGER.info("User {} {}", user.getUserId(), response.result());
     } catch (Exception t) {
-      logger.error("Could not create user with userId {}", user.getUserId(), t);
+      LOGGER.error("Could not create user with userId {}", user.getUserId(), t);
     }
   }
 }

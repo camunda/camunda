@@ -116,10 +116,16 @@ public class MessageEntity extends OperateZeebeEntity<MessageEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    MessageEntity that = (MessageEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final MessageEntity that = (MessageEntity) o;
     return Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey)
         && Objects.equals(publishDate, that.publishDate)

@@ -66,7 +66,7 @@ public class OpensearchPipelineReindexPlan extends PipelineReindexPlan implement
     if (script == null) {
       buildScript(PRESERVE_INDEX_SUFFIX_SCRIPT, Map.of("dstIndex", dstIndex));
     }
-    var reindexRequest =
+    final var reindexRequest =
         new ReindexRequest.Builder()
             .source(
                 Source.of(
@@ -98,7 +98,7 @@ public class OpensearchPipelineReindexPlan extends PipelineReindexPlan implement
   }
 
   private void buildScript(String scriptContent, Map<String, Object> params) {
-    Map<String, JsonData> paramsMap = new HashMap<>();
+    final Map<String, JsonData> paramsMap = new HashMap<>();
     for (var param : params.entrySet()) {
       paramsMap.put(param.getKey(), JsonData.of(param.getValue()));
     }

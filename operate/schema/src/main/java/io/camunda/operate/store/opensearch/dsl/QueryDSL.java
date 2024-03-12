@@ -198,12 +198,16 @@ public interface QueryDSL {
   }
 
   static SourceConfig sourceInclude(String... fields) {
-    if (CollectionUtil.isEmpty(fields)) return sourceInclude(List.of());
+    if (CollectionUtil.isEmpty(fields)) {
+      return sourceInclude(List.of());
+    }
     return sourceInclude(List.of(fields));
   }
 
   static SourceConfig sourceExclude(String... fields) {
-    if (CollectionUtil.isEmpty(fields)) return sourceExclude(List.of());
+    if (CollectionUtil.isEmpty(fields)) {
+      return sourceExclude(List.of());
+    }
     return sourceExclude(List.of(fields));
   }
 

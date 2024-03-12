@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchImportStore implements ImportStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchImportStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchImportStore.class);
   @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
@@ -57,7 +57,7 @@ public class OpensearchImportStore implements ImportStore {
   @Override
   public ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
       throws IOException {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(importPositionType.getAlias())
             .size(10)
             .query(
@@ -65,14 +65,14 @@ public class OpensearchImportStore implements ImportStore {
                     term(ImportPositionIndex.ALIAS_NAME, alias),
                     term(ImportPositionIndex.PARTITION_ID, partitionId)));
 
-    var response =
+    final var response =
         richOpenSearchClient.doc().search(searchRequestBuilder, ImportPositionEntity.class);
 
     ImportPositionEntity importPositionEntity = new ImportPositionEntity();
     if (!response.hits().hits().isEmpty()) {
       importPositionEntity = response.hits().hits().get(0).source();
     }
-    logger.debug(
+    LOGGER.debug(
         "Latest loaded position for alias [{}] and partitionId [{}]: {}",
         alias,
         partitionId,
@@ -104,7 +104,7 @@ public class OpensearchImportStore implements ImportStore {
 
         return Either.right(true);
       } catch (final Throwable e) {
-        logger.error("Error occurred while persisting latest loaded position", e);
+        LOGGER.error("Error occurred while persisting latest loaded position", e);
         return Either.left(e);
       }
     }

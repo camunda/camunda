@@ -28,7 +28,7 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
   }
 
   public Map<String, Object> addPolicyToIndex(String index, String policy) {
-    var json = format("{\"policy_id\": \"%s\"}", policy);
+    final var json = format("{\"policy_id\": \"%s\"}", policy);
     return withExtendedOpenSearchClient(
         extendedOpenSearchClient ->
             safe(

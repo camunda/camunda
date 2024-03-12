@@ -55,7 +55,7 @@ import org.springframework.stereotype.Component;
         + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class ElasticsearchUserStore implements UserStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUserStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserStore.class);
 
   private static final XContentType XCONTENT_TYPE = XContentType.JSON;
 
@@ -96,13 +96,13 @@ public class ElasticsearchUserStore implements UserStore {
   @Override
   public void save(UserEntity user) {
     try {
-      IndexRequest request =
+      final IndexRequest request =
           new IndexRequest(userIndex.getFullQualifiedName())
               .id(user.getId())
               .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (Exception t) {
-      logger.error("Could not create user with userId {}", user.getUserId(), t);
+      LOGGER.error("Could not create user with userId {}", user.getUserId(), t);
     }
   }
 }

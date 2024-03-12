@@ -101,10 +101,16 @@ public class PostImporterQueueEntity extends OperateEntity<PostImporterQueueEnti
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    PostImporterQueueEntity that = (PostImporterQueueEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final PostImporterQueueEntity that = (PostImporterQueueEntity) o;
     return Objects.equals(key, that.key)
         && actionType == that.actionType
         && Objects.equals(intent, that.intent)

@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchDecisionStore implements DecisionStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchDecisionStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchDecisionStore.class);
 
   private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
   @Autowired private DecisionIndex decisionIndex;
@@ -51,8 +51,8 @@ public class OpensearchDecisionStore implements DecisionStore {
 
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
-    var indexAlias = decisionIndex.getAlias();
-    var searchRequestBuilder =
+    final var indexAlias = decisionIndex.getAlias();
+    final var searchRequestBuilder =
         searchRequestBuilder(indexAlias)
             .query(withTenantCheck(matchAll()))
             .size(0)
@@ -60,12 +60,13 @@ public class OpensearchDecisionStore implements DecisionStore {
                 DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation());
 
     try {
-      var searchResponse = richOpenSearchClient.doc().search(searchRequestBuilder, Void.class);
+      final var searchResponse =
+          richOpenSearchClient.doc().search(searchRequestBuilder, Void.class);
 
       return Optional.of(
           searchResponse.aggregations().get(DISTINCT_FIELD_COUNTS).cardinality().value());
     } catch (Exception e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.", fieldName, indexAlias),
           e);

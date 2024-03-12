@@ -74,10 +74,16 @@ public class MetricEntity extends OperateEntity {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    MetricEntity that = (MetricEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final MetricEntity that = (MetricEntity) o;
     return Objects.equals(event, that.event)
         && Objects.equals(value, that.value)
         && Objects.equals(eventTime, that.eventTime)

@@ -53,7 +53,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchOperationStore implements OperationStore {
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchOperationStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchOperationStore.class);
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired private OperationTemplate operationTemplate;
@@ -97,7 +97,7 @@ public class OpensearchOperationStore implements OperationStore {
             stringTerms(
                 OperationTemplate.STATE,
                 List.of(OperationState.SENT.name(), OperationState.LOCKED.name())));
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate.getAlias()).query(query).size(1);
 
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
@@ -105,7 +105,7 @@ public class OpensearchOperationStore implements OperationStore {
 
   @Override
   public String add(BatchOperationEntity batchOperationEntity) throws PersistenceException {
-    var indexRequestBuilder =
+    final var indexRequestBuilder =
         RequestDSL.<BatchOperationEntity>indexRequestBuilder(
                 batchOperationTemplate.getFullQualifiedName())
             .id(batchOperationEntity.getId())
@@ -124,7 +124,7 @@ public class OpensearchOperationStore implements OperationStore {
             String.format(
                 "Error preparing the query to update operation [%s] for process instance id [%s]",
                 operation.getId(), operation.getProcessInstanceKey());
-    var updateRequestBuilder =
+    final var updateRequestBuilder =
         RequestDSL.<OperationEntity, Void>updateRequestBuilder(
                 operationTemplate.getFullQualifiedName())
             .id(operation.getId())
@@ -147,7 +147,7 @@ public class OpensearchOperationStore implements OperationStore {
             String.format(
                 "Exception occurred, while executing update request with script for operation [%s]",
                 id);
-    var updateRequestBuilder =
+    final var updateRequestBuilder =
         RequestDSL.<Void, Void>updateRequestBuilder(index)
             .id(id)
             .script(script(script, parameters))

@@ -34,7 +34,7 @@ import org.springframework.util.StringUtils;
 @Component
 public class ProcessCache {
 
-  private static final Logger logger = LoggerFactory.getLogger(ProcessCache.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
   private static final int CACHE_MAX_SIZE = 100;
   private static final int MAX_ATTEMPTS = 5;
   private static final long WAIT_TIME = 200;
@@ -49,7 +49,7 @@ public class ProcessCache {
       processName = cachedProcessData.getName();
     }
     if (!StringUtils.hasText(processName)) {
-      logger.debug("ProcessName is empty, use default value: {} ", defaultValue);
+      LOGGER.debug("ProcessName is empty, use default value: {} ", defaultValue);
       processName = defaultValue;
     }
     return processName;
@@ -66,7 +66,7 @@ public class ProcessCache {
       }
     }
     if (!StringUtils.hasText(processName)) {
-      logger.debug("ProcessName is empty, use default value: {} ", defaultValue);
+      LOGGER.debug("ProcessName is empty, use default value: {} ", defaultValue);
       processName = defaultValue;
     }
     return processName;
@@ -78,7 +78,7 @@ public class ProcessCache {
         getCachedProcessEntity(processDefinitionKey).orElse(null);
     String flowNodeName = defaultValue;
     if (cachedProcessData != null && flowNodeId != null) {
-      ProcessFlowNodeEntity flowNodeEntity =
+      final ProcessFlowNodeEntity flowNodeEntity =
           cachedProcessData.getFlowNodes().stream()
               .filter(x -> flowNodeId.equals(x.getId()))
               .findFirst()
@@ -88,7 +88,7 @@ public class ProcessCache {
       }
     }
     if (!StringUtils.hasText(flowNodeName)) {
-      logger.debug("FlowNodeName is empty, use default value: {} ", defaultValue);
+      LOGGER.debug("FlowNodeName is empty, use default value: {} ", defaultValue);
       flowNodeName = defaultValue;
     }
     return flowNodeName;
@@ -123,14 +123,14 @@ public class ProcessCache {
       attemptsCount++;
       foundProcess = readProcessByKey(processDefinitionKey);
       if (foundProcess.isEmpty()) {
-        logger.debug(
+        LOGGER.debug(
             "Unable to find process {}. {} attempts left. Waiting {} ms.",
             processDefinitionKey,
             attempts - attemptsCount,
             sleepInMilliseconds);
         sleepFor(sleepInMilliseconds);
       } else {
-        logger.debug(
+        LOGGER.debug(
             "Found process {} after {} attempts. Waited {} ms.",
             processDefinitionKey,
             attemptsCount,

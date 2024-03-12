@@ -42,14 +42,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchMetricsStore implements MetricsStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchMetricsStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchMetricsStore.class);
   @Autowired private MetricIndex metricIndex;
 
   @Autowired private UsageMetricDAO dao;
 
   @Override
   public Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime) {
-    int limit = 1; // limiting to one, as we just care about the total documents number
+    final int limit = 1; // limiting to one, as we just care about the total documents number
     final Query query =
         Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
             .or(whereEquals(EVENT, EVENT_PROCESS_INSTANCE_STARTED))
@@ -59,7 +59,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
     final AggregationResponse response = dao.searchWithAggregation(query);
     if (response.hasError()) {
       final String message = "Error while retrieving process instance count between dates";
-      logger.error(message);
+      LOGGER.error(message);
       throw new OperateRuntimeException(message);
     }
 
@@ -69,7 +69,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime) {
-    int limit = 1; // limiting to one, as we just care about the total documents number
+    final int limit = 1; // limiting to one, as we just care about the total documents number
     final Query query =
         Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
             .and(range(EVENT_TIME, startTime, endTime))
@@ -78,7 +78,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
     final AggregationResponse response = dao.searchWithAggregation(query);
     if (response.hasError()) {
       final String message = "Error while retrieving decision instance count between dates";
-      logger.error(message);
+      LOGGER.error(message);
       throw new OperateRuntimeException(message);
     }
 

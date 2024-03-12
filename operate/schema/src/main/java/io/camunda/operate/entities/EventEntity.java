@@ -44,7 +44,6 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   private EventMetadataEntity metadata;
 
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -138,10 +137,16 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    EventEntity that = (EventEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final EventEntity that = (EventEntity) o;
     return Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)

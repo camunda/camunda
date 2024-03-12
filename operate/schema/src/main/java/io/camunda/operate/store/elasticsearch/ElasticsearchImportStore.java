@@ -53,7 +53,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchImportStore implements ImportStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchImportStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchImportStore.class);
   @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RestHighLevelClient esClient;
 
@@ -86,7 +86,7 @@ public class ElasticsearchImportStore implements ImportStore {
           ElasticsearchUtil.fromSearchHit(
               hitIterator.next().getSourceAsString(), objectMapper, ImportPositionEntity.class);
     }
-    logger.debug(
+    LOGGER.debug(
         "Latest loaded position for alias [{}] and partitionId [{}]: {}",
         alias,
         partitionId,
@@ -126,7 +126,7 @@ public class ElasticsearchImportStore implements ImportStore {
 
       return Either.right(true);
     } catch (final Throwable e) {
-      logger.error("Error occurred while persisting latest loaded position", e);
+      LOGGER.error("Error occurred while persisting latest loaded position", e);
       return Either.left(e);
     }
   }
@@ -194,7 +194,7 @@ public class ElasticsearchImportStore implements ImportStore {
       return Either.right(updateRequest);
 
     } catch (final Exception e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Error occurred while preparing request to update processed position for %s",
               position.getAliasName()),
@@ -224,7 +224,7 @@ public class ElasticsearchImportStore implements ImportStore {
       return Either.right(updateRequest);
 
     } catch (final Exception e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Error occurred while preparing request to update processed position for %s",
               position.getAliasName()),

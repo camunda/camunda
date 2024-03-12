@@ -32,7 +32,6 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   private String activityId;
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -92,10 +91,16 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    SequenceFlowEntity that = (SequenceFlowEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final SequenceFlowEntity that = (SequenceFlowEntity) o;
     return Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)

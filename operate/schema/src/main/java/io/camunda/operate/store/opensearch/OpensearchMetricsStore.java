@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchMetricsStore implements MetricsStore {
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchMetricsStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchMetricsStore.class);
   @Autowired private MetricIndex metricIndex;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
@@ -84,17 +84,17 @@ public class OpensearchMetricsStore implements MetricsStore {
                     new RichOpenSearchClient.AggregationValue(bucket.key(), bucket.docCount()))
             .toList();
 
-    long sumOfOtherDocCounts =
+    final long sumOfOtherDocCounts =
         aggregate.sterms().sumOtherDocCount(); // size of documents not in result
-    long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
+    final long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
     return new AggregationResult(false, values, total);
   }
 
   @Override
   public Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime) {
-    int limit = 1; // limiting to one, as we just care about the total documents number
+    final int limit = 1; // limiting to one, as we just care about the total documents number
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(metricIndex.getFullQualifiedName())
             .query(
                 and(
@@ -111,9 +111,9 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime) {
-    int limit = 1; // limiting to one, as we just care about the total documents number
+    final int limit = 1; // limiting to one, as we just care about the total documents number
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(metricIndex.getFullQualifiedName())
             .query(
                 and(

@@ -44,7 +44,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private Long position;
   private boolean incident;
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
+
   @JsonIgnore private Object[] sortValues;
 
   public String getFlowNodeId() {
@@ -207,10 +207,16 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
     return level == that.level
         && incident == that.incident
         && Objects.equals(flowNodeId, that.flowNodeId)

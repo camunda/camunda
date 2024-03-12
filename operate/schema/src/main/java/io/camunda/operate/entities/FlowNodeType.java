@@ -47,7 +47,7 @@ public enum FlowNodeType {
 
   UNKNOWN;
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowNodeType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeType.class);
 
   public static FlowNodeType fromZeebeBpmnElementType(final String bpmnElementType) {
     if (bpmnElementType == null) {
@@ -56,7 +56,7 @@ public enum FlowNodeType {
     try {
       return FlowNodeType.valueOf(bpmnElementType);
     } catch (final IllegalArgumentException ex) {
-      logger.error(
+      LOGGER.error(
           "Flow node type not found for value [{}]. UNKNOWN type will be assigned.",
           bpmnElementType);
       return UNKNOWN;

@@ -69,7 +69,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         "Get aliases for " + namePattern,
         () -> {
           try {
-            GetAliasResponse response =
+            final GetAliasResponse response =
                 openSearchClient.indices().getAlias(i -> i.index(namePattern));
             return response.result().values().stream()
                 .map(a -> a.aliases())
@@ -94,9 +94,9 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
             return openSearchClient.indices().create(createIndexRequest).acknowledged();
           }
           if (createIndexRequest.aliases() != null && !createIndexRequest.aliases().isEmpty()) {
-            String aliasName = createIndexRequest.aliases().keySet().iterator().next();
+            final String aliasName = createIndexRequest.aliases().keySet().iterator().next();
             if (!aliasExists(aliasName)) {
-              Action action =
+              final Action action =
                   new Action.Builder()
                       .add(
                           new AddAction.Builder()
@@ -105,7 +105,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
                               .isWriteIndex(false)
                               .build())
                       .build();
-              UpdateAliasesRequest request =
+              final UpdateAliasesRequest request =
                   new UpdateAliasesRequest.Builder().actions(List.of(action)).build();
               openSearchClient.indices().updateAliases(request);
               logger.info(
@@ -117,7 +117,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   private boolean aliasExists(String aliasName) throws IOException {
-    ExistsAliasRequest aliasExistsReq =
+    final ExistsAliasRequest aliasExistsReq =
         new ExistsAliasRequest.Builder().name(List.of(aliasName)).build();
     return openSearchClient.indices().existsAlias(aliasExistsReq).value();
   }
@@ -219,7 +219,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
-    var refreshIntervalTime = getIndexSettingsWithRetries(indexName).refreshInterval();
+    final var refreshIntervalTime = getIndexSettingsWithRetries(indexName).refreshInterval();
     String refreshInterval =
         refreshIntervalTime == null ? defaultValue : refreshIntervalTime.time();
     if (refreshInterval.trim().equals(NO_REFRESH)) {
@@ -229,7 +229,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
-    String numberOfReplicasOriginal = getIndexSettingsWithRetries(indexName).numberOfReplicas();
+    final String numberOfReplicasOriginal =
+        getIndexSettingsWithRetries(indexName).numberOfReplicas();
     String numbersOfReplica =
         numberOfReplicasOriginal == null ? defaultValue : numberOfReplicasOriginal;
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
@@ -245,7 +246,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
 
   public PutIndicesSettingsResponse setIndexLifeCycle(String index, String value)
       throws IOException {
-    var request =
+    final var request =
         PutIndicesSettingsRequest.of(b -> b.index(index).settings(s -> s.lifecycleName(value)));
     return putSettings(request);
   }
@@ -302,10 +303,10 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
               return true;
             }
           }
-          var response = openSearchClient.reindex(reindexRequest);
+          final var response = openSearchClient.reindex(reindexRequest);
 
           if (response.total().equals(srcCount)) {
-            var taskId = response.task() != null ? response.task() : "task:unavailable";
+            final var taskId = response.task() != null ? response.task() : "task:unavailable";
             logProgress(taskId, srcCount, srcCount);
             return true;
           }
@@ -338,12 +339,12 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   private void logProgress(String taskId, long processed, long srcCount) {
-    var progress = processed * 100.00 / srcCount;
+    final var progress = processed * 100.00 / srcCount;
     logger.info("TaskId: {}, Progress: {}%", taskId, String.format("%.2f", progress));
   }
 
   public GetIndexResponse get(GetIndexRequest.Builder requestBuilder) {
-    GetIndexRequest request = requestBuilder.build();
+    final GetIndexRequest request = requestBuilder.build();
     return safe(
         () -> openSearchClient.indices().get(request),
         e -> "Failed to get index " + request.index());

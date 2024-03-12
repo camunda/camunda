@@ -60,7 +60,7 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQueryAndScriptPlan {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchReindexWithQueryAndScriptPlan.class);
   private List<Step> steps = List.of();
   private String srcIndex;
@@ -102,9 +102,9 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
   private Script buildScript(
       final String scriptContent, final Map<String, Tuple<String, String>> bpmnProcessIdsMap)
       throws JsonProcessingException {
-    Map<String, Object> paramsMap =
+    final Map<String, Object> paramsMap =
         Map.of("dstIndex", dstIndex, "bpmnProcessIds", bpmnProcessIdsMap);
-    Map<String, Object> jsonMap =
+    final Map<String, Object> jsonMap =
         objectMapper.readValue(objectMapper.writeValueAsString(paramsMap), HashMap.class);
     return new Script(ScriptType.INLINE, "painless", scriptContent, jsonMap);
   }
@@ -117,29 +117,29 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
   @Override
   public void executeOn(final SchemaManager schemaManager) throws MigrationException {
     // iterate over process instance ids
-    String processInstanceKeyField = "processInstanceKey";
-    SearchRequest searchRequest =
+    final String processInstanceKeyField = "processInstanceKey";
+    final SearchRequest searchRequest =
         new SearchRequest(srcIndex + "_*")
             .source(
                 new SearchSourceBuilder()
                     .fetchField(processInstanceKeyField)
                     .sort(processInstanceKeyField)
                     .size(migrationProperties.getScriptParamsCount()));
-    Set<Long> processInstanceKeys = new HashSet<>();
+    final Set<Long> processInstanceKeys = new HashSet<>();
     try {
       scroll(
           searchRequest,
           rethrowConsumer(
               hits -> {
-                Set<Long> currentProcessInstanceKeys =
+                final Set<Long> currentProcessInstanceKeys =
                     Arrays.stream(hits.getHits())
                         .map(sh -> (Long) sh.getSourceAsMap().get(processInstanceKeyField))
                         .collect(Collectors.toSet());
                 if (processInstanceKeys.size() + currentProcessInstanceKeys.size()
                     >= migrationProperties.getScriptParamsCount()) {
-                  int remainingSize =
+                  final int remainingSize =
                       migrationProperties.getScriptParamsCount() - processInstanceKeys.size();
-                  Set<Long> subSet =
+                  final Set<Long> subSet =
                       currentProcessInstanceKeys.stream()
                           .limit(remainingSize)
                           .collect(Collectors.toSet());
@@ -168,8 +168,8 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
   @Override
   public void validateMigrationResults(final SchemaManager schemaManager)
       throws MigrationException {
-    long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
-    long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
+    final long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
+    final long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
     if (srcCount != dstCount) {
       throw new MigrationException(
           String.format(
@@ -180,9 +180,9 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
 
   private void reindexPart(RestHighLevelClient esClient, Set<Long> processInstanceKeys)
       throws MigrationException, JsonProcessingException {
-    Map<String, Tuple<String, String>> bpmnProcessIdsMap =
+    final Map<String, Tuple<String, String>> bpmnProcessIdsMap =
         getBpmnProcessIds(processInstanceKeys, esClient);
-    logger.debug(
+    LOGGER.debug(
         "Migrate srcIndex: {}, processInstanceKeys: {}, bpmnProcessIdsMap: {}",
         srcIndex,
         processInstanceKeys,
@@ -198,7 +198,8 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
             .setSourceBatchSize(migrationProperties.getReindexBatchSize());
 
     // create script
-    String content = steps.get(0).getContent(); // we checked before that only one step is present
+    final String content =
+        steps.get(0).getContent(); // we checked before that only one step is present
     reindexRequest.setScript(
         buildScript(PRESERVE_INDEX_SUFFIX_SCRIPT + content, bpmnProcessIdsMap));
 
@@ -207,7 +208,7 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
 
   private Map<String, Tuple<String, String>> getBpmnProcessIds(
       Set<Long> processInstanceKeys, RestHighLevelClient esClient) throws MigrationException {
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(listViewIndexName + "*")
             .source(
                 new SearchSourceBuilder()
@@ -215,14 +216,14 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
                     .fetchSource(new String[] {KEY, BPMN_PROCESS_ID, PROCESS_KEY}, null)
                     .size(migrationProperties.getScriptParamsCount()));
     try {
-      Map<String, Tuple<String, String>> result = new HashMap<>();
+      final Map<String, Tuple<String, String>> result = new HashMap<>();
       scroll(
           searchRequest,
           hits -> {
             Arrays.stream(hits.getHits())
                 .forEach(
                     sh -> {
-                      Map<String, Object> sourceAsMap = sh.getSourceAsMap();
+                      final Map<String, Object> sourceAsMap = sh.getSourceAsMap();
                       result.put(
                           String.valueOf(sourceAsMap.get(KEY)),
                           new Tuple<>(

@@ -93,9 +93,13 @@ public abstract class AbstractStep implements Step {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    AbstractStep that = (AbstractStep) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AbstractStep that = (AbstractStep) o;
     return Objects.equals(indexName, that.indexName)
         && Objects.equals(version, that.version)
         && Objects.equals(order, that.order);

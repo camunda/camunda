@@ -90,10 +90,14 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    SemanticVersion version1 = (SemanticVersion) o;
+    final SemanticVersion version1 = (SemanticVersion) o;
 
     return compareTo(version1) == 0;
   }
@@ -189,7 +193,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
 
     final List<Integer> parts1 = versionParts;
     final List<Integer> parts2 = o.versionParts;
-    int largestNumberOfParts = Math.max(parts1.size(), parts2.size());
+    final int largestNumberOfParts = Math.max(parts1.size(), parts2.size());
     for (int i = 0; i < largestNumberOfParts; i++) {
       final int compared = getOrZero(parts1, i).compareTo(getOrZero(parts2, i));
       if (compared != 0) {
@@ -210,7 +214,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
    * @return The resulting array.
    */
   private List<Integer> tokenize(final String version) {
-    List<Integer> parts = new ArrayList<>();
+    final List<Integer> parts = new ArrayList<>();
     try {
       for (String part : splitPattern.split(version)) {
         parts.add(Integer.valueOf(part));

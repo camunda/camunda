@@ -102,9 +102,13 @@ public interface ProcessStore {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      ProcessKey that = (ProcessKey) o;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final ProcessKey that = (ProcessKey) o;
       return Objects.equals(bpmnProcessId, that.bpmnProcessId)
           && Objects.equals(tenantId, that.tenantId);
     }
