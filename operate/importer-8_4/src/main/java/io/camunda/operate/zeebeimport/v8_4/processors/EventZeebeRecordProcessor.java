@@ -47,7 +47,7 @@ import org.springframework.util.StringUtils;
 @Component
 public class EventZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(EventZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(EventZeebeRecordProcessor.class);
 
   private static final String ID_PATTERN = "%s_%s";
 
@@ -341,7 +341,7 @@ public class EventZeebeRecordProcessor {
   private void persistEvent(
       final EventEntity entity, final long position, final BatchRequest batchRequest)
       throws PersistenceException {
-    logger.debug(
+    LOGGER.debug(
         "Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
         entity.getId(),
         entity.getEventSourceType(),
