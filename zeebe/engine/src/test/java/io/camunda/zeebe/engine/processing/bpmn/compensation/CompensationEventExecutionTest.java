@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -172,24 +173,71 @@ public class CompensationEventExecutionTest {
         .complete();
 
     // then
+    final var compensationActivityActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("ActivityToCompensate")
+            .getFirst();
+
+    final var compensationThrowEventActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.INTERMEDIATE_THROW_EVENT)
+            .withEventType(BpmnEventType.COMPENSATION)
+            .getFirst();
+
+    final var compensationHandlerActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("CompensationHandler")
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(
+            CompensationSubscriptionRecordValue::getTenantId,
+            CompensationSubscriptionRecordValue::getProcessInstanceKey,
+            CompensationSubscriptionRecordValue::getProcessDefinitionKey,
+            CompensationSubscriptionRecordValue::getCompensableActivityId,
+            CompensationSubscriptionRecordValue::getCompensableActivityInstanceKey,
+            CompensationSubscriptionRecordValue::getCompensableActivityScopeId,
+            CompensationSubscriptionRecordValue::getCompensableActivityScopeKey,
+            CompensationSubscriptionRecordValue::getCompensationHandlerId)
+        .containsOnly(
+            tuple(
+                compensationActivityActivated.getValue().getTenantId(),
+                processInstanceKey,
+                compensationActivityActivated.getValue().getProcessDefinitionKey(),
+                "ActivityToCompensate",
+                compensationActivityActivated.getKey(),
+                PROCESS_ID,
+                compensationActivityActivated.getValue().getFlowScopeKey(),
+                "CompensationHandler"));
+
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(
             Record::getIntent,
-            r -> r.getValue().getCompensableActivityId(),
-            r -> r.getValue().getThrowEventId())
+            r -> r.getValue().getThrowEventId(),
+            r -> r.getValue().getThrowEventInstanceKey(),
+            r -> r.getValue().getCompensationHandlerInstanceKey())
         .containsSequence(
-            tuple(CompensationSubscriptionIntent.CREATED, "ActivityToCompensate", ""),
+            tuple(CompensationSubscriptionIntent.CREATED, "", -1L, -1L),
             tuple(
                 CompensationSubscriptionIntent.TRIGGERED,
-                "ActivityToCompensate",
-                "CompensationThrowEvent"),
+                "CompensationThrowEvent",
+                compensationThrowEventActivated.getKey(),
+                compensationHandlerActivated.getKey()),
             tuple(
                 CompensationSubscriptionIntent.COMPLETED,
-                "ActivityToCompensate",
-                "CompensationThrowEvent"));
+                "CompensationThrowEvent",
+                compensationThrowEventActivated.getKey(),
+                compensationHandlerActivated.getKey()));
   }
 
   @Test
