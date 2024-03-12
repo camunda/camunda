@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -31,7 +32,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -61,8 +61,7 @@ public class BpmnCompensationSubscriptionBehaviour {
 
     final var elementId = BufferUtil.bufferAsString(element.getId());
 
-    if ((hasCompensationBoundaryEvent(element) || isFlowScopeWithSubscriptions(context))
-        && !isMultiInstanceActivityAlreadySubscribed(element, context, elementId)) {
+    if (hasCompensationBoundaryEvent(element) || isFlowScopeWithSubscriptions(context)) {
 
       final var key = keyGenerator.nextKey();
       final var flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
@@ -81,26 +80,6 @@ public class BpmnCompensationSubscriptionBehaviour {
 
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
-  }
-
-  private boolean isMultiInstanceActivityAlreadySubscribed(
-      final ExecutableActivity element, final BpmnElementContext context, final String elementId) {
-    final var availableTasks =
-        List.of(
-            BpmnElementType.TASK,
-            BpmnElementType.SERVICE_TASK,
-            BpmnElementType.MANUAL_TASK,
-            BpmnElementType.USER_TASK,
-            BpmnElementType.SEND_TASK,
-            BpmnElementType.SCRIPT_TASK);
-
-    return BpmnElementType.MULTI_INSTANCE_BODY.equals(element.getFlowScope().getElementType())
-        && availableTasks.contains(element.getElementType())
-        && compensationSubscriptionState
-            .findSubscriptionsByProcessInstanceKey(
-                context.getTenantId(), context.getProcessInstanceKey())
-            .stream()
-            .anyMatch(sub -> elementId.equals(sub.getRecord().getCompensableActivityId()));
   }
 
   private boolean hasCompensationBoundaryEvent(final ExecutableActivity element) {
@@ -123,12 +102,6 @@ public class BpmnCompensationSubscriptionBehaviour {
   }
 
   private Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
-    // multi instance subscriptions doesn't need to have handlerId, otherwise they will activate
-    // again the compensation handler
-    if (BpmnElementType.MULTI_INSTANCE_BODY.equals(element.getElementType())) {
-      return Optional.empty();
-    }
-
     return element.getBoundaryEvents().stream()
         .map(ExecutableBoundaryEvent::getCompensation)
         .filter(Objects::nonNull)
@@ -240,14 +213,33 @@ public class BpmnCompensationSubscriptionBehaviour {
             BufferUtil.wrapString(elementId),
             ExecutableActivity.class);
 
-    return activityToCompensate.getBoundaryEvents().stream()
-        .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new BpmnProcessingException(
-                    context,
-                    "No compensation boundary event found for activity '%s'".formatted(elementId)));
+    final var boundaryEvent =
+        activityToCompensate.getBoundaryEvents().stream()
+            .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
+            .findFirst()
+            .orElse(null);
+
+    if (boundaryEvent != null) {
+      return boundaryEvent;
+    }
+
+    final var parentActivityToCompensate = activityToCompensate.getFlowScope();
+
+    if (!(parentActivityToCompensate instanceof ExecutableMultiInstanceBody)) {
+      throw new BpmnProcessingException(
+          context, "No compensation boundary event found for activity '%s'".formatted(elementId));
+    }
+
+    return ((ExecutableMultiInstanceBody) parentActivityToCompensate)
+        .getBoundaryEvents().stream()
+            .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new BpmnProcessingException(
+                        context,
+                        "No compensation boundary event found for activity '%s'"
+                            .formatted(elementId)));
   }
 
   private void activateAndCompleteCompensationBoundaryEvent(

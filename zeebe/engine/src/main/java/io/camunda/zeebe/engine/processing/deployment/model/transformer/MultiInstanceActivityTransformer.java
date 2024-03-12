@@ -63,6 +63,9 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
       innerActivity.getInterruptingElementIds().clear();
 
+      // remove compensation boundary events from inner activity
+      innerActivity.getBoundaryEvents().removeIf(boundary -> boundary.getCompensation() != null);
+
       // attach incoming and outgoing sequence flows to the multi-instance body
       innerActivity.getIncoming().forEach(flow -> flow.setTarget(multiInstanceBody));
       innerActivity.getOutgoing().forEach(flow -> flow.setSource(multiInstanceBody));
