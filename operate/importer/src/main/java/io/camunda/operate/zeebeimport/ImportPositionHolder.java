@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("schemaStartup")
 public class ImportPositionHolder {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportPositionHolder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportPositionHolder.class);
 
   // this is the in-memory only storage
   private final Map<String, ImportPositionEntity> lastScheduledPositions = new HashMap<>();
@@ -64,7 +64,7 @@ public class ImportPositionHolder {
 
   @PostConstruct
   private void init() {
-    logger.info("INIT: Start import position updater...");
+    LOGGER.info("INIT: Start import position updater...");
     scheduleImportPositionUpdateTask();
   }
 

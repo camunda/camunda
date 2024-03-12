@@ -73,7 +73,7 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostImportAction
     implements PostImportAction {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchIncidentPostImportAction.class);
 
   @Autowired private RestHighLevelClient esClient;
@@ -154,8 +154,8 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
               "Exception occurred, while processing pending incidents: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-    if (logger.isDebugEnabled() && !incidents2Process.isEmpty()) {
-      logger.debug("Processing incident ids <-> intents: " + incidents2Process);
+    if (LOGGER.isDebugEnabled() && !incidents2Process.isEmpty()) {
+      LOGGER.debug("Processing incident ids <-> intents: " + incidents2Process);
     }
 
     if (incidents2Process.size() == 0) {
@@ -200,7 +200,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
       absentIncidents.removeAll(
           incidents.stream().map(i -> i.getKey()).collect(Collectors.toSet()));
       if (operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
-        logger.warn(
+        LOGGER.warn(
             "Not all incidents are yet imported for post processing: "
                 + absentIncidents
                 + ". This post processor records will be ignored.");
@@ -301,7 +301,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                   "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
                   incident.getId(), incident.getProcessInstanceKey()));
         } else {
-          logger.warn(
+          LOGGER.warn(
               String.format(
                   "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s. Ignoring.",
                   incident.getId(), incident.getProcessInstanceKey()));
@@ -597,7 +597,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
       if (piTreePath == null || piTreePath.isEmpty()) {
         // check whether DELETE_PROCESS_INSTANCE operation exists
         if (processInstanceWasDeleted(i.getProcessInstanceKey())) {
-          logger.debug(
+          LOGGER.debug(
               "Process instance with the key {} was deleted. Incident post processing will be skipped for id {}.",
               i.getProcessInstanceKey(),
               i.getId());
@@ -613,7 +613,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
             countMissingInstance++;
             piTreePath =
                 new TreePath().startTreePath(String.valueOf(i.getProcessInstanceKey())).toString();
-            logger.warn(
+            LOGGER.warn(
                 String.format(
                     "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s.",
                     i.getId(), i.getProcessInstanceKey()));
