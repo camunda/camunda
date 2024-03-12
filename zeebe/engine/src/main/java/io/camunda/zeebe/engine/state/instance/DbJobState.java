@@ -72,9 +72,11 @@ public final class DbJobState implements JobState, MutableJobState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
       backoffColumnFamily;
   private long nextBackOffDueDate;
+  private final TransactionContext transactionContext;
 
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this.transactionContext = transactionContext;
 
     jobKey = new DbLong();
     fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
@@ -430,7 +432,11 @@ public final class DbJobState implements JobState, MutableJobState {
   boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
-      LOG.error("Expected to find job with key {}, but no job found", jobKey);
+      LOG.error(
+          "Expected to find job with key {}, but no job found in context {}",
+          jobKey,
+          transactionContext,
+          new IllegalStateException());
       return true; // we want to continue with the iteration
     }
     return callback.test(jobKey, job);

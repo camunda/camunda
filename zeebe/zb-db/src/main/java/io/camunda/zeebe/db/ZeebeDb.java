@@ -53,7 +53,11 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
 
   Optional<String> getProperty(String propertyName);
 
-  TransactionContext createContext();
+  default TransactionContext createContext() {
+    return createContext("default");
+  }
+
+  TransactionContext createContext(final String name);
 
   /**
    * Checks the database if the given column is empty.

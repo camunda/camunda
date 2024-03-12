@@ -17,11 +17,18 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
 
 public final class DefaultTransactionContext implements TransactionContext {
+  private final String name;
 
   private final ZeebeTransaction transaction;
 
-  DefaultTransactionContext(final ZeebeTransaction transaction) {
+  DefaultTransactionContext(final String name, final ZeebeTransaction transaction) {
+    this.name = name;
     this.transaction = transaction;
+  }
+
+  @Override
+  public String toString() {
+    return "DefaultTransactionContext{" + "name='" + name + '\'' + '}';
   }
 
   @Override

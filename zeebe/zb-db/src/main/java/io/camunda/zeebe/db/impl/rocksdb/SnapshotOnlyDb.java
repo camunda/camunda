@@ -63,7 +63,7 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
   }
 
   @Override
-  public TransactionContext createContext() {
+  public TransactionContext createContext(final String name) {
     throw unsupported("createContext");
   }
 

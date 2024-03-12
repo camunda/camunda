@@ -84,7 +84,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldThrowRecoverableExceptionOnCommit() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final TransactionContext newContext = new DefaultTransactionContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext("default", transaction);
     final Status status = new Status(Code.IOError, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).commitInternal();
 
@@ -96,7 +96,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldWrapExceptionInRuntimeExceptionOnCommit() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final TransactionContext newContext = new DefaultTransactionContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext("default", transaction);
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).commitInternal();
 
@@ -108,7 +108,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldThrowRecoverableExceptionOnRollback() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final TransactionContext newContext = new DefaultTransactionContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext("default", transaction);
     final Status status = new Status(Code.IOError, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).rollbackInternal();
 
@@ -120,7 +120,7 @@ public final class ZeebeRocksDbTransactionTest {
   public void shouldWrapExceptionInRuntimeExceptionOnRollback() throws Exception {
     // given
     final ZeebeTransaction transaction = mock(ZeebeTransaction.class);
-    final TransactionContext newContext = new DefaultTransactionContext(transaction);
+    final TransactionContext newContext = new DefaultTransactionContext("default", transaction);
     final Status status = new Status(Code.NotSupported, SubCode.None, "");
     doThrow(new RocksDBException("expected", status)).when(transaction).rollbackInternal();
 

@@ -171,11 +171,11 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   }
 
   @Override
-  public TransactionContext createContext() {
+  public TransactionContext createContext(final String name) {
     final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
     final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction, this);
     closables.add(zeebeTransaction);
-    return new DefaultTransactionContext(zeebeTransaction);
+    return new DefaultTransactionContext(name, zeebeTransaction);
   }
 
   @Override
