@@ -6,6 +6,11 @@
     "/^stable\\/8\\..*/"
   ],
   "prConcurrentLimit": 30,
+  "updateNotScheduled": false,
+  "schedule": [
+    "after 10pm every weekday",
+    "before 6am every weekday"
+  ],
   "helmv3": {
     "registryAliases": {
       "helm-camunda-io": "https://helm.camunda.io"
