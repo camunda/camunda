@@ -20,6 +20,14 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 import java.util.stream.IntStream;
 
+/**
+ * This behavior allows distributing a command to other partitions, and for those receiving
+ * partitions to acknowledge the distributed commands back to the partition that started. This is
+ * needed because the communication between partitions is unreliable.
+ *
+ * @see <a href="https://github.com/camunda/zeebe/blob/main/zeebe/docs/generalized_distribution.md">
+ *     generalized_distribution.md</a>
+ */
 public final class CommandDistributionBehavior {
 
   private final StateWriter stateWriter;
@@ -45,11 +53,15 @@ public final class CommandDistributionBehavior {
   }
 
   /**
-   * Distributes a command to the other partitions
+   * Distributes a command to all other partitions.
    *
-   * @param distributionKey the key which is used for the distribution. This could either be a new
-   *     key, but it could also be the key of the entity that's getting distributed.
-   * @param command the command that needs to be distributed
+   * @param distributionKey the key to identify this unique command distribution. The key is used to
+   *     store the pending distribution, as the key of distributed command, to identify the
+   *     distributing partition when processing the distributed command, and as the key to correlate
+   *     the ACKNOWLEDGE command to the pending distribution. This can be a newly generated key, or
+   *     the key identifying the entity that's being distributed. Please note that it must be unique
+   *     for command distribution. Don't reuse the key to distribute another command.
+   * @param command the command to distribute
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final TypedRecord<T> command) {
@@ -101,6 +113,12 @@ public final class CommandDistributionBehavior {
         });
   }
 
+  /**
+   * Acknowledges that a command was distributed to another partition successfully.
+   *
+   * @param distributionKey the key identifying the command distribution
+   * @param command the command that was distributed
+   */
   public <T extends UnifiedRecordValue> void acknowledgeCommand(
       final long distributionKey, final TypedRecord<T> command) {
     final var distributionRecord =
