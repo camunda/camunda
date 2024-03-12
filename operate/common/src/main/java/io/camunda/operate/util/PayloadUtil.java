@@ -35,7 +35,7 @@ public class PayloadUtil {
 
   public Map<String, Object> parsePayload(String payload) throws IOException {
 
-    Map<String, Object> map = new LinkedHashMap<>();
+    final Map<String, Object> map = new LinkedHashMap<>();
 
     traverseTheTree(objectMapper.readTree(payload), map, "");
 
@@ -74,6 +74,8 @@ public class PayloadUtil {
             case DOUBLE:
             case BIG_DECIMAL:
               value = jsonNode.doubleValue();
+              break;
+            default:
               break;
           }
           break;

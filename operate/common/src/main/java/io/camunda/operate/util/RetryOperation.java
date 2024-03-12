@@ -28,9 +28,9 @@ import org.slf4j.LoggerFactory;
 // Taken from https://stackoverflow.com/questions/13239972/how-do-you-implement-a-re-try-catch and
 // slightly modified
 //
-public class RetryOperation<T> {
+public final class RetryOperation<T> {
 
-  private static final Logger logger = LoggerFactory.getLogger(RetryOperation.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RetryOperation.class);
   private RetryConsumer<T> retryConsumer;
   private int noOfRetry;
   private int delayInterval;
@@ -67,7 +67,7 @@ public class RetryOperation<T> {
       try {
         result = retryConsumer.evaluate();
         if (Objects.nonNull(retryPredicate)) {
-          boolean shouldItRetry = retryPredicate.shouldRetry(result);
+          final boolean shouldItRetry = retryPredicate.shouldRetry(result);
           if (shouldItRetry) {
             retries = increaseRetryCountAndSleep(retries);
           } else {
@@ -78,7 +78,7 @@ public class RetryOperation<T> {
           return result;
         }
       } catch (Exception e) {
-        logger.warn(String.format("Retry Operation %s failed: %s", message, e.getMessage()), e);
+        LOGGER.warn(String.format("Retry Operation %s failed: %s", message, e.getMessage()), e);
         retries = handleException(retries, e);
       }
     }
@@ -106,10 +106,10 @@ public class RetryOperation<T> {
     if (retries < noOfRetry && delayInterval > 0) {
       try {
         if (retries % 20 == 0) {
-          logger.info(
+          LOGGER.info(
               "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
         } else {
-          logger.debug(
+          LOGGER.debug(
               "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
         }
         timeUnit.sleep(delayInterval);
@@ -120,7 +120,7 @@ public class RetryOperation<T> {
     return retries;
   }
 
-  public static class OperationBuilder<T> {
+  public static final class OperationBuilder<T> {
     private RetryConsumer<T> iRetryConsumer;
     private int iNoOfRetry;
     private int iDelayInterval;

@@ -29,16 +29,16 @@ import org.springframework.stereotype.Component;
 public class DatabaseInfo implements ApplicationContextAware {
 
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
-  private static final Logger logger = LoggerFactory.getLogger(DatabaseInfo.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInfo.class);
   private static ApplicationContext applicationContext;
 
   public static DatabaseType getCurrent() {
     if (applicationContext == null) {
-      logger.warn("getCurrent() called on DatabaseInfo before application context has been set");
+      LOGGER.warn("getCurrent() called on DatabaseInfo before application context has been set");
       return DEFAULT_DATABASE;
     }
 
-    var code = applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
+    final var code = applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
     return DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
   }
 

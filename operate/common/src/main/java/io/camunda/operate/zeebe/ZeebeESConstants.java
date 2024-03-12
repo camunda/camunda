@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.zeebe;
 
+@SuppressWarnings("checkstyle:InterfaceIsType")
 public interface ZeebeESConstants {
 
   String POSITION_FIELD_NAME = "position";

@@ -38,7 +38,7 @@ public abstract class ZeebeTestUtil {
 
   public static final Logger ALL_EVENTS_LOGGER =
       LoggerFactory.getLogger("io.camunda.operate.ALL_EVENTS");
-  private static final Logger logger = LoggerFactory.getLogger(ZeebeTestUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeTestUtil.class);
 
   /**
    * Deploys the process synchronously.
@@ -72,14 +72,14 @@ public abstract class ZeebeTestUtil {
           ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
               .send()
               .join();
-      logger.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
+      LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
       return deploymentEvent
           .getProcesses()
           .get(classpathResources.length - 1)
           .getProcessDefinitionKey();
     } catch (Exception e) {
       if (ignoreException) {
-        logger.warn("Deployment failed: " + e.getMessage());
+        LOGGER.warn("Deployment failed: " + e.getMessage());
         return null;
       } else {
         throw e;
@@ -105,7 +105,7 @@ public abstract class ZeebeTestUtil {
     ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
         .send()
         .join();
-    logger.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
+    LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
   }
 
   /**
@@ -129,7 +129,7 @@ public abstract class ZeebeTestUtil {
         ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
             .send()
             .join();
-    logger.debug("Deployment of resource [{}] was performed", resourceName);
+    LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
     return deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
   }
 
@@ -183,17 +183,17 @@ public abstract class ZeebeTestUtil {
       ProcessInstanceEvent processInstanceEvent = null;
       try {
         processInstanceEvent = createProcessInstanceCommandStep3.send().join();
-        logger.debug("Process instance created for process [{}]", bpmnProcessId);
+        LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);
       } catch (ClientException ex) {
         // retry once
         sleepFor(300L);
         processInstanceEvent = createProcessInstanceCommandStep3.send().join();
-        logger.debug("Process instance created for process [{}]", bpmnProcessId);
+        LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);
       }
       return processInstanceEvent.getProcessInstanceKey();
     } catch (Exception e) {
       if (ignoreException) {
-        logger.warn("Instance creation failed: " + e.getMessage());
+        LOGGER.warn("Instance creation failed: " + e.getMessage());
         return 0L;
       } else {
         throw e;
@@ -209,7 +209,7 @@ public abstract class ZeebeTestUtil {
       if (!ignoreException) {
         throw e;
       } else {
-        logger.warn("Cancellation failed: " + e.getMessage());
+        LOGGER.warn("Cancellation failed: " + e.getMessage());
       }
     }
   }
@@ -231,7 +231,7 @@ public abstract class ZeebeTestUtil {
         workerName,
         count,
         (jobClient, job) -> {
-          CompleteJobCommandStep1 command = jobClient.newCompleteCommand(job.getKey());
+          final CompleteJobCommandStep1 command = jobClient.newCompleteCommand(job.getKey());
           if (payload != null) {
             command.variables(payload);
           }
@@ -251,7 +251,7 @@ public abstract class ZeebeTestUtil {
             workerName,
             numberOfFailures,
             ((jobClient, job) -> {
-              FailJobCommandStep2 failCommand =
+              final FailJobCommandStep2 failCommand =
                   jobClient.newFailCommand(job.getKey()).retries(job.getRetries() - 1);
               if (errorMessage != null) {
                 failCommand.errorMessage(errorMessage);
@@ -273,7 +273,7 @@ public abstract class ZeebeTestUtil {
             workerName,
             1,
             ((jobClient, job) -> {
-              FailJobCommandStep2 failCommand =
+              final FailJobCommandStep2 failCommand =
                   jobClient.newFailCommand(job.getKey()).retries(numberOfRetriesLeft);
               if (errorMessage != null) {
                 failCommand.errorMessage(errorMessage);

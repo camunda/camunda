@@ -59,7 +59,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    * The number of strong references to hold internally, that is, the number of instances to prevent
    * from being garbage collected automatically (unlike other soft references).
    */
-  private final int RETENTION_SIZE;
+  private final int retentionSize;
 
   /** The FIFO list of strong references (not to be garbage collected), order of last access. */
   private final Queue<V> strongReferences; // guarded by 'strongReferencesLock'
@@ -98,7 +98,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
   @SuppressWarnings({"unchecked"})
   public SoftHashMap(int retentionSize) {
     super();
-    RETENTION_SIZE = Math.max(0, retentionSize);
+    this.retentionSize = Math.max(0, retentionSize);
     queue = new ReferenceQueue<>();
     strongReferencesLock = new ReentrantLock();
     map = new ConcurrentHashMap<>();
@@ -152,7 +152,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
 
   private void trimStrongReferencesIfNecessary() {
     // trim the strong ref queue if necessary:
-    while (strongReferences.size() > RETENTION_SIZE) {
+    while (strongReferences.size() > retentionSize) {
       strongReferences.poll();
     }
   }
@@ -188,7 +188,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
 
   public boolean containsValue(Object value) {
     processQueue();
-    Collection values = values();
+    final Collection values = values();
     return values != null && values.contains(value);
   }
 
@@ -196,7 +196,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     processQueue();
 
     V result = null;
-    SoftValue<V, K> value = map.get(key);
+    final SoftValue<V, K> value = map.get(key);
 
     if (value != null) {
       // unwrap the 'real' value from the SoftReference
@@ -219,15 +219,15 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    */
   public V put(K key, V value) {
     processQueue(); // throw out garbage collected values first
-    SoftValue<V, K> sv = new SoftValue<V, K>(value, key, queue);
-    SoftValue<V, K> previous = map.put(key, sv);
+    final SoftValue<V, K> sv = new SoftValue<V, K>(value, key, queue);
+    final SoftValue<V, K> previous = map.put(key, sv);
     addToStrongReferences(value);
     return previous != null ? previous.get() : null;
   }
 
   public V remove(Object key) {
     processQueue(); // throw out garbage collected values first
-    SoftValue<V, K> raw = map.remove(key);
+    final SoftValue<V, K> raw = map.remove(key);
     return raw != null ? raw.get() : null;
   }
 
@@ -259,14 +259,14 @@ public class SoftHashMap<K, V> implements Map<K, V> {
 
   public Collection<V> values() {
     processQueue();
-    Collection<K> keys = map.keySet();
+    final Collection<K> keys = map.keySet();
     if (keys.isEmpty()) {
       //noinspection unchecked
       return Collections.EMPTY_SET;
     }
-    Collection<V> values = new ArrayList<V>(keys.size());
+    final Collection<V> values = new ArrayList<V>(keys.size());
     for (K key : keys) {
-      V v = get(key);
+      final V v = get(key);
       if (v != null) {
         values.add(v);
       }
@@ -276,15 +276,15 @@ public class SoftHashMap<K, V> implements Map<K, V> {
 
   public Set<Map.Entry<K, V>> entrySet() {
     processQueue(); // throw out garbage collected values first
-    Collection<K> keys = map.keySet();
+    final Collection<K> keys = map.keySet();
     if (keys.isEmpty()) {
       //noinspection unchecked
       return Collections.EMPTY_SET;
     }
 
-    Map<K, V> kvPairs = new HashMap<K, V>(keys.size());
+    final Map<K, V> kvPairs = new HashMap<K, V>(keys.size());
     for (K key : keys) {
-      V v = get(key);
+      final V v = get(key);
       if (v != null) {
         kvPairs.put(key, v);
       }
@@ -296,7 +296,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    * We define our own subclass of SoftReference which contains not only the value but also the key
    * to make it easier to find the entry in the HashMap after it's been garbage collected.
    */
-  private static class SoftValue<V, K> extends SoftReference<V> {
+  private static final class SoftValue<V, K> extends SoftReference<V> {
 
     private final K key;
 

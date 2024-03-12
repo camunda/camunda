@@ -74,7 +74,7 @@ public class Metrics {
       TAG_VALUE_CORESTATISTICS = "corestatistics",
       TAG_VALUE_SUCCEEDED = "succeeded",
       TAG_VALUE_FAILED = "failed";
-  private static final Logger logger = LoggerFactory.getLogger(Metrics.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Metrics.class);
   private Timer importBatchTimer;
   @Autowired private MeterRegistry registry;
 
