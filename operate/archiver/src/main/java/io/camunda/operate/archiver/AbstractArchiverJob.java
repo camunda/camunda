@@ -32,7 +32,7 @@ public abstract class AbstractArchiverJob implements ArchiverJob {
 
   public static final String DATES_AGG = "datesAgg";
   public static final String INSTANCES_AGG = "instancesAgg";
-  private static final Logger logger = LoggerFactory.getLogger(AbstractArchiverJob.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
@@ -71,7 +71,7 @@ public abstract class AbstractArchiverJob implements ArchiverJob {
             })
         .exceptionally(
             (t) -> {
-              logger.error("Error occurred while archiving data. Will be retried.", t);
+              LOGGER.error("Error occurred while archiving data. Will be retried.", t);
               errorStrategy.idle();
               final var delay =
                   Math.max(

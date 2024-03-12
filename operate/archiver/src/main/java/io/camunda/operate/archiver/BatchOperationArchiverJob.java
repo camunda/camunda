@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class BatchOperationArchiverJob extends AbstractArchiverJob {
 
-  private static final Logger logger = LoggerFactory.getLogger(BatchOperationArchiverJob.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationArchiverJob.class);
 
   private final Archiver archiver;
 
@@ -53,7 +53,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
     final CompletableFuture<Integer> archiveBatchFuture;
 
     if (archiveBatch != null) {
-      logger.debug("Following batch operations are found for archiving: {}", archiveBatch);
+      LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
 
       archiveBatchFuture = new CompletableFuture<>();
       archiver
@@ -71,7 +71,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
                 archiveBatchFuture.complete(archiveBatch.getIds().size());
               });
     } else {
-      logger.debug("Nothing to archive");
+      LOGGER.debug("Nothing to archive");
       archiveBatchFuture = CompletableFuture.completedFuture(0);
     }
 
