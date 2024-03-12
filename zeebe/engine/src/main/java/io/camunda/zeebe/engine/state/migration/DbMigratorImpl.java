@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult;
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
@@ -74,7 +75,10 @@ public class DbMigratorImpl implements DbMigrator {
 
   @Override
   public void runMigrations() {
-    checkVersionCompatibility();
+    if (checkVersionCompatibility() instanceof Compatible.SameVersion) {
+      LOGGER.info("No migrations to run, snapshot is the same as current version");
+      return;
+    }
     logPreview(migrationTasks);
 
     final var executedMigrations = new ArrayList<MigrationTask>();
@@ -90,10 +94,12 @@ public class DbMigratorImpl implements DbMigrator {
     logSummary(executedMigrations);
   }
 
-  private void checkVersionCompatibility() {
+  private VersionCompatibilityCheck.CheckResult checkVersionCompatibility() {
     final var migratedByVersion = processingState.getMigrationState().getMigratedByVersion();
     final var currentVersion = VersionUtil.getVersion();
-    switch (VersionCompatibilityCheck.check(migratedByVersion, currentVersion)) {
+    final CheckResult checkResult =
+        VersionCompatibilityCheck.check(migratedByVersion, currentVersion);
+    switch (checkResult) {
       case final Indeterminate.PreviousVersionUnknown previousVersionUnknown ->
           LOGGER.trace(
               "Snapshot is from an unknown version, not checking compatibility with current version: {}",
@@ -112,6 +118,7 @@ public class DbMigratorImpl implements DbMigrator {
       case final Compatible compatible ->
           LOGGER.info("Snapshot is compatible with current version: {}", compatible);
     }
+    return checkResult;
   }
 
   private void markMigrationsAsCompleted() {
