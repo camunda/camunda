@@ -114,9 +114,7 @@ describe('Filters', () => {
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
 
-    expect(screen.getByLabelText('Flow Node')).toHaveValue(
-      MOCK_PARAMS.flowNodeId,
-    );
+    expect(screen.getByLabelText('Flow Node')).toHaveValue('Service Task 1');
 
     expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
 
@@ -241,7 +239,7 @@ describe('Filters', () => {
       MOCK_VALUES.errorMessage,
     );
 
-    await selectFlowNode({user, option: MOCK_VALUES.flowNodeId});
+    await selectFlowNode({user, option: 'Service Task 1'});
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));

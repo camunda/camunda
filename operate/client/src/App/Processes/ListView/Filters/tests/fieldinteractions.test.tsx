@@ -166,7 +166,7 @@ describe('Interaction with other fields during validation', () => {
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
-    await selectFlowNode({user, option: 'ServiceTask_0kt6c5i'});
+    await selectFlowNode({user, option: 'Service Task 1'});
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
