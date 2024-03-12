@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.common;
+package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
