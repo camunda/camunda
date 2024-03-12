@@ -31,9 +31,6 @@
             "compensableActivityId": {
               "type": "keyword"
             },
-            "compensableActivityScopeId": {
-              "type": "keyword"
-            },
             "throwEventId": {
               "type": "keyword"
             },

@@ -313,16 +313,14 @@
         },
         {
           "ignore": true,
-          "code": "java.method.returnTypeChanged",
+          "code": "java.method.removed",
           "old": "method long io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
-          "new": "method java.lang.String io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
           "justification": "This functionality is not yet released"
         },
         {
           "ignore": true,
-          "code": "java.method.returnTypeChanged",
+          "code": "java.method.removed",
           "old": "method long io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
-          "new": "method java.lang.String io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
           "justification": "This functionality is not yet released"
         },
         {

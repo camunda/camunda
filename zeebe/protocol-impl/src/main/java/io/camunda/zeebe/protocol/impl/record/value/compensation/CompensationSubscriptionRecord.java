@@ -32,8 +32,6 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1);
   private final StringProperty compensableActivityIdProperty =
       new StringProperty("compensableActivityId", EMPTY_STRING);
-  private final StringProperty compensableActivityScopeIdProperty =
-      new StringProperty("compensableActivityScopeId", EMPTY_STRING);
   private final StringProperty throwEventIdProperty =
       new StringProperty("throwEventId", EMPTY_STRING);
   private final LongProperty throwEventInstanceKeyProperty =
@@ -52,12 +50,11 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
-    super(12);
+    super(11);
     declareProperty(tenantIdProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(compensableActivityIdProperty)
-        .declareProperty(compensableActivityScopeIdProperty)
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(compensationHandlerIdProperty)
@@ -72,7 +69,6 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
     processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
     compensableActivityIdProperty.setValue(record.getCompensableActivityId());
-    compensableActivityScopeIdProperty.setValue(record.getCompensableActivityScopeId());
     throwEventIdProperty.setValue(record.getThrowEventId());
     throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
     compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
@@ -115,11 +111,6 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   @Override
   public String getCompensableActivityId() {
     return BufferUtil.bufferAsString(compensableActivityIdProperty.getValue());
-  }
-
-  @Override
-  public String getCompensableActivityScopeId() {
-    return BufferUtil.bufferAsString(compensableActivityScopeIdProperty.getValue());
   }
 
   @Override
@@ -174,7 +165,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public CompensationSubscriptionRecord setCompensationHandlerInstanceKey(final long compensationHandlerInstanceKey) {
+  public CompensationSubscriptionRecord setCompensationHandlerInstanceKey(
+      final long compensationHandlerInstanceKey) {
     compensationHandlerInstanceKeyProperty.setValue(compensationHandlerInstanceKey);
     return this;
   }
@@ -192,12 +184,6 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
 
   public CompensationSubscriptionRecord setThrowEventId(final String throwEventId) {
     throwEventIdProperty.setValue(throwEventId);
-    return this;
-  }
-
-  public CompensationSubscriptionRecord setCompensableActivityScopeId(
-      final String compensableActivityScopeId) {
-    compensableActivityScopeIdProperty.setValue(compensableActivityScopeId);
     return this;
   }
 

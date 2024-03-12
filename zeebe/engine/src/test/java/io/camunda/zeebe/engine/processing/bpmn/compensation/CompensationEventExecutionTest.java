@@ -203,7 +203,6 @@ public class CompensationEventExecutionTest {
             CompensationSubscriptionRecordValue::getProcessDefinitionKey,
             CompensationSubscriptionRecordValue::getCompensableActivityId,
             CompensationSubscriptionRecordValue::getCompensableActivityInstanceKey,
-            CompensationSubscriptionRecordValue::getCompensableActivityScopeId,
             CompensationSubscriptionRecordValue::getCompensableActivityScopeKey,
             CompensationSubscriptionRecordValue::getCompensationHandlerId)
         .containsOnly(
@@ -213,7 +212,6 @@ public class CompensationEventExecutionTest {
                 compensationActivityActivated.getValue().getProcessDefinitionKey(),
                 "ActivityToCompensate",
                 compensationActivityActivated.getKey(),
-                PROCESS_ID,
                 compensationActivityActivated.getValue().getFlowScopeKey(),
                 "CompensationHandler"));
 
@@ -778,19 +776,10 @@ public class CompensationEventExecutionTest {
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(5))
-        .extracting(
-            Record::getIntent,
-            r -> r.getValue().getCompensableActivityScopeId(),
-            r -> r.getValue().getCompensationHandlerId())
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .containsSubsequence(
-            tuple(
-                CompensationSubscriptionIntent.COMPLETED,
-                "embedded-subprocess",
-                "CompensationHandler2"),
-            tuple(
-                CompensationSubscriptionIntent.DELETED,
-                "compensation-process",
-                "CompensationHandler"));
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler2"),
+            tuple(CompensationSubscriptionIntent.DELETED, "CompensationHandler"));
   }
 
   @Test

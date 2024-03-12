@@ -74,7 +74,6 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setProcessInstanceKey(context.getProcessInstanceKey())
               .setProcessDefinitionKey(context.getProcessDefinitionKey())
               .setCompensableActivityId(elementId)
-              .setCompensableActivityScopeId(flowScopeId)
               .setCompensableActivityInstanceKey(context.getElementInstanceKey())
               .setCompensableActivityScopeKey(context.getFlowScopeKey());
 

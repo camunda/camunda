@@ -2266,7 +2266,6 @@ final class JsonSerializableToJsonTest {
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(456L)
                     .setCompensableActivityId("elementActivityId")
-                    .setCompensableActivityScopeId("elementActivityScopeId")
                     .setThrowEventId("elementThrowEventId")
                     .setThrowEventInstanceKey(123L)
                     .setCompensationHandlerId("compensationActivityElementId")
@@ -2280,7 +2279,6 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": 123,
           "processDefinitionKey": 456,
           "compensableActivityId": "elementActivityId",
-          "compensableActivityScopeId": "elementActivityScopeId",
           "throwEventId": "elementThrowEventId",
           "throwEventInstanceKey": 123,
           "compensationHandlerId": "compensationActivityElementId",
@@ -2306,7 +2304,6 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "processDefinitionKey": -1,
           "compensableActivityId": "",
-          "compensableActivityScopeId": "",
           "throwEventId": "",
           "throwEventInstanceKey": -1,
           "compensationHandlerId": "",

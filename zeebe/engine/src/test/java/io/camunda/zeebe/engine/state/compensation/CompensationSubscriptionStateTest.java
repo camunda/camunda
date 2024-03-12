@@ -26,7 +26,6 @@ public class CompensationSubscriptionStateTest {
   private static final long PROCESS_DEFINITION_KEY = 2L;
   private static final String COMPENSABLE_ACTIVITY_ID = "compensableActivityId";
   private static final long COMPENSABLE_ACTIVITY_INSTANCE_KEY = 3L;
-  private static final String COMPENSABLE_ACTIVITY_SCOPE_ID = "compensableActivityScopeId";
   private static final long COMPENSABLE_ACTIVITY_SCOPE_KEY = 4L;
   private static final String THROW_EVENT_ID = "throwEventId";
   private static final long THROW_EVENT_INSTANCE_KEY = 5L;
@@ -55,8 +54,6 @@ public class CompensationSubscriptionStateTest {
     assertThat(storedCompensation.getCompensableActivityId()).isEqualTo(COMPENSABLE_ACTIVITY_ID);
     assertThat(storedCompensation.getCompensableActivityInstanceKey())
         .isEqualTo(COMPENSABLE_ACTIVITY_INSTANCE_KEY);
-    assertThat(storedCompensation.getCompensableActivityScopeId())
-        .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_ID);
     assertThat(storedCompensation.getCompensableActivityScopeKey())
         .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_KEY);
     assertThat(storedCompensation.getThrowEventId()).isEqualTo(THROW_EVENT_ID);
@@ -80,7 +77,6 @@ public class CompensationSubscriptionStateTest {
             .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
             .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
             .setCompensableActivityId(COMPENSABLE_ACTIVITY_ID)
-            .setCompensableActivityScopeId(COMPENSABLE_ACTIVITY_SCOPE_ID)
             .setCompensableActivityInstanceKey(10L)
             .setCompensableActivityScopeKey(11L)
             .setThrowEventId("updateThrowEventId")
@@ -214,7 +210,6 @@ public class CompensationSubscriptionStateTest {
         .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
         .setCompensableActivityId(COMPENSABLE_ACTIVITY_ID)
         .setCompensableActivityInstanceKey(COMPENSABLE_ACTIVITY_INSTANCE_KEY)
-        .setCompensableActivityScopeId(COMPENSABLE_ACTIVITY_SCOPE_ID)
         .setCompensableActivityScopeKey(COMPENSABLE_ACTIVITY_SCOPE_KEY)
         .setThrowEventId(THROW_EVENT_ID)
         .setThrowEventInstanceKey(THROW_EVENT_INSTANCE_KEY)
