@@ -178,7 +178,7 @@ public final class DeploymentCreateProcessor
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     stateWriter.appendFollowUpEvent(
         command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
-    distributionBehavior.acknowledgeCommand(command.getKey(), command);
+    distributionBehavior.acknowledgeCommand(command);
   }
 
   private void createBpmnResources(final DeploymentRecord deploymentEvent) {
