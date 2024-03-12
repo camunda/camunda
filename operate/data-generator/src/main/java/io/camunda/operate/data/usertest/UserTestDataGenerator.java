@@ -47,7 +47,7 @@ import org.springframework.stereotype.Component;
 public class UserTestDataGenerator extends AbstractDataGenerator {
 
   public static final int JOB_WORKER_TIMEOUT = 5;
-  private static final Logger logger = LoggerFactory.getLogger(UserTestDataGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(UserTestDataGenerator.class);
   private static final String TENANT_B = "tenantB";
 
   protected List<Long> processInstanceKeys = new ArrayList<>();
@@ -62,7 +62,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     if (!super.createZeebeData(manuallyCalled)) {
       return false;
     }
-    logger.debug("Test data will be generated");
+    LOGGER.debug("Test data will be generated");
 
     createInputOutputMappingInstances();
     createProcessWithoutInstances();
@@ -102,7 +102,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private void createInputOutputMappingInstances() {
-    logger.debug("Create input/output mapping process instances");
+    LOGGER.debug("Create input/output mapping process instances");
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_B), "develop/always-completing-process.bpmn");
     ZeebeTestUtil.deployProcess(
@@ -112,7 +112,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private void createAndStartProcessWithLargeVariableValue() {
-    logger.debug("Deploy and start process with large variable value >32kb");
+    LOGGER.debug("Deploy and start process with large variable value >32kb");
     ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_B), "usertest/single-task.bpmn");
     final String jsonString = payloadUtil.readStringFromClasspath("/usertest/large-payload.json");
     ZeebeTestUtil.startProcessInstance(
@@ -296,7 +296,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       attempts++;
     }
     if (attempts == 10) {
-      logger.debug(
+      LOGGER.debug(
           "Could not complete the task {} for process instance id {}", jobType, processInstanceKey);
     }
     jobWorker.close();
@@ -320,7 +320,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       attempts++;
     }
     if (attempts == 10) {
-      logger.debug(
+      LOGGER.debug(
           "Could not fail the task {} for process instance id {}", jobType, processInstanceKey);
     }
     jobWorker.close();
@@ -421,7 +421,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         try {
           client.newCancelInstanceCommand(processInstanceKey).send().join();
         } catch (final ClientException ex) {
-          logger.error("Error occurred when cancelling process instance:", ex);
+          LOGGER.error("Error occurred when cancelling process instance:", ex);
         }
       }
       iterator.remove();
@@ -430,13 +430,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   protected void createOperations() {}
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   protected JobWorker progressOrderProcessCheckPayment() {
     return client
         .newWorker()
         .jobType("checkPayment")
         .handler(
             (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) return;
+              if (!canProgress(job.getProcessInstanceKey())) {
+                return;
+              }
               final int scenario = ThreadLocalRandom.current().nextInt(5);
               switch (scenario) {
                 case 0:
@@ -465,13 +468,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .open();
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   private JobWorker progressOrderProcessCheckItems() {
     return client
         .newWorker()
         .jobType("checkItems")
         .handler(
             (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) return;
+              if (!canProgress(job.getProcessInstanceKey())) {
+                return;
+              }
               final int scenario = ThreadLocalRandom.current().nextInt(4);
               switch (scenario) {
                 case 0:
@@ -497,13 +503,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .open();
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   private JobWorker progressOrderProcessShipArticles() {
     return client
         .newWorker()
         .jobType("shipArticles")
         .handler(
             (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) return;
+              if (!canProgress(job.getProcessInstanceKey())) {
+                return;
+              }
               final int scenario = ThreadLocalRandom.current().nextInt(2);
               switch (scenario) {
                 case 0:
@@ -528,13 +537,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .open();
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   private JobWorker progressFlightRegistrationRegisterCabinBag() {
     return client
         .newWorker()
         .jobType("registerCabinBag")
         .handler(
             (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) return;
+              if (!canProgress(job.getProcessInstanceKey())) {
+                return;
+              }
               final int scenario = ThreadLocalRandom.current().nextInt(4);
               switch (scenario) {
                 case 0:
@@ -566,7 +578,9 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .jobType("determineLuggageWeight")
         .handler(
             (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) return;
+              if (!canProgress(job.getProcessInstanceKey())) {
+                return;
+              }
               jobClient
                   .newCompleteCommand(job.getKey())
                   .variables(
@@ -579,13 +593,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .open();
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   private JobWorker progressReviewLoanRequestTask() {
     return client
         .newWorker()
         .jobType("reviewLoanRequest")
         .handler(
             (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) return;
+              if (!canProgress(job.getProcessInstanceKey())) {
+                return;
+              }
               final int scenarioCount = ThreadLocalRandom.current().nextInt(3);
               switch (scenarioCount) {
                 case 0:
@@ -616,13 +633,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .open();
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   private JobWorker progressCheckSchufaTask() {
     return client
         .newWorker()
         .jobType("checkSchufa")
         .handler(
             (jobClient, job) -> {
-              if (!canProgress(job.getProcessInstanceKey())) return;
+              if (!canProgress(job.getProcessInstanceKey())) {
+                return;
+              }
               final int scenarioCount = ThreadLocalRandom.current().nextInt(3);
               switch (scenarioCount) {
                 case 0:
@@ -664,7 +684,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     final Long processDefinitionKeyVersion2 =
         ZeebeTestUtil.deployProcess(
             true, client, getTenant(TENANT_B), "usertest/withoutInstancesProcess_v_2.bpmn");
-    logger.info(
+    LOGGER.info(
         "Created process 'withoutInstancesProcess' version 1: {} and version 2: {}",
         processDefinitionKeyVersion1,
         processDefinitionKeyVersion2);
@@ -689,7 +709,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       failTask(processInstanceKey, "alwaysFails", "No space left on device.");
       failTask(processInstanceKey, "alwaysFails2", "No space left on device.");
     }
-    logger.info(
+    LOGGER.info(
         "Created process 'onlyIncidentsProcess' with {} instances for version 1 and {} instances for version 2",
         forVersion1,
         forVersion2);
@@ -711,7 +731,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
               true, client, getTenant(TENANT_B), "withoutIncidentsProcess", null);
       completeTask(processInstanceKey, "neverFails", null);
     }
-    logger.info(
+    LOGGER.info(
         "Created process 'withoutIncidentsProcess' with {} instances for version 1 and {} instances for version 2",
         forVersion1,
         forVersion2);
