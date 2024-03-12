@@ -17,6 +17,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.service.db.es.OptimizeElasticsearchClient.INDICES_EXIST_OPTIONS;
 import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
+import static org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
@@ -69,6 +70,7 @@ import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
@@ -91,6 +93,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.GetRequest;
@@ -358,8 +361,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public void deleteAllSingleProcessReports() {
     final DeleteByQueryRequest request =
         new DeleteByQueryRequest(
-                getIndexNameService()
-                    .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
+            getIndexNameService()
+                .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
             .setQuery(matchAllQuery())
             .setRefresh(true);
 
@@ -371,7 +374,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       throw new OptimizeIntegrationTestException(
           "Could not delete data in index "
               + getIndexNameService()
-                  .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
+              .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
           e);
     }
   }
@@ -692,7 +695,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             .get(
                 new GetIndexRequest(
                     indexNameService.getOptimizeIndexAliasForIndex(
-                            EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+                        EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
                         + "*"),
                 esClient.requestOptions());
     return getIndexResponse.getAliases();
@@ -844,6 +847,37 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     return elasticsearchDatabaseVersion;
   }
 
+  @Override
+  public int getNestedDocumentsLimit(final ConfigurationService configurationService) {
+    return configurationService.getElasticSearchConfiguration().getNestedDocumentsLimit();
+  }
+
+  @Override
+  public void setNestedDocumentsLimit(final ConfigurationService configurationService,
+      final int nestedDocumentsLimit) {
+    configurationService.getElasticSearchConfiguration()
+        .setNestedDocumentsLimit(nestedDocumentsLimit);
+  }
+
+  @Override
+  @SneakyThrows
+  public void updateProcessInstanceNestedDocLimit(final String processDefinitionKey,
+      final int nestedDocLimit, final ConfigurationService configurationService) {
+    setNestedDocumentsLimit(configurationService, nestedDocLimit);
+    final OptimizeElasticsearchClient esClient = getOptimizeElasticsearchClient();
+    final String indexName = esClient.getIndexNameService()
+        .getOptimizeIndexNameWithVersionForAllIndicesOf(
+            new ProcessInstanceIndexES(processDefinitionKey));
+
+    esClient.getHighLevelClient().indices().putSettings(
+        new UpdateSettingsRequest(
+            buildDynamicSettings(configurationService),
+            indexName
+        ),
+        esClient.requestOptions()
+    );
+  }
+
   @SneakyThrows
   @Override
   public void deleteIndicesStartingWithPrefix(final String term) {
@@ -934,7 +968,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private <T> List<T> getAllDocumentsOfIndexAs(
       final String indexName, final Class<T> type, final QueryBuilder query) {
     try {
-      return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
+      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
     } catch (final ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot get all documents for index " + indexName, e);

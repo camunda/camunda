@@ -28,6 +28,10 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
+  protected static final String NESTED_DOC_LIMIT_MESSAGE =
+      "The number of nested documents has exceeded the allowed limit of";
+  @Getter protected OptimizeIndexNameService indexNameService;
+
   /**
    * Get all the aliases for the indexes matching the indexNamePattern
    *
@@ -45,8 +49,6 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public abstract boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB);
 
   public abstract void deleteIndex(final String indexAlias);
-
-  @Getter protected OptimizeIndexNameService indexNameService;
 
   public abstract <T> long count(final String[] indexNames, final T query) throws IOException;
 

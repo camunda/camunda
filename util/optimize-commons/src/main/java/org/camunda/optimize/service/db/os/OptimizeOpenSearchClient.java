@@ -120,8 +120,6 @@ import org.springframework.context.ApplicationContext;
 @Slf4j
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  private static final String NESTED_DOC_LIMIT_MESSAGE = "nested";
-
   @Getter private ExtendedOpenSearchClient openSearchClient;
 
   @Getter private OpenSearchAsyncClient openSearchAsyncClient;
@@ -156,7 +154,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (containsNestedDocumentLimitErrorMessage) {
       // exception potentially related to nested object limit
       return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-          + "configured nested object limit or enabling the skipping of "
+          + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
           + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
           + "See Optimize documentation for details.";
     }
@@ -593,8 +591,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         final Set<String> failedNestedDocLimitItemIds =
             bulkResponse.items().stream()
                 .filter(operation -> Objects.nonNull(operation.error()))
-                // TODO OPT-7352 we need to validate whether this is a valid way to check for nested
-                // document errors
                 .filter(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
                 .map(BulkResponseItem::id)
                 .collect(Collectors.toSet());
