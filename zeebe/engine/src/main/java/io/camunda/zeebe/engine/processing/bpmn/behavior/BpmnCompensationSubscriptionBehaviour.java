@@ -66,7 +66,6 @@ public class BpmnCompensationSubscriptionBehaviour {
 
       final var key = keyGenerator.nextKey();
       final var elementId = BufferUtil.bufferAsString(element.getId());
-      final var flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
 
       final var compensation =
           new CompensationSubscriptionRecord()
