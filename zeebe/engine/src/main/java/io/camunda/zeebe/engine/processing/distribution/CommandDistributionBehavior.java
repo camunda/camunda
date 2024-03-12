@@ -126,7 +126,7 @@ public final class CommandDistributionBehavior {
             .setValueType(command.getValueType())
             .setIntent(command.getIntent());
 
-    final int receiverPartitionId = Protocol.decodePartitionId(command.getKey());
+    final int receiverPartitionId = Protocol.decodePartitionId(distributionKey);
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
