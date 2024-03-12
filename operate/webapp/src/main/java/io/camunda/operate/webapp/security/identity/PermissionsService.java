@@ -18,14 +18,18 @@ package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import io.camunda.operate.webapp.security.sso.TokenAuthentication;
 import jakarta.annotation.PostConstruct;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public class PermissionsService {
@@ -36,10 +40,14 @@ public class PermissionsService {
 
   private static final Logger logger = LoggerFactory.getLogger(PermissionsService.class);
 
-  private OperateProperties operateProperties;
+  private final OperateProperties operateProperties;
+  private final SecurityContextWrapper securityContextWrapperComponent;
 
-  public PermissionsService(OperateProperties operateProperties) {
+  public PermissionsService(
+      final OperateProperties operateProperties,
+      final SecurityContextWrapper securityContextWrapperComponent) {
     this.operateProperties = operateProperties;
+    this.securityContextWrapperComponent = securityContextWrapperComponent;
   }
 
   @PostConstruct
@@ -53,7 +61,7 @@ public class PermissionsService {
    * @param bpmnProcessId bpmnProcessId
    * @return Identity permissions for the given bpmnProcessId, including wildcard permissions
    */
-  public Set<String> getProcessDefinitionPermission(String bpmnProcessId) {
+  public Set<String> getProcessDefinitionPermission(final String bpmnProcessId) {
     return getProcessDefinitionPermission(bpmnProcessId, true);
   }
 
@@ -66,9 +74,9 @@ public class PermissionsService {
    * @return Identity permissions for the given bpmnProcessId
    */
   public Set<String> getProcessDefinitionPermission(
-      String bpmnProcessId, boolean includeWildcardPermissions) {
+      final String bpmnProcessId, final boolean includeWildcardPermissions) {
 
-    Set<String> permissions = new HashSet<>();
+    final Set<String> permissions = new HashSet<>();
 
     getIdentityAuthorizations().stream()
         .filter(
@@ -96,7 +104,7 @@ public class PermissionsService {
    * @param decisionId decisionId
    * @return Identity permissions for the given decisionId, including wildcard permissions
    */
-  public Set<String> getDecisionDefinitionPermission(String decisionId) {
+  public Set<String> getDecisionDefinitionPermission(final String decisionId) {
     return getDecisionDefinitionPermission(decisionId, true);
   }
 
@@ -109,9 +117,9 @@ public class PermissionsService {
    * @return Identity permissions for the given decisionId
    */
   public Set<String> getDecisionDefinitionPermission(
-      String decisionId, boolean includeWildcardPermissions) {
+      final String decisionId, final boolean includeWildcardPermissions) {
 
-    Set<String> permissions = new HashSet<>();
+    final Set<String> permissions = new HashSet<>();
 
     getIdentityAuthorizations().stream()
         .filter(
@@ -138,7 +146,8 @@ public class PermissionsService {
    *
    * @return true if the user has the given permission for the process
    */
-  public boolean hasPermissionForProcess(String bpmnProcessId, IdentityPermission permission) {
+  public boolean hasPermissionForProcess(
+      final String bpmnProcessId, final IdentityPermission permission) {
 
     if (!permissionsEnabled()) {
       return true;
@@ -155,7 +164,8 @@ public class PermissionsService {
    *
    * @return true if the user has the given permission for the decision
    */
-  public boolean hasPermissionForDecision(String decisionId, IdentityPermission permission) {
+  public boolean hasPermissionForDecision(
+      final String decisionId, final IdentityPermission permission) {
 
     if (!permissionsEnabled()) {
       return true;
@@ -170,8 +180,11 @@ public class PermissionsService {
   /** getIdentityAuthorizations */
   private List<IdentityAuthorization> getIdentityAuthorizations() {
     List<IdentityAuthorization> list = null;
-    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication instanceof IdentityAuthentication) {
+    final Authentication authentication = securityContextWrapperComponent.getAuthentication();
+
+    if (authentication == null) {
+      return new ArrayList<>();
+    } else if (authentication instanceof IdentityAuthentication) {
       list = ((IdentityAuthentication) authentication).getAuthorizations();
       logger.debug("Following authorizations found for IdentityAuthentication: " + list);
     } else if (authentication instanceof TokenAuthentication) {
@@ -190,13 +203,9 @@ public class PermissionsService {
     return operateProperties.getIdentity().isResourcePermissionsEnabled() && !isJwtToken();
   }
 
-  /**
-   * Resource based permissions are not yet supported for JwtAuthenticationToken.
-   *
-   * @return
-   */
+  /** Resource based permissions are not yet supported for JwtAuthenticationToken. */
   private boolean isJwtToken() {
-    return SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken;
+    return securityContextWrapperComponent.getAuthentication() instanceof JwtAuthenticationToken;
   }
 
   /**
@@ -205,18 +214,18 @@ public class PermissionsService {
    * @return processes for which the user has the given permission; the result matches either all
    *     processes, or a list of bpmnProcessId
    */
-  public ResourcesAllowed getProcessesWithPermission(IdentityPermission permission) {
+  public ResourcesAllowed getProcessesWithPermission(final IdentityPermission permission) {
     if (permission == null) {
       throw new IllegalStateException("Identity permission can't be null");
     }
 
     if (permissionsEnabled()) {
-      List<IdentityAuthorization> processAuthorizations =
+      final List<IdentityAuthorization> processAuthorizations =
           getIdentityAuthorizations().stream()
               .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_PROCESS_DEFINITION))
               .collect(Collectors.toList());
-      Set<String> ids = new HashSet<>();
-      for (IdentityAuthorization authorization : processAuthorizations) {
+      final Set<String> ids = new HashSet<>();
+      for (final IdentityAuthorization authorization : processAuthorizations) {
         if (authorization.getPermissions() != null
             && authorization.getPermissions().contains(permission.name())) {
           if (RESOURCE_KEY_ALL.equals(authorization.getResourceKey())) {
@@ -236,18 +245,18 @@ public class PermissionsService {
    * @return decisions for which the user has the given permission; the result matches either all
    *     decisions, or a list of decisionId
    */
-  public ResourcesAllowed getDecisionsWithPermission(IdentityPermission permission) {
+  public ResourcesAllowed getDecisionsWithPermission(final IdentityPermission permission) {
     if (permission == null) {
       throw new IllegalStateException("Identity permission can't be null");
     }
 
     if (permissionsEnabled()) {
-      List<IdentityAuthorization> decisionAuthorizations =
+      final List<IdentityAuthorization> decisionAuthorizations =
           getIdentityAuthorizations().stream()
               .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_DECISION_DEFINITION))
               .collect(Collectors.toList());
-      Set<String> ids = new HashSet<>();
-      for (IdentityAuthorization authorization : decisionAuthorizations) {
+      final Set<String> ids = new HashSet<>();
+      for (final IdentityAuthorization authorization : decisionAuthorizations) {
         if (authorization.getPermissions() != null
             && authorization.getPermissions().contains(permission.name())) {
           if (RESOURCE_KEY_ALL.equals(authorization.getResourceKey())) {
@@ -263,10 +272,11 @@ public class PermissionsService {
 
   /** ResourcesAllowed */
   public static class ResourcesAllowed {
-    private boolean all;
-    private Set<String> ids;
 
-    private ResourcesAllowed(boolean all, Set<String> ids) {
+    private final boolean all;
+    private final Set<String> ids;
+
+    private ResourcesAllowed(final boolean all, final Set<String> ids) {
       this.all = all;
       this.ids = ids;
     }
@@ -275,7 +285,7 @@ public class PermissionsService {
       return new ResourcesAllowed(true, null);
     }
 
-    public static ResourcesAllowed withIds(Set<String> ids) {
+    public static ResourcesAllowed withIds(final Set<String> ids) {
       return new ResourcesAllowed(false, ids);
     }
 
@@ -285,10 +295,14 @@ public class PermissionsService {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      ResourcesAllowed that = (ResourcesAllowed) o;
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final ResourcesAllowed that = (ResourcesAllowed) o;
       return all == that.all && Objects.equals(ids, that.ids);
     }
 

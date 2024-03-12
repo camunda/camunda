@@ -14,41 +14,16 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.security.identity;
+package io.camunda.operate.webapp.security;
 
-import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.IdentityConfiguration;
-import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.SecurityContextWrapper;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
-@Configuration
-public class IdentityConfigurer {
+@Component
+public class SecurityContextWrapper {
 
-  @Bean(name = "saasIdentity")
-  @Profile(OperateProfileService.SSO_AUTH_PROFILE)
-  @ConditionalOnProperty(
-      prefix = OperateProperties.PREFIX,
-      name = "identity.resourcePermissionsEnabled",
-      havingValue = "true")
-  public Identity getSaaSIdentity(final OperateProperties operateProperties) {
-    return new Identity(
-        new IdentityConfiguration.Builder()
-            .withBaseUrl(operateProperties.getIdentity().getBaseUrl())
-            .withType(IdentityConfiguration.Type.AUTH0.name())
-            .build());
-  }
-
-  @Bean
-  @Profile(
-      OperateProfileService.SSO_AUTH_PROFILE + " || " + OperateProfileService.IDENTITY_AUTH_PROFILE)
-  public PermissionsService getPermissionsService(
-      final OperateProperties operateProperties,
-      final SecurityContextWrapper securityContextWrapperComponent) {
-    return new PermissionsService(operateProperties, securityContextWrapperComponent);
+  public Authentication getAuthentication() {
+    return SecurityContextHolder.getContext().getAuthentication();
   }
 }

@@ -32,6 +32,7 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.operate.property.IdentityProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -47,7 +48,6 @@ import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class IdentityServiceTest {
@@ -55,6 +55,8 @@ class IdentityServiceTest {
   @Mock private IdentityRetryService mockRetryService;
   @Mock private Identity identity;
   @Spy private OperateProperties operateProperties = new OperateProperties();
+
+  @Mock private SecurityContextWrapper mockSecurityContextWrapper;
 
   private IdentityService instance;
 
@@ -81,7 +83,9 @@ class IdentityServiceTest {
 
   @BeforeEach
   public void setup() {
-    instance = new IdentityService(mockRetryService, operateProperties, identity);
+    instance =
+        new IdentityService(
+            mockRetryService, operateProperties, identity, mockSecurityContextWrapper);
   }
 
   @ParameterizedTest
@@ -194,14 +198,12 @@ class IdentityServiceTest {
     final var refreshToken = "refreshToken";
     final var mockAuthentication = Mockito.mock(Authentication.class);
 
-    SecurityContextHolder.getContext().setAuthentication(mockIdentityAuthentication);
+    when(mockSecurityContextWrapper.getAuthentication()).thenReturn(mockIdentityAuthentication);
     when(mockIdentityAuthentication.getTokens()).thenReturn(mockTokens);
     when(mockTokens.getRefreshToken()).thenReturn(refreshToken);
     when(identity.authentication()).thenReturn(mockAuthentication);
 
     instance.logout();
-
-    SecurityContextHolder.getContext().setAuthentication(null);
 
     verify(mockAuthentication, times(1)).revokeToken(refreshToken);
   }

@@ -23,12 +23,12 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -41,14 +41,18 @@ public class IdentityService {
 
   private final IdentityRetryService identityRetryService;
 
+  private final SecurityContextWrapper securityContextWrapper;
+
   @Autowired
   public IdentityService(
-      IdentityRetryService identityRetryService,
-      OperateProperties operateProperties,
-      Identity identity) {
+      final IdentityRetryService identityRetryService,
+      final OperateProperties operateProperties,
+      final Identity identity,
+      final SecurityContextWrapper securityContextWrapper) {
     this.identityRetryService = identityRetryService;
     this.operateProperties = operateProperties;
     this.identity = identity;
+    this.securityContextWrapper = securityContextWrapper;
   }
 
   public String getRedirectUrl(final HttpServletRequest req) {
@@ -61,7 +65,7 @@ public class IdentityService {
 
   public void logout() {
     final IdentityAuthentication authentication =
-        (IdentityAuthentication) SecurityContextHolder.getContext().getAuthentication();
+        (IdentityAuthentication) securityContextWrapper.getAuthentication();
     identity.authentication().revokeToken(authentication.getTokens().getRefreshToken());
   }
 
@@ -103,11 +107,11 @@ public class IdentityService {
     return authentication;
   }
 
-  private boolean contextPathIsUUID(String contextPath) {
+  private boolean contextPathIsUUID(final String contextPath) {
     try {
       UUID.fromString(contextPath.replace("/", ""));
       return true;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // Assume it isn't a UUID
       return false;
     }

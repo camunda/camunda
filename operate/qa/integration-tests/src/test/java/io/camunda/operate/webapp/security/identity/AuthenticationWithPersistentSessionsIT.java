@@ -40,6 +40,7 @@ import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
+import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import io.camunda.operate.webapp.security.SessionRepositoryConfig;
 import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
@@ -95,7 +96,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       OpensearchSessionRepository.class,
       RichOpenSearchClient.class,
       OpensearchConnector.class,
-      PermissionConverter.class
+      PermissionConverter.class,
+      SecurityContextWrapper.class
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
@@ -218,22 +220,23 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return testRestTemplate;
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", getCookies(response).get(0));
     return new HttpEntity<>(new HashMap<>(), headers);
   }
 
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  protected void assertThatRequestIsRedirectedTo(
+      final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 }
