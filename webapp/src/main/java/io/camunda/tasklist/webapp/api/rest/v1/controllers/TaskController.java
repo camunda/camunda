@@ -199,8 +199,8 @@ public class TaskController extends ApiErrorController {
   }
 
   private void checkTaskImplementation(LazySupplier<TaskDTO> taskSupplier) {
-    if (identityAuthorizationService.isJwtAuthentication()
-        && taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER) {
+    if (taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER
+        && userReader.getCurrentUser().isApiUser()) {
       final TaskDTO task = taskSupplier.get();
       LOGGER.warn(
           "V1 API is used for task with id={} implementation={}",

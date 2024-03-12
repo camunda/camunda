@@ -76,6 +76,7 @@ class TaskControllerTest {
   @BeforeEach
   public void setUp() {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO());
   }
 
   @Nested
@@ -1767,7 +1768,7 @@ class TaskControllerTest {
       when(taskService.getTask(taskId))
           .thenReturn(
               new TaskDTO().setId(taskId).setImplementation(TaskImplementation.ZEEBE_USER_TASK));
-      when(identityAuthorizationService.isJwtAuthentication()).thenReturn(true);
+      when(userReader.getCurrentUser()).thenReturn(new UserDTO().setApiUser(true));
     }
 
     @Test
