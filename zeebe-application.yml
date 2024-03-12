@@ -10,9 +10,9 @@ zeebe:
       enabled: false
     exporters:
       optimize:
-        className: io.camunda.zeebe.exporter.ElasticsearchExporter
+        className: ${ZEEBE_EXPORTER_CLASS_NAME:io.camunda.zeebe.exporter.ElasticsearchExporter}
         args:
-          url: "http://elasticsearch:9200"
+          url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
           index:
             prefix: zeebe-record
             createTemplate: true
@@ -41,5 +41,6 @@ zeebe:
             variableDocument: false
             processInstance: true
             processInstanceCreation: false
-            processMessageSubscription: false
+            processMessageSubscription: true
             processInstanceModification: false
+            bulkSize: 1
