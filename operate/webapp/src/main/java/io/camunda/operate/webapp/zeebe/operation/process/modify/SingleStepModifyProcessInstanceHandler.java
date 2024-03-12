@@ -111,15 +111,17 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
           nextStep = moveTokenHandler.moveToken(currentStep, processInstanceKey, modification);
           break;
         default:
+          logger.warn(
+              "SingleStepModifyProcessInstanceHandler encountered a modification type that should have been filtered out: {}",
+              modification.getModification());
           break;
       }
 
       // Append 'and' if there is at least one more operation to process
       if (nextStep != null) {
+        lastStep = nextStep;
         if (iter.hasNext()) {
           currentStep = nextStep.and();
-        } else {
-          lastStep = nextStep;
         }
       }
 
