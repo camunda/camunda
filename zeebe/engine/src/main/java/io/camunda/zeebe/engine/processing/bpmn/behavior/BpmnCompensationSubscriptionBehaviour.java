@@ -176,22 +176,6 @@ public class BpmnCompensationSubscriptionBehaviour {
             });
   }
 
-  private void appendCompensationSubscriptionTriggerEvent(
-      final BpmnElementContext context,
-      final CompensationSubscription subscription,
-      final long compensationHandlerInstanceKey) {
-
-    final var key = subscription.getKey();
-    final var compensationRecord = subscription.getRecord();
-    compensationRecord
-        .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
-        .setThrowEventInstanceKey(context.getElementInstanceKey())
-        .setCompensationHandlerInstanceKey(compensationHandlerInstanceKey);
-
-    stateWriter.appendFollowUpEvent(
-        key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
-  }
-
   private long activateCompensationHandler(
       final BpmnElementContext context, final String elementId) {
 
@@ -215,6 +199,22 @@ public class BpmnCompensationSubscriptionBehaviour {
         compensationHandlerRecord);
 
     return compensationHandlerInstanceKey;
+  }
+
+  private void appendCompensationSubscriptionTriggerEvent(
+      final BpmnElementContext context,
+      final CompensationSubscription subscription,
+      final long compensationHandlerInstanceKey) {
+
+    final var key = subscription.getKey();
+    final var compensationRecord = subscription.getRecord();
+    compensationRecord
+        .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
+        .setThrowEventInstanceKey(context.getElementInstanceKey())
+        .setCompensationHandlerInstanceKey(compensationHandlerInstanceKey);
+
+    stateWriter.appendFollowUpEvent(
+        key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
   }
 
   private ExecutableBoundaryEvent getCompensationBoundaryEvent(
