@@ -451,11 +451,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Long> getLastProcessedPositionAsync() {
     return actor.call(
         () -> {
-          if (isInReplayOnlyMode()) {
+          if (isInReplayOnlyMode() || processingStateMachine == null) {
             return replayStateMachine.getLastSourceEventPosition();
-          } else if (processingStateMachine == null) {
-            // StreamProcessor is still replay mode
-            return StreamProcessor.UNSET_POSITION;
           } else {
             return processingStateMachine.getLastSuccessfulProcessedRecordPosition();
           }

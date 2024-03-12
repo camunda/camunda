@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -26,10 +27,10 @@ import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -154,19 +155,14 @@ final class StreamProcessorReplayTest {
 
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
-            () ->
-                Assertions.assertThat(streamProcessor.getLastProcessedPositionAsync().join())
-                    .isEqualTo(1L));
+            () -> assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(1L));
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
-            () ->
-                Assertions.assertThat(streamProcessor.getLastWrittenPositionAsync().join())
-                    .isEqualTo(2L));
+            () -> assertThat(streamProcessor.getLastWrittenPositionAsync().join()).isEqualTo(2L));
 
     // state has to be updated
-    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
-    Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
-        .isEqualTo(19L);
+    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey())).isEqualTo(19L);
   }
 
   @Test
@@ -200,19 +196,14 @@ final class StreamProcessorReplayTest {
 
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
-            () ->
-                Assertions.assertThat(streamProcessor.getLastProcessedPositionAsync().join())
-                    .isEqualTo(1L));
+            () -> assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(1L));
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
-            () ->
-                Assertions.assertThat(streamProcessor.getLastWrittenPositionAsync().join())
-                    .isEqualTo(2L));
+            () -> assertThat(streamProcessor.getLastWrittenPositionAsync().join()).isEqualTo(2L));
 
     // state has to be updated
-    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
-    Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
-        .isEqualTo(19L);
+    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey())).isEqualTo(19L);
   }
 
   @Test
@@ -251,24 +242,19 @@ final class StreamProcessorReplayTest {
     inOrder.verify(recordProcessor, TIMEOUT).replay(recordCaptor.capture());
     inOrder.verifyNoMoreInteractions();
 
-    Assertions.assertThat(recordCaptor.getValue().getKey()).isEqualTo(eventKeyAfterSnapshot);
+    assertThat(recordCaptor.getValue().getKey()).isEqualTo(eventKeyAfterSnapshot);
 
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
-            () ->
-                Assertions.assertThat(streamProcessor.getLastProcessedPositionAsync().join())
-                    .isEqualTo(3L));
+            () -> assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(3L));
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
-            () ->
-                Assertions.assertThat(streamProcessor.getLastWrittenPositionAsync().join())
-                    .isEqualTo(4L));
-    Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
-        .isEqualTo(21L);
+            () -> assertThat(streamProcessor.getLastWrittenPositionAsync().join()).isEqualTo(4L));
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey())).isEqualTo(21L);
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/13101")
-  public void shouldNotReplayErrorEventAppliedInSnapshot() throws Exception {
+  void shouldNotReplayErrorEventAppliedInSnapshot() throws Exception {
     // given
     final var processorWhichFails = setupProcessorWhichFailsOnProcessing();
     setupOnErrorReactionForProcessor(processorWhichFails);
@@ -297,6 +283,44 @@ final class StreamProcessorReplayTest {
     verifyProcessingErrorLifecycle(processorWhichFails);
     // we shouldn't replay any events - due to snapshot
     verify(processorWhichFails, never()).replay(any());
+  }
+
+  @Test
+  void shouldReturnLastProcessedPositionInSnapshotWhenPausedDuringReplay() throws Exception {
+    // given
+    final var positionInSnapshot =
+        streamPlatform.writeBatch(
+            RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+    streamPlatform.writeBatch(
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .key(1)
+            .causedBy((int) positionInSnapshot));
+    // starting the stream processor awaits until replay is completed
+    streamPlatform.startStreamProcessor();
+    streamPlatform.snapshot();
+
+    // write more events to make sure that the processor is paused in replay phase after recovery
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .key(2)
+            .causedBy(0));
+
+    streamPlatform.closeStreamProcessor();
+    streamPlatform.resetMockInvocations();
+
+    // when
+    final var streamProcessor = streamPlatform.startStreamProcessorPaused();
+
+    // then
+    assertThat(streamProcessor.getCurrentPhase().join()).isEqualTo(Phase.PAUSED);
+    Awaitility.await("position has to be set when replay is paused")
+        .untilAsserted(
+            () ->
+                assertThat(streamProcessor.getLastProcessedPositionAsync().join())
+                    .isEqualTo(positionInSnapshot));
   }
 
   private static void verifyProcessingErrorLifecycle(final RecordProcessor processorWhichFails) {
@@ -362,7 +386,6 @@ final class StreamProcessorReplayTest {
     streamPlatform.startStreamProcessor();
 
     // then
-    Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
-        .isEqualTo(19L);
+    assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey())).isEqualTo(19L);
   }
 }

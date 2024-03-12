@@ -230,6 +230,12 @@ public final class StreamPlatform {
     return buildStreamProcessor(stream, false, StreamProcessorMode.REPLAY);
   }
 
+  public StreamProcessor startStreamProcessorPaused() {
+    final SynchronousLogStream stream = getLogStream();
+    return buildStreamProcessor(
+        stream, false, cfg -> cfg.streamProcessorMode(StreamProcessorMode.PROCESSING), true);
+  }
+
   public StreamProcessorLifecycleAware getMockProcessorLifecycleAware() {
     return mockProcessorLifecycleAware;
   }
@@ -255,6 +261,14 @@ public final class StreamPlatform {
       final SynchronousLogStream stream,
       final boolean awaitOpening,
       final Consumer<StreamProcessorBuilder> processorConfiguration) {
+    return buildStreamProcessor(stream, awaitOpening, processorConfiguration, false);
+  }
+
+  public StreamProcessor buildStreamProcessor(
+      final SynchronousLogStream stream,
+      final boolean awaitOpening,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean pauseOnStart) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
     scheduledCommandCache = new TestCommandCache();
@@ -282,7 +296,7 @@ public final class StreamPlatform {
     builder.addLifecycleListener(mockProcessorLifecycleAware);
 
     final StreamProcessor streamProcessor = builder.build();
-    final var openFuture = streamProcessor.openAsync(false);
+    final var openFuture = streamProcessor.openAsync(pauseOnStart);
 
     if (awaitOpening) { // and recovery
       verify(mockProcessorLifecycleAware, timeout(15 * 1000)).onRecovered(any());
