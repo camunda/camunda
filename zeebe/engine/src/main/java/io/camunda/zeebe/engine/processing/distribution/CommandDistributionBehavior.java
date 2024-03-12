@@ -36,6 +36,12 @@ public final class CommandDistributionBehavior {
   private final InterPartitionCommandSender interPartitionCommandSender;
   private final int currentPartitionId;
 
+  // Records are expensive to construct, so we create them once and reuse them
+  private final CommandDistributionRecord commandDistributionStarted =
+      new CommandDistributionRecord();
+  private final CommandDistributionRecord commandDistributionDistributing =
+      new CommandDistributionRecord();
+
   public CommandDistributionBehavior(
       final Writers writers,
       final int currentPartition,
@@ -70,7 +76,7 @@ public final class CommandDistributionBehavior {
     }
 
     final var distributionRecord =
-        new CommandDistributionRecord()
+        commandDistributionStarted
             .setPartitionId(currentPartitionId)
             .setValueType(command.getValueType())
             .setIntent(command.getIntent())
@@ -95,7 +101,7 @@ public final class CommandDistributionBehavior {
     stateWriter.appendFollowUpEvent(
         distributionKey,
         CommandDistributionIntent.DISTRIBUTING,
-        new CommandDistributionRecord()
+        commandDistributionDistributing
             .setPartitionId(partition)
             .setValueType(valueType)
             .setIntent(intent));
