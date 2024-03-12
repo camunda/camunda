@@ -169,7 +169,15 @@ public class ElasticsearchSessionRepository implements SessionRepository {
       session.setMaxInactiveInterval(
           getDurationFor(document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS)));
 
-      setPolling(session);
+      try {
+        if (request != null && request.getHeader(POLLING_HEADER) != null) {
+          logger.info("Set session polling to true");
+          session.setPolling(true);
+        }
+      } catch (final Exception e) {
+        logger.debug(
+            "Expected Exception: is not possible to access request as currently this is not on a request context");
+      }
 
       final Object attributesObject = document.get(ATTRIBUTES);
       if (attributesObject != null
@@ -186,17 +194,6 @@ public class ElasticsearchSessionRepository implements SessionRepository {
     } catch (final Exception e) {
       logger.error("Could not restore session.", e);
       return Optional.empty();
-    }
-  }
-
-  private void setPolling(final OperateSession session) {
-    try {
-      if (request != null && request.getHeader(POLLING_HEADER) != null) {
-        session.setPolling(true);
-      }
-    } catch (final Exception e) {
-      logger.debug(
-          "Expected Exception: is not possible to access request as currently this is not on a request context");
     }
   }
 

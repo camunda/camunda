@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -161,7 +160,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   public List<Permission> getPermissions() {
     final PermissionConverter permissionConverter = getPermissionConverter();
-    return permissions.stream().map(permissionConverter::convert).collect(Collectors.toList());
+    return permissions.stream().map(permissionConverter::convert).toList();
   }
 
   public IdentityAuthentication setPermissions(final List<String> permissions) {
@@ -217,7 +216,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
           tenants =
               identityTenants.stream()
                   .map(t -> new OperateTenant(t.getTenantId(), t.getName()))
-                  .collect(Collectors.toList());
+                  .toList();
         } else {
           tenants = new ArrayList<>();
         }
@@ -267,10 +266,9 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     final ServletRequestAttributes requestAttributes =
         (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
     if (requestAttributes != null) {
-      return RequestContextHolder.getRequestAttributes() != null
-          && Boolean.TRUE.equals(
-              Boolean.parseBoolean(
-                  (requestAttributes).getRequest().getHeader(SessionRepository.POLLING_HEADER)));
+      return Boolean.TRUE.equals(
+          Boolean.parseBoolean(
+              requestAttributes.getRequest().getHeader(SessionRepository.POLLING_HEADER)));
     } else {
       return false;
     }
