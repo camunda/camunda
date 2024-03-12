@@ -10,7 +10,7 @@ fi
 mvn spotless:check
 if [ $? -eq 1 ]; then
   echo "Found errors in formatting. Reformat ..."
-  mvn com.coveo:fmt-maven-plugin:format
+  mvn spotless:apply
   exit 1
 fi
 mvn license:check -Dlicense.header=license/license-header

@@ -676,6 +676,7 @@
 			  <excludes>
 				<exclude>**/target/**/*.md</exclude>
 				<exclude>**/node_modules/**/*.md</exclude>
+          <exclude>client/**/*.md</exclude>
 			  </excludes>
 			  <flexmark></flexmark>
 			</markdown>
