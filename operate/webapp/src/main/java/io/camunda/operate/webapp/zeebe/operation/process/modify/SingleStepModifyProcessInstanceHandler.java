@@ -21,26 +21,21 @@ import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstance
 import static java.util.function.Predicate.not;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 // Modify Process Instance Implementation to execute all given modifications in one Zeebe
 // 'transaction'
@@ -53,59 +48,28 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
       LoggerFactory.getLogger(SingleStepModifyProcessInstanceHandler.class);
   @Autowired private ObjectMapper objectMapper;
   @Autowired private OperationsManager operationsManager;
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
   @Autowired private MoveTokenHandler moveTokenHandler;
-  @Autowired private CancelFlowNodeHelper cancelFlowNodeHelper;
+  @Autowired private AddTokenHandler addTokenHandler;
+  @Autowired private CancelTokenHandler cancelTokenHandler;
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
+    // Create request from serialized instructions
     final ModifyProcessInstanceRequestDto modifyProcessInstanceRequest =
         objectMapper.readValue(
             operation.getModifyInstructions(), ModifyProcessInstanceRequestDto.class);
-    final Long processInstanceKey =
-        Long.parseLong(modifyProcessInstanceRequest.getProcessInstanceKey());
-    final List<Modification> modifications = modifyProcessInstanceRequest.getModifications();
-    // Variables first
-    modifyVariables(processInstanceKey, getVariableModifications(modifications), operation);
-    // Token Modifications in given order
-    final List<Modification> tokenModifications = getTokenModifications(modifications);
+    // Process variable modifications
+    modifyVariables(modifyProcessInstanceRequest, operation);
 
-    ModifyProcessInstanceCommandStep1 currentStep =
-        zeebeClient.newModifyProcessInstanceCommand(processInstanceKey);
-    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep = null;
-    final int lastModificationIndex = tokenModifications.size() - 1;
-    for (int i = 0; i < tokenModifications.size(); i++) {
-      final Modification modification = tokenModifications.get(i);
-      if (modification.getModification().equals(ADD_TOKEN)) {
-        final var nextStep = addToken(currentStep, modification);
-        if (i < lastModificationIndex) {
-          currentStep = nextStep.and();
-        } else {
-          lastStep = nextStep;
-        }
-      } else if (modification.getModification().equals(CANCEL_TOKEN)) {
-        final var nextStep = cancelToken(currentStep, processInstanceKey, modification);
-        if (i < lastModificationIndex) {
-          currentStep = nextStep.and();
-        } else {
-          lastStep = nextStep;
-        }
-      } else if (modification.getModification().equals(MOVE_TOKEN)) {
-        final var nextStep =
-            moveTokenHandler.moveToken(currentStep, processInstanceKey, modification);
-        if (i < lastModificationIndex) {
-          currentStep = nextStep.and();
-        } else {
-          lastStep = nextStep;
-        }
-      }
-      updateFinishedInBatchOperation(operation);
-    }
+    // Process token (non-variable) modifications
+    final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep =
+        processTokenModifications(modifyProcessInstanceRequest, operation);
+
     if (lastStep != null) {
       lastStep.send().join();
     }
     markAsSent(operation);
-    completeOperation(operation, false);
+    operationsManager.completeOperation(operation, false);
   }
 
   @Override
@@ -113,24 +77,75 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     return Set.of(OperationType.MODIFY_PROCESS_INSTANCE);
   }
 
+  // Needed for tests
+  @Override
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+  }
+
+  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
+      processTokenModifications(
+          final ModifyProcessInstanceRequestDto modifyProcessInstanceRequest,
+          final OperationEntity operation)
+          throws PersistenceException {
+    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep = null;
+
+    final Long processInstanceKey =
+        Long.parseLong(modifyProcessInstanceRequest.getProcessInstanceKey());
+    ModifyProcessInstanceCommandStep1 currentStep =
+        zeebeClient.newModifyProcessInstanceCommand(processInstanceKey);
+    final List<Modification> tokenModifications =
+        getTokenModifications(modifyProcessInstanceRequest.getModifications());
+
+    for (final var iter = tokenModifications.iterator(); iter.hasNext(); ) {
+      final Modification modification = iter.next();
+      ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep = null;
+      switch (modification.getModification()) {
+        case ADD_TOKEN:
+          nextStep = addTokenHandler.addToken(currentStep, modification);
+          break;
+        case CANCEL_TOKEN:
+          nextStep = cancelTokenHandler.cancelToken(currentStep, processInstanceKey, modification);
+          break;
+        case MOVE_TOKEN:
+          nextStep = moveTokenHandler.moveToken(currentStep, processInstanceKey, modification);
+          break;
+        default:
+          break;
+      }
+
+      // Append 'and' if there is at least one more operation to process
+      if (nextStep != null) {
+        if (iter.hasNext()) {
+          currentStep = nextStep.and();
+        } else {
+          lastStep = nextStep;
+        }
+      }
+
+      // Always update the finished metrics
+      operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
+    }
+
+    return lastStep;
+  }
+
   private void updateFinishedInBatchOperation(final OperationEntity operation)
       throws PersistenceException {
     operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
   }
 
-  private void completeOperation(
-      final OperationEntity operation, final boolean updateFinishedInBatch)
-      throws PersistenceException {
-    operationsManager.completeOperation(operation, updateFinishedInBatch);
-  }
-
   private void modifyVariables(
-      final Long processInstanceKey,
-      final List<Modification> modifications,
+      final ModifyProcessInstanceRequestDto modifyProcessInstanceRequest,
       final OperationEntity operation)
       throws PersistenceException {
+    final Long processInstanceKey =
+        Long.parseLong(modifyProcessInstanceRequest.getProcessInstanceKey());
+    final List<Modification> modifications =
+        getVariableModifications(modifyProcessInstanceRequest.getModifications());
     for (final Modification modification : modifications) {
-      final Long scopeKey = determineScopeKey(processInstanceKey, modification);
+      final Long scopeKey =
+          modification.getScopeKey() == null ? processInstanceKey : modification.getScopeKey();
       zeebeClient
           .newSetVariablesCommand(scopeKey)
           .variables(modification.getVariables())
@@ -139,22 +154,6 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
           .join();
       updateFinishedInBatchOperation(operation);
     }
-  }
-
-  private Long determineScopeKey(final Long processInstanceKey, final Modification modification) {
-    return modification.getScopeKey() == null ? processInstanceKey : modification.getScopeKey();
-  }
-
-  private List<Long> getNotFinishedFlowNodeInstanceKeysFor(
-      final Long processInstanceKey, final String flowNodeId) {
-    return flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
-        processInstanceKey, flowNodeId, List.of(FlowNodeState.ACTIVE));
-  }
-
-  // Needed for tests
-  @Override
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
   }
 
   private List<Modification> getVariableModifications(final List<Modification> modifications) {
@@ -170,57 +169,5 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   private boolean isVariableModification(final Modification modification) {
     return modification.getModification().equals(ADD_VARIABLE)
         || modification.getModification().equals(EDIT_VARIABLE);
-  }
-
-  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 addToken(
-      final ModifyProcessInstanceCommandStep1 currentStep, final Modification modification) {
-    // 0. Prepare
-    final String flowNodeId = modification.getToFlowNodeId();
-    final Map<String, List<Map<String, Object>>> flowNodeId2variables =
-        modification.variablesForAddToken();
-    logger.debug("Add token to flowNodeId {} with variables: {}", flowNodeId, flowNodeId2variables);
-    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep;
-    // 1. Activate
-    if (modification.getAncestorElementInstanceKey() != null) {
-      nextStep =
-          currentStep.activateElement(flowNodeId, modification.getAncestorElementInstanceKey());
-    } else {
-      nextStep = currentStep.activateElement(flowNodeId);
-    }
-    // 2. Add variables
-    if (flowNodeId2variables != null) {
-      for (final String scopeId : flowNodeId2variables.keySet()) {
-        final List<Map<String, Object>> variablesForFlowNode = flowNodeId2variables.get(scopeId);
-        for (final Map<String, Object> vars : variablesForFlowNode) {
-          nextStep = nextStep.withVariables(vars, scopeId);
-        }
-      }
-    }
-    return nextStep;
-  }
-
-  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 cancelToken(
-      final ModifyProcessInstanceCommandStep1 currentStep,
-      final Long processInstanceKey,
-      final Modification modification) {
-    final String flowNodeId = modification.getFromFlowNodeId();
-    final String flowNodeInstanceKeyAsString = modification.getFromFlowNodeInstanceKey();
-    if (StringUtils.hasText(flowNodeInstanceKeyAsString)) {
-      final Long flowNodeInstanceKey = Long.parseLong(flowNodeInstanceKeyAsString);
-      logger.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
-      return cancelFlowNodeHelper.cancelFlowNodeInstances(
-          currentStep, List.of(flowNodeInstanceKey));
-    } else {
-      final List<Long> flowNodeInstanceKeys =
-          getNotFinishedFlowNodeInstanceKeysFor(processInstanceKey, flowNodeId);
-      if (flowNodeInstanceKeys.isEmpty()) {
-        throw new OperateRuntimeException(
-            String.format(
-                "Abort CANCEL_TOKEN: Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
-                processInstanceKey, flowNodeId));
-      }
-      logger.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
-      return cancelFlowNodeHelper.cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
-    }
   }
 }
