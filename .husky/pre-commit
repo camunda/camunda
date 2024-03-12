@@ -1,6 +1,10 @@
 #!/bin/sh
 [ -n "$CI" ] && exit 0
-yarn --cwd client lint-staged && yarn --cwd client coverage
+
+. "$(dirname "$0")/_/husky.sh"
+
+yarn --cwd client lint-staged
+yarn --cwd client coverage
 # backend hooks
 mvn checkstyle:check
 if [ $? -eq 1 ]; then

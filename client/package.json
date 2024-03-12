@@ -104,10 +104,13 @@
   },
   "lint-staged": {
     "*": [
-      "prettier --write"
+      "prettier . --write"
     ],
     "*.{js,jsx,ts,tsx}": [
-      "yarn lint"
+      "yarn eslint --fix"
+    ],
+    "'**/*.ts?(x)'": [
+      "tsc -p tsconfig.json --noEmit"
     ]
   },
   "scarfSettings": {

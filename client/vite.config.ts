@@ -50,6 +50,7 @@ export default defineConfig(({mode}) => ({
         'public/**',
         'e2e/**',
         'build/**',
+        'src/modules/mockServer/startBrowserMocking.tsx',
       ],
       reporters: ['html', 'default'],
       all: true,
