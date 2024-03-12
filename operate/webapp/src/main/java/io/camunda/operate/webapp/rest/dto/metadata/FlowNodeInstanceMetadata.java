@@ -16,6 +16,8 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
@@ -35,6 +37,7 @@ import java.time.OffsetDateTime;
       name = "BUSINESS_RULE_TASK"),
   @JsonSubTypes.Type(value = CallActivityInstanceMetadataDto.class, name = "CALL_ACTIVITY")
 })
+@JsonInclude(Include.NON_NULL)
 public interface FlowNodeInstanceMetadata {
   FlowNodeType getFlowNodeType();
 
