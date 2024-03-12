@@ -32,7 +32,6 @@ import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequest
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,6 +54,8 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   @Autowired private ObjectMapper objectMapper;
   @Autowired private OperationsManager operationsManager;
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
+  @Autowired private MoveTokenHandler moveTokenHandler;
+  @Autowired private CancelFlowNodeHelper cancelFlowNodeHelper;
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
@@ -90,7 +91,8 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
           lastStep = nextStep;
         }
       } else if (modification.getModification().equals(MOVE_TOKEN)) {
-        final var nextStep = moveToken(currentStep, processInstanceKey, modification);
+        final var nextStep =
+            moveTokenHandler.moveToken(currentStep, processInstanceKey, modification);
         if (i < lastModificationIndex) {
           currentStep = nextStep.and();
         } else {
@@ -206,7 +208,8 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     if (StringUtils.hasText(flowNodeInstanceKeyAsString)) {
       final Long flowNodeInstanceKey = Long.parseLong(flowNodeInstanceKeyAsString);
       logger.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
-      return cancelFlowNodeInstances(currentStep, List.of(flowNodeInstanceKey));
+      return cancelFlowNodeHelper.cancelFlowNodeInstances(
+          currentStep, List.of(flowNodeInstanceKey));
     } else {
       final List<Long> flowNodeInstanceKeys =
           getNotFinishedFlowNodeInstanceKeysFor(processInstanceKey, flowNodeId);
@@ -217,102 +220,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
                 processInstanceKey, flowNodeId));
       }
       logger.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
-      return cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
+      return cancelFlowNodeHelper.cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
     }
-  }
-
-  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 moveToken(
-      final ModifyProcessInstanceCommandStep1 currentStep,
-      final Long processInstanceKey,
-      final Modification modification) {
-    // 0. Prepare
-    final String toFlowNodeId = modification.getToFlowNodeId();
-    Integer newTokensCount = modification.getNewTokensCount();
-    // Add least one token will be added
-    if (newTokensCount == null || newTokensCount < 1) {
-      newTokensCount = 1;
-    }
-    // flowNodeId => List of variables (Map)
-    //  flowNodeId => [ { "key": "value" }, {"key for another flowNode with the same id": "value"} ]
-    Map<String, List<Map<String, Object>>> flowNodeId2variables =
-        modification.variablesForAddToken();
-    if (flowNodeId2variables == null) {
-      flowNodeId2variables = new HashMap<>();
-    }
-
-    // 1. Add tokens
-    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep = null;
-    // Create flowNodes with variables
-    final List<Map<String, Object>> toFlowNodeIdVariables =
-        flowNodeId2variables.getOrDefault(toFlowNodeId, List.of());
-    logger.debug(
-        "Move [Add token to flowNodeId: {} with variables: {} ]",
-        toFlowNodeId,
-        toFlowNodeIdVariables);
-    for (int i = 0; i < newTokensCount; i++) {
-      if (nextStep == null) {
-        if (modification.getAncestorElementInstanceKey() != null) {
-          nextStep =
-              currentStep.activateElement(
-                  toFlowNodeId, modification.getAncestorElementInstanceKey());
-        } else {
-          nextStep = currentStep.activateElement(toFlowNodeId);
-        }
-      } else {
-        if (modification.getAncestorElementInstanceKey() != null) {
-          nextStep
-              .and()
-              .activateElement(toFlowNodeId, modification.getAncestorElementInstanceKey());
-        } else {
-          nextStep = nextStep.and().activateElement(toFlowNodeId);
-        }
-      }
-      if (i < toFlowNodeIdVariables.size()) {
-        nextStep = nextStep.withVariables(toFlowNodeIdVariables.get(i), toFlowNodeId);
-      }
-    }
-    for (final String flowNodeId : flowNodeId2variables.keySet()) {
-      if (!flowNodeId.equals(toFlowNodeId)) {
-        final List<Map<String, Object>> flowNodeVars = flowNodeId2variables.get(flowNodeId);
-        for (final Map<String, Object> vars : flowNodeVars) {
-          nextStep.withVariables(vars, flowNodeId);
-        }
-      }
-    }
-    // 2. cancel
-    final String fromFlowNodeId = modification.getFromFlowNodeId();
-    final String fromFlowNodeInstanceKey = modification.getFromFlowNodeInstanceKey();
-    final List<Long> flowNodeInstanceKeysToCancel;
-    if (StringUtils.hasText(fromFlowNodeInstanceKey)) {
-      final Long flowNodeInstanceKey = Long.parseLong(fromFlowNodeInstanceKey);
-      flowNodeInstanceKeysToCancel = List.of(flowNodeInstanceKey);
-    } else {
-      flowNodeInstanceKeysToCancel =
-          getNotFinishedFlowNodeInstanceKeysFor(processInstanceKey, fromFlowNodeId);
-      if (flowNodeInstanceKeysToCancel.isEmpty()) {
-        throw new OperateRuntimeException(
-            String.format(
-                "Abort MOVE_TOKEN (CANCEL step): Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
-                processInstanceKey, fromFlowNodeId));
-      }
-    }
-    logger.debug(
-        "Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeysToCancel);
-    return cancelFlowNodeInstances(nextStep.and(), flowNodeInstanceKeysToCancel);
-  }
-
-  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
-      cancelFlowNodeInstances(
-          ModifyProcessInstanceCommandStep1 currentStep, final List<Long> flowNodeInstanceKeys) {
-    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep = null;
-    final int size = flowNodeInstanceKeys.size();
-    for (int i = 0; i < size; i++) {
-      if (i < size - 1) {
-        currentStep = currentStep.terminateElement(flowNodeInstanceKeys.get(i)).and();
-      } else {
-        nextStep = currentStep.terminateElement(flowNodeInstanceKeys.get(i));
-      }
-    }
-    return nextStep;
   }
 }
