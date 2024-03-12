@@ -29,7 +29,6 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
 
   public String getDecisionId() {
     return decisionId;
@@ -87,10 +86,16 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    DecisionDefinitionEntity that = (DecisionDefinitionEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DecisionDefinitionEntity that = (DecisionDefinitionEntity) o;
     return version == that.version
         && decisionRequirementsKey == that.decisionRequirementsKey
         && Objects.equals(decisionId, that.decisionId)

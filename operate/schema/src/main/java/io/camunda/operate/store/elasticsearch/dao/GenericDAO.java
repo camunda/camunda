@@ -169,9 +169,9 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
                           String.valueOf(it.getKey()), it.getDocCount()))
               .collect(Collectors.toList());
 
-      long sumOfOtherDocCounts =
+      final long sumOfOtherDocCounts =
           ((ParsedStringTerms) group).getSumOfOtherDocCounts(); // size of documents not in result
-      long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
+      final long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
       return new AggregationResponse(false, values, total);
     } catch (IOException e) {
       LOGGER.error("Error searching at index: " + index, e);

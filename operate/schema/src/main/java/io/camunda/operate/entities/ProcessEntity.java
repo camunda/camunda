@@ -32,7 +32,6 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private String resourceName;
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
 
   public String getName() {
     return name;
@@ -135,10 +134,16 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    ProcessEntity that = (ProcessEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ProcessEntity that = (ProcessEntity) o;
     return version == that.version
         && Objects.equals(name, that.name)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)

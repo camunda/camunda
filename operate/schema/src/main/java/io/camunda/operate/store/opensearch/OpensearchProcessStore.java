@@ -68,7 +68,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchProcessStore implements ProcessStore {
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchProcessStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchProcessStore.class);
   private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
@@ -82,7 +82,7 @@ public class OpensearchProcessStore implements ProcessStore {
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
     final SearchResponse<Void> response;
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(matchAll()))
             .aggregations(
@@ -93,7 +93,7 @@ public class OpensearchProcessStore implements ProcessStore {
       response = richOpenSearchClient.doc().search(searchRequestBuilder, Void.class);
       return Optional.of(response.aggregations().get(DISTINCT_FIELD_COUNTS).cardinality().value());
     } catch (Exception e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.",
               fieldName, processIndex.getAlias()),
@@ -109,7 +109,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public ProcessEntity getProcessByKey(Long processDefinitionKey) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)));
 
@@ -121,7 +121,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public String getDiagramByKey(Long processDefinitionKey) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(ids(processDefinitionKey.toString())));
 
@@ -148,7 +148,7 @@ public class OpensearchProcessStore implements ProcessStore {
         allowedBPMNProcessIds == null
             ? matchAll()
             : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNProcessIds);
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(withTenantIdQuery(tenantId, query)))
             .size(0)
@@ -213,7 +213,7 @@ public class OpensearchProcessStore implements ProcessStore {
         allowedBPMNIds == null
             ? matchAll()
             : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNIds);
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(query))
             .source(sourceInclude(fields))
@@ -228,7 +228,9 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
-    if (CollectionUtil.isEmpty(processDefinitionKeys)) return 0;
+    if (CollectionUtil.isEmpty(processDefinitionKeys)) {
+      return 0;
+    }
     return richOpenSearchClient
         .doc()
         .deleteByQuery(
@@ -237,7 +239,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, ALL)
             .query(
                 withTenantCheck(
@@ -262,7 +264,7 @@ public class OpensearchProcessStore implements ProcessStore {
         allowedBPMNIds == null
             ? matchAll()
             : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNIds);
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, ALL)
             .query(withTenantCheck(query))
             .aggregations(
@@ -291,7 +293,7 @@ public class OpensearchProcessStore implements ProcessStore {
   @Override
   public String getProcessInstanceTreePathById(String processInstanceId) {
     record Result(String treePath) {}
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate)
             .query(
                 withTenantCheck(
@@ -313,7 +315,7 @@ public class OpensearchProcessStore implements ProcessStore {
         String id, String processDefinitionKey, String processName, String bpmnProcessId) {}
     final List<String> processInstanceIdsWithoutCurrentProcess =
         processInstanceIds.stream().filter(id -> !currentProcessInstanceId.equals(id)).toList();
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate)
             .query(
                 withTenantCheck(
@@ -344,7 +346,7 @@ public class OpensearchProcessStore implements ProcessStore {
     record ProcessEntityUpdate(String treePath) {}
 
     // select process instance - get tree path
-    String treePath = getProcessInstanceTreePathById(processInstanceKey);
+    final String treePath = getProcessInstanceTreePathById(processInstanceKey);
 
     // select all process instances with term treePath == tree path
     // update all this process instances to remove corresponding part of tree path
@@ -352,7 +354,7 @@ public class OpensearchProcessStore implements ProcessStore {
     // - middle level: we remove /PI_key/FN_name/FNI_key from the middle
     // - end level: we remove /PI_key from the end
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate)
             .query(
                 withTenantCheck(
@@ -362,21 +364,21 @@ public class OpensearchProcessStore implements ProcessStore {
                         not(term(KEY, processInstanceKey)))))
             .source(sourceInclude(TREE_PATH));
 
-    var results = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class);
+    final var results = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class);
     if (results.isEmpty()) {
-      logger.debug(
+      LOGGER.debug(
           "No results in deleteProcessInstanceFromTreePath for process instance key {}",
           processInstanceKey);
       return;
     }
-    var bulk = new BulkRequest.Builder();
+    final var bulk = new BulkRequest.Builder();
     results.forEach(
         r ->
             bulk.operations(
                 op ->
                     op.update(
                         upd -> {
-                          String newTreePath =
+                          final String newTreePath =
                               new TreePath(r.treePath())
                                   .removeProcessInstance(processInstanceKey)
                                   .toString();
@@ -399,7 +401,7 @@ public class OpensearchProcessStore implements ProcessStore {
       throw new OperateRuntimeException("Parameter 'states' is needed to search by states.");
     }
 
-    var searchRequest =
+    final var searchRequest =
         searchRequestBuilder(listViewTemplate)
             .size(size)
             .query(
@@ -423,7 +425,7 @@ public class OpensearchProcessStore implements ProcessStore {
           "Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
     }
 
-    var searchRequest =
+    final var searchRequest =
         searchRequestBuilder(listViewTemplate)
             .query(
                 withTenantCheck(
@@ -438,15 +440,17 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys) {
-    if (CollectionUtil.isEmpty(processInstanceKeys)) return 0;
+    if (CollectionUtil.isEmpty(processInstanceKeys)) {
+      return 0;
+    }
 
     long count = 0;
-    List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
+    final List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
         processInstanceDependantTemplates.stream()
             .filter(template -> !(template instanceof OperationTemplate))
             .toList();
     for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
-      String indexName = ((TemplateDescriptor) template).getAlias();
+      final String indexName = ((TemplateDescriptor) template).getAlias();
       count +=
           richOpenSearchClient
               .doc()

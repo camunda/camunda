@@ -48,7 +48,7 @@ import org.springframework.context.annotation.Import;
 @Import({JacksonConfig.class, Metrics.class})
 public class SchemaMigration implements CommandLineRunner {
 
-  private static final Logger logger = LoggerFactory.getLogger(SchemaMigration.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMigration.class);
   @Autowired private SchemaStartup schemaStartup;
 
   public static void main(String[] args) {
@@ -68,7 +68,7 @@ public class SchemaMigration implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-    logger.info("SchemaMigration finished.");
+    LOGGER.info("SchemaMigration finished.");
   }
 
   public static class ApplicationErrorListener

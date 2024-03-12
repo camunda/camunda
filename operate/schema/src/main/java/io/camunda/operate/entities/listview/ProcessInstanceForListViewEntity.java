@@ -204,10 +204,16 @@ public class ProcessInstanceForListViewEntity
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
     return incident == that.incident
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processName, that.processName)

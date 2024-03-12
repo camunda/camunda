@@ -121,12 +121,12 @@ public class ElasticsearchListViewStore implements ListViewStore {
 
   @Override
   public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(Long processDefinitionKey) {
-    QueryBuilder queryBuilder =
+    final QueryBuilder queryBuilder =
         constantScoreQuery(
             joinWithAnd(
                 termQuery(ListViewTemplate.PROCESS_KEY, processDefinitionKey),
                 boolQuery().mustNot(existsQuery(ListViewTemplate.PROCESS_VERSION))));
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(listViewTemplate.getAlias())
             .source(new SearchSourceBuilder().query(queryBuilder).fetchSource(false));
     try {

@@ -49,12 +49,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchIncidentStore implements IncidentStore {
 
-  public static Query ACTIVE_INCIDENT_QUERY =
+  public static Query activeIncidentQuery =
       TermQuery.of(
               q ->
                   q.field(IncidentTemplate.STATE).value(FieldValue.of(IncidentState.ACTIVE.name())))
           ._toQuery();
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchIncidentStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchIncidentStore.class);
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired private IncidentTemplate incidentTemplate;
@@ -62,13 +62,13 @@ public class OpensearchIncidentStore implements IncidentStore {
   @Autowired private OperateProperties operateProperties;
 
   private Query activeIncidentConstantScore(Query q) {
-    return constantScore(and(ACTIVE_INCIDENT_QUERY, q));
+    return constantScore(and(activeIncidentQuery, q));
   }
 
   @Override
   public IncidentEntity getIncidentById(Long incidentKey) {
-    var key = incidentKey.toString();
-    var searchRequestBuilder =
+    final var key = incidentKey.toString();
+    final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(withTenantCheck(activeIncidentConstantScore(ids(key))));
     return richOpenSearchClient.doc().searchUnique(searchRequestBuilder, IncidentEntity.class, key);
@@ -78,12 +78,12 @@ public class OpensearchIncidentStore implements IncidentStore {
   public List<IncidentEntity> getIncidentsWithErrorTypesFor(
       String treePath, List<Map<ErrorType, Long>> errorTypes) {
     final String errorTypesAggName = "errorTypesAgg";
-    var request =
+    final var request =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(
                 withTenantCheck(
                     constantScore(
-                        and(term(IncidentTemplate.TREE_PATH, treePath), ACTIVE_INCIDENT_QUERY))))
+                        and(term(IncidentTemplate.TREE_PATH, treePath), activeIncidentQuery))))
             .aggregations(
                 Map.of(
                     errorTypesAggName,
@@ -93,7 +93,7 @@ public class OpensearchIncidentStore implements IncidentStore {
                             Map.of("_key", SortOrder.Asc))
                         ._toAggregation()));
 
-    OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result =
+    final OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result =
         richOpenSearchClient.doc().scrollValuesAndAggregations(request, IncidentEntity.class);
 
     result
@@ -104,7 +104,7 @@ public class OpensearchIncidentStore implements IncidentStore {
         .array()
         .forEach(
             b -> {
-              ErrorType errorType = ErrorType.valueOf(b.key());
+              final ErrorType errorType = ErrorType.valueOf(b.key());
               errorTypes.add(Map.of(errorType, b.docCount()));
             });
 
@@ -113,7 +113,7 @@ public class OpensearchIncidentStore implements IncidentStore {
 
   @Override
   public List<IncidentEntity> getIncidentsByProcessInstanceKey(Long processInstanceKey) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(
                 withTenantCheck(
@@ -128,7 +128,7 @@ public class OpensearchIncidentStore implements IncidentStore {
   public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
     record Result(Long processInstanceKey) {}
     final int batchSize = operateProperties.getOpensearch().getBatchSize();
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, RequestDSL.QueryType.ONLY_RUNTIME)
             .query(
                 withTenantCheck(

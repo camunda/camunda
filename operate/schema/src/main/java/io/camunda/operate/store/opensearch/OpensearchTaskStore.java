@@ -31,9 +31,9 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 public class OpensearchTaskStore implements TaskStore {
 
-  String DESCRIPTION_PREFIX_FROM_INDEX = "reindex from [";
-  String DESCRIPTION_PREFIX_TO_INDEX = "to [";
-  String TASK_ACTION_INDICES_REINDEX = "indices:data/write/reindex";
+  String descriptionPrefixFromIndex = "reindex from [";
+  String descriptionPrefixToIndex = "to [";
+  String taskActionIndicesReindex = "indices:data/write/reindex";
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
@@ -44,13 +44,13 @@ public class OpensearchTaskStore implements TaskStore {
       return List.of();
     }
 
-    var id2taskInfo =
-        richOpenSearchClient.task().tasksWithActions(List.of(TASK_ACTION_INDICES_REINDEX));
-    Function<String, Boolean> descriptionContainsReindexFromTo =
+    final var id2taskInfo =
+        richOpenSearchClient.task().tasksWithActions(List.of(taskActionIndicesReindex));
+    final Function<String, Boolean> descriptionContainsReindexFromTo =
         desc ->
             desc != null
-                && desc.contains(DESCRIPTION_PREFIX_FROM_INDEX + fromIndex)
-                && desc.contains(DESCRIPTION_PREFIX_TO_INDEX + toIndex);
+                && desc.contains(descriptionPrefixFromIndex + fromIndex)
+                && desc.contains(descriptionPrefixToIndex + toIndex);
 
     return id2taskInfo.entrySet().stream()
         .filter(

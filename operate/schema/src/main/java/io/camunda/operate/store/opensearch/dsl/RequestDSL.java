@@ -110,7 +110,7 @@ public interface RequestDSL {
 
   static ReindexRequest.Builder reindexRequestBuilder(
       String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) {
-    var jsonParams =
+    final var jsonParams =
         scriptParams.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
 

@@ -63,7 +63,7 @@ import org.springframework.stereotype.Component;
 @Profile("!test")
 public class ElasticsearchSchemaManager implements SchemaManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
@@ -168,11 +168,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private Settings getIndexSettings(String indexName) {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    var shards =
+    final var shards =
         elsConfig
             .getNumberOfShardsForIndices()
             .getOrDefault(indexName, elsConfig.getNumberOfShards());
-    var replicas =
+    final var replicas =
         elsConfig
             .getNumberOfReplicasForIndices()
             .getOrDefault(indexName, elsConfig.getNumberOfReplicas());
@@ -185,13 +185,13 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private void createDefaults() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     final String settingsTemplate = settingsTemplateName();
-    logger.info(
+    LOGGER.info(
         "Create default settings from '{}' with {} shards and {} replicas per index.",
         settingsTemplate,
         elsConfig.getNumberOfShards(),
         elsConfig.getNumberOfReplicas());
 
-    Settings settings = getDefaultIndexSettings();
+    final Settings settings = getDefaultIndexSettings();
 
     final Template template = new Template(settings, null, null);
     final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
@@ -207,17 +207,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         TimeValue.parseTimeValue(
             operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
             "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
-    logger.info(
+    LOGGER.info(
         "Create Index Lifecycle {} for min age of {} ",
         OPERATE_DELETE_ARCHIVED_INDICES,
         timeValue.getStringRep());
-    Map<String, Phase> phases = new HashMap<>();
-    Map<String, LifecycleAction> deleteActions =
+    final Map<String, Phase> phases = new HashMap<>();
+    final Map<String, LifecycleAction> deleteActions =
         Collections.singletonMap(DeleteAction.NAME, new DeleteAction());
     phases.put(DELETE_PHASE, new Phase(DELETE_PHASE, timeValue, deleteActions));
 
-    LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES, phases);
-    PutLifecyclePolicyRequest request = new PutLifecyclePolicyRequest(policy);
+    final LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES, phases);
+    final PutLifecyclePolicyRequest request = new PutLifecyclePolicyRequest(policy);
     retryElasticsearchClient.putLifeCyclePolicy(request);
   }
 
@@ -243,8 +243,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
-    Template template = getTemplateFrom(templateDescriptor);
-    ComposableIndexTemplate composableTemplate =
+    final Template template = getTemplateFrom(templateDescriptor);
+    final ComposableIndexTemplate composableTemplate =
         new ComposableIndexTemplate.Builder()
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
@@ -255,8 +255,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .name(templateDescriptor.getTemplateName())
             .indexTemplate(composableTemplate));
     // This is necessary, otherwise operate won't find indexes at startup
-    String indexName = templateDescriptor.getFullQualifiedName();
-    var createIndexRequest =
+    final String indexName = templateDescriptor.getFullQualifiedName();
+    final var createIndexRequest =
         new CreateIndexRequest(indexName)
             .aliases(Set.of(new Alias(templateDescriptor.getAlias()).writeIndex(false)))
             .settings(getIndexSettings(templateDescriptor.getIndexName()));
@@ -265,10 +265,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private void overrideTemplateSettings(
       final Map<String, Object> templateConfig, final TemplateDescriptor templateDescriptor) {
-    Settings indexSettings = getIndexSettings(templateDescriptor.getIndexName());
-    Map<String, Object> settings =
+    final Settings indexSettings = getIndexSettings(templateDescriptor.getIndexName());
+    final Map<String, Object> settings =
         (Map<String, Object>) templateConfig.getOrDefault("settings", new HashMap<>());
-    Map<String, Object> index =
+    final Map<String, Object> index =
         (Map<String, Object>) settings.getOrDefault("index", new HashMap<>());
     index.put("number_of_shards", indexSettings.get(NUMBER_OF_SHARDS));
     index.put("number_of_replicas", indexSettings.get(NUMBER_OF_REPLICAS));
@@ -284,7 +284,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
     final Map<String, Object> templateConfig = readJSONFileToMap(templateFilename);
     overrideTemplateSettings(templateConfig, templateDescriptor);
-    PutIndexTemplateRequest ptr =
+    final PutIndexTemplateRequest ptr =
         new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(templateConfig);
     try {
       final Map<String, AliasMetadata> aliases =
@@ -314,20 +314,20 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
-    boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
+    final boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
     if (created) {
-      logger.debug("Index [{}] was successfully created", indexName);
+      LOGGER.debug("Index [{}] was successfully created", indexName);
     } else {
-      logger.debug("Index [{}] was NOT created", indexName);
+      LOGGER.debug("Index [{}] was NOT created", indexName);
     }
   }
 
   private void putIndexTemplate(final PutComposableIndexTemplateRequest request) {
-    boolean created = retryElasticsearchClient.createTemplate(request);
+    final boolean created = retryElasticsearchClient.createTemplate(request);
     if (created) {
-      logger.debug("Template [{}] was successfully created", request.name());
+      LOGGER.debug("Template [{}] was successfully created", request.name());
     } else {
-      logger.debug("Template [{}] was NOT created", request.name());
+      LOGGER.debug("Template [{}] was NOT created", request.name());
     }
   }
 }

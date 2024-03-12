@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchSequenceFlowStore implements SequenceFlowStore {
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchSequenceFlowStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSequenceFlowStore.class);
   @Autowired private SequenceFlowTemplate sequenceFlowTemplate;
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
@@ -46,8 +46,9 @@ public class OpensearchSequenceFlowStore implements SequenceFlowStore {
 
   @Override
   public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(Long processInstanceKey) {
-    var query = constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
-    var searchRequestBuilder =
+    final var query =
+        constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var searchRequestBuilder =
         searchRequestBuilder(sequenceFlowTemplate, RequestDSL.QueryType.ALL)
             .query(
                 withTenantCheck(

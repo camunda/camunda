@@ -50,7 +50,7 @@ public class ElasticsearchTaskStore implements TaskStore {
   public static final String DESCRIPTION_PREFIX_FROM_INDEX = "reindex from [";
   public static final String DESCRIPTION_PREFIX_TO_INDEX = "to [";
   private static final String TASKS_ENDPOINT = "_tasks";
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;
@@ -97,7 +97,7 @@ public class ElasticsearchTaskStore implements TaskStore {
   }
 
   private List<TaskInfo> getReindexTasks() throws IOException {
-    var response =
+    final var response =
         esClient
             .tasks()
             .list(
@@ -109,7 +109,7 @@ public class ElasticsearchTaskStore implements TaskStore {
   private void checkForErrors(final TaskResponse taskResponse) {
     if (taskResponse != null && taskResponse.getError() != null) {
       final var error = taskResponse.getError();
-      logger.error("Task status contains error: " + error);
+      LOGGER.error("Task status contains error: " + error);
       throw new OperateRuntimeException(error.getReason());
     }
   }

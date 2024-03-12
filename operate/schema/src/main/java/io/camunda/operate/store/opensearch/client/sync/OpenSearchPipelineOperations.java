@@ -36,11 +36,11 @@ public class OpenSearchPipelineOperations extends OpenSearchRetryOperation {
 
   public boolean addPipelineWithRetries(String name, String definition) {
     try {
-      var processorsJSONNodes =
+      final var processorsJSONNodes =
           objectMapper.readTree(new StringReader(definition)).get("processors");
-      List<Processor> processors = new ArrayList<>();
+      final List<Processor> processors = new ArrayList<>();
       for (int i = 0; i < processorsJSONNodes.size(); i++) {
-        var processorAsJSON = processorsJSONNodes.get(i).toPrettyString();
+        final var processorAsJSON = processorsJSONNodes.get(i).toPrettyString();
         processors.add(readProcessorFromJSON(processorAsJSON));
       }
       return executeWithRetries(

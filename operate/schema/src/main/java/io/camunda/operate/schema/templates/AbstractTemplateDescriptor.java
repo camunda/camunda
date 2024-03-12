@@ -28,7 +28,7 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    var indexPrefix =
+    final var indexPrefix =
         DatabaseInfo.isOpensearch()
             ? operateProperties.getOpensearch().getIndexPrefix()
             : operateProperties.getElasticsearch().getIndexPrefix();

@@ -56,7 +56,7 @@ public abstract class PipelineReindexPlan implements ReindexPlan {
       return Optional.empty();
     }
     final String name = srcIndex + "-to-" + dstIndex + "-pipeline";
-    boolean added = schemaManager.addPipeline(name, getPipelineDefinition());
+    final boolean added = schemaManager.addPipeline(name, getPipelineDefinition());
     if (added) {
       return Optional.of(name);
     } else {

@@ -238,10 +238,16 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    OperationEntity that = (OperationEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final OperationEntity that = (OperationEntity) o;
     return Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)

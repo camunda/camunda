@@ -157,7 +157,7 @@ public class TaskResponse {
 
     @Override
     public String toString() {
-      String scriptStackString =
+      final String scriptStackString =
           scriptStack == null
               ? null
               : scriptStack.stream()

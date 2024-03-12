@@ -97,7 +97,7 @@ public class RetryElasticsearchClient {
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
-  private static final Logger logger = LoggerFactory.getLogger(RetryElasticsearchClient.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RetryElasticsearchClient.class);
   @Autowired private RestHighLevelClient esClient;
   @Autowired private ElasticsearchTaskStore elasticsearchTaskStore;
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
@@ -124,7 +124,7 @@ public class RetryElasticsearchClient {
       final ClusterHealthStatus status = response.getStatus();
       return !response.isTimedOut() && !status.equals(ClusterHealthStatus.RED);
     } catch (IOException e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Couldn't connect to Elasticsearch due to %s. Return unhealthy state. ",
               e.getMessage()),
@@ -183,7 +183,7 @@ public class RetryElasticsearchClient {
         "Get indices for " + namePattern,
         () -> {
           try {
-            GetIndexResponse response =
+            final GetIndexResponse response =
                 esClient.indices().get(new GetIndexRequest(namePattern), RequestOptions.DEFAULT);
             return Set.of(response.getIndices());
           } catch (ElasticsearchException e) {
@@ -232,8 +232,8 @@ public class RetryElasticsearchClient {
           if (CollectionUtil.isNotEmpty(createIndexRequest.aliases())
               && !aliasExists(
                   createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
-            IndicesAliasesRequest request = new IndicesAliasesRequest();
-            IndicesAliasesRequest.AliasActions aliasAction =
+            final IndicesAliasesRequest request = new IndicesAliasesRequest();
+            final IndicesAliasesRequest.AliasActions aliasAction =
                 new IndicesAliasesRequest.AliasActions(IndicesAliasesRequest.AliasActions.Type.ADD)
                     .index(createIndexRequest.index())
                     .alias(createIndexRequest.aliases().iterator().next().name())
@@ -241,7 +241,7 @@ public class RetryElasticsearchClient {
             request.addAliasAction(aliasAction);
 
             esClient.indices().updateAliases(request, RequestOptions.DEFAULT);
-            logger.info(
+            LOGGER.info(
                 "Alias is created. Index: {}, alias: {} ",
                 createIndexRequest.index(),
                 createIndexRequest.aliases().iterator().next().name());
@@ -253,7 +253,7 @@ public class RetryElasticsearchClient {
   }
 
   private boolean aliasExists(Alias alias, String index) throws IOException {
-    GetAliasesRequest aliasExistsReq = new GetAliasesRequest(alias.name()).indices(index);
+    final GetAliasesRequest aliasExistsReq = new GetAliasesRequest(alias.name()).indices(index);
     return esClient.indices().existsAlias(aliasExistsReq, RequestOptions.DEFAULT);
   }
 
@@ -264,7 +264,7 @@ public class RetryElasticsearchClient {
           final IndexResponse response =
               esClient.index(
                   new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
-          DocWriteResponse.Result result = response.getResult();
+          final DocWriteResponse.Result result = response.getResult();
           return result.equals(DocWriteResponse.Result.CREATED)
               || result.equals(DocWriteResponse.Result.UPDATED);
         });
@@ -277,7 +277,7 @@ public class RetryElasticsearchClient {
           final IndexResponse response =
               esClient.index(
                   new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
-          DocWriteResponse.Result result = response.getResult();
+          final DocWriteResponse.Result result = response.getResult();
           return result.equals(DocWriteResponse.Result.CREATED)
               || result.equals(DocWriteResponse.Result.UPDATED);
         });
@@ -315,7 +315,7 @@ public class RetryElasticsearchClient {
         () -> {
           final DeleteResponse response =
               esClient.delete(new DeleteRequest(name).id(id), requestOptions);
-          DocWriteResponse.Result result = response.getResult();
+          final DocWriteResponse.Result result = response.getResult();
           return result.equals(DocWriteResponse.Result.DELETED);
         });
   }
@@ -401,8 +401,8 @@ public class RetryElasticsearchClient {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
-          Map<String, String> settings = new HashMap<>();
-          GetSettingsResponse response =
+          final Map<String, String> settings = new HashMap<>();
+          final GetSettingsResponse response =
               esClient
                   .indices()
                   .getSettings(new GetSettingsRequest().indices(indexName), requestOptions);
@@ -414,7 +414,7 @@ public class RetryElasticsearchClient {
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
-    Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
+    final Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
     String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
     if (refreshInterval.trim().equals(NO_REFRESH)) {
       refreshInterval = defaultValue;
@@ -423,7 +423,7 @@ public class RetryElasticsearchClient {
   }
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
-    Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
     String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
@@ -490,14 +490,14 @@ public class RetryElasticsearchClient {
               refreshAndRetryOnShardFailures(dstIndex + "*");
               final var dstCount = getNumberOfDocumentsFor(dstIndex + "*");
               if (srcCount == dstCount) {
-                logger.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
+                LOGGER.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
                 return true;
               }
             }
 
             taskId = esClient.submitReindexTask(reindexRequest, requestOptions).getTask();
           } else {
-            logger.info(
+            LOGGER.info(
                 "There is an already running reindex task for [{}] -> [{}]. Will not submit another reindex task but wait for completion of this task",
                 srcIndices,
                 dstIndex);
@@ -529,7 +529,7 @@ public class RetryElasticsearchClient {
     final String nodeId = taskIdParts[0];
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
 
-    Optional<TaskResponse> maybeTaskResponse =
+    final Optional<TaskResponse> maybeTaskResponse =
         executeWithGivenRetries(
             Integer.MAX_VALUE,
             "GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
@@ -539,7 +539,7 @@ public class RetryElasticsearchClient {
               if (result.isLeft()) {
                 final var exception = result.getLeft();
                 final var message = exception.getMessage();
-                logger.warn(
+                LOGGER.warn(
                     String.format(
                         "Failed to retrieve TaskInfo {%s},{%d}: %s", nodeId, smallTaskId, message),
                     exception);
@@ -550,7 +550,7 @@ public class RetryElasticsearchClient {
               final var taskResponse = result.get();
               elasticsearchTaskStore.checkForErrorsOrFailures(taskResponse);
 
-              logger.info(
+              LOGGER.info(
                   "TaskId: {}, Progress: {}%",
                   taskId, String.format("%.2f", taskResponse.getProgress() * 100.0D));
 
@@ -562,10 +562,10 @@ public class RetryElasticsearchClient {
       final long total = maybeTaskResponse.get().getTaskStatus().getTotal();
 
       if (srcCount != null) {
-        logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
+        LOGGER.info("Source docs: {}, Migrated docs: {}", srcCount, total);
         return total == srcCount;
       } else {
-        logger.info("Migrated docs: {}", total);
+        LOGGER.info("Migrated docs: {}", total);
         return maybeTaskResponse.get().isCompleted();
       }
     } else {
@@ -589,13 +589,13 @@ public class RetryElasticsearchClient {
             doneOnSearchHits += response.getHits().getHits().length;
 
             scrollId = response.getScrollId();
-            SearchScrollRequest scrollRequest =
+            final SearchScrollRequest scrollRequest =
                 new SearchScrollRequest(scrollId)
                     .scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
             response = esClient.scroll(scrollRequest, requestOptions);
           }
           if (scrollId != null) {
-            ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+            final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
             clearScrollRequest.addScrollId(scrollId);
             esClient.clearScroll(clearScrollRequest, requestOptions);
           }
@@ -605,7 +605,7 @@ public class RetryElasticsearchClient {
 
   public <T> List<T> searchWithScroll(
       SearchRequest searchRequest, Class<T> resultClass, ObjectMapper objectMapper) {
-    long totalHits =
+    final long totalHits =
         executeWithRetries(
             "Count search results",
             () -> esClient.search(searchRequest, requestOptions).getHits().getTotalHits().value);
@@ -617,7 +617,7 @@ public class RetryElasticsearchClient {
 
   private <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper)
       throws IOException {
-    List<T> results = new ArrayList<>();
+    final List<T> results = new ArrayList<>();
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(searchRequest, requestOptions);
 
@@ -629,12 +629,12 @@ public class RetryElasticsearchClient {
               searchHit -> searchHitToObject(searchHit, clazz, objectMapper)));
 
       scrollId = response.getScrollId();
-      SearchScrollRequest scrollRequest =
+      final SearchScrollRequest scrollRequest =
           new SearchScrollRequest(scrollId).scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
       response = esClient.scroll(scrollRequest, requestOptions);
     }
     if (scrollId != null) {
-      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
       esClient.clearScroll(clearScrollRequest, requestOptions);
     }

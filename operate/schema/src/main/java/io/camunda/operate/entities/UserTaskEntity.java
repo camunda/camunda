@@ -207,10 +207,16 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    UserTaskEntity that = (UserTaskEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final UserTaskEntity that = (UserTaskEntity) o;
     return Objects.equals(userTaskKey, that.userTaskKey)
         && Objects.equals(assignee, that.assignee)
         && Objects.equals(candidateGroups, that.candidateGroups)

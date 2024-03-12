@@ -27,7 +27,7 @@ public enum DecisionType {
   UNSPECIFIED,
   UNKNOWN;
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowNodeType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeType.class);
 
   public static DecisionType fromZeebeDecisionType(String decisionType) {
     if (decisionType == null) {
@@ -36,7 +36,7 @@ public enum DecisionType {
     try {
       return DecisionType.valueOf(decisionType);
     } catch (IllegalArgumentException ex) {
-      logger.error(
+      LOGGER.error(
           "Decision type not found for value [{}]. UNKNOWN type will be assigned.", decisionType);
       return UNKNOWN;
     }

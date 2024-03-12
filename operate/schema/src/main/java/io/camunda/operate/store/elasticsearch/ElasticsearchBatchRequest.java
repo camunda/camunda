@@ -49,7 +49,7 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchBatchRequest implements BatchRequest {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
 
   private final BulkRequest bulkRequest = new BulkRequest();
 
@@ -67,7 +67,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest addWithId(String index, String id, OperateEntity entity)
       throws PersistenceException {
-    logger.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
+    LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
     try {
       bulkRequest.add(
           new IndexRequest(index)
@@ -86,7 +86,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest addWithRouting(String index, OperateEntity entity, String routing)
       throws PersistenceException {
-    logger.debug(
+    LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
     try {
       bulkRequest
@@ -109,7 +109,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest upsert(
       String index, String id, OperateEntity entity, Map<String, Object> updateFields)
       throws PersistenceException {
-    logger.debug(
+    LOGGER.debug(
         "Add upsert request for index {} id {} entity {} and update fields {}",
         index,
         id,
@@ -142,7 +142,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       Map<String, Object> updateFields,
       String routing)
       throws PersistenceException {
-    logger.debug(
+    LOGGER.debug(
         "Add upsert request with routing {} for index {} id {} entity {} and update fields ",
         routing,
         index,
@@ -173,7 +173,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest update(String index, String id, Map<String, Object> updateFields)
       throws PersistenceException {
-    logger.debug(
+    LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
     try {
       bulkRequest.add(
@@ -210,7 +210,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest updateWithScript(
       String index, String id, String script, Map<String, Object> parameters)
       throws PersistenceException {
-    logger.debug("Add update with script request for index {} id {} ", index, id);
+    LOGGER.debug("Add update with script request for index {} id {} ", index, id);
     final UpdateRequest updateRequest =
         new UpdateRequest()
             .index(index)
@@ -223,14 +223,14 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public void execute() throws PersistenceException {
-    logger.debug("Execute batchRequest with {} requests", bulkRequest.requests().size());
+    LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.requests().size());
     ElasticsearchUtil.processBulkRequest(
         esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
   }
 
   @Override
   public void executeWithRefresh() throws PersistenceException {
-    logger.debug(
+    LOGGER.debug(
         "Execute batchRequest with {} requests and refresh", bulkRequest.requests().size());
     ElasticsearchUtil.processBulkRequest(
         esClient,

@@ -145,8 +145,8 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   }
 
   private boolean needsToPollAgain(final GetTasksResponse taskResponse) {
-    var r = taskResponse.response();
-    var allTasksExecuted = r.total() == r.created() + r.updated() + r.deleted();
+    final var r = taskResponse.response();
+    final var allTasksExecuted = r.total() == r.created() + r.updated() + r.deleted();
     return !(taskResponse.completed() && allTasksExecuted);
   }
 }

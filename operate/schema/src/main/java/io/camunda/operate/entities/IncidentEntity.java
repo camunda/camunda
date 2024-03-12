@@ -50,7 +50,6 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
   private String treePath;
 
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
 
   @Deprecated @JsonIgnore private boolean pending = true;
 
@@ -183,10 +182,16 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    IncidentEntity incident = (IncidentEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final IncidentEntity incident = (IncidentEntity) o;
     return pending == incident.pending
         && errorType == incident.errorType
         && Objects.equals(errorMessage, incident.errorMessage)
