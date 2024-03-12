@@ -116,11 +116,10 @@ public final class CommandDistributionBehavior {
   /**
    * Acknowledges that a command was distributed to another partition successfully.
    *
-   * @param distributionKey the key identifying the command distribution
    * @param command the command that was distributed
    */
-  public <T extends UnifiedRecordValue> void acknowledgeCommand(
-      final long distributionKey, final TypedRecord<T> command) {
+  public <T extends UnifiedRecordValue> void acknowledgeCommand(final TypedRecord<T> command) {
+    final long distributionKey = command.getKey();
     final var distributionRecord =
         new CommandDistributionRecord()
             .setPartitionId(currentPartitionId)

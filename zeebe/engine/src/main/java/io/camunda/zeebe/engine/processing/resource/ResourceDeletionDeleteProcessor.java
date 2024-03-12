@@ -115,7 +115,7 @@ public class ResourceDeletionDeleteProcessor
     tryDeleteResources(command);
 
     stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETED, value);
-    commandDistributionBehavior.acknowledgeCommand(command.getKey(), command);
+    commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   @Override

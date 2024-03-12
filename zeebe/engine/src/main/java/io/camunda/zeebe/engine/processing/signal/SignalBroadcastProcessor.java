@@ -102,7 +102,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         subscription -> activateElement(subscription.getRecord(), value.getVariablesBuffer()));
 
     stateWriter.appendFollowUpEvent(command.getKey(), SignalIntent.BROADCASTED, command.getValue());
-    commandDistributionBehavior.acknowledgeCommand(command.getKey(), command);
+    commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   private void activateElement(
