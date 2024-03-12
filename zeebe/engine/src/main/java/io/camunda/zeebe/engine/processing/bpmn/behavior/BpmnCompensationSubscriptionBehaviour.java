@@ -206,40 +206,26 @@ public class BpmnCompensationSubscriptionBehaviour {
   private ExecutableBoundaryEvent getCompensationBoundaryEvent(
       final BpmnElementContext context, final String elementId) {
 
-    final var activityToCompensate =
+    var activityToCompensate =
         processState.getFlowElement(
             context.getProcessDefinitionKey(),
             context.getTenantId(),
             BufferUtil.wrapString(elementId),
             ExecutableActivity.class);
 
-    final var boundaryEvent =
-        activityToCompensate.getBoundaryEvents().stream()
-            .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
-            .findFirst()
-            .orElse(null);
-
-    if (boundaryEvent != null) {
-      return boundaryEvent;
+    if (activityToCompensate.getFlowScope()
+        instanceof final ExecutableMultiInstanceBody multiInstanceBody) {
+      activityToCompensate = multiInstanceBody;
     }
 
-    final var parentActivityToCompensate = activityToCompensate.getFlowScope();
-
-    if (!(parentActivityToCompensate instanceof ExecutableMultiInstanceBody)) {
-      throw new BpmnProcessingException(
-          context, "No compensation boundary event found for activity '%s'".formatted(elementId));
-    }
-
-    return ((ExecutableMultiInstanceBody) parentActivityToCompensate)
-        .getBoundaryEvents().stream()
-            .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new BpmnProcessingException(
-                        context,
-                        "No compensation boundary event found for activity '%s'"
-                            .formatted(elementId)));
+    return activityToCompensate.getBoundaryEvents().stream()
+        .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new BpmnProcessingException(
+                    context,
+                    "No compensation boundary event found for activity '%s'".formatted(elementId)));
   }
 
   private void activateAndCompleteCompensationBoundaryEvent(
