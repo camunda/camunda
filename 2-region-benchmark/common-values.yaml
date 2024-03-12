@@ -1,0 +1,32 @@
+camunda-platform:
+  zeebe:
+    env:
+    - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+      value: "camunda-zeebe-0.camunda-zeebe.dd-region-0.svc.cluster.local:26502,camunda-zeebe-1.camunda-zeebe.dd-region-0.svc.cluster.local:26502,camunda-zeebe-0.camunda-zeebe.dd-region-1.svc.cluster.local:26502,camunda-zeebe-1.camunda-zeebe.dd-region-1.svc.cluster.local:26502"
+    - name: ZEEBE_BROKER_CLUSTER_MESSAGECOMPRESSION
+      value: "GZIP"
+    - name: ZEEBE_BROKER_BACKPRESSURE_AIMD_REQUESTTIMEOUT
+      value: "1s"
+    - name: ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT
+      value: "500ms"
+    - name: ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL
+      value: "2s"
+    - name: ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTREQUESTTIMEOUT
+      value: "10s"
+
+  zeebe-gateway:
+    env:
+    - name: ZEEBE_GATEWAY_CLUSTER_MESSAGECOMPRESSION
+      value: "GZIP"
+    - name: ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_PROBETIMEOUT
+      value: "500ms"
+    - name: ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_PROBEINTERVAL
+      value: "2s"
+    
+   
+starter:
+  replicas: 1
+  rate: 25
+  
+worker:
+  replicas: 1

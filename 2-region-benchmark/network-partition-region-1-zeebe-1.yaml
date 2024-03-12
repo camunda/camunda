@@ -1,0 +1,15 @@
+kind: NetworkChaos
+apiVersion: chaos-mesh.org/v1alpha1
+metadata:
+  namespace: dd-region-1
+  name: network-partition-region-1-zeebe-1
+spec:
+  selector:
+    namespaces:
+      - dd-region-1
+    pods:
+      dd-region-1:
+        - camunda-zeebe-1
+  mode: all
+  action: partition
+  direction: both

@@ -1,0 +1,35 @@
+kind: NetworkChaos
+apiVersion: chaos-mesh.org/v1alpha1
+metadata:
+  namespace: dd-region-0
+  name: chaos-network-regions
+spec:
+  selector:
+    namespaces:
+      - dd-region-0
+    pods:
+      dd-region-0:
+        - camunda-zeebe-0
+        - camunda-zeebe-1
+        - elastic-0
+        - elastic-1
+        - elastic-2
+  mode: all
+  action: delay
+  delay:
+    latency: 50ms
+    correlation: '100'
+    jitter: '0'
+  direction: both
+  target:
+    selector:
+      namespaces:
+        - dd-region-1
+      pods:
+        dd-region-1:
+          - camunda-zeebe-0
+          - camunda-zeebe-1
+          - elastic-0
+          - elastic-1
+          - elastic-2
+    mode: all
