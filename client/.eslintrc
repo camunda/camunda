@@ -12,7 +12,6 @@
     "plugin:prettier/recommended",
     "plugin:testing-library/react"
   ],
-  "ignorePatterns": ["dist"],
   "parser": "@typescript-eslint/parser",
   "plugins": ["react-refresh", "testing-library"],
   "rules": {

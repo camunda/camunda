@@ -7,6 +7,9 @@ coverage/
 **/*.svg
 **/*.xml
 src/fonts/
+test-results/
+playwright-report/
+playwright/.cache/
 yarn.lock
 .eslintcache
 .env
