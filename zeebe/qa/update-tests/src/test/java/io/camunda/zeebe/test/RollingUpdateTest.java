@@ -17,14 +17,18 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.junit.CachedTestResultsExtension;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.cluster.ZeebeCluster;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,12 +40,10 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.ContainerState;
-import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -51,7 +53,6 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
-@Execution(ExecutionMode.CONCURRENT)
 final class RollingUpdateTest {
 
   private static final BpmnModelInstance PROCESS =
@@ -61,19 +62,28 @@ final class RollingUpdateTest {
           .serviceTask("task2", s -> s.zeebeJobType("secondTask"))
           .endEvent()
           .done();
-  private final Network network = Network.newNetwork();
+
+  @SuppressWarnings("unused")
+  @RegisterExtension()
+  private static final CachedTestResultsExtension CACHED_TEST_RESULTS_EXTENSION =
+      new CachedTestResultsExtension(
+          Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT"))
+              .map(Path::of)
+              .orElse(null));
+
   private final ZeebeCluster cluster =
       ZeebeCluster.builder()
           .withEmbeddedGateway(true)
           .withBrokersCount(3)
           .withPartitionsCount(1)
           .withReplicationFactor(3)
-          .withNetwork(network)
           .build();
 
   @SuppressWarnings("unused")
   @RegisterExtension
   private final ContainerLogsDumper logsPrinter = new ContainerLogsDumper(cluster::getNodes);
+
+  private final Collection<ZeebeVolume> volumes = new LinkedList<>();
 
   @BeforeEach
   public void setup() {
@@ -83,7 +93,8 @@ final class RollingUpdateTest {
   @AfterEach
   public void tearDown() {
     cluster.stop();
-    CloseHelper.quietClose(network);
+    CloseHelper.closeAll(volumes);
+    volumes.clear();
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
@@ -351,8 +362,20 @@ final class RollingUpdateTest {
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
+    final var volume =
+        ZeebeVolume.newVolume(
+            cfg -> {
+              // Workaround for
+              // https://github.com/camunda-community-hub/zeebe-test-container/issues/656
+              final var labels = new HashMap<>(cfg.getLabels());
+              labels.put(
+                  DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL,
+                  DockerClientFactory.SESSION_ID);
+              return cfg.withLabels(labels);
+            });
+    volumes.add(volume);
     broker
-        .withZeebeData(ZeebeVolume.newVolume())
+        .withZeebeData(volume)
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
