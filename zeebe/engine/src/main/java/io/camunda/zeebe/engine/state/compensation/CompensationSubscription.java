@@ -41,6 +41,9 @@ public class CompensationSubscription extends UnpackedObject implements DbValue 
     copy.recordProp.getValue().setCompensationHandlerId(getRecord().getCompensationHandlerId());
     copy.recordProp
         .getValue()
+        .setCompensationHandlerInstanceKey(getRecord().getCompensationHandlerInstanceKey());
+    copy.recordProp
+        .getValue()
         .setCompensableActivityScopeKey(getRecord().getCompensableActivityScopeKey());
     copy.recordProp
         .getValue()

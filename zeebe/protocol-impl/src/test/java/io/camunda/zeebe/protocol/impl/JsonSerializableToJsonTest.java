@@ -2270,6 +2270,7 @@ final class JsonSerializableToJsonTest {
                     .setThrowEventId("elementThrowEventId")
                     .setThrowEventInstanceKey(123L)
                     .setCompensationHandlerId("compensationActivityElementId")
+                    .setCompensationHandlerInstanceKey(100L)
                     .setCompensableActivityScopeKey(789L)
                     .setCompensableActivityInstanceKey(123L)
                     .setVariables(VARIABLES_MSGPACK),
@@ -2283,6 +2284,7 @@ final class JsonSerializableToJsonTest {
           "throwEventId": "elementThrowEventId",
           "throwEventInstanceKey": 123,
           "compensationHandlerId": "compensationActivityElementId",
+          "compensationHandlerInstanceKey": 100,
           "compensableActivityScopeKey": 789,
           "compensableActivityInstanceKey": 123,
           "variables": {
@@ -2308,6 +2310,7 @@ final class JsonSerializableToJsonTest {
           "throwEventId": "",
           "throwEventInstanceKey": -1,
           "compensationHandlerId": "",
+          "compensationHandlerInstanceKey": -1,
           "compensableActivityScopeKey": -1,
           "compensableActivityInstanceKey": -1,
           "variables": {}
