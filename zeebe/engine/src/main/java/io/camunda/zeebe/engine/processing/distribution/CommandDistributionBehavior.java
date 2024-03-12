@@ -32,9 +32,10 @@ public final class CommandDistributionBehavior {
 
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
-  private final List<Integer> otherPartitions;
   private final InterPartitionCommandSender interPartitionCommandSender;
+
   private final int currentPartitionId;
+  private final List<Integer> otherPartitions;
 
   // Records are expensive to construct, so we create them once and reuse them
   private final CommandDistributionRecord commandDistributionStarted =
@@ -71,7 +72,24 @@ public final class CommandDistributionBehavior {
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final TypedRecord<T> command) {
-    if (otherPartitions.isEmpty()) {
+    distributeCommand(distributionKey, command, otherPartitions);
+  }
+
+  /**
+   * Distributes a command to the specified partitions.
+   *
+   * @param distributionKey the key to identify this unique command distribution. The key is used to
+   *     store the pending distribution, as the key of distributed command, to identify the
+   *     distributing partition when processing the distributed command, and as the key to correlate
+   *     the ACKNOWLEDGE command to the pending distribution. This can be a newly generated key, or
+   *     the key identifying the entity that's being distributed. Please note that it must be unique
+   *     for command distribution. Don't reuse the key to distribute another command.
+   * @param command the command to distribute
+   * @param partitions the partitions to distribute the command to
+   */
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final long distributionKey, final TypedRecord<T> command, final List<Integer> partitions) {
+    if (partitions.isEmpty()) {
       return;
     }
 
@@ -85,7 +103,7 @@ public final class CommandDistributionBehavior {
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    otherPartitions.forEach(
+    partitions.forEach(
         (partition) -> distributeToPartition(partition, distributionRecord, distributionKey));
   }
 
