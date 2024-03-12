@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ZeebeConnector {
 
-  private static final Logger logger = LoggerFactory.getLogger(ZeebeConnector.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeConnector.class);
 
   private static final int JOB_WORKER_MAX_JOBS_ACTIVE = 5;
 
@@ -47,10 +47,10 @@ public class ZeebeConnector {
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
-      logger.info("Use TLS connection to zeebe");
+      LOGGER.info("Use TLS connection to zeebe");
     } else {
       builder.usePlaintext();
-      logger.info("Use plaintext connection to zeebe");
+      LOGGER.info("Use plaintext connection to zeebe");
     }
     return builder.build();
   }

@@ -42,9 +42,9 @@ public class MapPath {
   }
 
   public Optional<Convertable> getByPath(List<String> path) {
-    Supplier<String> pathHead = () -> path.get(0);
-    Supplier<List<String>> pathTail = () -> path.subList(1, path.size());
-    Supplier<Object> headItem = () -> map.get(pathHead.get());
+    final Supplier<String> pathHead = () -> path.get(0);
+    final Supplier<List<String>> pathTail = () -> path.subList(1, path.size());
+    final Supplier<Object> headItem = () -> map.get(pathHead.get());
 
     return switch (path.size()) {
       case 0 -> Optional.empty();

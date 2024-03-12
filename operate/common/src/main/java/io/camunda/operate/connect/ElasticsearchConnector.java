@@ -68,7 +68,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ElasticsearchConnector {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchConnector.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
   @Autowired private OperateProperties operateProperties;
 
@@ -79,7 +79,7 @@ public class ElasticsearchConnector {
       try {
         esClient.close();
       } catch (IOException e) {
-        logger.error("Could not close esClient", e);
+        LOGGER.error("Could not close esClient", e);
       }
     }
   }
@@ -92,9 +92,9 @@ public class ElasticsearchConnector {
 
   @Bean
   public ElasticsearchClient elasticsearchClient() {
-    logger.debug("Creating ElasticsearchClient ...");
+    LOGGER.debug("Creating ElasticsearchClient ...");
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
+    final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
     if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
       restClientBuilder.setRequestConfigCallback(
           configCallback -> setTimeouts(configCallback, elsConfig));
@@ -106,21 +106,21 @@ public class ElasticsearchConnector {
             .build();
 
     // Create the transport with a Jackson mapper
-    ElasticsearchTransport transport =
+    final ElasticsearchTransport transport =
         new RestClientTransport(restClient, new JacksonJsonpMapper());
 
     // And create the API client
     elasticsearchClient = new ElasticsearchClient(transport);
     if (!checkHealth(elasticsearchClient)) {
-      logger.warn("Elasticsearch cluster is not accessible");
+      LOGGER.warn("Elasticsearch cluster is not accessible");
     } else {
-      logger.debug("Elasticsearch connection was successfully created.");
+      LOGGER.debug("Elasticsearch connection was successfully created.");
     }
     return elasticsearchClient;
   }
 
   public boolean checkHealth(ElasticsearchClient elasticsearchClient) {
-    ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(50)
@@ -135,7 +135,7 @@ public class ElasticsearchConnector {
           .retryConsumer(
               () -> {
                 final HealthResponse healthResponse = elasticsearchClient.cluster().health();
-                logger.info("Elasticsearch cluster health: {}", healthResponse.status());
+                LOGGER.info("Elasticsearch cluster health: {}", healthResponse.status());
                 return healthResponse.clusterName().equals(elsConfig.getClusterName());
               })
           .build()
@@ -173,7 +173,7 @@ public class ElasticsearchConnector {
   }
 
   public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {
-    logger.debug("Creating Elasticsearch connection...");
+    LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(getHttpHost(elsConfig))
             .setHttpClientConfigCallback(
@@ -187,9 +187,9 @@ public class ElasticsearchConnector {
             .setApiCompatibilityMode(true)
             .build();
     if (!checkHealth(esClient)) {
-      logger.warn("Elasticsearch cluster is not accessible");
+      LOGGER.warn("Elasticsearch cluster is not accessible");
     } else {
-      logger.debug("Elasticsearch connection was successfully created.");
+      LOGGER.debug("Elasticsearch connection was successfully created.");
     }
     return esClient;
   }
@@ -211,7 +211,7 @@ public class ElasticsearchConnector {
         httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
     } catch (Exception e) {
-      logger.error("Error in setting up SSLContext", e);
+      LOGGER.error("Error in setting up SSLContext", e);
     }
   }
 
@@ -239,7 +239,7 @@ public class ElasticsearchConnector {
       }
       return trustStore;
     } catch (Exception e) {
-      String message =
+      final String message =
           "Could not create certificate trustStore for the secured Elasticsearch Connection!";
       throw new OperateRuntimeException(message, e);
     }
@@ -248,10 +248,10 @@ public class ElasticsearchConnector {
   private void setCertificateInTrustStore(
       final KeyStore trustStore, final String serverCertificate) {
     try {
-      Certificate cert = loadCertificateFromPath(serverCertificate);
+      final Certificate cert = loadCertificateFromPath(serverCertificate);
       trustStore.setCertificateEntry("elasticsearch-host", cert);
     } catch (Exception e) {
-      String message =
+      final String message =
           "Could not load configured server certificate for the secured Elasticsearch Connection!";
       throw new OperateRuntimeException(message, e);
     }
@@ -259,13 +259,13 @@ public class ElasticsearchConnector {
 
   private Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
-    Certificate cert;
+    final Certificate cert;
     try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
-      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+      final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
         cert = cf.generateCertificate(bis);
-        logger.debug("Found certificate: {}", cert);
+        LOGGER.debug("Found certificate: {}", cert);
       } else {
         throw new OperateRuntimeException(
             "Could not load certificate from file, file is empty. File: " + certificatePath);
@@ -299,7 +299,7 @@ public class ElasticsearchConnector {
     final String password = elsConfig.getPassword();
 
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      logger.warn(
+      LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
       return;
     }
@@ -310,7 +310,7 @@ public class ElasticsearchConnector {
   }
 
   public boolean checkHealth(RestHighLevelClient esClient) {
-    ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(50)

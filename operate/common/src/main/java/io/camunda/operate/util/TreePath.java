@@ -130,9 +130,9 @@ public class TreePath {
   }
 
   public TreePath removeProcessInstance(String processInstanceKey) {
-    List<String> treePathEntries = new ArrayList<>();
+    final List<String> treePathEntries = new ArrayList<>();
     Collections.addAll(treePathEntries, treePath.toString().split("/"));
-    int piIndex = treePathEntries.indexOf("PI_" + processInstanceKey);
+    final int piIndex = treePathEntries.indexOf("PI_" + processInstanceKey);
     if (piIndex > -1) {
       if (piIndex == treePathEntries.size() - 1) {
         // if last element remove only that one

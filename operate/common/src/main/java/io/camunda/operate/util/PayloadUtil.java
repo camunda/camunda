@@ -35,7 +35,7 @@ public class PayloadUtil {
 
   public Map<String, Object> parsePayload(String payload) throws IOException {
 
-    Map<String, Object> map = new LinkedHashMap<>();
+    final Map<String, Object> map = new LinkedHashMap<>();
 
     traverseTheTree(objectMapper.readTree(payload), map, "");
 
@@ -54,6 +54,7 @@ public class PayloadUtil {
     }
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   private void traverseTheTree(JsonNode jsonNode, Map<String, Object> map, String path) {
     if (jsonNode.isValueNode()) {
 

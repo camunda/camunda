@@ -71,8 +71,8 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   }
 
   private String json(SearchRequest request) {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    JsonGenerator generator = transport.jsonpMapper().jsonProvider().createGenerator(baos);
+    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    final JsonGenerator generator = transport.jsonpMapper().jsonProvider().createGenerator(baos);
     request.serialize(generator, transport.jsonpMapper());
     generator.close();
     return baos.toString();
@@ -89,12 +89,12 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
 
   */
   private String fixSearchAfter(String json) {
-    Matcher m = SEARCH_AFTER_PATTERN.matcher(json);
+    final Matcher m = SEARCH_AFTER_PATTERN.matcher(json);
     if (m.find()) {
-      var searchAfter = m.group(1); // Find "searchAfter" block in search request
+      final var searchAfter = m.group(1); // Find "searchAfter" block in search request
       // Replace all occurrences of minimum long value string representations with long
       // representations inside searchAfter
-      var fixedSearchAfter =
+      final var fixedSearchAfter =
           searchAfter.replaceAll(format("\"%s\"", Long.MIN_VALUE), String.valueOf(Long.MIN_VALUE));
       return json.replace(searchAfter, fixedSearchAfter);
     } else {
@@ -105,7 +105,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   public <TDocument> SearchResponse<TDocument> fixedSearch(
       SearchRequest request, Class<TDocument> tDocumentClass)
       throws IOException, OpenSearchException {
-    var path = format("/%s/_search", join(",", request.index()));
+    final var path = format("/%s/_search", join(",", request.index()));
     JsonEndpoint<Map<String, Object>, SearchResponse<Object>, ErrorResponse> endpoint =
         arbitraryEndpoint("POST", path, SearchResponse._DESERIALIZER);
     endpoint =
@@ -119,7 +119,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
 
   public Map<String, Object> searchAsMap(SearchRequest request)
       throws IOException, OpenSearchException {
-    JsonEndpoint<SearchRequest, HashMap, ErrorResponse> endpoint =
+    final JsonEndpoint<SearchRequest, HashMap, ErrorResponse> endpoint =
         SearchRequest._ENDPOINT.withResponseDeserializer(getDeserializer(HashMap.class));
 
     return transport.performRequest(request, endpoint, null);
@@ -127,7 +127,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
 
   public Map<String, Object> arbitraryRequest(String method, String path, String json)
       throws IOException, OpenSearchException {
-    JsonEndpoint<Map<String, Object>, HashMap, ErrorResponse> endpoint =
+    final JsonEndpoint<Map<String, Object>, HashMap, ErrorResponse> endpoint =
         arbitraryEndpoint(method, path, this.getDeserializer(HashMap.class));
     return arbitraryRequest(json, endpoint);
   }

@@ -31,7 +31,7 @@ public class ApplicationShutdownService {
   @Autowired private ConfigurableApplicationContext context;
 
   public void shutdown() {
-    int exitCode = SpringApplication.exit(context, () -> SYSTEM_ERROR);
+    final int exitCode = SpringApplication.exit(context, () -> SYSTEM_ERROR);
     System.exit(exitCode);
   }
 }

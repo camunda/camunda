@@ -38,7 +38,7 @@ public class PartitionHolder {
 
   public static final int MAX_RETRY = 60; // 1 minute
 
-  private static final Logger logger = LoggerFactory.getLogger(PartitionHolder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PartitionHolder.class);
 
   private List<Integer> partitionIds = new ArrayList<>();
 
@@ -54,9 +54,9 @@ public class PartitionHolder {
    * for {@value #MAX_RETRY} times.
    */
   public List<Integer> getPartitionIds() {
-    List<Integer> ids = getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
+    final List<Integer> ids = getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
     if (ids.isEmpty() && applicationShutdownService != null) {
-      logger.error(
+      LOGGER.error(
           "Operate needs an established connection to Zeebe in order to retrieve Zeebe Partitions. Shutting down...");
       applicationShutdownService.shutdown();
     }
@@ -71,14 +71,14 @@ public class PartitionHolder {
         sleepFor(waitingTimeInMilliseconds);
       }
       retries++;
-      Optional<List<Integer>> zeebePartitionIds = getPartitionIdsFromZeebe();
+      final Optional<List<Integer>> zeebePartitionIds = getPartitionIdsFromZeebe();
       if (zeebePartitionIds.isPresent()) {
         partitionIds = extractCurrentNodePartitions(zeebePartitionIds.get());
       } else {
         if (retries <= maxRetries) {
-          logger.info("Partition ids can't be fetched from Zeebe. Try next round ({}).", retries);
+          LOGGER.info("Partition ids can't be fetched from Zeebe. Try next round ({}).", retries);
         } else {
-          logger.info(
+          LOGGER.info(
               "Partition ids can't be fetched from Zeebe. Return empty partition ids list.");
         }
       }
@@ -92,15 +92,15 @@ public class PartitionHolder {
    * @param partitionIds
    */
   protected List<Integer> extractCurrentNodePartitions(List<Integer> partitionIds) {
-    Integer[] configuredIds = operateProperties.getClusterNode().getPartitionIds();
+    final Integer[] configuredIds = operateProperties.getClusterNode().getPartitionIds();
     if (configuredIds != null && configuredIds.length > 0) {
       partitionIds.retainAll(Arrays.asList(configuredIds));
     } else if (operateProperties.getClusterNode().getNodeCount() != null
         && operateProperties.getClusterNode().getCurrentNodeId() != null) {
-      Integer nodeCount = operateProperties.getClusterNode().getNodeCount();
-      Integer nodeId = operateProperties.getClusterNode().getCurrentNodeId();
+      final Integer nodeCount = operateProperties.getClusterNode().getNodeCount();
+      final Integer nodeId = operateProperties.getClusterNode().getCurrentNodeId();
       if (nodeId >= nodeCount) {
-        logger.warn(
+        LOGGER.warn(
             "Misconfiguration: nodeId [{}] must be strictly less than nodeCount [{}]. No partitions will be selected.",
             nodeId,
             nodeCount);
@@ -111,15 +111,15 @@ public class PartitionHolder {
   }
 
   protected Optional<List<Integer>> getPartitionIdsFromZeebe() {
-    logger.debug("Requesting partition ids from Zeebe client");
+    LOGGER.debug("Requesting partition ids from Zeebe client");
     try {
       final Topology topology = zeebeClient.newTopologyRequest().send().join();
-      int partitionCount = topology.getPartitionsCount();
+      final int partitionCount = topology.getPartitionsCount();
       if (partitionCount > 0) {
         return Optional.of(CollectionUtil.fromTo(1, partitionCount));
       }
     } catch (Exception t) {
-      logger.warn(
+      LOGGER.warn(
           "Error occurred when requesting partition ids from Zeebe client: " + t.getMessage(), t);
     }
     return Optional.empty();

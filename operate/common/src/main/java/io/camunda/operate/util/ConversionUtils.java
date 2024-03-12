@@ -22,9 +22,9 @@ import java.util.function.Function;
 
 public class ConversionUtils {
 
-  public static final Function<String, Long> stringToLong =
+  public static final Function<String, Long> STRING_TO_LONG =
       (aString) -> aString == null ? null : Long.valueOf(aString);
-  public static final Function<Long, String> longToString =
+  public static final Function<Long, String> LONG_TO_STRING =
       (aLong) -> aLong == null ? null : String.valueOf(aLong);
 
   public static String toStringOrNull(Object object) {

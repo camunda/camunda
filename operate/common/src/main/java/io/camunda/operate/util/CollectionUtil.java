@@ -16,7 +16,7 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.util.ConversionUtils.stringToLong;
+import static io.camunda.operate.util.ConversionUtils.STRING_TO_LONG;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.util.AbstractList;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 public abstract class CollectionUtil {
 
   public static <K, V> V getOrDefaultForNullValue(Map<K, V> map, K key, V defaultValue) {
-    V value = map.get(key);
+    final V value = map.get(key);
     return value == null ? defaultValue : value;
   }
 
@@ -53,7 +53,7 @@ public abstract class CollectionUtil {
 
   @SafeVarargs
   public static <T> List<T> throwAwayNullElements(T... array) {
-    List<T> listOfNotNulls = new ArrayList<>();
+    final List<T> listOfNotNulls = new ArrayList<>();
     for (T o : array) {
       if (o != null) {
         listOfNotNulls.add(o);
@@ -63,7 +63,7 @@ public abstract class CollectionUtil {
   }
 
   public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
-    Set<Object> seen = ConcurrentHashMap.newKeySet();
+    final Set<Object> seen = ConcurrentHashMap.newKeySet();
     return t -> seen.add(keyExtractor.apply(t));
   }
 
@@ -87,7 +87,7 @@ public abstract class CollectionUtil {
     if (keyValuePairs == null || keyValuePairs.length % 2 != 0) {
       throw new OperateRuntimeException("keyValuePairs should not be null and has a even length.");
     }
-    Map<String, Object> result = new HashMap<>();
+    final Map<String, Object> result = new HashMap<>();
     for (int i = 0; i < keyValuePairs.length - 1; i += 2) {
       result.put(keyValuePairs[i].toString(), keyValuePairs[i + 1]);
     }
@@ -127,7 +127,7 @@ public abstract class CollectionUtil {
   }
 
   public static List<Long> toSafeListOfLongs(Collection<String> aCollection) {
-    return map(withoutNulls(aCollection), stringToLong);
+    return map(withoutNulls(aCollection), STRING_TO_LONG);
   }
 
   public static <T> void addNotNull(Collection<T> collection, T object) {
@@ -137,7 +137,7 @@ public abstract class CollectionUtil {
   }
 
   public static List<Integer> fromTo(int from, int to) {
-    List<Integer> result = new ArrayList<>();
+    final List<Integer> result = new ArrayList<>();
     for (int i = from; i <= to; i++) {
       result.add(i);
     }
@@ -167,10 +167,10 @@ public abstract class CollectionUtil {
     if (subsetId >= subsetCount) {
       return new ArrayList<>();
     }
-    Integer size = list.size();
-    int bucketSize = (int) Math.round((double) size / (double) subsetCount);
-    int start = bucketSize * subsetId;
-    int end;
+    final Integer size = list.size();
+    final int bucketSize = (int) Math.round((double) size / (double) subsetCount);
+    final int start = bucketSize * subsetId;
+    final int end;
     if (subsetId == subsetCount - 1) {
       end = size;
     } else {
