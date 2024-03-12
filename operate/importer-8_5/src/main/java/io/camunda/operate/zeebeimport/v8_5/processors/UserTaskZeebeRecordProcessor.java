@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserTaskZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(UserTaskZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskZeebeRecordProcessor.class);
   private static final Set<Intent> CREATE_STATES = Set.of(UserTaskIntent.CREATED);
   private static final Set<Intent> UPDATE_STATES =
       Set.of(
@@ -129,7 +129,7 @@ public class UserTaskZeebeRecordProcessor {
       final BatchRequest batchRequest, final Record<UserTaskRecordValue> userTaskRecord)
       throws PersistenceException {
     final Intent intent = userTaskRecord.getIntent();
-    logger.info("Intent is: {}", intent);
+    LOGGER.info("Intent is: {}", intent);
     final var userTaskValue = userTaskRecord.getValue();
     final UserTaskEntity userTaskEntity;
     try {
@@ -144,7 +144,7 @@ public class UserTaskZeebeRecordProcessor {
       updateUserTask(
           userTaskEntity, intentToUpdateFields.get(intent).apply(userTaskEntity), batchRequest);
     } else {
-      logger.debug("UserTask record with intent {} is ignored", intent);
+      LOGGER.debug("UserTask record with intent {} is ignored", intent);
     }
   }
 
@@ -155,7 +155,7 @@ public class UserTaskZeebeRecordProcessor {
       throws PersistenceException {
     batchRequest.update(
         userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), updateFields);
-    logger.debug(
+    LOGGER.debug(
         "Updated UserTaskEntity {} with update fields {} to batch request",
         userTaskEntity.getId(),
         updateFields);
@@ -165,7 +165,7 @@ public class UserTaskZeebeRecordProcessor {
       throws PersistenceException {
     batchRequest.addWithId(
         userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), userTaskEntity);
-    logger.debug("Added UserTaskEntity {} to batch request", userTaskEntity);
+    LOGGER.debug("Added UserTaskEntity {} to batch request", userTaskEntity);
   }
 
   private UserTaskEntity createEntity(final Record<UserTaskRecordValue> userTaskRecord)
@@ -195,11 +195,13 @@ public class UserTaskZeebeRecordProcessor {
   }
 
   private OffsetDateTime toDateOrNull(final String dateString) {
-    if (dateString == null) return null;
+    if (dateString == null) {
+      return null;
+    }
     try {
       return OffsetDateTime.parse(dateString);
     } catch (final Exception e) {
-      logger.warn("Could not parse {} as OffsetDateTime. Use null.", dateString);
+      LOGGER.warn("Could not parse {} as OffsetDateTime. Use null.", dateString);
       return null;
     }
   }

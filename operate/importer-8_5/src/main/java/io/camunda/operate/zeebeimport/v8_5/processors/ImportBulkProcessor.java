@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ImportBulkProcessor extends AbstractImportBatchProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportBulkProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportBulkProcessor.class);
 
   @Autowired private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
 
@@ -87,7 +87,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
     try {
       entity = objectMapper.readValue(searchHitString, valueType);
     } catch (final IOException e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Error while reading entity of type %s from indices!", valueType.toString()),
           e);
@@ -110,7 +110,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
                     getLocalObjectMapper(),
                     SimpleType.constructUnsafe(Record.class)));
 
-    logger.debug(
+    LOGGER.debug(
         "Writing {} Zeebe records to indices, version={}, importValueType={}, partition={}",
         zeebeRecords.size(),
         getZeebeVersion(),
@@ -153,7 +153,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
         processUserTask(batchRequest, zeebeRecords);
         break;
       default:
-        logger.debug("Default case triggered for type {}", importValueType);
+        LOGGER.debug("Default case triggered for type {}", importValueType);
         break;
     }
 
