@@ -93,6 +93,7 @@ public final class SubProcessProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
     incidentBehavior.resolveIncidents(terminating);
+    compensationSubscriptionBehaviour.deleteSubscriptionsOfSubprocess(terminating);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(terminating);
     if (noActiveChildInstances) {
