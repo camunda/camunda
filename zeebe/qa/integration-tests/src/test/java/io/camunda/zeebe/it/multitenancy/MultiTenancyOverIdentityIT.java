@@ -40,11 +40,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -56,7 +51,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -172,12 +166,15 @@ public class MultiTenancyOverIdentityIT {
           .withEnv("IDENTITY_DATABASE_NAME", DATABASE_NAME)
           .withEnv("IDENTITY_DATABASE_USERNAME", DATABASE_USER)
           .withEnv("IDENTITY_DATABASE_PASSWORD", DATABASE_PASSWORD)
+          // this will enable readiness checks by spring to await ApplicationRunner completion
+          .withEnv("MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED", "true")
+          .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
           .withNetwork(NETWORK)
           .withExposedPorts(8080, 8082)
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
-                  .forPath("/actuator/health")
+                  .forPath("/actuator/health/readiness")
                   .allowInsecure()
                   .forStatusCode(200))
           .withNetworkAliases("identity");
@@ -217,8 +214,6 @@ public class MultiTenancyOverIdentityIT {
         .withRecordingExporter(true)
         .start()
         .await(TestHealthProbe.READY);
-
-    awaitCamundaRealmAvailabilityOnKeycloak();
 
     associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_A), ZEEBE_CLIENT_ID_TENANT_A);
     associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_B), ZEEBE_CLIENT_ID_TENANT_B);
@@ -1352,32 +1347,6 @@ public class MultiTenancyOverIdentityIT {
               "Expected to handle gRPC request BroadcastSignal with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
     }
-  }
-
-  /**
-   * Awaits the presence of the Camunda realm and openid keys on the keycloak container. Once
-   * Keycloak and Identity booted up, Identity will eventually configure the Camunda Realm on
-   * Keycloak.
-   */
-  private static void awaitCamundaRealmAvailabilityOnKeycloak() {
-    final var httpClient = HttpClient.newHttpClient();
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(
-                URI.create(
-                    "http://localhost:%d%s/protocol/openid-connect/certs"
-                        .formatted(KEYCLOAK.getFirstMappedPort(), KEYCLOAK_PATH_CAMUNDA_REALM)))
-            .build();
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(120))
-        .pollInterval(Duration.ofSeconds(5))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final HttpResponse<String> response =
-                  httpClient.send(request, BodyHandlers.ofString());
-              assertThat(response.statusCode()).isEqualTo(200);
-            });
   }
 
   /**
