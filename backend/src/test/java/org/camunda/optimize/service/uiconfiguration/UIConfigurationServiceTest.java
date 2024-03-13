@@ -7,8 +7,10 @@ package org.camunda.optimize.service.uiconfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +44,8 @@ import org.springframework.core.env.Environment;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class UIConfigurationServiceTest {
 
+  @InjectMocks UIConfigurationService underTest;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
 
@@ -56,7 +60,17 @@ public class UIConfigurationServiceTest {
   @Mock private Identity identity;
   @Mock private Users identityUsers;
 
-  @InjectMocks UIConfigurationService underTest;
+  private static Stream<Arguments> optimizeProfiles() {
+    return Stream.of(
+        Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE), Arguments.of(PLATFORM_PROFILE));
+  }
+
+  private static Stream<Arguments> optimizeProfilesAndExpectedIsEnterpriseModeResult() {
+    return Stream.of(
+        Arguments.of(CLOUD_PROFILE, true),
+        Arguments.of(CCSM_PROFILE, false), // false by default because it's not mocked
+        Arguments.of(PLATFORM_PROFILE, true));
+  }
 
   @ParameterizedTest
   @MethodSource("optimizeProfiles")
@@ -125,21 +139,11 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.isEnterpriseMode()).isEqualTo(expectedIsEnterprise);
   }
 
-  private static Stream<Arguments> optimizeProfiles() {
-    return Stream.of(
-        Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE), Arguments.of(PLATFORM_PROFILE));
-  }
-
-  private static Stream<Arguments> optimizeProfilesAndExpectedIsEnterpriseModeResult() {
-    return Stream.of(
-        Arguments.of(CLOUD_PROFILE, true),
-        Arguments.of(CCSM_PROFILE, false), // false by default because it's not mocked
-        Arguments.of(PLATFORM_PROFILE, true));
-  }
-
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);
     when(identityUsers.isAvailable()).thenReturn(true);
+    when(environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY))
+        .thenReturn("elasticsearch");
   }
 }

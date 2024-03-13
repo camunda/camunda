@@ -30,6 +30,7 @@ public class UIConfigurationResponseDto {
   private List<String> webhooks;
   private boolean logoutHidden;
   private Integer exportCsvLimit;
+  private String optimizeDatabase;
 
   // mirrors SettingsDto
   private boolean metadataTelemetryEnabled;

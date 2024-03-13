@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+
 import com.google.common.collect.Sets;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
@@ -16,15 +24,6 @@ import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
-
 @Tag(OPENSEARCH_PASSING)
 public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
@@ -34,7 +33,7 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(true);
 
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isLogoutHidden()).isTrue();
@@ -46,7 +45,7 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(false);
 
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isLogoutHidden()).isFalse();
@@ -79,15 +78,16 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getDefaultCamundaWebappsEndpoint() {
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
+    final Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
     assertThat(webappsEndpoints).isNotEmpty();
-    WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
+    final WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint).isNotNull();
     assertThat(defaultEndpoint.getEndpoint()).isEqualTo("http://localhost:8080/camunda");
-    assertThat(defaultEndpoint.getEngineName()).isEqualTo(engineIntegrationExtension.getEngineName());
+    assertThat(defaultEndpoint.getEngineName()).isEqualTo(
+        engineIntegrationExtension.getEngineName());
   }
 
   @Test
@@ -96,15 +96,16 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     setWebappsEndpoint("foo");
 
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
+    final Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
     assertThat(webappsEndpoints).isNotEmpty();
-    WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
+    final WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint).isNotNull();
     assertThat(defaultEndpoint.getEndpoint()).isEqualTo("foo");
-    assertThat(defaultEndpoint.getEngineName()).isEqualTo(engineIntegrationExtension.getEngineName());
+    assertThat(defaultEndpoint.getEngineName()).isEqualTo(
+        engineIntegrationExtension.getEngineName());
   }
 
   @Test
@@ -113,12 +114,12 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     setWebappsEnabled(false);
 
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
+    final Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
     assertThat(webappsEndpoints).isNotEmpty();
-    WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
+    final WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint).isNotNull();
     assertThat(defaultEndpoint.getEndpoint()).isEmpty();
   }
@@ -130,7 +131,7 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
 
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isEmailEnabled()).isTrue();
@@ -142,7 +143,7 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(false);
 
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isEmailEnabled()).isFalse();
@@ -151,7 +152,7 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getOptimizeVersion() {
     // when
-    UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.getOptimizeVersion()).isEqualTo(Version.RAW_VERSION);
@@ -163,15 +164,15 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     // given
     final String webhook1Name = "webhook1";
     final String webhook2Name = "webhook2";
-    Map<String, WebhookConfiguration> webhookMap = uiConfigurationClient.createSimpleWebhookConfigurationMap(
-      Sets.newHashSet(
-        webhook2Name,
-        webhook1Name
-      ));
+    final Map<String, WebhookConfiguration> webhookMap = uiConfigurationClient.createSimpleWebhookConfigurationMap(
+        Sets.newHashSet(
+            webhook2Name,
+            webhook1Name
+        ));
     embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookMap);
 
     // when
-    List<String> allWebhooks = uiConfigurationClient.getUIConfiguration().getWebhooks();
+    final List<String> allWebhooks = uiConfigurationClient.getUIConfiguration().getWebhooks();
 
     // then
     assertThat(allWebhooks).containsExactly(webhook1Name, webhook2Name);
@@ -205,9 +206,11 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(response.isMetadataTelemetryEnabled())
-      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().getMetadataTelemetryEnabled().get());
+        .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings()
+            .getMetadataTelemetryEnabled().get());
     assertThat(response.isSettingsManuallyConfirmed())
-      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isTelemetryManuallyConfirmed());
+        .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings()
+            .isTelemetryManuallyConfirmed());
   }
 
   @Test
@@ -238,15 +241,18 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     final String scriptUrl = "test";
     final String stage = "IT";
     final String clusterId = "IT-cluster";
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setApiHost(apiHost);
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setToken(testToken);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel()
+        .setApiHost(apiHost);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel()
+        .setToken(testToken);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
-      .setOrganizationId(organizationId);
+        .setOrganizationId(organizationId);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
-      .setStage(stage);
+        .setStage(stage);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
-      .setClusterId(clusterId);
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getOsano().setScriptUrl(scriptUrl);
+        .setClusterId(clusterId);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getOsano()
+        .setScriptUrl(scriptUrl);
 
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
@@ -266,11 +272,12 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnabled(true);
     final String scriptUrl = "test";
-    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setAppCuesScriptUrl(scriptUrl);
+    embeddedOptimizeExtension.getConfigurationService().getOnboarding()
+        .setAppCuesScriptUrl(scriptUrl);
     final String clusterId = "clusterId1";
     final String orgId = "orgId1";
     embeddedOptimizeExtension.getConfigurationService().getOnboarding().setProperties(
-      new OnboardingConfiguration.Properties(orgId, clusterId)
+        new OnboardingConfiguration.Properties(orgId, clusterId)
     );
 
     // when
@@ -283,22 +290,32 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     assertThat(response.getOnboarding().getClusterId()).isEqualTo(clusterId);
   }
 
+  @Test
+  public void databaseModeIsReturnedCorrectly() {
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.getOptimizeDatabase()).isEqualTo(
+        databaseIntegrationTestExtension.getDatabaseVendor().toString());
+  }
+
   private void setWebappsEndpoint(final String webappsEndpoint) {
     embeddedOptimizeExtension
-      .getConfigurationService()
-      .getConfiguredEngines()
-      .get(DEFAULT_ENGINE_ALIAS)
-      .getWebapps()
-      .setEndpoint(webappsEndpoint);
+        .getConfigurationService()
+        .getConfiguredEngines()
+        .get(DEFAULT_ENGINE_ALIAS)
+        .getWebapps()
+        .setEndpoint(webappsEndpoint);
   }
 
   private void setWebappsEnabled(final boolean enabled) {
     embeddedOptimizeExtension
-      .getConfigurationService()
-      .getConfiguredEngines()
-      .get(DEFAULT_ENGINE_ALIAS)
-      .getWebapps()
-      .setEnabled(enabled);
+        .getConfigurationService()
+        .getConfiguredEngines()
+        .get(DEFAULT_ENGINE_ALIAS)
+        .getWebapps()
+        .setEnabled(enabled);
   }
 
   protected void createTenant(final String tenantId) {
