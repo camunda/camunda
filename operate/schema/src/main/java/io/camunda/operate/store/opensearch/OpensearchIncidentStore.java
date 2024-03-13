@@ -49,7 +49,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchIncidentStore implements IncidentStore {
 
-  public static Query activeIncidentQuery =
+  public static final Query ACTIVE_INCIDENT_QUERY =
       TermQuery.of(
               q ->
                   q.field(IncidentTemplate.STATE).value(FieldValue.of(IncidentState.ACTIVE.name())))
@@ -62,7 +62,7 @@ public class OpensearchIncidentStore implements IncidentStore {
   @Autowired private OperateProperties operateProperties;
 
   private Query activeIncidentConstantScore(Query q) {
-    return constantScore(and(activeIncidentQuery, q));
+    return constantScore(and(ACTIVE_INCIDENT_QUERY, q));
   }
 
   @Override
@@ -83,7 +83,7 @@ public class OpensearchIncidentStore implements IncidentStore {
             .query(
                 withTenantCheck(
                     constantScore(
-                        and(term(IncidentTemplate.TREE_PATH, treePath), activeIncidentQuery))))
+                        and(term(IncidentTemplate.TREE_PATH, treePath), ACTIVE_INCIDENT_QUERY))))
             .aggregations(
                 Map.of(
                     errorTypesAggName,
