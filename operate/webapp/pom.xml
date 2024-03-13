@@ -72,6 +72,11 @@
       <artifactId>spring-security-oauth2-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+    </dependency>
+
     <!-- SPRING -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -342,6 +347,7 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
+            <dep>com.nimbusds:nimbus-jose-jwt</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

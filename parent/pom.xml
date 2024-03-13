@@ -51,11 +51,16 @@
     <version.commons-text>1.11.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.3.6</version.docker-java-api>
-    <version.elasticsearch>8.9.2</version.elasticsearch>
-    <version.error-prone>2.26.1</version.error-prone>
+    <version.elasticsearch>7.17.16</version.elasticsearch>
+    <version.lucene>8.11.1</version.lucene>
+    <version.elasticsearch-client>8.9.2</version.elasticsearch-client>
+    <version.parsson>1.1.5</version.parsson>
+
+    <version.error-prone>2.25.0</version.error-prone>
     <version.grpc>1.62.2</version.grpc>
     <version.gson>2.10.1</version.gson>
-    <version.guava>33.1.0-jre</version.guava>
+    <version.guava>33.0.0-jre</version.guava>
+    <version.guava.annotations>r03</version.guava.annotations>
     <version.hamcrest>2.2</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
@@ -63,6 +68,9 @@
     <version.httpcore5>5.2.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.4.5</version.identity>
+    <version.auth0>1.45.1</version.auth0>
+    <version.auth0-commons>1.11.0</version.auth0-commons>
+    <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.jackson>2.17.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.jna>5.14.0</version.jna>
@@ -124,6 +132,7 @@
     <version.google-sdk>26.34.0</version.google-sdk>
     <version.azure-sdk>1.2.21</version.azure-sdk>
     <version.awssdk>2.25.11</version.awssdk>
+    <version.aws-java-sdk>1.12.647</version.aws-java-sdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -139,6 +148,10 @@
     <version.tc-keycloak>3.3.0</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
+    <version.jakarta.json>2.0.1</version.jakarta.json>
+    <version.joda-time>2.10.10</version.joda-time>
+    <version.hdr-histogram>2.1.12</version.hdr-histogram>
+    <version.nimbus-jose-jwt>9.37.2</version.nimbus-jose-jwt>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -215,6 +228,7 @@
 
   <dependencyManagement>
     <dependencies>
+
       <!-- Internal Zeebe modules -->
       <dependency>
         <groupId>io.camunda</groupId>
@@ -470,6 +484,74 @@
         <version>${version.zpt}</version>
       </dependency>
 
+      <!-- Operate Modules -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-webjar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-archiver</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer-8_4</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer-8_5</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-data-generator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-schema</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-mvc-auth-commons</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- Third party dependencies -->
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
@@ -483,6 +565,15 @@
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>
         <version>${version.spring}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <!-- Import dependency management from Spring Boot -->
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${version.spring-boot}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -739,15 +830,64 @@
       </dependency>
 
       <dependency>
+        <groupId>org.eclipse.parsson</groupId>
+        <artifactId>parsson</artifactId>
+        <version>${version.parsson}</version>
+      </dependency>
+
+      <!-- ELASTICSEARCH -->
+      <dependency>
+        <groupId>org.elasticsearch.client</groupId>
+        <artifactId>elasticsearch-rest-high-level-client</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch-x-content</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch-core</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch.plugin</groupId>
+        <artifactId>parent-join-client</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-core</artifactId>
+        <version>${version.lucene}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-join</artifactId>
+        <version>${version.lucene}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-client</artifactId>
-        <version>${version.elasticsearch}</version>
+        <version>${version.elasticsearch-client}</version>
       </dependency>
 
       <dependency>
         <groupId>co.elastic.clients</groupId>
         <artifactId>elasticsearch-java</artifactId>
-        <version>${version.elasticsearch}</version>
+        <version>${version.elasticsearch-client}</version>
       </dependency>
 
       <dependency>
@@ -756,6 +896,7 @@
         <version>${version.opensearch}</version>
       </dependency>
 
+      <!-- OPENSEARCH -->
       <dependency>
         <groupId>org.opensearch.client</groupId>
         <artifactId>opensearch-java</artifactId>
@@ -766,6 +907,12 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${version.guava}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava-annotations</artifactId>
+        <version>${version.guava.annotations}</version>
       </dependency>
 
       <dependency>
@@ -1093,6 +1240,18 @@
       </dependency>
 
       <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-sts</artifactId>
+        <version>${version.aws-java-sdk}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-core</artifactId>
+        <version>${version.aws-java-sdk}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.azure</groupId>
         <artifactId>azure-sdk-bom</artifactId>
         <version>${version.azure-sdk}</version>
@@ -1137,6 +1296,18 @@
       </dependency>
 
       <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-models-jakarta</artifactId>
+        <version>${version.swagger-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations-jakarta</artifactId>
+        <version>${version.swagger-annotations}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${version.commons-compress}</version>
@@ -1167,6 +1338,24 @@
       </dependency>
 
       <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>auth0</artifactId>
+        <version>${version.auth0}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>mvc-auth-commons</artifactId>
+        <version>${version.auth0-commons}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>jwks-rsa</artifactId>
+        <version>${version.jwks-rsa}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.jetbrains</groupId>
         <artifactId>annotations</artifactId>
         <version>${version.jetbrains-annotations}</version>
@@ -1181,6 +1370,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-autoconfigure</artifactId>
+        <version>${version.identity}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
       </dependency>
 
@@ -1296,6 +1491,31 @@
         <artifactId>jakarta.json-api</artifactId>
         <version>${version.jakarta.json-api}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.glassfish</groupId>
+        <artifactId>jakarta.json</artifactId>
+        <version>${version.jakarta.json}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${version.joda-time}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hdrhistogram</groupId>
+        <artifactId>HdrHistogram</artifactId>
+        <version>${version.hdr-histogram}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${version.nimbus-jose-jwt}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -1809,6 +2029,9 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>org.postgresql:postgresql</dep>
                 </ignoredUnusedDeclaredDependencies>
+                <ignoredNonTestScopedDependencies>
+                  <dep>org.elasticsearch:elasticsearch-x-content</dep>
+                </ignoredNonTestScopedDependencies>
               </configuration>
             </execution>
           </executions>
