@@ -60,7 +60,7 @@ import org.springframework.stereotype.Component;
 public class DecisionReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.DecisionReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(DecisionReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionReader.class);
 
   @Autowired private DecisionIndex decisionIndex;
 
@@ -111,7 +111,7 @@ public class DecisionReader extends AbstractReader
       response = tenantAwareClient.search(searchRequest);
 
       if (response.getHits().getTotalHits().value == 1) {
-        Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
+        final Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(XML);
       } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(
@@ -124,7 +124,7 @@ public class DecisionReader extends AbstractReader
       final String message =
           String.format(
               "Exception occurred, while obtaining the decision diagram: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -156,7 +156,7 @@ public class DecisionReader extends AbstractReader
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the decision: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -173,7 +173,7 @@ public class DecisionReader extends AbstractReader
     final String groupsAggName = "group_by_decisionId";
     final String decisionsAggName = "decisions";
 
-    AggregationBuilder agg =
+    final AggregationBuilder agg =
         terms(tenantsGroupsAggName)
             .field(DecisionIndex.TENANT_ID)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
@@ -195,7 +195,7 @@ public class DecisionReader extends AbstractReader
                             .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
                             .sort(DecisionIndex.VERSION, SortOrder.DESC)));
 
-    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(agg).size(0);
+    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(agg).size(0);
 
     sourceBuilder.query(buildQuery(request.getTenantId()));
 
@@ -205,7 +205,7 @@ public class DecisionReader extends AbstractReader
     try {
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
-      Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
+      final Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
 
       groups.getBuckets().stream()
           .forEach(
@@ -217,7 +217,7 @@ public class DecisionReader extends AbstractReader
                     .forEach(
                         tenantB -> {
                           final String decisionId = tenantB.getKeyAsString();
-                          String groupKey = groupTenantId + "_" + decisionId;
+                          final String groupKey = groupTenantId + "_" + decisionId;
                           result.put(groupKey, new ArrayList<>());
 
                           final TopHits processes = tenantB.getAggregations().get(decisionsAggName);
@@ -242,7 +242,7 @@ public class DecisionReader extends AbstractReader
   private QueryBuilder buildQuery(String tenantId) {
     QueryBuilder decisionIdQ = null;
     if (permissionsService != null) {
-      var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+      final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
       if (allowed != null && !allowed.isAll()) {
         decisionIdQ = QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
       }

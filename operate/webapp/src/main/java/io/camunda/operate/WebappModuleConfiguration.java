@@ -34,10 +34,10 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     matchIfMissing = true)
 public class WebappModuleConfiguration {
 
-  private static final Logger logger = LoggerFactory.getLogger(WebappModuleConfiguration.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(WebappModuleConfiguration.class);
 
   @PostConstruct
   public void logModule() {
-    logger.info("Starting module: webapp");
+    LOGGER.info("Starting module: webapp");
   }
 }

@@ -80,9 +80,13 @@ public class DecisionInstanceOutput {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionInstanceOutput that = (DecisionInstanceOutput) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceOutput that = (DecisionInstanceOutput) o;
     return ruleIndex == that.ruleIndex
         && Objects.equals(id, that.id)
         && Objects.equals(name, that.name)

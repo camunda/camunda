@@ -51,8 +51,8 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
   @Override
   public List<BatchOperationEntity> getBatchOperations(
       BatchOperationRequestDto batchOperationRequestDto) {
-    var searchRequestBuilder = createSearchRequest(batchOperationRequestDto);
-    List<BatchOperationEntity> batchOperationEntities =
+    final var searchRequestBuilder = createSearchRequest(batchOperationRequestDto);
+    final List<BatchOperationEntity> batchOperationEntities =
         richOpenSearchClient
             .doc()
             .search(searchRequestBuilder, BatchOperationEntity.class)
@@ -61,7 +61,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
             .stream()
             .map(
                 hit -> {
-                  BatchOperationEntity entity = hit.source();
+                  final BatchOperationEntity entity = hit.source();
                   entity.setSortValues(hit.sort().toArray());
                   return entity;
                 })
@@ -75,11 +75,11 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
 
   private SearchRequest.Builder createSearchRequest(
       BatchOperationRequestDto batchOperationRequestDto) {
-    SortOptions sort1, sort2;
-    Object[] querySearchAfter;
+    final SortOptions sort1, sort2;
+    final Object[] querySearchAfter;
 
-    Object[] searchAfter = batchOperationRequestDto.getSearchAfter(objectMapper);
-    Object[] searchBefore = batchOperationRequestDto.getSearchBefore(objectMapper);
+    final Object[] searchAfter = batchOperationRequestDto.getSearchAfter(objectMapper);
+    final Object[] searchBefore = batchOperationRequestDto.getSearchBefore(objectMapper);
     if (searchAfter != null
         || searchBefore == null) { // this sorting is also the default one for 1st page
       sort1 = sortOptions(BatchOperationTemplate.END_DATE, SortOrder.Desc, "_first");
@@ -92,7 +92,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
       querySearchAfter = searchBefore;
     }
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(batchOperationTemplate.getAlias())
             .query(
                 constantScore(
@@ -101,7 +101,6 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
                         userService.getCurrentUser().getUsername())))
             .sort(sort1, sort2)
             .size(batchOperationRequestDto.getPageSize());
-    ;
 
     if (querySearchAfter != null) {
       searchRequestBuilder.searchAfter(Arrays.asList(toStringArray(querySearchAfter)));

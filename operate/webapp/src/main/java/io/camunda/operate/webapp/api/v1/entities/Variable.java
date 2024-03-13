@@ -111,9 +111,13 @@ public class Variable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    Variable variable = (Variable) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final Variable variable = (Variable) o;
     return Objects.equals(key, variable.key)
         && Objects.equals(processInstanceKey, variable.processInstanceKey)
         && Objects.equals(scopeKey, variable.scopeKey)

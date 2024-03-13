@@ -67,7 +67,7 @@ public class BatchOperationRestService extends InternalAPIErrorController {
       throw new InvalidRequestException("searchAfter must be an array of two values.");
     }
 
-    List<BatchOperationEntity> batchOperations =
+    final List<BatchOperationEntity> batchOperations =
         batchOperationReader.getBatchOperations(batchOperationRequestDto);
     return BatchOperationDto.createFrom(batchOperations, objectMapper);
   }

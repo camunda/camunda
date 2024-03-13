@@ -46,8 +46,8 @@ public class JWTDecoder implements DecodedJWT, Serializable {
   public JWTDecoder(JWTParser converter, String jwt) throws JWTDecodeException {
     this.parts = TokenUtils.splitToken(jwt);
 
-    String headerJson;
-    String payloadJson;
+    final String headerJson;
+    final String payloadJson;
     try {
       headerJson = new String(Base64.getUrlDecoder().decode(this.parts[0]), StandardCharsets.UTF_8);
       payloadJson =

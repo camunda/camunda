@@ -57,7 +57,7 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    Long result = subject.retrieveProcessInstanceCount(oneHourBefore, now);
+    final Long result = subject.retrieveProcessInstanceCount(oneHourBefore, now);
 
     // Then
     assertEquals(result, 99L);
@@ -75,15 +75,15 @@ public class MetricReaderTest {
     subject.retrieveProcessInstanceCount(oneHourBefore, now);
 
     // Then
-    ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
+    final ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
     verify(dao).searchWithAggregation(entityCaptor.capture());
 
-    Query expected =
+    final Query expected =
         Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
             .or(whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_STARTED))
             .and(range(EVENT_TIME, oneHourBefore, now))
             .aggregate(MetricsStore.PROCESS_INSTANCES_AGG_NAME, VALUE, 1);
-    Query calledValue = entityCaptor.getValue();
+    final Query calledValue = entityCaptor.getValue();
     assertEquals(expected, calledValue);
   }
 
@@ -107,7 +107,7 @@ public class MetricReaderTest {
     // When
     when(dao.searchWithAggregation(any()))
         .thenReturn(new AggregationResponse(false, List.of(), 99L));
-    Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now);
+    final Long result = subject.retrieveDecisionInstanceCount(oneHourBefore, now);
 
     // Then
     assertEquals(result, 99L);
@@ -125,14 +125,14 @@ public class MetricReaderTest {
     subject.retrieveDecisionInstanceCount(oneHourBefore, now);
 
     // Then
-    ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
+    final ArgumentCaptor<Query> entityCaptor = ArgumentCaptor.forClass(Query.class);
     verify(dao).searchWithAggregation(entityCaptor.capture());
 
-    Query expected =
+    final Query expected =
         Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
             .and(range(EVENT_TIME, oneHourBefore, now))
             .aggregate(MetricsStore.DECISION_INSTANCES_AGG_NAME, VALUE, 1);
-    Query calledValue = entityCaptor.getValue();
+    final Query calledValue = entityCaptor.getValue();
     assertEquals(expected, calledValue);
   }
 

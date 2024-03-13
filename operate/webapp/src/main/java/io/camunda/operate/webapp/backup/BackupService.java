@@ -42,11 +42,10 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 public class BackupService {
-  public record SnapshotRequest(
-      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
 
-  private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+  private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
   private final List<Prio1Backup> prio1BackupIndices;
 
@@ -59,6 +58,8 @@ public class BackupService {
   private final OperateProperties operateProperties;
 
   private final BackupRepository repository;
+
+  private String[][] indexPatternsOrdered;
 
   public BackupService(
       @Qualifier("backupThreadPoolExecutor") ThreadPoolTaskExecutor threadPoolTaskExecutor,
@@ -77,17 +78,13 @@ public class BackupService {
     this.operateProperties = operateProperties;
   }
 
-  private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
-
-  private String[][] indexPatternsOrdered;
-
   public void deleteBackup(Long backupId) {
     repository.validateRepositoryExists(getRepositoryName());
-    String repositoryName = getRepositoryName();
-    int count = getIndexPatternsOrdered().length;
-    String version = getCurrentOperateVersion();
+    final String repositoryName = getRepositoryName();
+    final int count = getIndexPatternsOrdered().length;
+    final String version = getCurrentOperateVersion();
     for (int index = 0; index < count; index++) {
-      String snapshotName =
+      final String snapshotName =
           new Metadata()
               .setVersion(version)
               .setPartCount(count)
@@ -113,24 +110,24 @@ public class BackupService {
   }
 
   private TakeBackupResponseDto scheduleSnapshots(TakeBackupRequestDto request) {
-    String repositoryName = getRepositoryName();
-    int count = getIndexPatternsOrdered().length;
-    List<String> snapshotNames = new ArrayList<>();
-    String version = getCurrentOperateVersion();
+    final String repositoryName = getRepositoryName();
+    final int count = getIndexPatternsOrdered().length;
+    final List<String> snapshotNames = new ArrayList<>();
+    final String version = getCurrentOperateVersion();
     for (int index = 0; index < count; index++) {
-      List<String> indexPattern = Arrays.asList(getIndexPatternsOrdered()[index]);
-      Metadata metadata =
+      final List<String> indexPattern = Arrays.asList(getIndexPatternsOrdered()[index]);
+      final Metadata metadata =
           new Metadata()
               .setVersion(version)
               .setPartCount(count)
               .setPartNo(index + 1)
               .setBackupId(request.getBackupId());
-      String snapshotName = metadata.buildSnapshotName();
-      SnapshotRequest snapshotRequest =
+      final String snapshotName = metadata.buildSnapshotName();
+      final SnapshotRequest snapshotRequest =
           new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata);
 
       requestsQueue.offer(snapshotRequest);
-      logger.debug("Snapshot scheduled: {}", snapshotName);
+      LOGGER.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
     }
     // schedule next snapshot
@@ -139,13 +136,13 @@ public class BackupService {
   }
 
   private void scheduleNextSnapshot() {
-    SnapshotRequest nextRequest = requestsQueue.poll();
+    final SnapshotRequest nextRequest = requestsQueue.poll();
     if (nextRequest != null) {
       threadPoolTaskExecutor.submit(
           () ->
               repository.executeSnapshotting(
                   nextRequest, this::scheduleNextSnapshot, requestsQueue::clear));
-      logger.debug("Snapshot picked for execution: {}", nextRequest);
+      LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
     }
   }
 
@@ -205,4 +202,7 @@ public class BackupService {
   public List<GetBackupStateResponseDto> getBackups() {
     return repository.getBackups(getRepositoryName());
   }
+
+  public record SnapshotRequest(
+      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
 }

@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionWriter implements io.camunda.operate.webapp.writer.DecisionWriter {
 
-  private static final Logger logger = LoggerFactory.getLogger(DecisionWriter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionWriter.class);
 
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 

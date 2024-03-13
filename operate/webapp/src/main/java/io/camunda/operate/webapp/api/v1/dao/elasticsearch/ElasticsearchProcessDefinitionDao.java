@@ -81,7 +81,7 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
   @Override
   public ProcessDefinition byKey(final Long key) throws APIException {
     logger.debug("byKey {}", key);
-    List<ProcessDefinition> processDefinitions;
+    final List<ProcessDefinition> processDefinitions;
     try {
       processDefinitions =
           searchFor(new SearchSourceBuilder().query(termQuery(ProcessIndex.KEY, key)));
@@ -111,7 +111,7 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
                       .fetchSource(BPMN_XML, null));
       final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
-        Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
+        final Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(BPMN_XML);
       }
     } catch (IOException e) {
@@ -126,7 +126,7 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
       final Query<ProcessDefinition> query, final SearchSourceBuilder searchSourceBuilder) {
     final ProcessDefinition filter = query.getFilter();
     if (filter != null) {
-      List<QueryBuilder> queryBuilders = new ArrayList<>();
+      final List<QueryBuilder> queryBuilders = new ArrayList<>();
       queryBuilders.add(buildTermQuery(ProcessDefinition.NAME, filter.getName()));
       queryBuilders.add(
           buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()));

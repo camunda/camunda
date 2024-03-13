@@ -50,12 +50,18 @@ public class ListViewResponseDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    ListViewResponseDto that = (ListViewResponseDto) o;
+    final ListViewResponseDto that = (ListViewResponseDto) o;
 
-    if (totalCount != that.totalCount) return false;
+    if (totalCount != that.totalCount) {
+      return false;
+    }
     return processInstances != null
         ? processInstances.equals(that.processInstances)
         : that.processInstances == null;

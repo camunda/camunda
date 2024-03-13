@@ -36,7 +36,7 @@ public abstract class OpensearchKeyFilteringDao<T, R> extends OpensearchSearchab
   public T byKey(Long key) {
     validateKey(key);
 
-    List<R> results;
+    final List<R> results;
     try {
       results = searchByKey(key);
     } catch (Exception e) {
@@ -52,7 +52,7 @@ public abstract class OpensearchKeyFilteringDao<T, R> extends OpensearchSearchab
   }
 
   protected List<R> searchByKey(Long key) {
-    SearchRequest.Builder request =
+    final SearchRequest.Builder request =
         requestDSLWrapper
             .searchRequestBuilder(getIndexName())
             .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(getKeyFieldName(), key)));

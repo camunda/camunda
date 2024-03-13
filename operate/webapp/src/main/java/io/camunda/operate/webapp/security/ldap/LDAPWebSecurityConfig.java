@@ -45,7 +45,7 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
   @Override
   protected void applyAuthenticationSettings(final AuthenticationManagerBuilder auth)
       throws Exception {
-    LdapProperties ldapConfig = operateProperties.getLdap();
+    final LdapProperties ldapConfig = operateProperties.getLdap();
     if (StringUtils.hasText(ldapConfig.getDomain())) {
       setUpActiveDirectoryLDAP(auth, ldapConfig);
     } else {
@@ -69,7 +69,7 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
 
   private void setUpActiveDirectoryLDAP(
       AuthenticationManagerBuilder auth, LdapProperties ldapConfig) {
-    ActiveDirectoryLdapAuthenticationProvider adLDAPProvider =
+    final ActiveDirectoryLdapAuthenticationProvider adLDAPProvider =
         new ActiveDirectoryLdapAuthenticationProvider(
             ldapConfig.getDomain(), ldapConfig.getUrl(), ldapConfig.getBaseDn());
     if (StringUtils.hasText(ldapConfig.getUserSearchFilter())) {

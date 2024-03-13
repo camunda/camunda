@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 public class OpensearchProcessInstanceWriter
     implements io.camunda.operate.webapp.writer.ProcessInstanceWriter {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchProcessInstanceWriter.class);
 
   @Autowired private ListViewTemplate processInstanceTemplate;
@@ -66,7 +66,7 @@ public class OpensearchProcessInstanceWriter
 
   @Override
   public void deleteInstanceById(Long id) throws IOException {
-    ProcessInstanceForListViewEntity processInstanceEntity =
+    final ProcessInstanceForListViewEntity processInstanceEntity =
         processInstanceReader.getProcessInstanceByKey(id);
     validateDeletion(processInstanceEntity);
     deleteProcessInstanceAndDependants(processInstanceEntity.getProcessInstanceKey().toString());
@@ -74,7 +74,7 @@ public class OpensearchProcessInstanceWriter
 
   private void deleteProcessInstanceAndDependants(final String processInstanceKey)
       throws IOException {
-    List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
+    final List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
         processInstanceDependantTemplates.stream()
             .filter(t -> !(t instanceof OperationTemplate))
             .toList();

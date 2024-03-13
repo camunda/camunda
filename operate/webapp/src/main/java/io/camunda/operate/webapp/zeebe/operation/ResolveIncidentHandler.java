@@ -42,7 +42,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
       return;
     }
 
-    IncidentEntity incident;
+    final IncidentEntity incident;
     try {
       incident = incidentReader.getIncidentById(operation.getIncidentKey());
     } catch (NotFoundException ex) {

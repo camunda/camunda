@@ -95,9 +95,13 @@ public class FlowNodeStatistics {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    FlowNodeStatistics that = (FlowNodeStatistics) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeStatistics that = (FlowNodeStatistics) o;
     return Objects.equals(activityId, that.activityId)
         && Objects.equals(active, that.active)
         && Objects.equals(canceled, that.canceled)

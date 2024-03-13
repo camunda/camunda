@@ -58,7 +58,7 @@ import org.springframework.stereotype.Component;
 public class OpensearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchBackupRepository.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBackupRepository.class);
 
   private final RichOpenSearchClient richOpenSearchClient;
 
@@ -72,23 +72,23 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public void deleteSnapshot(String repositoryName, String snapshotName) {
-    var requestBuilder = deleteSnapshotRequestBuilder(repositoryName, snapshotName);
+    final var requestBuilder = deleteSnapshotRequestBuilder(repositoryName, snapshotName);
     richOpenSearchClient
         .async()
         .snapshot()
         .delete(requestBuilder)
         .thenAccept(
             response ->
-                logger.debug(
+                LOGGER.debug(
                     "Delete snapshot was acknowledged by Opensearch node: {}",
                     response.acknowledged()))
         .exceptionally(
             t -> {
               if (isSnapshotMissingException(t)) {
                 // no snapshot with given backupID exists, this is fine, log warning
-                logger.warn("No snapshot found for snapshot deletion: {} ", t.getMessage());
+                LOGGER.warn("No snapshot found for snapshot deletion: {} ", t.getMessage());
               } else {
-                logger.error(
+                LOGGER.error(
                     "Exception occurred while deleting the snapshot: {} ", t.getMessage(), t);
               }
               return null;
@@ -108,9 +108,9 @@ public class OpensearchBackupRepository implements BackupRepository {
   @Override
   public void validateRepositoryExists(String repositoryName) {
     try {
-      var repositoryResponse =
+      final var repositoryResponse =
           richOpenSearchClient.snapshot().getRepository(repositoryRequestBuilder(repositoryName));
-      logger.debug("Repository {} exists", repositoryResponse);
+      LOGGER.debug("Repository {} exists", repositoryResponse);
     } catch (IOException e) {
       final String reason =
           format(
@@ -136,9 +136,9 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public void validateNoDuplicateBackupId(String repositoryName, Long backupId) {
-    String snapshot = Metadata.buildSnapshotNamePrefix(backupId) + "*";
+    final String snapshot = Metadata.buildSnapshotNamePrefix(backupId) + "*";
 
-    OpenSearchGetSnapshotResponse response;
+    final OpenSearchGetSnapshotResponse response;
     try {
       response =
           richOpenSearchClient.snapshot().get(getSnapshotRequestBuilder(repositoryName, snapshot));
@@ -174,15 +174,15 @@ public class OpensearchBackupRepository implements BackupRepository {
   @Override
   public void executeSnapshotting(
       BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure) {
-    Long backupId = backupId(snapshotRequest);
-    var metadata = snapshotRequest.metadata();
-    Map<String, JsonData> metadataJson =
+    final Long backupId = backupId(snapshotRequest);
+    final var metadata = snapshotRequest.metadata();
+    final Map<String, JsonData> metadataJson =
         Map.of(
             "backupId", JsonData.of(metadata.getBackupId()),
             "version", JsonData.of(metadata.getVersion()),
             "partNo", JsonData.of(metadata.getPartNo()),
             "partCount", JsonData.of(metadata.getPartCount()));
-    var requestBuilder =
+    final var requestBuilder =
         createSnapshotRequestBuilder(
                 snapshotRequest.repositoryName(),
                 snapshotRequest.snapshotName(),
@@ -203,22 +203,22 @@ public class OpensearchBackupRepository implements BackupRepository {
             e -> {
               if (e instanceof SocketTimeoutException) {
                 // This is thrown even if the backup is still running
-                logger.warn(
+                LOGGER.warn(
                     format(
                         "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
                         snapshotRequest.snapshotName(), backupId));
                 // Keep waiting
                 while (true) {
-                  List<OpenSearchSnapshotInfo> snapshotInfos =
+                  final List<OpenSearchSnapshotInfo> snapshotInfos =
                       findSnapshots(snapshotRequest.repositoryName(), backupId);
-                  Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
+                  final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
                       snapshotInfos.stream()
                           .filter(
                               x -> Objects.equals(x.getSnapshot(), snapshotRequest.snapshotName()))
                           .findFirst();
 
                   if (maybeCurrentSnapshot.isEmpty()) {
-                    logger.error(
+                    LOGGER.error(
                         format(
                             "Expected (but not found) snapshot [%s] for backupId [%d].",
                             snapshotRequest.snapshotName(), backupId));
@@ -233,7 +233,7 @@ public class OpensearchBackupRepository implements BackupRepository {
                   }
                 }
               } else {
-                logger.error(
+                LOGGER.error(
                     format(
                         "Exception while creating snapshot [%s] for backup id [%d].",
                         snapshotRequest.snapshotName(), backupId),
@@ -253,14 +253,14 @@ public class OpensearchBackupRepository implements BackupRepository {
   private void handleSnapshotReceived(
       OpenSearchSnapshotInfo snapshotInfo, Runnable onSuccess, Runnable onFailure) {
     if (SUCCESS.equals(snapshotInfo.getState())) {
-      logger.info("Snapshot done: {}", snapshotInfo.getUuid());
+      LOGGER.info("Snapshot done: {}", snapshotInfo.getUuid());
       onSuccess.run();
     } else if (FAILED.equals(snapshotInfo.getState())) {
-      logger.error("Snapshot taking failed for {}", snapshotInfo.getUuid());
+      LOGGER.error("Snapshot taking failed for {}", snapshotInfo.getUuid());
       // No need to continue
       onFailure.run();
     } else {
-      logger.warn(
+      LOGGER.warn(
           "Snapshot state is {} for snapshot {}", snapshotInfo.getState(), snapshotInfo.getUuid());
       onSuccess.run();
     }
@@ -269,25 +269,25 @@ public class OpensearchBackupRepository implements BackupRepository {
   private void handleSnapshotReceived(
       SnapshotInfo snapshotInfo, Runnable onSuccess, Runnable onFailure) {
     if (SUCCESS.equals(SnapshotState.valueOf(snapshotInfo.state()))) {
-      logger.info("Snapshot done: {}", snapshotInfo.uuid());
+      LOGGER.info("Snapshot done: {}", snapshotInfo.uuid());
       onSuccess.run();
     } else if (FAILED.equals(SnapshotState.valueOf(snapshotInfo.state()))) {
-      logger.error(
+      LOGGER.error(
           "Snapshot taking failed for {}, reason {}", snapshotInfo.uuid(), snapshotInfo.reason());
       // No need to continue
       onFailure.run();
     } else {
-      logger.warn(
+      LOGGER.warn(
           "Snapshot state is {} for snapshot {}", snapshotInfo.state(), snapshotInfo.uuid());
       onSuccess.run();
     }
   }
 
   private List<OpenSearchSnapshotInfo> findSnapshots(String repositoryName, Long backupId) {
-    var requestBuilder =
+    final var requestBuilder =
         getSnapshotRequestBuilder(repositoryName, Metadata.buildSnapshotNamePrefix(backupId) + "*");
 
-    OpenSearchGetSnapshotResponse response;
+    final OpenSearchGetSnapshotResponse response;
     try {
       response = richOpenSearchClient.snapshot().get(requestBuilder);
       return response.snapshots();
@@ -314,7 +314,7 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public GetBackupStateResponseDto getBackupState(String repositoryName, Long backupId) {
-    List<OpenSearchSnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
+    final List<OpenSearchSnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
     return toGetBackupStateResponseDto(backupId, snapshots);
   }
 
@@ -338,14 +338,16 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   private GetBackupStateResponseDto toGetBackupStateResponseDto(
       Long backupId, List<OpenSearchSnapshotInfo> snapshots) {
-    GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
-    Metadata metadata = objectMapper.convertValue(snapshots.get(0).getMetadata(), Metadata.class);
+    final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
+    final Metadata metadata =
+        objectMapper.convertValue(snapshots.get(0).getMetadata(), Metadata.class);
     final Integer expectedSnapshotsCount = metadata.getPartCount();
 
     response.setState(getState(snapshots, expectedSnapshotsCount));
     response.setDetails(getBackupStateDetails(snapshots));
 
-    var failureReason = getFailureReason(snapshots, response.getState(), expectedSnapshotsCount);
+    final var failureReason =
+        getFailureReason(snapshots, response.getState(), expectedSnapshotsCount);
     if (failureReason != null) {
       response.setFailureReason(failureReason);
     }
@@ -354,9 +356,9 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   private List<GetBackupStateResponseDetailDto> getBackupStateDetails(
       List<OpenSearchSnapshotInfo> snapshots) {
-    List<GetBackupStateResponseDetailDto> details = new ArrayList<>();
+    final List<GetBackupStateResponseDetailDto> details = new ArrayList<>();
     for (OpenSearchSnapshotInfo snapshot : snapshots) {
-      GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
+      final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.getSnapshot());
       detail.setStartTime(
           OffsetDateTime.ofInstant(
@@ -376,7 +378,7 @@ public class OpensearchBackupRepository implements BackupRepository {
       BackupStateDto state,
       Integer expectedSnapshotsCount) {
     if (state == BackupStateDto.FAILED) {
-      String failedSnapshots =
+      final String failedSnapshots =
           snapshots.stream()
               .filter(s -> FAILED.equals(s.getState()))
               .map(OpenSearchSnapshotInfo::getSnapshot)
@@ -384,7 +386,7 @@ public class OpensearchBackupRepository implements BackupRepository {
       if (!failedSnapshots.isEmpty()) {
         return format("There were failures with the following snapshots: %s", failedSnapshots);
       } else {
-        String partialSnapshot =
+        final String partialSnapshot =
             snapshots.stream()
                 .filter(s -> PARTIAL.equals(s.getState()))
                 .map(OpenSearchSnapshotInfo::getSnapshot)
@@ -401,22 +403,22 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public List<GetBackupStateResponseDto> getBackups(String repositoryName) {
-    var requestBuilder =
+    final var requestBuilder =
         getSnapshotRequestBuilder(repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + "*");
-    OpenSearchGetSnapshotResponse response;
+    final OpenSearchGetSnapshotResponse response;
     try {
       response = richOpenSearchClient.snapshot().get(requestBuilder);
-      List<OpenSearchSnapshotInfo> snapshots =
+      final List<OpenSearchSnapshotInfo> snapshots =
           response.snapshots().stream()
               .sorted(Comparator.comparing(OpenSearchSnapshotInfo::getStartTimeInMillis).reversed())
               .toList();
 
-      LinkedHashMap<Long, List<OpenSearchSnapshotInfo>> groupedSnapshotInfos =
+      final LinkedHashMap<Long, List<OpenSearchSnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
               .collect(
                   groupingBy(
                       si -> {
-                        Metadata metadata =
+                        final Metadata metadata =
                             objectMapper.convertValue(si.getMetadata(), Metadata.class);
                         Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1

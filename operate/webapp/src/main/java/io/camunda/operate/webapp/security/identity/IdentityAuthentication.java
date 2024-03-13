@@ -45,7 +45,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger = LoggerFactory.getLogger(IdentityAuthentication.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
 
   private Tokens tokens;
   private String id;
@@ -80,15 +80,17 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private boolean hasRefreshTokenExpired() {
-    if (!StringUtils.hasText(tokens.getRefreshToken())) return true;
+    if (!StringUtils.hasText(tokens.getRefreshToken())) {
+      return true;
+    }
     try {
       final DecodedJWT refreshToken =
           getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
       final Date refreshTokenExpiresAt = refreshToken.getExpiresAt();
-      logger.info("Refresh token will expire at {}", refreshTokenExpiresAt);
+      LOGGER.info("Refresh token will expire at {}", refreshTokenExpiresAt);
       return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
     } catch (final TokenDecodeException e) {
-      logger.info("Refresh token is not a JWT and expire date can not be determined");
+      LOGGER.info("Refresh token is not a JWT and expire date can not be determined");
       return false;
     }
   }
@@ -101,18 +103,18 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @Override
   public boolean isAuthenticated() {
     if (hasExpired()) {
-      logger.info("Access token is expired");
+      LOGGER.info("Access token is expired");
       if (hasRefreshTokenExpired()) {
         setAuthenticated(false);
-        logger.info("No refresh token available. Authentication is invalid.");
+        LOGGER.info("No refresh token available. Authentication is invalid.");
         throw new InsufficientAuthenticationException(
             "Access token and refresh token are expired.");
       } else {
-        logger.info("Get a new access token by using refresh token");
+        LOGGER.info("Get a new access token by using refresh token");
         try {
           renewAccessToken();
         } catch (Exception e) {
-          logger.error("Renewing access token failed with exception", e);
+          LOGGER.error("Renewing access token failed with exception", e);
           setAuthenticated(false);
         }
       }
@@ -125,7 +127,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   public List<Permission> getPermissions() {
-    PermissionConverter permissionConverter = getPermissionConverter();
+    final PermissionConverter permissionConverter = getPermissionConverter();
     return permissions.stream().map(permissionConverter::convert).collect(Collectors.toList());
   }
 
@@ -164,7 +166,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
             IdentityAuthorization.createFrom(
                 getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
       } catch (RestException ex) {
-        logger.warn(
+        LOGGER.warn(
             "Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(),
             ex);
         authorizations = new ArrayList<>();
@@ -188,7 +190,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         }
 
       } catch (RestException ex) {
-        logger.warn("Unable to retrieve tenants from Identity. Error: " + ex.getMessage(), ex);
+        LOGGER.warn("Unable to retrieve tenants from Identity. Error: " + ex.getMessage(), ex);
         tenants = new ArrayList<>();
       }
     }
@@ -213,7 +215,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
-    logger.info("Access token will expire at {}", expires);
+    LOGGER.info("Access token will expire at {}", expires);
     if (!hasExpired()) {
       setAuthenticated(true);
     } else {

@@ -31,9 +31,9 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
 
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
-    String updateVariableJson =
+    final String updateVariableJson =
         mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
-    SetVariablesResponse response =
+    final SetVariablesResponse response =
         zeebeClient
             .newSetVariablesCommand(operation.getScopeKey())
             .variables(updateVariableJson)

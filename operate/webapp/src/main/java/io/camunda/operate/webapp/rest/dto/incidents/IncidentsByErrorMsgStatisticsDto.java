@@ -77,14 +77,23 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    IncidentsByErrorMsgStatisticsDto that = (IncidentsByErrorMsgStatisticsDto) o;
-
-    if (instancesWithErrorCount != that.instancesWithErrorCount) return false;
-    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
+    }
+
+    final IncidentsByErrorMsgStatisticsDto that = (IncidentsByErrorMsgStatisticsDto) o;
+
+    if (instancesWithErrorCount != that.instancesWithErrorCount) {
+      return false;
+    }
+    if (errorMessage != null
+        ? !errorMessage.equals(that.errorMessage)
+        : that.errorMessage != null) {
+      return false;
+    }
     return processes != null ? processes.equals(that.processes) : that.processes == null;
   }
 

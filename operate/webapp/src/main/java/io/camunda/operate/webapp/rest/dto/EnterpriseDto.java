@@ -43,7 +43,7 @@ public class EnterpriseDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    EnterpriseDto that = (EnterpriseDto) o;
+    final EnterpriseDto that = (EnterpriseDto) o;
     return enterprise == that.enterprise;
   }
 

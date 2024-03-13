@@ -31,13 +31,14 @@ public class IdentityAuthorizationTest {
 
   @Test
   public void testCreateFromAuthorization() {
-    String resourceKey = "key";
-    String resourceType = "type";
-    Set<String> permissions =
+    final String resourceKey = "key";
+    final String resourceType = "type";
+    final Set<String> permissions =
         Stream.of("read", "write").collect(Collectors.toCollection(HashSet::new));
-    Authorization authorization = new Authorization(resourceKey, resourceType, permissions);
+    final Authorization authorization = new Authorization(resourceKey, resourceType, permissions);
 
-    IdentityAuthorization identityAuthorization = IdentityAuthorization.createFrom(authorization);
+    final IdentityAuthorization identityAuthorization =
+        IdentityAuthorization.createFrom(authorization);
 
     assertThat(identityAuthorization).isNotNull();
     assertThat(identityAuthorization.getResourceKey()).isEqualTo(resourceKey);
@@ -48,7 +49,7 @@ public class IdentityAuthorizationTest {
 
   @Test
   public void testCreateFromNullAuthorizationsList() {
-    List<IdentityAuthorization> identityAuthorizations =
+    final List<IdentityAuthorization> identityAuthorizations =
         IdentityAuthorization.createFrom((List<Authorization>) null);
 
     assertThat(identityAuthorizations).isNotNull();
@@ -57,7 +58,7 @@ public class IdentityAuthorizationTest {
 
   @Test
   public void testCreateFromEmptyAuthorizationsList() {
-    List<IdentityAuthorization> identityAuthorizations =
+    final List<IdentityAuthorization> identityAuthorizations =
         IdentityAuthorization.createFrom(new LinkedList<>());
 
     assertThat(identityAuthorizations).isNotNull();
@@ -66,15 +67,15 @@ public class IdentityAuthorizationTest {
 
   @Test
   public void testCreateFromAuthorizationsList() {
-    Set<String> permissions =
+    final Set<String> permissions =
         Stream.of("read", "write").collect(Collectors.toCollection(HashSet::new));
 
-    Authorization firstAuthorization = new Authorization("key1", "type1", permissions);
-    Authorization secondAuthorization = new Authorization("key2", "type2", permissions);
-    List<Authorization> authorizationList =
+    final Authorization firstAuthorization = new Authorization("key1", "type1", permissions);
+    final Authorization secondAuthorization = new Authorization("key2", "type2", permissions);
+    final List<Authorization> authorizationList =
         Stream.of(firstAuthorization, secondAuthorization).toList();
 
-    List<IdentityAuthorization> identityAuthorizations =
+    final List<IdentityAuthorization> identityAuthorizations =
         IdentityAuthorization.createFrom(authorizationList);
 
     assertThat(identityAuthorizations).isNotNull();

@@ -65,7 +65,7 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
       Query<FlowNodeStatistics> query, SearchSourceBuilder searchSourceBuilder) {
 
     final FlowNodeStatistics filter = query.getFilter();
-    List<QueryBuilder> queryBuilders = new ArrayList<>();
+    final List<QueryBuilder> queryBuilders = new ArrayList<>();
     if (filter != null) {
       queryBuilders.add(buildTermQuery(FlowNodeStatistics.ACTIVITY_ID, filter.getActivityId()));
     }

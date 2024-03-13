@@ -153,9 +153,13 @@ public class DecisionDefinition {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionDefinition that = (DecisionDefinition) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionDefinition that = (DecisionDefinition) o;
     return Objects.equals(id, that.id)
         && Objects.equals(key, that.key)
         && Objects.equals(decisionId, that.decisionId)
