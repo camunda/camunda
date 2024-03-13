@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
@@ -38,43 +41,38 @@ public final class IntermediateThrowEventTransformer
 
     throwEvent.setEventType(BpmnEventType.NONE);
 
-    if (isMessageEvent(element)) {
-      throwEvent.setEventType(BpmnEventType.MESSAGE);
-      if (hasTaskDefinition(element)) {
-        jobWorkerElementTransformer.transform(element, context);
-      }
-    } else if (isLinkEvent(element)) {
-      transformLinkEventDefinition(element, context, throwEvent);
-    } else if (isEscalationEvent(element)) {
-      transformEscalationEventDefinition(element, context);
-    } else if (isSignalEvent(element)) {
-      transformSignalEventDefinition(element, context);
-    } else if (isCompensationEvent(element)) {
-      transformCompensationEventDefinition(element, context);
+    if (!element.getEventDefinitions().isEmpty()) {
+      transformEventDefinition(element, context, throwEvent);
     }
   }
 
-  private boolean isMessageEvent(final IntermediateThrowEvent element) {
-    return element.getEventDefinitions().stream()
-        .anyMatch(MessageEventDefinition.class::isInstance);
-  }
+  private void transformEventDefinition(
+      final IntermediateThrowEvent element,
+      final TransformContext context,
+      final ExecutableIntermediateThrowEvent executableElement) {
 
-  private boolean isLinkEvent(final IntermediateThrowEvent element) {
-    return element.getEventDefinitions().stream().anyMatch(LinkEventDefinition.class::isInstance);
-  }
+    final var eventDefinition = element.getEventDefinitions().iterator().next();
 
-  private boolean isEscalationEvent(final IntermediateThrowEvent element) {
-    return element.getEventDefinitions().stream()
-        .anyMatch(EscalationEventDefinition.class::isInstance);
-  }
+    if (eventDefinition instanceof MessageEventDefinition) {
+      executableElement.setEventType(BpmnEventType.MESSAGE);
+      if (hasTaskDefinition(element)) {
+        jobWorkerElementTransformer.transform(element, context);
+      }
 
-  private boolean isSignalEvent(final IntermediateThrowEvent element) {
-    return element.getEventDefinitions().stream().anyMatch(SignalEventDefinition.class::isInstance);
-  }
+    } else if (eventDefinition instanceof final LinkEventDefinition linkEventDefinition) {
+      transformLinkEventDefinition(context, executableElement, linkEventDefinition);
 
-  private boolean isCompensationEvent(final IntermediateThrowEvent element) {
-    return element.getEventDefinitions().stream()
-        .anyMatch(CompensateEventDefinition.class::isInstance);
+    } else if (eventDefinition
+        instanceof final EscalationEventDefinition escalationEventDefinition) {
+      transformEscalationEventDefinition(context, executableElement, escalationEventDefinition);
+
+    } else if (eventDefinition instanceof final SignalEventDefinition signalEventDefinition) {
+      transformSignalEventDefinition(context, executableElement, signalEventDefinition);
+
+    } else if (eventDefinition
+        instanceof final CompensateEventDefinition compensateEventDefinition) {
+      transformCompensationEventDefinition(context, executableElement, compensateEventDefinition);
+    }
   }
 
   private boolean hasTaskDefinition(final IntermediateThrowEvent element) {
@@ -82,12 +80,9 @@ public final class IntermediateThrowEventTransformer
   }
 
   private void transformLinkEventDefinition(
-      final IntermediateThrowEvent element,
       final TransformContext context,
-      final ExecutableIntermediateThrowEvent executableThrowEventElement) {
-
-    final var eventDefinition =
-        (LinkEventDefinition) element.getEventDefinitions().iterator().next();
+      final ExecutableIntermediateThrowEvent executableThrowEventElement,
+      final LinkEventDefinition eventDefinition) {
 
     final var name = eventDefinition.getName();
     final var executableLink = context.getLink(name);
@@ -96,27 +91,21 @@ public final class IntermediateThrowEventTransformer
   }
 
   private void transformEscalationEventDefinition(
-      final IntermediateThrowEvent element, final TransformContext context) {
-    final var currentProcess = context.getCurrentProcess();
-    final var executableElement =
-        currentProcess.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
-
-    final var eventDefinition =
-        (EscalationEventDefinition) element.getEventDefinitions().iterator().next();
+      final TransformContext context,
+      final ExecutableIntermediateThrowEvent executableElement,
+      final EscalationEventDefinition eventDefinition) {
     final var escalation = eventDefinition.getEscalation();
+
     final var executableEscalation = context.getEscalation(escalation.getId());
     executableElement.setEscalation(executableEscalation);
     executableElement.setEventType(BpmnEventType.ESCALATION);
   }
 
   private void transformSignalEventDefinition(
-      final IntermediateThrowEvent element, final TransformContext context) {
-    final var currentProcess = context.getCurrentProcess();
-    final var executableElement =
-        currentProcess.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
+      final TransformContext context,
+      final ExecutableIntermediateThrowEvent executableElement,
+      final SignalEventDefinition eventDefinition) {
 
-    final var eventDefinition =
-        (SignalEventDefinition) element.getEventDefinitions().iterator().next();
     final var signal = eventDefinition.getSignal();
     final var executableSignal = context.getSignal(signal.getId());
     executableElement.setSignal(executableSignal);
@@ -124,10 +113,19 @@ public final class IntermediateThrowEventTransformer
   }
 
   private void transformCompensationEventDefinition(
-      final IntermediateThrowEvent element, final TransformContext context) {
-    final var currentProcess = context.getCurrentProcess();
-    final var executableElement =
-        currentProcess.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
+      final TransformContext context,
+      final ExecutableIntermediateThrowEvent executableElement,
+      final CompensateEventDefinition eventDefinition) {
+
+    final ExecutableCompensation compensation = new ExecutableCompensation(eventDefinition.getId());
+
+    final Activity activityRef = eventDefinition.getActivity();
+    if (activityRef != null) {
+      final ExecutableActivity activity =
+          context.getCurrentProcess().getElementById(activityRef.getId(), ExecutableActivity.class);
+      compensation.setReferenceCompensationActivity(activity);
+    }
+    executableElement.setCompensation(compensation);
     executableElement.setEventType(BpmnEventType.COMPENSATION);
   }
 }

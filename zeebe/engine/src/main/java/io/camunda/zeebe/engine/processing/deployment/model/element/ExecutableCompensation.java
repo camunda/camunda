@@ -11,6 +11,10 @@ public class ExecutableCompensation extends AbstractFlowElement {
 
   private ExecutableActivity compensationHandler;
 
+  /* Activity that could be referenced by a compensation throw event via attribute "activityRef".
+   */
+  private ExecutableActivity referenceCompensationActivity;
+
   public ExecutableCompensation(final String id) {
     super(id);
   }
@@ -21,5 +25,18 @@ public class ExecutableCompensation extends AbstractFlowElement {
 
   public void setCompensationHandler(final ExecutableActivity compensationHandler) {
     this.compensationHandler = compensationHandler;
+  }
+
+  public ExecutableActivity getReferenceCompensationActivity() {
+    return referenceCompensationActivity;
+  }
+
+  public void setReferenceCompensationActivity(
+      final ExecutableActivity referenceCompensationActivity) {
+    this.referenceCompensationActivity = referenceCompensationActivity;
+  }
+
+  public boolean hasReferenceActivity() {
+    return referenceCompensationActivity != null;
   }
 }

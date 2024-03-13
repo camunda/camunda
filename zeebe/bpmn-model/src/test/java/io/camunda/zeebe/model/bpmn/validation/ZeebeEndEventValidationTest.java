@@ -22,15 +22,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CancelEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
-import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.TerminateEventDefinition;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,13 +32,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ZeebeEndEventValidationTest {
 
   private static final String END_EVENT_ID = "end";
+  private static final String EVENT_DEFINITION_ID = "event-definition-id";
 
   @ParameterizedTest(name = "[{index}] event type = {0}")
   @MethodSource("supportedEndEventTypes")
   @DisplayName("Should support end event of the given type")
-  void supportedEndEventTypes(final EndEventTypeBuilder endEventTypeBuilder) {
+  void supportedEndEventTypes(final BpmnElementBuilder elementBuilder) {
     // given
-    final BpmnModelInstance process = createProcessWithEndEvent(endEventTypeBuilder);
+    final BpmnModelInstance process = createProcessWithEndEvent(elementBuilder);
 
     // when/then
     ProcessValidationUtil.assertThatProcessIsValid(process);
@@ -55,9 +48,9 @@ class ZeebeEndEventValidationTest {
   @ParameterizedTest(name = "[{index}] event type = {0}")
   @MethodSource("unsupportedEndEventTypes")
   @DisplayName("Should not support end event of the given type")
-  void unsupportedEndEventTypes(final EndEventTypeBuilder endEventTypeBuilder) {
+  void unsupportedEndEventTypes(final BpmnElementBuilder elementBuilder) {
     // given
-    final BpmnModelInstance process = createProcessWithEndEvent(endEventTypeBuilder);
+    final BpmnModelInstance process = createProcessWithEndEvent(elementBuilder);
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
@@ -65,7 +58,7 @@ class ZeebeEndEventValidationTest {
         expect(
             END_EVENT_ID,
             "End events must be one of: none, error, message, terminate, signal, escalation or compensation"),
-        expect(endEventTypeBuilder.eventType, "Event definition of this type is not supported"));
+        expect(EVENT_DEFINITION_ID, "Event definition of this type is not supported"));
   }
 
   @Test
@@ -88,68 +81,52 @@ class ZeebeEndEventValidationTest {
   }
 
   private static BpmnModelInstance createProcessWithEndEvent(
-      final EndEventTypeBuilder endEventTypeBuilder) {
+      final BpmnElementBuilder elementBuilder) {
     final StartEventBuilder processBuilder = Bpmn.createExecutableProcess("process").startEvent();
-    endEventTypeBuilder.build(processBuilder.endEvent(END_EVENT_ID));
-    return processBuilder.done();
+    return elementBuilder.build(processBuilder).done();
   }
 
-  private static Stream<EndEventTypeBuilder> supportedEndEventTypes() {
+  private static Stream<BpmnElementBuilder> supportedEndEventTypes() {
     return Stream.of(
-        new EndEventTypeBuilder(null, endEvent -> endEvent),
-        new EndEventTypeBuilder(
-            SignalEventDefinition.class, endEvent -> endEvent.signal("signal-name")),
-        new EndEventTypeBuilder(
-            ErrorEventDefinition.class, endEvent -> endEvent.error("error-code")),
-        new EndEventTypeBuilder(
-            EscalationEventDefinition.class, endEvent -> endEvent.escalation("escalation-code")),
-        new EndEventTypeBuilder(
-            MessageEventDefinition.class,
-            endEvent -> endEvent.message("message-name").zeebeJobType("job-type")),
-        new EndEventTypeBuilder(
-            MessageEventDefinition.class,
-            endEvent ->
-                endEvent.message(
-                    b -> b.name("message-name").zeebeCorrelationKey("correlationKey"))),
-        new EndEventTypeBuilder(TerminateEventDefinition.class, EndEventBuilder::terminate),
-        new EndEventTypeBuilder(
-            CompensateEventDefinition.class,
-            endEvent -> endEvent.compensateEventDefinition().compensateEventDefinitionDone()));
+        BpmnElementBuilder.of("none", builder -> builder.endEvent(END_EVENT_ID)),
+        BpmnElementBuilder.of(
+            "signal", builder -> builder.endEvent(END_EVENT_ID).signal("signal-name")),
+        BpmnElementBuilder.of(
+            "error", builder -> builder.endEvent(END_EVENT_ID).error("error-code")),
+        BpmnElementBuilder.of(
+            "escalation", builder -> builder.endEvent(END_EVENT_ID).escalation("escalation-code")),
+        BpmnElementBuilder.of(
+            "message (job worker)",
+            builder ->
+                builder.endEvent(END_EVENT_ID).message("message-name").zeebeJobType("job-type")),
+        BpmnElementBuilder.of(
+            "message",
+            builder ->
+                builder
+                    .endEvent(END_EVENT_ID)
+                    .message(b -> b.name("message-name").zeebeCorrelationKey("correlationKey"))),
+        BpmnElementBuilder.of("termination", builder -> builder.endEvent(END_EVENT_ID).terminate()),
+        BpmnElementBuilder.of(
+            "compensation",
+            builder ->
+                builder
+                    .endEvent(END_EVENT_ID)
+                    .compensateEventDefinition()
+                    .compensateEventDefinitionDone()));
   }
 
-  private static Stream<EndEventTypeBuilder> unsupportedEndEventTypes() {
+  private static Stream<BpmnElementBuilder> unsupportedEndEventTypes() {
     return Stream.of(
-        new EndEventTypeBuilder(
-            CancelEventDefinition.class,
-            endEvent -> {
+        BpmnElementBuilder.of(
+            "cancel",
+            builder -> {
+              final EndEventBuilder endEvent = builder.endEvent(END_EVENT_ID);
               // currently, we don't have a builder for cancel events
               final CancelEventDefinition cancelEventDefinition =
                   endEvent.getElement().getModelInstance().newInstance(CancelEventDefinition.class);
+              cancelEventDefinition.setId(EVENT_DEFINITION_ID);
               endEvent.getElement().getEventDefinitions().add(cancelEventDefinition);
               return endEvent;
             }));
-  }
-
-  private static final class EndEventTypeBuilder {
-    private final String eventTypeName;
-    private final Class<? extends EventDefinition> eventType;
-    private final UnaryOperator<EndEventBuilder> elementModifier;
-
-    private EndEventTypeBuilder(
-        final Class<? extends EventDefinition> eventType,
-        final UnaryOperator<EndEventBuilder> elementModifier) {
-      this.eventType = eventType;
-      eventTypeName = eventType == null ? "none" : eventType.getSimpleName();
-      this.elementModifier = elementModifier;
-    }
-
-    public EndEventBuilder build(final EndEventBuilder endEventBuilder) {
-      return elementModifier.apply(endEventBuilder);
-    }
-
-    @Override
-    public String toString() {
-      return eventTypeName;
-    }
   }
 }

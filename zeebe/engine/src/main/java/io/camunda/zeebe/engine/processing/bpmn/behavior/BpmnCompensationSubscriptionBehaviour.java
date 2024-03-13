@@ -152,26 +152,29 @@ public class BpmnCompensationSubscriptionBehaviour {
         .filter(
             subscription -> scopeKey == subscription.getRecord().getCompensableActivityScopeKey())
         .forEach(
-            subscription -> {
-              long compensationHandlerInstanceKey = NONE_COMPENSATION_HANDLER_INSTANCE_KEY;
+            subscription ->
+                triggerCompensationForSubscription(context, subscriptions, subscription));
+  }
 
-              // invoke the compensation handler if present
-              if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
-                compensationHandlerInstanceKey =
-                    activateCompensationHandler(
-                        context, subscription.getRecord().getCompensableActivityId());
-              }
+  private void triggerCompensationForSubscription(
+      final BpmnElementContext context,
+      final Collection<CompensationSubscription> subscriptions,
+      final CompensationSubscription subscription) {
+    long compensationHandlerInstanceKey = NONE_COMPENSATION_HANDLER_INSTANCE_KEY;
 
-              // mark the subscription as triggered
-              appendCompensationSubscriptionTriggerEvent(
-                  context, subscription, compensationHandlerInstanceKey);
+    // invoke the compensation handler if present
+    if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
+      compensationHandlerInstanceKey =
+          activateCompensationHandler(context, subscription.getRecord().getCompensableActivityId());
+    }
 
-              // propagate the compensation to subprocesses
-              triggerCompensationFromTopToBottom(
-                  context,
-                  subscriptions,
-                  subscription.getRecord().getCompensableActivityInstanceKey());
-            });
+    // mark the subscription as triggered
+    appendCompensationSubscriptionTriggerEvent(
+        context, subscription, compensationHandlerInstanceKey);
+
+    // propagate the compensation to subprocesses
+    triggerCompensationFromTopToBottom(
+        context, subscriptions, subscription.getRecord().getCompensableActivityInstanceKey());
   }
 
   private long activateCompensationHandler(
@@ -260,6 +263,45 @@ public class BpmnCompensationSubscriptionBehaviour {
         boundaryEventKey, ProcessInstanceIntent.ELEMENT_COMPLETING, boundaryEventRecord);
     stateWriter.appendFollowUpEvent(
         boundaryEventKey, ProcessInstanceIntent.ELEMENT_COMPLETED, boundaryEventRecord);
+  }
+
+  public boolean triggerCompensationForActivity(
+      final ExecutableActivity compensationActivity, final BpmnElementContext context) {
+    final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
+
+    // ignore subscriptions that are already triggered
+    final var notTriggeredSubscriptions =
+        compensationSubscriptionState
+            .findSubscriptionsByProcessInstanceKey(
+                context.getTenantId(), context.getProcessInstanceKey())
+            .stream()
+            .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
+            .toList();
+
+    // filter subscriptions by given activity
+    final var subscriptionsForActivity =
+        notTriggeredSubscriptions.stream()
+            .filter(
+                subscription ->
+                    subscription
+                        .getRecord()
+                        .getCompensableActivityId()
+                        .equals(compensationActivityId))
+            .filter(
+                subscription ->
+                    subscription.getRecord().getCompensableActivityScopeKey()
+                        == context.getFlowScopeKey())
+            .toList();
+
+    if (subscriptionsForActivity.isEmpty()) {
+      return false; // no subscriptions are triggered
+    }
+
+    // trigger the compensation for the given activity
+    subscriptionsForActivity.forEach(
+        subscription ->
+            triggerCompensationForSubscription(context, notTriggeredSubscriptions, subscription));
+    return true;
   }
 
   public void completeCompensationHandler(final BpmnElementContext context) {

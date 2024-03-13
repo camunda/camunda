@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x2c0k1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.19.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x2c0k1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
   <bpmn:process id="compensation-process" isExecutable="true">
     <bpmn:startEvent id="StartEvent">
       <bpmn:outgoing>Flow_1vslwh8</bpmn:outgoing>
@@ -15,7 +15,7 @@
     <bpmn:intermediateThrowEvent id="CompensationThrowEvent">
       <bpmn:incoming>Flow_08yr8s3</bpmn:incoming>
       <bpmn:outgoing>Flow_0n0oakg</bpmn:outgoing>
-      <bpmn:compensateEventDefinition id="CompensateEventDefinition_1ce2r2v" activityRef="ActivityToCompensate" />
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_1ce2r2v" />
     </bpmn:intermediateThrowEvent>
     <bpmn:sequenceFlow id="Flow_1vslwh8" sourceRef="StartEvent" targetRef="Gateway_118x39o" />
     <bpmn:parallelGateway id="Gateway_118x39o">
@@ -92,21 +92,11 @@
       <bpmndi:BPMNShape id="Activity_1upgh7w_di" bpmnElement="CompensationHandler2">
         <dc:Bounds x="450" y="550" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Association_1jwpcsv_di" bpmnElement="Association_1jwpcsv">
-        <di:waypoint x="430" y="157" />
-        <di:waypoint x="430" y="240" />
-        <di:waypoint x="500" y="240" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_1ebe076_di" bpmnElement="Association_1ebe076">
-        <di:waypoint x="410" y="508" />
-        <di:waypoint x="410" y="590" />
-        <di:waypoint x="450" y="590" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Event_1n78lze_di" bpmnElement="CompensationBoundaryEvent">
-        <dc:Bounds x="432" y="139" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_0rexz0f" bpmnElement="CompensationBoundaryEvent2">
         <dc:Bounds x="392" y="472" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1n78lze_di" bpmnElement="CompensationBoundaryEvent">
+        <dc:Bounds x="432" y="139" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0n0oakg_di" bpmnElement="Flow_0n0oakg">
         <di:waypoint x="908" y="117" />
@@ -137,6 +127,16 @@
         <di:waypoint x="410" y="450" />
         <di:waypoint x="790" y="450" />
         <di:waypoint x="790" y="142" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1jwpcsv_di" bpmnElement="Association_1jwpcsv">
+        <di:waypoint x="430" y="157" />
+        <di:waypoint x="430" y="240" />
+        <di:waypoint x="500" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1ebe076_di" bpmnElement="Association_1ebe076">
+        <di:waypoint x="410" y="508" />
+        <di:waypoint x="410" y="590" />
+        <di:waypoint x="450" y="590" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
