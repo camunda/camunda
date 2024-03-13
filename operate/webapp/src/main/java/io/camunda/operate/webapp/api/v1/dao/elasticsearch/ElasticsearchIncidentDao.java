@@ -53,7 +53,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
   protected void buildFiltering(
       final Query<Incident> query, final SearchSourceBuilder searchSourceBuilder) {
     final Incident filter = query.getFilter();
-    List<QueryBuilder> queryBuilders = new ArrayList<>();
+    final List<QueryBuilder> queryBuilders = new ArrayList<>();
     if (filter != null) {
       queryBuilders.add(buildTermQuery(Incident.KEY, filter.getKey()));
       queryBuilders.add(
@@ -73,7 +73,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
   @Override
   public Incident byKey(final Long key) throws APIException {
     logger.debug("byKey {}", key);
-    List<Incident> incidents;
+    final List<Incident> incidents;
     try {
       incidents = searchFor(new SearchSourceBuilder().query(termQuery(IncidentTemplate.KEY, key)));
     } catch (Exception e) {
@@ -102,7 +102,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<Incident> incidents =
+        final List<Incident> incidents =
             ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToIncident);
         return new Results<Incident>()
             .setTotal(searchHits.getTotalHits().value)

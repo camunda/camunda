@@ -31,7 +31,7 @@ public class OperationsConfig {
 
   @Bean("operationsThreadPoolExecutor")
   public ThreadPoolTaskExecutor getOperationsThreadPoolExecutor() {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(operateProperties.getOperationExecutor().getThreadsCount());
     executor.setMaxPoolSize(operateProperties.getOperationExecutor().getThreadsCount());
     executor.setQueueCapacity(operateProperties.getOperationExecutor().getQueueSize());
@@ -41,7 +41,7 @@ public class OperationsConfig {
     return executor;
   }
 
-  private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
+  private final class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
     public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
       // this will block if the queue is full
       if (!executor.isShutdown()) {

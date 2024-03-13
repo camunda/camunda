@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class SortValuesWrapper implements Serializable {
 
-  private static final Logger logger = LoggerFactory.getLogger(SortValuesWrapper.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SortValuesWrapper.class);
 
   public String value;
   public Class valueType;
@@ -55,7 +55,7 @@ public class SortValuesWrapper implements Serializable {
                           objectMapper.writeValueAsString(value), value.getClass())))
           .toArray(SortValuesWrapper[]::new);
     } catch (JsonProcessingException e) {
-      logger.warn("Unable to serialize sortValues. Error: " + e.getMessage(), e);
+      LOGGER.warn("Unable to serialize sortValues. Error: " + e.getMessage(), e);
       throw new OperateRuntimeException(e);
     }
   }
@@ -72,7 +72,7 @@ public class SortValuesWrapper implements Serializable {
                   value -> objectMapper.readValue(value.value.getBytes(), value.valueType)))
           .toArray(Object[]::new);
     } catch (IOException e) {
-      logger.warn("Unable to deserialize sortValues. Error: " + e.getMessage(), e);
+      LOGGER.warn("Unable to deserialize sortValues. Error: " + e.getMessage(), e);
       throw new OperateRuntimeException(e);
     }
   }
@@ -102,9 +102,13 @@ public class SortValuesWrapper implements Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    SortValuesWrapper that = (SortValuesWrapper) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SortValuesWrapper that = (SortValuesWrapper) o;
     return Objects.equals(value, that.value) && Objects.equals(valueType, that.valueType);
   }
 }

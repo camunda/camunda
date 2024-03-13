@@ -73,7 +73,7 @@ import org.springframework.stereotype.Component;
 public class OperationReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.OperationReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(OperationReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OperationReader.class);
 
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
   private static final String LOCKED_OPERATION = LOCKED.toString();
@@ -106,7 +106,7 @@ public class OperationReader extends AbstractReader
         joinWithOr(
             scheduledOperationsQuery, joinWithAnd(lockedOperationsQuery, lockExpirationTimeQuery));
 
-    ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(operationsQuery);
+    final ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(operationsQuery);
 
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
@@ -124,7 +124,7 @@ public class OperationReader extends AbstractReader
       final String message =
           String.format(
               "Exception occurred, while acquiring operations for execution: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -132,9 +132,10 @@ public class OperationReader extends AbstractReader
   @Override
   public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
       List<Long> processInstanceKeys) {
-    Map<Long, List<OperationEntity>> result = new HashMap<>();
+    final Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    TermsQueryBuilder processInstanceKeysQ = termsQuery(PROCESS_INSTANCE_KEY, processInstanceKeys);
+    final TermsQueryBuilder processInstanceKeysQ =
+        termsQuery(PROCESS_INSTANCE_KEY, processInstanceKeys);
     final ConstantScoreQueryBuilder query =
         constantScoreQuery(joinWithAnd(processInstanceKeysQ, createUsernameQuery()));
 
@@ -169,16 +170,17 @@ public class OperationReader extends AbstractReader
           String.format(
               "Exception occurred, while obtaining operations per process instance id: %s",
               e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
 
   @Override
   public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(String processInstanceId) {
-    Map<Long, List<OperationEntity>> result = new HashMap<>();
+    final Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    TermQueryBuilder processInstanceKeysQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
+    final TermQueryBuilder processInstanceKeysQ =
+        termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
     final ConstantScoreQueryBuilder query =
         constantScoreQuery(joinWithAnd(processInstanceKeysQ, createUsernameQuery()));
 
@@ -209,7 +211,7 @@ public class OperationReader extends AbstractReader
       final String message =
           String.format(
               "Exception occurred, while obtaining operations per incident id: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -217,7 +219,7 @@ public class OperationReader extends AbstractReader
   @Override
   public Map<String, List<OperationEntity>> getUpdateOperationsPerVariableName(
       Long processInstanceKey, Long scopeKey) {
-    Map<String, List<OperationEntity>> result = new HashMap<>();
+    final Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
@@ -252,7 +254,7 @@ public class OperationReader extends AbstractReader
           String.format(
               "Exception occurred, while obtaining operations per variable name: %s",
               e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -260,9 +262,10 @@ public class OperationReader extends AbstractReader
   @Override
   public List<OperationEntity> getOperationsByProcessInstanceKey(Long processInstanceKey) {
 
-    TermQueryBuilder processInstanceQ =
+    final TermQueryBuilder processInstanceQ =
         processInstanceKey == null ? null : termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
-    QueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceQ, createUsernameQuery()));
+    final QueryBuilder query =
+        constantScoreQuery(joinWithAnd(processInstanceQ, createUsernameQuery()));
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
             .source(new SearchSourceBuilder().query(query).sort(ID, SortOrder.ASC));
@@ -271,7 +274,7 @@ public class OperationReader extends AbstractReader
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining operations: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -279,9 +282,9 @@ public class OperationReader extends AbstractReader
   // this query will be extended
   @Override
   public List<BatchOperationEntity> getBatchOperations(int pageSize) {
-    String username = userService.getCurrentUser().getUsername();
-    TermQueryBuilder isOfCurrentUser = termQuery(BatchOperationTemplate.USERNAME, username);
-    SearchRequest searchRequest =
+    final String username = userService.getCurrentUser().getUsername();
+    final TermQueryBuilder isOfCurrentUser = termQuery(BatchOperationTemplate.USERNAME, username);
+    final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(batchOperationTemplate, ALL)
             .source(
                 new SearchSourceBuilder()
@@ -314,7 +317,7 @@ public class OperationReader extends AbstractReader
           String.format(
               "Exception occurred, while searching for operation with batchOperationId: %s",
               e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -340,7 +343,7 @@ public class OperationReader extends AbstractReader
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while searching for operation.", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }

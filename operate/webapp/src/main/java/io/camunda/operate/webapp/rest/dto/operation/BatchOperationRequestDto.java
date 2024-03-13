@@ -95,15 +95,23 @@ public class BatchOperationRequestDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    BatchOperationRequestDto that = (BatchOperationRequestDto) o;
+    final BatchOperationRequestDto that = (BatchOperationRequestDto) o;
 
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
-    if (!Arrays.equals(searchBefore, that.searchBefore)) return false;
+    if (!Arrays.equals(searchBefore, that.searchBefore)) {
+      return false;
+    }
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
-    if (!Arrays.equals(searchAfter, that.searchAfter)) return false;
+    if (!Arrays.equals(searchAfter, that.searchAfter)) {
+      return false;
+    }
     return pageSize != null ? pageSize.equals(that.pageSize) : that.pageSize == null;
   }
 }

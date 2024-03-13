@@ -40,7 +40,7 @@ public class Metadata {
 
   // backward compatibility with v. 8.1
   public static Long extractBackupIdFromSnapshotName(String snapshotName) {
-    Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
+    final Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
     if (matcher.matches()) {
       return Long.valueOf(matcher.group(1));
     } else {
@@ -100,9 +100,13 @@ public class Metadata {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    Metadata that = (Metadata) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final Metadata that = (Metadata) o;
     return Objects.equals(version, that.version)
         && Objects.equals(partNo, that.partNo)
         && Objects.equals(partCount, that.partCount);

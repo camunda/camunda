@@ -89,9 +89,13 @@ public class ProcessDefinition {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ProcessDefinition that = (ProcessDefinition) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessDefinition that = (ProcessDefinition) o;
     return Objects.equals(key, that.key)
         && Objects.equals(name, that.name)
         && Objects.equals(version, that.version)

@@ -28,7 +28,7 @@ public enum DecisionInstanceStateDto {
     if (state == null) {
       return UNSPECIFIED;
     }
-    DecisionInstanceStateDto stateDto = valueOf(state.name());
+    final DecisionInstanceStateDto stateDto = valueOf(state.name());
     if (stateDto == null) {
       return UNKNOWN;
     }

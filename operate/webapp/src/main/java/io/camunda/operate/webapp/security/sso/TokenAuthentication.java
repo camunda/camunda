@@ -159,7 +159,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   }
 
   public boolean needToUpdate() {
-    Duration duration = Duration.between(lastResourceBasedPermissionsUpdated, Instant.now());
+    final Duration duration = Duration.between(lastResourceBasedPermissionsUpdated, Instant.now());
     return !duration
         .minusSeconds(getOperateProperties().getIdentity().getResourcePermissionsUpdatePeriod())
         .isNegative();
@@ -169,7 +169,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     if (getOperateProperties().getIdentity().isResourcePermissionsEnabled()
         && getIdentity() != null) {
       try {
-        List<IdentityAuthorization> identityAuthorizations =
+        final List<IdentityAuthorization> identityAuthorizations =
             IdentityAuthorization.createFrom(
                 getIdentity()
                     .authorizations()
@@ -236,7 +236,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     if (refreshToken != null) {
       this.refreshToken = refreshToken;
     }
-    Claim claim = JWT.decode(idToken).getClaim(claimName);
+    final Claim claim = JWT.decode(idToken).getClaim(claimName);
     tryAuthenticateAsListOfMaps(claim);
     if (!isAuthenticated()) {
       throw new InsufficientAuthenticationException(
@@ -246,7 +246,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   private void tryAuthenticateAsListOfMaps(final Claim claim) {
     try {
-      List<? extends Map> claims = claim.asList(Map.class);
+      final List<? extends Map> claims = claim.asList(Map.class);
       if (claims != null) {
         setAuthenticated(claims.stream().anyMatch(this::isIdEqualsOrganization));
       }

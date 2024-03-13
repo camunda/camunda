@@ -46,7 +46,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchIncidentReader extends OpensearchAbstractReader implements IncidentReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchIncidentReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchIncidentReader.class);
 
   @Autowired private OperationReader operationReader;
 
@@ -84,8 +84,8 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
     // get treePath for process instance
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
-    List<Map<ErrorType, Long>> errorTypes = new ArrayList<>();
-    List<IncidentEntity> incidents =
+    final List<Map<ErrorType, Long>> errorTypes = new ArrayList<>();
+    final List<IncidentEntity> incidents =
         incidentStore.getIncidentsWithErrorTypesFor(treePath, errorTypes);
 
     final IncidentResponseDto incidentResponse = new IncidentResponseDto();
@@ -93,7 +93,7 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
         errorTypes.stream()
             .map(
                 m -> {
-                  var entry = m.entrySet().iterator().next();
+                  final var entry = m.entrySet().iterator().next();
                   return IncidentErrorTypeDto.createFrom(entry.getKey())
                       .setCount(entry.getValue().intValue());
                 })
@@ -149,7 +149,7 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
     final Set<String> flowNodeInstanceIdsSet = new HashSet<>();
     final Map<String, IncidentDataHolder> incDatas = new HashMap<>();
     for (IncidentEntity inc : incidents) {
-      IncidentDataHolder incData = new IncidentDataHolder().setIncidentId(inc.getId());
+      final IncidentDataHolder incData = new IncidentDataHolder().setIncidentId(inc.getId());
       if (!String.valueOf(inc.getProcessInstanceKey()).equals(processInstanceId)) {
         final String callActivityInstanceId =
             TreePath.extractFlowNodeInstanceId(inc.getTreePath(), currentTreePath);

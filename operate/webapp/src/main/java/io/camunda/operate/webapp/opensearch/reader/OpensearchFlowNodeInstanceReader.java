@@ -33,7 +33,7 @@ import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.START
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.ACTIVE_INCIDENT_QUERY;
+import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.activeIncidentQuery;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
@@ -501,7 +501,9 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   private void markHasIncident(
       final String processInstanceId, final List<FlowNodeInstanceEntity> flowNodeInstances) {
-    if (flowNodeInstances == null || flowNodeInstances.isEmpty()) return;
+    if (flowNodeInstances == null || flowNodeInstances.isEmpty()) {
+      return;
+    }
     final Map<String, Query> filters =
         flowNodeInstances.stream()
             .filter(this::flowNodeInstanceIsRunningOrIsNotMarked)
@@ -712,7 +714,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                 constantScore(
                     withTenantCheck(
                         and(
-                            ACTIVE_INCIDENT_QUERY,
+                            activeIncidentQuery,
                             term(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath)))));
 
     final var hitsMeta =
@@ -763,7 +765,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                 constantScore(
                     withTenantCheck(
                         and(
-                            ACTIVE_INCIDENT_QUERY,
+                            activeIncidentQuery,
                             term(IncidentTemplate.TREE_PATH, incidentTreePath)))));
 
     final var hitsMeta =

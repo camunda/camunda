@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
 
-  private static final Logger logger = LoggerFactory.getLogger(PaginatedQuery.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PaginatedQuery.class);
 
   private static final int DEFAULT_PAGE_SIZE = 50;
 

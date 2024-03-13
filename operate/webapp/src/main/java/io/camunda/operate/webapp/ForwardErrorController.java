@@ -53,7 +53,7 @@ public class ForwardErrorController {
       final HttpServletRequest request, final String requestedURI) {
     LOGGER.warn(
         "Requested path {}, but not authenticated. Redirect to  {} ", requestedURI, LOGIN_RESOURCE);
-    String queryString = request.getQueryString();
+    final String queryString = request.getQueryString();
     if (ConversionUtils.stringIsEmpty(queryString)) {
       request.getSession(true).setAttribute(REQUESTED_URL, requestedURI);
     } else {

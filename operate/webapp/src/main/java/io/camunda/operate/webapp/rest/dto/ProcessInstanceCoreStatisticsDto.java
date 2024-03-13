@@ -59,13 +59,21 @@ public class ProcessInstanceCoreStatisticsDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    ProcessInstanceCoreStatisticsDto that = (ProcessInstanceCoreStatisticsDto) o;
+    final ProcessInstanceCoreStatisticsDto that = (ProcessInstanceCoreStatisticsDto) o;
 
-    if (running != null ? !running.equals(that.running) : that.running != null) return false;
-    if (active != null ? !active.equals(that.active) : that.active != null) return false;
+    if (running != null ? !running.equals(that.running) : that.running != null) {
+      return false;
+    }
+    if (active != null ? !active.equals(that.active) : that.active != null) {
+      return false;
+    }
 
     return withIncidents != null
         ? withIncidents.equals(that.withIncidents)

@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
     implements OperationHandler {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(DeleteProcessDefinitionHandler.class);
 
   @Autowired private OperationsManager operationsManager;
@@ -57,13 +57,13 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
 
-    Long processDefinitionKey = operation.getProcessDefinitionKey();
+    final Long processDefinitionKey = operation.getProcessDefinitionKey();
     if (processDefinitionKey == null) {
       failOperation(operation, "No process definition key is provided.");
       return;
     }
 
-    List<ProcessInstanceForListViewEntity> runningInstances =
+    final List<ProcessInstanceForListViewEntity> runningInstances =
         processStore.getProcessInstancesByProcessAndStates(
             processDefinitionKey, Set.of(ProcessInstanceState.ACTIVE), 1, null);
     if (!runningInstances.isEmpty()) {
@@ -75,25 +75,25 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
       return;
     }
 
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Sending Zeebe delete command for processDefinitionKey [%s]...",
             operation.getId(), processDefinitionKey));
     zeebeClient.newDeleteResourceCommand(processDefinitionKey).send().join();
     markAsSent(operation);
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Delete command sent to Zeebe for processDefinitionKey [%s]",
             operation.getId(), processDefinitionKey));
 
     cascadeDeleteProcessInstances(processDefinitionKey, operation);
 
-    long deleted = processStore.deleteProcessDefinitionsByKeys(processDefinitionKey);
-    logger.info(
+    final long deleted = processStore.deleteProcessDefinitionsByKeys(processDefinitionKey);
+    LOGGER.info(
         String.format(
             "Operation [%s]: Total process definitions deleted: %s", operation.getId(), deleted));
     completeOperation(operation);
-    logger.info(String.format("Operation [%s]: Completed.", operation.getId()));
+    LOGGER.info(String.format("Operation [%s]: Completed.", operation.getId()));
   }
 
   @Override
@@ -113,28 +113,28 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
 
     long totalDeleted = 0;
     while (true) {
-      List<ProcessInstanceForListViewEntity> processInstances =
+      final List<ProcessInstanceForListViewEntity> processInstances =
           processStore.getProcessInstancesByProcessAndStates(
               processDefinitionKey, states, blockSize, includeFields);
       if (processInstances.isEmpty()) {
         break;
       }
-      List<List<ProcessInstanceForListViewEntity>> treeLevels = new ArrayList<>();
+      final List<List<ProcessInstanceForListViewEntity>> treeLevels = new ArrayList<>();
       treeLevels.add(processInstances);
       int currentLevel = 0;
       while (!treeLevels.isEmpty()) {
-        List<ProcessInstanceForListViewEntity> currentProcessInstances =
+        final List<ProcessInstanceForListViewEntity> currentProcessInstances =
             treeLevels.get(currentLevel);
-        Set<Long> currentKeys =
+        final Set<Long> currentKeys =
             currentProcessInstances.stream()
                 .map(OperateZeebeEntity::getKey)
                 .collect(Collectors.toSet());
-        List<ProcessInstanceForListViewEntity> children =
+        final List<ProcessInstanceForListViewEntity> children =
             processStore.getProcessInstancesByParentKeys(currentKeys, blockSize, includeFields);
         if (children.isEmpty()) {
-          long deleted = processStore.deleteProcessInstancesAndDependants(currentKeys);
+          final long deleted = processStore.deleteProcessInstancesAndDependants(currentKeys);
           updateInstancesInBatchOperation(operation, currentKeys.size());
-          logger.info(
+          LOGGER.info(
               String.format(
                   "Operation [%s]: Deleted %s documents on level %s",
                   operation.getId(), deleted, currentLevel));
@@ -148,7 +148,7 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
         }
       }
     }
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Total process instances and dependants deleted: %s",
             operation.getId(), totalDeleted));

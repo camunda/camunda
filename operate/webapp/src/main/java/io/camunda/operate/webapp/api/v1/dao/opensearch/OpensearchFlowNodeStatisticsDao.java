@@ -63,7 +63,7 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
 
   @Override
   public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(Long processInstanceKey) {
-    var requestBuilder =
+    final var requestBuilder =
         requestDSLWrapper
             .searchRequestBuilder(flowNodeInstanceTemplate)
             .query(

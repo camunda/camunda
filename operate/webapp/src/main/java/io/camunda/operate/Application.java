@@ -56,7 +56,7 @@ public class Application {
 
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
-  private static final Logger logger = LoggerFactory.getLogger(Application.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
   public static void main(final String[] args) {
 
@@ -127,7 +127,7 @@ public class Application {
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
-    logger.debug("Create Data generator stub");
+    LOGGER.debug("Create Data generator stub");
     return DataGenerator.DO_NOTHING;
   }
 

@@ -64,10 +64,10 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
 
   @Override
   protected void buildFiltering(Query<SequenceFlow> query, SearchRequest.Builder request) {
-    SequenceFlow filter = query.getFilter();
+    final SequenceFlow filter = query.getFilter();
 
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(SequenceFlow.ID, filter.getId()),
                   queryDSLWrapper.term(SequenceFlow.ACTIVITY_ID, filter.getActivityId()),

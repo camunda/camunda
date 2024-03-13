@@ -146,7 +146,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
           "For variable update use \"Create operation for one process instance\" endpoint.");
     }
     if (batchOperationRequest.getOperationType() == MIGRATE_PROCESS_INSTANCE) {
-      MigrationPlanDto migrationPlanDto = batchOperationRequest.getMigrationPlan();
+      final MigrationPlanDto migrationPlanDto = batchOperationRequest.getMigrationPlan();
       if (migrationPlanDto == null) {
         throw new InvalidRequestException(
             String.format(

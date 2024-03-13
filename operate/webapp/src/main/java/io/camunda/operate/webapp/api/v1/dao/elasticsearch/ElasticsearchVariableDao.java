@@ -52,7 +52,7 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
   protected void buildFiltering(
       final Query<Variable> query, final SearchSourceBuilder searchSourceBuilder) {
     final Variable filter = query.getFilter();
-    List<QueryBuilder> queryBuilders = new ArrayList<>();
+    final List<QueryBuilder> queryBuilders = new ArrayList<>();
     if (filter != null) {
       queryBuilders.add(buildTermQuery(Variable.KEY, filter.getKey()));
       queryBuilders.add(buildTermQuery(Variable.TENANT_ID, filter.getTenantId()));
@@ -69,7 +69,7 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
   @Override
   public Variable byKey(final Long key) throws APIException {
     logger.debug("byKey {}", key);
-    List<Variable> variables;
+    final List<Variable> variables;
     try {
       variables = searchFor(new SearchSourceBuilder().query(termQuery(Variable.KEY, key)));
     } catch (Exception e) {
@@ -97,7 +97,7 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<Variable> variables =
+        final List<Variable> variables =
             ElasticsearchUtil.mapSearchHits(
                 searchHitArray, this::searchHitToVariableWithoutFullValue);
         return new Results<Variable>()

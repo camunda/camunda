@@ -43,7 +43,7 @@ public class MetricWriterTest {
   public void verifyRegisterProcessEventWasCalledWithRightArgument() throws PersistenceException {
     // Given
     final String key = "processInstanceKey";
-    var now = OffsetDateTime.now();
+    final var now = OffsetDateTime.now();
     final String tenantId = "tenantA";
 
     // When
@@ -64,7 +64,7 @@ public class MetricWriterTest {
   public void verifyRegisterDecisionEventWasCalledWithRightArgument() throws PersistenceException {
     // Given
     final String key = "decisionInstanceKey";
-    var now = OffsetDateTime.now();
+    final var now = OffsetDateTime.now();
     final String tenantId = "tenantA";
 
     // When

@@ -61,7 +61,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ListViewReader implements io.camunda.operate.webapp.reader.ListViewReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ListViewReader.class);
+  private static final String WILD_CARD = "*";
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -114,7 +115,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
 
     final QueryBuilder query = queryHelper.createRequestQuery(processInstanceRequest.getQuery());
 
-    logger.debug("Process instance search request: \n{}", query.toString());
+    LOGGER.debug("Process instance search request: \n{}", query.toString());
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
 
@@ -125,7 +126,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
             .createSearchRequest(processInstanceRequest.getQuery())
             .source(searchSourceBuilder);
 
-    logger.debug("Search request will search in: \n{}", searchRequest.indices());
+    LOGGER.debug("Search request will search in: \n{}", searchRequest.indices());
 
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
@@ -150,7 +151,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining instances list: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }

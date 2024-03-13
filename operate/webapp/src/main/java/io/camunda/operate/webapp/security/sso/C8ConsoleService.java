@@ -33,7 +33,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Component
 public class C8ConsoleService {
-  private static final Logger logger = LoggerFactory.getLogger(C8ConsoleService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(C8ConsoleService.class);
 
   private static final String CONSOLE_CLUSTER_TEMPLATE = "%s/external/organizations/%s/clusters";
   @Autowired private OperateProperties operateProperties;
@@ -52,7 +52,7 @@ public class C8ConsoleService {
                 .getAccessToken();
         clusterMetadata = retrieveClusterMetadata(accessToken);
       } catch (Exception e) {
-        logger.error("Couldn't retrieve ClusterMetadata, return null.", e);
+        LOGGER.error("Couldn't retrieve ClusterMetadata, return null.", e);
         clusterMetadata = null;
       }
     }
@@ -60,7 +60,7 @@ public class C8ConsoleService {
   }
 
   private ClusterMetadata retrieveClusterMetadata(final String accessToken) throws Exception {
-    ClusterMetadata clusterMetadata =
+    final ClusterMetadata clusterMetadata =
         RetryOperation.<ClusterMetadata>newBuilder()
             .noOfRetry(5)
             .delayInterval(500, TimeUnit.MILLISECONDS)
@@ -73,7 +73,7 @@ public class C8ConsoleService {
   }
 
   private ClusterMetadata addModelerAndConsoleLinksIfNotExists(ClusterMetadata clusterMetadata) {
-    Map<ClusterMetadata.AppName, String> urls = new TreeMap<>(clusterMetadata.getUrls());
+    final Map<ClusterMetadata.AppName, String> urls = new TreeMap<>(clusterMetadata.getUrls());
     final String organizationId = operateProperties.getCloud().getOrganizationId();
     final String domain = operateProperties.getCloud().getPermissionAudience();
     final String clusterId = operateProperties.getCloud().getClusterId();

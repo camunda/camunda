@@ -169,26 +169,45 @@ public class BatchOperationDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    BatchOperationDto that = (BatchOperationDto) o;
-
-    if (id != null ? !id.equals(that.id) : that.id != null) return false;
-    if (name != null ? !name.equals(that.name) : that.name != null) return false;
-    if (type != that.type) return false;
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) return false;
+    }
+
+    final BatchOperationDto that = (BatchOperationDto) o;
+
+    if (id != null ? !id.equals(that.id) : that.id != null) {
+      return false;
+    }
+    if (name != null ? !name.equals(that.name) : that.name != null) {
+      return false;
+    }
+    if (type != that.type) {
+      return false;
+    }
+    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null) {
+      return false;
+    }
+    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) {
+      return false;
+    }
     if (instancesCount != null
         ? !instancesCount.equals(that.instancesCount)
-        : that.instancesCount != null) return false;
+        : that.instancesCount != null) {
+      return false;
+    }
     if (operationsTotalCount != null
         ? !operationsTotalCount.equals(that.operationsTotalCount)
-        : that.operationsTotalCount != null) return false;
+        : that.operationsTotalCount != null) {
+      return false;
+    }
     if (operationsFinishedCount != null
         ? !operationsFinishedCount.equals(that.operationsFinishedCount)
-        : that.operationsFinishedCount != null) return false;
+        : that.operationsFinishedCount != null) {
+      return false;
+    }
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
     return Arrays.equals(sortValues, that.sortValues);
   }

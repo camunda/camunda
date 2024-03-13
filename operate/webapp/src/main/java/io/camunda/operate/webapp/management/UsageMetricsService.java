@@ -41,7 +41,7 @@ public class UsageMetricsService {
       value = "/process-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveProcessInstanceCount(UsageMetricQueryDTO query) {
-    Long total =
+    final Long total =
         metricsStore.retrieveProcessInstanceCount(query.getStartTime(), query.getEndTime());
     return new UsageMetricDTO().setTotal(total);
   }
@@ -56,7 +56,7 @@ public class UsageMetricsService {
       value = "/decision-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveDecisionInstancesCount(UsageMetricQueryDTO query) {
-    Long total =
+    final Long total =
         metricsStore.retrieveDecisionInstanceCount(query.getStartTime(), query.getEndTime());
     return new UsageMetricDTO().setTotal(total);
   }

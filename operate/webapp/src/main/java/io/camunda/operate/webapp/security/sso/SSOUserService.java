@@ -73,7 +73,7 @@ public class SSOUserService extends AbstractUserService<AbstractAuthenticationTo
   }
 
   private UserDto getUserDtoFor(final TokenAuthentication authentication) {
-    Map<String, Claim> claims = authentication.getClaims();
+    final Map<String, Claim> claims = authentication.getClaims();
     String name = "No name";
     if (claims.containsKey(operateProperties.getAuth0().getNameKey())) {
       name = claims.get(operateProperties.getAuth0().getNameKey()).asString();

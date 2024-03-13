@@ -27,7 +27,9 @@ public enum Permission {
 
   public static Permission fromString(String permissionAsString) {
     for (Permission permission : values()) {
-      if (permission.name().equalsIgnoreCase(permissionAsString)) return permission;
+      if (permission.name().equalsIgnoreCase(permissionAsString)) {
+        return permission;
+      }
     }
     throw new IllegalArgumentException(
         String.format(

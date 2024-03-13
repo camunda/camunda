@@ -52,7 +52,7 @@ public class FlowNodeInstanceDto {
 
   public static FlowNodeInstanceDto createFrom(
       final FlowNodeInstanceEntity flowNodeInstanceEntity, final ObjectMapper objectMapper) {
-    FlowNodeInstanceDto instance =
+    final FlowNodeInstanceDto instance =
         new FlowNodeInstanceDto()
             .setId(flowNodeInstanceEntity.getId())
             .setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId())

@@ -50,7 +50,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
 
   @Override
   public DecisionRequirements byKey(Long key) throws APIException {
-    List<DecisionRequirements> decisionRequirements;
+    final List<DecisionRequirements> decisionRequirements;
     try {
       decisionRequirements =
           searchFor(new SearchSourceBuilder().query(termQuery(DecisionRequirementsIndex.KEY, key)));
@@ -95,7 +95,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
                       .fetchSource(DecisionRequirementsIndex.XML, null));
       final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
-        Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
+        final Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(DecisionRequirementsIndex.XML);
       }
     } catch (IOException e) {
@@ -122,7 +122,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<DecisionRequirements> decisionRequirements =
+        final List<DecisionRequirements> decisionRequirements =
             ElasticsearchUtil.mapSearchHits(
                 searchHitArray, objectMapper, DecisionRequirements.class);
         return new Results<DecisionRequirements>()
@@ -154,7 +154,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
       Query<DecisionRequirements> query, SearchSourceBuilder searchSourceBuilder) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
-      List<QueryBuilder> queryBuilders = new ArrayList<>();
+      final List<QueryBuilder> queryBuilders = new ArrayList<>();
       queryBuilders.add(buildTermQuery(DecisionRequirements.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.KEY, filter.getKey()));
       queryBuilders.add(

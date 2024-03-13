@@ -30,7 +30,7 @@ public enum FlowNodeStateDto {
     if (state == null) {
       return UNSPECIFIED;
     }
-    FlowNodeStateDto stateDto = valueOf(state.name());
+    final FlowNodeStateDto stateDto = valueOf(state.name());
     if (stateDto == null) {
       return UNKNOWN;
     }

@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 public class OperationExecutor extends Thread {
 
-  private static final Logger logger = LoggerFactory.getLogger(OperationExecutor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OperationExecutor.class);
 
   private boolean shutdown = false;
 
@@ -66,7 +66,7 @@ public class OperationExecutor extends Thread {
 
   @PreDestroy
   public void shutdown() {
-    logger.info("Shutdown OperationExecutor");
+    LOGGER.info("Shutdown OperationExecutor");
     shutdown = true;
   }
 
@@ -85,7 +85,7 @@ public class OperationExecutor extends Thread {
 
       } catch (Exception ex) {
         // retry
-        logger.error(
+        LOGGER.error(
             "Something went wrong, while executing operations batch. Will be retried.", ex);
 
         sleepFor(2000);
@@ -94,7 +94,7 @@ public class OperationExecutor extends Thread {
   }
 
   public List<Future<?>> executeOneBatch() throws PersistenceException {
-    List<Future<?>> futures = new ArrayList<>();
+    final List<Future<?>> futures = new ArrayList<>();
 
     // lock the operations
     final List<OperationEntity> lockedOperations = batchOperationWriter.lockBatch();
@@ -103,12 +103,12 @@ public class OperationExecutor extends Thread {
     for (OperationEntity operation : lockedOperations) {
       final OperationHandler handler = getOperationHandlers().get(operation.getType());
       if (handler == null) {
-        logger.info(
+        LOGGER.info(
             "Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.",
             operation.getType(),
             operation.getProcessInstanceKey());
       } else {
-        OperationCommand operationCommand = new OperationCommand(operation, handler);
+        final OperationCommand operationCommand = new OperationCommand(operation, handler);
         futures.add(operationsTaskExecutor.submit(operationCommand));
       }
     }
@@ -118,7 +118,7 @@ public class OperationExecutor extends Thread {
   @Bean
   public Map<OperationType, OperationHandler> getOperationHandlers() {
     // populate handlers map
-    Map<OperationType, OperationHandler> handlerMap = new HashMap<>();
+    final Map<OperationType, OperationHandler> handlerMap = new HashMap<>();
     for (OperationHandler handler : handlers) {
       handler.getTypes().forEach(t -> handlerMap.put(t, handler));
     }

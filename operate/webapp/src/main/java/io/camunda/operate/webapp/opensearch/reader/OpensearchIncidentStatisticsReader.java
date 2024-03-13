@@ -68,8 +68,9 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   private static final String GROUP_BY_ERROR_MESSAGE_HASH = "group_by_errorMessages";
   private static final String GROUP_BY_PROCESS_KEYS = "group_by_processDefinitionKeys";
   private static final String UNIQ_PROCESS_INSTANCES = "uniq_processInstances";
-  Aggregation COUNT_PROCESS_KEYS = termAggregation(PROCESS_KEY, TERMS_AGG_SIZE)._toAggregation();
-  Query INCIDENTS_QUERY =
+  private static final Aggregation COUNT_PROCESS_KEYS =
+      termAggregation(PROCESS_KEY, TERMS_AGG_SIZE)._toAggregation();
+  private static final Query INCIDENTS_QUERY =
       and(
           term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
           term(STATE, ProcessInstanceState.ACTIVE.toString()),
@@ -92,10 +93,10 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   @Override
   public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError() {
-    Set<IncidentsByErrorMsgStatisticsDto> result =
+    final Set<IncidentsByErrorMsgStatisticsDto> result =
         new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
 
-    Map<Long, ProcessEntity> processes =
+    final Map<Long, ProcessEntity> processes =
         processReader.getProcessesWithFields(
             ProcessIndex.KEY,
             ProcessIndex.NAME,
@@ -103,20 +104,22 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             ProcessIndex.TENANT_ID,
             ProcessIndex.VERSION);
 
-    Query query =
+    final Query query =
         permissionsService == null
             ? ACTIVE_INCIDENT_QUERY
             : and(
                 ACTIVE_INCIDENT_QUERY,
                 createQueryForProcessesByPermission(IdentityPermission.READ));
 
-    var uniqueProcessInstances = cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
-    var groupByProcessKeys =
+    final var uniqueProcessInstances =
+        cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
+    final var groupByProcessKeys =
         termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, TERMS_AGG_SIZE);
-    var errorMessage = topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG), 1);
-    var groupByErrorMessageHash = termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
+    final var errorMessage = topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG), 1);
+    final var groupByErrorMessageHash =
+        termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(withTenantCheck(query))
             .aggregations(
@@ -145,7 +148,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   }
 
   private List<LongTermsBucket> searchAggBuckets(Query query) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(processInstanceTemplate, ONLY_RUNTIME)
             .query(withTenantCheck(query))
             .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS);
@@ -169,8 +172,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
       Map<Long, IncidentByProcessStatisticsDto> statistics) {
-    Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
-    Query query =
+    final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
+    final Query query =
         withTenantCheck(
             and(
                 term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
@@ -179,8 +182,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     searchAggBuckets(query)
         .forEach(
             bucket -> {
-              Long processDefinitionKey = Long.valueOf(bucket.key());
-              long runningCount = bucket.docCount();
+              final Long processDefinitionKey = Long.valueOf(bucket.key());
+              final long runningCount = bucket.docCount();
               IncidentByProcessStatisticsDto statistic = results.get(processDefinitionKey);
               if (statistic != null) {
                 statistic.setActiveInstancesCount(
@@ -196,7 +199,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   private Set<IncidentsByProcessGroupStatisticsDto> collectStatisticsForProcessGroups(
       Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap) {
-    Set<IncidentsByProcessGroupStatisticsDto> result =
+    final Set<IncidentsByProcessGroupStatisticsDto> result =
         new TreeSet<>(IncidentsByProcessGroupStatisticsDto.COMPARATOR);
 
     final Map<ProcessStore.ProcessKey, List<ProcessEntity>> processGroups =
@@ -204,7 +207,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
     // iterate over process groups (bpmnProcessId)
     for (List<ProcessEntity> processes : processGroups.values()) {
-      IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
+      final IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
       stat.setBpmnProcessId(processes.get(0).getBpmnProcessId());
       stat.setTenantId(processes.get(0).getTenantId());
 
@@ -249,9 +252,11 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   }
 
   private Query createQueryForProcessesByPermission(IdentityPermission permission) {
-    PermissionsService.ResourcesAllowed allowed =
+    final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
-    if (allowed == null) return null;
+    if (allowed == null) {
+      return null;
+    }
     return allowed.isAll()
         ? matchAll()
         : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
@@ -261,7 +266,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
       Map<Long, ProcessEntity> processes, LongTermsBucket errorMessageBucket) {
     record ErrorMessage(String errorMessage) {}
 
-    ErrorMessage errorMessage =
+    final ErrorMessage errorMessage =
         errorMessageBucket
             .aggregations()
             .get(ERROR_MESSAGE)
@@ -272,7 +277,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             .source()
             .to(ErrorMessage.class);
 
-    IncidentsByErrorMsgStatisticsDto processStatistics =
+    final IncidentsByErrorMsgStatisticsDto processStatistics =
         new IncidentsByErrorMsgStatisticsDto(errorMessage.errorMessage());
 
     errorMessageBucket
@@ -283,17 +288,17 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         .array()
         .forEach(
             bucket -> {
-              Long processDefinitionKey = Long.valueOf(bucket.key());
-              long incidentsCount =
+              final Long processDefinitionKey = Long.valueOf(bucket.key());
+              final long incidentsCount =
                   bucket.aggregations().get(UNIQ_PROCESS_INSTANCES).cardinality().value();
 
               if (processes.containsKey(processDefinitionKey)) {
-                IncidentByProcessStatisticsDto statisticForProcess =
+                final IncidentByProcessStatisticsDto statisticForProcess =
                     new IncidentByProcessStatisticsDto(
                         processDefinitionKey.toString(),
                         errorMessage.errorMessage(),
                         incidentsCount);
-                ProcessEntity process = processes.get(processDefinitionKey);
+                final ProcessEntity process = processes.get(processDefinitionKey);
                 statisticForProcess.setName(process.getName());
                 statisticForProcess.setBpmnProcessId(process.getBpmnProcessId());
                 statisticForProcess.setTenantId(process.getTenantId());

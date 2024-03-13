@@ -47,7 +47,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchSessionRepository implements SessionRepository {
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchSessionRepository.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSessionRepository.class);
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
@@ -66,7 +66,7 @@ public class OpensearchSessionRepository implements SessionRepository {
   }
 
   private SessionEntity toSessionEntity(OperateSession session) {
-    Map<String, String> attributes =
+    final Map<String, String> attributes =
         session.getAttributeNames().stream()
             .collect(Collectors.toMap(identity(), name -> serialize(session.getAttribute(name))));
 
@@ -90,7 +90,7 @@ public class OpensearchSessionRepository implements SessionRepository {
   }
 
   private OperateSession toOperateSession(SessionEntity sessionEntity) {
-    OperateSession session = new OperateSession(sessionEntity.id());
+    final OperateSession session = new OperateSession(sessionEntity.id());
     session.setCreationTime(nullable(sessionEntity.creationTime, Instant::ofEpochMilli));
     session.setLastAccessedTime(nullable(sessionEntity.lastAccessedTime, Instant::ofEpochMilli));
     session.setMaxInactiveInterval(
@@ -106,7 +106,7 @@ public class OpensearchSessionRepository implements SessionRepository {
   }
 
   private Object deserialize(String s) {
-    byte[] bytes = Base64.getDecoder().decode(s.getBytes());
+    final byte[] bytes = Base64.getDecoder().decode(s.getBytes());
     return conversionService.convert(
         bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
   }
@@ -131,7 +131,7 @@ public class OpensearchSessionRepository implements SessionRepository {
 
   @Override
   public void save(OperateSession session) {
-    var requestBuilder =
+    final var requestBuilder =
         indexRequestBuilder(operateWebSessionIndex.getFullQualifiedName())
             .id(session.getId())
             .document(toSessionEntity(session));

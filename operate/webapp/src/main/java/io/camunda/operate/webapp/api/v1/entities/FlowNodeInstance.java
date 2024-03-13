@@ -184,9 +184,13 @@ public class FlowNodeInstance {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    FlowNodeInstance that = (FlowNodeInstance) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeInstance that = (FlowNodeInstance) o;
     return Objects.equals(key, that.key)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)

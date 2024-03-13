@@ -68,7 +68,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchDecisionInstanceReader implements DecisionInstanceReader {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchDecisionInstanceReader.class);
 
   private final DecisionInstanceTemplate decisionInstanceTemplate;
@@ -198,7 +198,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
       final DecisionInstanceListRequestDto request, final DecisionInstanceListResponseDto result) {
     final var query = createRequestQuery(request.getQuery());
 
-    logger.debug("Decision instance search request: \n{}", query);
+    LOGGER.debug("Decision instance search request: \n{}", query);
 
     final var searchRequest =
         searchRequestBuilder(decisionInstanceTemplate)
@@ -207,7 +207,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
 
     applySorting(searchRequest, request);
 
-    logger.debug(
+    LOGGER.debug(
         "Search request will search in: \n{}", decisionInstanceTemplate.getFullQualifiedName());
 
     final var response =
@@ -249,9 +249,13 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   }
 
   private Query createReadPermissionQuery() {
-    if (permissionsService == null) return null;
+    if (permissionsService == null) {
+      return null;
+    }
     final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
-    if (allowed == null) return null;
+    if (allowed == null) {
+      return null;
+    }
     return allowed.isAll() ? matchAll() : stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());
   }
 

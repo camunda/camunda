@@ -26,7 +26,9 @@ public enum Role {
   public static Role fromString(final String roleAsString) {
     final String roleName = roleAsString.replaceAll("\\s+", "_");
     for (Role role : values()) {
-      if (role.name().equalsIgnoreCase(roleName)) return role;
+      if (role.name().equalsIgnoreCase(roleName)) {
+        return role;
+      }
     }
     throw new IllegalArgumentException(
         String.format("%s does not exists as Role in %s", roleAsString, Arrays.toString(values())));
