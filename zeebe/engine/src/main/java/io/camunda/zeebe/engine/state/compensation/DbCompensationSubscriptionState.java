@@ -19,10 +19,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionStat
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public class DbCompensationSubscriptionState implements MutableCompensationSubscriptionState {
 
@@ -64,12 +62,12 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public Set<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
+  public List<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
       final String tenantId, final long piKey) {
     tenantIdKey.wrapString(tenantId);
     processInstanceKey.wrapLong(piKey);
 
-    final Set<CompensationSubscription> subscriptions = new HashSet<>();
+    final List<CompensationSubscription> subscriptions = new ArrayList<>();
     compensationSubscriptionColumnFamily.whileEqualPrefix(
         new DbCompositeKey<>(tenantIdKey, processInstanceKey),
         ((key, value) -> {
@@ -97,12 +95,12 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public Set<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
+  public List<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
       final String tenantId, final long piKey, final long throwEventInstanceKey) {
     tenantIdKey.wrapString(tenantId);
     processInstanceKey.wrapLong(piKey);
 
-    final Set<CompensationSubscription> compensations = new HashSet<>();
+    final List<CompensationSubscription> compensations = new ArrayList<>();
     compensationSubscriptionColumnFamily.whileEqualPrefix(
         new DbCompositeKey<>(tenantIdKey, processInstanceKey),
         ((key, value) -> {

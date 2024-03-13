@@ -34,8 +34,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class BpmnCompensationSubscriptionBehaviour {
 
@@ -119,7 +117,7 @@ public class BpmnCompensationSubscriptionBehaviour {
                 context.getTenantId(), context.getProcessInstanceKey())
             .stream()
             .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
-            .collect(Collectors.toSet());
+            .toList();
 
     if (hasCompensationSubscriptionInScope(subscriptions, context.getFlowScopeKey())) {
       // trigger the compensation in the current scope and propagate to the subprocesses
@@ -132,7 +130,7 @@ public class BpmnCompensationSubscriptionBehaviour {
   }
 
   private static boolean hasCompensationSubscriptionInScope(
-      final Set<CompensationSubscription> subscriptions, final long scopeKey) {
+      final Collection<CompensationSubscription> subscriptions, final long scopeKey) {
     return subscriptions.stream()
         .anyMatch(
             subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
@@ -163,7 +161,7 @@ public class BpmnCompensationSubscriptionBehaviour {
     long compensationHandlerInstanceKey = NONE_COMPENSATION_HANDLER_INSTANCE_KEY;
 
     // invoke the compensation handler if present
-    if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
+    if (hasCompensationHandler(subscription)) {
       compensationHandlerInstanceKey =
           activateCompensationHandler(context, subscription.getRecord().getCompensableActivityId());
     }
@@ -175,6 +173,10 @@ public class BpmnCompensationSubscriptionBehaviour {
     // propagate the compensation to subprocesses
     triggerCompensationFromTopToBottom(
         context, subscriptions, subscription.getRecord().getCompensableActivityInstanceKey());
+  }
+
+  private static boolean hasCompensationHandler(final CompensationSubscription subscription) {
+    return !subscription.getRecord().getCompensationHandlerId().isEmpty();
   }
 
   private long activateCompensationHandler(
@@ -357,6 +359,7 @@ public class BpmnCompensationSubscriptionBehaviour {
         .filter(
             subscription ->
                 scopeKey == subscription.getRecord().getCompensableActivityInstanceKey())
+        .filter(not(BpmnCompensationSubscriptionBehaviour::hasCompensationHandler))
         .findFirst()
         .ifPresent(
             flowScopeSubscription -> {

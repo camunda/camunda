@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionStat
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
-import java.util.Set;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -162,10 +162,10 @@ public class CompensationSubscriptionStateTest {
 
     state.delete(TENANT_ID, PROCESS_INSTANCE_KEY, 2L);
 
-    final Set<CompensationSubscription> compensations =
+    final List<CompensationSubscription> compensations =
         state.findSubscriptionsByProcessInstanceKey(TENANT_ID, PROCESS_INSTANCE_KEY);
     assertThat(compensations.size()).isEqualTo(1);
-    assertThat(compensations.stream().findFirst().get().getRecord().getCompensableActivityId())
+    assertThat(compensations.getFirst().getRecord().getCompensableActivityId())
         .isEqualTo(COMPENSABLE_ACTIVITY_ID);
   }
 
@@ -195,11 +195,11 @@ public class CompensationSubscriptionStateTest {
     state.put(1L, compensation);
     state.put(2L, notValidCompensation);
 
-    final Set<CompensationSubscription> compensations =
+    final List<CompensationSubscription> compensations =
         state.findSubscriptionsByThrowEventInstanceKey(
             TENANT_ID, PROCESS_INSTANCE_KEY, THROW_EVENT_INSTANCE_KEY);
     assertThat(compensations.size()).isEqualTo(1);
-    assertThat(compensations.stream().findFirst().get().getRecord().getThrowEventInstanceKey())
+    assertThat(compensations.getFirst().getRecord().getThrowEventInstanceKey())
         .isEqualTo(THROW_EVENT_INSTANCE_KEY);
   }
 

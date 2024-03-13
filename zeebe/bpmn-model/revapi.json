@@ -47,6 +47,24 @@
             "matcher": "java-package",
             "match": "io.camunda.zeebe.model.bpmn.validation.zeebe"
           }
+        },
+        {
+          "justification": "The parameter type of the builder changed to a more concrete type. This is okay because compensation was not officially supported yet.",
+          "code": "java.method.parameterTypeParameterChanged",
+          "package": "io.camunda.zeebe.model.bpmn.builder",
+          "classQualifiedName": "io.camunda.zeebe.model.bpmn.builder.BoundaryEventBuilder",
+          "methodName": "compensation",
+          "oldType": "java.util.function.Consumer<io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder>",
+          "newType": "java.util.function.Consumer<io.camunda.zeebe.model.bpmn.builder.BoundaryEventBuilder>"
+        },
+        {
+          "justification": "The parameter type of the builder changed to a more concrete type. This is okay because compensation was not officially supported yet.",
+          "code": "java.method.parameterTypeParameterChanged",
+          "package": "io.camunda.zeebe.model.bpmn.builder",
+          "classQualifiedName": "io.camunda.zeebe.model.bpmn.builder.AbstractBoundaryEventBuilder",
+          "methodName": "compensation",
+          "oldType": "java.util.function.Consumer<io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder>",
+          "newType": "java.util.function.Consumer<B extends io.camunda.zeebe.model.bpmn.builder.AbstractBoundaryEventBuilder<B>>"
         }
       ]
     }
