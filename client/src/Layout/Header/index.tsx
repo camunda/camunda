@@ -58,7 +58,6 @@ const Header: React.FC = observer(() => {
             key: appName,
             label: capitalize(appName),
             href: parsedC8Links[appName],
-            target: '_blank',
             active: appName === 'tasklist',
             routeProps:
               appName === 'tasklist' ? {to: pages.initial} : undefined,
