@@ -1665,22 +1665,25 @@ public class CompensationEventExecutionTest {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .parallelGateway("fork")
+            .zeebeOutputExpression("0", "iteration")
             .serviceTask(
                 "A",
                 task ->
                     task.zeebeJobType("A")
+                        .zeebeOutputExpression("iteration + 1", "iteration")
                         .boundaryEvent()
                         .compensation(
                             compensation ->
                                 compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
-            .parallelGateway("join")
+            .exclusiveGateway("loop")
+            .defaultFlow()
+            .connectTo("A")
+            .moveToNode("loop")
+            .conditionExpression("iteration > 1")
             .intermediateThrowEvent(
                 "compensation-throw-event",
                 event -> event.compensateEventDefinition().activityRef("A"))
-            .moveToNode("fork")
-            .connectTo("A")
-            .connectTo("join")
+            .endEvent()
             .done();
 
     ENGINE.deployment().withXmlResource(process).deploy();
