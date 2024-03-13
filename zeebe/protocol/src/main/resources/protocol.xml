@@ -115,6 +115,7 @@
     <field name="partitionId" id="1" type="uint16"/>
     <field name="key" id="2" type="uint64"/>
     <field name="recordType" id="3" type="RecordType"/>
+    <!-- value type is usually request.ValueType but can also be ERROR if RecordType is COMMAND_REJECTION -->
     <field name="valueType" id="4" type="ValueType"/>
     <field name="intent" id="5" type="uint8"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
