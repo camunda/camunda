@@ -106,7 +106,7 @@ public class GatewayAuthenticationIdentityIT {
           .withNetworkAliases("identity");
 
   @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
-  private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker().withProperty("spring.profiles.active", "identity-auth");
+  private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
 
   @SuppressWarnings("unused")
   @RegisterExtension
@@ -130,7 +130,7 @@ public class GatewayAuthenticationIdentityIT {
   @Test
   void getTopologyRequestFailsWithoutAuthToken() {
     // given
-    try (final var client = createZeebeClientBuilder().defaultCommunicationApi("REST").build()) {
+    try (final var client = createZeebeClientBuilder().build()) {
       // when
       final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
 
