@@ -15,8 +15,11 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -522,23 +525,24 @@ public final class ProcessingStateMachine {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
         new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
-    // reset value to minimize any potential error loop that can be caused by writing the full
-    // record.
-    typedCommand.getValue().reset();
-    final var rejectionMetadata =
+    final var errorRecord = new ErrorRecord();
+    errorRecord.initErrorRecord(new RuntimeException(rejectionReason), currentRecord.getPosition());
+
+    final var recordMetadata =
         new RecordMetadata()
-            .recordType(RecordType.COMMAND_REJECTION)
-            .intent(typedCommand.getIntent())
-            .rejectionType(RejectionType.PROCESSING_ERROR)
-            .rejectionReason(rejectionReason);
-    processingResultBuilder.appendRecord(
-        currentRecord.getKey(), typedCommand.getValue(), rejectionMetadata);
+            .recordType(RecordType.EVENT)
+            .valueType(ValueType.ERROR)
+            .intent(ErrorIntent.CREATED)
+            .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("");
+    processingResultBuilder.appendRecord(currentRecord.getKey(), errorRecord, recordMetadata);
     processingResultBuilder.withResponse(
         RecordType.COMMAND_REJECTION,
         typedCommand.getKey(),
         typedCommand.getIntent(),
-        typedCommand.getValue(),
-        typedCommand.getValueType(),
+        errorRecord,
+        ValueType.ERROR,
         RejectionType.PROCESSING_ERROR,
         rejectionReason,
         typedCommand.getRequestId(),
