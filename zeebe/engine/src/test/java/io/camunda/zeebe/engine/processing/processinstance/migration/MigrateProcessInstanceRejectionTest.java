@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.processinstance;
+package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -892,6 +892,141 @@ public class MigrateProcessInstanceRejectionTest {
               an user task with id 'B' and different implementation 'zeebe user task'. \
               Elements must be mapped to elements of the same implementation.""",
                 processInstanceKey))
+        .hasKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectMigrationWhenSubprocessIsUnmapped() {
+    // given
+    final String processId = "process";
+    final String targetProcessId = "process2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .subProcess(
+                        "sub1",
+                        s ->
+                            s.embeddedSubProcess()
+                                .startEvent()
+                                .serviceTask("A", t -> t.zeebeJobType("task"))
+                                .endEvent())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .subProcess(
+                        "sub2",
+                        s ->
+                            s.embeddedSubProcess()
+                                .startEvent()
+                                .serviceTask("B", t -> t.zeebeJobType("task"))
+                                .endEvent())
+                    .endEvent()
+                    .moveToActivity("sub2")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, targetProcessId);
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        // subprocess is not mapped but only the service task
+        .addMappingInstruction("A", "B")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to migrate process instance '%d' \
+                but no mapping instruction defined for active element with id 'sub1'. \
+                Elements cannot be migrated without a mapping.""",
+                processInstanceKey))
+        .hasKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectMigrationWhenTargetSubprocessHasBoundaryEvent() {
+    // given
+    final String processId = "process";
+    final String targetProcessId = "process2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .subProcess(
+                        "sub1",
+                        s ->
+                            s.embeddedSubProcess()
+                                .startEvent()
+                                .serviceTask("A", t -> t.zeebeJobType("task"))
+                                .endEvent())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .subProcess(
+                        "sub2",
+                        s ->
+                            s.embeddedSubProcess()
+                                .startEvent()
+                                .serviceTask("B", t -> t.zeebeJobType("task"))
+                                .endEvent())
+                    .boundaryEvent("boundary")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("sub2")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, targetProcessId);
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("sub1", "sub2")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+              Expected to migrate process instance '%s' \
+              but target element with id 'sub1' has a boundary event. \
+              Migrating target elements with boundary events is not possible yet."""
+                .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
   }
 
