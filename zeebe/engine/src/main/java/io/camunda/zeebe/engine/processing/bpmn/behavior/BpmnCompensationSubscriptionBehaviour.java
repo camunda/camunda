@@ -165,8 +165,7 @@ public class BpmnCompensationSubscriptionBehaviour {
     // invoke the compensation handler if present
     if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
       compensationHandlerInstanceKey =
-          activateCompensationHandler(
-              context, subscription.getRecord().getCompensableActivityId());
+          activateCompensationHandler(context, subscription.getRecord().getCompensableActivityId());
     }
 
     // mark the subscription as triggered
@@ -175,9 +174,7 @@ public class BpmnCompensationSubscriptionBehaviour {
 
     // propagate the compensation to subprocesses
     triggerCompensationFromTopToBottom(
-        context,
-        subscriptions,
-        subscription.getRecord().getCompensableActivityInstanceKey());
+        context, subscriptions, subscription.getRecord().getCompensableActivityInstanceKey());
   }
 
   private long activateCompensationHandler(
