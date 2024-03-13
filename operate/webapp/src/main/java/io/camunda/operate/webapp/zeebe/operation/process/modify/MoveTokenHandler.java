@@ -32,7 +32,6 @@ import org.springframework.util.StringUtils;
 @Component
 public class MoveTokenHandler {
   private static final Logger logger = LoggerFactory.getLogger(MoveTokenHandler.class);
-
   private final FlowNodeInstanceReader flowNodeInstanceReader;
   private final CancelFlowNodeHelper cancelFlowNodeHelper;
 
@@ -47,13 +46,28 @@ public class MoveTokenHandler {
       final ModifyProcessInstanceCommandStep1 currentStep,
       final Long processInstanceKey,
       final Modification modification) {
-    // 0. Prepare
-    final String toFlowNodeId = modification.getToFlowNodeId();
-    Integer newTokensCount = modification.getNewTokensCount();
-    // Add least one token will be added
-    if (newTokensCount == null || newTokensCount < 1) {
-      newTokensCount = 1;
+
+    final int newTokensCount = calculateNewTokensCount(modification);
+
+    if (newTokensCount > 0) {
+      final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep =
+          addTokensToNewNodes(currentStep, modification, newTokensCount);
+
+      return cancelTokensOnOriginalNodes(nextStep, processInstanceKey, modification);
+    } else {
+      logger.info(
+          "Skipping MOVE_TOKEN processing for process instance {} since newTokensCount is {}",
+          processInstanceKey,
+          newTokensCount);
+      return null;
     }
+  }
+
+  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 addTokensToNewNodes(
+      final ModifyProcessInstanceCommandStep1 currentStep,
+      final Modification modification,
+      final int newTokensCount) {
+    final String toFlowNodeId = modification.getToFlowNodeId();
     // flowNodeId => List of variables (Map)
     //  flowNodeId => [ { "key": "value" }, {"key for another flowNode with the same id": "value"} ]
     Map<String, List<Map<String, Object>>> flowNodeId2variables =
@@ -61,7 +75,6 @@ public class MoveTokenHandler {
     if (flowNodeId2variables == null) {
       flowNodeId2variables = new HashMap<>();
     }
-
     // 1. Add tokens
     ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep = null;
     // Create flowNodes with variables
@@ -101,7 +114,15 @@ public class MoveTokenHandler {
         }
       }
     }
-    // 2. cancel
+
+    return nextStep;
+  }
+
+  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
+      cancelTokensOnOriginalNodes(
+          final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep,
+          final Long processInstanceKey,
+          final Modification modification) {
     final String fromFlowNodeId = modification.getFromFlowNodeId();
     final String fromFlowNodeInstanceKey = modification.getFromFlowNodeInstanceKey();
     final List<Long> flowNodeInstanceKeysToCancel;
@@ -121,5 +142,16 @@ public class MoveTokenHandler {
     }
     return cancelFlowNodeHelper.cancelFlowNodeInstances(
         nextStep.and(), flowNodeInstanceKeysToCancel);
+  }
+
+  private int calculateNewTokensCount(final Modification modification) {
+    Integer newTokensCount = modification.getNewTokensCount();
+    // Add least one token will be added
+    if (newTokensCount == null || newTokensCount < 1) {
+      newTokensCount = 1;
+    }
+
+    logger.info("MOVE_TOKEN has a newTokensCount value of {}", newTokensCount);
+    return newTokensCount;
   }
 }
