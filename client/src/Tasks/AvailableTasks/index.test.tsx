@@ -117,9 +117,7 @@ describe('<Tasks />', () => {
     expect(
       withinFirstTask.getByTitle('Created at 28 May 2020 - 10:11 AM'),
     ).toBeInTheDocument();
-    expect(
-      await withinFirstTask.findByText('Assigned to me'),
-    ).toBeInTheDocument();
+    expect(await withinFirstTask.findByText('Me')).toBeInTheDocument();
 
     expect(withinSecondTask.getByText(secondTask.name)).toBeInTheDocument();
     expect(
@@ -128,7 +126,7 @@ describe('<Tasks />', () => {
     expect(
       withinSecondTask.getByTitle('Created at 29 May 2020 - 01:14 PM'),
     ).toBeInTheDocument();
-    expect(withinSecondTask.getByText('Assigned')).toBeInTheDocument();
+    expect(withinSecondTask.getByText('mustermann')).toBeInTheDocument();
   });
 
   it('should render empty message when there are no tasks', async () => {

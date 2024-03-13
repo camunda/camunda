@@ -29,6 +29,7 @@ import {Task, CurrentUser} from 'modules/types';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
+import {AssigneeTag} from 'Tasks/AssigneeTag';
 
 type AssignmentStatus =
   | 'off'
@@ -77,7 +78,6 @@ const Details: React.FC<Props> = ({
       : undefined;
   const candidates = [...(candidateUsers ?? []), ...(candidateGroups ?? [])];
   const isAssigned = assignee !== null;
-  const isAssignedToMe = assignee === user.userId;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
   const {mutateAsync: assignTask, isLoading: assignIsLoading} = useAssignTask();
@@ -142,24 +142,11 @@ const Details: React.FC<Props> = ({
           </HeaderLeftContainer>
           <HeaderRightContainer>
             <Label $color="secondary" data-testid="assignee">
-              {isAssigned ? (
-                <>
-                  {isAssignedToMe ? (
-                    <Tag size="sm" type="gray">
-                      Assigned to me
-                    </Tag>
-                  ) : (
-                    <>
-                      Assigned to
-                      <Tag size="sm" type="gray">
-                        {assignee}
-                      </Tag>
-                    </>
-                  )}
-                </>
-              ) : (
-                'Unassigned'
-              )}
+              <AssigneeTag
+                currentUser={user}
+                assignee={assignee}
+                isShortFormat={false}
+              />
             </Label>
             {taskState === 'CREATED' && (
               <Restricted scopes={['write']}>

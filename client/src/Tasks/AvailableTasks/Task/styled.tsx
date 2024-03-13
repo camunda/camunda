@@ -8,7 +8,7 @@
 /* istanbul ignore file */
 
 import {rem} from '@carbon/elements';
-import {Stack as BaseStack, Tag as BaseTag} from '@carbon/react';
+import {Stack as BaseStack} from '@carbon/react';
 import {BodyCompact} from 'modules/components/FontTokens';
 import {NavLink} from 'react-router-dom';
 import styled, {css} from 'styled-components';
@@ -81,7 +81,7 @@ const Stack = styled(BaseStack)`
 
 const Container = styled.article`
   cursor: pointer;
-  height: ${rem(136)};
+  height: ${rem(144)};
 
   &.active ${TaskLink} {
     background-color: var(--cds-layer-selected);
@@ -164,9 +164,4 @@ const SkeletonContainer = styled.article`
   }
 `;
 
-const Tag = styled(BaseTag)`
-  margin: 0;
-  cursor: pointer;
-`;
-
-export {Row, Label, TaskLink, Stack, Container, SkeletonContainer, Tag};
+export {Row, Label, TaskLink, Stack, Container, SkeletonContainer};

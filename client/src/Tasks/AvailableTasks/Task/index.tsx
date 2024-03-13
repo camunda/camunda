@@ -6,7 +6,7 @@
  */
 
 import React, {useMemo} from 'react';
-import {Row, Label, TaskLink, Stack, Container, Tag} from './styled';
+import {Row, Label, TaskLink, Stack, Container} from './styled';
 import {pages} from 'modules/routing';
 import {formatDate} from 'modules/utils/formatDate';
 import {CurrentUser, Task as TaskType} from 'modules/types';
@@ -14,6 +14,7 @@ import {useLocation, useMatch} from 'react-router-dom';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {BodyCompact} from 'modules/components/FontTokens';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
+import {AssigneeTag} from 'Tasks/AssigneeTag';
 
 type Props = {
   taskId: TaskType['id'];
@@ -42,9 +43,9 @@ const Task = React.forwardRef<HTMLElement, Props>(
     },
     ref,
   ) => {
-    const {userId, displayName} = currentUser;
-    const isUnassigned = assignee === null || userId === null;
-    const isAssignedToMe = assignee === userId;
+    const {userId} = currentUser;
+    const isAssigned = assignee !== null;
+    const isAssignedToCurrentUser = assignee === userId;
     const match = useMatch('/:id');
     const location = useLocation();
     const isActive = match?.params?.id === taskId;
@@ -79,11 +80,13 @@ const Task = React.forwardRef<HTMLElement, Props>(
             search: searchWithRefTag.toString(),
           }}
           aria-label={
-            isUnassigned
-              ? `Unassigned task: ${name}`
-              : `${
-                  isAssignedToMe ? `Task assigned to me` : 'Assigned task'
+            isAssigned
+              ? `${
+                  isAssignedToCurrentUser
+                    ? `Task assigned to me`
+                    : 'Assigned task'
                 }: ${name}`
+              : `Unassigned task: ${name}`
           }
         >
           <Stack data-testid={`task-${taskId}`} gap={3} ref={ref}>
@@ -93,22 +96,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
             </Row>
             <Row>
               <Label $variant="secondary">
-                {isUnassigned ? (
-                  'Unassigned'
-                ) : (
-                  <Tag
-                    type={isActive ? 'high-contrast' : 'gray'}
-                    size="sm"
-                    title={
-                      isAssignedToMe
-                        ? undefined
-                        : `Task assigned to ${displayName}`
-                    }
-                    unselectable="off"
-                  >
-                    {isAssignedToMe ? 'Assigned to me' : 'Assigned'}
-                  </Tag>
-                )}
+                <AssigneeTag currentUser={currentUser} assignee={assignee} />
               </Label>
             </Row>
             <Row data-testid="creation-time" $direction="row">

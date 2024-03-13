@@ -56,7 +56,7 @@ describe('<Task />', () => {
     expect(
       screen.getByTitle('Created at 29 May 2020 - 02:00 PM'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
+    expect(screen.getByText('Me')).toBeInTheDocument();
   });
 
   it('should handle unassigned tasks', () => {

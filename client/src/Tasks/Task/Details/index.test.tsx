@@ -291,7 +291,7 @@ describe('<Details />', () => {
     );
 
     expect(screen.getByTestId('assignee')).toHaveTextContent(
-      `Assigned to${MOCK_OTHER_ASSIGNEE}`,
+      `Assigned to ${MOCK_OTHER_ASSIGNEE}`,
     );
   });
 
