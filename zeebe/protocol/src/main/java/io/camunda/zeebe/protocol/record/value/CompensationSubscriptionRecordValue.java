@@ -45,12 +45,6 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   String getCompensableActivityId();
 
   /**
-   * @return the element id of the flow scope that contains the activity with the compensation
-   *     handler
-   */
-  String getCompensableActivityScopeId();
-
-  /**
    * @return the element id of compensation throw event
    */
   String getThrowEventId();
@@ -64,6 +58,11 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
    * @return the element id of the compensation handler
    */
   String getCompensationHandlerId();
+
+  /**
+   * @return the instance key of the compensation handler
+   */
+  long getCompensationHandlerInstanceKey();
 
   /**
    * @return the instance key of the flow scope that contains the activity with the compensation

@@ -25,10 +25,12 @@ public class CompensationSubscriptionStateTest {
   private static final long PROCESS_INSTANCE_KEY = 1L;
   private static final long PROCESS_DEFINITION_KEY = 2L;
   private static final String COMPENSABLE_ACTIVITY_ID = "compensableActivityId";
-  private static final String COMPENSABLE_ACTIVITY_SCOPE_ID = "compensableActivityScopeId";
+  private static final long COMPENSABLE_ACTIVITY_INSTANCE_KEY = 3L;
+  private static final long COMPENSABLE_ACTIVITY_SCOPE_KEY = 4L;
   private static final String THROW_EVENT_ID = "throwEventId";
-  private static final long THROW_EVENT_INSTANCE_KEY = 4L;
-  private static final String COMPENSATION_ACTIVITY_ELEMENT_ID = "compensationActivityElementId";
+  private static final long THROW_EVENT_INSTANCE_KEY = 5L;
+  private static final String COMPENSATION_HANDLER_ID = "compensationHandlerId";
+  private static final long COMPENSATION_HANDLER_INSTANCE_KEY = 6L;
 
   private MutableCompensationSubscriptionState state;
   private MutableProcessingState processingState;
@@ -50,12 +52,15 @@ public class CompensationSubscriptionStateTest {
     assertThat(storedCompensation.getProcessInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
     assertThat(storedCompensation.getProcessDefinitionKey()).isEqualTo(PROCESS_DEFINITION_KEY);
     assertThat(storedCompensation.getCompensableActivityId()).isEqualTo(COMPENSABLE_ACTIVITY_ID);
-    assertThat(storedCompensation.getCompensableActivityScopeId())
-        .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_ID);
+    assertThat(storedCompensation.getCompensableActivityInstanceKey())
+        .isEqualTo(COMPENSABLE_ACTIVITY_INSTANCE_KEY);
+    assertThat(storedCompensation.getCompensableActivityScopeKey())
+        .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_KEY);
     assertThat(storedCompensation.getThrowEventId()).isEqualTo(THROW_EVENT_ID);
     assertThat(storedCompensation.getThrowEventInstanceKey()).isEqualTo(THROW_EVENT_INSTANCE_KEY);
-    assertThat(storedCompensation.getCompensationHandlerId())
-        .isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
+    assertThat(storedCompensation.getCompensationHandlerId()).isEqualTo(COMPENSATION_HANDLER_ID);
+    assertThat(storedCompensation.getCompensationHandlerInstanceKey())
+        .isEqualTo(COMPENSATION_HANDLER_INSTANCE_KEY);
   }
 
   @Test
@@ -72,9 +77,11 @@ public class CompensationSubscriptionStateTest {
             .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
             .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
             .setCompensableActivityId(COMPENSABLE_ACTIVITY_ID)
-            .setCompensableActivityScopeId(COMPENSABLE_ACTIVITY_SCOPE_ID)
+            .setCompensableActivityInstanceKey(10L)
+            .setCompensableActivityScopeKey(11L)
             .setThrowEventId("updateThrowEventId")
-            .setThrowEventInstanceKey(2L);
+            .setThrowEventInstanceKey(2L)
+            .setCompensationHandlerInstanceKey(12L);
 
     state.update(1L, updatedCompensationInfo);
 
@@ -95,14 +102,23 @@ public class CompensationSubscriptionStateTest {
             .getRecord();
 
     assertThat(updatedCompensation.getCompensableActivityId()).isEqualTo(COMPENSABLE_ACTIVITY_ID);
+    assertThat(updatedCompensation.getCompensableActivityInstanceKey()).isEqualTo(10L);
+    assertThat(updatedCompensation.getCompensableActivityScopeKey()).isEqualTo(11L);
     assertThat(updatedCompensation.getThrowEventId()).isEqualTo("updateThrowEventId");
     assertThat(updatedCompensation.getThrowEventInstanceKey()).isEqualTo(2L);
+    assertThat(updatedCompensation.getCompensationHandlerInstanceKey()).isEqualTo(12L);
 
     assertThat(notUpdatedCompensation.getCompensableActivityId())
         .isEqualTo(COMPENSABLE_ACTIVITY_ID);
+    assertThat(notUpdatedCompensation.getCompensableActivityInstanceKey())
+        .isEqualTo(COMPENSABLE_ACTIVITY_INSTANCE_KEY);
+    assertThat(notUpdatedCompensation.getCompensableActivityScopeKey())
+        .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_KEY);
     assertThat(notUpdatedCompensation.getThrowEventId()).isEqualTo(THROW_EVENT_ID);
     assertThat(notUpdatedCompensation.getThrowEventInstanceKey())
         .isEqualTo(THROW_EVENT_INSTANCE_KEY);
+    assertThat(notUpdatedCompensation.getCompensationHandlerInstanceKey())
+        .isEqualTo(COMPENSATION_HANDLER_INSTANCE_KEY);
   }
 
   @Test
@@ -164,10 +180,10 @@ public class CompensationSubscriptionStateTest {
 
     final var retrievedCompensation =
         state.findSubscriptionByCompensationHandlerId(
-            TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSATION_ACTIVITY_ELEMENT_ID);
+            TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSATION_HANDLER_ID);
     assertThat(retrievedCompensation.isPresent()).isTrue();
     assertThat(retrievedCompensation.get().getRecord().getCompensationHandlerId())
-        .isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
+        .isEqualTo(COMPENSATION_HANDLER_ID);
   }
 
   @Test
@@ -193,9 +209,11 @@ public class CompensationSubscriptionStateTest {
         .setProcessInstanceKey(key)
         .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
         .setCompensableActivityId(COMPENSABLE_ACTIVITY_ID)
-        .setCompensableActivityScopeId(COMPENSABLE_ACTIVITY_SCOPE_ID)
+        .setCompensableActivityInstanceKey(COMPENSABLE_ACTIVITY_INSTANCE_KEY)
+        .setCompensableActivityScopeKey(COMPENSABLE_ACTIVITY_SCOPE_KEY)
         .setThrowEventId(THROW_EVENT_ID)
         .setThrowEventInstanceKey(THROW_EVENT_INSTANCE_KEY)
-        .setCompensationHandlerId(COMPENSATION_ACTIVITY_ELEMENT_ID);
+        .setCompensationHandlerId(COMPENSATION_HANDLER_ID)
+        .setCompensationHandlerInstanceKey(COMPENSATION_HANDLER_INSTANCE_KEY);
   }
 }

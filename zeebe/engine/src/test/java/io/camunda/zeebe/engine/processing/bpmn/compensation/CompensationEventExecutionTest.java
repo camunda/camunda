@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -24,9 +25,11 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -170,24 +173,69 @@ public class CompensationEventExecutionTest {
         .complete();
 
     // then
+    final var compensationActivityActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("ActivityToCompensate")
+            .getFirst();
+
+    final var compensationThrowEventActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.INTERMEDIATE_THROW_EVENT)
+            .withEventType(BpmnEventType.COMPENSATION)
+            .getFirst();
+
+    final var compensationHandlerActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("CompensationHandler")
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(
+            CompensationSubscriptionRecordValue::getTenantId,
+            CompensationSubscriptionRecordValue::getProcessInstanceKey,
+            CompensationSubscriptionRecordValue::getProcessDefinitionKey,
+            CompensationSubscriptionRecordValue::getCompensableActivityId,
+            CompensationSubscriptionRecordValue::getCompensableActivityInstanceKey,
+            CompensationSubscriptionRecordValue::getCompensableActivityScopeKey,
+            CompensationSubscriptionRecordValue::getCompensationHandlerId)
+        .containsOnly(
+            tuple(
+                compensationActivityActivated.getValue().getTenantId(),
+                processInstanceKey,
+                compensationActivityActivated.getValue().getProcessDefinitionKey(),
+                "ActivityToCompensate",
+                compensationActivityActivated.getKey(),
+                compensationActivityActivated.getValue().getFlowScopeKey(),
+                "CompensationHandler"));
+
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(
             Record::getIntent,
-            r -> r.getValue().getCompensableActivityId(),
-            r -> r.getValue().getThrowEventId())
+            r -> r.getValue().getThrowEventId(),
+            r -> r.getValue().getThrowEventInstanceKey(),
+            r -> r.getValue().getCompensationHandlerInstanceKey())
         .containsSequence(
-            tuple(CompensationSubscriptionIntent.CREATED, "ActivityToCompensate", ""),
+            tuple(CompensationSubscriptionIntent.CREATED, "", -1L, -1L),
             tuple(
                 CompensationSubscriptionIntent.TRIGGERED,
-                "ActivityToCompensate",
-                "CompensationThrowEvent"),
+                "CompensationThrowEvent",
+                compensationThrowEventActivated.getKey(),
+                compensationHandlerActivated.getKey()),
             tuple(
                 CompensationSubscriptionIntent.COMPLETED,
-                "ActivityToCompensate",
-                "CompensationThrowEvent"));
+                "CompensationThrowEvent",
+                compensationThrowEventActivated.getKey(),
+                compensationHandlerActivated.getKey()));
   }
 
   @Test
@@ -728,19 +776,10 @@ public class CompensationEventExecutionTest {
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(5))
-        .extracting(
-            Record::getIntent,
-            r -> r.getValue().getCompensableActivityScopeId(),
-            r -> r.getValue().getCompensationHandlerId())
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .containsSubsequence(
-            tuple(
-                CompensationSubscriptionIntent.COMPLETED,
-                "embedded-subprocess",
-                "CompensationHandler2"),
-            tuple(
-                CompensationSubscriptionIntent.DELETED,
-                "compensation-process",
-                "CompensationHandler"));
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler2"),
+            tuple(CompensationSubscriptionIntent.DELETED, "CompensationHandler"));
   }
 
   @Test
@@ -1146,6 +1185,85 @@ public class CompensationEventExecutionTest {
             tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
         .doesNotContain(tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldCompleteThrowEventThatTriggeredCompensationHandler() {
+    // given
+    final Consumer<SubProcessBuilder> subprocessBuilder =
+        subprocess ->
+            subprocess
+                .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask(
+                    "A",
+                    task ->
+                        task.zeebeJobType("A")
+                            .boundaryEvent()
+                            .compensation(
+                                compensation ->
+                                    compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+                .intermediateThrowEvent(
+                    "compensation-throw-event",
+                    AbstractThrowEventBuilder::compensateEventDefinition)
+                .endEvent()
+                .zeebeOutputExpression("loopCounter", "completed");
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess", subprocessBuilder)
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    completeJobs(processInstanceKey, "A", 3);
+
+    final List<Long> jobKeysUndoA =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("Undo-A")
+            .limit(3)
+            .map(Record::getKey)
+            .toList();
+
+    // when
+    ENGINE.job().withKey(jobKeysUndoA.get(1)).complete();
+    ENGINE.job().withKey(jobKeysUndoA.get(2)).complete();
+    ENGINE.job().withKey(jobKeysUndoA.get(0)).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("Undo-A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("Undo-A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("Undo-A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords())
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
+        .containsSubsequence(
+            tuple("loopCounter", "1"),
+            tuple("loopCounter", "2"),
+            tuple("loopCounter", "3"),
+            tuple("completed", "2"),
+            tuple("completed", "3"),
+            tuple("completed", "1"));
   }
 
   @Test

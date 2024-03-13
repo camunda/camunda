@@ -28,26 +28,12 @@ public class CompensationSubscription extends UnpackedObject implements DbValue 
 
   public CompensationSubscription copy() {
     final var copy = new CompensationSubscription();
-    copy.keyProp.setValue(getKey());
-    copy.recordProp.getValue().setTenantId(getRecord().getTenantId());
-    copy.recordProp.getValue().setProcessInstanceKey(getRecord().getProcessInstanceKey());
-    copy.recordProp.getValue().setProcessDefinitionKey(getRecord().getProcessDefinitionKey());
-    copy.recordProp.getValue().setCompensableActivityId(getRecord().getCompensableActivityId());
-    copy.recordProp
-        .getValue()
-        .setCompensableActivityScopeId(getRecord().getCompensableActivityScopeId());
-    copy.recordProp.getValue().setThrowEventId(getRecord().getThrowEventId());
-    copy.recordProp.getValue().setThrowEventInstanceKey(getRecord().getThrowEventInstanceKey());
-    copy.recordProp.getValue().setCompensationHandlerId(getRecord().getCompensationHandlerId());
-    copy.recordProp
-        .getValue()
-        .setCompensableActivityScopeKey(getRecord().getCompensableActivityScopeKey());
-    copy.recordProp
-        .getValue()
-        .setCompensableActivityInstanceKey(getRecord().getCompensableActivityInstanceKey());
-    copy.recordProp
-        .getValue()
-        .setVariables(BufferUtil.cloneBuffer(getRecord().getVariablesBuffer()));
+    copy.setKey(getKey());
+
+    final CompensationSubscriptionRecord original = getRecord();
+    copy.getRecord().wrap(original);
+    copy.getRecord().setVariables(BufferUtil.cloneBuffer(original.getVariablesBuffer()));
+
     return copy;
   }
 

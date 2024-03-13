@@ -78,7 +78,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
             })
         .thenDo(
             completed -> {
-              compensationSubscriptionBehaviour.completeCompensationHandler(element, completed);
+              compensationSubscriptionBehaviour.completeCompensationHandler(completed);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }

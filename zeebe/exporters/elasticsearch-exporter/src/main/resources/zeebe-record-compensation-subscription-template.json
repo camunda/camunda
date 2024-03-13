@@ -31,9 +31,6 @@
             "compensableActivityId": {
               "type": "keyword"
             },
-            "compensableActivityScopeId": {
-              "type": "keyword"
-            },
             "throwEventId": {
               "type": "keyword"
             },
@@ -42,6 +39,9 @@
             },
             "compensationHandlerId": {
               "type": "keyword"
+            },
+            "compensationHandlerInstanceKey": {
+              "type": "long"
             },
             "compensableActivityScopeKey":{
               "type": "long"

@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
 
 public class BpmnCompensationSubscriptionBehaviour {
 
+  /** Default instance key if no compensation handler was activated. */
+  private static final long NONE_COMPENSATION_HANDLER_INSTANCE_KEY = -1L;
+
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final CompensationSubscriptionState compensationSubscriptionState;
@@ -59,12 +62,10 @@ public class BpmnCompensationSubscriptionBehaviour {
   public void createCompensationSubscription(
       final ExecutableActivity element, final BpmnElementContext context) {
 
-    final var elementId = BufferUtil.bufferAsString(element.getId());
-
     if (hasCompensationBoundaryEvent(element) || isFlowScopeWithSubscriptions(context)) {
 
       final var key = keyGenerator.nextKey();
-      final var flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
+      final var elementId = BufferUtil.bufferAsString(element.getId());
 
       final var compensation =
           new CompensationSubscriptionRecord()
@@ -72,7 +73,6 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setProcessInstanceKey(context.getProcessInstanceKey())
               .setProcessDefinitionKey(context.getProcessDefinitionKey())
               .setCompensableActivityId(elementId)
-              .setCompensableActivityScopeId(flowScopeId)
               .setCompensableActivityInstanceKey(context.getElementInstanceKey())
               .setCompensableActivityScopeKey(context.getFlowScopeKey());
 
@@ -153,14 +153,18 @@ public class BpmnCompensationSubscriptionBehaviour {
             subscription -> scopeKey == subscription.getRecord().getCompensableActivityScopeKey())
         .forEach(
             subscription -> {
-              // mark the subscription as triggered
-              appendCompensationSubscriptionTriggerEvent(context, subscription);
+              long compensationHandlerInstanceKey = NONE_COMPENSATION_HANDLER_INSTANCE_KEY;
 
               // invoke the compensation handler if present
               if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
-                activateCompensationHandler(
-                    context, subscription.getRecord().getCompensableActivityId());
+                compensationHandlerInstanceKey =
+                    activateCompensationHandler(
+                        context, subscription.getRecord().getCompensableActivityId());
               }
+
+              // mark the subscription as triggered
+              appendCompensationSubscriptionTriggerEvent(
+                  context, subscription, compensationHandlerInstanceKey);
 
               // propagate the compensation to subprocesses
               triggerCompensationFromTopToBottom(
@@ -170,20 +174,7 @@ public class BpmnCompensationSubscriptionBehaviour {
             });
   }
 
-  private void appendCompensationSubscriptionTriggerEvent(
-      final BpmnElementContext context, final CompensationSubscription subscription) {
-
-    final var key = subscription.getKey();
-    final var compensationRecord = subscription.getRecord();
-    compensationRecord
-        .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
-        .setThrowEventInstanceKey(context.getElementInstanceKey());
-
-    stateWriter.appendFollowUpEvent(
-        key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
-  }
-
-  private void activateCompensationHandler(
+  private long activateCompensationHandler(
       final BpmnElementContext context, final String elementId) {
 
     final var boundaryEvent = getCompensationBoundaryEvent(context, elementId);
@@ -199,8 +190,29 @@ public class BpmnCompensationSubscriptionBehaviour {
         .setBpmnElementType(compensationHandler.getElementType())
         .setBpmnEventType(BpmnEventType.COMPENSATION);
 
-    commandWriter.appendNewCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, compensationHandlerRecord);
+    final long compensationHandlerInstanceKey = keyGenerator.nextKey();
+    commandWriter.appendFollowUpCommand(
+        compensationHandlerInstanceKey,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        compensationHandlerRecord);
+
+    return compensationHandlerInstanceKey;
+  }
+
+  private void appendCompensationSubscriptionTriggerEvent(
+      final BpmnElementContext context,
+      final CompensationSubscription subscription,
+      final long compensationHandlerInstanceKey) {
+
+    final var key = subscription.getKey();
+    final var compensationRecord = subscription.getRecord();
+    compensationRecord
+        .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
+        .setThrowEventInstanceKey(context.getElementInstanceKey())
+        .setCompensationHandlerInstanceKey(compensationHandlerInstanceKey);
+
+    stateWriter.appendFollowUpEvent(
+        key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
   }
 
   private ExecutableBoundaryEvent getCompensationBoundaryEvent(
@@ -250,18 +262,13 @@ public class BpmnCompensationSubscriptionBehaviour {
         boundaryEventKey, ProcessInstanceIntent.ELEMENT_COMPLETED, boundaryEventRecord);
   }
 
-  public void completeCompensationHandler(
-      final ExecutableActivity element, final BpmnElementContext context) {
+  public void completeCompensationHandler(final BpmnElementContext context) {
 
     if (BpmnEventType.COMPENSATION != context.getBpmnEventType()) {
       return; // avoid accessing the state for non-compensation handlers
     }
 
-    final var compensationHandlerId = BufferUtil.bufferAsString(element.getId());
-
     // complete the subscription of the compensation handler
-    // - if there are multiple subscriptions for the same compensation handler then we may
-    // complete the wrong subscription
     compensationSubscriptionState
         .findSubscriptionsByProcessInstanceKey(
             context.getTenantId(), context.getProcessInstanceKey())
@@ -269,8 +276,10 @@ public class BpmnCompensationSubscriptionBehaviour {
         .filter(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered)
         .filter(
             subscription ->
-                subscription.getRecord().getCompensationHandlerId().equals(compensationHandlerId))
-        .forEach(compensation -> completeSubscription(context, compensation));
+                subscription.getRecord().getCompensationHandlerInstanceKey()
+                    == context.getElementInstanceKey())
+        .findFirst()
+        .ifPresent(compensation -> completeSubscription(context, compensation));
   }
 
   private void completeSubscription(
