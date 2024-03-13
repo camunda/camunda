@@ -95,7 +95,7 @@ import org.springframework.stereotype.Component;
 public class DecisionInstanceReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.DecisionInstanceReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionInstanceReader.class);
 
   @Autowired(required = false)
   protected PermissionsService permissionsService;
@@ -226,7 +226,7 @@ public class DecisionInstanceReader extends AbstractReader
       final DecisionInstanceListRequestDto request, final DecisionInstanceListResponseDto result) {
     final QueryBuilder query = createRequestQuery(request.getQuery());
 
-    logger.debug("Decision instance search request: \n{}", query.toString());
+    LOGGER.debug("Decision instance search request: \n{}", query.toString());
 
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
@@ -238,7 +238,7 @@ public class DecisionInstanceReader extends AbstractReader
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate).source(searchSourceBuilder);
 
-    logger.debug("Search request will search in: \n{}", searchRequest.indices());
+    LOGGER.debug("Search request will search in: \n{}", searchRequest.indices());
 
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
@@ -261,7 +261,7 @@ public class DecisionInstanceReader extends AbstractReader
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining instances list: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -354,9 +354,13 @@ public class DecisionInstanceReader extends AbstractReader
   }
 
   private QueryBuilder createReadPermissionQuery() {
-    if (permissionsService == null) return null;
+    if (permissionsService == null) {
+      return null;
+    }
     final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
-    if (allowed == null) return null;
+    if (allowed == null) {
+      return null;
+    }
     return allowed.isAll()
         ? QueryBuilders.matchAllQuery()
         : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());

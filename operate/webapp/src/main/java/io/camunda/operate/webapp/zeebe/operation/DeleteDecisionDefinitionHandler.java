@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
 public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
     implements OperationHandler {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(DeleteDecisionDefinitionHandler.class);
 
   @Autowired private OperationsManager operationsManager;
@@ -51,35 +51,35 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
       return;
     }
 
-    DecisionDefinitionEntity decisionDefinition =
+    final DecisionDefinitionEntity decisionDefinition =
         decisionReader.getDecision(operation.getDecisionDefinitionKey());
-    long decisionRequirementsKey = decisionDefinition.getDecisionRequirementsKey();
+    final long decisionRequirementsKey = decisionDefinition.getDecisionRequirementsKey();
     long deleted;
 
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...",
             operation.getId(), decisionRequirementsKey));
     zeebeClient.newDeleteResourceCommand(decisionRequirementsKey).send().join();
     markAsSent(operation);
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Delete command sent to Zeebe for decisionRequirementsKey [%s]",
             operation.getId(), decisionRequirementsKey));
 
     deleted = decisionWriter.deleteDecisionInstancesFor(decisionRequirementsKey);
     updateInstancesInBatchOperation(operation, deleted);
-    logger.info(
+    LOGGER.info(
         String.format("Operation [%s]: Deleted %s decision instances", operation.getId(), deleted));
 
     deleted = decisionWriter.deleteDecisionDefinitionsFor(decisionRequirementsKey);
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Deleted %s decision definitions", operation.getId(), deleted));
 
     deleted = decisionWriter.deleteDecisionRequirements(decisionRequirementsKey);
     completeOperation(operation);
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Deleted %s decision requirements", operation.getId(), deleted));
   }

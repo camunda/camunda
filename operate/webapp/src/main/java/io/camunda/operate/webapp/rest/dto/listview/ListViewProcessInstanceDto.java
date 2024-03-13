@@ -90,7 +90,7 @@ public class ListViewProcessInstanceDto {
     if (processInstanceEntity == null) {
       return null;
     }
-    ListViewProcessInstanceDto processInstance = new ListViewProcessInstanceDto();
+    final ListViewProcessInstanceDto processInstance = new ListViewProcessInstanceDto();
     processInstance
         .setId(processInstanceEntity.getId())
         .setStartDate(processInstanceEntity.getStartDate())
@@ -332,9 +332,13 @@ public class ListViewProcessInstanceDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ListViewProcessInstanceDto that = (ListViewProcessInstanceDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ListViewProcessInstanceDto that = (ListViewProcessInstanceDto) o;
     return hasActiveOperation == that.hasActiveOperation
         && Objects.equals(id, that.id)
         && Objects.equals(processId, that.processId)

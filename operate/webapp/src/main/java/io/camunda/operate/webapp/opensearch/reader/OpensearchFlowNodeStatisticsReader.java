@@ -68,7 +68,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
 
   @Override
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
-    SearchRequest.Builder searchRequest;
+    final SearchRequest.Builder searchRequest;
 
     if (!query.isFinished()) {
       searchRequest = createQuery(query, RequestDSL.QueryType.ONLY_RUNTIME);
@@ -76,13 +76,13 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
       searchRequest = createQuery(query, RequestDSL.QueryType.ALL);
     }
 
-    Map<String, FlowNodeStatisticsDto> statisticsMap = runQueryAndCollectStats(searchRequest);
+    final Map<String, FlowNodeStatisticsDto> statisticsMap = runQueryAndCollectStats(searchRequest);
     return statisticsMap.values();
   }
 
   private SearchRequest.Builder createQuery(
       ListViewQueryDto query, RequestDSL.QueryType queryType) {
-    Map<String, Aggregation> subAggregations = new HashMap<>();
+    final Map<String, Aggregation> subAggregations = new HashMap<>();
     if (query.isActive()) {
       subAggregations.put(AGG_ACTIVE_ACTIVITIES, getActiveFlowNodesAggregation());
     }
@@ -139,9 +139,9 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
 
   private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(
       SearchRequest.Builder searchRequest) {
-    Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
-    Map<String, Object> result = richOpenSearchClient.doc().searchAsMap(searchRequest);
-    Optional<Map<String, Object>> maybeActivities =
+    final Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
+    final Map<String, Object> result = richOpenSearchClient.doc().searchAsMap(searchRequest);
+    final Optional<Map<String, Object>> maybeActivities =
         MapPath.from(result)
             .getByPath("aggregations", "children#activities")
             .flatMap(Convertable::to);
@@ -196,7 +196,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
       Map<String, Object> activities,
       String aggName,
       MapUpdater mapUpdater) {
-    Optional<List<Map<String, Object>>> maybeUniqueActivitiesBuckets =
+    final Optional<List<Map<String, Object>>> maybeUniqueActivitiesBuckets =
         MapPath.from(activities)
             .getByPath("filter#" + aggName, "sterms#" + AGG_UNIQUE_ACTIVITIES, "buckets")
             .flatMap(Convertable::to);
@@ -205,7 +205,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
         buckets ->
             buckets.forEach(
                 bucket -> {
-                  String activityId = (String) bucket.get("key");
+                  final String activityId = (String) bucket.get("key");
                   final long docCount =
                       (Integer)
                           MapPath.from(bucket)

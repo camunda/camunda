@@ -114,7 +114,7 @@ public class IdentityController {
 
   private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res)
       throws IOException {
-    Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
+    final Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
     if (originalRequestUrl != null) {
       res.sendRedirect(req.getContextPath() + originalRequestUrl);
     } else {

@@ -156,9 +156,13 @@ public class Incident {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    Incident incident = (Incident) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final Incident incident = (Incident) o;
     return Objects.equals(key, incident.key)
         && Objects.equals(processDefinitionKey, incident.processDefinitionKey)
         && Objects.equals(processInstanceKey, incident.processInstanceKey)

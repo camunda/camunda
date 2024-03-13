@@ -82,7 +82,7 @@ public class QueryValidator<T> {
       throw new ValidationException(
           "No 'field' given in sort. Example: \"sort\": [{\"field\":\"name\",\"order\": \"ASC\"}] ");
     }
-    List<String> invalidSortSpecs = getInvalidFields(fields, givenFields);
+    final List<String> invalidSortSpecs = getInvalidFields(fields, givenFields);
     if (!invalidSortSpecs.isEmpty()) {
       throw new ValidationException(
           String.format("Sort has invalid field(s): %s", String.join(", ", invalidSortSpecs)));

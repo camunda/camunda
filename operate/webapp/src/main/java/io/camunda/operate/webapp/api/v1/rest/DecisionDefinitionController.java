@@ -53,20 +53,21 @@ public class DecisionDefinitionController extends ErrorController
     implements SearchController<DecisionDefinition> {
 
   public static final String URI = "/v1/decision-definitions";
-  private static final QueryValidator.CustomQueryValidator<DecisionDefinition> searchSortValidator =
-      query -> {
-        List<Query.Sort> sorts = query.getSort();
-        if (sorts != null) {
-          for (Query.Sort sort : sorts) {
-            String field = sort.getField();
-            if (DecisionDefinition.DECISION_REQUIREMENTS_NAME.equals(field)
-                || DecisionDefinition.DECISION_REQUIREMENTS_VERSION.equals(field)) {
-              throw new ValidationException(
-                  String.format("Field '%s' cannot be used as sort field", field));
+  private static final QueryValidator.CustomQueryValidator<DecisionDefinition>
+      SEARCH_SORT_VALIDATOR =
+          query -> {
+            final List<Query.Sort> sorts = query.getSort();
+            if (sorts != null) {
+              for (Query.Sort sort : sorts) {
+                final String field = sort.getField();
+                if (DecisionDefinition.DECISION_REQUIREMENTS_NAME.equals(field)
+                    || DecisionDefinition.DECISION_REQUIREMENTS_VERSION.equals(field)) {
+                  throw new ValidationException(
+                      String.format("Field '%s' cannot be used as sort field", field));
+                }
+              }
             }
-          }
-        }
-      };
+          };
   private final QueryValidator<DecisionDefinition> queryValidator = new QueryValidator<>();
   @Autowired private DecisionDefinitionDao decisionDefinitionDao;
 
@@ -144,7 +145,7 @@ public class DecisionDefinitionController extends ErrorController
               }))
   @Override
   public Results<DecisionDefinition> search(@RequestBody final Query<DecisionDefinition> query) {
-    queryValidator.validate(query, DecisionDefinition.class, searchSortValidator);
+    queryValidator.validate(query, DecisionDefinition.class, SEARCH_SORT_VALIDATOR);
     return decisionDefinitionDao.search(query);
   }
 

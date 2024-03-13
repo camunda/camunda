@@ -245,14 +245,14 @@ public class ProcessInstanceController extends ErrorController
       @Parameter(description = "Key of process instance", required = true) @PathVariable
           final Long key) {
     processInstanceDao.byKey(key); // this is just to throw error if not found
-    Query<SequenceFlow> query =
+    final Query<SequenceFlow> query =
         new Query<SequenceFlow>()
             .setFilter(new SequenceFlow().setProcessInstanceKey(key))
             .setSize(QueryValidator.MAX_QUERY_SIZE);
     logger.debug("search for query {}", query);
-    QueryValidator<SequenceFlow> queryValidator = new QueryValidator<>();
+    final QueryValidator<SequenceFlow> queryValidator = new QueryValidator<>();
     queryValidator.validate(query, SequenceFlow.class);
-    Results<SequenceFlow> results = sequenceFlowDao.search(query);
+    final Results<SequenceFlow> results = sequenceFlowDao.search(query);
     return results.getItems().stream()
         .map(SequenceFlow::getActivityId)
         .collect(Collectors.toList());

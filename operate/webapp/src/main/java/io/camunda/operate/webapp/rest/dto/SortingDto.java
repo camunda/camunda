@@ -70,12 +70,18 @@ public class SortingDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    SortingDto that = (SortingDto) o;
+    final SortingDto that = (SortingDto) o;
 
-    if (sortBy != null ? !sortBy.equals(that.sortBy) : that.sortBy != null) return false;
+    if (sortBy != null ? !sortBy.equals(that.sortBy) : that.sortBy != null) {
+      return false;
+    }
     return sortOrder != null ? sortOrder.equals(that.sortOrder) : that.sortOrder == null;
   }
 }

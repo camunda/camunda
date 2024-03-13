@@ -110,9 +110,13 @@ public class DecisionRequirements {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionRequirements that = (DecisionRequirements) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionRequirements that = (DecisionRequirements) o;
     return Objects.equals(id, that.id)
         && Objects.equals(key, that.key)
         && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)

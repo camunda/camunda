@@ -30,7 +30,7 @@ public abstract class DtoCreator {
       return null;
     }
     try {
-      T newDto = clazz.getDeclaredConstructor().newInstance();
+      final T newDto = clazz.getDeclaredConstructor().newInstance();
       newDto.fillFrom(from);
       return newDto;
     } catch (InstantiationException

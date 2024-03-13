@@ -103,7 +103,7 @@ import org.springframework.stereotype.Component;
 public class FlowNodeInstanceReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.FlowNodeInstanceReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowNodeInstanceReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeInstanceReader.class);
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
@@ -547,7 +547,9 @@ public class FlowNodeInstanceReader extends AbstractReader
   // Max size: page size of request - default: 50
   private void markHasIncident(
       final String processInstanceId, final List<FlowNodeInstanceEntity> flowNodeInstances) {
-    if (flowNodeInstances == null || flowNodeInstances.isEmpty()) return;
+    if (flowNodeInstances == null || flowNodeInstances.isEmpty()) {
+      return;
+    }
     final List<FiltersAggregator.KeyedFilter> filters =
         flowNodeInstances.stream()
             .filter(this::flowNodeInstanceIsRunningOrIsNotMarked)
@@ -581,7 +583,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         }
       }
     } catch (final IOException e) {
-      logger.error("Could not retrieve flow node incidents", e);
+      LOGGER.error("Could not retrieve flow node incidents", e);
     }
   }
 

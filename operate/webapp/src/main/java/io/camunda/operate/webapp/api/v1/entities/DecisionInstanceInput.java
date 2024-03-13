@@ -60,9 +60,13 @@ public class DecisionInstanceInput {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionInstanceInput that = (DecisionInstanceInput) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceInput that = (DecisionInstanceInput) o;
     return Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value);

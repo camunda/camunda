@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchUserTaskReader extends AbstractReader implements UserTaskReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
 
   private final UserTaskTemplate userTaskTemplate;
 
@@ -50,7 +50,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
   @Override
   public List<UserTaskEntity> getUserTasks() {
-    logger.debug("retrieve all user tasks");
+    LOGGER.debug("retrieve all user tasks");
     try {
       final QueryBuilder query = matchAllQuery();
       final SearchRequest searchRequest =
@@ -66,7 +66,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
   @Override
   public Optional<UserTaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
-    logger.debug("Get UserTask by flowNodeInstanceKey {}", flowNodeInstanceKey);
+    LOGGER.debug("Get UserTask by flowNodeInstanceKey {}", flowNodeInstanceKey);
     try {
       final QueryBuilder query =
           termQuery(UserTaskTemplate.ELEMENT_INSTANCE_KEY, flowNodeInstanceKey);

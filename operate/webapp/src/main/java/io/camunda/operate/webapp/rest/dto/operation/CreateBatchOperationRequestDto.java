@@ -84,9 +84,13 @@ public class CreateBatchOperationRequestDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    CreateBatchOperationRequestDto that = (CreateBatchOperationRequestDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CreateBatchOperationRequestDto that = (CreateBatchOperationRequestDto) o;
     return Objects.equals(name, that.name)
         && Objects.equals(query, that.query)
         && operationType == that.operationType

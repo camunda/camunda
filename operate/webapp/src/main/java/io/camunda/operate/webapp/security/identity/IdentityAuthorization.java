@@ -85,9 +85,13 @@ public class IdentityAuthorization implements Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    IdentityAuthorization that = (IdentityAuthorization) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IdentityAuthorization that = (IdentityAuthorization) o;
     return Objects.equals(resourceKey, that.resourceKey)
         && Objects.equals(resourceType, that.resourceType)
         && Objects.equals(permissions, that.permissions);

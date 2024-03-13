@@ -52,10 +52,11 @@ public abstract class BaseWebConfigurer {
     response.reset();
     response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
 
-    PrintWriter writer = response.getWriter();
+    final PrintWriter writer = response.getWriter();
     response.setContentType(APPLICATION_JSON.getMimeType());
 
-    String jsonResponse = Json.createObjectBuilder().add("message", message).build().toString();
+    final String jsonResponse =
+        Json.createObjectBuilder().add("message", message).build().toString();
 
     writer.append(jsonResponse);
     response.setStatus(UNAUTHORIZED.value());
@@ -137,7 +138,8 @@ public abstract class BaseWebConfigurer {
   protected void failureHandler(
       HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
       throws IOException {
-    String requestedUrl = request.getRequestURI().substring(request.getContextPath().length());
+    final String requestedUrl =
+        request.getRequestURI().substring(request.getContextPath().length());
     if (requestedUrl.contains("/api/") || requestedUrl.contains("/v1/")) {
       sendError(request, response, ex);
     } else {

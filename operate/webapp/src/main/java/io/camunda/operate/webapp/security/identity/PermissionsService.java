@@ -38,7 +38,7 @@ public class PermissionsService {
   public static final String RESOURCE_TYPE_PROCESS_DEFINITION = "process-definition";
   public static final String RESOURCE_TYPE_DECISION_DEFINITION = "decision-definition";
 
-  private static final Logger logger = LoggerFactory.getLogger(PermissionsService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PermissionsService.class);
 
   private final OperateProperties operateProperties;
   private final SecurityContextWrapper securityContextWrapperComponent;
@@ -52,7 +52,7 @@ public class PermissionsService {
 
   @PostConstruct
   public void logCreated() {
-    logger.debug("PermissionsService bean created.");
+    LOGGER.debug("PermissionsService bean created.");
   }
 
   /**
@@ -186,12 +186,12 @@ public class PermissionsService {
       return new ArrayList<>();
     } else if (authentication instanceof IdentityAuthentication) {
       list = ((IdentityAuthentication) authentication).getAuthorizations();
-      logger.debug("Following authorizations found for IdentityAuthentication: " + list);
+      LOGGER.debug("Following authorizations found for IdentityAuthentication: " + list);
     } else if (authentication instanceof TokenAuthentication) {
       list = ((TokenAuthentication) authentication).getAuthorizations();
-      logger.debug("Following authorizations found for TokenAuthentication: " + list);
+      LOGGER.debug("Following authorizations found for TokenAuthentication: " + list);
     } else {
-      logger.error(
+      LOGGER.error(
           "Unable to read resource based permissions. Unknown token type: "
               + authentication.getClass().getSimpleName(),
           new OperateRuntimeException());
@@ -271,8 +271,7 @@ public class PermissionsService {
   }
 
   /** ResourcesAllowed */
-  public static class ResourcesAllowed {
-
+  public static final class ResourcesAllowed {
     private final boolean all;
     private final Set<String> ids;
 

@@ -53,15 +53,15 @@ public class InternalAPIErrorControllerTest {
 
   @Test
   public void testHandleOperateRuntimeException() {
-    OperateRuntimeException exception = new OperateRuntimeException("runtime exception");
+    final OperateRuntimeException exception = new OperateRuntimeException("runtime exception");
 
-    ResponseEntity<Error> result = underTest.handleOperateRuntimeException(exception);
+    final ResponseEntity<Error> result = underTest.handleOperateRuntimeException(exception);
 
     assertThat(result).isNotNull();
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     assertThat(result.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
 
-    Error errorBody = result.getBody();
+    final Error errorBody = result.getBody();
 
     assertThat(errorBody).isNotNull();
     assertThat(errorBody.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -71,16 +71,16 @@ public class InternalAPIErrorControllerTest {
 
   @Test
   public void testHandleRuntimeNotFoundException() {
-    io.camunda.operate.store.NotFoundException exception =
+    final io.camunda.operate.store.NotFoundException exception =
         new io.camunda.operate.store.NotFoundException("not found exception");
 
-    ResponseEntity<Error> result = underTest.handleRuntimeNotFoundException(exception);
+    final ResponseEntity<Error> result = underTest.handleRuntimeNotFoundException(exception);
 
     assertThat(result).isNotNull();
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(result.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
 
-    Error errorBody = result.getBody();
+    final Error errorBody = result.getBody();
 
     assertThat(errorBody).isNotNull();
     assertThat(errorBody.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
@@ -90,16 +90,16 @@ public class InternalAPIErrorControllerTest {
 
   @Test
   public void testHandleInternalAPIException() {
-    InternalAPIException exception = new InternalAPIException("internal api exception") {};
+    final InternalAPIException exception = new InternalAPIException("internal api exception") {};
     exception.setInstance("instanceId");
 
-    ResponseEntity<Error> result = underTest.handleInternalAPIException(exception);
+    final ResponseEntity<Error> result = underTest.handleInternalAPIException(exception);
 
     assertThat(result).isNotNull();
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(result.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
 
-    Error errorBody = result.getBody();
+    final Error errorBody = result.getBody();
 
     assertThat(errorBody).isNotNull();
     assertThat(errorBody.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
@@ -109,16 +109,16 @@ public class InternalAPIErrorControllerTest {
 
   @Test
   public void testHandleInternalNotFoundException() {
-    NotFoundException exception = new NotFoundException("not found exception");
+    final NotFoundException exception = new NotFoundException("not found exception");
     exception.setInstance("instanceId");
 
-    ResponseEntity<Error> result = underTest.handleInternalNotFoundException(exception);
+    final ResponseEntity<Error> result = underTest.handleInternalNotFoundException(exception);
 
     assertThat(result).isNotNull();
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(result.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
 
-    Error errorBody = result.getBody();
+    final Error errorBody = result.getBody();
 
     assertThat(errorBody).isNotNull();
     assertThat(errorBody.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
@@ -128,16 +128,16 @@ public class InternalAPIErrorControllerTest {
 
   @Test
   public void testHandleNotAuthorizedException() {
-    NotAuthorizedException exception = new NotAuthorizedException("not authorized exception");
+    final NotAuthorizedException exception = new NotAuthorizedException("not authorized exception");
     exception.setInstance("instanceId");
 
-    ResponseEntity<Error> result = underTest.handleNotAuthorizedException(exception);
+    final ResponseEntity<Error> result = underTest.handleNotAuthorizedException(exception);
 
     assertThat(result).isNotNull();
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     assertThat(result.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
 
-    Error errorBody = result.getBody();
+    final Error errorBody = result.getBody();
 
     assertThat(errorBody).isNotNull();
     assertThat(errorBody.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());

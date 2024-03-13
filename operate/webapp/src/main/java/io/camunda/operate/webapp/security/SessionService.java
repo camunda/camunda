@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 public class SessionService
     implements org.springframework.session.SessionRepository<OperateSession> {
   public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30; // min
-  private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SessionService.class);
   @Autowired SessionRepository sessionRepository;
 
   @Autowired
@@ -49,13 +49,13 @@ public class SessionService
 
   @PostConstruct
   private void setUp() {
-    logger.debug("Persistent sessions in enabled");
+    LOGGER.debug("Persistent sessions in enabled");
     startExpiredSessionCheck();
   }
 
   @PreDestroy
   private void tearDown() {
-    logger.debug("Shutdown SessionService");
+    LOGGER.debug("Shutdown SessionService");
   }
 
   private void startExpiredSessionCheck() {
@@ -64,7 +64,7 @@ public class SessionService
   }
 
   private void removedExpiredSessions() {
-    logger.debug("Check for expired sessions");
+    LOGGER.debug("Check for expired sessions");
     sessionRepository.getExpiredSessionIds().forEach(this::deleteById);
   }
 
@@ -77,8 +77,8 @@ public class SessionService
     // Frontend e2e tests are relying on this pattern
     final String sessionId = UUID.randomUUID().toString().replace("-", "");
 
-    OperateSession session = new OperateSession(sessionId);
-    logger.debug(
+    final OperateSession session = new OperateSession(sessionId);
+    LOGGER.debug(
         "Create session {} with maxInactiveInterval {} ",
         session,
         session.getMaxInactiveInterval());
@@ -87,13 +87,13 @@ public class SessionService
 
   @Override
   public void save(OperateSession session) {
-    logger.debug("Save session {}", session);
+    LOGGER.debug("Save session {}", session);
     if (shouldDeleteSession(session)) {
       deleteById(session.getId());
       return;
     }
     if (session.isChanged()) {
-      logger.debug("Session {} changed, save in Elasticsearch.", session);
+      LOGGER.debug("Session {} changed, save in Elasticsearch.", session);
       sessionRepository.save(session);
       session.clearChangeFlag();
     }
@@ -101,7 +101,7 @@ public class SessionService
 
   @Override
   public OperateSession findById(final String id) {
-    logger.debug("Retrieve session {} from Elasticsearch", id);
+    LOGGER.debug("Retrieve session {} from Elasticsearch", id);
     final Optional<OperateSession> maybeSession = sessionRepository.findById(id);
     if (maybeSession.isEmpty()) {
       // need to delete entry in Elasticsearch in case of failing restore session

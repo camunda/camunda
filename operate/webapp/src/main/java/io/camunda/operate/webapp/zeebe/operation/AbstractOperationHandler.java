@@ -35,7 +35,7 @@ import org.springframework.util.StringUtils;
 
 public abstract class AbstractOperationHandler implements OperationHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(AbstractOperationHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOperationHandler.class);
   private static final List<Status.Code> RETRY_STATUSES =
       Arrays.asList(
           Status.UNAVAILABLE.getCode(),
@@ -55,7 +55,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     } catch (Exception ex) {
       if (isExceptionRetriable(ex)) {
         // leave the operation locked -> when it expires, operation will be retried
-        logger.error(
+        LOGGER.error(
             String.format(
                 "Unable to process operation with id %s. Reason: %s. Will be retried.",
                 operation.getId(), ex.getMessage()),
@@ -65,9 +65,9 @@ public abstract class AbstractOperationHandler implements OperationHandler {
           failOperation(
               operation, String.format("Unable to process operation: %s", ex.getMessage()));
         } catch (PersistenceException e) {
-          //
+          // noop
         }
-        logger.error(
+        LOGGER.error(
             String.format(
                 "Unable to process operation with id %s. Reason: %s. Will NOT be retried.",
                 operation.getId(), ex.getMessage()),
@@ -82,7 +82,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   }
 
   private boolean isExceptionRetriable(Exception ex) {
-    StatusRuntimeException cause = extractStatusRuntimeException(ex);
+    final StatusRuntimeException cause = extractStatusRuntimeException(ex);
     return cause != null && RETRY_STATUSES.contains(cause.getStatus().getCode());
   }
 
@@ -122,7 +122,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
       }
       batchOperationWriter.updateOperation(operation);
-      logger.debug(
+      LOGGER.debug(
           "Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
     }
     recordCommandMetric(operation);
@@ -146,7 +146,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       operation.setLockOwner(null);
       operation.setZeebeCommandKey(zeebeCommandKey);
       batchOperationWriter.updateOperation(operation);
-      logger.debug("Operation {} was sent to Zeebe", operation.getId());
+      LOGGER.debug("Operation {} was sent to Zeebe", operation.getId());
     }
     recordCommandMetric(operation);
   }

@@ -51,7 +51,7 @@ public class LDAPConfig {
 
   @Bean
   public LdapContextSource getContextSource() {
-    LdapContextSource contextSource = new LdapContextSource();
+    final LdapContextSource contextSource = new LdapContextSource();
     contextSource.setUrl(operateProperties.getLdap().getUrl());
     contextSource.setUserDn(operateProperties.getLdap().getManagerDn());
     contextSource.setPassword(operateProperties.getLdap().getManagerPassword());

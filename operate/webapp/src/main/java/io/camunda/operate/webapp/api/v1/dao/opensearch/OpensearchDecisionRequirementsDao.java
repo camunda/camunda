@@ -82,7 +82,7 @@ public class OpensearchDecisionRequirementsDao
       return List.of();
     }
     try {
-      var request =
+      final var request =
           requestDSLWrapper
               .searchRequestBuilder(getIndexName())
               .query(queryDSLWrapper.longTerms(getKeyFieldName(), nonNullKeys));
@@ -95,7 +95,7 @@ public class OpensearchDecisionRequirementsDao
   @Override
   public String xmlByKey(Long key) throws APIException {
     validateKey(key);
-    var request =
+    final var request =
         requestDSLWrapper
             .searchRequestBuilder(getIndexName())
             .query(
@@ -103,7 +103,7 @@ public class OpensearchDecisionRequirementsDao
                     queryDSLWrapper.term(DecisionRequirements.KEY, key)))
             .source(queryDSLWrapper.sourceInclude(DecisionRequirementsIndex.XML));
     try {
-      var response = richOpenSearchClient.doc().search(request, Map.class);
+      final var response = richOpenSearchClient.doc().search(request, Map.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source().get(DecisionRequirementsIndex.XML).toString();
       }
@@ -134,7 +134,7 @@ public class OpensearchDecisionRequirementsDao
   protected void buildFiltering(Query<DecisionRequirements> query, SearchRequest.Builder request) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(DecisionRequirements.ID, filter.getId()),
                   queryDSLWrapper.term(DecisionRequirements.KEY, filter.getKey()),

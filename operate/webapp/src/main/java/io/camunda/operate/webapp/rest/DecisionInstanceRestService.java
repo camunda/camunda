@@ -68,7 +68,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get decision instance by id")
   @GetMapping("/{decisionInstanceId}")
   public DecisionInstanceDto queryDecisionInstanceById(@PathVariable String decisionInstanceId) {
-    DecisionInstanceDto decisionInstanceDto =
+    final DecisionInstanceDto decisionInstanceDto =
         decisionInstanceReader.getDecisionInstance(decisionInstanceId);
     checkIdentityReadPermission(decisionInstanceDto);
     return decisionInstanceDto;

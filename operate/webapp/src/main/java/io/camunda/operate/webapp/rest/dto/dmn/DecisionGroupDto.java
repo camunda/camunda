@@ -45,12 +45,12 @@ public class DecisionGroupDto {
   public static List<DecisionGroupDto> createFrom(
       Map<String, List<DecisionDefinitionEntity>> decisionsGrouped,
       PermissionsService permissionsService) {
-    List<DecisionGroupDto> groups = new ArrayList<>();
+    final List<DecisionGroupDto> groups = new ArrayList<>();
     decisionsGrouped.values().stream()
         .forEach(
             group -> {
-              DecisionGroupDto groupDto = new DecisionGroupDto();
-              DecisionDefinitionEntity decision0 = group.get(0);
+              final DecisionGroupDto groupDto = new DecisionGroupDto();
+              final DecisionDefinitionEntity decision0 = group.get(0);
               groupDto.setDecisionId(decision0.getDecisionId());
               groupDto.setTenantId(decision0.getTenantId());
               groupDto.setName(decision0.getName());
@@ -114,9 +114,13 @@ public class DecisionGroupDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionGroupDto that = (DecisionGroupDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionGroupDto that = (DecisionGroupDto) o;
     return Objects.equals(decisionId, that.decisionId)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(name, that.name)

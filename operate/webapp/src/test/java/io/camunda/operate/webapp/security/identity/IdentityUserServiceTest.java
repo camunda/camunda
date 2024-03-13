@@ -54,17 +54,18 @@ public class IdentityUserServiceTest {
 
   @Test
   public void testCreateUserDtoFromIdentityAuthentication() {
-    var identityAuthentication = Mockito.mock(IdentityAuthentication.class);
+    final var identityAuthentication = Mockito.mock(IdentityAuthentication.class);
 
-    List<Permission> authPermissions = Arrays.asList(Permission.fromString("READ"));
-    List<OperateTenant> authTenants = Arrays.asList(new OperateTenant("tenantId", "tenantName"));
+    final List<Permission> authPermissions = Arrays.asList(Permission.fromString("READ"));
+    final List<OperateTenant> authTenants =
+        Arrays.asList(new OperateTenant("tenantId", "tenantName"));
 
     when(identityAuthentication.getId()).thenReturn("mockId");
     when(identityAuthentication.getName()).thenReturn("mockName");
     when(identityAuthentication.getTenants()).thenReturn(authTenants);
     when(identityAuthentication.getPermissions()).thenReturn(authPermissions);
 
-    UserDto result = underTest.createUserDtoFrom(identityAuthentication);
+    final UserDto result = underTest.createUserDtoFrom(identityAuthentication);
 
     // Validate the DTO object was created with the expected fields
     assertThat(result).isNotNull();
@@ -76,10 +77,10 @@ public class IdentityUserServiceTest {
 
   @Test
   public void testCreateUserDtoFromJwtToken() {
-    var jwtToken = Mockito.mock(JwtAuthenticationToken.class);
-    var mockJwt = Mockito.mock(Jwt.class);
-    var mockAuthentication = Mockito.mock(Authentication.class);
-    var mockAccessToken = Mockito.mock(AccessToken.class);
+    final var jwtToken = Mockito.mock(JwtAuthenticationToken.class);
+    final var mockJwt = Mockito.mock(Jwt.class);
+    final var mockAuthentication = Mockito.mock(Authentication.class);
+    final var mockAccessToken = Mockito.mock(AccessToken.class);
 
     when(jwtToken.getPrincipal()).thenReturn(mockJwt);
     when(jwtToken.getName()).thenReturn("mockTokenName");
@@ -90,7 +91,7 @@ public class IdentityUserServiceTest {
         .thenReturn(Arrays.asList(PermissionConverter.READ_PERMISSION_VALUE));
     when(mockPermissionConverter.convert(any())).thenCallRealMethod();
 
-    UserDto result = underTest.createUserDtoFrom(jwtToken);
+    final UserDto result = underTest.createUserDtoFrom(jwtToken);
 
     // Validate the DTO object was created with the expected fields
     assertThat(result).isNotNull();
@@ -98,7 +99,7 @@ public class IdentityUserServiceTest {
     assertThat(result.getUserId()).isEqualTo(jwtToken.getName());
     assertThat(result.isCanLogout()).isEqualTo(true);
 
-    List<Permission> permissions = result.getPermissions();
+    final List<Permission> permissions = result.getPermissions();
     assertThat(permissions).isNotNull();
     assertThat(permissions.size()).isEqualTo(1);
     assertThat(permissions.get(0)).isEqualTo(Permission.READ);
@@ -106,9 +107,9 @@ public class IdentityUserServiceTest {
 
   @Test
   public void testCreateDtoUserFromInvalidType() {
-    var tokenAuthentication = Mockito.mock(TokenAuthentication.class);
+    final var tokenAuthentication = Mockito.mock(TokenAuthentication.class);
 
-    UserDto result = underTest.createUserDtoFrom(tokenAuthentication);
+    final UserDto result = underTest.createUserDtoFrom(tokenAuthentication);
 
     assertThat(result).isNull();
   }

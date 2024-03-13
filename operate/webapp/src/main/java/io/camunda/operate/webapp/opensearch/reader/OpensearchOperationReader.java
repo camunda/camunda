@@ -65,7 +65,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchOperationReader extends OpensearchAbstractReader implements OperationReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchOperationReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchOperationReader.class);
 
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
   private static final String LOCKED_OPERATION = LOCKED.toString();
@@ -87,7 +87,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
    */
   @Override
   public List<OperationEntity> acquireOperations(int batchSize) {
-    Query query =
+    final Query query =
         constantScore(
             or(
                 term(OperationTemplate.STATE, SCHEDULED_OPERATION),
@@ -97,7 +97,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
                         OperationTemplate.LOCK_EXPIRATION_TIME,
                         dateTimeFormatter.format(OffsetDateTime.now())))));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ONLY_RUNTIME)
             .sort(sortOptions(BATCH_OPERATION_ID, Asc))
             .from(0)
@@ -110,12 +110,12 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   @Override
   public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
       List<Long> processInstanceKeys) {
-    Map<Long, List<OperationEntity>> result = new HashMap<>();
+    final Map<Long, List<OperationEntity>> result = new HashMap<>();
 
     final Query query =
         constantScore(and(longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys), usernameQuery()));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
             .query(query)
             .sort(sortOptions(PROCESS_INSTANCE_KEY, Asc), sortOptions(ID, Asc));
@@ -137,7 +137,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     final Query query =
         constantScore(and(term(PROCESS_INSTANCE_KEY, processInstanceId), usernameQuery()));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ONLY_RUNTIME)
             .query(query)
             .sort(sortOptions(INCIDENT_KEY, Asc), sortOptions(ID, Asc));
@@ -164,7 +164,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
                 term(TYPE, OperationType.UPDATE_VARIABLE.name()),
                 usernameQuery()));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL).query(query).sort(sortOptions(ID, Asc));
 
     richOpenSearchClient
@@ -186,7 +186,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
                 processInstanceKey == null ? null : term(PROCESS_INSTANCE_KEY, processInstanceKey),
                 usernameQuery()));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL).query(query).sort(sortOptions(ID, Asc));
 
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
@@ -199,7 +199,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
         constantScore(
             term(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername()));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(batchOperationTemplate, ALL).query(query).size(pageSize);
 
     return richOpenSearchClient
@@ -209,7 +209,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public List<OperationDto> getOperationsByBatchOperationId(String batchOperationId) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
             .query(term(BATCH_OPERATION_ID, batchOperationId));
 
@@ -221,7 +221,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   @Override
   public List<OperationDto> getOperations(
       OperationType operationType, String processInstanceId, String scopeId, String variableName) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
             .query(
                 and(

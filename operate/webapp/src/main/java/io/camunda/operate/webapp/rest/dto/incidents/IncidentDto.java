@@ -87,7 +87,7 @@ public class IncidentDto {
       return null;
     }
 
-    IncidentDto incident =
+    final IncidentDto incident =
         new IncidentDto()
             .setId(incidentEntity.getId())
             .setFlowNodeId(incidentEntity.getFlowNodeId())
@@ -99,7 +99,7 @@ public class IncidentDto {
             .setCreationTime(incidentEntity.getCreationTime());
 
     if (operations != null && operations.size() > 0) {
-      OperationEntity lastOperation = operations.get(0); // operations are
+      final OperationEntity lastOperation = operations.get(0); // operations are
       // sorted by start date
       // descendant
       incident

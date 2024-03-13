@@ -64,10 +64,10 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
 
   @Override
   protected void buildFiltering(Query<Variable> query, SearchRequest.Builder request) {
-    Variable filter = query.getFilter();
+    final Variable filter = query.getFilter();
 
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(Variable.KEY, filter.getKey()),
                   queryDSLWrapper.term(Variable.TENANT_ID, filter.getTenantId()),
