@@ -401,11 +401,34 @@ public class BpmnCompensationSubscriptionBehaviour {
     compensationSubscriptionState
         .findSubscriptionsByProcessInstanceKey(
             context.getTenantId(), context.getProcessInstanceKey())
+        .forEach(this::appendCompensationSubscriptionDeleteEvent);
+  }
+
+  public void deleteSubscriptionsOfSubprocess(final BpmnElementContext context) {
+    final var subscriptions =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey());
+
+    // remove subprocess subscriptions in this scope (recursively) from the state
+    deleteSubscriptionsTopToBottom(subscriptions, context.getElementInstanceKey());
+  }
+
+  private void deleteSubscriptionsTopToBottom(
+      final Collection<CompensationSubscription> subscriptions, final long scopeKey) {
+    subscriptions.stream()
+        .filter(
+            subscription -> scopeKey == subscription.getRecord().getCompensableActivityScopeKey())
         .forEach(
-            subscription ->
-                stateWriter.appendFollowUpEvent(
-                    subscription.getKey(),
-                    CompensationSubscriptionIntent.DELETED,
-                    subscription.getRecord()));
+            subscription -> {
+              appendCompensationSubscriptionDeleteEvent(subscription);
+              deleteSubscriptionsTopToBottom(
+                  subscriptions, subscription.getRecord().getCompensableActivityInstanceKey());
+            });
+  }
+
+  private void appendCompensationSubscriptionDeleteEvent(
+      final CompensationSubscription subscription) {
+    stateWriter.appendFollowUpEvent(
+        subscription.getKey(), CompensationSubscriptionIntent.DELETED, subscription.getRecord());
   }
 }
