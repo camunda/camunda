@@ -83,7 +83,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetDistinctCountFor() throws IOException {
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    when(esClient.search(any(), any())).thenThrow(new IOException());
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
     Optional<Long> result = underTest.getDistinctCountFor("foo");
