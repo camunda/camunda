@@ -5,7 +5,7 @@ on:
     inputs:
       image_tag:
         required: true
-        description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.12.6861-SNAPSHOT for a branch called OPT-6861'
+        description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.12.6861-SNAPSHOT for a branch called 6861-test'
 env:
   IMAGE_NAME: optimize
 permissions:
@@ -31,7 +31,7 @@ jobs:
           secrets: |
             secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
             secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
-
+          
       - name: Set image build label from ISO 8601 DATE
         id: get-date
         shell: bash
@@ -75,6 +75,10 @@ jobs:
           echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           echo "docker_image=gcr.io/${{ steps.auth.outputs.project_id }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
 
+      - name: Read pom.xml file
+        id: pom-info
+        uses: YunaBraska/java-info-action@main
+
       # This action equates to:
       # docker buildx build -t registry.camunda.cloud/team-optimize/optimize:OPT-xxxx
       # --build-arg VERSION=3.11.0-SNAPSHOT --build-arg DATE=2022-12-08T15:25:30.165965Z
@@ -87,7 +91,7 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: |
-            VERSION=3.12.0-SNAPSHOT
+            VERSION=${{ steps.pom-info.outputs.project_version }}
             DATE= ${{ steps.get-date.outputs.result }}
             REVISION= ${{ github.sha }}
           tags: ${{ steps.meta.outputs.docker_image }}
