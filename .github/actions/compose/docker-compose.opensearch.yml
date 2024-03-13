@@ -30,6 +30,7 @@ services:
       - http.port=${OPENSEARCH_HTTP_PORT:-9205}
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - OPENSEARCH_JAVA_OPTS=-Xms${OPENSEARCH_JVM_MEMORY:-1}g -Xmx${OPENSEARCH_JVM_MEMORY:-1}g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD:-ThisIsAStrongOptimizePassword79!} # Required for OS 2.12+
     ulimits:
       memlock:
         soft: -1

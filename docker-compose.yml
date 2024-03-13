@@ -39,7 +39,8 @@ services:
       - plugins.security.disabled=true
       - cluster.initial_cluster_manager_nodes=opensearch
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD:-ThisIsAStrongOptimizePassword79!} # Required for OS 2.12+
     ulimits:
       memlock:
         soft: -1
