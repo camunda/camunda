@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
 import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -109,7 +111,8 @@ public class BpmnCompensationSubscriptionBehaviour {
         .findFirst();
   }
 
-  public boolean triggerCompensation(final BpmnElementContext context) {
+  public boolean triggerCompensation(
+      final ExecutableFlowElement element, final BpmnElementContext context) {
     // ignore subscriptions that are already triggered
     final var subscriptions =
         compensationSubscriptionState
@@ -119,14 +122,31 @@ public class BpmnCompensationSubscriptionBehaviour {
             .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
             .toList();
 
-    if (hasCompensationSubscriptionInScope(subscriptions, context.getFlowScopeKey())) {
-      // trigger the compensation in the current scope and propagate to the subprocesses
-      triggerCompensationFromTopToBottom(context, subscriptions, context.getFlowScopeKey());
-      return true;
+    boolean hasTriggeredCompensation = false;
 
-    } else {
-      return false;
+    if (hasCompensationSubscriptionInScope(subscriptions, context.getFlowScopeKey())) {
+      // trigger the compensation in this scope and propagate to the subprocesses
+      triggerCompensationFromTopToBottom(context, subscriptions, context.getFlowScopeKey());
+      hasTriggeredCompensation = true;
     }
+
+    if (isElementInsideEventSubprocess(element)) {
+      // inside an event subprocess, trigger the compensation also from outside the event subprocess
+      final ElementInstance flowScopeInstance =
+          elementInstanceState.getInstance(context.getFlowScopeKey());
+      final long eventSubprocessScopeKey = flowScopeInstance.getParentKey();
+
+      if (hasCompensationSubscriptionInScope(subscriptions, eventSubprocessScopeKey)) {
+        triggerCompensationFromTopToBottom(context, subscriptions, eventSubprocessScopeKey);
+        hasTriggeredCompensation = true;
+      }
+    }
+
+    return hasTriggeredCompensation;
+  }
+
+  private static boolean isElementInsideEventSubprocess(final ExecutableFlowElement element) {
+    return element.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS;
   }
 
   private static boolean hasCompensationSubscriptionInScope(
