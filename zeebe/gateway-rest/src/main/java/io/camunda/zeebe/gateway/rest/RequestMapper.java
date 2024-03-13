@@ -22,7 +22,6 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +34,6 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.server.ServerWebExchange;
 
 public class RequestMapper {
-
-  // TODO: create proper multi-tenancy handling, e.g. via HTTP filter
-  public static final String TENANT_CTX_KEY = "io.camunda.zeebe.broker.rest.tenantIds";
 
   public static Either<ProblemDetail, BrokerUserTaskCompletionRequest> toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest,
@@ -153,9 +149,7 @@ public class RequestMapper {
   }
 
   private static String getAuthorizationToken(final ServerWebExchange context) {
-    final List<String> authorizedTenants =
-        context.getAttributeOrDefault(
-            TENANT_CTX_KEY, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds(context);
 
     return Authorization.jwtEncoder()
         .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)

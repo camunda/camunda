@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.shared;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -50,6 +51,11 @@ public final class BrokerConfiguration {
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
+  }
+
+  @Bean
+  public MultiTenancyCfg multiTenancyConfig() {
+    return properties.getGateway().getMultiTenancy();
   }
 
   @ConfigurationProperties("zeebe.broker")
