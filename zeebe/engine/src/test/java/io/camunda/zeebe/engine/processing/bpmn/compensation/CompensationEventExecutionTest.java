@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.BoundaryEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -2617,6 +2618,212 @@ public class CompensationEventExecutionTest {
         .doesNotContain(
             tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("Undo-C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldTriggerCompensationForActivityFromEventSubprocess() {
+    // given
+    final Consumer<EventSubProcessBuilder> compensationEventSubprocess =
+        eventSubprocess ->
+            eventSubprocess.startEvent().error().endEvent("compensation-throw-event");
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess("event-subprocess", compensationEventSubprocess)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .serviceTask(
+                "B",
+                task ->
+                    task.zeebeJobType("B")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-B").zeebeJobType("Undo-B")))
+            .serviceTask("C", task -> task.zeebeJobType("C"))
+            .done();
+
+    final EndEvent endEvent = process.getModelElementById("compensation-throw-event");
+    endEvent.builder().compensateEventDefinition().activityRef("A");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").withErrorCode("error").throwError();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-A").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("event-subprocess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("Undo-A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("event-subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(tuple("Undo-B", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldTriggerCompensationForActivityFromEventSubprocessInsideSubprocess() {
+    // given
+    final Consumer<EventSubProcessBuilder> compensationEventSubprocess =
+        eventSubprocess ->
+            eventSubprocess.startEvent().error().endEvent("compensation-throw-event");
+
+    final Consumer<SubProcessBuilder> subprocessBuilder =
+        subprocess ->
+            subprocess
+                .embeddedSubProcess()
+                .eventSubProcess("event-subprocess", compensationEventSubprocess)
+                .startEvent()
+                .serviceTask(
+                    "B",
+                    task ->
+                        task.zeebeJobType("B")
+                            .boundaryEvent()
+                            .compensation(
+                                compensation ->
+                                    compensation.serviceTask("Undo-B").zeebeJobType("Undo-B")))
+                .serviceTask(
+                    "C",
+                    task ->
+                        task.zeebeJobType("C")
+                            .boundaryEvent()
+                            .compensation(
+                                compensation ->
+                                    compensation.serviceTask("Undo-C").zeebeJobType("Undo-C")))
+                .serviceTask("D", task -> task.zeebeJobType("D"));
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .subProcess("subprocess", subprocessBuilder)
+            .endEvent()
+            .done();
+
+    final EndEvent endEvent = process.getModelElementById("compensation-throw-event");
+    endEvent.builder().compensateEventDefinition().activityRef("B");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("D").withErrorCode("error").throwError();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-B").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("event-subprocess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("Undo-B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("event-subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("Undo-C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldTriggerCompensationForActivityInsideEventSubprocess() {
+    // given
+    final Consumer<EventSubProcessBuilder> compensationEventSubprocess =
+        eventSubprocess ->
+            eventSubprocess
+                .startEvent()
+                .error()
+                .serviceTask(
+                    "C",
+                    task ->
+                        task.zeebeJobType("C")
+                            .boundaryEvent()
+                            .compensation(
+                                compensation ->
+                                    compensation.serviceTask("Undo-C").zeebeJobType("Undo-C")))
+                .endEvent("compensation-throw-event");
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess("event-subprocess", compensationEventSubprocess)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .serviceTask("B", task -> task.zeebeJobType("B"))
+            .done();
+
+    final EndEvent endEvent = process.getModelElementById("compensation-throw-event");
+    endEvent.builder().compensateEventDefinition().activityRef("C");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").withErrorCode("error").throwError();
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-C").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("event-subprocess", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("Undo-C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("event-subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
