@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.6.2">
+  <bpmn:process id="withoutIncidentsProcess" name="Without Incidents Process" isExecutable="true">
+    <bpmn:startEvent id="start" name="start">
+      <bpmn:outgoing>SequenceFlow_1sz6737</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1sz6737" sourceRef="start" targetRef="neverFails" />
+    <bpmn:endEvent id="end" name="end">
+      <bpmn:incoming>SequenceFlow_0g2buaw</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="neverFails" name="Never fails">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="neverFails" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_1sz6737</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0v10lat</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="neverFails2" name="Never fails again">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="neverFails2" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0v10lat</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0g2buaw</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0v10lat" sourceRef="neverFails" targetRef="neverFails2" />
+    <bpmn:sequenceFlow id="SequenceFlow_0g2buaw" sourceRef="neverFails2" targetRef="end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="withoutIncidentsProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
+        <dc:Bounds x="173" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="180" y="138" width="22" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1sz6737_di" bpmnElement="SequenceFlow_1sz6737">
+        <di:waypoint x="209" y="120" />
+        <di:waypoint x="374" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="260" y="105" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0gbv3sc_di" bpmnElement="end">
+        <dc:Bounds x="867" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="876" y="138" width="18" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0sryj72_di" bpmnElement="neverFails">
+        <dc:Bounds x="374" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1j8pmi5_di" bpmnElement="neverFails2">
+        <dc:Bounds x="602" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0v10lat_di" bpmnElement="SequenceFlow_0v10lat">
+        <di:waypoint x="474" y="120" />
+        <di:waypoint x="602" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0g2buaw_di" bpmnElement="SequenceFlow_0g2buaw">
+        <di:waypoint x="702" y="120" />
+        <di:waypoint x="867" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
