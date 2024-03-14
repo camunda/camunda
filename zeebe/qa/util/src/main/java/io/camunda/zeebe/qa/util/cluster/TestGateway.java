@@ -38,8 +38,12 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    *
    * @return the gateway address
    */
-  default String gatewayAddress() {
+  default String grpcAddress() {
     return address(TestZeebePort.GATEWAY);
+  }
+
+  default String restAddress() {
+    return address(TestZeebePort.REST);
   }
 
   /**
@@ -71,7 +75,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
 
   /** Returns a new pre-configured client builder for this gateway */
   default ZeebeClientBuilder newClientBuilder() {
-    final var builder = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress());
+    final var builder = ZeebeClient.newClientBuilder().gatewayAddress(grpcAddress());
     final var security = gatewayConfig().getSecurity();
     if (security.isEnabled()) {
       builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());

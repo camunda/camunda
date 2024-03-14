@@ -15,11 +15,12 @@ import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,13 +39,12 @@ class UpdateUserTaskTest {
   private long userTaskKey;
 
   @BeforeEach
-  void initClientAndInstances() {
+  void initClientAndInstances() throws URISyntaxException {
     final var gateway = CLUSTER.availableGateway();
     client =
         CLUSTER
             .newClientBuilder()
-            .gatewayAddress(gateway.gatewayAddress())
-            .gatewayRestApiPort(gateway.mappedPort(TestZeebePort.REST))
+            .restAddress(new URI(gateway.restAddress()))
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .build();
     final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);

@@ -93,13 +93,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   @Override
-  public String gatewayAddress() {
+  public String grpcAddress() {
     if (!isGateway()) {
       throw new IllegalStateException(
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
 
-    return TestGateway.super.gatewayAddress();
+    return TestGateway.super.grpcAddress();
   }
 
   @Override
