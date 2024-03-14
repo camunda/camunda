@@ -80,17 +80,15 @@ public final class CommandDistributionBehavior {
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
     otherPartitions.forEach(
-        (partition) ->
-            distributeToPartition(command, partition, distributionRecord, distributionKey));
+        (partition) -> distributeToPartition(partition, distributionRecord, distributionKey));
   }
 
   private <T extends UnifiedRecordValue> void distributeToPartition(
-      final TypedRecord<T> command,
       final int partition,
       final CommandDistributionRecord distributionRecord,
       final long distributionKey) {
     final var valueType = distributionRecord.getValueType();
-    final var intent = command.getIntent();
+    final var intent = distributionRecord.getIntent();
     final var commandValue = distributionRecord.getCommandValue();
 
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
