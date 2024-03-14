@@ -106,6 +106,35 @@ final class ExportingEndpointIT {
     Awaitility.await().untilAsserted(this::allPartitionsExporting);
   }
 
+  @Test
+  void shouldStayPausedAfterRestart() {
+    // given
+    // in case this test gets run right after shouldPauseExporting
+    getActuator().resume();
+    client
+        .newPublishMessageCommand()
+        .messageName("Test")
+        .correlationKey("5")
+        .messageId("3")
+        .send()
+        .join();
+
+    final var recordsBeforePause =
+        Awaitility.await()
+            .atMost(Duration.ofSeconds(30))
+            .during(Duration.ofSeconds(5))
+            .until(RecordingExporter.getRecords()::size, hasStableValue());
+
+    // when
+    getActuator().pause();
+    CLUSTER.shutdown();
+    CLUSTER.start();
+
+    // then
+    RecordingExporter.records().limit(recordsBeforePause + 1).await();
+    Awaitility.await().untilAsserted(this::allPartitionsPausedExporting);
+  }
+
   private ExportingActuator getActuator() {
     return ExportingActuator.of(CLUSTER.availableGateway());
   }
