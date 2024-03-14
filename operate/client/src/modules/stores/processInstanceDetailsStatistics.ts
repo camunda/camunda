@@ -100,8 +100,10 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   handlePolling = async (processInstanceId: string) => {
     this.isPollRequestRunning = true;
-    const response =
-      await fetchProcessInstanceDetailStatistics(processInstanceId);
+    const response = await fetchProcessInstanceDetailStatistics(
+      processInstanceId,
+      {isPolling: true},
+    );
 
     if (this.intervalId !== null) {
       if (response.isSuccess) {

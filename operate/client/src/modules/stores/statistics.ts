@@ -63,23 +63,29 @@ class Statistics extends NetworkReconnectionHandler {
     }
 
     processInstancesStore.addCompletedOperationsHandler(() =>
-      this.fetchStatistics(),
+      this.fetchStatistics({isPolling: true}),
     );
   }
 
-  fetchStatistics = this.retryOnConnectionLost(async () => {
-    if (this.state.status === 'initial') {
-      this.startFirstFetch();
-    }
+  fetchStatistics: (
+    options?: Parameters<typeof fetchProcessCoreStatistics>[0],
+  ) => Promise<void> = this.retryOnConnectionLost(
+    async (options?: Parameters<typeof fetchProcessCoreStatistics>[0]) => {
+      if (this.state.status === 'initial') {
+        this.startFirstFetch();
+      }
 
-    const response = await fetchProcessCoreStatistics();
+      const response = await fetchProcessCoreStatistics({
+        isPolling: options?.isPolling,
+      });
 
-    if (response.isSuccess) {
-      this.setStatistics(response.data);
-    } else {
-      this.setError();
-    }
-  });
+      if (response.isSuccess) {
+        this.setStatistics(response.data);
+      } else {
+        this.setError();
+      }
+    },
+  );
 
   startFirstFetch = () => {
     this.state.status = 'first-fetch';
@@ -98,7 +104,7 @@ class Statistics extends NetworkReconnectionHandler {
 
   handlePolling = async () => {
     this.isPollRequestRunning = true;
-    const response = await fetchProcessCoreStatistics();
+    const response = await fetchProcessCoreStatistics({isPolling: true});
 
     if (this.intervalId !== null) {
       if (response.isSuccess) {

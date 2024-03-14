@@ -31,13 +31,16 @@ import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
+import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
 
 const mockInstance = createInstance({id: '2251799813685625'});
 
 describe('stores/statistics', () => {
   beforeEach(() => {
     // mock for initial fetch when statistics store is initialized
-    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchProcessCoreStatistics().withSuccess(statistics, {
+      expectPolling: false,
+    });
   });
 
   afterEach(() => {
@@ -95,6 +98,9 @@ describe('stores/statistics', () => {
   });
 
   it('should start polling on init', async () => {
+    mockFetchProcessCoreStatistics().withSuccess(statistics, {
+      expectPolling: true,
+    });
     jest.useFakeTimers();
     statisticsStore.init();
     jest.runOnlyPendingTimers();
@@ -104,11 +110,14 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
 
-    mockFetchProcessCoreStatistics().withSuccess({
-      running: 1088,
-      active: 211,
-      withIncidents: 878,
-    });
+    mockFetchProcessCoreStatistics().withSuccess(
+      {
+        running: 1088,
+        active: 211,
+        withIncidents: 878,
+      },
+      {expectPolling: true},
+    );
     jest.runOnlyPendingTimers();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
@@ -120,6 +129,9 @@ describe('stores/statistics', () => {
   });
 
   it('should fetch statistics depending on completed operations', async () => {
+    mockFetchProcessCoreStatistics().withSuccess(statistics, {
+      expectPolling: true,
+    });
     jest.useFakeTimers();
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -156,37 +168,41 @@ describe('stores/statistics', () => {
     // mock for next poll
 
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
+      rest.post('/api/process-instances', (req, res, ctx) => {
+        checkPollingHeader({req, expectPolling: true});
+        return res.once(
           ctx.json({
             processInstances: [{...mockInstance}],
             totalCount: 1,
           }),
-        ),
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
+        );
+      }),
+      rest.post('/api/process-instances', (req, res, ctx) => {
+        checkPollingHeader({req, expectPolling: true});
+        return res.once(
           ctx.json({
             processInstances: [{...mockInstance}],
             totalCount: 2,
           }),
-        ),
-      ),
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
+        );
+      }),
+      rest.get('/api/process-instances/core-statistics', (req, res, ctx) => {
+        checkPollingHeader({req, expectPolling: true});
+        return res.once(
           ctx.json({
             ...statistics,
           }),
-        ),
-      ),
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
+        );
+      }),
+      rest.get('/api/process-instances/core-statistics', (req, res, ctx) => {
+        checkPollingHeader({req, expectPolling: true});
+        return res.once(
           ctx.json({
             ...statistics,
             running: 1088,
           }),
-        ),
-      ),
+        );
+      }),
     );
 
     jest.runOnlyPendingTimers();

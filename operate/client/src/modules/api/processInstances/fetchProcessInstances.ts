@@ -37,25 +37,33 @@ type ProcessInstancesQuery = {
 const fetchProcessInstances = async ({
   payload,
   signal,
+  options,
 }: {
   payload: ProcessInstancesQuery;
   signal?: AbortSignal;
+  options?: Parameters<typeof requestAndParse>[1];
 }) => {
-  return requestAndParse<ProcessInstancesDto>({
-    url: '/api/process-instances',
-    method: 'POST',
-    body: payload,
-    signal,
-  });
+  return requestAndParse<ProcessInstancesDto>(
+    {
+      url: '/api/process-instances',
+      method: 'POST',
+      body: payload,
+      signal,
+    },
+    options,
+  );
 };
 
-async function fetchProcessInstancesByIds({
-  ids,
-  signal,
-}: {
-  ids: ProcessInstanceEntity['id'][];
-  signal?: AbortSignal;
-}) {
+async function fetchProcessInstancesByIds(
+  {
+    ids,
+    signal,
+  }: {
+    ids: ProcessInstanceEntity['id'][];
+    signal?: AbortSignal;
+  },
+  options?: Parameters<typeof requestAndParse>[1],
+) {
   return fetchProcessInstances({
     payload: {
       pageSize: ids.length,
@@ -70,6 +78,7 @@ async function fetchProcessInstancesByIds({
       },
     },
     signal,
+    options,
   });
 }
 

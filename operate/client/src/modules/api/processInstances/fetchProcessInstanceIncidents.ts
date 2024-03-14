@@ -55,10 +55,14 @@ type ProcessInstanceIncidentsDto = {
 
 const fetchProcessInstanceIncidents = async (
   processInstanceId: ProcessInstanceEntity['id'],
+  options?: Parameters<typeof requestAndParse>[1],
 ) => {
-  return requestAndParse<ProcessInstanceIncidentsDto>({
-    url: `/api/process-instances/${processInstanceId}/incidents`,
-  });
+  return requestAndParse<ProcessInstanceIncidentsDto>(
+    {
+      url: `/api/process-instances/${processInstanceId}/incidents`,
+    },
+    options,
+  );
 };
 
 export {fetchProcessInstanceIncidents};
