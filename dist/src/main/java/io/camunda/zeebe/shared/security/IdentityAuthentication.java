@@ -9,6 +9,7 @@ package io.camunda.zeebe.shared.security;
 
 import io.camunda.identity.sdk.authentication.AccessToken;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,7 +19,7 @@ public record IdentityAuthentication(AccessToken token, List<String> tenantIds)
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return null;
+    return Collections.emptyList();
   }
 
   @Override
