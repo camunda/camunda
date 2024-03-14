@@ -7,8 +7,7 @@
 
 import {CurrentUser} from 'modules/types';
 import {Tag} from './styled';
-
-import {CircleDash, UserAvatar, UserAvatarFilled} from '@carbon/icons-react';
+import {CircleDash, UserAvatar, UserAvatarFilled} from '@carbon/react/icons';
 
 type Props = {
   currentUser: CurrentUser;

@@ -313,6 +313,9 @@ declare module '@carbon/react/icons' {
   export const RadioButtonChecked: Icon;
   export const Share: Icon;
   export const Filter: Icon;
+  export const CircleDash: Icon;
+  export const UserAvatar: Icon;
+  export const UserAvatarFilled: Icon;
 }
 
 declare module '@carbon/elements' {
