@@ -21,10 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
 import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -47,16 +44,20 @@ public class BpmnCompensationSubscriptionBehaviour {
   private final CompensationSubscriptionState compensationSubscriptionState;
   private final ProcessState processState;
   private final TypedCommandWriter commandWriter;
-  private final ElementInstanceState elementInstanceState;
+  private final BpmnStateBehavior stateBehavior;
 
   public BpmnCompensationSubscriptionBehaviour(
-      final MutableProcessingState processingState, final Writers writers) {
-    keyGenerator = processingState.getKeyGenerator();
+      final KeyGenerator keyGenerator,
+      final ProcessState processState,
+      final CompensationSubscriptionState compensationSubscriptionState,
+      final Writers writers,
+      final BpmnStateBehavior stateBehavior) {
+    this.keyGenerator = keyGenerator;
+    this.processState = processState;
+    this.compensationSubscriptionState = compensationSubscriptionState;
     stateWriter = writers.state();
-    compensationSubscriptionState = processingState.getCompensationSubscriptionState();
-    processState = processingState.getProcessState();
     commandWriter = writers.command();
-    elementInstanceState = processingState.getElementInstanceState();
+    this.stateBehavior = stateBehavior;
   }
 
   public void createCompensationSubscription(
@@ -132,9 +133,8 @@ public class BpmnCompensationSubscriptionBehaviour {
 
     if (isElementInsideEventSubprocess(element)) {
       // inside an event subprocess, trigger the compensation also from outside the event subprocess
-      final ElementInstance flowScopeInstance =
-          elementInstanceState.getInstance(context.getFlowScopeKey());
-      final long eventSubprocessScopeKey = flowScopeInstance.getParentKey();
+      final BpmnElementContext flowScopeContext = stateBehavior.getFlowScopeContext(context);
+      final long eventSubprocessScopeKey = flowScopeContext.getFlowScopeKey();
 
       if (hasCompensationSubscriptionInScope(subscriptions, eventSubprocessScopeKey)) {
         triggerCompensationFromTopToBottom(context, subscriptions, eventSubprocessScopeKey);
@@ -405,7 +405,7 @@ public class BpmnCompensationSubscriptionBehaviour {
 
   private void completeCompensationThrowEvent(final long throwEventInstanceKey) {
 
-    Optional.ofNullable(elementInstanceState.getInstance(throwEventInstanceKey))
+    Optional.ofNullable(stateBehavior.getElementInstance(throwEventInstanceKey))
         .ifPresent(
             compensationThrowEvent -> {
               final long elementInstanceKey = compensationThrowEvent.getKey();
