@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.camunda.zeebe.shared.management.ConditionalOnManagementContext.OnManagementContextCondition;
+import static io.camunda.zeebe.shared.management.ConditionalOnManagementContext.OnManagementContextCondition.MANAGEMENT_ONLY_BEAN_NAME;
+
+import io.camunda.zeebe.shared.management.ConditionalOnNonManagementContext.OnNonManagementContextCondition;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -20,37 +22,29 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-/**
- * This conditional annotation only works for {@link
- * org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration} factories
- * registered in {@code
- * /META-INF/spring/org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration.imports}.
- */
+/** This annotation provides the inverse of {@link ConditionalOnManagementContext} */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@Conditional(OnManagementContextCondition.class)
-public @interface ConditionalOnManagementContext {
-
+@Conditional(OnNonManagementContextCondition.class)
+public @interface ConditionalOnNonManagementContext {
   /**
-   * A condition which matches if the management context is the same as the base server context or
-   * if it's a different one, and we're currently configuring it.
+   * A condition which matches if the management context is disabled or the same as the base server
+   * context. If the management context is on a different server, it will match iff for the absence
+   * of a management specific bean on the current context.
    */
-  final class OnManagementContextCondition extends SpringBootCondition {
-
-    static final String MANAGEMENT_ONLY_BEAN_NAME = "ManagementContextWebServerFactory";
+  final class OnNonManagementContextCondition extends SpringBootCondition {
 
     @Override
     public ConditionOutcome getMatchOutcome(
         final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final var managementPortType = ManagementPortType.get(context.getEnvironment());
       return switch (managementPortType) {
-        case DISABLED -> ConditionOutcome.noMatch("no management application defined");
-        case SAME -> ConditionOutcome.match();
+        case DISABLED, SAME -> ConditionOutcome.match();
         case DIFFERENT ->
             context.getRegistry().containsBeanDefinition(MANAGEMENT_ONLY_BEAN_NAME)
-                ? ConditionOutcome.match()
-                : ConditionOutcome.noMatch("not the management context");
+                ? ConditionOutcome.noMatch("management context")
+                : ConditionOutcome.match();
       };
     }
   }
