@@ -363,8 +363,8 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("%s.%s.zeebe.camunda.io:443", clusterId, region));
+      assertThat(clientConfiguration.getGrpcAddress().toString())
+          .isEqualTo(String.format("zb://%s.%s.zeebe.camunda.io:443", clusterId, region));
     }
   }
 
@@ -383,8 +383,8 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("%s.bru-2.zeebe.camunda.io:443", clusterId));
+      assertThat(clientConfiguration.getGrpcAddress().toString())
+          .isEqualTo(String.format("zb://%s.bru-2.zeebe.camunda.io:443", clusterId));
     }
   }
 
@@ -425,8 +425,8 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", region));
+      assertThat(clientConfiguration.getGrpcAddress().toString())
+          .isEqualTo(String.format("zb://clusterId.%s.zeebe.camunda.io:443", region));
     }
   }
 
@@ -445,8 +445,8 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", defaultRegion));
+      assertThat(clientConfiguration.getGrpcAddress().toString())
+          .isEqualTo(String.format("zb://clusterId.%s.zeebe.camunda.io:443", defaultRegion));
     }
   }
 
