@@ -70,6 +70,9 @@ jobs:
 
       - name: Start OpenSearch
         uses: ./.github/actions/compose
+        # There is a glitch with the 2.9.0 OS image. It will boot properly but it will have an exit
+        # code of 1. The statement below avoids the pipeline becoming red due to that
+        continue-on-error: ${{ matrix.osVersion == '2.9.0' }}
         with:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
           project_name: opensearch
