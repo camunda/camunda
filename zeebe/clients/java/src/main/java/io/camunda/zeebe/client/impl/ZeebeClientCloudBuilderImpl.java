@@ -122,12 +122,6 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientBuilder gatewayRestApiPort(final int restApiPort) {
-    innerBuilder.gatewayRestApiPort(restApiPort);
-    return this;
-  }
-
-  @Override
   public ZeebeClientBuilder restAddress(final URI restAddress) {
     innerBuilder.restAddress(restAddress);
     return this;
@@ -136,12 +130,6 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
     innerBuilder.grpcAddress(grpcAddress);
-    return this;
-  }
-
-  @Override
-  public ZeebeClientBuilder defaultCommunicationApi(final String communicationApi) {
-    innerBuilder.defaultCommunicationApi(communicationApi);
     return this;
   }
 

@@ -33,7 +33,6 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.DataSizeUtil;
@@ -62,11 +61,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final URI DEFAULT_REST_ADDRESS;
   public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
   public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
-  public static final String GATEWAY_REST_API_PORT_VAR = "ZEEBE_GATEWAY_REST_API_PORT";
-  public static final int DEFAULT_GATEWAY_REST_API_PORT = 8080;
-  public static final String DEFAULT_COMMUNICATION_API =
-      CommandWithCommunicationApiStep.DEFAULT_COMMUNICATION_API;
-  public static final String DEFAULT_COMMUNICATION_API_VAR = "ZEEBE_DEFAULT_COMMUNICATION_API";
   public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
@@ -89,8 +83,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private URI restAddress = DEFAULT_REST_ADDRESS;
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
-  private String defaultCommunicationApi = DEFAULT_COMMUNICATION_API;
-  private int gatewayRestApiPort = DEFAULT_GATEWAY_REST_API_PORT;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
@@ -127,21 +119,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public URI getGrpcAddress() {
     return grpcAddress;
-  }
-
-  @Override
-  public int getGatewayRestApiPort() {
-    return gatewayRestApiPort;
-  }
-
-  @Override
-  public String getDefaultCommunicationApi() {
-    return defaultCommunicationApi;
-  }
-
-  @Override
-  public boolean useRestApi() {
-    return CommandWithCommunicationApiStep.REST.equals(defaultCommunicationApi);
   }
 
   @Override
@@ -267,13 +244,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
     }
-    if (properties.containsKey(ClientProperties.GATEWAY_REST_API_PORT)) {
-      gatewayRestApiPort(
-          Integer.parseInt(properties.getProperty(ClientProperties.GATEWAY_REST_API_PORT)));
-    }
-    if (properties.containsKey(ClientProperties.DEFAULT_COMMUNICATION_API)) {
-      defaultCommunicationApi(properties.getProperty(ClientProperties.DEFAULT_COMMUNICATION_API));
-    }
     if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
       defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
     }
@@ -362,18 +332,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
-  public ZeebeClientBuilder gatewayRestApiPort(final int restApiPort) {
-    if (restApiPort < 0 || restApiPort > 65535) {
-      throw new IllegalArgumentException(
-          String.format(
-              "The REST API port must be a number between 0 and 65535, but was '%d'.",
-              restApiPort));
-    }
-    gatewayRestApiPort = restApiPort;
-    return this;
-  }
-
-  @Override
   public ZeebeClientBuilder restAddress(final URI restAddress) {
     this.restAddress = restAddress;
     return this;
@@ -383,18 +341,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
     this.grpcAddress = grpcAddress;
     grpcAddressUsed = true;
-    return this;
-  }
-
-  @Override
-  public ZeebeClientBuilder defaultCommunicationApi(final String communicationApi) {
-    if (!CommandWithCommunicationApiStep.AVAILABLE_COMMUNICATION_API.contains(communicationApi)) {
-      throw new IllegalArgumentException(
-          String.format(
-              "The default communication API must be one of %s but was '%s'.",
-              CommandWithCommunicationApiStep.AVAILABLE_COMMUNICATION_API, communicationApi));
-    }
-    defaultCommunicationApi = communicationApi;
     return this;
   }
 
@@ -578,14 +524,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       restAddress(restAddr);
     }
 
-    if (Environment.system().isDefined(GATEWAY_REST_API_PORT_VAR)) {
-      gatewayRestApiPort(Integer.parseInt(Environment.system().get(GATEWAY_REST_API_PORT_VAR)));
-    }
-
-    if (Environment.system().isDefined(DEFAULT_COMMUNICATION_API_VAR)) {
-      defaultCommunicationApi(Environment.system().get(DEFAULT_COMMUNICATION_API_VAR));
-    }
-
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
       defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
     }
@@ -614,7 +552,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "gatewayAddress", gatewayAddress);
     appendProperty(sb, "grpcAddress", grpcAddress);
     appendProperty(sb, "restAddress", restAddress);
-    appendProperty(sb, "gatewayRestApiPort", gatewayRestApiPort);
     appendProperty(sb, "defaultTenantId", defaultTenantId);
     appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
