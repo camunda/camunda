@@ -22,8 +22,10 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -47,68 +49,87 @@ public class MoveTokenHandler {
       final Long processInstanceKey,
       final Modification modification) {
 
-    final int newTokensCount = calculateNewTokensCount(modification);
+    final int newTokensCount = calculateNewTokensCount(modification, processInstanceKey);
 
     if (newTokensCount > 0) {
       final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep =
-          addTokensToNewNodes(currentStep, modification, newTokensCount);
+          activateNewNodes(currentStep, modification, newTokensCount);
+
+      moveGlobalVariables(nextStep, modification);
 
       return cancelTokensOnOriginalNodes(nextStep, processInstanceKey, modification);
     } else {
       logger.info(
-          "Skipping MOVE_TOKEN processing for process instance {} since newTokensCount is {}",
+          "Skipping MOVE_TOKEN processing for flowNode {} and process instance {} since newTokensCount is {}",
+          modification.getFromFlowNodeId(),
           processInstanceKey,
           newTokensCount);
       return null;
     }
   }
 
-  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 addTokensToNewNodes(
+  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 activateNewNodes(
       final ModifyProcessInstanceCommandStep1 currentStep,
       final Modification modification,
       final int newTokensCount) {
     final String toFlowNodeId = modification.getToFlowNodeId();
     // flowNodeId => List of variables (Map)
     //  flowNodeId => [ { "key": "value" }, {"key for another flowNode with the same id": "value"} ]
-    Map<String, List<Map<String, Object>>> flowNodeId2variables =
-        modification.variablesForAddToken();
-    if (flowNodeId2variables == null) {
-      flowNodeId2variables = new HashMap<>();
-    }
-    // 1. Add tokens
-    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep = null;
+    final Map<String, List<Map<String, Object>>> variablesToMoveByFlownodeId =
+        modification.variablesForAddToken() == null
+            ? new HashMap<>()
+            : modification.variablesForAddToken();
+
     // Create flowNodes with variables
-    final List<Map<String, Object>> toFlowNodeIdVariables =
-        flowNodeId2variables.getOrDefault(toFlowNodeId, List.of());
+    final Queue<Map<String, Object>> activatedNodeVariables =
+        new LinkedList<>(variablesToMoveByFlownodeId.getOrDefault(toFlowNodeId, List.of()));
+
     logger.debug(
         "Move [Add token to flowNodeId: {} with variables: {} ]",
         toFlowNodeId,
-        toFlowNodeIdVariables);
+        activatedNodeVariables);
+
+    if (newTokensCount > activatedNodeVariables.size()) {
+      logger.warn(
+          "There are {} variables to move but only {} elements to activate, some variables might be lost",
+          newTokensCount,
+          activatedNodeVariables.size());
+    }
+
+    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep = null;
+    // Activate new nodes and move variables
     for (int i = 0; i < newTokensCount; i++) {
-      if (nextStep == null) {
-        if (modification.getAncestorElementInstanceKey() != null) {
-          nextStep =
-              currentStep.activateElement(
-                  toFlowNodeId, modification.getAncestorElementInstanceKey());
-        } else {
-          nextStep = currentStep.activateElement(toFlowNodeId);
-        }
-      } else {
-        if (modification.getAncestorElementInstanceKey() != null) {
-          nextStep
-              .and()
-              .activateElement(toFlowNodeId, modification.getAncestorElementInstanceKey());
-        } else {
-          nextStep = nextStep.and().activateElement(toFlowNodeId);
-        }
+      if (nextStep != null) {
+        nextStep.and();
       }
-      if (i < toFlowNodeIdVariables.size()) {
-        nextStep = nextStep.withVariables(toFlowNodeIdVariables.get(i), toFlowNodeId);
+      if (modification.getAncestorElementInstanceKey() != null) {
+        nextStep =
+            currentStep.activateElement(toFlowNodeId, modification.getAncestorElementInstanceKey());
+      } else {
+        nextStep = currentStep.activateElement(toFlowNodeId);
+      }
+      if (activatedNodeVariables.peek() != null) {
+        nextStep = nextStep.withVariables(activatedNodeVariables.poll(), toFlowNodeId);
       }
     }
-    for (final String flowNodeId : flowNodeId2variables.keySet()) {
+
+    return nextStep;
+  }
+
+  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 moveGlobalVariables(
+      final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep,
+      final Modification modification) {
+    final String toFlowNodeId = modification.getToFlowNodeId();
+
+    final Map<String, List<Map<String, Object>>> variablesToMoveByFlownodeId =
+        modification.variablesForAddToken() == null
+            ? new HashMap<>()
+            : modification.variablesForAddToken();
+
+    // Move remaining variables within process instance
+    for (final String flowNodeId : variablesToMoveByFlownodeId.keySet()) {
       if (!flowNodeId.equals(toFlowNodeId)) {
-        final List<Map<String, Object>> flowNodeVars = flowNodeId2variables.get(flowNodeId);
+        final List<Map<String, Object>> flowNodeVars = variablesToMoveByFlownodeId.get(flowNodeId);
         for (final Map<String, Object> vars : flowNodeVars) {
           nextStep.withVariables(vars, flowNodeId);
         }
@@ -144,11 +165,28 @@ public class MoveTokenHandler {
         nextStep.and(), flowNodeInstanceKeysToCancel);
   }
 
-  private int calculateNewTokensCount(final Modification modification) {
+  private int calculateNewTokensCount(
+      final Modification modification, final Long processInstanceKey) {
     Integer newTokensCount = modification.getNewTokensCount();
-    // Add least one token will be added
-    if (newTokensCount == null || newTokensCount < 1) {
-      newTokensCount = 1;
+
+    if (newTokensCount == null) {
+      if (modification.getFromFlowNodeId() != null) {
+        newTokensCount =
+            flowNodeInstanceReader
+                .getFlowNodeInstanceKeysByIdAndStates(
+                    processInstanceKey,
+                    modification.getFromFlowNodeId(),
+                    List.of(FlowNodeState.ACTIVE))
+                .size();
+      } else if (modification.getFromFlowNodeInstanceKey() != null) {
+        // If a flow node instance key was specified, assume that flow node is valid. Zeebe
+        // will correctly fail attempts to migrate off an invalid flow node
+        newTokensCount = 1;
+      } else {
+        logger.warn(
+            "MOVE_TOKEN attempted with no flowNodeId, flowNodeInstanceKey, or newTokenCount specified");
+        newTokensCount = 0;
+      }
     }
 
     logger.info("MOVE_TOKEN has a newTokensCount value of {}", newTokensCount);

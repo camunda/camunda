@@ -505,6 +505,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         List.of(
             new Modification()
                 .setModification(Modification.Type.MOVE_TOKEN)
+                .setNewTokensCount(1)
                 .setFromFlowNodeId("taskA")
                 .setToFlowNodeId("taskB"));
     tester.modifyProcessInstanceOperation(modifications).waitUntil().operationIsFailed();
