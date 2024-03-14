@@ -1816,24 +1816,14 @@ public class ProcessBuilderTest {
             .userTask("subProcessTask")
             .endEvent()
             .subProcessDone()
-            .endEvent("end")
+            .endEvent("throw")
+            .compensateEventDefinition()
+            .activityRef("subProcessTask")
             .done();
 
-    final UserTask userTask = modelInstance.getModelElementById("userTask");
-    final UserTaskBuilder userTaskBuilder = userTask.builder();
-
-    try {
-      userTaskBuilder
-          .boundaryEvent("boundary")
-          .compensateEventDefinition()
-          .activityRef("subProcessTask")
-          .done();
-      fail("should fail");
-    } catch (final BpmnModelException e) {
-      assertThat(e)
-          .hasMessageContaining(
-              "Activity with id 'subProcessTask' must be in the same scope as 'boundary'");
-    }
+    final CompensateEventDefinition eventDefinition =
+        assertAndGetSingleEventDefinition("throw", CompensateEventDefinition.class);
+    assertThat(eventDefinition.getActivity().getId()).isEqualTo("subProcessTask");
   }
 
   @Test

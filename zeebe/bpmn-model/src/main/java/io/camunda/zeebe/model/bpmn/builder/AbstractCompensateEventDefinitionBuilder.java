@@ -43,16 +43,6 @@ public abstract class AbstractCompensateEventDefinitionBuilder<
     if (activity == null) {
       throw new BpmnModelException("Activity with id '" + activityId + "' does not exist");
     }
-    final Event event = (Event) element.getParentElement();
-    if (activity.getParentElement() != event.getParentElement()) {
-      throw new BpmnModelException(
-          "Activity with id '"
-              + activityId
-              + "' must be in the same scope as '"
-              + event.getId()
-              + "'");
-    }
-
     element.setActivity(activity);
     return myself;
   }
