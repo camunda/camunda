@@ -296,7 +296,7 @@
    <rule ref="category/java/performance.xml/AvoidArrayLoops" />
    <rule ref="category/java/performance.xml/AvoidCalendarDateCreation" />
    <rule ref="category/java/performance.xml/AvoidFileStream" />
-   <rule ref="category/java/performance.xml/AvoidInstantiatingObjectsInLoops" />
+<!--   <rule ref="category/java/performance.xml/AvoidInstantiatingObjectsInLoops" />-->
   <rule ref="category/java/performance.xml/BigIntegerInstantiation"/>
    <rule ref="category/java/performance.xml/ConsecutiveAppendsShouldReuse" />
    <rule ref="category/java/performance.xml/ConsecutiveLiteralAppends" />
