@@ -53,7 +53,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class ReconfigurationTest {
   private final SingleThreadContext context = new SingleThreadContext("raft-%d");
-  private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory(context);
+  private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory();
   private final List<RaftServer> servers = new LinkedList<>();
 
   @AfterEach

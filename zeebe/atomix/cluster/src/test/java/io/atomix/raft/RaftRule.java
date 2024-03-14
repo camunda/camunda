@@ -137,7 +137,7 @@ public final class RaftRule extends ExternalResource {
     snapshots = new HashMap<>();
     nextId = 0;
     context = new SingleThreadContext("raft-test-messaging-%d");
-    protocolFactory = new TestRaftProtocolFactory(context);
+    protocolFactory = new TestRaftProtocolFactory();
 
     if (nodeCount > 0) {
       createServers(nodeCount, configurator);
