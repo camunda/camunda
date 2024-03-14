@@ -6,11 +6,19 @@
  */
 
 import {InlineLoadingStatus, Stack} from '@carbon/react';
+import {ArrowRight} from '@carbon/icons-react';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useState} from 'react';
-import {Container, Title, Subtitle, ButtonRow} from './styled';
+import {
+  Container,
+  Content,
+  TitleWrapper,
+  Title,
+  Subtitle,
+  ButtonRow,
+} from './styled';
 import {useNavigate, useMatch, useLocation} from 'react-router-dom';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
@@ -114,11 +122,13 @@ const ProcessTile: React.FC<Props> = ({
 
   return (
     <Container {...props}>
-      <Stack data-testid="process-tile-content">
-        <Title>{displayName}</Title>
-        <Subtitle>
-          {displayName === bpmnProcessId ? '' : bpmnProcessId}
-        </Subtitle>
+      <Stack as={Content} data-testid="process-tile-content">
+        <Stack as={TitleWrapper}>
+          <Title>{displayName}</Title>
+          <Subtitle>
+            {displayName === bpmnProcessId ? '' : bpmnProcessId}
+          </Subtitle>
+        </Stack>
         <ButtonRow>
           <ul title="Process Attributes" aria-hidden={tags.length === 0}>
             {tags.map((type) => (
@@ -133,6 +143,8 @@ const ProcessTile: React.FC<Props> = ({
               type: 'button',
               kind: 'tertiary',
               size: 'sm',
+              className: 'startButton',
+              renderIcon: startEventFormId === null ? null : ArrowRight,
               id: isFirst ? 'main-content' : '',
               autoFocus: isFirst,
               disabled: isStartButtonDisabled,

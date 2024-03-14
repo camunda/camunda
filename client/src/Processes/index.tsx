@@ -5,16 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {Search, Stack, Link} from '@carbon/react';
+import {Search, Grid, Column, Stack, Link, Layer} from '@carbon/react';
 import {ProcessTile} from './ProcessTile';
 import {
+  SplitPane,
   Container,
   Content,
+  ProcessTilesContainerInner,
   SearchContainer,
-  ProcessesContainer,
+  SearchContainerInner,
+  SearchFieldWrapper,
+  ProcessTileWrapper,
+  ProcessTilesContainer,
   TileSkeleton,
   Aside,
-  MultiTenancyContainer,
   Dropdown,
 } from './styled';
 import debounce from 'lodash/debounce';
@@ -240,120 +244,155 @@ const Processes: React.FC = observer(() => {
     disabled: isInitialLoading,
   } as const;
 
+  const Filter = () => {
+    return (
+      <FilterDropdown
+        items={START_FORM_FILTER_OPTIONS}
+        selected={startFormFilter}
+        onChange={(value) =>
+          updateSearchParams(searchParams, {
+            name: 'hasStartForm',
+            value: value.searchParamValue ?? '',
+          })
+        }
+      />
+    );
+  };
+
   return (
-    <Container
-      className="cds--content"
-      $isSingleColumn={!IS_PROCESS_INSTANCES_ENABLED}
-    >
-      <NewProcessInstanceTasksPolling />
-      <Stack as={Content} gap={6}>
-        {isMultiTenancyVisible ? (
-          <MultiTenancyContainer>
-            <Search {...processSearchProps} />
-            <FilterDropdown
-              items={START_FORM_FILTER_OPTIONS}
-              selected={startFormFilter}
-              onChange={(value) =>
-                updateSearchParams(searchParams, {
-                  name: 'hasStartForm',
-                  value: value.searchParamValue ?? '',
-                })
-              }
-            />
-            <MultiTenancyDropdown
-              initialSelectedItem={currentUser?.tenants.find(({id}) =>
-                [
-                  searchParams.get('tenantId') ?? undefined,
-                  getStateLocally('tenantId'),
-                ]
-                  .filter((tenantId) => tenantId !== undefined)
-                  .includes(id),
-              )}
-              onChange={(tenant) => {
-                updateSearchParams(searchParams, {
-                  name: 'tenantId',
-                  value: tenant,
-                });
-                storeStateLocally('tenantId', tenant);
-              }}
-            />
-          </MultiTenancyContainer>
-        ) : (
+    <SplitPane className="cds--content">
+      <Container>
+        <NewProcessInstanceTasksPolling />
+        <Stack as={Content} gap={2}>
           <SearchContainer>
-            <Search {...processSearchProps} />
-            <FilterDropdown
-              items={START_FORM_FILTER_OPTIONS}
-              selected={startFormFilter}
-              onChange={(value) =>
-                updateSearchParams(searchParams, {
-                  name: 'hasStartForm',
-                  value: value.searchParamValue ?? '',
-                })
-              }
-            />
+            <Stack as={SearchContainerInner} gap={6}>
+              <Grid narrow>
+                <Column sm={4} md={8} lg={16}>
+                  <Stack gap={4}>
+                    <h1>Processes</h1>
+                    <p>
+                      Browse and run processes published by your organization.
+                    </p>
+                  </Stack>
+                </Column>
+              </Grid>
+              {isMultiTenancyVisible ? (
+                <Grid narrow>
+                  <Column as={SearchFieldWrapper} sm={4} md={8} lg={10}>
+                    <Search {...processSearchProps} />
+                  </Column>
+                  <Column as={SearchFieldWrapper} sm={2} md={4} lg={3}>
+                    <Filter />
+                  </Column>
+                  <Column as={SearchFieldWrapper} sm={2} md={4} lg={2}>
+                    <MultiTenancyDropdown
+                      initialSelectedItem={currentUser?.tenants.find(({id}) =>
+                        [
+                          searchParams.get('tenantId') ?? undefined,
+                          getStateLocally('tenantId'),
+                        ]
+                          .filter((tenantId) => tenantId !== undefined)
+                          .includes(id),
+                      )}
+                      onChange={(tenant) => {
+                        updateSearchParams(searchParams, {
+                          name: 'tenantId',
+                          value: tenant,
+                        });
+                        storeStateLocally('tenantId', tenant);
+                      }}
+                    />
+                  </Column>
+                </Grid>
+              ) : (
+                <Grid narrow>
+                  <Column as={SearchFieldWrapper} sm={4} md={5} lg={10}>
+                    <Search {...processSearchProps} />
+                  </Column>
+                  <Column as={SearchFieldWrapper} sm={4} md={3} lg={5}>
+                    <Filter />
+                  </Column>
+                </Grid>
+              )}
+            </Stack>
           </SearchContainer>
-        )}
-        {!isInitialLoading && processes.length === 0 ? (
-          <C3EmptyState
-            icon={
-              isFiltered ? undefined : {path: EmptyMessageImage, altText: ''}
-            }
-            heading={
-              isFiltered
-                ? 'We could not find any process with that name'
-                : 'No published processes yet'
-            }
-            description={
-              <span data-testid="empty-message">
-                Contact your process administrator to publish processes or learn
-                how to publish processes{' '}
-                <Link
-                  href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  inline
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'processes-empty-message-link-clicked',
-                    });
-                  }}
-                >
-                  here
-                </Link>
-              </span>
-            }
-          />
-        ) : (
-          <ProcessesContainer>
-            {isInitialLoading
-              ? Array.from({length: 5}).map((_, index) => (
-                  <TileSkeleton key={index} data-testid="process-skeleton" />
-                ))
-              : processes.map((process, idx) => (
-                  <ProcessTile
-                    process={process}
-                    key={process.id}
-                    isFirst={idx === 0}
-                    isStartButtonDisabled={
-                      (instance !== null &&
-                        instance.id !== process.bpmnProcessId) ||
-                      !hasPermission
-                    }
-                    data-testid="process-tile"
-                    tenantId={selectedTenantId}
-                  />
-                ))}
-          </ProcessesContainer>
-        )}
-      </Stack>
+
+          <ProcessTilesContainer>
+            <ProcessTilesContainerInner>
+              {!isInitialLoading && processes.length === 0 ? (
+                <C3EmptyState
+                  icon={
+                    isFiltered
+                      ? undefined
+                      : {path: EmptyMessageImage, altText: ''}
+                  }
+                  heading={
+                    isFiltered
+                      ? 'We could not find any process with that name'
+                      : 'No published processes yet'
+                  }
+                  description={
+                    <span data-testid="empty-message">
+                      Contact your process administrator to publish processes or
+                      learn how to publish processes{' '}
+                      <Link
+                        href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        inline
+                        onClick={() => {
+                          tracking.track({
+                            eventName: 'processes-empty-message-link-clicked',
+                          });
+                        }}
+                      >
+                        here
+                      </Link>
+                    </span>
+                  }
+                />
+              ) : (
+                <Grid narrow as={Layer}>
+                  {isInitialLoading
+                    ? Array.from({length: 5}).map((_, index) => (
+                        <Column as={ProcessTileWrapper} sm={4} md={4} lg={5}>
+                          <TileSkeleton
+                            key={index}
+                            data-testid="process-skeleton"
+                          />
+                        </Column>
+                      ))
+                    : processes.map((process, idx) => (
+                        <Column as={ProcessTileWrapper} sm={4} md={4} lg={5}>
+                          <ProcessTile
+                            process={process}
+                            key={process.id}
+                            isFirst={idx === 0}
+                            isStartButtonDisabled={
+                              (instance !== null &&
+                                instance.id !== process.bpmnProcessId) ||
+                              !hasPermission
+                            }
+                            data-testid="process-tile"
+                            tenantId={selectedTenantId}
+                          />
+                        </Column>
+                      ))}
+                </Grid>
+              )}
+            </ProcessTilesContainerInner>
+          </ProcessTilesContainer>
+        </Stack>
+      </Container>
 
       {IS_PROCESS_INSTANCES_ENABLED ? (
         <Aside>
           <History />
         </Aside>
       ) : null}
+
       <FirstTimeModal />
-    </Container>
+    </SplitPane>
   );
 });
 

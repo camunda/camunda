@@ -10,8 +10,17 @@ import styled, {css} from 'styled-components';
 
 const Container = styled.div`
   width: 100%;
+  height: 100%;
   padding: var(--cds-spacing-05);
   background: var(--cds-layer);
+`;
+
+const Content = styled.div`
+  height: 100%;
+`;
+
+const TitleWrapper = styled.div`
+  height: fit-content;
 `;
 
 const textOverflowEllipsis = css`
@@ -24,7 +33,7 @@ const textOverflowEllipsis = css`
 const Title = styled.h4`
   ${({theme}) => css`
     color: var(--cds-text-primary);
-    ${theme.productiveHeading03};
+    ${theme.productiveHeading02};
     ${textOverflowEllipsis};
   `}
 `;
@@ -42,8 +51,14 @@ const Subtitle = styled.span`
 const ButtonRow = styled.div`
   display: flex;
   flex-direction: row-reverse;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--cds-spacing-05);
+  align-content: end;
+
+  & .startButton {
+    margin-right: auto;
+  }
 `;
 
-export {Container, Title, Subtitle, ButtonRow};
+export {Container, Content, TitleWrapper, Title, Subtitle, ButtonRow};
