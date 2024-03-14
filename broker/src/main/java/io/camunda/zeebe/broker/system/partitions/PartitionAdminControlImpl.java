@@ -91,6 +91,11 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   }
 
   @Override
+  public boolean softPauseExporting() throws IOException {
+    return partitionProcessingStateSupplier.get().softPauseExporting();
+  }
+
+  @Override
   public boolean resumeExporting() throws IOException {
     return partitionProcessingStateSupplier.get().resumeExporting();
   }
