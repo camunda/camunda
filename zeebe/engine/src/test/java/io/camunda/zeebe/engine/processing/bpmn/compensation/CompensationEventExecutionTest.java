@@ -2294,6 +2294,41 @@ public class CompensationEventExecutionTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldDeleteSubscriptionInTerminatedSubprocessMultiInstanceScope() {
+    // given
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-multiinstance-subprocess-terminated.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeJobs(processInstanceKey, "A", 2);
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.CREATED, "undoA"),
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "undoA"),
+            tuple(CompensationSubscriptionIntent.CREATED, "undoA"),
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "undoA"),
+            tuple(CompensationSubscriptionIntent.DELETED, "undoA"),
+            tuple(CompensationSubscriptionIntent.DELETED, "undoA"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
