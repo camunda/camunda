@@ -106,7 +106,7 @@ public final class CommandDistributionBehavior {
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
-              partition, command.getValueType(), intent, distributionKey, commandValue);
+              partition, valueType, intent, distributionKey, commandValue);
           return true;
         });
   }
