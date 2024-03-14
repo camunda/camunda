@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
@@ -45,10 +46,13 @@ public interface ZeebeClientBuilder {
       final boolean applyEnvironmentVariableOverrides);
 
   /**
+   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
+   *     ZeebeClientBuilder#grpcAddress(URI)}
    * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .
    */
+  @Deprecated
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
@@ -62,6 +66,18 @@ public interface ZeebeClientBuilder {
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   ZeebeClientBuilder gatewayRestApiPort(int restApiPort);
+
+  /**
+   * @param restAddress the REST API address of a gateway that the client can connect to. The
+   *     default value is {@code 0.0.0.0:8080}.
+   */
+  ZeebeClientBuilder restAddress(URI restAddress);
+
+  /**
+   * @param grpcAddress the gRPC address of a gateway that the client can connect to. The default
+   *     value is {@code 0.0.0.0:26500}.
+   */
+  ZeebeClientBuilder grpcAddress(URI grpcAddress);
 
   /**
    * <strong>Experimental: This method is under development, and as such using it may have no effect
