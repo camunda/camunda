@@ -44,16 +44,6 @@ public final class ClientProperties {
   public static final String GRPC_ADDRESS = "zeebe.client.gateway.grpc.address";
 
   /**
-   * @see ZeebeClientBuilder#gatewayRestApiPort(int)
-   */
-  public static final String GATEWAY_REST_API_PORT = "zeebe.client.gateway.restApi.port";
-
-  /**
-   * @see ZeebeClientBuilder#defaultCommunicationApi(String)
-   */
-  public static final String DEFAULT_COMMUNICATION_API = "zeebe.client.communicationApi";
-
-  /**
    * @see ZeebeClientBuilder#defaultTenantId(String)
    */
   public static final String DEFAULT_TENANT_ID = "zeebe.client.tenantId";
