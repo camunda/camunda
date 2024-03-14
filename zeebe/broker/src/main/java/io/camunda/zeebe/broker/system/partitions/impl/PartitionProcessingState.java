@@ -10,14 +10,20 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 import io.atomix.raft.partition.RaftPartition;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class PartitionProcessingState {
 
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
   private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
+  private static final String PAUSED = "paused";
+  private static final String SOFT_PAUSED = "softPaused";
+  private static final String EXPORTING = "";
   private boolean isProcessingPaused;
-  private boolean isExportingPaused;
+  private String exporterState;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
 
@@ -69,35 +75,61 @@ public class PartitionProcessingState {
   }
 
   public boolean isExportingPaused() {
-    return isExportingPaused;
+    return exporterState.equals(PAUSED);
   }
 
   @SuppressWarnings({"squid:S899"})
-  /** Returns true if exporting is paused */
-  public boolean pauseExporting() throws IOException {
-    final File persistedExporterPauseState =
-        getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
-    persistedExporterPauseState.createNewFile();
-    if (persistedExporterPauseState.exists()) {
-      isExportingPaused = true;
-      return true;
+  /** Returns true if exporting is paused. This method overrides the effects of soft pause. */
+  public boolean pauseExporting() {
+    try {
+      setPersistedExporterState(PAUSED);
+    } catch (final IOException e) {
+      return false;
     }
-    return false;
+    return true;
   }
 
-  /** Returns true if exporting is resumed */
-  public boolean resumeExporting() throws IOException {
+  /** Returns true if soft exporting is paused. This method overrides the effects of hard pause. */
+  public boolean softPauseExporting() {
+    try {
+      setPersistedExporterState(SOFT_PAUSED);
+    } catch (final IOException e) {
+      return false;
+    }
+    return true;
+  }
+
+  /** Returns true if exporting is resumed. This method resumes both soft and "hard" exporting. */
+  public boolean resumeExporting() {
+    try {
+      setPersistedExporterState(EXPORTING);
+    } catch (final IOException e) {
+      return false;
+    }
+    return true;
+  }
+
+  void setPersistedExporterState(final String state) throws IOException {
     final File persistedExporterPauseState =
         getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
-    Files.deleteIfExists(persistedExporterPauseState.toPath());
-    if (!persistedExporterPauseState.exists()) {
-      isExportingPaused = false;
-      return true;
-    }
-    return false;
+    Files.write(persistedExporterPauseState.toPath(), Arrays.asList(state), StandardCharsets.UTF_8);
+    exporterState = state;
   }
 
   private void initExportingState() {
-    isExportingPaused = getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists();
+    Stream<String> stream = null;
+    try {
+      if (!getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists()) {
+        setPersistedExporterState(EXPORTING);
+      } else {
+        stream =
+            Files.lines(getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
+        exporterState = stream.findFirst().get();
+        stream.close();
+      }
+    } catch (final IOException e) {
+      // exporting is the default state
+      exporterState = EXPORTING;
+    }
   }
 }
