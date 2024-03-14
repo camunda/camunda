@@ -400,7 +400,7 @@ public final class DbJobState implements JobState, MutableJobState {
   boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
-      LOG.error("Expected to find job with key {}, but no job found", jobKey);
+      LOG.warn("Expected to find job with key {}, but no job found", jobKey);
       return true; // we want to continue with the iteration
     }
     return callback.test(jobKey, job);
