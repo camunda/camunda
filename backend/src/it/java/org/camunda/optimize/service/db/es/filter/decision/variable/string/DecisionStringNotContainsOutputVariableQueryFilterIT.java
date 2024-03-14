@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.junit.jupiter.api.Tag;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,10 +18,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringOutputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.STRING_OUTPUT_ID;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionStringNotContainsOutputVariableQueryFilterIT
   extends AbstractDecisionStringNotContainsVariableQueryFilterIT {
 

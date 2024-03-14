@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.db.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 import static java.lang.Double.parseDouble;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN_EQUALS;
@@ -37,6 +39,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT {
 
   @Test

@@ -147,7 +147,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenAllFlowNodeInstancesHaveFinished() {
     // given
     final ProcessInstanceEngineDto processInstance =
@@ -176,7 +175,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenFlowNodeDurationIsLong() {
     // given
     final ProcessInstanceEngineDto processInstance =
@@ -206,7 +204,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenAllFlowNodesHaveTheSameName() {
     // given
     final ProcessInstanceEngineDto processInstance =
@@ -236,7 +233,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenFlowNodesHaveNoNames() {
     // given
     final ProcessInstanceEngineDto processInstance = deployAndStartSimpleUserTaskProcess();
@@ -297,7 +293,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenProcessIsLooping() {
     // given
     final ProcessInstanceEngineDto processInstance = deployAndStartLoopingProcess();
@@ -338,11 +333,10 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                     // splitting gateway loops in the process and that's why its total duration
                     // equates to 2
                     SPLITTING_GATEWAY_ID,
-                        new FlowNodeTotalDurationDataDto(SPLITTING_GATEWAY_ID, 2)));
+                    new FlowNodeTotalDurationDataDto(SPLITTING_GATEWAY_ID, 2)));
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForDefinitionWithDifferentVersions() {
     // given
     final ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleUserTaskProcess();
@@ -380,7 +374,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenReportHasTwoDefinitions() {
     // given
     final ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleUserTaskProcess();
@@ -402,7 +395,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
             processInstance1.getProcessDefinitionKey(), processInstance2.getProcessDefinitionKey());
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
         evaluationResultWithUserTask =
-            evaluateRawReportWithDefaultPagination(rawDataReportWithTwoDefinitions);
+        evaluateRawReportWithDefaultPagination(rawDataReportWithTwoDefinitions);
 
     // then
     assertBasicResultDataForMultiDefinitionReport(
@@ -424,7 +417,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getNumberOfUserTasksForProcessInstance() {
     // given
     final ProcessInstanceEngineDto processInstanceWithUserTask =
@@ -438,12 +430,12 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     final ProcessReportDataDto reportDataWithUserTask = createReport(processInstanceWithUserTask);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
         evaluationResultWithUserTask =
-            evaluateRawReportWithDefaultPagination(reportDataWithUserTask);
+        evaluateRawReportWithDefaultPagination(reportDataWithUserTask);
     final ProcessReportDataDto reportDataWithoutUserTask =
         createReport(processInstanceWithoutUserTask);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
         evaluationResultWithoutUserTask =
-            evaluateRawReportWithDefaultPagination(reportDataWithoutUserTask);
+        evaluateRawReportWithDefaultPagination(reportDataWithoutUserTask);
 
     // then
     assertThat(evaluationResultWithUserTask.getResult().getData())
@@ -682,7 +674,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCustomOrderOnProcessInstanceVariableIsApplied() {
     // given
     final ProcessInstanceEngineDto processInstanceDto1 =
@@ -747,7 +738,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variablesOfOneProcessInstanceAreAddedToOther() {
     // given
     final Map<String, Object> variables = new HashMap<>();
@@ -791,7 +781,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void
-      variablesOfOneProcessInstanceAreAddedToOtherIncludingVariablesFromInstancesNotOnPage() {
+  variablesOfOneProcessInstanceAreAddedToOtherIncludingVariablesFromInstancesNotOnPage() {
     // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("varName1", "value1");
@@ -861,7 +851,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void allValuesOfListVariablesAreInResult() {
     // given
     final VariableDto listVariable =
@@ -889,7 +878,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void objectVariable_placeholderForObjectAndPropertyVariablesAreIncluded() {
     // given
     final Map<String, Object> objectVar = new HashMap<>();
@@ -1178,7 +1166,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variableFilterInReport() {
     // given
     final Map<String, Object> variables = new HashMap<>();
@@ -1210,7 +1197,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void flowNodeFilterInReport() {
     // given
     final Map<String, Object> variables = new HashMap<>();
@@ -1402,7 +1388,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void addNewVariablesToIncludedColumnsByDefault() {
     // given
     final ProcessInstanceEngineDto processInstanceDto =
@@ -1432,20 +1417,20 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // then the new vars are added in alphabetical order to the included columns
     assertThat(
-            evaluationResult
-                .getReportDefinition()
-                .getData()
-                .getConfiguration()
-                .getTableColumns()
-                .getExcludedColumns())
+        evaluationResult
+            .getReportDefinition()
+            .getData()
+            .getConfiguration()
+            .getTableColumns()
+            .getExcludedColumns())
         .contains(VARIABLE_PREFIX + "existingExcludedVar");
     assertThat(
-            evaluationResult
-                .getReportDefinition()
-                .getData()
-                .getConfiguration()
-                .getTableColumns()
-                .getIncludedColumns())
+        evaluationResult
+            .getReportDefinition()
+            .getData()
+            .getConfiguration()
+            .getTableColumns()
+            .getIncludedColumns())
         .contains(
             VARIABLE_PREFIX + "aNewVar",
             VARIABLE_PREFIX + "anotherNewVar",
@@ -1453,7 +1438,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void addNewVariablesToExcludedColumns() {
     // given
     final ProcessInstanceEngineDto processInstanceDto =
@@ -1483,20 +1467,20 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // then the new vars are added in alphabetical order to the excluded columns
     assertThat(
-            evaluationResult
-                .getReportDefinition()
-                .getData()
-                .getConfiguration()
-                .getTableColumns()
-                .getIncludedColumns())
+        evaluationResult
+            .getReportDefinition()
+            .getData()
+            .getConfiguration()
+            .getTableColumns()
+            .getIncludedColumns())
         .contains(VARIABLE_PREFIX + "existingIncludedVar");
     assertThat(
-            evaluationResult
-                .getReportDefinition()
-                .getData()
-                .getConfiguration()
-                .getTableColumns()
-                .getExcludedColumns())
+        evaluationResult
+            .getReportDefinition()
+            .getData()
+            .getConfiguration()
+            .getTableColumns()
+            .getExcludedColumns())
         .contains(
             VARIABLE_PREFIX + "aNewVar",
             VARIABLE_PREFIX + "anotherNewVar",
@@ -1829,16 +1813,17 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
-      evaluateSavedRawDataProcessReport(
-          final String reportId, final PaginationRequestDto paginationDto) {
+  evaluateSavedRawDataProcessReport(
+      final String reportId, final PaginationRequestDto paginationDto) {
     return embeddedOptimizeExtension
         .getRequestExecutor()
         .buildEvaluateSavedReportRequest(reportId, paginationDto)
-        .execute(new TypeReference<>() {});
+        .execute(new TypeReference<>() {
+        });
   }
 
   private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
-      evaluateRawReportWithDefaultPagination(final ProcessReportDataDto reportData) {
+  evaluateRawReportWithDefaultPagination(final ProcessReportDataDto reportData) {
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(0);
     paginationDto.setLimit(20);
@@ -1942,8 +1927,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
-      createReportAndReturnEvaluationResult(
-          final ProcessInstanceEngineDto processInstanceEngineDto) {
+  createReportAndReturnEvaluationResult(
+      final ProcessInstanceEngineDto processInstanceEngineDto) {
     final ProcessReportDataDto reportData = createReport(processInstanceEngineDto);
     return evaluateRawReportWithDefaultPagination(reportData);
   }

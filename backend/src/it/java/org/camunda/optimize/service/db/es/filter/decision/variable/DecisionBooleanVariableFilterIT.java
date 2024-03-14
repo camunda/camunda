@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.db.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -24,10 +25,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionIT {
 
   @Test

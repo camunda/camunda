@@ -17,6 +17,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,10 +28,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
+@Tag(OPENSEARCH_PASSING)
 public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
   @Test
@@ -210,6 +213,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
     assertThat(resultData).isEmpty();
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("dateReportTypes")
   public void filtersWithNullFieldsWorkForDateReports(final ProcessReportDataType reportType) {

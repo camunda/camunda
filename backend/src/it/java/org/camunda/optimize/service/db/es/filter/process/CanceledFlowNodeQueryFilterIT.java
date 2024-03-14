@@ -15,17 +15,20 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 
+@Tag(OPENSEARCH_PASSING)
 public class CanceledFlowNodeQueryFilterIT extends AbstractFilterIT {
 
   private final static String USER_TASK_3 = "UserTask3";

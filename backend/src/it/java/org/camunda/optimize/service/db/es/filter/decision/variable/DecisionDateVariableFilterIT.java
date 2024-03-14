@@ -27,6 +27,7 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -40,6 +41,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDateInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
@@ -48,6 +50,7 @@ import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.c
 import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
 
   @BeforeEach

@@ -89,7 +89,6 @@ public class ImportIT extends AbstractImportIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void documentsHittingNestedDocLimitAreSkippedOnImportIfConfigurationEnabled() {
     // given
     embeddedOptimizeExtension.getConfigurationService().setSkipDataAfterNestedDocLimitReached(true);

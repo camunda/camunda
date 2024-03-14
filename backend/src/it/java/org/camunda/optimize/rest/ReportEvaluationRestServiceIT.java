@@ -5,9 +5,36 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithAssignees;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithCandidateGroups;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.core.Response;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -54,45 +81,56 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
-import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
-import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithAssignees;
-import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithCandidateGroups;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-
 @Tag(OPENSEARCH_PASSING)
 public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
+
+  private static Stream<SingleReportDataDto> nonPaginateableReportTypes() {
+    return Stream.concat(
+        Stream.of(DecisionReportDataType.values())
+            .filter(type -> !DecisionReportDataType.RAW_DATA.equals(type))
+            .map(type -> DecisionReportDataBuilder
+                .create()
+                .setDecisionDefinitionKey(RANDOM_KEY)
+                .setDecisionDefinitionVersion(RANDOM_VERSION)
+                .setReportDataType(type)
+                .build()),
+        Stream.of(ProcessReportDataType.values())
+            .filter(type -> !ProcessReportDataType.RAW_DATA.equals(type))
+            .map(ReportEvaluationRestServiceIT::createProcessReportData)
+    );
+  }
+
+  private static DecisionReportDataDto createDecisionReportData() {
+    return DecisionReportDataBuilder
+        .create()
+        .setDecisionDefinitionKey(RANDOM_KEY)
+        .setDecisionDefinitionVersion(RANDOM_VERSION)
+        .setReportDataType(DecisionReportDataType.RAW_DATA)
+        .build();
+  }
+
+  private static ProcessReportDataDto createProcessReportData() {
+    return createProcessReportData(ProcessReportDataType.RAW_DATA);
+  }
+
+  private static ProcessReportDataDto createProcessReportData(
+      final ProcessReportDataType reportDataType) {
+    return TemplatedProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(RANDOM_KEY)
+        .setProcessDefinitionVersion(RANDOM_VERSION)
+        .setReportDataType(reportDataType)
+        .build();
+  }
 
   @Test
   public void evaluateReportByIdWithoutAuthorization() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildEvaluateSavedReportRequest("123")
-      .execute();
+    final Response response = embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withoutAuthentication()
+        .buildEvaluateSavedReportRequest("123")
+        .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -101,14 +139,14 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
-  public void evaluateReportById(ReportType reportType) {
+  public void evaluateReportById(final ReportType reportType) {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
+        .buildEvaluateSavedReportRequest(reportId)
+        .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -118,11 +156,11 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_additionalFiltersAreApplied() {
     // given
-    BpmnModelInstance processModel = getSingleUserTaskDiagram();
+    final BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
-      processModel,
-      ImmutableMap.of(variableName, "value")
+        processModel,
+        ImmutableMap.of(variableName, "value")
     );
     final String reportId = createOptimizeReportForProcess(processModel, processInstanceEngineDto);
 
@@ -135,8 +173,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when future start date filter applied
     Response filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createFixedDateFilter(OffsetDateTime.now().plusDays(1), null))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createFixedDateFilter(OffsetDateTime.now().plusDays(1), null))
     );
 
     // then instance is not part of evaluated result
@@ -145,8 +184,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when historic end date filter applied
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createFixedDateFilter(null, OffsetDateTime.now().minusYears(100L)))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createFixedDateFilter(null, OffsetDateTime.now().minusYears(100L)))
     );
 
     // then instance is not part of evaluated result
@@ -155,9 +195,10 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when variable filter applied for existent value
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createStringVariableFilter(variableName, "value")
-      )
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createStringVariableFilter(variableName, "value")
+        )
     );
 
     // then instance is not part of evaluated result
@@ -166,9 +207,10 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when variable filter applied for non-existent value
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createStringVariableFilter(variableName, "someOtherValue")
-      )
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createStringVariableFilter(variableName, "someOtherValue")
+        )
     );
 
     // then instance is not part of evaluated result
@@ -177,8 +219,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when completed instances filter applied
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(completedInstancesOnlyFilter())
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(completedInstancesOnlyFilter())
     );
 
     // then instance is not part of evaluated result
@@ -189,8 +231,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
     importAllEngineEntitiesFromScratch();
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(runningInstancesOnlyFilter())
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(runningInstancesOnlyFilter())
     );
 
     // then instance is not part of evaluated result
@@ -199,8 +241,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when contains matching filter applied
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createContainsFilterForValues(variableName, "val"))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createContainsFilterForValues(variableName, "val"))
     );
 
     // then instance is part of evaluated result
@@ -211,8 +254,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
     importAllEngineEntitiesFromScratch();
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createContainsFilterForValues(variableName, "notMatch"))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createContainsFilterForValues(variableName, "notMatch"))
     );
 
     // then instance is part of evaluated result
@@ -221,8 +265,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when not contains does not match given value
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createNotContainsFilterForValues(variableName, "notMatch"))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createNotContainsFilterForValues(variableName, "notMatch"))
     );
 
     // then instance is not part of evaluated result
@@ -233,8 +278,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
     importAllEngineEntitiesFromScratch();
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createNotContainsFilterForValues(variableName, "val"))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createNotContainsFilterForValues(variableName, "val"))
     );
 
     // then instance is not part of evaluated result
@@ -246,7 +292,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_additionalAssigneeFiltersAreApplied() {
     // given
-    final BpmnModelInstance userTaskModel = getDoubleUserTaskDiagramWithAssignees(DEFAULT_USERNAME, "otherUserId");
+    final BpmnModelInstance userTaskModel = getDoubleUserTaskDiagramWithAssignees(DEFAULT_USERNAME,
+        "otherUserId");
     final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
@@ -255,25 +302,29 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when filtering for usertasks with the assignee
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(MembershipFilterOperator.IN, DEFAULT_USERNAME))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createAssigneeFilter(MembershipFilterOperator.IN, DEFAULT_USERNAME))
     ).getResult();
 
     // then only the usertask with the assignee is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey)
+        .containsOnly(USER_TASK_1);
 
     // when filtering for usertasks without the assignee
     result = reportClient.evaluateMapReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(MembershipFilterOperator.NOT_IN, DEFAULT_USERNAME))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createAssigneeFilter(MembershipFilterOperator.NOT_IN, DEFAULT_USERNAME))
     ).getResult();
 
     // then only the usertask without the assignee is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey)
+        .containsOnly(USER_TASK_2);
   }
 
   @Test
@@ -282,7 +333,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // given
     final String candidateGroupId = "candidateGroupId";
     final BpmnModelInstance userTaskModel =
-      getDoubleUserTaskDiagramWithCandidateGroups(candidateGroupId, "otherGroupId");
+        getDoubleUserTaskDiagramWithCandidateGroups(candidateGroupId, "otherGroupId");
     final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
@@ -291,28 +342,31 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when filtering for usertasks with the candidate group
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(MembershipFilterOperator.IN, candidateGroupId))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createCandidateGroupFilter(MembershipFilterOperator.IN, candidateGroupId))
     ).getResult();
 
     // then only the usertask with the candidate group is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_1);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey)
+        .containsOnly(USER_TASK_1);
 
     // when filtering for usertasks without the candidate group
     result = reportClient.evaluateMapReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(
-        MembershipFilterOperator.NOT_IN,
-        candidateGroupId
-      ))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(
+            MembershipFilterOperator.NOT_IN,
+            candidateGroupId
+        ))
     ).getResult();
 
     // then only the usertask without the candidate group is included
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey).containsOnly(USER_TASK_2);
+    assertThat(result.getFirstMeasureData()).extracting(MapResultEntryDto::getKey)
+        .containsOnly(USER_TASK_2);
   }
 
   @Test
@@ -320,18 +374,21 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   public void evaluateReportById_additionalAssigneeFiltersAreCombinedWithIncompatibleReportFilter() {
     // given
     final String otherUserId = "otherUserId";
-    final BpmnModelInstance userTaskModel = getDoubleUserTaskDiagramWithAssignees(DEFAULT_USERNAME, otherUserId);
+    final BpmnModelInstance userTaskModel = getDoubleUserTaskDiagramWithAssignees(DEFAULT_USERNAME,
+        otherUserId);
     final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     final String reportId =
-      createUserTaskReport(userTaskModel, instance, createAssigneeFilter(MembershipFilterOperator.IN, otherUserId));
+        createUserTaskReport(userTaskModel, instance,
+            createAssigneeFilter(MembershipFilterOperator.IN, otherUserId));
     importAllEngineEntitiesFromScratch();
 
     // when
-    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(MembershipFilterOperator.IN, DEFAULT_USERNAME))
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createAssigneeFilter(MembershipFilterOperator.IN, DEFAULT_USERNAME))
     ).getResult();
 
     // then the additional and report filters are combined with "and" and hence returns no results
@@ -347,18 +404,20 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     final String candidateGroupId = "candidateGroupId";
     final String otherGroupId = "otherGroupId";
     final BpmnModelInstance userTaskModel =
-      getDoubleUserTaskDiagramWithCandidateGroups(candidateGroupId, otherGroupId);
+        getDoubleUserTaskDiagramWithCandidateGroups(candidateGroupId, otherGroupId);
     final ProcessInstanceEngineDto instance = deployAndStartInstanceForModel(userTaskModel);
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     final String reportId =
-      createUserTaskReport(userTaskModel, instance, createCandidateGroupFilter(MembershipFilterOperator.IN, otherGroupId));
+        createUserTaskReport(userTaskModel, instance,
+            createCandidateGroupFilter(MembershipFilterOperator.IN, otherGroupId));
     importAllEngineEntitiesFromScratch();
 
     // when
-    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(MembershipFilterOperator.IN, candidateGroupId))
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createCandidateGroupFilter(MembershipFilterOperator.IN, candidateGroupId))
     ).getResult();
 
     // then the additional and report filters are combined with "and" and hence return no results
@@ -368,15 +427,15 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportByIdWithAdditionalFilters_filtersCombinedWithAlreadyExistingFiltersOnReport() {
     // given a report with a running instances filter
-    BpmnModelInstance processModel = getSingleUserTaskDiagram();
-    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
+    final BpmnModelInstance processModel = getSingleUserTaskDiagram();
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(
+        processModel);
     final String reportId = createReportForProcessUsingFilters(
-      processModel,
-      processInstanceEngineDto,
-      runningInstancesOnlyFilter()
+        processModel,
+        processInstanceEngineDto,
+        runningInstancesOnlyFilter()
     );
 
     // when
@@ -388,8 +447,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when completed instances filter added
     final Response filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(completedInstancesOnlyFilter())
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(completedInstancesOnlyFilter())
     );
 
     // then instance is no longer part of evaluated result
@@ -398,15 +457,15 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_emptyFiltersListDoesNotImpactExistingFilters() {
     // given a report with a running instances filter
-    BpmnModelInstance processModel = getSingleUserTaskDiagram();
-    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
+    final BpmnModelInstance processModel = getSingleUserTaskDiagram();
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(
+        processModel);
     final String reportId = createReportForProcessUsingFilters(
-      processModel,
-      processInstanceEngineDto,
-      runningInstancesOnlyFilter()
+        processModel,
+        processInstanceEngineDto,
+        runningInstancesOnlyFilter()
     );
 
     // when
@@ -418,8 +477,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when empty filter list added
     final Response filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(Collections.emptyList())
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(Collections.emptyList())
     );
 
     // then instance is still part of evaluated result when identical filter added
@@ -428,15 +487,15 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportByIdWithAdditionalFilters_filtersExistOnReportThatAreSameAsAdditional() {
     // given
-    BpmnModelInstance processModel = getSingleUserTaskDiagram();
-    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
+    final BpmnModelInstance processModel = getSingleUserTaskDiagram();
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(
+        processModel);
     final String reportId = createReportForProcessUsingFilters(
-      processModel,
-      processInstanceEngineDto,
-      runningInstancesOnlyFilter()
+        processModel,
+        processInstanceEngineDto,
+        runningInstancesOnlyFilter()
     );
 
     // when
@@ -448,8 +507,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when additional identical filter added
     final Response filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(runningInstancesOnlyFilter())
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(runningInstancesOnlyFilter())
     );
 
     // then instance is still part of evaluated result when identical filter added
@@ -458,14 +517,14 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportByIdWithAdditionalFilters_filtersIgnoredIfDecisionReport() {
     // given
     final DmnModelInstance decisionModel = createSimpleDmnModel("someKey");
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      deployAndStartDecisionInstanceForModel(decisionModel);
+        deployAndStartDecisionInstanceForModel(decisionModel);
 
-    final String reportId = createOptimizeReportForDecisionDefinition(decisionModel, decisionDefinitionEngineDto);
+    final String reportId = createOptimizeReportForDecisionDefinition(decisionModel,
+        decisionDefinitionEngineDto);
 
     // when
     final Response response = evaluateSavedReport(reportId);
@@ -476,8 +535,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when additional filter added
     final Response filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createFixedDateFilter(OffsetDateTime.now().plusSeconds(1), null))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createFixedDateFilter(OffsetDateTime.now().plusSeconds(1), null))
     );
 
     // then the instance is still part of evaluation result when evaluated with future start date filter
@@ -489,11 +549,11 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_variableFiltersWithNameThatDoesNotExistForReportAreIgnored() {
     // given
-    BpmnModelInstance processModel = getSingleUserTaskDiagram();
+    final BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
-      processModel,
-      ImmutableMap.of(variableName, "someValue")
+        processModel,
+        ImmutableMap.of(variableName, "someValue")
     );
     final String reportId = createOptimizeReportForProcess(processModel, processInstanceEngineDto);
 
@@ -506,8 +566,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when filter for given name added
     Response filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createStringVariableFilter(variableName, "someValue"))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createStringVariableFilter(variableName, "someValue"))
     );
 
     // then instance is part of evaluated result
@@ -516,8 +577,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when filter for unknown variable name added
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createStringVariableFilter("someOtherVariableName", "someValue"))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createStringVariableFilter("someOtherVariableName", "someValue"))
     );
 
     // then filter gets ignored and instance is part of evaluated result
@@ -526,13 +588,13 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when known and unknown variable filter used in combination
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(
-        Stream.concat(
-          createStringVariableFilter(variableName, "someValue").stream(),
-          createStringVariableFilter("someOtherVariableName", "someValue").stream()
-        ).collect(Collectors.toList())
-      )
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            Stream.concat(
+                createStringVariableFilter(variableName, "someValue").stream(),
+                createStringVariableFilter("someOtherVariableName", "someValue").stream()
+            ).collect(Collectors.toList())
+        )
     );
 
     // then filter gets ignored and instance is part of evaluated result as the value matches
@@ -541,13 +603,13 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when known and unknown variable filter used in combination and value does not match
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(
-        Stream.concat(
-          createStringVariableFilter(variableName, "someOtherValue").stream(),
-          createStringVariableFilter("someOtherVariableName", "someValue").stream()
-        ).collect(Collectors.toList())
-      )
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            Stream.concat(
+                createStringVariableFilter(variableName, "someOtherValue").stream(),
+                createStringVariableFilter("someOtherVariableName", "someValue").stream()
+            ).collect(Collectors.toList())
+        )
     );
 
     // then filter gets ignored and instance is part of evaluated result as the value matches
@@ -559,11 +621,11 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_variableFiltersWithTypeThatDoesNotExistForReportAreIgnored() {
     // given deployed instance with long type variable
-    BpmnModelInstance processModel = getSingleUserTaskDiagram();
+    final BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
-      processModel,
-      ImmutableMap.of(variableName, 5L)
+        processModel,
+        ImmutableMap.of(variableName, 5L)
     );
     final String reportId = createOptimizeReportForProcess(processModel, processInstanceEngineDto);
 
@@ -576,8 +638,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when long variable filter for given variable name used
     Response filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createLongVariableFilter(variableName, 3L))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createLongVariableFilter(variableName, 3L))
     );
 
     // then result is filtered out by filter
@@ -586,8 +649,9 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when string variable filter for given variable name used
     filteredResponse = evaluateSavedReport(
-      reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createStringVariableFilter(variableName, "someValue"))
+        reportId,
+        new AdditionalProcessReportEvaluationFilterDto(
+            createStringVariableFilter(variableName, "someValue"))
     );
 
     // then filter is ignored as variable is of wrong type for report so instance is still part of evaluated result
@@ -598,16 +662,17 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateInvalidReportById() {
     // given
-    ProcessReportDataDto reportData = createProcessReportData(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
+    final ProcessReportDataDto reportData = createProcessReportData(
+        ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
     reportData.setGroupBy(new NoneGroupByDto());
     reportData.setVisualization(ProcessVisualization.NUMBER);
-    String id = addSingleProcessReportWithDefinition(reportData);
+    final String id = addSingleProcessReportWithDefinition(reportData);
 
     // then
-    ReportEvaluationException response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
+    final ReportEvaluationException response = embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildEvaluateSavedReportRequest(id)
+        .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     AbstractSharingIT.assertErrorFields(response);
@@ -616,11 +681,11 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateUnsavedReportWithoutAuthorization() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildEvaluateCombinedUnsavedReportRequest(null)
-      .execute();
+    final Response response = embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withoutAuthentication()
+        .buildEvaluateCombinedUnsavedReportRequest(null)
+        .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -629,14 +694,14 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
-  public void evaluateUnsavedReport(ReportType reportType) {
+  public void evaluateUnsavedReport(final ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
-      .execute();
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+        .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+        .execute();
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -645,18 +710,20 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
-  public void evaluateUnsavedReport_reflectOwnerAndModifierNames_ownerHasNoAuthSideEffects(ReportType reportType) {
+  public void evaluateUnsavedReport_reflectOwnerAndModifierNames_ownerHasNoAuthSideEffects(
+      final ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
     final SingleReportDefinitionDto<?> reportDefinitionDto;
     final AuthorizedSingleReportEvaluationResponseDto<?, ?> result;
     switch (reportType) {
       case PROCESS:
-        reportDefinitionDto = new SingleProcessReportDefinitionRequestDto((ProcessReportDataDto) reportDataDto);
+        reportDefinitionDto = new SingleProcessReportDefinitionRequestDto(
+            (ProcessReportDataDto) reportDataDto);
         break;
       case DECISION:
         reportDefinitionDto =
-          new SingleDecisionReportDefinitionRequestDto((DecisionReportDataDto) reportDataDto);
+            new SingleDecisionReportDefinitionRequestDto((DecisionReportDataDto) reportDataDto);
         break;
       default:
         throw new IllegalStateException("Uncovered type: " + reportType);
@@ -668,8 +735,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // when
     result = ReportType.PROCESS.equals(reportType)
-      ? reportClient.evaluateProcessReport(reportDefinitionDto)
-      : reportClient.evaluateDecisionReport(reportDefinitionDto);
+        ? reportClient.evaluateProcessReport(reportDefinitionDto)
+        : reportClient.evaluateDecisionReport(reportDefinitionDto);
 
     // then
     assertThat(result.getCurrentUserRole()).isEqualTo(RoleType.EDITOR);
@@ -681,12 +748,13 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @ParameterizedTest
   @EnumSource(ReportType.class)
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
-  public void evaluateUnsavedReportWithoutVersionsAndTenantsDoesNotFail(ReportType reportType) {
+  public void evaluateUnsavedReportWithoutVersionsAndTenantsDoesNotFail(
+      final ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createReportWithoutVersionsAndTenants(reportType);
 
     // when
-    Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
+    final Response response = reportClient.evaluateReportAndReturnResponse(reportDataDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -697,13 +765,14 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // given
     final ProcessReportDataDto reportDataDto = createProcessReportData();
     reportDataDto.setFilter(
-      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(Collections.emptyList()).add().buildList()
+        ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(Collections.emptyList())
+            .add().buildList()
     );
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
-      .execute();
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+        .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+        .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -714,14 +783,14 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // given
     final DecisionReportDataDto reportDataDto = createDecisionReportData();
     final EvaluationDateFilterDto filterDto =
-      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
+        DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateUnit.SECONDS);
     filterDto.setAppliedTo(List.of("invalid"));
     reportDataDto.getFilter().add(filterDto);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
-      .execute();
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+        .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+        .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -730,11 +799,11 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateUnsavedCombinedReportWithoutAuthorization() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildEvaluateCombinedUnsavedReportRequest(null)
-      .execute();
+    final Response response = embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withoutAuthentication()
+        .buildEvaluateCombinedUnsavedReportRequest(null)
+        .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -743,7 +812,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateCombinedUnsavedReport_returnsOk() {
     // given
-    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
+    final CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
 
     // when
     final Response response = evaluateUnsavedCombinedReport(combinedReport);
@@ -755,7 +824,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void nullReportsAreHandledAsEmptyList() {
     // given
-    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
+    final CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
     combinedReport.setReports(null);
 
     // when
@@ -767,18 +836,18 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  public void evaluateReportWithoutViewById(ReportType reportType) {
+  public void evaluateReportWithoutViewById(final ReportType reportType) {
     // given
-    String id;
+    final String id;
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto =
-          createProcessReportData(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
+        final ProcessReportDataDto processReportDataDto =
+            createProcessReportData(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
         processReportDataDto.setView(null);
         id = addSingleProcessReportWithDefinition(processReportDataDto);
         break;
       case DECISION:
-        DecisionReportDataDto decisionReportDataDto = createDecisionReportData();
+        final DecisionReportDataDto decisionReportDataDto = createDecisionReportData();
         decisionReportDataDto.setView(null);
         id = addSingleDecisionReportWithDefinition(decisionReportDataDto, null);
         break;
@@ -787,10 +856,10 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     }
 
     // then
-    ReportEvaluationException response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
+    final ReportEvaluationException response = embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildEvaluateSavedReportRequest(id)
+        .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     AbstractSharingIT.assertErrorFields(response);
@@ -798,16 +867,17 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @MethodSource("nonPaginateableReportTypes")
-  public void evaluateNonPaginateableUnsavedReportWithPaginationParametersReturnsError(SingleReportDataDto reportDataDto) {
+  public void evaluateNonPaginateableUnsavedReportWithPaginationParametersReturnsError(
+      final SingleReportDataDto reportDataDto) {
     // given
-    PaginationRequestDto paginationDto = new PaginationRequestDto();
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(10);
     paginationDto.setLimit(10);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequestWithPagination(reportDataDto, paginationDto)
-      .execute();
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+        .buildEvaluateSingleUnsavedReportRequestWithPagination(reportDataDto, paginationDto)
+        .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -815,17 +885,18 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @MethodSource("nonPaginateableReportTypes")
-  public void evaluateNonPaginateableSavedReportWithPaginationParametersReturnsError(SingleReportDataDto reportDataDto) {
+  public void evaluateNonPaginateableSavedReportWithPaginationParametersReturnsError(
+      final SingleReportDataDto reportDataDto) {
     // given
     final String reportId = saveReport(reportDataDto);
-    PaginationRequestDto paginationDto = new PaginationRequestDto();
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(10);
     paginationDto.setLimit(10);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId, paginationDto)
-      .execute();
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+        .buildEvaluateSavedReportRequest(reportId, paginationDto)
+        .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -842,21 +913,22 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     importAllEngineEntitiesFromScratch();
     final String xmlV1 = definitionClient.getProcessDefinitionXml(processKey, "1", null);
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processKey)
-      .setProcessDefinitionVersions(List.of(version))
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-      .setVisualization(ProcessVisualization.HEAT)
-      .build();
+        .createReportData()
+        .setProcessDefinitionKey(processKey)
+        .setProcessDefinitionVersions(List.of(version))
+        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+        .setVisualization(ProcessVisualization.HEAT)
+        .build();
     final String reportId = reportClient.createSingleProcessReport(reportData);
 
     // when
     reportClient.evaluateReport(reportId);
 
     // then
-    assertThat(reportClient.getSingleProcessReportById(reportId).getData().getConfiguration().getXml())
-      .isNotNull()
-      .isEqualTo(xmlV1);
+    assertThat(
+        reportClient.getSingleProcessReportById(reportId).getData().getConfiguration().getXml())
+        .isNotNull()
+        .isEqualTo(xmlV1);
 
     // given
     final BpmnModelInstance processV2 = getSingleUserTaskDiagram(processKey);
@@ -869,9 +941,10 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     reportClient.evaluateReport(reportId);
 
     // then
-    assertThat(reportClient.getSingleProcessReportById(reportId).getData().getConfiguration().getXml())
-      .isEqualTo(xmlV2)
-      .isNotEqualTo(xmlV1);
+    assertThat(
+        reportClient.getSingleProcessReportById(reportId).getData().getConfiguration().getXml())
+        .isEqualTo(xmlV2)
+        .isNotEqualTo(xmlV1);
   }
 
   private String saveReport(final SingleReportDataDto reportDataDto) {
@@ -882,22 +955,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       reportId = reportClient.createSingleDecisionReport((DecisionReportDataDto) reportDataDto);
     }
     return reportId;
-  }
-
-  private static Stream<SingleReportDataDto> nonPaginateableReportTypes() {
-    return Stream.concat(
-      Stream.of(DecisionReportDataType.values())
-        .filter(type -> !DecisionReportDataType.RAW_DATA.equals(type))
-        .map(type -> DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(type)
-          .build()),
-      Stream.of(ProcessReportDataType.values())
-        .filter(type -> !ProcessReportDataType.RAW_DATA.equals(type))
-        .map(ReportEvaluationRestServiceIT::createProcessReportData)
-    );
   }
 
   private SingleReportDataDto createSingleReportDataForType(final ReportType reportType) {
@@ -915,10 +972,10 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     return reportDataDto;
   }
 
-  private Response evaluateUnsavedCombinedReport(CombinedReportDataDto reportDataDto) {
+  private Response evaluateUnsavedCombinedReport(final CombinedReportDataDto reportDataDto) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
-      .execute();
+        .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+        .execute();
   }
 
   private Response evaluateSavedReport(final String reportId) {
@@ -926,128 +983,137 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   private Response evaluateSavedReport(final String reportId,
-                                       final AdditionalProcessReportEvaluationFilterDto filters) {
+      final AdditionalProcessReportEvaluationFilterDto filters) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId, filters)
-      .execute();
+        .buildEvaluateSavedReportRequest(reportId, filters)
+        .execute();
   }
 
-  private void assertExpectedEvaluationInstanceCount(final Response response, final long expectedCount) {
-    assertThat(extractReportResponse(response).getResult().getInstanceCount()).isEqualTo(expectedCount);
+  private void assertExpectedEvaluationInstanceCount(final Response response,
+      final long expectedCount) {
+    assertThat(extractReportResponse(response).getResult().getInstanceCount()).isEqualTo(
+        expectedCount);
   }
 
-  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>> extractReportResponse(Response response) {
-    String jsonString = response.readEntity(String.class);
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>> extractReportResponse(
+      final Response response) {
+    final String jsonString = response.readEntity(String.class);
     try {
       return embeddedOptimizeExtension
-        .getObjectMapper()
-        .readValue(
-          jsonString,
-          new TypeReference<>() {
-          }
-        );
-    } catch (IOException e) {
+          .getObjectMapper()
+          .readValue(
+              jsonString,
+              new TypeReference<>() {
+              }
+          );
+    } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
 
   private String createOptimizeReportForDecisionDefinition(final DmnModelInstance decisionModel,
-                                                           final DecisionDefinitionEngineDto decisionDefinitionEngineDto) {
-    DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
-      .create()
-      .setDecisionDefinitionKey(decisionDefinitionEngineDto.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionEngineDto.getVersionAsString())
-      .setReportDataType(DecisionReportDataType.RAW_DATA)
-      .build();
+      final DecisionDefinitionEngineDto decisionDefinitionEngineDto) {
+    final DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
+        .create()
+        .setDecisionDefinitionKey(decisionDefinitionEngineDto.getKey())
+        .setDecisionDefinitionVersion(decisionDefinitionEngineDto.getVersionAsString())
+        .setReportDataType(DecisionReportDataType.RAW_DATA)
+        .build();
     decisionReportDataDto.getConfiguration().setXml(Dmn.convertToString(decisionModel));
     return addSingleDecisionReportWithDefinition(decisionReportDataDto, null);
   }
 
-  private DecisionDefinitionEngineDto deployAndStartDecisionInstanceForModel(final DmnModelInstance decisionModel) {
+  private DecisionDefinitionEngineDto deployAndStartDecisionInstanceForModel(
+      final DmnModelInstance decisionModel) {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      engineIntegrationExtension.deployAndStartDecisionDefinition(
-        decisionModel);
+        engineIntegrationExtension.deployAndStartDecisionDefinition(
+            decisionModel);
     importAllEngineEntitiesFromScratch();
     return decisionDefinitionEngineDto;
   }
 
-  private List<ProcessFilterDto<?>> createFixedDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
-    return ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(endDate).add().buildList();
+  private List<ProcessFilterDto<?>> createFixedDateFilter(final OffsetDateTime startDate,
+      final OffsetDateTime endDate) {
+    return ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(endDate)
+        .add().buildList();
   }
 
-  private List<ProcessFilterDto<?>> createLongVariableFilter(String variableName, Long variableValue) {
+  private List<ProcessFilterDto<?>> createLongVariableFilter(final String variableName,
+      final Long variableValue) {
     return ProcessFilterBuilder
-      .filter()
-      .variable()
-      .longType()
-      .name(variableName)
-      .operator(IN)
-      .values(Collections.singletonList(String.valueOf(variableValue)))
-      .add()
-      .buildList();
+        .filter()
+        .variable()
+        .longType()
+        .name(variableName)
+        .operator(IN)
+        .values(Collections.singletonList(String.valueOf(variableValue)))
+        .add()
+        .buildList();
   }
 
-  private List<ProcessFilterDto<?>> createStringVariableFilter(String variableName, String variableValue) {
+  private List<ProcessFilterDto<?>> createStringVariableFilter(final String variableName,
+      final String variableValue) {
     return ProcessFilterBuilder
-      .filter()
-      .variable()
-      .stringType()
-      .name(variableName)
-      .values(Collections.singletonList(variableValue))
-      .operator(IN)
-      .add()
-      .buildList();
+        .filter()
+        .variable()
+        .stringType()
+        .name(variableName)
+        .values(Collections.singletonList(variableValue))
+        .operator(IN)
+        .add()
+        .buildList();
   }
 
   private List<ProcessFilterDto<?>> createAssigneeFilter(final MembershipFilterOperator operator,
-                                                         final String assigneeId) {
+      final String assigneeId) {
     return ProcessFilterBuilder.filter()
-      .assignee()
-      .filterLevel(FilterApplicationLevel.VIEW)
-      .operator(operator)
-      .id(assigneeId)
-      .add()
-      .buildList();
+        .assignee()
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .operator(operator)
+        .id(assigneeId)
+        .add()
+        .buildList();
   }
 
-  private List<ProcessFilterDto<?>> createCandidateGroupFilter(final MembershipFilterOperator operator,
-                                                               final String assigneeId) {
+  private List<ProcessFilterDto<?>> createCandidateGroupFilter(
+      final MembershipFilterOperator operator,
+      final String assigneeId) {
     return ProcessFilterBuilder.filter()
-      .candidateGroups()
-      .filterLevel(FilterApplicationLevel.VIEW)
-      .operator(operator)
-      .id(assigneeId)
-      .add()
-      .buildList();
+        .candidateGroups()
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .operator(operator)
+        .id(assigneeId)
+        .add()
+        .buildList();
   }
 
   private SingleReportDataDto createReportWithoutVersionsAndTenants(final ReportType reportType) {
     switch (reportType) {
       case PROCESS:
         return TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
+            .createReportData()
+            .setProcessDefinitionKey(RANDOM_KEY)
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .build();
       case DECISION:
         return DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
+            .create()
+            .setDecisionDefinitionKey(RANDOM_KEY)
+            .setReportDataType(DecisionReportDataType.RAW_DATA)
+            .build();
       default:
         throw new IllegalStateException("Uncovered type: " + reportType);
     }
   }
 
   private String createReportForProcessUsingFilters(final BpmnModelInstance processModel,
-                                                    final ProcessInstanceEngineDto processInstanceEngineDto,
-                                                    final List<ProcessFilterDto<?>> filters) {
+      final ProcessInstanceEngineDto processInstanceEngineDto,
+      final List<ProcessFilterDto<?>> filters) {
     final TemplatedProcessReportDataBuilder reportBuilder = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.RAW_DATA);
+        .createReportData()
+        .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
+        .setReportDataType(ProcessReportDataType.RAW_DATA);
     Optional.ofNullable(filters).ifPresent(reportBuilder::setFilter);
     final ProcessReportDataDto processReportDataDto = reportBuilder.build();
     processReportDataDto.getConfiguration().setXml(toXml(processModel));
@@ -1055,18 +1121,18 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   private String createUserTaskReport(final BpmnModelInstance processModel,
-                                      final ProcessInstanceEngineDto processInstanceEngineDto) {
+      final ProcessInstanceEngineDto processInstanceEngineDto) {
     return createUserTaskReport(processModel, processInstanceEngineDto, null);
   }
 
   private String createUserTaskReport(final BpmnModelInstance processModel,
-                                      final ProcessInstanceEngineDto processInstanceEngineDto,
-                                      final List<ProcessFilterDto<?>> filters) {
+      final ProcessInstanceEngineDto processInstanceEngineDto,
+      final List<ProcessFilterDto<?>> filters) {
     final TemplatedProcessReportDataBuilder reportBuilder = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK);
+        .createReportData()
+        .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
+        .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK);
     Optional.ofNullable(filters).ifPresent(reportBuilder::setFilter);
     final ProcessReportDataDto processReportDataDto = reportBuilder.build();
     processReportDataDto.getConfiguration().setXml(toXml(processModel));
@@ -1074,19 +1140,21 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   private String createOptimizeReportForProcess(final BpmnModelInstance processModel,
-                                                final ProcessInstanceEngineDto processInstanceEngineDto) {
+      final ProcessInstanceEngineDto processInstanceEngineDto) {
     return createReportForProcessUsingFilters(processModel, processInstanceEngineDto, null);
   }
 
-  private ProcessInstanceEngineDto deployAndStartInstanceForModel(final BpmnModelInstance processModel) {
+  private ProcessInstanceEngineDto deployAndStartInstanceForModel(
+      final BpmnModelInstance processModel) {
     return deployAndStartInstanceForModelWithVariables(processModel, Collections.emptyMap());
   }
 
-  private ProcessInstanceEngineDto deployAndStartInstanceForModelWithVariables(final BpmnModelInstance processModel,
-                                                                               final Map<String, Object> variables) {
+  private ProcessInstanceEngineDto deployAndStartInstanceForModelWithVariables(
+      final BpmnModelInstance processModel,
+      final Map<String, Object> variables) {
     final ProcessInstanceEngineDto instance = engineIntegrationExtension.deployAndStartProcessWithVariables(
-      processModel,
-      variables
+        processModel,
+        variables
     );
     importAllEngineEntitiesFromScratch();
     return instance;
@@ -1107,51 +1175,29 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   private List<ProcessFilterDto<?>> createContainsFilterForValues(final String variableName,
-                                                                  final String... valuesToFilterFor) {
+      final String... valuesToFilterFor) {
     return ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name(variableName)
-      .stringType()
-      .values(Arrays.asList(valuesToFilterFor))
-      .operator(CONTAINS)
-      .add()
-      .buildList();
+        .filter()
+        .variable()
+        .name(variableName)
+        .stringType()
+        .values(Arrays.asList(valuesToFilterFor))
+        .operator(CONTAINS)
+        .add()
+        .buildList();
   }
 
   private List<ProcessFilterDto<?>> createNotContainsFilterForValues(final String variableName,
-                                                                     final String... valuesToFilterFor) {
+      final String... valuesToFilterFor) {
     return ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name(variableName)
-      .stringType()
-      .values(Arrays.asList(valuesToFilterFor))
-      .operator(NOT_CONTAINS)
-      .add()
-      .buildList();
-  }
-
-  private static DecisionReportDataDto createDecisionReportData() {
-    return DecisionReportDataBuilder
-      .create()
-      .setDecisionDefinitionKey(RANDOM_KEY)
-      .setDecisionDefinitionVersion(RANDOM_VERSION)
-      .setReportDataType(DecisionReportDataType.RAW_DATA)
-      .build();
-  }
-
-  private static ProcessReportDataDto createProcessReportData() {
-    return createProcessReportData(ProcessReportDataType.RAW_DATA);
-  }
-
-  private static ProcessReportDataDto createProcessReportData(final ProcessReportDataType reportDataType) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(RANDOM_KEY)
-      .setProcessDefinitionVersion(RANDOM_VERSION)
-      .setReportDataType(reportDataType)
-      .build();
+        .filter()
+        .variable()
+        .name(variableName)
+        .stringType()
+        .values(Arrays.asList(valuesToFilterFor))
+        .operator(NOT_CONTAINS)
+        .add()
+        .buildList();
   }
 
 }
