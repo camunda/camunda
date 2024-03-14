@@ -178,7 +178,7 @@ public final class DbProcessMessageSubscriptionState
         LOG.warn(
             "Expected to find subscription with key {} messageName {} tenantId: {}, but no subscription found",
             pendingSubscription.elementInstanceKey(),
-            messageName,
+            pendingSubscription.messageName(),
             pendingSubscription.tenantId());
         continue;
       }
