@@ -212,7 +212,7 @@ public class GatewayAuthenticationIdentityIT {
 
   private ZeebeClientBuilder createZeebeClientBuilder() {
     return ZeebeClient.newClientBuilder()
-        .gatewayAddress(ZEEBE.gatewayAddress())
+        .gatewayAddress(ZEEBE.grpcAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .usePlaintext();
   }
