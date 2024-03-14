@@ -47,3 +47,7 @@ hs_err*.log
 /metrics/
 *.exe
 /clients/go/.idea/
+
+.vscode
+.eslintcache
+els-snapshots

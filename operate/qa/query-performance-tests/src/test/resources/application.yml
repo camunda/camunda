@@ -1,0 +1,10 @@
+camunda.operate.qa.queries:
+  operate:
+    host: localhost
+    port: 8080
+    username: demo
+    password: demo
+  elasticsearch:
+    url: http://localhost:9200
+    prefix: operate
+  timeout: 3000

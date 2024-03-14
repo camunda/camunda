@@ -1,0 +1,19 @@
+# This GitHub Actions is used to test workflows. By default, workflow invokes  `ci-test-reusable` workflows.
+---
+name: Operate Backend
+on:
+  workflow_dispatch:
+
+# This will limit the workflow to 1 concurrent run per ref (branch / PR).
+# If a new commits occurs, the current run will be canceled to save costs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-tests:
+    name: run-tests
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
