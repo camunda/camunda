@@ -39,6 +39,8 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.DataSizeUtil;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,6 +58,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String ZEEBE_CLIENT_WORKER_STREAM_ENABLED =
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
+  public static final URI DEFAULT_GRPC_ADDRESS;
+  public static final URI DEFAULT_REST_ADDRESS;
+  public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
+  public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
   public static final String GATEWAY_REST_API_PORT_VAR = "ZEEBE_GATEWAY_REST_API_PORT";
   public static final int DEFAULT_GATEWAY_REST_API_PORT = 8080;
   public static final String DEFAULT_COMMUNICATION_API =
@@ -67,10 +73,22 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String DEFAULT_JOB_WORKER_NAME = "default";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
+
+  static {
+    try {
+      DEFAULT_GRPC_ADDRESS = new URI("zb://" + DEFAULT_GATEWAY_ADDRESS);
+      DEFAULT_REST_ADDRESS = new URI("http://0.0.0.0:8080");
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException("Failed to parse URI string", e);
+    }
+  }
+
   private boolean applyEnvironmentVariableOverrides = true;
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
+  private URI restAddress = DEFAULT_REST_ADDRESS;
+  private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
   private String defaultCommunicationApi = DEFAULT_COMMUNICATION_API;
   private int gatewayRestApiPort = DEFAULT_GATEWAY_REST_API_PORT;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
@@ -91,6 +109,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String overrideAuthority;
   private int maxMessageSize = 4 * ONE_MB;
   private boolean streamEnabled = false;
+  private boolean grpcAddressUsed = false;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
@@ -98,6 +117,16 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public String getGatewayAddress() {
     return gatewayAddress;
+  }
+
+  @Override
+  public URI getRestAddress() {
+    return restAddress;
+  }
+
+  @Override
+  public URI getGrpcAddress() {
+    return grpcAddress;
   }
 
   @Override
@@ -227,6 +256,14 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
           Boolean.parseBoolean(
               properties.getProperty(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)));
     }
+    if (properties.containsKey(ClientProperties.GRPC_ADDRESS)) {
+      final URI grpcAddr = getURIFromString(properties.getProperty(ClientProperties.GRPC_ADDRESS));
+      grpcAddress(grpcAddr);
+    }
+    if (properties.containsKey(ClientProperties.REST_ADDRESS)) {
+      final URI restAddr = getURIFromString(properties.getProperty(ClientProperties.REST_ADDRESS));
+      restAddress(restAddr);
+    }
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
     }
@@ -333,6 +370,19 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
               restApiPort));
     }
     gatewayRestApiPort = restApiPort;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder restAddress(final URI restAddress) {
+    this.restAddress = restAddress;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
+    this.grpcAddress = grpcAddress;
+    grpcAddressUsed = true;
     return this;
   }
 
@@ -482,6 +532,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       applyOverrides();
     }
 
+    if (!grpcAddressUsed) {
+      grpcAddress(getURIFromString("zb://" + getGatewayAddress()));
+    }
+
     return new ZeebeClientImpl(this);
   }
 
@@ -512,6 +566,16 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     if (Environment.system().isDefined(MAX_MESSAGE_SIZE)) {
       maxMessageSize(DataSizeUtil.parse(Environment.system().get(MAX_MESSAGE_SIZE)));
+    }
+
+    if (Environment.system().isDefined(GRPC_ADDRESS_VAR)) {
+      final URI grpcAddr = getURIFromString(Environment.system().get(GRPC_ADDRESS_VAR));
+      grpcAddress(grpcAddr);
+    }
+
+    if (Environment.system().isDefined(REST_ADDRESS_VAR)) {
+      final URI restAddr = getURIFromString(Environment.system().get(REST_ADDRESS_VAR));
+      restAddress(restAddr);
     }
 
     if (Environment.system().isDefined(GATEWAY_REST_API_PORT_VAR)) {
@@ -548,6 +612,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     final StringBuilder sb = new StringBuilder();
 
     appendProperty(sb, "gatewayAddress", gatewayAddress);
+    appendProperty(sb, "grpcAddress", grpcAddress);
+    appendProperty(sb, "restAddress", restAddress);
     appendProperty(sb, "gatewayRestApiPort", gatewayRestApiPort);
     appendProperty(sb, "defaultTenantId", defaultTenantId);
     appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
@@ -582,5 +648,13 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
 
     return builder.build();
+  }
+
+  private URI getURIFromString(final String uri) {
+    try {
+      return new URI(uri);
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException("Failed to parse URI string", e);
+    }
   }
 }
