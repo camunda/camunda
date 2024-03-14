@@ -90,7 +90,9 @@ public final class CommandDistributionBehavior {
       final CommandDistributionRecord distributionRecord,
       final long distributionKey) {
     final var valueType = distributionRecord.getValueType();
+    final var intent = command.getIntent();
     final var commandValue = distributionRecord.getCommandValue();
+
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
     // reaching the max message size we don't set the record value here.
     stateWriter.appendFollowUpEvent(
@@ -99,16 +101,12 @@ public final class CommandDistributionBehavior {
         new CommandDistributionRecord()
             .setPartitionId(partition)
             .setValueType(valueType)
-            .setIntent(command.getIntent()));
+            .setIntent(intent));
 
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
-              partition,
-              command.getValueType(),
-              command.getIntent(),
-              distributionKey,
-              commandValue);
+              partition, command.getValueType(), intent, distributionKey, commandValue);
           return true;
         });
   }
