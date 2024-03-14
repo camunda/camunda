@@ -89,7 +89,6 @@ public final class CommandDistributionBehavior {
       final long distributionKey) {
     final var valueType = distributionRecord.getValueType();
     final var intent = distributionRecord.getIntent();
-    final var commandValue = distributionRecord.getCommandValue();
 
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
     // reaching the max message size we don't set the record value here.
@@ -100,6 +99,14 @@ public final class CommandDistributionBehavior {
             .setPartitionId(partition)
             .setValueType(valueType)
             .setIntent(intent));
+
+    // This getter makes a hard copy of the command value, which we need to send the command to the
+    // other partition in a side effect. It does not appear to be possible to reuse a single
+    // instance for distributing to all partitions in the form of a method parameter, but it's not
+    // fully clear why that leads to problems. We suspect that it's because the command value is a
+    // mutable object, and it is somehow modified before the side effect is executed. Instead, we
+    // have to copy this value for every partition.
+    final var commandValue = distributionRecord.getCommandValue();
 
     sideEffectWriter.appendSideEffect(
         () -> {
