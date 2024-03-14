@@ -16,7 +16,6 @@
  */
 package io.camunda.operate.webapp.rest;
 
-import static io.camunda.operate.entities.OperationType.*;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 import io.camunda.operate.Metrics;
@@ -32,7 +31,6 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
@@ -45,21 +43,20 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
+import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
+import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
-import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -77,6 +74,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Autowired(required = false)
   protected PermissionsService permissionsService;
 
+  @Autowired private ProcessInstanceRequestValidator validator;
   @Autowired private BatchOperationWriter batchOperationWriter;
   @Autowired private ProcessInstanceReader processInstanceReader;
   @Autowired private ListViewReader listViewReader;
@@ -85,7 +83,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Autowired private VariableReader variableReader;
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
   @Autowired private SequenceFlowStore sequenceFlowStore;
-  @Autowired private OperationReader operationReader;
   @Autowired private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
 
   @Operation(summary = "Query process instances by different parameters")
@@ -95,7 +92,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_PROCESSINSTANCES},
       description = "How long does it take to retrieve the processinstances by query.")
   public ListViewResponseDto queryProcessInstances(
-      @RequestBody ListViewRequestDto processInstanceRequest) {
+      @RequestBody final ListViewRequestDto processInstanceRequest) {
     if (processInstanceRequest.getQuery() == null) {
       throw new InvalidRequestException("Query must be provided.");
     }
@@ -111,9 +108,9 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @PostMapping("/{id}/operation")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity operation(
-      @PathVariable @ValidLongId String id,
-      @RequestBody CreateOperationRequestDto operationRequest) {
-    validate(operationRequest, id);
+      @PathVariable @ValidLongId final String id,
+      @RequestBody final CreateOperationRequestDto operationRequest) {
+    validator.validateCreateOperationRequest(operationRequest, id);
     if (operationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE) {
       checkIdentityPermission(Long.valueOf(id), IdentityPermission.DELETE_PROCESS_INSTANCE);
     } else {
@@ -126,80 +123,27 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @PostMapping("/{id}/modify")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity modify(
-      @PathVariable @ValidLongId String id,
-      @RequestBody ModifyProcessInstanceRequestDto modifyRequest) {
+      @PathVariable @ValidLongId final String id,
+      @RequestBody final ModifyProcessInstanceRequestDto modifyRequest) {
     modifyRequest.setProcessInstanceKey(id);
     modifyProcessInstanceRequestValidator.validate(modifyRequest);
     checkIdentityPermission(Long.valueOf(id), IdentityPermission.UPDATE_PROCESS_INSTANCE);
     return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
   }
 
-  private void validate(CreateBatchOperationRequestDto batchOperationRequest) {
-    if (batchOperationRequest.getQuery() == null) {
-      throw new InvalidRequestException("List view query must be defined.");
-    }
-    if (batchOperationRequest.getOperationType() == null) {
-      throw new InvalidRequestException("Operation type must be defined.");
-    }
-    if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(batchOperationRequest.getOperationType())) {
-      throw new InvalidRequestException(
-          "For variable update use \"Create operation for one process instance\" endpoint.");
-    }
-    if (batchOperationRequest.getOperationType() == MIGRATE_PROCESS_INSTANCE) {
-      MigrationPlanDto migrationPlanDto = batchOperationRequest.getMigrationPlan();
-      if (migrationPlanDto == null) {
-        throw new InvalidRequestException(
-            String.format(
-                "Migration plan is mandatory for %s operation", MIGRATE_PROCESS_INSTANCE));
-      }
-      migrationPlanDto.validate();
-    }
-  }
-
-  private void validate(
-      CreateOperationRequestDto operationRequest, @ValidLongId String processInstanceId) {
-    if (operationRequest.getOperationType() == null) {
-      throw new InvalidRequestException("Operation type must be defined.");
-    }
-    if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(operationRequest.getOperationType())
-        && (operationRequest.getVariableScopeId() == null
-            || operationRequest.getVariableName() == null
-            || operationRequest.getVariableName().isEmpty()
-            || operationRequest.getVariableValue() == null)) {
-      throw new InvalidRequestException(
-          "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-    }
-    if (operationRequest.getOperationType().equals(ADD_VARIABLE)
-        && (variableReader.getVariableByName(
-                    processInstanceId,
-                    operationRequest.getVariableScopeId(),
-                    operationRequest.getVariableName())
-                != null
-            || !operationReader
-                .getOperations(
-                    ADD_VARIABLE,
-                    processInstanceId,
-                    operationRequest.getVariableScopeId(),
-                    operationRequest.getVariableName())
-                .isEmpty())) {
-      throw new InvalidRequestException(
-          String.format(
-              "Variable with the name \"%s\" already exists.", operationRequest.getVariableName()));
-    }
-  }
-
   @Operation(summary = "Create batch operation based on filter")
   @PostMapping("/batch-operation")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity createBatchOperation(
-      @RequestBody CreateBatchOperationRequestDto batchOperationRequest) {
-    validate(batchOperationRequest);
+      @RequestBody final CreateBatchOperationRequestDto batchOperationRequest) {
+    validator.validateCreateBatchOperationRequest(batchOperationRequest);
     return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   @Operation(summary = "Get process instance by id")
   @GetMapping("/{id}")
-  public ListViewProcessInstanceDto queryProcessInstanceById(@PathVariable @ValidLongId String id) {
+  public ListViewProcessInstanceDto queryProcessInstanceById(
+      @PathVariable @ValidLongId final String id) {
     checkIdentityReadPermission(Long.parseLong(id));
     return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
   }
@@ -207,7 +151,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get incidents by process instance id")
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByProcessInstanceId(
-      @PathVariable @ValidLongId String id) {
+      @PathVariable @ValidLongId final String id) {
     checkIdentityReadPermission(Long.parseLong(id));
     return incidentReader.getIncidentsByProcessInstanceId(id);
   }
@@ -215,7 +159,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get sequence flows by process instance id")
   @GetMapping("/{id}/sequence-flows")
   public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(
-      @PathVariable @ValidLongId String id) {
+      @PathVariable @ValidLongId final String id) {
     checkIdentityReadPermission(Long.parseLong(id));
     final List<SequenceFlowEntity> sequenceFlows =
         sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
@@ -225,17 +169,18 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get variables by process instance id and scope id")
   @PostMapping("/{processInstanceId}/variables")
   public List<VariableDto> getVariables(
-      @PathVariable @ValidLongId String processInstanceId,
-      @RequestBody VariableRequestDto variableRequest) {
+      @PathVariable @ValidLongId final String processInstanceId,
+      @RequestBody final VariableRequestDto variableRequest) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    validate(variableRequest);
+    validator.validateVariableRequest(variableRequest);
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
   @Operation(summary = "Get full variable by id")
   @GetMapping("/{processInstanceId}/variables/{variableId}")
   public VariableDto getVariable(
-      @PathVariable @ValidLongId String processInstanceId, @PathVariable String variableId) {
+      @PathVariable @ValidLongId final String processInstanceId,
+      @PathVariable final String variableId) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return variableReader.getVariable(variableId);
   }
@@ -243,7 +188,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get flow node states by process instance id")
   @GetMapping("/{processInstanceId}/flow-node-states")
   public Map<String, FlowNodeStateDto> getFlowNodeStates(
-      @PathVariable @ValidLongId String processInstanceId) {
+      @PathVariable @ValidLongId final String processInstanceId) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
@@ -251,7 +196,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get flow node statistic by process instance id")
   @GetMapping("/{processInstanceId}/statistics")
   public Collection<FlowNodeStatisticsDto> getStatistics(
-      @PathVariable @ValidLongId String processInstanceId) {
+      @PathVariable @ValidLongId final String processInstanceId) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return flowNodeInstanceReader.getFlowNodeStatisticsForProcessInstance(
         Long.parseLong(processInstanceId));
@@ -260,35 +205,17 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get flow node metadata.")
   @PostMapping("/{processInstanceId}/flow-node-metadata")
   public FlowNodeMetadataDto getFlowNodeMetadata(
-      @PathVariable @ValidLongId String processInstanceId,
-      @RequestBody FlowNodeMetadataRequestDto request) {
+      @PathVariable @ValidLongId final String processInstanceId,
+      @RequestBody final FlowNodeMetadataRequestDto request) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    validate(request);
+    validator.validateFlowNodeMetadataRequest(request);
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
-  }
-
-  private void validate(final VariableRequestDto request) {
-    if (request.getScopeId() == null) {
-      throw new InvalidRequestException("ScopeId must be specifies in the request.");
-    }
-  }
-
-  private void validate(final FlowNodeMetadataRequestDto request) {
-    if (request.getFlowNodeId() == null
-        && request.getFlowNodeType() == null
-        && request.getFlowNodeInstanceId() == null) {
-      throw new InvalidRequestException(
-          "At least flowNodeId or flowNodeInstanceId must be specifies in the request.");
-    }
-    if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
-      throw new InvalidRequestException(
-          "Only one of flowNodeId or flowNodeInstanceId must be specifies in the request.");
-    }
   }
 
   @Operation(summary = "Get activity instance statistics")
   @PostMapping(path = "/statistics")
-  public Collection<FlowNodeStatisticsDto> getStatistics(@RequestBody ListViewQueryDto query) {
+  public Collection<FlowNodeStatisticsDto> getStatistics(
+      @RequestBody final ListViewQueryDto query) {
     final List<Long> processDefinitionKeys =
         CollectionUtil.toSafeListOfLongs(query.getProcessIds());
     final String bpmnProcessId = query.getBpmnProcessId();
@@ -313,15 +240,17 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<String> handleConstraintViolation(ConstraintViolationException exception) {
+  public ResponseEntity<String> handleConstraintViolation(
+      final ConstraintViolationException exception) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
   }
 
-  private void checkIdentityReadPermission(Long processInstanceKey) {
+  private void checkIdentityReadPermission(final Long processInstanceKey) {
     checkIdentityPermission(processInstanceKey, IdentityPermission.READ);
   }
 
-  private void checkIdentityPermission(Long processInstanceKey, IdentityPermission permission) {
+  private void checkIdentityPermission(
+      final Long processInstanceKey, final IdentityPermission permission) {
     if (permissionsService != null
         && !permissionsService.hasPermissionForProcess(
             processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),

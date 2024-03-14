@@ -21,23 +21,11 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.JacksonConfig;
-import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
-import io.camunda.operate.webapp.reader.IncidentReader;
-import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
@@ -52,48 +40,22 @@ import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequest
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
-import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest(
-    classes = {
-      TestApplicationWithNoBeans.class,
-      ProcessInstanceRestService.class,
-      OperateProperties.class,
-      OperateProfileService.class,
-      ModifyProcessInstanceRequestValidator.class,
-      JacksonConfig.class,
-      OperateDateTimeFormatter.class,
-      DatabaseInfo.class,
-      OperateProperties.class
-    })
 public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
-
-  @MockBean private ListViewReader listViewReader;
-
-  @MockBean private FlowNodeStatisticsReader flowNodeStatisticsReader;
 
   @MockBean private ProcessInstanceReader processInstanceReader;
 
-  @MockBean private IncidentReader incidentReader;
-
   @MockBean private VariableReader variableReader;
 
-  @MockBean private SequenceFlowStore sequenceFlowStore;
-
-  @MockBean private FlowNodeInstanceReader flowNodeInstanceReader;
-
   @MockBean private BatchOperationWriter batchOperationWriter;
-
-  @MockBean private OperationReader operationReader;
 
   @MockBean private PermissionsService permissionsService;
 

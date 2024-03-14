@@ -14,6 +14,31 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.zeebe.operation;
+package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
-public interface ModifyProcessInstanceHandler extends OperationHandler {}
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CancelFlowNodeHelper {
+  private static final Logger logger = LoggerFactory.getLogger(CancelFlowNodeHelper.class);
+
+  public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
+      cancelFlowNodeInstances(
+          ModifyProcessInstanceCommandStep1 currentStep, final List<Long> flowNodeInstanceKeys) {
+    logger.debug("Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeys);
+    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep = null;
+    final int size = flowNodeInstanceKeys.size();
+    for (int i = 0; i < size; i++) {
+      if (i < size - 1) {
+        currentStep = currentStep.terminateElement(flowNodeInstanceKeys.get(i)).and();
+      } else {
+        nextStep = currentStep.terminateElement(flowNodeInstanceKeys.get(i));
+      }
+    }
+    return nextStep;
+  }
+}
