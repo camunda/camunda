@@ -27,6 +27,8 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.PlatformOptimizeVersionService;
 import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -83,7 +85,8 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(activeProfile);
+    assertThat(configurationResponse.getOptimizeProfile())
+        .isEqualTo(OptimizeProfile.toProfile(activeProfile));
   }
 
   @Test
@@ -96,7 +99,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
   }
 
   @Test
@@ -121,7 +124,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
   }
 
   @ParameterizedTest
@@ -144,6 +147,6 @@ public class UIConfigurationServiceTest {
     when(identity.users()).thenReturn(identityUsers);
     when(identityUsers.isAvailable()).thenReturn(true);
     when(environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY))
-        .thenReturn("elasticsearch");
+        .thenReturn(DatabaseType.ELASTICSEARCH.toString());
   }
 }

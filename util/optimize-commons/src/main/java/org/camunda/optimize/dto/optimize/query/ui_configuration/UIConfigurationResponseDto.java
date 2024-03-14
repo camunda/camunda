@@ -10,6 +10,8 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 
 @Data
 @AllArgsConstructor
@@ -23,14 +25,14 @@ public class UIConfigurationResponseDto {
   private String optimizeVersion;
   private String optimizeDocsVersion;
   private boolean isEnterpriseMode;
-  private String optimizeProfile;
+  private OptimizeProfile optimizeProfile;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private Map<AppName, String> webappsLinks; // links for the app switcher
   private String notificationsUrl;
   private List<String> webhooks;
   private boolean logoutHidden;
   private Integer exportCsvLimit;
-  private String optimizeDatabase;
+  private DatabaseType optimizeDatabase;
 
   // mirrors SettingsDto
   private boolean metadataTelemetryEnabled;

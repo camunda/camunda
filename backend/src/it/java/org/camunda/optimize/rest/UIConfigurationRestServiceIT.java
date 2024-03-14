@@ -8,7 +8,6 @@ package org.camunda.optimize.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 
 import com.google.common.collect.Sets;
@@ -20,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationR
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.OnboardingConfiguration;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -219,7 +219,7 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
+    assertThat(response.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
   }
 
   @Test
@@ -297,7 +297,12 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(response.getOptimizeDatabase()).isEqualTo(
-        databaseIntegrationTestExtension.getDatabaseVendor().toString());
+        databaseIntegrationTestExtension.getDatabaseVendor());
+  }
+
+  protected void createTenant(final String tenantId) {
+    final TenantDto tenantDto = new TenantDto(tenantId, tenantId, DEFAULT_ENGINE_ALIAS);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 
   private void setWebappsEndpoint(final String webappsEndpoint) {
@@ -316,10 +321,5 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
         .get(DEFAULT_ENGINE_ALIAS)
         .getWebapps()
         .setEnabled(enabled);
-  }
-
-  protected void createTenant(final String tenantId) {
-    final TenantDto tenantDto = new TenantDto(tenantId, tenantId, DEFAULT_ENGINE_ALIAS);
-    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 }

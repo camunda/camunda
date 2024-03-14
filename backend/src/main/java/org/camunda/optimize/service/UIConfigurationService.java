@@ -59,13 +59,12 @@ public class UIConfigurationService {
     final OptimizeProfile optimizeProfile = ConfigurationService.getOptimizeProfile(environment);
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
     uiConfigurationDto.setUserSearchAvailable(isUserSearchAvailable(optimizeProfile));
-    uiConfigurationDto.setOptimizeProfile(optimizeProfile.getId());
+    uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(
         configurationService.getCsvConfiguration().getExportCsvLimit());
-    uiConfigurationDto.setOptimizeDatabase(
-        ConfigurationService.getDatabaseType(environment).getId());
+    uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
 
     final SettingsResponseDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(
