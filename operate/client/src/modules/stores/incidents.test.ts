@@ -28,7 +28,9 @@ describe('stores/incidents', () => {
     incidentsStore.reset();
   });
   beforeEach(() => {
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents, {
+      expectPolling: false,
+    });
   });
 
   it('should poll for incidents if instance state is incident', async () => {
@@ -43,10 +45,13 @@ describe('stores/incidents', () => {
       expect(incidentsStore.state.response).toEqual(mockIncidents),
     );
 
-    mockFetchProcessInstanceIncidents().withSuccess({
-      ...mockIncidents,
-      count: 2,
-    });
+    mockFetchProcessInstanceIncidents().withSuccess(
+      {
+        ...mockIncidents,
+        count: 2,
+      },
+      {expectPolling: true},
+    );
 
     jest.runOnlyPendingTimers();
 
@@ -57,10 +62,13 @@ describe('stores/incidents', () => {
       }),
     );
 
-    mockFetchProcessInstanceIncidents().withSuccess({
-      ...mockIncidents,
-      count: 3,
-    });
+    mockFetchProcessInstanceIncidents().withSuccess(
+      {
+        ...mockIncidents,
+        count: 3,
+      },
+      {expectPolling: true},
+    );
 
     jest.runOnlyPendingTimers();
 

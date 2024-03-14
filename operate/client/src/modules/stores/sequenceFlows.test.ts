@@ -25,7 +25,9 @@ describe('stores/sequenceFlows', () => {
   const mockSequenceFlows = createSequenceFlows();
 
   beforeEach(() => {
-    mockFetchSequenceFlows().withSuccess(mockSequenceFlows);
+    mockFetchSequenceFlows().withSuccess(mockSequenceFlows, {
+      expectPolling: false,
+    });
   });
 
   afterEach(() => {
@@ -67,13 +69,16 @@ describe('stores/sequenceFlows', () => {
       ]),
     );
 
-    mockFetchSequenceFlows().withSuccess([
-      ...mockSequenceFlows,
-      {
-        processInstanceId: '2251799813693731',
-        activityId: 'SequenceFlow_1sz6737',
-      },
-    ]);
+    mockFetchSequenceFlows().withSuccess(
+      [
+        ...mockSequenceFlows,
+        {
+          processInstanceId: '2251799813693731',
+          activityId: 'SequenceFlow_1sz6737',
+        },
+      ],
+      {expectPolling: true},
+    );
 
     jest.runOnlyPendingTimers();
 
@@ -87,17 +92,20 @@ describe('stores/sequenceFlows', () => {
       ]),
     );
 
-    mockFetchSequenceFlows().withSuccess([
-      ...mockSequenceFlows,
-      {
-        processInstanceId: '2251799813693731',
-        activityId: 'SequenceFlow_1sz6737',
-      },
-      {
-        processInstanceId: '2251799813693732',
-        activityId: 'SequenceFlow_1sz6738',
-      },
-    ]);
+    mockFetchSequenceFlows().withSuccess(
+      [
+        ...mockSequenceFlows,
+        {
+          processInstanceId: '2251799813693731',
+          activityId: 'SequenceFlow_1sz6737',
+        },
+        {
+          processInstanceId: '2251799813693732',
+          activityId: 'SequenceFlow_1sz6738',
+        },
+      ],
+      {expectPolling: true},
+    );
 
     jest.runOnlyPendingTimers();
 

@@ -17,10 +17,16 @@
 
 import {requestAndParse} from 'modules/request';
 
-const getOperation = async (batchOperationId: string) => {
-  return requestAndParse<InstanceOperationEntity[]>({
-    url: `/api/operations?batchOperationId=${batchOperationId}`,
-  });
+const getOperation = async (
+  batchOperationId: string,
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<InstanceOperationEntity[]>(
+    {
+      url: `/api/operations?batchOperationId=${batchOperationId}`,
+    },
+    options,
+  );
 };
 
 export {getOperation};

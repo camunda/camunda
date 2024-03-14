@@ -83,6 +83,7 @@ describe('stores/processInstanceDetailsStatistics', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDetailStatistics().withSuccess(
       mockProcessInstanceDetailsStatistics,
+      {expectPolling: false},
     );
     mockFetchProcessInstance().withSuccess(
       createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'}),
@@ -170,16 +171,19 @@ describe('stores/processInstanceDetailsStatistics', () => {
       );
     });
 
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      ...mockProcessInstanceDetailsStatistics,
-      {
-        activityId: 'anotherNode',
-        active: 1,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
+    mockFetchProcessInstanceDetailStatistics().withSuccess(
+      [
+        ...mockProcessInstanceDetailsStatistics,
+        {
+          activityId: 'anotherNode',
+          active: 1,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+      ],
+      {expectPolling: true},
+    );
 
     jest.runOnlyPendingTimers();
 
