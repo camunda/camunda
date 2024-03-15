@@ -77,7 +77,7 @@ public final class JobTimeOutTest {
     final Duration timeout = Duration.ofSeconds(10);
 
     ENGINE.jobs().withType(jobType).withTimeout(timeout.toMillis()).activate();
-    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
     jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
 
     final long jobKey2 = ENGINE.createJob(jobType, PROCESS_ID).getKey();
@@ -90,7 +90,7 @@ public final class JobTimeOutTest {
     ENGINE.jobs().withType(jobType).activate();
 
     // then
-    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
     jobRecords(TIME_OUT).withRecordKey(jobKey2).getFirst();
   }
 
