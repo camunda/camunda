@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SaveActionSettings">
+    <option name="actions">
+      <set>
+        <option value="activate" />
+        <option value="organizeImports" />
+        <option value="reformat" />
+        <option value="rearrange" />
+        <option value="fieldCanBeFinal" />
+        <option value="localCanBeFinal" />
+        <option value="missingOverrideAnnotation" />
+        <option value="unnecessaryThis" />
+      </set>
+    </option>
+    <option name="configurationPath" value="" />
+    <option name="inclusions">
+      <set>
+        <option value=".*\.java" />
+      </set>
+    </option>
+  </component>
+</project>
