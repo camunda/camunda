@@ -18,7 +18,7 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 
-public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
+public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   private final JobState state;
 
@@ -27,7 +27,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   private ReadonlyStreamProcessorContext processingContext;
   private final Task deactivateTimedOutJobs;
 
-  public JobTimeoutTrigger(final JobState state) {
+  public JobTimeoutChecker(final JobState state) {
     this.state = state;
     deactivateTimedOutJobs = new DeactivateTimeOutJobs();
   }

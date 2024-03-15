@@ -88,7 +88,7 @@ public final class JobEventProcessors {
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
                 writers, processingState, processingState.getKeyGenerator(), jobMetrics))
-        .withListener(new JobTimeoutTrigger(scheduledTaskStateFactory.get().getJobState()))
+        .withListener(new JobTimeoutChecker(scheduledTaskStateFactory.get().getJobState()))
         .withListener(jobBackoffChecker);
   }
 }
