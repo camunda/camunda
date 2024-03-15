@@ -2,14 +2,14 @@
 
 .PHONY: env-up
 env-up:
-	docker-compose -f operate/docker-compose.yml up -d elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=true \
+	docker-compose -f docker-compose.yml up -d elasticsearch zeebe \
+	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 env-os-up:
-	docker-compose -f operate/docker-compose.yml up -d opensearch zeebe-opensearch \
-	&& mvn install -DskipTests=true -Dskip.fe.build=true \
+	docker-compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
+	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	&& CAMUNDA_OPERATE_DATABASE=opensearch \
 	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
@@ -18,19 +18,19 @@ env-os-up:
 .PHONY: env-ldap-up
 env-ldap-up:
 	@echo "Starting ldap-testserver: Look up for users (fry/fry, bender/bender etc) at: https://github.com/rroemhild/docker-test-openldap" \
-	&& docker-compose -f operate/docker-compose.yml up -d elasticsearch zeebe ldap-test-server \
+	&& docker-compose -f docker-compose.yml up -d elasticsearch zeebe ldap-test-server \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_LDAP_BASEDN=dc=planetexpress,dc=com \
        CAMUNDA_OPERATE_LDAP_URL=ldap://localhost:10389/ \
        CAMUNDA_OPERATE_LDAP_MANAGERDN=cn=admin,dc=planetexpress,dc=com \
        CAMUNDA_OPERATE_LDAP_MANAGERPASSWORD=GoodNewsEveryone \
        CAMUNDA_OPERATE_LDAP_USERSEARCHFILTER=uid={0} \
-	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,ldap-auth
+	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,ldap-auth
 
 # Set the env var CAMUNDA_OPERATE_AUTH0_CLIENTSECRET in your shell please, eg: export CAMUNDA_OPERATE_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
 env-sso-up:
-	@docker-compose -f operate/docker-compose.yml up -d elasticsearch zeebe \
+	@docker-compose -f docker-compose.yml up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_AUTH0_BACKENDDOMAIN=camunda-dev.eu.auth0.com \
 	   CAMUNDA_OPERATE_AUTH0_CLAIMNAME=https://camunda.com/orgs \
@@ -42,7 +42,7 @@ env-sso-up:
        CAMUNDA_OPERATE_AUTH0_ORGANIZATION=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
        CAMUNDA_OPERATE_AUTH0_ORGANIZATIONSKEY=https://camunda.com/orgs \
        CAMUNDA_OPERATE_CLOUD_CONSOLE_URL=https://console.cloud.ultrawombat.com/ \
-	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,sso-auth
+	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,sso-auth
 
 .PHONY: env-identity-up
 env-identity-up:
@@ -55,17 +55,17 @@ env-identity-up:
        CAMUNDA_IDENTITY_AUDIENCE=operate-api \
        CAMUNDA_OPERATE_PERSISTENT_SESSIONS_ENABLED=true \
        SERVER_PORT=8081 \
-	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
+	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
 
 .PHONY: env-down
 env-down:
-	@docker-compose -f operate/docker-compose.yml down -v \
-	&& docker-compose -f ./operate/config/docker-compose.identity.yml down -v \
+	@docker-compose -f docker-compose.yml down -v \
+	&& docker-compose -f ./config/docker-compose.identity.yml down -v \
 	&& mvn clean
 
 .PHONY: env-status
 env-status:
-	docker-compose -f operate/docker-compose.yml ps
+	docker-compose -f docker-compose.yml ps
 
 .PHONY: env-clean
 env-clean: env-down
@@ -75,11 +75,11 @@ env-clean: env-down
 start-e2e:
 	curl --request DELETE --url http://localhost:9200/e2e* \
 	&& docker rm -f zeebe-e2e || true \
-	&& docker-compose -f operate/docker-compose.yml up --force-recreate -d zeebe-e2e \
+	&& docker-compose -f docker-compose.yml up --force-recreate -d zeebe-e2e \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=localhost:26503 \
 	CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX=e2e \
 	CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX=e2eoperate \
 	CAMUNDA_OPERATE_IMPORTER_READERBACKOFF=0 \
 	CAMUNDA_OPERATE_IMPORTER_SCHEDULERBACKOFF=0 \
-	mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dserver.port=8081
+	mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dserver.port=8081
