@@ -21,10 +21,12 @@ public final class EngineConfiguration {
   public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
 
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
+  public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
+  private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -52,6 +54,16 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setDrgCacheCapacity(final int drgCacheCapacity) {
     this.drgCacheCapacity = drgCacheCapacity;
+    return this;
+  }
+
+  public Duration getJobsTimeoutCheckerPollingInterval() {
+    return jobsTimeoutCheckerPollingInterval;
+  }
+
+  public EngineConfiguration setJobsTimeoutCheckerPollingInterval(
+      final Duration jobsTimeoutCheckerPollingInterval) {
+    this.jobsTimeoutCheckerPollingInterval = jobsTimeoutCheckerPollingInterval;
     return this;
   }
 }

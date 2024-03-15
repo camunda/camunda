@@ -15,11 +15,13 @@ public final class EngineCfg implements ConfigurationEntry {
 
   private MessagesCfg messages = new MessagesCfg();
   private CachesCfg caches = new CachesCfg();
+  private JobsCfg jobs = new JobsCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     messages.init(globalConfig, brokerBase);
     caches.init(globalConfig, brokerBase);
+    jobs.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -38,15 +40,24 @@ public final class EngineCfg implements ConfigurationEntry {
     this.caches = caches;
   }
 
+  public JobsCfg getJobs() {
+    return jobs;
+  }
+
+  public void setJobs(final JobsCfg jobs) {
+    this.jobs = jobs;
+  }
+
   @Override
   public String toString() {
-    return "EngineCfg{" + "messages=" + messages + ", caches=" + caches + '}';
+    return "EngineCfg{" + "messages=" + messages + ", caches=" + caches + ", jobs=" + jobs + '}';
   }
 
   public EngineConfiguration createEngineConfiguration() {
     return new EngineConfiguration()
         .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
         .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
-        .setDrgCacheCapacity(caches.getDrgCacheCapacity());
+        .setDrgCacheCapacity(caches.getDrgCacheCapacity())
+        .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval());
   }
 }
