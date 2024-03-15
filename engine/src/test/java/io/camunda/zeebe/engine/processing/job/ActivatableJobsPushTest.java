@@ -156,7 +156,7 @@ public class ActivatableJobsPushTest {
     // given
     final int activationCount = 2;
     final long jobKey = createJob(jobType, PROCESS_ID, variables);
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.TIME_OUT_POLLING_INTERVAL);
 
     // when
     // job times out
