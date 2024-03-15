@@ -422,7 +422,7 @@ public class UserTaskControllerTest {
             "No update data provided. Provide at least an \"action\" or a non-null value "
                 + "for a supported attribute in the \"changeset\".");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1"));
 
     // when / then
     webClient
@@ -451,12 +451,12 @@ public class UserTaskControllerTest {
             HttpStatus.BAD_REQUEST,
             "The provided due date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1"));
 
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -481,12 +481,12 @@ public class UserTaskControllerTest {
             HttpStatus.BAD_REQUEST,
             "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1"));
 
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -513,12 +513,12 @@ public class UserTaskControllerTest {
             "The provided due date 'bar' cannot be parsed as a date according to RFC 3339, section 5.6. "
                 + "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1"));
 
     // when / then
     webClient
         .patch()
-        .uri("api/v1/user-tasks/1")
+        .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(request), UserTaskUpdateRequest.class)
@@ -546,7 +546,7 @@ public class UserTaskControllerTest {
             "No update data provided. Provide at least an \"action\" or a non-null value "
                 + "for a supported attribute in the \"changeset\".");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1"));
 
     // when / then
     webClient
@@ -575,7 +575,7 @@ public class UserTaskControllerTest {
             "No update data provided. Provide at least an \"action\" or a non-null value "
                 + "for a supported attribute in the \"changeset\".");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1"));
 
     // when / then
     webClient
@@ -615,7 +615,7 @@ public class UserTaskControllerTest {
             HttpStatus.NOT_FOUND,
             "Command 'COMPLETE' rejected with code 'NOT_FOUND': Task not found");
     expectedBody.setTitle("NOT_FOUND");
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
@@ -660,7 +660,7 @@ public class UserTaskControllerTest {
             HttpStatus.CONFLICT,
             "Command 'COMPLETE' rejected with code 'INVALID_STATE': Task is not in state CREATED");
     expectedBody.setTitle("INVALID_STATE");
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
@@ -705,7 +705,7 @@ public class UserTaskControllerTest {
             HttpStatus.BAD_REQUEST,
             "Command 'COMPLETE' rejected with code '" + rejectionType + "': Just an error");
     expectedBody.setTitle(rejectionType.name());
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
@@ -750,7 +750,7 @@ public class UserTaskControllerTest {
             HttpStatus.INTERNAL_SERVER_ERROR,
             "Command 'COMPLETE' rejected with code '" + rejectionType + "': Just an error");
     expectedBody.setTitle(rejectionType.name());
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1/completion"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
     webClient
@@ -956,7 +956,7 @@ public class UserTaskControllerTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "No assignee provided");
     expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/v1/user-tasks/1/assignment"));
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1/assignment"));
 
     // when / then
     webClient
