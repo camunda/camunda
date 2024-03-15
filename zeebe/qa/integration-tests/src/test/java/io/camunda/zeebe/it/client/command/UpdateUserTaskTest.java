@@ -21,6 +21,8 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,9 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 @AutoCloseResources
 class UpdateUserTaskTest {
+
+  private static final String TEST_TIME =
+      ZonedDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneId.of("UTC")).toString();
 
   @TestZeebe(clusterSize = 1, partitionCount = 1, replicationFactor = 1)
   private static final TestCluster CLUSTER =
@@ -64,21 +69,21 @@ class UpdateUserTaskTest {
   @Test
   void shouldUpdateUserTaskWithDueDate() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).dueDate("myDate").send().join();
+    client.newUserTaskUpdateCommand(userTaskKey).dueDate(TEST_TIME).send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
-        userTaskKey, (userTask) -> assertThat(userTask.getDueDate()).isEqualTo("myDate"));
+        userTaskKey, (userTask) -> assertThat(userTask.getDueDate()).isEqualTo(TEST_TIME));
   }
 
   @Test
   void shouldUpdateUserTaskWithFollowUpDate() {
     // when
-    client.newUserTaskUpdateCommand(userTaskKey).followUpDate("myDate").send().join();
+    client.newUserTaskUpdateCommand(userTaskKey).followUpDate(TEST_TIME).send().join();
 
     // then
     ZeebeAssertHelper.assertUserTaskUpdated(
-        userTaskKey, (userTask) -> assertThat(userTask.getFollowUpDate()).isEqualTo("myDate"));
+        userTaskKey, (userTask) -> assertThat(userTask.getFollowUpDate()).isEqualTo(TEST_TIME));
   }
 
   @Test
@@ -86,8 +91,8 @@ class UpdateUserTaskTest {
     // when
     client
         .newUserTaskUpdateCommand(userTaskKey)
-        .dueDate("myDate")
-        .followUpDate("myOtherDate")
+        .dueDate(TEST_TIME)
+        .followUpDate(TEST_TIME)
         .send()
         .join();
 
@@ -95,8 +100,8 @@ class UpdateUserTaskTest {
     ZeebeAssertHelper.assertUserTaskUpdated(
         userTaskKey,
         (userTask) -> {
-          assertThat(userTask.getDueDate()).isEqualTo("myDate");
-          assertThat(userTask.getFollowUpDate()).isEqualTo("myOtherDate");
+          assertThat(userTask.getDueDate()).isEqualTo(TEST_TIME);
+          assertThat(userTask.getFollowUpDate()).isEqualTo(TEST_TIME);
         });
   }
 
@@ -177,7 +182,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldClearUserTaskDueDate() {
     // given
-    client.newUserTaskUpdateCommand(userTaskKey).dueDate("foo").send().join();
+    client.newUserTaskUpdateCommand(userTaskKey).dueDate(TEST_TIME).send().join();
 
     // when
     client.newUserTaskUpdateCommand(userTaskKey).clearDueDate().send().join();
@@ -190,7 +195,7 @@ class UpdateUserTaskTest {
   @Test
   void shouldClearUserTaskFollowUpDate() {
     // given
-    client.newUserTaskUpdateCommand(userTaskKey).followUpDate("foo").send().join();
+    client.newUserTaskUpdateCommand(userTaskKey).followUpDate(TEST_TIME).send().join();
 
     // when
     client.newUserTaskUpdateCommand(userTaskKey).clearFollowUpDate().send().join();
@@ -232,5 +237,42 @@ class UpdateUserTaskTest {
     assertThatThrownBy(() -> client.newUserTaskUpdateCommand(userTaskKey).send().join())
         .hasCauseInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
+  }
+
+  @Test
+  public void shouldRejectIfMalformedDueDate() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUserTaskUpdateCommand(userTaskKey).dueDate("foo").send().join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("The provided due date 'foo' cannot be parsed as a date");
+  }
+
+  @Test
+  public void shouldRejectIfMalformedFollowUpDate() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUserTaskUpdateCommand(userTaskKey).followUpDate("foo").send().join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("The provided follow-up date 'foo' cannot be parsed as a date");
+  }
+
+  @Test
+  public void shouldRejectIfMalformedDueDateAndFollowUpDate() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUserTaskUpdateCommand(userTaskKey)
+                    .dueDate("bar")
+                    .followUpDate("foo")
+                    .send()
+                    .join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("The provided due date 'bar' cannot be parsed as a date")
+        .hasMessageContaining("The provided follow-up date 'foo' cannot be parsed as a date");
   }
 }
