@@ -13,6 +13,28 @@ camunda-platform:
       value: "2s"
     - name: ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTREQUESTTIMEOUT
       value: "10s"
+    - name: ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDSPERFOLLOWER
+      value: "32"
+    - name: ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD
+      value: "10000"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+      value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
+      value: "http://camunda-elasticsearch.dd-region-0.svc.cluster.local:9200"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHREGION1_CLASSNAME
+      value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHREGION1_ARGS_URL
+      value: "http://camunda-elasticsearch.dd-region-1.svc.cluster.local:9200"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHREGION1_ARGS_RETENTION_MINIMUMAGE
+      value: "10m"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHREGION1_ARGS_RETENTION_ENABLED
+      value: "true"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHREGION1_ARGS_RETENTION_POLICYNAME
+      value: "zeebe-record-retention-policy"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHREGION1_ARGS_INDEX_PREFIX
+      value: "zeebe-record"
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHREGION1_ARGS_INDEX_INDEXSUFFIXDATEPATTERN
+      value: "yyyy-MM-dd_HH"    
 
   zeebe-gateway:
     env:
@@ -26,7 +48,7 @@ camunda-platform:
    
 starter:
   replicas: 1
-  rate: 25
+  rate: 75
   
 worker:
-  replicas: 1
+  replicas: 2
