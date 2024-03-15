@@ -149,7 +149,8 @@ public final class EngineProcessors {
         scheduledTaskStateFactory,
         bpmnBehaviors,
         writers,
-        jobMetrics);
+        jobMetrics,
+        config);
 
     addIncidentProcessors(
         processingState,
