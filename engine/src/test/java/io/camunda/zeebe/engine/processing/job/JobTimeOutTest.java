@@ -87,7 +87,6 @@ public final class JobTimeOutTest {
 
     // when
     ENGINE.reprocess();
-    ENGINE.jobs().withType(jobType).activate();
 
     // then
     ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
