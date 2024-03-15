@@ -506,6 +506,7 @@ public final class JobStateTest {
     final long since = 65536L;
     jobState.forEachTimedOutEntry(
         since,
+        null,
         (k, e) -> {
           timedOutKeys.add(k);
           return k.longValue() < 3;
@@ -528,6 +529,7 @@ public final class JobStateTest {
     final long since = 65536L;
     jobState.forEachTimedOutEntry(
         since,
+        null,
         (k, e) -> {
           timedOutKeys.add(k);
           return true;
@@ -783,7 +785,7 @@ public final class JobStateTest {
   private List<Long> getTimedOutKeys(final long since) {
     final List<Long> timedOutKeys = new ArrayList<>();
 
-    jobState.forEachTimedOutEntry(since, (k, e) -> timedOutKeys.add(k));
+    jobState.forEachTimedOutEntry(since, null, (k, e) -> timedOutKeys.add(k));
     return timedOutKeys;
   }
 

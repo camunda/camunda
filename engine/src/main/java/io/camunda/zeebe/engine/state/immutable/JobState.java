@@ -15,7 +15,20 @@ import org.agrona.DirectBuffer;
 
 public interface JobState {
 
-  void forEachTimedOutEntry(long upperBound, BiPredicate<Long, JobRecord> callback);
+  /**
+   * Loops over all timed-out job entries and applies the provided callback.
+   *
+   * @param executionTimestamp Timestamp against which it's determined whether the deadline has
+   *     expired
+   * @param startAt Index used to start the iteration at; looping starts at the beginning when
+   *     startAt is {@code null}
+   * @param callback A callback method to be applied to each job entry. It must return a boolean
+   *     that when {@code true} allows the loop to continue, or when {@code false} stops iteration.
+   * @return The next index to start iteration from if the iteration has stopped because the {@code
+   *     callback} method returned false or {@code null} if it was not the case.
+   */
+  DeadlineIndex forEachTimedOutEntry(
+      long executionTimestamp, final DeadlineIndex startAt, BiPredicate<Long, JobRecord> callback);
 
   boolean exists(long jobKey);
 
@@ -30,6 +43,9 @@ public interface JobState {
   void setJobsAvailableCallback(Consumer<String> callback);
 
   long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback);
+
+  /** Index to point to a specific position in the jobs with deadline column family. */
+  record DeadlineIndex(long deadline, long key) {}
 
   enum State {
     ACTIVATABLE((byte) 0),

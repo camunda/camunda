@@ -15,17 +15,26 @@ import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.time.Duration;
+import org.agrona.collections.MutableInteger;
 
 public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   private final JobState state;
   private final Duration pollingInterval;
+  private final int batchLimit = 1000;
 
   private boolean shouldReschedule = false;
 
   private ReadonlyStreamProcessorContext processingContext;
   private final Task deactivateTimedOutJobs;
+
+  /** Keeps track of the timestamp to compare the message deadlines against. */
+  private long executionTimestamp = -1;
+
+  /** Keeps track of where to continue between iterations. */
+  private DeadlineIndex startAtIndex = null;
 
   public JobTimeoutChecker(final JobState state, final Duration pollingInterval) {
     this.state = state;
@@ -38,7 +47,7 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
     this.processingContext = processingContext;
     shouldReschedule = true;
 
-    scheduleDeactivateTimedOutJobsTask();
+    scheduleDeactivateTimedOutJobsTask(pollingInterval);
   }
 
   @Override
@@ -59,11 +68,11 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onResumed() {
     shouldReschedule = true;
-    scheduleDeactivateTimedOutJobsTask();
+    scheduleDeactivateTimedOutJobsTask(pollingInterval);
   }
 
-  private void scheduleDeactivateTimedOutJobsTask() {
-    processingContext.getScheduleService().runDelayed(pollingInterval, deactivateTimedOutJobs);
+  private void scheduleDeactivateTimedOutJobsTask(final Duration idleInterval) {
+    processingContext.getScheduleService().runDelayed(idleInterval, deactivateTimedOutJobs);
   }
 
   private void cancelTimer() {
@@ -74,12 +83,33 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
 
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-      final long now = currentTimeMillis();
-      state.forEachTimedOutEntry(
-          now,
-          (key, record) -> taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record));
+      if (executionTimestamp == -1) {
+        executionTimestamp = currentTimeMillis();
+      }
+
+      final var counter = new MutableInteger(0);
+
+      final DeadlineIndex nextIndex =
+          state.forEachTimedOutEntry(
+              executionTimestamp,
+              startAtIndex,
+              (key, record) -> {
+                if (counter.getAndIncrement() >= batchLimit) {
+                  return false;
+                }
+
+                return taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record);
+              });
+
       if (shouldReschedule) {
-        scheduleDeactivateTimedOutJobsTask();
+        if (nextIndex != null) {
+          startAtIndex = nextIndex;
+          scheduleDeactivateTimedOutJobsTask(Duration.ZERO);
+        } else {
+          executionTimestamp = -1;
+          startAtIndex = null;
+          scheduleDeactivateTimedOutJobsTask(pollingInterval);
+        }
       }
       return taskResultBuilder.build();
     }
