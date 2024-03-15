@@ -105,7 +105,7 @@ public final class ActivatableJobsNotificationTests {
     activateJobs(1, Duration.ofMillis(10));
 
     // when
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.TIME_OUT_POLLING_INTERVAL);
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // then
@@ -117,7 +117,7 @@ public final class ActivatableJobsNotificationTests {
     // given
     createProcessInstanceAndJobs(1);
     final long jobKey = activateJobs(1, Duration.ofMillis(10)).getValue().getJobKeys().get(0);
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutChecker.TIME_OUT_POLLING_INTERVAL);
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // when
