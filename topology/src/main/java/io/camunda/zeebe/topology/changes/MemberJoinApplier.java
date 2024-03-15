@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
@@ -32,12 +33,21 @@ final class MemberJoinApplier implements OperationApplier {
   @Override
   public Either<Exception, UnaryOperator<MemberState>> init(
       final ClusterTopology currentClusterTopology) {
-    if (currentClusterTopology.hasMember(memberId)) {
+    if (currentClusterTopology.hasMember(memberId)
+        && !currentClusterTopology.getMember(memberId).state().equals(State.JOINING)) {
       return Either.left(
           new IllegalStateException(
               String.format(
                   "Expected to join member %s, but the member is already part of the topology",
                   memberId)));
+    }
+
+    if (currentClusterTopology.hasMember(memberId)
+        && currentClusterTopology.getMember(memberId).state().equals(State.JOINING)) {
+      // If member is already joining, then we don't need to set it again. This can happen if the
+      // node restarted while applying the join operation. To ensure that the topology change can
+      // make progress, we do not treat this as an error.
+      return Either.right(UnaryOperator.identity());
     }
 
     return Either.right(
