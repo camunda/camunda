@@ -13,6 +13,7 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.spring.client.annotation.Deployment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeDeploymentValue;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
+import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -109,7 +110,6 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
   public Optional<ZeebeDeploymentValue> readAnnotation(final ClassInfo beanInfo) {
     final Optional<Deployment> annotation = beanInfo.getAnnotation(Deployment.class);
     if (annotation.isEmpty()) {
-      // we don't support deprecated annotations anymore
       return Optional.empty();
     } else {
       final List<String> resources =

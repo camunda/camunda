@@ -9,6 +9,7 @@ package io.camunda.zeebe.spring.client.annotation.processor;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
+import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.util.List;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;

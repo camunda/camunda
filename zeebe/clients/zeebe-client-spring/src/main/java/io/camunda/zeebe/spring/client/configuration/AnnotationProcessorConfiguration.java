@@ -5,9 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.spring.client.annotation.processor;
+package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
+import io.camunda.zeebe.spring.client.annotation.processor.AbstractZeebeAnnotationProcessor;
+import io.camunda.zeebe.spring.client.annotation.processor.ZeebeAnnotationProcessorRegistry;
+import io.camunda.zeebe.spring.client.annotation.processor.ZeebeDeploymentAnnotationProcessor;
+import io.camunda.zeebe.spring.client.annotation.processor.ZeebeWorkerAnnotationProcessor;
+import io.camunda.zeebe.spring.client.event.ZeebeClientEventListener;
 import io.camunda.zeebe.spring.client.jobhandling.JobWorkerManager;
 import java.util.List;
 import org.springframework.context.annotation.Bean;

@@ -15,6 +15,7 @@ import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCust
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.bean.MethodInfo;
+import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.JobWorkerManager;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;

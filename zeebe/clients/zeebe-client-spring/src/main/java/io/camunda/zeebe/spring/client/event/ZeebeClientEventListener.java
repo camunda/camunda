@@ -5,10 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.spring.client.annotation.processor;
+package io.camunda.zeebe.spring.client.event;
 
-import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
-import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
+import io.camunda.zeebe.spring.client.annotation.processor.ZeebeAnnotationProcessorRegistry;
 import org.springframework.context.event.EventListener;
 
 public class ZeebeClientEventListener {

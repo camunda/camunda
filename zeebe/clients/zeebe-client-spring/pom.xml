@@ -15,7 +15,7 @@
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>spring-client-zeebe</artifactId>
+  <artifactId>zeebe-client-spring</artifactId>
 
   <dependencies>
     <dependency>
