@@ -44,11 +44,11 @@ import org.springframework.core.env.ConfigurableEnvironment;
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @EnableAutoConfiguration
-public class Application {
+public class StandaloneOperate {
 
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
-  private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneOperate.class);
 
   public static void main(final String[] args) {
 
@@ -58,7 +58,7 @@ public class Application {
     System.setProperty(
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
-    final SpringApplication springApplication = new SpringApplication(Application.class);
+    final SpringApplication springApplication = new SpringApplication(StandaloneOperate.class);
     springApplication.setAddCommandLineProperties(true);
     springApplication.addListeners(new ApplicationErrorListener());
     setDefaultProperties(springApplication);

@@ -474,7 +474,7 @@
             </program>
             <program>
               <id>operate</id>
-              <mainClass>io.camunda.standalone.Application</mainClass>
+              <mainClass>io.camunda.standalone.StandaloneOperate</mainClass>
             </program>
             <program>
               <id>restore</id>
