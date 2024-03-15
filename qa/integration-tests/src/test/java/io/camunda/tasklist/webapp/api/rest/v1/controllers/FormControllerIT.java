@@ -92,6 +92,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
   @Nested
   class LinkedFormTests {
     private DeploymentEvent lastVersionDeployedData = null;
+    private DeploymentEvent v2DeployedData = null;
 
     @BeforeEach
     public void setUp() {
@@ -105,11 +106,12 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
             .send()
             .join();
 
-        zeebeClient
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("formDeployedV2.form")
-            .send()
-            .join();
+        v2DeployedData =
+            zeebeClient
+                .newDeployResourceCommand()
+                .addResourceFromClasspath("formDeployedV2.form")
+                .send()
+                .join();
 
         lastVersionDeployedData =
             zeebeClient
@@ -187,6 +189,34 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
                     .isEqualTo(tester.getProcessDefinitionKey());
                 assertThat(form.getIsDeleted()).isEqualTo(false);
                 assertThat(form.getSchema()).isNotBlank().doesNotContain("taglist");
+                assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
+              });
+    }
+
+    @Test
+    public void getLinkedFormByFormKey() {
+      // given
+      final var formId = "Form_0mik7px";
+      final var formKey = v2DeployedData.getForm().stream().findFirst().get().getFormKey();
+
+      // when
+      final var result =
+          mockMvcHelper.doRequest(
+              get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formKey)
+                  .param("processDefinitionKey", tester.getProcessDefinitionKey()));
+
+      // then
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, FormResponse.class)
+          .satisfies(
+              form -> {
+                assertThat(form.getId()).isEqualTo(formId);
+                assertThat(form.getVersion()).isEqualTo(2L);
+                assertThat(form.getProcessDefinitionKey())
+                    .isEqualTo(tester.getProcessDefinitionKey());
+                assertThat(form.getIsDeleted()).isEqualTo(false);
                 assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
               });
     }

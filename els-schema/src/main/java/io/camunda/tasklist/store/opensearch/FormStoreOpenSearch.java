@@ -79,11 +79,27 @@ public class FormStoreOpenSearch implements FormStore {
                       b.bool(
                           bool ->
                               bool.must(
-                                      q ->
-                                          q.match(
-                                              m ->
-                                                  m.field(TaskTemplate.FORM_ID)
-                                                      .query(FieldValue.of(formId))))
+                                      must ->
+                                          must.bool(
+                                              boolIds ->
+                                                  boolIds
+                                                      .should(
+                                                          q1 ->
+                                                              q1.match(
+                                                                  m ->
+                                                                      m.field(TaskTemplate.FORM_ID)
+                                                                          .query(
+                                                                              FieldValue.of(
+                                                                                  formId))))
+                                                      .should(
+                                                          q2 ->
+                                                              q2.match(
+                                                                  m ->
+                                                                      m.field(TaskTemplate.FORM_KEY)
+                                                                          .query(
+                                                                              FieldValue.of(
+                                                                                  formId))))
+                                                      .minimumShouldMatch("1")))
                                   .must(
                                       q ->
                                           q.match(
@@ -148,11 +164,33 @@ public class FormStoreOpenSearch implements FormStore {
               .size(1);
 
       final Query.Builder bpmnIdProcessQ = new Query.Builder();
-      bpmnIdProcessQ.terms(
-          terms ->
-              terms
-                  .field(FormIndex.BPMN_ID)
-                  .terms(t -> t.value(Collections.singletonList(FieldValue.of(formId)))));
+
+      bpmnIdProcessQ.bool(
+          boolQ ->
+              boolQ
+                  .should(
+                      q1 ->
+                          q1.terms(
+                              terms ->
+                                  terms
+                                      .field(FormIndex.BPMN_ID)
+                                      .terms(
+                                          t ->
+                                              t.value(
+                                                  Collections.singletonList(
+                                                      FieldValue.of(formId))))))
+                  .should(
+                      q2 ->
+                          q2.terms(
+                              terms ->
+                                  terms
+                                      .field(FormIndex.ID)
+                                      .terms(
+                                          t ->
+                                              t.value(
+                                                  Collections.singletonList(
+                                                      FieldValue.of(formId))))))
+                  .minimumShouldMatch("1"));
 
       if (formVersion == null) {
         // get the latest version where isDeleted is false (highest active version)

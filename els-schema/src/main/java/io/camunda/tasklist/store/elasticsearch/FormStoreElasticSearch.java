@@ -142,7 +142,11 @@ public class FormStoreElasticSearch implements FormStore {
     final SearchRequest searchRequest = new SearchRequest(formIndex.getFullQualifiedName());
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-    boolQuery.must(QueryBuilders.termQuery(FormIndex.BPMN_ID, formId));
+    boolQuery.must(
+        QueryBuilders.boolQuery()
+            .should(QueryBuilders.termQuery(FormIndex.BPMN_ID, formId))
+            .should(QueryBuilders.termQuery(FormIndex.ID, formId))
+            .minimumShouldMatch(1));
     if (formVersion != null) {
       // with the version set, you can return the form that was deleted, because of backward
       // compatibility
@@ -184,7 +188,11 @@ public class FormStoreElasticSearch implements FormStore {
     try {
       final BoolQueryBuilder boolQuery =
           QueryBuilders.boolQuery()
-              .must(QueryBuilders.matchQuery(TaskTemplate.FORM_ID, formId))
+              .must(
+                  QueryBuilders.boolQuery()
+                      .should(QueryBuilders.matchQuery(TaskTemplate.FORM_ID, formId))
+                      .should(QueryBuilders.matchQuery(TaskTemplate.FORM_KEY, formId))
+                      .minimumShouldMatch(1))
               .must(
                   QueryBuilders.matchQuery(
                       TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId));
