@@ -17,7 +17,7 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.engine.processing.job.JobTimeoutChecker;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -683,7 +683,7 @@ public final class BrokerReprocessingTest {
 
     final ControlledActorClock clock = brokerRule.getClock();
     final Duration pollingInterval =
-        JobTimeoutChecker.TIME_OUT_POLLING_INTERVAL
+        EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL
             // this shouldn't be needed but is caused by the fact hat on reprocessing without
             // a snapshot a new deadline is set for the job
             // https://github.com/zeebe-io/zeebe/issues/1800

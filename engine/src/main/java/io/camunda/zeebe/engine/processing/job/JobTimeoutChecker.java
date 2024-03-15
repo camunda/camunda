@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.time.Duration;
 
 public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
-  public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   private final JobState state;
   private final Duration pollingInterval;
 
