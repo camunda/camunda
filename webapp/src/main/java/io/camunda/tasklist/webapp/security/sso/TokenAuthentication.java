@@ -101,16 +101,18 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
     return super.isAuthenticated();
   }
 
-  private void getNewTokenByRefreshToken() {
+  public String getNewTokenByRefreshToken() {
     try {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);
       final TokenHolder tokenHolder = tokenRequest.execute();
       authenticate(
           tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
       getLogger().info("New tokens received and validated.");
+      return accessToken;
     } catch (Auth0Exception e) {
       getLogger().error(e.getMessage(), e.getCause());
       setAuthenticated(false);
+      return null;
     }
   }
 

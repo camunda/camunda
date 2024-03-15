@@ -89,4 +89,14 @@ public class SSOUserReader implements UserReader {
     return map(
         usernames, name -> new UserDTO().setDisplayName(name).setUserId(name).setApiUser(false));
   }
+
+  @Override
+  public Optional<String> getUserToken(final Authentication authentication) {
+    if (authentication instanceof TokenAuthentication) {
+      return Optional.of(((TokenAuthentication) authentication).getNewTokenByRefreshToken());
+    } else {
+      throw new UnsupportedOperationException(
+          "Not supported for token class: " + authentication.getClass().getName());
+    }
+  }
 }

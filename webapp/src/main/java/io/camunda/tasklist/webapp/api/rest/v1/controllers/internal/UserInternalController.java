@@ -39,4 +39,17 @@ public class UserInternalController extends ApiErrorController {
   public ResponseEntity<UserDTO> getCurrentUser() {
     return ResponseEntity.ok(userReader.getCurrentUser());
   }
+
+  @Operation(
+      summary = "Returns a new access token.",
+      responses = {
+        @ApiResponse(
+            description = "Token successfully created and returned",
+            responseCode = "200",
+            useReturnTypeSchema = true)
+      })
+  @GetMapping("token")
+  public String getToken() {
+    return userReader.getUserToken();
+  }
 }

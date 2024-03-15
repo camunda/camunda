@@ -76,4 +76,10 @@ public class IdentityUserReader implements UserReader {
   public List<UserDTO> getUsersByUsernames(final List<String> usernames) {
     return map(usernames, name -> new UserDTO().setUserId(name).setDisplayName(name));
   }
+
+  @Override
+  public Optional<String> getUserToken(final Authentication authentication) {
+    throw new UnsupportedOperationException(
+        "Get token is not supported for Identity authentication");
+  }
 }

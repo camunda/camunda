@@ -58,4 +58,10 @@ public class SearchEngineUserReader implements UserReader {
                 .setDisplayName(userEntity.getDisplayName())
                 .setApiUser(false));
   }
+
+  @Override
+  public Optional<String> getUserToken(final Authentication authentication) {
+    throw new UnsupportedOperationException(
+        "Get token is not supported for Identity authentication");
+  }
 }

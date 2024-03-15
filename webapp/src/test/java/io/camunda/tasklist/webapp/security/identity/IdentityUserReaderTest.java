@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -119,5 +120,15 @@ class IdentityUserReaderTest {
 
     // then
     assertFalse(currentUser.isPresent());
+  }
+
+  @Test
+  public void shouldReturnExceptionWhenGettingToken() {
+    final Jwt jwt = mock(Jwt.class);
+    final var jwtAuthenticationToken = mock(IdentityTenantAwareJwtAuthenticationToken.class);
+
+    assertThatThrownBy(() -> identityUserReader.getUserToken(jwtAuthenticationToken))
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessage("Get token is not supported for Identity authentication");
   }
 }

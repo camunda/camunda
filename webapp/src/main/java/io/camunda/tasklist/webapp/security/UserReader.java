@@ -55,4 +55,20 @@ public interface UserReader {
   }
 
   List<UserDTO> getUsersByUsernames(List<String> usernames);
+
+  default String getUserToken() {
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication instanceof AnonymousAuthenticationToken) {
+      throw new UnauthenticatedUserException("User is not authenticated");
+    }
+
+    return getUserToken(authentication)
+        .orElseThrow(
+            () ->
+                new TasklistRuntimeException(
+                    String.format(
+                        "Could not build UserDTO from authentication %s", authentication)));
+  }
+
+  Optional<String> getUserToken(final Authentication authentication);
 }
