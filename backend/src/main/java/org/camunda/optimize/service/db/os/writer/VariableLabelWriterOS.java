@@ -22,11 +22,11 @@ public class VariableLabelWriterOS implements VariableLabelWriter {
   @Override
   public void createVariableLabelUpsertRequest(
       final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

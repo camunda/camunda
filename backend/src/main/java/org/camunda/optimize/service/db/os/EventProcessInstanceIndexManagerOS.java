@@ -34,6 +34,6 @@ public class EventProcessInstanceIndexManagerOS extends EventProcessInstanceInde
 
   @Override
   public void syncAvailableIndices() {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

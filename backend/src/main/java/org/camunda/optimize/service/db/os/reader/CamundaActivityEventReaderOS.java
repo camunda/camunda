@@ -29,14 +29,14 @@ public class CamundaActivityEventReaderOS implements CamundaActivityEventReader 
   @Override
   public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionAfter(
       final String definitionKey, final Long eventTimestamp, final int limit) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionAt(
       final String definitionKey, final Long eventTimestamp) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
@@ -46,20 +46,20 @@ public class CamundaActivityEventReaderOS implements CamundaActivityEventReader 
       final Long startTimestamp,
       final Long endTimestamp,
       final int limit) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
       getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Set<String> getIndexSuffixesForCurrentActivityIndices() {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 }

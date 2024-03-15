@@ -33,7 +33,7 @@ public class RunningUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS
 
   @Override
   protected String createInlineUpdateScript() {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return "";
   }
 }

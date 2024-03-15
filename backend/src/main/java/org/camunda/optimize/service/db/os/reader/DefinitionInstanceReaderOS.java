@@ -23,14 +23,14 @@ public class DefinitionInstanceReaderOS implements DefinitionInstanceReader {
 
   @Override
   public Set<String> getAllExistingDefinitionKeys(final DefinitionType type) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 
   @Override
   public Set<String> getAllExistingDefinitionKeys(
       final DefinitionType type, final Set<String> instanceIds) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 }

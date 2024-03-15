@@ -25,12 +25,12 @@ public class VariableUpdateInstanceWriterOS implements VariableUpdateInstanceWri
   @Override
   public List<ImportRequestDto> generateVariableUpdateImports(
       final List<ProcessVariableDto> variableUpdates) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

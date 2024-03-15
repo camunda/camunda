@@ -26,7 +26,7 @@ public abstract class AbstractUserTaskWriterOS implements AbstractUserTaskWriter
       final String importItemName,
       final DatabaseClient databaseClient,
       final List<FlowNodeInstanceDto> userTaskInstances) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return Collections.emptyList();
   }
 }

@@ -24,13 +24,13 @@ public class ExternalVariableReaderOS implements ExternalVariableReader {
   @Override
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
       final Long ingestTimestamp, final int limit) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 }

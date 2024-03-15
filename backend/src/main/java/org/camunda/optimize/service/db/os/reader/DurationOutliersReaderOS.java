@@ -31,7 +31,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
   @Override
   public List<DurationChartEntryDto> getCountByDurationChart(
       final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
@@ -39,21 +39,21 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
   public Map<String, FindingsDto> getFlowNodeOutlierMap(
       final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto>
           outlierAnalysisParams) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<VariableTermDto> getSignificantOutlierVariableTerms(
       final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(
       final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> outlierParams) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 }

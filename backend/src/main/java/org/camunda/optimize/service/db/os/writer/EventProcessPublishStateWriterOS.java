@@ -23,26 +23,26 @@ public class EventProcessPublishStateWriterOS implements EventProcessPublishStat
   @Override
   public IdResponseDto createEventProcessPublishState(
       final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public void updateEventProcessPublishState(
       final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(
       final String eventProcessMappingId) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return false;
   }
 
   @Override
   public void markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(
       final String eventProcessMappingId, final String publishStateIdToExclude) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

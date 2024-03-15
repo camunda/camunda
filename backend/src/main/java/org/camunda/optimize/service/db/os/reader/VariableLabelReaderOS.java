@@ -25,7 +25,7 @@ public class VariableLabelReaderOS implements VariableLabelReader {
   @Override
   public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       final List<String> processDefinitionKeys) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new HashMap<>();
   }
 }

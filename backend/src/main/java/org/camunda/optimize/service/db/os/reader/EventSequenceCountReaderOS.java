@@ -30,47 +30,47 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
   @Override
   public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
       final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(
       final String searchTerm) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(
       final List<String> groups, final String searchTerm) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventCountResponseDto> getEventCountsForCamundaSources(
       final List<CamundaEventSourceEntryDto> camundaSources) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Set<String> getIndexSuffixesForCurrentSequenceCountIndices() {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(
       final EventTypeDto firstEventTypeDto, final EventTypeDto secondEventTypeDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventSequenceCountDto> getAllSequenceCounts() {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 }

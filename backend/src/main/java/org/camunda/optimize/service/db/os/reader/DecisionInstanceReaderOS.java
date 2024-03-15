@@ -22,7 +22,7 @@ public class DecisionInstanceReaderOS implements DecisionInstanceReader {
 
   @Override
   public Set<String> getExistingDecisionDefinitionKeysFromInstances() {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 }

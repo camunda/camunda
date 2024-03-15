@@ -29,8 +29,8 @@ public class VariableUpdateInstanceReaderOS implements VariableUpdateInstanceRea
 
   @Override
   public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
-      Set<String> processInstanceIds) {
-    log.error("Functionality not implemented for OpenSearch");
+      final Set<String> processInstanceIds) {
+    log.debug("Functionality not implemented for OpenSearch");
     return Collections.emptyList();
   }
 }

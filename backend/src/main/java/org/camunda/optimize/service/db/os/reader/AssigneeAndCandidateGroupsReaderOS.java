@@ -32,7 +32,7 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
       @NonNull final String engineAlias,
       @NonNull final Consumer<List<String>> assigneeBatchConsumer,
       final int batchSize) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
@@ -40,20 +40,20 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
       @NonNull final String engineAlias,
       @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
       final int batchSize) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public Set<String> getAssigneeIdsForProcess(
       final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 
   @Override
   public Set<String> getCandidateGroupIdsForProcess(
       final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 }

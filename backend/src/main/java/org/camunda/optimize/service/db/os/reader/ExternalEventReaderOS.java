@@ -29,53 +29,53 @@ public class ExternalEventReaderOS implements ExternalEventReader {
 
   @Override
   public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventDto> getEventsIngestedAfterForGroups(
       final Long ingestTimestamp, final int limit, final List<String> groups) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventDto> getEventsIngestedAtForGroups(
       final Long ingestTimestamp, final List<String> groups) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
       getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Page<DeletableEventDto> getEventsForRequest(
       final EventSearchRequestDto eventSearchRequestDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<String> getEventGroups(final EventGroupRequestDto eventGroupRequestDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 }

@@ -8,7 +8,7 @@
     </encoder>
   </appender>
   
-  <logger name="org.camunda.optimize" level="info" />
+  <logger name="org.camunda.optimize" level="debug" />
   <logger name="io.camunda.zeebe" level="warn" />
 
   <root level="warn">
