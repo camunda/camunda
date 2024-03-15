@@ -38,6 +38,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
@@ -92,6 +93,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   @Autowired private Metrics metrics;
   @Autowired private RestHighLevelClient esClient;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   private ArchiveBatch createArchiveBatch(
       final SearchResponse searchResponse,
@@ -166,7 +168,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   @Override
   public void setIndexLifeCycle(final String destinationIndexName) {
     try {
-      if (operateProperties.getArchiver().isIlmEnabled()) {
+      if (operateProperties.getArchiver().isIlmEnabled() && richOpenSearchClient.index().indexExists(destinationIndexName)) {
         esClient
             .indices()
             .putSettings(
