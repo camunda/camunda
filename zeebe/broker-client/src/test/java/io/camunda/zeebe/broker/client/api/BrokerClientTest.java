@@ -280,6 +280,32 @@ public final class BrokerClientTest {
   }
 
   @Test
+  void shouldReturnRejectionWithCorrectTypeAndReasonAndIgnoreValue() {
+    // given
+    final var request = new TestCommand(1L);
+    broker
+        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
+        .respondWith()
+        .event()
+        .intent(TestCommand.INTENT)
+        .key(ExecuteCommandRequest::key)
+        .rejection(RejectionType.INVALID_ARGUMENT, "foo")
+        .value(null) // value is ignored when reading a rejection
+        .register();
+
+    // when
+    final var responseFuture = client.sendRequestWithRetry(request);
+
+    // then
+    assertThat(responseFuture)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(
+            new BrokerRejectionException(
+                new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+  }
+
+  @Test
   void shouldPassTopologyManagerToDispatchStrategy() {
     // given
     final AtomicReference<BrokerTopologyManager> managerRef = new AtomicReference<>();
