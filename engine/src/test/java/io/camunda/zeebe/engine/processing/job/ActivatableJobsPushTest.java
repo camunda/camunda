@@ -15,6 +15,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
@@ -156,7 +157,7 @@ public class ActivatableJobsPushTest {
     // given
     final int activationCount = 2;
     final long jobKey = createJob(jobType, PROCESS_ID, variables);
-    ENGINE.increaseTime(JobTimeoutChecker.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
 
     // when
     // job times out
