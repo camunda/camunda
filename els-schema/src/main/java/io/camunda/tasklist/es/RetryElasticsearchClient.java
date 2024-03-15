@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.tasklist.util.CollectionUtil;
 import java.io.IOException;
@@ -92,6 +93,8 @@ public class RetryElasticsearchClient {
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ElasticsearchInternalTask elasticsearchTask;
+
+  @Autowired private TasklistProperties tasklistProperties;
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
@@ -220,6 +223,23 @@ public class RetryElasticsearchClient {
           if (!indicesExist(createIndexRequest.index())) {
             return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
           }
+
+          final String replicas =
+              getOrDefaultNumbersOfReplica(createIndexRequest.index(), NO_REPLICA);
+          if (!replicas.equals(
+              String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
+            final UpdateSettingsRequest updateSettingsRequest =
+                new UpdateSettingsRequest(createIndexRequest.index());
+            final Settings settings =
+                Settings.builder()
+                    .put(
+                        NUMBERS_OF_REPLICA,
+                        tasklistProperties.getElasticsearch().getNumberOfReplicas())
+                    .build();
+            updateSettingsRequest.settings(settings);
+            esClient.indices().putSettings(updateSettingsRequest, requestOptions).isAcknowledged();
+          }
+
           try {
             if (createIndexRequest.aliases() != null
                 && !createIndexRequest.aliases().isEmpty()
@@ -407,6 +427,32 @@ public class RetryElasticsearchClient {
         });
   }
 
+  protected Map<String, String> getComponentTemplateProperties(
+      String templatePattern, String... fields) {
+    return executeWithRetries(
+        "GetComponentTemplateSettings " + templatePattern,
+        () -> {
+          final Map<String, String> settings = new HashMap<>();
+          final GetComponentTemplatesRequest request =
+              new GetComponentTemplatesRequest(templatePattern);
+          final GetComponentTemplatesResponse response =
+              esClient.cluster().getComponentTemplate(request, requestOptions);
+          if (response.getComponentTemplates().get(templatePattern) != null) {
+            for (String field : fields) {
+              settings.put(
+                  field,
+                  response
+                      .getComponentTemplates()
+                      .get(templatePattern)
+                      .template()
+                      .settings()
+                      .get(field));
+            }
+          }
+          return settings;
+        });
+  }
+
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
     final Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
     String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
@@ -418,6 +464,17 @@ public class RetryElasticsearchClient {
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
     final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
+    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
+      numbersOfReplica = defaultValue;
+    }
+    return numbersOfReplica;
+  }
+
+  public String getOrDefaultComponentTemplateNumbersOfReplica(
+      String templatePattern, String defaultValue) {
+    final Map<String, String> settings =
+        getComponentTemplateProperties(templatePattern, NUMBERS_OF_REPLICA);
     String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
@@ -696,7 +753,11 @@ public class RetryElasticsearchClient {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (!templatesExist(request.name())
+              || !getOrDefaultComponentTemplateNumbersOfReplica(request.name(), NO_REPLICA)
+                  .equals(
+                      String.valueOf(
+                          tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
             return esClient
                 .cluster()
                 .putComponentTemplate(request, requestOptions)

@@ -14,10 +14,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -144,10 +141,26 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
               tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
 
-      return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
+      return indices.containsAll(allIndexNames)
+          && aliases.containsAll(allAliasesNames)
+          && validateNumberOfReplicas(allIndexNames);
     } catch (Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
     }
+  }
+
+  public boolean validateNumberOfReplicas(final List<String> indexes) {
+    for (String index : indexes) {
+      final Map<String, String> response =
+          retryElasticsearchClient.getIndexSettingsFor(
+              index, RetryElasticsearchClient.NUMBERS_OF_REPLICA);
+      if (!response
+          .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA)
+          .equals(String.valueOf(tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
+        return false;
+      }
+    }
+    return true;
   }
 }

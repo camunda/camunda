@@ -14,13 +14,11 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -138,10 +136,24 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
               tasklistProperties.getOpenSearch().getIndexPrefix() + "*");
       final List<String> allIndexNames =
           map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
-      return indices.containsAll(allIndexNames);
+      return indices.containsAll(allIndexNames) && validateNumberOfReplicas(allIndexNames);
     } catch (Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
     }
+  }
+
+  public boolean validateNumberOfReplicas(final List<String> indexes) {
+    for (String index : indexes) {
+      final IndexSettings response =
+          retryOpenSearchClient.getIndexSettingsFor(
+              index, RetryOpenSearchClient.NUMBERS_OF_REPLICA);
+      if (!response
+          .numberOfReplicas()
+          .equals(String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
+        return false;
+      }
+    }
+    return true;
   }
 }
