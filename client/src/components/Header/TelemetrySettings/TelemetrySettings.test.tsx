@@ -8,7 +8,6 @@
 import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {LabeledInput} from 'components';
 import {loadConfig} from 'config';
 
 import {updateTelemetry} from './service';
@@ -36,7 +35,7 @@ it('should contain a checkbox with the current state of the telemetry settings',
 
   await runLastEffect();
 
-  expect(node.find(LabeledInput).prop('checked')).toBe(true);
+  expect(node.find('Checkbox').prop('checked')).toBe(true);
 });
 
 it('should update the telemetry when applying the changes', async () => {
@@ -44,7 +43,7 @@ it('should update the telemetry when applying the changes', async () => {
 
   await runLastEffect();
 
-  node.find(LabeledInput).simulate('change', {target: {checked: false}});
+  node.find('Checkbox').simulate('change', {target: {checked: false}});
   node.find('.confirm').simulate('click');
 
   expect(updateTelemetry).toHaveBeenCalledWith(false);
