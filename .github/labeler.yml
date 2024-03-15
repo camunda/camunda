@@ -6,5 +6,6 @@ component/zeebe:
 component/operate:
   - changed-files:
     - all-globs-to-any-file:
-      - '!zeebe/**'
       - '!.github/workflows/zeebe-*'
+      - '!dist/**'
+      - '!zeebe/**'

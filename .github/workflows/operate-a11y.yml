@@ -3,6 +3,7 @@ on:
   push:
     paths-ignore:
       - '.github/workflows/zeebe-*'
+      - 'dist/**'
       - 'zeebe/**'
 
 jobs:
