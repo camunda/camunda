@@ -14,10 +14,9 @@ import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.server.RouterFunction;
-import org.springframework.web.reactive.function.server.RouterFunctions;
-import org.springframework.web.reactive.function.server.ServerResponse;
-import reactor.core.publisher.Mono;
+import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.RouterFunctions;
+import org.springframework.web.servlet.function.ServerResponse;
 
 @Profile("broker")
 @ManagementContextConfiguration(value = ManagementContextType.ANY, proxyBeanMethods = false)
@@ -33,7 +32,7 @@ public class BrokerHealthRoutes {
         .build();
   }
 
-  private Mono<ServerResponse> movedPermanently(final String path) {
+  private ServerResponse movedPermanently(final String path) {
     return ServerResponse.status(HttpStatus.MOVED_PERMANENTLY).location(URI.create(path)).build();
   }
 }

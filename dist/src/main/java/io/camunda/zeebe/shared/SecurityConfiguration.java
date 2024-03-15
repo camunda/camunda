@@ -11,20 +11,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.config.web.server.ServerHttpSecurity.CsrfSpec;
-import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfiguration {
 
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE)
-  public SecurityWebFilterChain filterChain(ServerHttpSecurity http) throws Exception {
-    http.securityMatcher(new PathPatternParserServerWebExchangeMatcher("/api/v1/**"))
-        .csrf(CsrfSpec::disable)
-        .authorizeExchange((authz) -> authz.anyExchange().permitAll());
-    return http.build();
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    return http.securityMatcher("/api/v1/**")
+        .csrf(CsrfConfigurer::disable)
+        .authorizeHttpRequests((authz) -> authz.anyRequest().permitAll())
+        .build();
   }
 }
