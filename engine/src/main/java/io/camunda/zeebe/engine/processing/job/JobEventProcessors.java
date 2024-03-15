@@ -82,7 +82,7 @@ public final class JobEventProcessors {
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
                 writers, processingState, processingState.getKeyGenerator(), jobMetrics))
-        .withListener(new JobTimeoutTrigger(jobState))
+        .withListener(new JobTimeoutChecker(jobState))
         .withListener(jobBackoffChecker)
         .withListener(
             new StreamProcessorLifecycleAware() {
