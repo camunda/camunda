@@ -5,42 +5,42 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker;
+package io.camunda.standalone;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.shared.MainSupport;
-import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.ContextClosedEvent;
 
-/**
- * Entry point for the standalone broker application. By default, it enables the {@link
- * Profile#BROKER} profile, loading the appropriate application properties overrides.
- *
- * <p>See {@link #main(String[])} for more.
- */
-// @SpringBootApplication(
-//    proxyBeanMethods = false,
-//    scanBasePackages = {
-//      "io.camunda.zeebe.broker",
-//      "io.camunda.zeebe.shared",
-//      "io.camunda.zeebe.gateway.rest"
-//    })
-// @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker",
-// "io.camunda.zeebe.shared"})
-public class StandaloneBroker
-    implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
+@Profile("broker")
+@Configuration
+@ComponentScan(
+    basePackages = {
+      "io.camunda.zeebe.broker",
+      "io.camunda.zeebe.shared",
+      "io.camunda.zeebe.gateway.rest"
+    })
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
+public class BrokerModuleConfiguration implements ApplicationListener<ContextClosedEvent> {
+
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
+
   private final BrokerConfiguration configuration;
   private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
@@ -48,11 +48,10 @@ public class StandaloneBroker
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
 
-  @Autowired private BrokerShutdownHelper shutdownHelper;
   private Broker broker;
 
   @Autowired
-  public StandaloneBroker(
+  public BrokerModuleConfiguration(
       final BrokerConfiguration configuration,
       final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
@@ -67,28 +66,13 @@ public class StandaloneBroker
     this.brokerClient = brokerClient;
   }
 
-  public static void main(final String[] args) {
-    MainSupport.setDefaultGlobalConfiguration();
-    MainSupport.putSystemPropertyIfAbsent(
-        "spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
+  @PostConstruct
+  public void logModule() {
+    LOGGER.info("Starting Broker");
 
-    final var application =
-        MainSupport.createDefaultApplicationBuilder()
-            .sources(StandaloneBroker.class)
-            .profiles(Profile.BROKER.getId(), "zeebe")
-            .build(args);
-
-    application.run();
-  }
-
-  @Override
-  public void run(final String... args) throws IOException {
     final SystemContext systemContext =
         new SystemContext(
             configuration.config(), identityConfiguration, actorScheduler, cluster, brokerClient);
-
-    springBrokerBridge.registerShutdownHelper(
-        errorCode -> shutdownHelper.initiateShutdown(errorCode));
 
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();
