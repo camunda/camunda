@@ -13,7 +13,7 @@ export const templateOption = (text) =>
   Selector('.TemplateModal .templateContainer .Button').withText(text);
 export const reportContainer = Selector('.Report');
 export const reportName = Selector('.ReportView .name');
-export const reportRenderer = Selector('.ReportRenderer');
+export const reportRenderer = Selector('.ReportRenderer').nth(0);
 export const report = Selector('.ListItem.report');
 export const definitionCopyButton = (definition) => definition.find('.actionBtn').nth(0);
 export const definitionEditButton = (definition) =>

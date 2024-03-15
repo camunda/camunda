@@ -1,33 +1,30 @@
-.Report.ReportView {
-  .reportHeader {
-    margin-bottom: 40px;
-
-    .InstanceCount {
-      margin-top: 0;
-    }
-  }
-
+.ReportEdit {
   .Report__content {
-    padding-right: 40px;
-
     &.hidden {
       display: none;
     }
   }
 
-  .IncompleteReport {
-    font-size: 20px;
-
-    p {
-      top: 25%;
-    }
+  .Report__view {
+    padding-left: 0;
   }
 
-  .viewsContainer {
+  .ReportControlPanel {
+    margin-left: 0;
+  }
+
+  .viewsContainer,
+  .mainView {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
+  }
+
+  .mainView {
+    padding-left: 40px;
+    padding-right: 20px;
   }
 
   .CollapsibleContainer {

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects, runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 import {DataTableSkeleton} from '@carbon/react';
 
@@ -32,7 +32,7 @@ jest.mock('hooks', () => ({
   })),
 }));
 
-it('should load a table seleton while loading the data', () => {
+it('should display a table skeleton while loading the data', () => {
   const node = shallow(<InstanceViewTable {...props} />);
 
   expect(node.find(DataTableSkeleton)).toExist();
@@ -41,18 +41,59 @@ it('should load a table seleton while loading the data', () => {
 
 it('should display the ReportRenderer when the data is loaded', () => {
   const node = shallow(<InstanceViewTable {...props} />);
-  runLastEffect();
+  runAllEffects();
+  runAllEffects();
   expect(node.find(ReportRenderer)).toExist();
 });
 
-it('evaluate the raw data of the report on mount', () => {
+it('should evaluate the raw data of the report on mount', () => {
   shallow(<InstanceViewTable {...props} />);
-  runLastEffect();
+  runAllEffects();
   expect(evaluateReport).toHaveBeenCalledWith(
     {
       data: {
         configuration: {
           xml: 'xml data',
+          sorting: {by: 'startDate', order: 'desc'},
+        },
+        groupBy: {type: 'none', value: null},
+        view: {entity: null, properties: ['rawData']},
+        visualization: 'table',
+      },
+    },
+    [],
+    undefined
+  );
+});
+
+it('should evaluate the raw data of the report on report prop change', () => {
+  const node = shallow(<InstanceViewTable {...props} />);
+  runAllEffects();
+  expect(evaluateReport).toHaveBeenCalledWith(
+    {
+      data: {
+        configuration: {
+          xml: 'xml data',
+          sorting: {by: 'startDate', order: 'desc'},
+        },
+        groupBy: {type: 'none', value: null},
+        view: {entity: null, properties: ['rawData']},
+        visualization: 'table',
+      },
+    },
+    [],
+    undefined
+  );
+
+  node.setProps({report: {data: {configuration: {xml: 'new xml data'}}}});
+  runAllEffects();
+  evaluateReport.mockClear();
+  runLastEffect();
+  expect(evaluateReport).toHaveBeenCalledWith(
+    {
+      data: {
+        configuration: {
+          xml: 'new xml data',
           sorting: {by: 'startDate', order: 'desc'},
         },
         groupBy: {type: 'none', value: null},
@@ -72,7 +113,7 @@ it('should pass the error to reportRenderer if evaluation fails', async () => {
   }));
 
   const node = shallow(<InstanceViewTable {...props} />);
-  runLastEffect();
+  runAllEffects();
   await flushPromises();
 
   expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, ...testError});
@@ -80,14 +121,14 @@ it('should pass the error to reportRenderer if evaluation fails', async () => {
 
 it('evaluate re-evaluate the report when called loadReport prop', () => {
   const node = shallow(<InstanceViewTable {...props} />);
-  runLastEffect();
+  runAllEffects();
 
   const sortParams = {limit: '20', offset: 0};
   const report = {data: {configuration: {sorting: {by: 'startDate', order: 'asc'}}}};
   node.find(ReportRenderer).prop('loadReport')(sortParams, report);
 
   evaluateReport.mockClear();
-  runLastEffect();
+  runAllEffects();
 
   expect(evaluateReport).toHaveBeenCalledWith(report, [], sortParams);
 });

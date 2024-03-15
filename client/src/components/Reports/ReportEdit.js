@@ -10,10 +10,11 @@ import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
 import {Redirect, withRouter} from 'react-router-dom';
 import {Button, Loading, Toggle} from '@carbon/react';
+import classnames from 'classnames';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {ReportRenderer, EntityNameForm, InstanceCount} from 'components';
+import {ReportRenderer, EntityNameForm, InstanceCount, InstanceViewTable} from 'components';
 import {updateEntity, createEntity, evaluateReport, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -27,6 +28,9 @@ import ConflictModal from './ConflictModal';
 import {Configuration} from './controlPanels/Configuration';
 import ReportWarnings from './ReportWarnings';
 import Visualization from './Visualization';
+import {CollapsibleContainer} from './CollapsibleContainer';
+
+import './ReportEdit.scss';
 
 export class ReportEdit extends React.Component {
   state = {
@@ -41,7 +45,10 @@ export class ReportEdit extends React.Component {
     shouldAutoReloadPreview: sessionStorage.getItem('shouldAutoReloadPreview') === 'true',
     frozenReport: this.props.report,
     runButtonLoading: false,
+    showReportRenderer: true,
   };
+
+  containerRef = React.createRef(null);
 
   componentDidMount() {
     const {report} = this.state;
@@ -281,6 +288,29 @@ export class ReportEdit extends React.Component {
     this.setState({runButtonLoading: false});
   };
 
+  showTable = (sectionState) => {
+    if (sectionState !== 'maximized') {
+      this.setState({showReportRenderer: true});
+    }
+  };
+
+  handleTableExpand = (currentState, newState) => {
+    track('changeRawDataView', {
+      from: currentState,
+      to: newState,
+      reportType: this.state.report.data?.visualization,
+    });
+    this.setState({showReportRenderer: newState !== 'maximized'});
+  };
+
+  handleTableCollapse = (currentState, newState) => {
+    track('changeRawDataView', {
+      from: currentState,
+      to: newState,
+      reportType: this.state.report.data?.visualization,
+    });
+  };
+
   render() {
     const {
       report,
@@ -291,6 +321,7 @@ export class ReportEdit extends React.Component {
       shouldAutoReloadPreview,
       frozenReport,
       runButtonLoading,
+      showReportRenderer,
     } = this.state;
     const {name, description, data, combined, reportType} = report;
 
@@ -337,37 +368,57 @@ export class ReportEdit extends React.Component {
             />
           </div>
         </div>
-        <div className="Report__view">
-          <div className="Report__content">
-            {!combined && (
-              <div className="visualization">
-                <Visualization
-                  type={reportType}
-                  report={data}
-                  onChange={(change) => this.updateReport(change, true)}
-                />
-                <Configuration
-                  type={data.visualization}
-                  onChange={this.updateReport}
-                  disabled={loadingReportData}
-                  report={report}
-                  autoPreviewDisabled={!shouldAutoReloadPreview}
-                />
+        <div className="Report__view" ref={this.containerRef}>
+          <div className="viewsContainer">
+            <div className="mainView">
+              <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
+                {!combined && (
+                  <div className="visualization">
+                    <Visualization
+                      type={reportType}
+                      report={data}
+                      onChange={(change) => this.updateReport(change, true)}
+                    />
+                    <Configuration
+                      type={data.visualization}
+                      onChange={this.updateReport}
+                      disabled={loadingReportData}
+                      report={report}
+                      autoPreviewDisabled={!shouldAutoReloadPreview}
+                    />
+                  </div>
+                )}
+
+                {!combined && this.isReportComplete(report) && <ReportWarnings report={report} />}
+
+                {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
+                  <Loading withOverlay={false} className="loading" />
+                ) : (
+                  showReportRenderer && (
+                    <ReportRenderer
+                      error={serverError}
+                      report={shouldAutoReloadPreview ? report : frozenReport}
+                      updateReport={this.updateReport}
+                      loadReport={this.loadReport}
+                    />
+                  )
+                )}
               </div>
-            )}
-
-            {!combined && this.isReportComplete(report) && <ReportWarnings report={report} />}
-
-            {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
-              <Loading withOverlay={false} className="loading" />
-            ) : (
-              <ReportRenderer
-                error={serverError}
-                report={shouldAutoReloadPreview ? report : frozenReport}
-                updateReport={this.updateReport}
-                loadReport={this.loadReport}
-              />
-            )}
+            </div>
+            {!combined &&
+              typeof report.result !== 'undefined' &&
+              report.data?.visualization !== 'table' && (
+                <CollapsibleContainer
+                  maxHeight={this.containerRef.current?.offsetHeight}
+                  initialState="minimized"
+                  onTransitionEnd={this.showTable}
+                  onExpand={this.handleTableExpand}
+                  onCollapse={this.handleTableCollapse}
+                  title={t('report.view.rawData')}
+                >
+                  <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />
+                </CollapsibleContainer>
+              )}
           </div>
           {!combined && reportType === 'process' && (
             <ReportControlPanel
