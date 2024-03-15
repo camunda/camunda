@@ -6,11 +6,13 @@ on:
     paths:
       - 'operate/client/**'
       - '!.github/workflows/zeebe-*'
+      - '!dist/**'
       - '!zeebe/**'
   pull_request:
     paths:
       - 'operate/client/**'
       - '!.github/workflows/zeebe-*'
+      - '!dist/**'
       - '!zeebe/**'
 
 jobs:
