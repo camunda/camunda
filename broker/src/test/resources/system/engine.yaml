@@ -7,3 +7,5 @@ zeebe:
           ttlCheckerInterval: 15s
         caches:
           drgCacheCapacity: 2000
+        jobs:
+          timeoutCheckerPollingInterval: 15s
