@@ -243,6 +243,16 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
@@ -558,6 +568,8 @@
             <dependency>io.camunda:operate-webjar</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-webapp</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-thymeleaf</dependency>
+            <dependency>org.thymeleaf:thymeleaf</dependency>
 
             <!-- Needed for Spring Actuators, which provide health checks and liveness/readiness probed -->
             <dependency>org.springframework.boot:spring-boot-starter-webflux</dependency>
