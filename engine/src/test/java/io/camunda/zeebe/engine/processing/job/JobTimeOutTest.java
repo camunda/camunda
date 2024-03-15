@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -73,9 +74,9 @@ public final class JobTimeOutTest {
   public void shouldTimeOutAfterReprocessing() {
     // given
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final long timeout = 10L;
+    final Duration timeout = Duration.ofSeconds(10);
 
-    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
+    ENGINE.jobs().withType(jobType).withTimeout(timeout.toMillis()).activate();
     ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
     jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
 
