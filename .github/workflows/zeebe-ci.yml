@@ -10,10 +10,12 @@ on:
       - staging
     paths-ignore:
       - '.github/workflows/operate-*'
+      - 'distro/**'
       - 'operate/**'
   pull_request:
     paths-ignore:
       - '.github/workflows/operate-*'
+      - 'distro/**'
       - 'operate/**'
   merge_group: { }
   workflow_dispatch: { }
