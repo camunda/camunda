@@ -2,7 +2,7 @@ name: Operate Backend
 on:
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - ".github/workflows/zeebe-*"
       - "operate/client/**"
