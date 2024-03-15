@@ -20,7 +20,7 @@ public class SecurityConfiguration {
 
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE)
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
     return http.securityMatcher("/api/v1/**")
         .csrf(CsrfConfigurer::disable)
         .authorizeHttpRequests((authz) -> authz.anyRequest().permitAll())

@@ -63,7 +63,7 @@ public abstract class BaseWebConfigurer {
   }
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain webappFilterChain(HttpSecurity http) throws Exception {
     final var authenticationManagerBuilder =
         http.getSharedObject(AuthenticationManagerBuilder.class);
 
