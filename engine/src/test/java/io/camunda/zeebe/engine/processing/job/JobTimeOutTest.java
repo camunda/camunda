@@ -81,7 +81,8 @@ public final class JobTimeOutTest {
     jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
 
     final long jobKey2 = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    ENGINE.jobs().withType(jobType).activate();
+    ENGINE.jobs().withTimeout(timeout.toMillis()).withType(jobType).activate();
+
     ENGINE.job().withKey(jobKey).complete();
 
     // when
