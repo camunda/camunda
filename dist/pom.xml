@@ -477,6 +477,10 @@
               <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
             </program>
             <program>
+              <id>operate</id>
+              <mainClass>io.camunda.standalone.Application</mainClass>
+            </program>
+            <program>
               <id>restore</id>
               <mainClass>io.camunda.zeebe.restore.RestoreApp</mainClass>
             </program>
