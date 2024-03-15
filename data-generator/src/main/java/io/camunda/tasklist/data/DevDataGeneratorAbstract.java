@@ -46,9 +46,9 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   @Autowired private PayloadUtil payloadUtil;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
-  private ExecutorService executor = Executors.newSingleThreadExecutor();
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -66,7 +66,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
                 Thread.sleep(10_000);
                 createZeebeData();
                 created = true;
-              } catch (Exception ex) {
+              } catch (final Exception ex) {
                 LOGGER.error("Demo data was not generated, will retry", ex);
               }
             }
@@ -74,6 +74,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     }
   }
 
+  @Override
   public void createDemoUsers() {
     createUser("john", "John", "Doe");
     createUser("jane", "Jane", "Doe");
@@ -85,7 +86,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     }
   }
 
-  protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
+  protected String userEntityToJSONString(final UserEntity aUser) throws JsonProcessingException {
     return objectMapper.writeValueAsString(aUser);
   }
 
@@ -234,6 +235,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "requestAnnualLeave.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "two_processes.bpmn");
   }
 
   @PreDestroy
@@ -246,7 +248,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
         if (!executor.awaitTermination(200, TimeUnit.MILLISECONDS)) {
           executor.shutdownNow();
         }
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         executor.shutdownNow();
       }
     }

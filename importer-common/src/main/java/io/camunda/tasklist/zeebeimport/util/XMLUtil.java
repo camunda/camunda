@@ -150,7 +150,9 @@ public class XMLUtil {
 
     @Override
     public void endElement(final String uri, final String localName, final String qName) {
-      if ("process".equalsIgnoreCase(localName)) {
+      if (!isCurrentProcess) {
+        // element is not part of the current imported process, skip it
+      } else if ("process".equalsIgnoreCase(localName)) {
         isCurrentProcess = false;
       } else if ("userTaskForm".equalsIgnoreCase(localName)) {
         userTaskFormConsumer.accept(userTaskFormId, userTaskFormJson.toString());
