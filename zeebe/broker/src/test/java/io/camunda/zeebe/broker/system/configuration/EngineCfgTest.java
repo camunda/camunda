@@ -30,6 +30,8 @@ final class EngineCfgTest {
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(Integer.MAX_VALUE);
     assertThat(configuration.getMessagesTtlCheckerInterval()).isEqualTo(Duration.ofMinutes(1));
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(1000L);
+    assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
+        .isEqualTo(Duration.ofSeconds(1));
   }
 
   @Test
@@ -44,5 +46,7 @@ final class EngineCfgTest {
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(1000);
     assertThat(configuration.getMessagesTtlCheckerInterval()).isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
+    assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
+        .isEqualTo(Duration.ofSeconds(15));
   }
 }
