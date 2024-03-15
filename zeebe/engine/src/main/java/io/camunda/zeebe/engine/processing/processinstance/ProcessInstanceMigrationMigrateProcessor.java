@@ -317,6 +317,16 @@ public class ProcessInstanceMigrationMigrateProcessor
             subscribedMessageNames.add(catchEvent.messageName());
           }
           return true;
+        }).ifLeft(
+        failure -> {
+          throw new ProcessInstanceMigrationPreconditionFailedException(
+              """
+              Expected to migrate process instance '%s' \
+              but active element with id '%s' is mapped to element with id '%s' \
+              that must be subscribed to a message catch event. %s"""
+                  .formatted(
+                      processInstanceKey, elementId, targetElementId, failure.getMessage()),
+              RejectionType.INVALID_STATE);
         });
 
     catchEventBehavior.unsubscribeFromMessageEvents(
