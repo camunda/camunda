@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIMED_OUT;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -105,7 +106,7 @@ public final class ActivatableJobsNotificationTests {
     activateJobs(1, Duration.ofMillis(10));
 
     // when
-    ENGINE.increaseTime(JobTimeoutChecker.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // then
@@ -117,7 +118,7 @@ public final class ActivatableJobsNotificationTests {
     // given
     createProcessInstanceAndJobs(1);
     final long jobKey = activateJobs(1, Duration.ofMillis(10)).getValue().getJobKeys().get(0);
-    ENGINE.increaseTime(JobTimeoutChecker.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // when
