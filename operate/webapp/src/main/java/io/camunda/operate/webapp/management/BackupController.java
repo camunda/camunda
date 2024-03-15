@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 @Component
-@RestControllerEndpoint(id = "backups")
+@RestControllerEndpoint(id = "operatebackups")
 public class BackupController extends ErrorController {
 
   private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
