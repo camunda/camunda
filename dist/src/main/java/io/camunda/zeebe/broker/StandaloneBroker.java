@@ -76,7 +76,7 @@ public class StandaloneBroker
     final var application =
         MainSupport.createDefaultApplicationBuilder()
             .sources(StandaloneBroker.class)
-            .profiles(Profile.BROKER.getId())
+            .profiles(Profile.BROKER.getId(), "zeebe")
             .build(args);
 
     application.run();
