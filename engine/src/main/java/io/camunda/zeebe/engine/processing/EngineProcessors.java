@@ -147,7 +147,8 @@ public final class EngineProcessors {
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
     JobEventProcessors.addJobProcessors(
-        typedRecordProcessors, processingState, bpmnBehaviors, writers, jobMetrics);
+        typedRecordProcessors, processingState, bpmnBehaviors, writers, jobMetrics,
+        config);
 
     addIncidentProcessors(processingState, bpmnStreamProcessor, typedRecordProcessors, writers);
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);

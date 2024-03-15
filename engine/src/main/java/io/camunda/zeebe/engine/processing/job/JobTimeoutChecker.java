@@ -21,14 +21,16 @@ import java.time.Duration;
 public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   private final JobState state;
+  private final Duration pollingInterval;
 
   private boolean shouldReschedule = false;
 
   private ReadonlyStreamProcessorContext processingContext;
   private final Task deactivateTimedOutJobs;
 
-  public JobTimeoutChecker(final JobState state) {
+  public JobTimeoutChecker(final JobState state, final Duration pollingInterval) {
     this.state = state;
+    this.pollingInterval = pollingInterval;
     deactivateTimedOutJobs = new DeactivateTimeOutJobs();
   }
 
@@ -62,9 +64,7 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   }
 
   private void scheduleDeactivateTimedOutJobsTask() {
-    processingContext
-        .getScheduleService()
-        .runDelayed(TIME_OUT_POLLING_INTERVAL, deactivateTimedOutJobs);
+    processingContext.getScheduleService().runDelayed(pollingInterval, deactivateTimedOutJobs);
   }
 
   private void cancelTimer() {
