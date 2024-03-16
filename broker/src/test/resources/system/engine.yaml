@@ -9,3 +9,4 @@ zeebe:
           drgCacheCapacity: 2000
         jobs:
           timeoutCheckerPollingInterval: 15s
+          timeoutCheckerBatchLimit: 1000
