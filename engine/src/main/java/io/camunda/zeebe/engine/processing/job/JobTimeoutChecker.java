@@ -23,7 +23,7 @@ import org.agrona.collections.MutableInteger;
 public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   private final JobState state;
   private final Duration pollingInterval;
-  private final int batchLimit = 1000;
+  private final int batchLimit;
 
   private boolean shouldReschedule = false;
 
@@ -36,9 +36,11 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   /** Keeps track of where to continue between iterations. */
   private DeadlineIndex startAtIndex = null;
 
-  public JobTimeoutChecker(final JobState state, final Duration pollingInterval) {
+  public JobTimeoutChecker(
+      final JobState state, final Duration pollingInterval, final int batchLimit) {
     this.state = state;
     this.pollingInterval = pollingInterval;
+    this.batchLimit = batchLimit;
     deactivateTimedOutJobs = new DeactivateTimeOutJobs();
   }
 

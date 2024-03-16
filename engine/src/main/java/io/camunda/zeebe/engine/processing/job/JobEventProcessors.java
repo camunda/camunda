@@ -87,7 +87,8 @@ public final class JobEventProcessors {
         .withListener(
             new JobTimeoutChecker(
                 jobState,
-                config.getJobsTimeoutCheckerPollingInterval()))
+                config.getJobsTimeoutCheckerPollingInterval(),
+                config.getJobsTimeoutCheckerBatchLimit()))
         .withListener(jobBackoffChecker)
         .withListener(
             new StreamProcessorLifecycleAware() {
