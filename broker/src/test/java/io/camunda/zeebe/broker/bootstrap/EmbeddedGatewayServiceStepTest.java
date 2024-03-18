@@ -37,6 +37,7 @@ class EmbeddedGatewayServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
+  private static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
 
   static {
     final var networkCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -78,7 +79,8 @@ class EmbeddedGatewayServiceStepTest {
               mock(ExporterRepository.class),
               mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(BrokerClient.class),
-              Collections.emptyList());
+              Collections.emptyList(),
+              TEST_SHUTDOWN_TIMEOUT);
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -146,7 +148,8 @@ class EmbeddedGatewayServiceStepTest {
               mock(ExporterRepository.class),
               mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(BrokerClient.class),
-              Collections.emptyList());
+              Collections.emptyList(),
+              TEST_SHUTDOWN_TIMEOUT);
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();

@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.time.Duration;
 import org.agrona.CloseHelper;
 
 public final class EmbeddedGatewayService implements AutoCloseable {
@@ -25,6 +26,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   private final ConcurrencyControl concurrencyControl;
 
   public EmbeddedGatewayService(
+      final Duration shutdownTimeout,
       final BrokerCfg configuration,
       final IdentityConfiguration identityConfiguration,
       final ActorSchedulingService actorScheduler,
@@ -36,6 +38,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
     this.jobStreamClient = jobStreamClient;
     gateway =
         new Gateway(
+            shutdownTimeout,
             configuration.getGateway(),
             identityConfiguration,
             brokerClient,
