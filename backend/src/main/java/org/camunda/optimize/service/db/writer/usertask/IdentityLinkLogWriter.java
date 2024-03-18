@@ -132,7 +132,8 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
         .collect(Collectors.toList());
   }
 
-  private List<String> extractCandidateGroups(final List<CandidateGroupOperationDto> identityLinkLogs) {
+  private List<String> extractCandidateGroups(
+      final List<CandidateGroupOperationDto> identityLinkLogs) {
     List<String> candidates = new ArrayList<>();
     identityLinkLogs.forEach(
         logEntry -> {
