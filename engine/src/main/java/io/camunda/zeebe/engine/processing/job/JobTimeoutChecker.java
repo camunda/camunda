@@ -120,6 +120,9 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
           scheduleDeactivateTimedOutJobsTask(pollingInterval);
         }
       }
+
+      LOG.trace("{} jobs has been marked to timeout", counter.get());
+
       return taskResultBuilder.build();
     }
   }
