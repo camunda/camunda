@@ -19,8 +19,11 @@ import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.time.Duration;
 import org.agrona.collections.MutableInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
+  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutChecker.class);
   private final JobState state;
   private final Duration pollingInterval;
   private final int batchLimit;
@@ -79,12 +82,14 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
 
   private void cancelTimer() {
     shouldReschedule = false;
+    LOG.trace("Job timout checker canceled!");
   }
 
   private final class DeactivateTimeOutJobs implements Task {
 
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+      LOG.trace("Job timout checker running...");
       if (executionTimestamp == -1) {
         executionTimestamp = currentTimeMillis();
       }
@@ -105,6 +110,8 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
 
       if (shouldReschedule) {
         if (nextIndex != null) {
+          LOG.trace(
+              "Job timout checker yielded early. will reschedule immediately from where it left of.");
           startAtIndex = nextIndex;
           scheduleDeactivateTimedOutJobsTask(Duration.ZERO);
         } else {
