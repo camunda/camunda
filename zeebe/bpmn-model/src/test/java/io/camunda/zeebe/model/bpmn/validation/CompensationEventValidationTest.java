@@ -160,6 +160,96 @@ class CompensationEventValidationTest {
             "The referenced compensation activity 'task' must be in the same scope as the compensation throw event"));
   }
 
+  @ParameterizedTest
+  @MethodSource("compensationThrowEvents")
+  @DisplayName("A compensation throw event can reference an activity from an event subprocess")
+  void activityRefFromEventSubprocess(final BpmnElementBuilder elementBuilder) {
+    // given
+    final BpmnModelInstance process =
+        processWithCompensationThrowEvent(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .userTask(
+                    "task",
+                    userTask ->
+                        userTask
+                            .boundaryEvent()
+                            .compensation(compensation -> compensation.userTask("undo-task")))
+                .moveToProcess("process")
+                .eventSubProcess("event-subprocess")
+                .startEvent()
+                .error(),
+            elementBuilder,
+            compensationEventDefinition ->
+                compensationEventDefinition.setAttributeValue("activityRef", "task"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @ParameterizedTest
+  @MethodSource("compensationThrowEvents")
+  @DisplayName("A compensation throw event can reference an activity inside an event subprocess")
+  void activityRefInsideEventSubprocess(final BpmnElementBuilder elementBuilder) {
+    // given
+    final BpmnModelInstance process =
+        processWithCompensationThrowEvent(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .endEvent()
+                .moveToProcess("process")
+                .eventSubProcess("event-subprocess")
+                .startEvent()
+                .error()
+                .userTask(
+                    "task",
+                    userTask ->
+                        userTask
+                            .boundaryEvent()
+                            .compensation(compensation -> compensation.userTask("undo-task"))),
+            elementBuilder,
+            compensationEventDefinition ->
+                compensationEventDefinition.setAttributeValue("activityRef", "task"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @ParameterizedTest
+  @MethodSource("compensationThrowEvents")
+  @DisplayName(
+      "A compensation throw event should reference an activity in the scope of an event subprocess")
+  void activityRefFromEventSubprocessOutOfScope(final BpmnElementBuilder elementBuilder) {
+    // given
+    final BpmnModelInstance process =
+        processWithCompensationThrowEvent(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    subprocess ->
+                        subprocess
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .userTask("task")
+                            .boundaryEvent()
+                            .compensation(compensation -> compensation.userTask("undo-task")))
+                .moveToProcess("process")
+                .eventSubProcess("event-subprocess")
+                .startEvent()
+                .error(),
+            elementBuilder,
+            compensationEventDefinition ->
+                compensationEventDefinition.setAttributeValue("activityRef", "task"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            CompensateEventDefinition.class,
+            "The referenced compensation activity 'task' must be in the same scope as the compensation throw event"));
+  }
+
   private BpmnModelInstance processWithCompensationThrowEvent(
       final AbstractFlowNodeBuilder<?, ?> processBuilder,
       final BpmnElementBuilder elementBuilder,

@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.util.ModelUtil;
@@ -66,7 +67,7 @@ public class CompensationEventDefinitionValidator
               referencedActivity.getId()));
     }
 
-    if (referencedActivity.getScope() != compensateEventDefinition.getScope()) {
+    if (!hasCompensationActivityInSameScope(compensateEventDefinition, referencedActivity)) {
       validationResultCollector.addError(
           0,
           String.format(
@@ -87,8 +88,24 @@ public class CompensationEventDefinitionValidator
   private static boolean isSubprocess(final Activity activity) {
     if (activity instanceof SubProcess) {
       return !((SubProcess) activity).triggeredByEvent();
-    } else {
-      return false;
     }
+    return false;
+  }
+
+  private static boolean hasCompensationActivityInSameScope(
+      final CompensateEventDefinition compensateEventDefinition,
+      final Activity referencedActivity) {
+    final BpmnModelElementInstance compensationEventScope = compensateEventDefinition.getScope();
+
+    return referencedActivity.getScope() == compensationEventScope
+        || (isEventSubprocess(compensationEventScope)
+            && referencedActivity.getScope() == compensationEventScope.getScope());
+  }
+
+  private static boolean isEventSubprocess(final BpmnModelElementInstance elementInstance) {
+    if (elementInstance instanceof SubProcess) {
+      return ((SubProcess) elementInstance).triggeredByEvent();
+    }
+    return false;
   }
 }
