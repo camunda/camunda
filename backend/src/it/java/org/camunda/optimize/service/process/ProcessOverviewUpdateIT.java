@@ -208,7 +208,6 @@ public class ProcessOverviewUpdateIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     importAllEngineEntitiesFromScratch();
     final ProcessDigestRequestDto initialDigestConfig = new ProcessDigestRequestDto(true);
