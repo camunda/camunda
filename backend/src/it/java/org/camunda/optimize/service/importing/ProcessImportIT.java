@@ -427,7 +427,6 @@ public class ProcessImportIT extends AbstractImportIT {
       .allSatisfy(instance -> assertThat(instance.getState()).isEqualTo(EXTERNALLY_TERMINATED_STATE));
   }
 
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   @Test
   public void runningProcessesIndexedAfterFinish() {
     // given

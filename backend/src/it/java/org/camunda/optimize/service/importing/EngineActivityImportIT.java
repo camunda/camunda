@@ -274,7 +274,6 @@ public class EngineActivityImportIT extends AbstractImportIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void completedActivitiesOverwriteRunningActivities() {
     // given
     engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());

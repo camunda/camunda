@@ -260,7 +260,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenFlowNodeHasNotFinished() {
     // given
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
