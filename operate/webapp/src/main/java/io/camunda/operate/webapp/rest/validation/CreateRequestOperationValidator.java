@@ -16,52 +16,56 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+
+import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ProcessInstanceRequestValidator {
-  private final CreateBatchOperationRequestValidator createBatchOperationRequestValidator;
+public class CreateRequestOperationValidator {
+  private final VariableReader variableReader;
+  private final OperationReader operationReader;
 
-  private final CreateRequestOperationValidator createRequestOperationValidator;
-
-  public ProcessInstanceRequestValidator(
-      final CreateRequestOperationValidator createRequestOperationValidator,
-      final CreateBatchOperationRequestValidator createBatchOperationRequestValidator) {
-    this.createRequestOperationValidator = createRequestOperationValidator;
-    this.createBatchOperationRequestValidator = createBatchOperationRequestValidator;
+  public CreateRequestOperationValidator(
+      final VariableReader variableReader, final OperationReader operationReader) {
+    this.variableReader = variableReader;
+    this.operationReader = operationReader;
   }
 
-  public void validateFlowNodeMetadataRequest(final FlowNodeMetadataRequestDto request) {
-    if (request.getFlowNodeId() == null
-        && request.getFlowNodeType() == null
-        && request.getFlowNodeInstanceId() == null) {
-      throw new InvalidRequestException(
-          "At least flowNodeId or flowNodeInstanceId must be specifies in the request.");
-    }
-    if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
-      throw new InvalidRequestException(
-          "Only one of flowNodeId or flowNodeInstanceId must be specifies in the request.");
-    }
-  }
-
-  public void validateVariableRequest(final VariableRequestDto request) {
-    if (request.getScopeId() == null) {
-      throw new InvalidRequestException("ScopeId must be specifies in the request.");
-    }
-  }
-
-  public void validateCreateBatchOperationRequest(
-      final CreateBatchOperationRequestDto batchOperationRequest) {
-    createBatchOperationRequestValidator.validate(batchOperationRequest);
-  }
-
-  public void validateCreateOperationRequest(
+  public void validate(
       final CreateOperationRequestDto operationRequest, final String processInstanceId) {
-    createRequestOperationValidator.validate(operationRequest, processInstanceId);
+    if (operationRequest.getOperationType() == null) {
+      throw new InvalidRequestException("Operation type must be defined.");
+    }
+    if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(operationRequest.getOperationType())
+        && (operationRequest.getVariableScopeId() == null
+            || operationRequest.getVariableName() == null
+            || operationRequest.getVariableName().isEmpty()
+            || operationRequest.getVariableValue() == null)) {
+      throw new InvalidRequestException(
+          "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    }
+    if (operationRequest.getOperationType().equals(ADD_VARIABLE)
+        && (variableReader.getVariableByName(
+                    processInstanceId,
+                    operationRequest.getVariableScopeId(),
+                    operationRequest.getVariableName())
+                != null
+            || !operationReader
+                .getOperations(
+                    ADD_VARIABLE,
+                    processInstanceId,
+                    operationRequest.getVariableScopeId(),
+                    operationRequest.getVariableName())
+                .isEmpty())) {
+      throw new InvalidRequestException(
+          String.format(
+              "Variable with the name \"%s\" already exists.", operationRequest.getVariableName()));
+    }
   }
 }

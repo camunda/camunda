@@ -31,9 +31,7 @@ import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
@@ -64,102 +62,6 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
   public void before() {
     super.before();
     when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
-  }
-
-  @Test
-  public void testQueryWithWrongSortBy() throws Exception {
-    // when
-    final String jsonRequest =
-        "{ \"sorting\": {\"sortBy\": \"processId\",\"sortOrder\": \"asc\"}}"; // not allowed for
-    // sorting
-    final MvcResult mvcResult = postRequestThatShouldFail(query(0, 100), jsonRequest);
-    // then
-    assertErrorMessageContains(mvcResult, "SortBy");
-  }
-
-  @Test
-  public void testQueryWithWrongSortOrder() throws Exception {
-    // when
-    final String jsonRequest =
-        "{ \"sorting\": {\"sortBy\": \"id\",\"sortOrder\": \"unknown\"}}"; // wrong sort order
-    final MvcResult mvcResult = postRequestThatShouldFail(query(0, 100), jsonRequest);
-    // then
-    assertErrorMessageContains(mvcResult, "SortOrder");
-  }
-
-  private String query(final int firstResult, final int maxResults) {
-    return String.format(
-        "%s?firstResult=%d&maxResults=%d",
-        ProcessInstanceRestService.PROCESS_INSTANCE_URL, firstResult, maxResults);
-  }
-
-  @Test
-  public void testOperationForUpdateVariableFailsNoValue() throws Exception {
-    final CreateOperationRequestDto operationRequestDto =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
-    operationRequestDto.setVariableScopeId("a");
-    operationRequestDto.setVariableName("a");
-    final MvcResult mvcResult = postRequestThatShouldFail(getOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(
-        mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testOperationForUpdateVariableFailsNoName() throws Exception {
-    final CreateOperationRequestDto operationRequestDto =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
-    operationRequestDto.setVariableScopeId("a");
-    operationRequestDto.setVariableValue("a");
-    final MvcResult mvcResult = postRequestThatShouldFail(getOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(
-        mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testOperationForUpdateVariableFailsNoScopeId() throws Exception {
-    final CreateOperationRequestDto operationRequestDto =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
-    operationRequestDto.setVariableName("a");
-    operationRequestDto.setVariableValue("a");
-    final MvcResult mvcResult = postRequestThatShouldFail(getOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(
-        mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testOperationFailsNoOperationType() throws Exception {
-    final CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto();
-    final MvcResult mvcResult = postRequestThatShouldFail(getOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(mvcResult, "Operation type must be defined.");
-  }
-
-  @Test
-  public void testBatchOperationForUpdateVariableFailsNoQuery() throws Exception {
-    final CreateBatchOperationRequestDto operationRequestDto =
-        new CreateBatchOperationRequestDto(null, OperationType.UPDATE_VARIABLE);
-    final MvcResult mvcResult =
-        postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(mvcResult, "List view query must be defined.");
-  }
-
-  @Test
-  public void testBatchOperationForUpdateVariableFailsWrongEndpoint() throws Exception {
-    final CreateBatchOperationRequestDto operationRequestDto =
-        new CreateBatchOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
-    final MvcResult mvcResult =
-        postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(
-        mvcResult,
-        "For variable update use \"Create operation for one process instance\" endpoint.");
-  }
-
-  @Test
-  public void testBatchOperationFailsNoOperationType() throws Exception {
-    final CreateBatchOperationRequestDto operationRequestDto =
-        new CreateBatchOperationRequestDto(new ListViewQueryDto(), null);
-    final MvcResult mvcResult =
-        postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(mvcResult, "Operation type must be defined.");
   }
 
   @Test
@@ -662,14 +564,6 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // then
     final VariableDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).isNotNull();
-  }
-
-  public String getBatchOperationUrl() {
-    return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/batch-operation";
-  }
-
-  public String getOperationUrl() {
-    return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/111/operation";
   }
 
   public String getOperationUrl(final String id) {

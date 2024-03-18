@@ -57,9 +57,9 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -71,19 +71,42 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   public static final String PROCESS_INSTANCE_URL = "/api/process-instances";
 
-  @Autowired(required = false)
-  protected PermissionsService permissionsService;
+  protected final PermissionsService permissionsService;
+  private final ProcessInstanceRequestValidator processInstanceRequestValidator;
+  private final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
+  private final BatchOperationWriter batchOperationWriter;
+  private final ProcessInstanceReader processInstanceReader;
+  private final ListViewReader listViewReader;
+  private final IncidentReader incidentReader;
+  private final VariableReader variableReader;
+  private final FlowNodeInstanceReader flowNodeInstanceReader;
+  private final FlowNodeStatisticsReader flowNodeStatisticsReader;
+  private final SequenceFlowStore sequenceFlowStore;
 
-  @Autowired private ProcessInstanceRequestValidator validator;
-  @Autowired private BatchOperationWriter batchOperationWriter;
-  @Autowired private ProcessInstanceReader processInstanceReader;
-  @Autowired private ListViewReader listViewReader;
-  @Autowired private FlowNodeStatisticsReader flowNodeStatisticsReader;
-  @Autowired private IncidentReader incidentReader;
-  @Autowired private VariableReader variableReader;
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
-  @Autowired private SequenceFlowStore sequenceFlowStore;
-  @Autowired private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
+  public ProcessInstanceRestService(
+      @Nullable final PermissionsService permissionsService,
+      final ProcessInstanceRequestValidator processInstanceRequestValidator,
+      final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator,
+      final BatchOperationWriter batchOperationWriter,
+      final ProcessInstanceReader processInstanceReader,
+      final ListViewReader listViewReader,
+      final IncidentReader incidentReader,
+      final VariableReader variableReader,
+      final FlowNodeInstanceReader flowNodeInstanceReader,
+      final FlowNodeStatisticsReader flowNodeStatisticsReader,
+      final SequenceFlowStore sequenceFlowStore) {
+    this.permissionsService = permissionsService;
+    this.processInstanceRequestValidator = processInstanceRequestValidator;
+    this.modifyProcessInstanceRequestValidator = modifyProcessInstanceRequestValidator;
+    this.batchOperationWriter = batchOperationWriter;
+    this.processInstanceReader = processInstanceReader;
+    this.listViewReader = listViewReader;
+    this.incidentReader = incidentReader;
+    this.variableReader = variableReader;
+    this.flowNodeInstanceReader = flowNodeInstanceReader;
+    this.flowNodeStatisticsReader = flowNodeStatisticsReader;
+    this.sequenceFlowStore = sequenceFlowStore;
+  }
 
   @Operation(summary = "Query process instances by different parameters")
   @PostMapping
@@ -110,7 +133,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public BatchOperationEntity operation(
       @PathVariable @ValidLongId final String id,
       @RequestBody final CreateOperationRequestDto operationRequest) {
-    validator.validateCreateOperationRequest(operationRequest, id);
+    processInstanceRequestValidator.validateCreateOperationRequest(operationRequest, id);
     if (operationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE) {
       checkIdentityPermission(Long.valueOf(id), IdentityPermission.DELETE_PROCESS_INSTANCE);
     } else {
@@ -136,7 +159,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity createBatchOperation(
       @RequestBody final CreateBatchOperationRequestDto batchOperationRequest) {
-    validator.validateCreateBatchOperationRequest(batchOperationRequest);
+    processInstanceRequestValidator.validateCreateBatchOperationRequest(batchOperationRequest);
     return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
@@ -172,7 +195,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable @ValidLongId final String processInstanceId,
       @RequestBody final VariableRequestDto variableRequest) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    validator.validateVariableRequest(variableRequest);
+    processInstanceRequestValidator.validateVariableRequest(variableRequest);
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
@@ -208,7 +231,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable @ValidLongId final String processInstanceId,
       @RequestBody final FlowNodeMetadataRequestDto request) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    validator.validateFlowNodeMetadataRequest(request);
+    processInstanceRequestValidator.validateFlowNodeMetadataRequest(request);
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
   }
 
