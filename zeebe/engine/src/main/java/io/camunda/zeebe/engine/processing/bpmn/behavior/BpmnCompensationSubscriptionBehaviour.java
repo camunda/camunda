@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public class BpmnCompensationSubscriptionBehaviour {
 
@@ -115,8 +116,18 @@ public class BpmnCompensationSubscriptionBehaviour {
 
   public boolean triggerCompensation(
       final ExecutableFlowElement element, final BpmnElementContext context) {
+    // trigger the compensation in the scope of the compensation throw event
+    return triggerCompensation(element, context, subscription -> true);
+  }
+
+  private boolean triggerCompensation(
+      final ExecutableFlowElement element,
+      final BpmnElementContext context,
+      final Predicate<CompensationSubscription> subscriptionFilter) {
+    final List<Long> compensationScopeKeys = getCompensationScopeKeys(element, context);
+
     // ignore subscriptions that are already triggered
-    final var subscriptions =
+    final var notTriggeredSubscriptions =
         compensationSubscriptionState
             .findSubscriptionsByProcessInstanceKey(
                 context.getTenantId(), context.getProcessInstanceKey())
@@ -124,21 +135,24 @@ public class BpmnCompensationSubscriptionBehaviour {
             .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
             .toList();
 
-    final List<Long> compensationScopeKeysWithSubscriptions =
-        getCompensationScopeKeys(element, context).stream()
+    // filter subscriptions by their scope
+    final var subscriptionsWithinScope =
+        notTriggeredSubscriptions.stream()
             .filter(
-                compensationScopeKey ->
-                    hasCompensationSubscriptionInScope(subscriptions, compensationScopeKey))
+                subscription ->
+                    compensationScopeKeys.contains(
+                        subscription.getRecord().getCompensableActivityScopeKey()))
+            .filter(subscriptionFilter)
             .toList();
 
-    if (compensationScopeKeysWithSubscriptions.isEmpty()) {
+    if (subscriptionsWithinScope.isEmpty()) {
       return false; // no subscriptions are triggered
     }
 
-    // trigger the compensation in the scopes and propagate to the subprocesses
-    compensationScopeKeysWithSubscriptions.forEach(
-        compensationScopeKey ->
-            triggerCompensationFromTopToBottom(context, subscriptions, compensationScopeKey));
+    // trigger the compensation for all subscriptions in the scopes
+    subscriptionsWithinScope.forEach(
+        subscription ->
+            triggerCompensationForSubscription(context, notTriggeredSubscriptions, subscription));
     return true;
   }
 
@@ -305,41 +319,12 @@ public class BpmnCompensationSubscriptionBehaviour {
       final ExecutableActivity compensationActivity,
       final BpmnElementContext context) {
     final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
-    final List<Long> compensationScopeKeys = getCompensationScopeKeys(element, context);
-
-    // ignore subscriptions that are already triggered
-    final var notTriggeredSubscriptions =
-        compensationSubscriptionState
-            .findSubscriptionsByProcessInstanceKey(
-                context.getTenantId(), context.getProcessInstanceKey())
-            .stream()
-            .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
-            .toList();
-
-    // filter subscriptions by given activity
-    final var subscriptionsForActivity =
-        notTriggeredSubscriptions.stream()
-            .filter(
-                subscription ->
-                    subscription
-                        .getRecord()
-                        .getCompensableActivityId()
-                        .equals(compensationActivityId))
-            .filter(
-                subscription ->
-                    compensationScopeKeys.contains(
-                        subscription.getRecord().getCompensableActivityScopeKey()))
-            .toList();
-
-    if (subscriptionsForActivity.isEmpty()) {
-      return false; // no subscriptions are triggered
-    }
-
     // trigger the compensation for the given activity
-    subscriptionsForActivity.forEach(
+    return triggerCompensation(
+        element,
+        context,
         subscription ->
-            triggerCompensationForSubscription(context, notTriggeredSubscriptions, subscription));
-    return true;
+            subscription.getRecord().getCompensableActivityId().equals(compensationActivityId));
   }
 
   public void completeCompensationHandler(final BpmnElementContext context) {
