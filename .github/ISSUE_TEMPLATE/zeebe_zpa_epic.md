@@ -57,7 +57,6 @@ Gateway API, a change needs to be made in Zeebe Process Test as well. -->
 
 <!-- The Epic might have an impact on other teams within Camunda. We should create an issue for
 them, explaining the changes they will have to make. -->
-- [ ] [Operate](https://github.com/camunda/operate/issues)
 - [ ] [Tasklist](https://github.com/camunda/tasklist/issues)
 - [ ] [Web Modeler](https://github.com/camunda/web-modeler/issues)
 - [ ] [Desktop Modeler](https://github.com/camunda/camunda-modeler/issues)
