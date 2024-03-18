@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -123,26 +124,43 @@ public class BpmnCompensationSubscriptionBehaviour {
             .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
             .toList();
 
-    boolean hasTriggeredCompensation = false;
+    final List<Long> compensationScopeKeysWithSubscriptions =
+        getCompensationScopeKeys(element, context).stream()
+            .filter(
+                compensationScopeKey ->
+                    hasCompensationSubscriptionInScope(subscriptions, compensationScopeKey))
+            .toList();
 
-    if (hasCompensationSubscriptionInScope(subscriptions, context.getFlowScopeKey())) {
-      // trigger the compensation in this scope and propagate to the subprocesses
-      triggerCompensationFromTopToBottom(context, subscriptions, context.getFlowScopeKey());
-      hasTriggeredCompensation = true;
+    if (compensationScopeKeysWithSubscriptions.isEmpty()) {
+      return false; // no subscriptions are triggered
     }
+
+    // trigger the compensation in the scopes and propagate to the subprocesses
+    compensationScopeKeysWithSubscriptions.forEach(
+        compensationScopeKey ->
+            triggerCompensationFromTopToBottom(context, subscriptions, compensationScopeKey));
+    return true;
+  }
+
+  private static boolean isCompensationTriggered(
+      final CompensationSubscription compensationSubscription) {
+    return !compensationSubscription.getRecord().getThrowEventId().isEmpty();
+  }
+
+  private List<Long> getCompensationScopeKeys(
+      final ExecutableFlowElement element, final BpmnElementContext context) {
+    final long compensationEventScopeKey = context.getFlowScopeKey();
 
     if (isElementInsideEventSubprocess(element)) {
       // inside an event subprocess, trigger the compensation also from outside the event subprocess
       final BpmnElementContext flowScopeContext = stateBehavior.getFlowScopeContext(context);
       final long eventSubprocessScopeKey = flowScopeContext.getFlowScopeKey();
 
-      if (hasCompensationSubscriptionInScope(subscriptions, eventSubprocessScopeKey)) {
-        triggerCompensationFromTopToBottom(context, subscriptions, eventSubprocessScopeKey);
-        hasTriggeredCompensation = true;
-      }
-    }
+      return List.of(compensationEventScopeKey, eventSubprocessScopeKey);
 
-    return hasTriggeredCompensation;
+    } else {
+      return List.of(compensationEventScopeKey);
+    }
   }
 
   private static boolean isElementInsideEventSubprocess(final ExecutableFlowElement element) {
@@ -154,11 +172,6 @@ public class BpmnCompensationSubscriptionBehaviour {
     return subscriptions.stream()
         .anyMatch(
             subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
-  }
-
-  private static boolean isCompensationTriggered(
-      final CompensationSubscription compensationSubscription) {
-    return !compensationSubscription.getRecord().getThrowEventId().isEmpty();
   }
 
   private void triggerCompensationFromTopToBottom(
@@ -292,6 +305,7 @@ public class BpmnCompensationSubscriptionBehaviour {
       final ExecutableActivity compensationActivity,
       final BpmnElementContext context) {
     final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
+    final List<Long> compensationScopeKeys = getCompensationScopeKeys(element, context);
 
     // ignore subscriptions that are already triggered
     final var notTriggeredSubscriptions =
@@ -313,11 +327,8 @@ public class BpmnCompensationSubscriptionBehaviour {
                         .equals(compensationActivityId))
             .filter(
                 subscription ->
-                    subscription.getRecord().getCompensableActivityScopeKey()
-                            == context.getFlowScopeKey()
-                        || (isElementInsideEventSubprocess(element)
-                            && subscription.getRecord().getCompensableActivityScopeKey()
-                                == stateBehavior.getFlowScopeContext(context).getFlowScopeKey()))
+                    compensationScopeKeys.contains(
+                        subscription.getRecord().getCompensableActivityScopeKey()))
             .toList();
 
     if (subscriptionsForActivity.isEmpty()) {
