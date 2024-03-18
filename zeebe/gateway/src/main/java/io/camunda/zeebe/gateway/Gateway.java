@@ -64,12 +64,14 @@ public final class Gateway implements CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
       MonitoringServerInterceptor.create(Configuration.allMetrics());
+  private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
   private final IdentityConfiguration identityCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
+  private final Duration shutdownTimeout;
 
   private Server server;
   private ExecutorService grpcExecutor;
@@ -81,13 +83,13 @@ public final class Gateway implements CloseableSilently {
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
-    this.gatewayCfg = gatewayCfg;
-    this.identityCfg = identityCfg;
-    this.brokerClient = brokerClient;
-    this.actorSchedulingService = actorSchedulingService;
-    this.jobStreamer = jobStreamer;
-
-    healthManager = new GatewayHealthManagerImpl();
+    this(
+        DEFAULT_SHUTDOWN_TIMEOUT,
+        gatewayCfg,
+        identityCfg,
+        brokerClient,
+        actorSchedulingService,
+        jobStreamer);
   }
 
   public Gateway(
@@ -96,6 +98,23 @@ public final class Gateway implements CloseableSilently {
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
     this(gatewayCfg, null, brokerClient, actorSchedulingService, jobStreamer);
+  }
+
+  public Gateway(
+      final Duration shutdownDuration,
+      final GatewayCfg gatewayCfg,
+      final IdentityConfiguration identityCfg,
+      final BrokerClient brokerClient,
+      final ActorSchedulingService actorSchedulingService,
+      final ClientStreamer<JobActivationProperties> jobStreamer) {
+    shutdownTimeout = shutdownDuration;
+    this.gatewayCfg = gatewayCfg;
+    this.identityCfg = identityCfg;
+    this.brokerClient = brokerClient;
+    this.actorSchedulingService = actorSchedulingService;
+    this.jobStreamer = jobStreamer;
+
+    healthManager = new GatewayHealthManagerImpl();
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -269,7 +288,6 @@ public final class Gateway implements CloseableSilently {
     if (server != null && !server.isShutdown()) {
       server.shutdown();
       try {
-        final var shutdownTimeout = Duration.ofSeconds(30);
         LOG.debug("Waiting {} for server to shut down cleanly", shutdownTimeout);
         final var cleanTermination =
             server.awaitTermination(shutdownTimeout.getSeconds(), TimeUnit.SECONDS);

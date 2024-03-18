@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,12 +40,14 @@ import org.slf4j.Logger;
 public final class SystemContext {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  public static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
 
+  private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
   private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
@@ -53,11 +56,13 @@ public final class SystemContext {
   private final BrokerClient brokerClient;
 
   public SystemContext(
+      final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
       final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
+    this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
@@ -71,7 +76,7 @@ public final class SystemContext {
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
-    this(brokerCfg, null, scheduler, cluster, brokerClient);
+    this(DEFAULT_SHUTDOWN_TIMEOUT, brokerCfg, null, scheduler, cluster, brokerClient);
   }
 
   private void initSystemContext() {
@@ -278,5 +283,9 @@ public final class SystemContext {
 
   public BrokerClient getBrokerClient() {
     return brokerClient;
+  }
+
+  public Duration getShutdownTimeout() {
+    return shutdownTimeout;
   }
 }

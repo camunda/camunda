@@ -104,6 +104,7 @@ public class StandaloneGateway
 
     gateway =
         new Gateway(
+            configuration.shutdownTimeout(),
             configuration.config(),
             identityConfiguration,
             brokerClient,
