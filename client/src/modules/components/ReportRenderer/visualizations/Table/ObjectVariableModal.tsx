@@ -6,9 +6,9 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Loading} from '@carbon/react';
 
-import {Modal, LoadingIndicator} from 'components';
+import {Modal} from 'components';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -47,10 +47,16 @@ export function ObjectVariableModal({
     <Modal className="ObjectVariableModal" open onClose={onClose}>
       <Modal.Header>{t('report.table.rawData.objectVariable')}</Modal.Header>
       <Modal.Content>
-        <div>
-          {t('report.table.rawData.variable')}: <b>{name}</b>
-        </div>
-        <pre>{objectString || <LoadingIndicator />}</pre>
+        {objectString ? (
+          <>
+            <div>
+              {t('report.table.rawData.variable')}: <b>{name}</b>
+            </div>
+            <pre>{objectString}</pre>
+          </>
+        ) : (
+          <Loading withOverlay={false} />
+        )}
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="close" onClick={onClose}>
