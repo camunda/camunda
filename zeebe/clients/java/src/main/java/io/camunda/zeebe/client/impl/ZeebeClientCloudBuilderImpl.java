@@ -287,7 +287,7 @@ public class ZeebeClientCloudBuilderImpl
     if (isNeedToSetCloudGrpcAddress() && isNeedToSetCloudGatewayAddress()) {
       ensureNotNull("cluster id", clusterId);
       final String cloudGrpcAddress =
-          String.format("zb://%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
+          String.format("https://%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
       return getURIFromString(cloudGrpcAddress);
     } else {
       if (!isNeedToSetCloudGrpcAddress()) {
@@ -302,7 +302,7 @@ public class ZeebeClientCloudBuilderImpl
           "Expected to use 'cluster id' to set gateway address in the client cloud builder, "
               + "but overwriting with explicitly defined gateway address: {}.",
           innerBuilder.getGatewayAddress());
-      return getURIFromString("zb://" + innerBuilder.getGatewayAddress());
+      return getURIFromString("https://" + innerBuilder.getGatewayAddress());
     }
   }
 

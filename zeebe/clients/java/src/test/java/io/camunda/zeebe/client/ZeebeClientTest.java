@@ -368,8 +368,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGrpcAddress().toString())
-          .isEqualTo(String.format("zb://%s.%s.zeebe.camunda.io:443", clusterId, region));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.%s.zeebe.camunda.io", clusterId, region))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -388,8 +390,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGrpcAddress().toString())
-          .isEqualTo(String.format("zb://%s.bru-2.zeebe.camunda.io:443", clusterId));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.bru-2.zeebe.camunda.io", clusterId))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -430,8 +434,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGrpcAddress().toString())
-          .isEqualTo(String.format("zb://clusterId.%s.zeebe.camunda.io:443", region));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", region))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -450,8 +456,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGrpcAddress().toString())
-          .isEqualTo(String.format("zb://clusterId.%s.zeebe.camunda.io:443", defaultRegion));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", defaultRegion))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -552,7 +560,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetGrpcAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
-    final URI grpcAddress = new URI("zb://localhost:9090");
+    final URI grpcAddress = new URI("http://localhost:9090");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.grpcAddress(grpcAddress);
 
@@ -566,7 +574,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetGrpcAddressFromPropertyWithClientBuilder() throws URISyntaxException {
     // given
-    final URI grpcAddress = new URI("zb://localhost:9090");
+    final URI grpcAddress = new URI("http://localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(ClientProperties.GRPC_ADDRESS, grpcAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -582,7 +590,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetGrpcAddressFromEnvVarWithClientBuilder() throws URISyntaxException {
     // given
-    final URI grpcAddress = new URI("zb://localhost:9090");
+    final URI grpcAddress = new URI("http://localhost:9090");
     Environment.system().put(GRPC_ADDRESS_VAR, grpcAddress.toString());
 
     // when

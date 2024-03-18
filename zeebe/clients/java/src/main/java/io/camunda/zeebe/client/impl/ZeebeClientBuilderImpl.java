@@ -70,7 +70,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   static {
     try {
-      DEFAULT_GRPC_ADDRESS = new URI("zb://" + DEFAULT_GATEWAY_ADDRESS);
+      DEFAULT_GRPC_ADDRESS = new URI("http://" + DEFAULT_GATEWAY_ADDRESS);
       DEFAULT_REST_ADDRESS = new URI("http://0.0.0.0:8080");
     } catch (final URISyntaxException e) {
       throw new RuntimeException("Failed to parse URI string", e);
@@ -479,7 +479,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
 
     if (!grpcAddressUsed) {
-      grpcAddress(getURIFromString("zb://" + getGatewayAddress()));
+      grpcAddress(getURIFromString("http://" + getGatewayAddress()));
     }
 
     return new ZeebeClientImpl(this);
