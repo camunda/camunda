@@ -33,7 +33,7 @@ import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.START
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.activeIncidentQuery;
+import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
@@ -714,7 +714,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                 constantScore(
                     withTenantCheck(
                         and(
-                            activeIncidentQuery,
+                            ACTIVE_INCIDENT_QUERY,
                             term(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath)))));
 
     final var hitsMeta =
@@ -765,7 +765,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                 constantScore(
                     withTenantCheck(
                         and(
-                            activeIncidentQuery,
+                            ACTIVE_INCIDENT_QUERY,
                             term(IncidentTemplate.TREE_PATH, incidentTreePath)))));
 
     final var hitsMeta =
