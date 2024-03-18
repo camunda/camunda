@@ -46,7 +46,6 @@ Documentation:
 
 Other teams:
 If the change impacts another team an issue has been created for this team, explaining what they need to do to support this change.
-- [ ] [Operate](https://github.com/camunda/operate/issues)
 - [ ] [Tasklist](https://github.com/camunda/tasklist/issues)
 - [ ] [Web Modeler](https://github.com/camunda/web-modeler/issues)
 - [ ] [Desktop Modeler](https://github.com/camunda/camunda-modeler/issues)
