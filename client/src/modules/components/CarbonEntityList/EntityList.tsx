@@ -172,7 +172,7 @@ export default function EntityList({
                   containsSearchWord(row?.type, searchWord)
                 );
               }
-              return containsSearchWord(cell?.value, searchWord);
+              return containsSearchWord(cell?.value?.toString(), searchWord);
             })
           );
         }}

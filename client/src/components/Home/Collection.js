@@ -217,7 +217,7 @@ export class Collection extends Component {
                           <>
                             <Button
                               size="md"
-                              onClick={() => this.setState({creatingDashboard: true})}
+                              onClick={() => this.setState({creating: 'dashboard'})}
                             >
                               {t('dashboard.createNew')}
                             </Button>

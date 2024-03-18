@@ -182,7 +182,7 @@ test('delete multiple external events', async (t) => {
 
 test('edit event source', async (t) => {
   await t.click(e.navItem);
-  await t.click(e.createDropdown);
+  await t.click(Common.emptyStateAdd);
   await t.click(Common.menuOption('Model a process'));
   await t.click(e.addSource);
 

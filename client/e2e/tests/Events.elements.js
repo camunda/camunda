@@ -8,7 +8,6 @@
 import {Selector} from 'testcafe';
 
 export const navItem = Selector('header a[href="#/events/processes/"]');
-export const createDropdown = Selector('.Events .createNewProcess button');
 export const invoiceEventProcess = Selector('.ListItem').withText('Event Invoice process');
 export const editAccess = Selector('.CarbonListItemSingleAction').withText('Edit access');
 export const fileInput = Selector('input').withAttribute('type', 'file');

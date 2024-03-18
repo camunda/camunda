@@ -178,7 +178,7 @@ test('user permissions', async (t) => {
   await t.click(e.deleteCollectionButton);
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(Common.collectionItem.exists).notOk();
+  await t.expect(Common.listItem('collection').exists).notOk();
 });
 
 test('add, edit and delete sources', async (t) => {

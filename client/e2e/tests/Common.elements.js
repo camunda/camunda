@@ -79,3 +79,8 @@ export const radioButton = (text) => Selector('.cds--radio-button-wrapper').with
 export const checkbox = (text) => Selector('.cds--checkbox-label').withText(text);
 export const kpiFilterButton = Selector('.filterTile button');
 export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
+export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
+export const oldListItem = Selector('.ListItem');
+export const processItem = oldListItem.filter(
+  (node) => node.querySelector('.name .type').textContent.indexOf('Process') !== -1
+);

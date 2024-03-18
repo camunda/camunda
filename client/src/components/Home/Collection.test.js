@@ -135,7 +135,7 @@ it('should modify the collections name with the edit modal', async () => {
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('action')().props.create('report');
+  node.find('EntityList').prop('action').props.create('report');
 
   expect(node.find(ReportTemplateModal)).toExist();
 });
@@ -143,7 +143,7 @@ it('should show a ReportTemplateModal', () => {
 it('should show kpiCreationModal', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('action')().props.create('kpi');
+  node.find('EntityList').prop('action').props.create('kpi');
 
   expect(node.find(KpiCreationModal)).toExist();
 });
