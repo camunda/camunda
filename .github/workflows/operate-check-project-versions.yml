@@ -33,8 +33,8 @@ jobs:
           RELEASE_VERSION: ${{ inputs.releaseVersion }}
           BRANCH_NAME: ${{ inputs.branchName }}
         run: |
-          ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
-          IDENTITY_VERSION=$(mvn help:evaluate -Dexpression=version.identity -q -DforceStdout)
+          ZEEBE_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
+          IDENTITY_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
 
           if [[ $ZEEBE_VERSION != $RELEASE_VERSION || $IDENTITY_VERSION != $RELEASE_VERSION ]]; then
             echo "Please update Zeebe and Identity versions!"
