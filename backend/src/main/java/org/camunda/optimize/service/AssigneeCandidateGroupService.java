@@ -51,17 +51,17 @@ public class AssigneeCandidateGroupService {
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
-  private final UserTaskIdentityService identityService;
+  private final UserTaskIdentityService userTaskIdentityService;
   private final ReportService reportService;
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
       final String id, final IdentityType type) {
-    return identityService.getIdentityByIdAndType(id, type);
+    return userTaskIdentityService.getIdentityByIdAndType(id, type);
   }
 
   public List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
     final Map<String, UserDto> assigneesById =
-        identityService.getAssigneesByIds(assigneeIds).stream()
+        userTaskIdentityService.getAssigneesByIds(assigneeIds).stream()
             .collect(toMap(IdentityDto::getId, Function.identity()));
     return assigneeIds.stream().map(id -> assigneesById.getOrDefault(id, new UserDto(id))).toList();
   }
@@ -87,7 +87,7 @@ public class AssigneeCandidateGroupService {
 
   public List<GroupDto> getCandidateGroupsByIds(final Collection<String> candidateGroupIds) {
     final Map<String, GroupDto> candidateGroupsById =
-        identityService.getCandidateGroupIdentitiesById(candidateGroupIds).stream()
+        userTaskIdentityService.getCandidateGroupIdentitiesById(candidateGroupIds).stream()
             .collect(toMap(IdentityDto::getId, Function.identity()));
     return candidateGroupIds.stream()
         .map(id -> candidateGroupsById.getOrDefault(id, new GroupDto(id)))
@@ -123,7 +123,7 @@ public class AssigneeCandidateGroupService {
     // to be worth it
     final Set<String> assigneeIdsForProcess =
         assigneeAndCandidateGroupsReader.getAssigneeIdsForProcess(definitionKeyToTenantsMap);
-    return identityService.searchAmongIdentitiesWithIds(
+    return userTaskIdentityService.searchAmongIdentitiesWithIds(
         terms, assigneeIdsForProcess, ASSIGNEE_IDENTITY_TYPE, limit);
   }
 
@@ -137,7 +137,7 @@ public class AssigneeCandidateGroupService {
     // to be worth it
     final Set<String> candidateGroupIdsForProcess =
         assigneeAndCandidateGroupsReader.getCandidateGroupIdsForProcess(definitionKeyToTenantsMap);
-    return identityService.searchAmongIdentitiesWithIds(
+    return userTaskIdentityService.searchAmongIdentitiesWithIds(
         terms, candidateGroupIdsForProcess, CANDIDATE_GROUP_IDENTITY_TYPE, limit);
   }
 

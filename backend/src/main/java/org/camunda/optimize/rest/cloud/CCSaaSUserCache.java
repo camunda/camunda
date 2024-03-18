@@ -13,6 +13,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -32,20 +33,18 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CloudUsersService {
-
-  private final Cache<String, CloudUserDto> cloudUsersCache;
+public class CCSaaSUserCache {
 
   private static final String ERROR_MISSING_ACCESS_TOKEN =
       "Missing user access token for service access.";
-
+  private final Cache<String, CloudUserDto> cloudUsersCache;
   private final CCSaaSUserClient userClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
   private final ConfigurationService configurationService;
 
   private OffsetDateTime cacheLastPopulatedTimestamp;
 
-  public CloudUsersService(
+  public CCSaaSUserCache(
       final CCSaaSUserClient userClient,
       final AccountsUserAccessTokenProvider accessTokenProvider,
       final ConfigurationService configurationService) {
@@ -73,6 +72,12 @@ public class CloudUsersService {
             .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN));
     fetchedUser.ifPresent(user -> cloudUsersCache.put(user.getUserId(), user));
     return fetchedUser;
+  }
+
+  /** Returns the users currently in the user cache */
+  public Collection<CloudUserDto> getUsersById(final Set<String> userIds) {
+    repopulateCacheIfMinFetchIntervalExceeded();
+    return cloudUsersCache.getAllPresent(userIds).values();
   }
 
   /** Returns the users currently in the user cache */

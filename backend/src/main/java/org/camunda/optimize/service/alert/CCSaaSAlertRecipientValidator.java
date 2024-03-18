@@ -5,11 +5,16 @@
  */
 package org.camunda.optimize.service.alert;
 
+import static java.util.stream.Collectors.toSet;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
 import org.camunda.optimize.service.identity.CCSaaSIdentityService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
@@ -25,13 +30,17 @@ public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
 
   @Override
   public void validateAlertRecipientEmailAddresses(final List<String> emails) {
-    final List<String> lowerCasedUserEmails =
-        identityService.getUsersByEmail(emails).stream()
-            .map(user -> user.getEmail().toLowerCase())
-            .toList();
-    final List<String> lowerCasedInputEmails = emails.stream().map(String::toLowerCase).toList();
+    final Set<String> emailsForSearch =
+        emails.stream()
+            .filter(StringUtils::isNotBlank)
+            .map(email -> email.toLowerCase(Locale.ENGLISH).trim())
+            .collect(toSet());
+    final Set<String> lowerCasedUserEmails =
+        identityService.getUsersByEmail(emailsForSearch).stream()
+            .map(user -> user.getEmail().toLowerCase(Locale.ENGLISH))
+            .collect(toSet());
     final Collection<String> unknownEmails =
-        CollectionUtils.subtract(lowerCasedInputEmails, lowerCasedUserEmails);
+        CollectionUtils.subtract(emailsForSearch, lowerCasedUserEmails);
     if (!unknownEmails.isEmpty()) {
       throw new OptimizeAlertEmailValidationException(new HashSet<>(unknownEmails));
     }

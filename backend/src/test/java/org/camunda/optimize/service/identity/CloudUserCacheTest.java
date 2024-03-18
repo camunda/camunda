@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Optional;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
 import org.camunda.optimize.rest.cloud.AccountsUserAccessTokenProvider;
+import org.camunda.optimize.rest.cloud.CCSaaSUserCache;
 import org.camunda.optimize.rest.cloud.CCSaaSUserClient;
-import org.camunda.optimize.rest.cloud.CloudUsersService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,13 +38,13 @@ public class CloudUserCacheTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;
 
-  private CloudUsersService underTest;
+  private CCSaaSUserCache underTest;
 
   @BeforeEach
   public void setup() {
     when(configurationService.getCaches().getCloudUsers().getMaxSize()).thenReturn(10000);
     when(accessTokenProvider.getCurrentUsersAccessToken()).thenReturn(Optional.of(ACCESS_TOKEN));
-    underTest = new CloudUsersService(ccSaaSUserClient, accessTokenProvider, configurationService);
+    underTest = new CCSaaSUserCache(ccSaaSUserClient, accessTokenProvider, configurationService);
   }
 
   @Test

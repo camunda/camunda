@@ -32,8 +32,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CamundaPlatformCondition.class)
-public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdentityCache
-    implements UserTaskIdentityService {
+public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdentityCache {
 
   public PlatformUserTaskIdentityCache(
       final ConfigurationService configurationService,
@@ -111,9 +110,17 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
       final Collection<String> identityIds,
       final IdentityType identityType,
       final int resultLimit) {
+    return searchAmongIdentitiesWithIds(
+        terms, identityIds, new IdentityType[] {identityType}, resultLimit);
+  }
+
+  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
+      final String terms,
+      final Collection<String> identityIds,
+      final IdentityType[] identityTypes,
+      final int resultLimit) {
     return getActiveIdentityCache()
-        .searchAmongIdentitiesWithIds(
-            terms, identityIds, new IdentityType[] {identityType}, resultLimit);
+        .searchAmongIdentitiesWithIds(terms, identityIds, identityTypes, resultLimit);
   }
 
   private void resolveAndAddIdentities(final Set<IdentityDto> identities) {
@@ -124,9 +131,7 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
     final Map<IdentityType, Set<String>> identitiesByType =
         identities.stream()
             .collect(
-                groupingBy(
-                    IdentityDto::getType,
-                    Collectors.mapping(IdentityDto::getId, Collectors.toSet())));
+                groupingBy(IdentityDto::getType, Collectors.mapping(IdentityDto::getId, toSet())));
     final Set<String> userIds =
         identitiesByType.getOrDefault(IdentityType.USER, Collections.emptySet());
     final Set<String> groupIds =

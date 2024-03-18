@@ -789,6 +789,10 @@ caches:
     maxSize: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE:10000}
     # the time (in millis) the tenant authorizations will be cached
     defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS:300000}
+  users:
+    # This cache is used to hold users in a CCSM environment
+    maxSize: ${CAMUNDA_OPTIMIZE_CACHES_USERS_MAX_SIZE:10000}
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_USERS_DEFAULT_TTL_MILLIS:600000}
 
 externalVariable:
   import:
