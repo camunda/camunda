@@ -31,6 +31,13 @@
     <module>../distro</module>
   </modules>
 
+  <scm>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/camunda/zeebe</url>
+  </scm>
+
   <properties>
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.19.2</plugin.version.google-java-format>
