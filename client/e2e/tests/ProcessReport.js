@@ -1365,3 +1365,46 @@ test('change popover alignment and height to stay visible', async (t) => {
   await t.resizeWindow(1200, 300);
   await t.expect(e.definitionEditorPopover.hasClass('cds--popover--top-right')).ok();
 });
+
+test('display raw data report in collapsible section under the main report renderer', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await u.selectView(t, 'Flow node', 'Duration');
+
+  await t.expect(e.reportDiagram.exists).ok();
+  await t.expect(e.collapsibleContainerTable.exists).notOk();
+
+  await t.click(e.collapsibleContainerExpandButton);
+
+  await t.expect(e.reportDiagram.exists).ok();
+  await t.expect(e.collapsibleContainerTable.exists).ok();
+
+  await t.click(e.collapsibleContainerExpandButton);
+
+  await t.expect(e.reportDiagram.exists).notOk();
+  await t.expect(e.collapsibleContainerTable.exists).ok();
+
+  await t.click(e.collapsibleContainerCollapseButton);
+
+  await t.expect(e.reportDiagram.exists).ok();
+  await t.expect(e.collapsibleContainerTable.exists).ok();
+
+  await t.click(e.collapsibleContainerCollapseButton);
+
+  await t.expect(e.reportDiagram.exists).ok();
+  await t.expect(e.collapsibleContainerTable.exists).notOk();
+});
+
+test('hide collapsible section if report has table view', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await u.selectView(t, 'Flow node', 'Duration');
+
+  await t.expect(e.collapsibleContainer.exists).ok();
+
+  await u.selectVisualization(t, 'Table');
+
+  await t.expect(e.collapsibleContainer.exists).notOk();
+});
