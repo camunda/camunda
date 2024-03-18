@@ -288,7 +288,9 @@ public class BpmnCompensationSubscriptionBehaviour {
   }
 
   public boolean triggerCompensationForActivity(
-      final ExecutableActivity compensationActivity, final BpmnElementContext context) {
+      final ExecutableFlowElement element,
+      final ExecutableActivity compensationActivity,
+      final BpmnElementContext context) {
     final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
 
     // ignore subscriptions that are already triggered
@@ -312,7 +314,10 @@ public class BpmnCompensationSubscriptionBehaviour {
             .filter(
                 subscription ->
                     subscription.getRecord().getCompensableActivityScopeKey()
-                        == context.getFlowScopeKey())
+                            == context.getFlowScopeKey()
+                        || (isElementInsideEventSubprocess(element)
+                            && subscription.getRecord().getCompensableActivityScopeKey()
+                                == stateBehavior.getFlowScopeContext(context).getFlowScopeKey()))
             .toList();
 
     if (subscriptionsForActivity.isEmpty()) {
