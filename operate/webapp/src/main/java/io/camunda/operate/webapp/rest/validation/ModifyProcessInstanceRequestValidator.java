@@ -23,14 +23,17 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.apache.commons.collections4.MapUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
 public class ModifyProcessInstanceRequestValidator {
 
-  @Autowired private ProcessInstanceReader processInstanceReader;
+  private final ProcessInstanceReader processInstanceReader;
+
+  public ModifyProcessInstanceRequestValidator(final ProcessInstanceReader processInstanceReader) {
+    this.processInstanceReader = processInstanceReader;
+  }
 
   public void validate(final ModifyProcessInstanceRequestDto modifyRequest) {
     final Long processInstanceKey = Long.parseLong(modifyRequest.getProcessInstanceKey());
