@@ -41,13 +41,13 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
   @Test
   public void shouldReindex() throws Exception {
     // given
-    String id = "1";
+    final String id = "1";
     opensearchTestDataHelper.addUser(id, "test", "test");
 
     // when
-    String dstIndex = indexPrefix + this.getClass().getSimpleName().toLowerCase();
-    Query query = stringTerms("userId", List.of(id));
-    var deleteByQueryRequestBuilder =
+    final String dstIndex = indexPrefix + this.getClass().getSimpleName().toLowerCase();
+    final Query query = stringTerms("userId", List.of(id));
+    final var deleteByQueryRequestBuilder =
         reindexRequestBuilder(userIndex.getFullQualifiedName(), query, dstIndex)
             .waitForCompletion(false)
             .scroll(time(OpenSearchDocumentOperations.INTERNAL_SCROLL_KEEP_ALIVE_MS))
@@ -55,7 +55,7 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
             .conflicts(Conflicts.Proceed)
             .refresh(true);
 
-    var task =
+    final var task =
         richOpenSearchClient
             .async()
             .index()
@@ -64,7 +64,7 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
             .task();
 
     // then
-    var total =
+    final var total =
         withThreadPoolTaskScheduler(
             scheduler -> {
               try {
@@ -80,7 +80,7 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
 
     assertThat(total).isEqualTo(1);
 
-    var user =
+    final var user =
         richOpenSearchClient
             .doc()
             .searchUnique(searchRequestBuilder(dstIndex).query(query), UserEntity.class, id);

@@ -46,12 +46,12 @@ public class DecisionOldIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
 
     final DecisionDefinitionEntity decision1 =
         new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
@@ -64,10 +64,10 @@ public class DecisionOldIT extends OperateAbstractIT {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
+    final MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
-    List<DecisionGroupDto> response =
+    final List<DecisionGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).isEmpty();
@@ -76,12 +76,12 @@ public class DecisionOldIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedWithPermisssionWhenAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
 
     final DecisionDefinitionEntity decision1 =
         new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
@@ -94,10 +94,10 @@ public class DecisionOldIT extends OperateAbstractIT {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
-    MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
+    final MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
-    List<DecisionGroupDto> response =
+    final List<DecisionGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(3);
@@ -108,12 +108,12 @@ public class DecisionOldIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedWithPermisssionWhenSomeAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
 
     final DecisionDefinitionEntity decision1 =
         new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
@@ -126,10 +126,10 @@ public class DecisionOldIT extends OperateAbstractIT {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId2)));
-    MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
+    final MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
-    List<DecisionGroupDto> response =
+    final List<DecisionGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(1);

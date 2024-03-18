@@ -60,7 +60,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
     assumeThatProcessIsUnderTest(bpmnProcessId);
     if (processInstanceIds == null) {
       // sleepFor(5_000);
-      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+      final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
       // Process instances list
       searchRequest
           .source()
@@ -79,7 +79,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testImportPositions() {
-    List<ImportPositionEntity> importPositions =
+    final List<ImportPositionEntity> importPositions =
         entityReader.getEntitiesFor(importPositionIndex.getAlias(), ImportPositionEntity.class);
     assertThat(importPositions.isEmpty())
         .describedAs("There should exists at least 1 ImportPosition")
@@ -88,7 +88,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testUsageMetrics() {
-    List<MetricEntity> metrics =
+    final List<MetricEntity> metrics =
         entityReader.getEntitiesFor(metricIndex.getAlias(), MetricEntity.class);
     assertThat(metrics.stream().allMatch(m -> m.getTenantId().equals(DEFAULT_TENANT_ID)))
         .describedAs("All events have <default> tenant id")
@@ -97,9 +97,9 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testProcess() {
-    SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
     searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));
-    List<ProcessEntity> processes =
+    final List<ProcessEntity> processes =
         entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
     assertThat(processes).hasSize(1);
     assertThat(processes.get(0).getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
@@ -107,11 +107,12 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testEvents() {
-    SearchRequest searchRequest = new SearchRequest(eventTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(eventTemplate.getAlias());
     searchRequest
         .source()
         .query(termsQuery(EventTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
-    List<EventEntity> events = entityReader.searchEntitiesFor(searchRequest, EventEntity.class);
+    final List<EventEntity> events =
+        entityReader.searchEntitiesFor(searchRequest, EventEntity.class);
     assertThat(events.isEmpty()).isFalse();
     assertThat(events.stream().filter(e -> e.getMetadata() != null).count())
         .describedAs("At least one event has metadata")
@@ -129,11 +130,11 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testSequenceFlows() {
-    SearchRequest searchRequest = new SearchRequest(sequenceFlowTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(sequenceFlowTemplate.getAlias());
     searchRequest
         .source()
         .query(termsQuery(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
-    List<SequenceFlowEntity> sequenceFlows =
+    final List<SequenceFlowEntity> sequenceFlows =
         entityReader.searchEntitiesFor(searchRequest, SequenceFlowEntity.class);
     assertThat(sequenceFlows.size())
         .isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 2);
@@ -144,11 +145,11 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testFlowNodeInstances() {
-    SearchRequest searchRequest = new SearchRequest(flowNodeInstanceTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(flowNodeInstanceTemplate.getAlias());
     searchRequest
         .source()
         .query(termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
-    List<FlowNodeInstanceEntity> flowNodeInstances =
+    final List<FlowNodeInstanceEntity> flowNodeInstances =
         entityReader.searchEntitiesFor(searchRequest, FlowNodeInstanceEntity.class);
     assertThat(flowNodeInstances.size())
         .isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 3);
@@ -165,11 +166,11 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testVariables() {
-    SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias());
     searchRequest
         .source()
         .query(termsQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
-    List<VariableEntity> variableEntities =
+    final List<VariableEntity> variableEntities =
         entityReader.searchEntitiesFor(searchRequest, VariableEntity.class);
     assertThat(variableEntities.size())
         .isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT * 4);
@@ -181,15 +182,15 @@ public class BasicProcessTest extends AbstractMigrationTest {
   @Test
   public void testOperations() {
     // TODO narrow down the search criteria
-    List<OperationEntity> operations =
+    final List<OperationEntity> operations =
         entityReader.getEntitiesFor(operationTemplate.getAlias(), OperationEntity.class);
     assertThat(operations.size()).describedAs("At least one operation is active").isGreaterThan(0);
   }
 
   @Test
   public void testListViews() {
-    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
-    int processInstancesCount = BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT;
+    final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    final int processInstancesCount = BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT;
 
     searchRequest
         .source()
@@ -197,7 +198,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
             joinWithAnd(
                 termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
                 termsQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceIds)));
-    List<ProcessInstanceForListViewEntity> processInstances =
+    final List<ProcessInstanceForListViewEntity> processInstances =
         entityReader.searchEntitiesFor(searchRequest, ProcessInstanceForListViewEntity.class);
 
     processInstances.forEach(
@@ -214,7 +215,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
             joinWithAnd(
                 termQuery(JOIN_RELATION, VARIABLES_JOIN_RELATION),
                 termsQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceIds)));
-    List<VariableForListViewEntity> variablesList =
+    final List<VariableForListViewEntity> variablesList =
         entityReader.searchEntitiesFor(searchRequest, VariableForListViewEntity.class);
     assertThat(variablesList.size()).isEqualTo(processInstancesCount * 4);
 
@@ -225,18 +226,18 @@ public class BasicProcessTest extends AbstractMigrationTest {
             joinWithAnd(
                 termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
                 termsQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceIds)));
-    List<FlowNodeInstanceForListViewEntity> activitiesList =
+    final List<FlowNodeInstanceForListViewEntity> activitiesList =
         entityReader.searchEntitiesFor(searchRequest, FlowNodeInstanceForListViewEntity.class);
     assertThat(activitiesList.size()).isEqualTo(processInstancesCount * 3);
   }
 
   @Test
   public void testIncidents() {
-    SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias());
     searchRequest
         .source()
         .query(termsQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
-    List<IncidentEntity> incidents =
+    final List<IncidentEntity> incidents =
         entityReader.searchEntitiesFor(searchRequest, IncidentEntity.class);
     assertThat(incidents.size())
         .isBetween(
@@ -253,7 +254,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
     assertThat(incidents.stream().allMatch(i -> i.getTenantId().equals(DEFAULT_TENANT_ID)))
         .describedAs("Each incident has <default> tenant id")
         .isTrue();
-    IncidentEntity randomIncident = chooseOne(incidents);
+    final IncidentEntity randomIncident = chooseOne(incidents);
     assertThat(randomIncident.getErrorMessageHash()).isNotNull();
 
     incidents.forEach(
@@ -277,10 +278,10 @@ public class BasicProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testPostImporterEntities() {
-    List<PostImporterQueueEntity> postImporterQueueEntities =
+    final List<PostImporterQueueEntity> postImporterQueueEntities =
         entityReader.getEntitiesFor(
             postImporterQueueTemplate.getAlias(), PostImporterQueueEntity.class);
-    long incidentsCount = entityReader.countEntitiesFor(incidentTemplate.getAlias());
+    final long incidentsCount = entityReader.countEntitiesFor(incidentTemplate.getAlias());
     assertThat(postImporterQueueEntities.size()).isEqualTo(incidentsCount);
     assertThat(postImporterQueueEntities)
         .extracting(PostImporterQueueEntity::getIntent)

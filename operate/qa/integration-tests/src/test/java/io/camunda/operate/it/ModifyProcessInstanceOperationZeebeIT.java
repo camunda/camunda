@@ -146,7 +146,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
     assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.ADD_TOKEN)
@@ -172,7 +172,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
     assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.ADD_TOKEN)
@@ -206,7 +206,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .waitUntil()
         .flowNodeIsActive("taskA");
 
-    var moveToken =
+    final var moveToken =
         new Modification()
             .setModification(Modification.Type.MOVE_TOKEN)
             .setFromFlowNodeId("taskA")
@@ -223,13 +223,13 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .flowNodeIsTerminated("taskA");
 
     var flowNodeInstances = tester.getAllFlowNodeInstances();
-    var subprocessInstanceKey =
+    final var subprocessInstanceKey =
         flowNodeInstances.stream()
             .filter(n -> n.getFlowNodeId().equals("subprocess"))
             .findFirst()
             .orElseThrow()
             .getKey();
-    var innerSubprocessInstanceKey =
+    final var innerSubprocessInstanceKey =
         flowNodeInstances.stream()
             .filter(n -> n.getFlowNodeId().equals("innerSubprocess"))
             .findFirst()
@@ -278,7 +278,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
     assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.ADD_TOKEN)
@@ -311,7 +311,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.ACTIVE);
     assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.MOVE_TOKEN)
@@ -347,7 +347,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.ACTIVE);
     assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.MOVE_TOKEN)
@@ -383,7 +383,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .isIn(FlowNodeStateDto.ACTIVE, FlowNodeStateDto.INCIDENT);
     assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.MOVE_TOKEN)
@@ -418,7 +418,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
 
     // Different var scopes
-    var variables = varsToStrings(tester.getFlowNodeInstanceKeysFor("taskB"));
+    final var variables = varsToStrings(tester.getFlowNodeInstanceKeysFor("taskB"));
     assertThat(variables.get(0)).isEqualTo("[var1=\"val1\", var2=\"val2\"]");
     assertThat(variables.get(1)).isEqualTo("[var3=\"val3\", var4=\"val4\"]");
   }
@@ -466,7 +466,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   @Test // NPE in cancelToken : https://github.com/camunda/operate/issues/3499
   public void shouldMoveTokenFailsDueMissingFlowNodeInstanceKeys() throws Exception {
     // given
-    var flowNodeInstanceKey =
+    final var flowNodeInstanceKey =
         tester
             .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
             .waitUntil()
@@ -531,7 +531,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
     assertThat(tester.getVariable("new-var")).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.ADD_VARIABLE)
@@ -558,10 +558,10 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .waitUntil()
         .flowNodeIsActive("taskA");
 
-    Long flowNodeInstanceId = tester.getFlowNodeInstanceKeyFor("taskA");
+    final Long flowNodeInstanceId = tester.getFlowNodeInstanceKeyFor("taskA");
     assertThat(tester.getVariable("new-var", flowNodeInstanceId)).isNull();
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.ADD_VARIABLE)
@@ -587,7 +587,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
     assertThat(tester.getVariable("a")).isEqualTo("\"b\"");
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.EDIT_VARIABLE)
@@ -621,7 +621,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeStateFor("taskC")).isNull();
     assertThat(tester.getFlowNodeStateFor("taskD")).isEqualTo(FlowNodeStateDto.ACTIVE);
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.CANCEL_TOKEN)
@@ -671,7 +671,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeStateFor("taskC")).isNull();
     assertThat(tester.getFlowNodeStateFor("taskD")).isEqualTo(FlowNodeStateDto.ACTIVE);
     // when
-    List<Modification> modifications =
+    final List<Modification> modifications =
         List.of(
             new Modification()
                 .setModification(Modification.Type.CANCEL_TOKEN)
@@ -765,7 +765,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .waitUntil()
         .flowNodeIsActive("taskA");
 
-    var moveToken =
+    final var moveToken =
         new Modification()
             .setModification(Modification.Type.MOVE_TOKEN)
             .setFromFlowNodeId("taskA")
@@ -782,20 +782,20 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .flowNodeIsTerminated("taskA");
 
     var flowNodeInstances = tester.getAllFlowNodeInstances();
-    var subprocessInstanceKey =
+    final var subprocessInstanceKey =
         flowNodeInstances.stream()
             .filter(n -> n.getFlowNodeId().equals("subprocess"))
             .findFirst()
             .orElseThrow()
             .getKey();
-    var innerSubprocessInstanceKey =
+    final var innerSubprocessInstanceKey =
         flowNodeInstances.stream()
             .filter(n -> n.getFlowNodeId().equals("innerSubprocess"))
             .findFirst()
             .orElseThrow()
             .getKey();
 
-    var moveWithAncestor =
+    final var moveWithAncestor =
         new Modification()
             .setModification(Modification.Type.MOVE_TOKEN)
             .setAncestorElementInstanceKey(subprocessInstanceKey)
@@ -840,10 +840,10 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .flowNodesAreActive("taskC", 2);
 
     // then
-    var flowNodeStates = tester.getFlowNodeStates();
+    final var flowNodeStates = tester.getFlowNodeStates();
     assertThat(flowNodeStates.get("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
-    var taskCFlowNodeKeys = tester.getFlowNodeInstanceKeysFor("taskC");
-    var varsAsStrings = varsToStrings(taskCFlowNodeKeys);
+    final var taskCFlowNodeKeys = tester.getFlowNodeInstanceKeysFor("taskC");
+    final var varsAsStrings = varsToStrings(taskCFlowNodeKeys);
     assertThat(varsAsStrings.get(0)).isEqualTo("[test=1]");
     assertThat(varsAsStrings.get(1)).isEqualTo("[test2=2]");
   }
@@ -853,8 +853,8 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   @Test
   public void shouldAddTokenAndNewScopesForEventSubprocess() throws Exception {
     // Given
-    String subprocessFlowNodeId = "eventSubprocess";
-    String eventSubprocessTaskFlowNodeId = "eventSubprocessTask";
+    final String subprocessFlowNodeId = "eventSubprocess";
+    final String eventSubprocessTaskFlowNodeId = "eventSubprocessTask";
     tester
         .deployProcess("develop/eventSubProcess_v_1.bpmn")
         .waitUntil()
@@ -888,20 +888,20 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .and()
         .flowNodesAreActive(subprocessFlowNodeId, 2);
     // check states
-    var flowNodeStates = tester.getFlowNodeStates();
+    final var flowNodeStates = tester.getFlowNodeStates();
     assertThat(flowNodeStates.get(eventSubprocessTaskFlowNodeId))
         .isEqualTo(FlowNodeStateDto.ACTIVE);
     assertThat(flowNodeStates.get(subprocessFlowNodeId)).isEqualTo(FlowNodeStateDto.ACTIVE);
     // check statistics
-    var statistics =
+    final var statistics =
         flowNodeInstanceReader.getFlowNodeStatisticsForProcessInstance(
             tester.getProcessInstanceKey());
-    var eventSubProcessTaskStatistic =
+    final var eventSubProcessTaskStatistic =
         statistics.stream()
             .filter(s -> s.getActivityId().equals(eventSubprocessTaskFlowNodeId))
             .findFirst()
             .orElseThrow();
-    var eventSubProcessStatistic =
+    final var eventSubProcessStatistic =
         statistics.stream()
             .filter(s -> s.getActivityId().equals(subprocessFlowNodeId))
             .findFirst()
@@ -938,7 +938,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   }
 
   private List<String> varsToStrings(List<Long> flowNodeKeys) {
-    var variables =
+    final var variables =
         flowNodeKeys.stream()
             .map(key -> tester.getVariablesForScope(key))
             .collect(Collectors.toList());

@@ -57,22 +57,22 @@ public class ImportWithMissedDataZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceCreated() throws IOException {
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
-    List<Long> processInstanceKeys = new ArrayList<>();
+    final List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       processInstanceKeys.add(
           ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}"));
     }
     // remove "middle part" of Zeebe data
     // split by partitions
-    Map<Integer, List<Long>> keysByPartition =
+    final Map<Integer, List<Long>> keysByPartition =
         processInstanceKeys.stream()
             .collect(Collectors.groupingBy(a -> Protocol.decodePartitionId(a)));
-    List<Long> keysForDeletion = new ArrayList<>();
-    for (Map.Entry<Integer, List<Long>> partition : keysByPartition.entrySet()) {
-      AtomicInteger counter = new AtomicInteger();
-      Map<Integer, List<Long>> splittedKeys =
+    final List<Long> keysForDeletion = new ArrayList<>();
+    for (final Map.Entry<Integer, List<Long>> partition : keysByPartition.entrySet()) {
+      final AtomicInteger counter = new AtomicInteger();
+      final Map<Integer, List<Long>> splittedKeys =
           partition.getValue().stream()
               .collect(Collectors.groupingBy(x -> counter.getAndIncrement() / 2));
       for (int j = 1; j < splittedKeys.size() - 1; j++) {
@@ -91,7 +91,7 @@ public class ImportWithMissedDataZeebeIT extends OperateZeebeAbstractIT {
     searchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, processInstanceKeys);
 
     // then all expected instances are loaded - imported is not blocked
-    ListViewResponseDto listViewResponseDto =
+    final ListViewResponseDto listViewResponseDto =
         listViewReader.queryProcessInstances(
             createGetAllProcessInstancesRequest(
                 q ->

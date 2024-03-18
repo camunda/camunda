@@ -39,16 +39,16 @@ public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
   public void shouldImportMigratedIncident() throws IOException {
 
     // given
-    String bpmnSource = "double-task-incident.bpmn";
-    String bpmnTarget = "double-task.bpmn";
-    Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
-    Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
+    final String bpmnSource = "double-task-incident.bpmn";
+    final String bpmnTarget = "double-task.bpmn";
+    final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
+    final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
 
     // when
-    Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
+    final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
     operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
 
-    MigrationPlan migrationPlan =
+    final MigrationPlan migrationPlan =
         new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
     List.of("taskA", "taskB")
         .forEach(
@@ -63,7 +63,7 @@ public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
         .join();
 
     operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
-    List<IncidentEntity> incidents =
+    final List<IncidentEntity> incidents =
         testSearchRepository.searchTerm(
             incidentTemplate.getAlias(),
             IncidentTemplate.PROCESS_INSTANCE_KEY,

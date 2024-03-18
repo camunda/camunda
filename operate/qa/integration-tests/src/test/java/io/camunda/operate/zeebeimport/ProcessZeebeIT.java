@@ -79,10 +79,10 @@ public class ProcessZeebeIT extends OperateZeebeAbstractIT {
     // given
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         get(String.format(QUERY_PROCESS_XML_URL, processDefinitionKey));
 
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
+    final MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
     final String xml = mvcResult.getResponse().getContentAsString();
 
@@ -116,16 +116,16 @@ public class ProcessZeebeIT extends OperateZeebeAbstractIT {
     // elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // then
-    MockHttpServletRequestBuilder request = get(QUERY_PROCESSES_GROUPED_URL);
+    final MockHttpServletRequestBuilder request = get(QUERY_PROCESSES_GROUPED_URL);
 
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())
             .andExpect(content().contentType(mockMvcTestRule.getContentType()))
             .andReturn();
 
-    List<ProcessGroupDto> processGroupDtos =
+    final List<ProcessGroupDto> processGroupDtos =
         mockMvcTestRule.listFromResponse(mvcResult, ProcessGroupDto.class);
     assertThat(processGroupDtos).hasSize(3);
     assertThat(processGroupDtos).isSortedAccordingTo(new ProcessGroupDto.ProcessGroupComparator());

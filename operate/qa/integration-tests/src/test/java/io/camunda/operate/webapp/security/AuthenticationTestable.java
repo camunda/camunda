@@ -55,11 +55,11 @@ public interface AuthenticationTestable {
   String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
   default HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
-    HttpHeaders headers = new HttpHeaders();
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", getSessionCookies(response).stream().findFirst().orElse(""));
 
-    Map<String, String> body = new HashMap<>();
+    final Map<String, String> body = new HashMap<>();
     return new HttpEntity<>(body, headers);
   }
 
@@ -74,16 +74,16 @@ public interface AuthenticationTestable {
   }
 
   default void assertThatCookiesAndSecurityHeadersAreSet(ResponseEntity<?> response) {
-    List<String> cookies = getSessionCookies(response);
+    final List<String> cookies = getSessionCookies(response);
     assertThat(cookies).isNotEmpty();
-    String lastSetCookie = cookies.get(cookies.size() - 1);
+    final String lastSetCookie = cookies.get(cookies.size() - 1);
     assertThat(lastSetCookie.split(";")[0]).matches(COOKIE_PATTERN);
     assertSameSiteIsSet(lastSetCookie);
     assertThatSecurityHeadersAreSet(response);
   }
 
   default void assertThatSecurityHeadersAreSet(ResponseEntity<?> response) {
-    var cspHeaderValues =
+    final var cspHeaderValues =
         response
             .getHeaders()
             .getOrEmpty(ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY);
@@ -97,18 +97,18 @@ public interface AuthenticationTestable {
 
   default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
     final String emptyValue = "=;";
-    List<String> sessionCookies = getSessionCookies(response);
+    final List<String> sessionCookies = getSessionCookies(response);
     if (!sessionCookies.isEmpty()) {
-      String lastSetCookie = sessionCookies.get(sessionCookies.size() - 1);
+      final String lastSetCookie = sessionCookies.get(sessionCookies.size() - 1);
       assertThat(lastSetCookie).contains(COOKIE_JSESSIONID + emptyValue);
     }
   }
 
   default ResponseEntity<Void> login(String username, String password) {
-    HttpHeaders headers = new HttpHeaders();
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
-    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
     body.add("username", username);
     body.add("password", password);
 
@@ -117,7 +117,7 @@ public interface AuthenticationTestable {
   }
 
   default ResponseEntity<?> logout(ResponseEntity<?> previousResponse) {
-    HttpEntity<Map<String, String>> request = prepareRequestWithCookies(previousResponse);
+    final HttpEntity<Map<String, String>> request = prepareRequestWithCookies(previousResponse);
     return getTestRestTemplate().postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
 

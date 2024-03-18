@@ -42,7 +42,7 @@ public class MetricAssert {
   //  }
 
   public static void assertThatMetricsFrom(MockMvc mockMvc, Matcher<? super String> matcher) {
-    MockHttpServletRequestBuilder request = get("/actuator/prometheus");
+    final MockHttpServletRequestBuilder request = get("/actuator/prometheus");
     try {
       mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().string(matcher));
     } catch (Exception e) {
@@ -50,7 +50,7 @@ public class MetricAssert {
     }
   }
 
-  public static class ValueMatcher extends BaseMatcher {
+  public static final class ValueMatcher extends BaseMatcher {
 
     private final String metricName;
     private final Predicate<Double> valueMatcher;
@@ -62,7 +62,7 @@ public class MetricAssert {
 
     @Override
     public boolean matches(Object o) {
-      Double metricValue = getMetricValue(o);
+      final Double metricValue = getMetricValue(o);
       if (metricValue != null) {
         return valueMatcher.test(metricValue);
       }
@@ -70,9 +70,9 @@ public class MetricAssert {
     }
 
     public Double getMetricValue(Object o) {
-      Optional<String> metricString = getMetricString(o);
+      final Optional<String> metricString = getMetricString(o);
       if (metricString.isPresent()) {
-        String[] oneMetric = metricString.get().split(" ");
+        final String[] oneMetric = metricString.get().split(" ");
         if (oneMetric.length > 1) {
           return Double.valueOf(oneMetric[1]);
         }
@@ -81,8 +81,8 @@ public class MetricAssert {
     }
 
     public Optional<String> getMetricString(Object o) {
-      String s = (String) o;
-      String[] strings = s.split("\\n");
+      final String s = (String) o;
+      final String[] strings = s.split("\\n");
       return Arrays.stream(strings)
           .filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#"))
           .findFirst();

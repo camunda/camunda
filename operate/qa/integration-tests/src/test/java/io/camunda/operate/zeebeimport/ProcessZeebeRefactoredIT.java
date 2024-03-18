@@ -34,18 +34,18 @@ public class ProcessZeebeRefactoredIT extends OperateZeebeSearchAbstractIT {
   public void shouldReadFromMultiProcessDiagram() throws IOException {
 
     // given
-    String bpmnFile = "multi-process.bpmn";
+    final String bpmnFile = "multi-process.bpmn";
     operateTester.deployProcessAndWait(bpmnFile);
 
     // when
-    List<ProcessEntity> processEntities =
+    final List<ProcessEntity> processEntities =
         testSearchRepository.searchAll(processIndex.getAlias(), ProcessEntity.class);
-    ProcessEntity process1 =
+    final ProcessEntity process1 =
         processEntities.stream()
             .filter(x -> "process1".equals(x.getBpmnProcessId()))
             .findAny()
             .orElse(null);
-    ProcessEntity process2 =
+    final ProcessEntity process2 =
         processEntities.stream()
             .filter(x -> "process2".equals(x.getBpmnProcessId()))
             .findAny()

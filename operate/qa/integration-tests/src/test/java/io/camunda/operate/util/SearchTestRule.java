@@ -34,7 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class SearchTestRule extends TestWatcher {
 
-  protected static final Logger logger = LoggerFactory.getLogger(SearchTestRule.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(SearchTestRule.class);
 
   @Autowired protected SearchTestRuleProvider searchTestRuleProvider;
 

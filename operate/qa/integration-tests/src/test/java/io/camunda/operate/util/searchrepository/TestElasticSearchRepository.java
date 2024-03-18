@@ -103,13 +103,13 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Override
   public boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data)
       throws IOException {
-    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, docId, entityMap);
   }
 
   @Override
   public String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException {
-    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, entityMap);
   }
 
@@ -119,14 +119,14 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     final IndexResponse response =
         esClient.index(
             new IndexRequest(name).id(id).source(doc, XContentType.JSON), RequestOptions.DEFAULT);
-    DocWriteResponse.Result result = response.getResult();
+    final DocWriteResponse.Result result = response.getResult();
     return result.equals(DocWriteResponse.Result.CREATED)
         || result.equals(DocWriteResponse.Result.UPDATED);
   }
 
   @Override
   public String createOrUpdateDocument(String name, Map<String, ?> doc) throws IOException {
-    String docId = UUID.randomUUID().toString();
+    final String docId = UUID.randomUUID().toString();
     if (createOrUpdateDocument(name, UUID.randomUUID().toString(), doc)) {
       return docId;
     } else {
@@ -136,7 +136,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
 
   @Override
   public void deleteById(String index, String id) throws IOException {
-    DeleteRequest request = new DeleteRequest().index(index).id(id);
+    final DeleteRequest request = new DeleteRequest().index(index).id(id);
     esClient.delete(request, RequestOptions.DEFAULT);
   }
 
@@ -148,7 +148,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Override
   public boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType)
       throws IOException {
-    var esDynamicMappingType =
+    final var esDynamicMappingType =
         switch (dynamicMappingType) {
           case Strict -> "strict";
           case True -> "true";
@@ -197,11 +197,11 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Override
   public <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size)
       throws IOException {
-    var request =
+    final var request =
         new SearchRequest(index)
             .source(new SearchSourceBuilder().query(QueryBuilders.termQuery(field, value)));
 
-    var response = esClient.search(request, RequestOptions.DEFAULT);
+    final var response = esClient.search(request, RequestOptions.DEFAULT);
 
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
   }
@@ -219,14 +219,14 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Override
   public void deleteByTermsQuery(String index, String fieldName, List<Long> values)
       throws IOException {
-    DeleteByQueryRequest request =
+    final DeleteByQueryRequest request =
         new DeleteByQueryRequest(index).setQuery(termsQuery(fieldName, values));
     esClient.deleteByQuery(request, RequestOptions.DEFAULT);
   }
 
   @Override
   public void update(String index, String id, Map<String, Object> fields) throws IOException {
-    UpdateRequest request = new UpdateRequest().index(index).id(id).doc(fields);
+    final UpdateRequest request = new UpdateRequest().index(index).id(id).doc(fields);
     esClient.update(request, RequestOptions.DEFAULT);
   }
 
@@ -253,7 +253,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   public void reindex(
       String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams)
       throws IOException {
-    ReindexRequest reindexRequest =
+    final ReindexRequest reindexRequest =
         new ReindexRequest()
             .setSourceIndices(srcIndex)
             .setDestIndex(dstIndex)
@@ -265,7 +265,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
 
   @Override
   public boolean ilmPolicyExists(String policyName) throws IOException {
-    var request = new GetLifecyclePolicyRequest(policyName);
+    final var request = new GetLifecyclePolicyRequest(policyName);
     return esClient
             .indexLifecycle()
             .getLifecyclePolicy(request, requestOptions)
@@ -276,7 +276,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
 
   @Override
   public IndexSettings getIndexSettings(String indexName) throws IOException {
-    var settings =
+    final var settings =
         esClient
             .indices()
             .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)

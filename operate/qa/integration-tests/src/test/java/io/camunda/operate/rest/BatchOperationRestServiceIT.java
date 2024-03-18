@@ -68,7 +68,7 @@ public class BatchOperationRestServiceIT extends OperateAbstractIT {
   @Test
   public void testGetBatchOperationWithWrongSearchAfter() throws Exception {
     // when
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         postRequestThatShouldFail(
             new BatchOperationRequestDto(2, createFrom(new Object[] {123}, objectMapper), null));
     // then
@@ -78,7 +78,7 @@ public class BatchOperationRestServiceIT extends OperateAbstractIT {
   @Test
   public void testGetBatchOperationWithWrongSearchBefore() throws Exception {
     // when
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         postRequestThatShouldFail(
             new BatchOperationRequestDto(2, null, createFrom(new Object[] {123}, objectMapper)));
     // then

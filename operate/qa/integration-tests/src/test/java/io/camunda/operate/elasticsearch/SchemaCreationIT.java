@@ -50,15 +50,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class SchemaCreationIT extends OperateAbstractIT {
 
-  private static final Consumer<OperateProperties> operatePropertiesCustomizer =
+  private static final Consumer<OperateProperties> OPERATE_PROPERTIES_CUSTOMIZER =
       operateProperties -> {
         operateProperties.getArchiver().setIlmEnabled(true);
         operateProperties.getArchiver().setIlmMinAgeForDeleteArchivedIndices("5m");
-        var numberOfShardsForIndices =
+        final var numberOfShardsForIndices =
             Map.of(
                 ListViewTemplate.INDEX_NAME, 3,
                 ProcessIndex.INDEX_NAME, 3);
-        var numberOfReplicasForIndices =
+        final var numberOfReplicasForIndices =
             Map.of(
                 ListViewTemplate.INDEX_NAME, 2,
                 ProcessIndex.INDEX_NAME, 2);
@@ -69,7 +69,7 @@ public class SchemaCreationIT extends OperateAbstractIT {
             .getElasticsearch()
             .setNumberOfReplicasForIndices(numberOfReplicasForIndices);
       };
-  @Rule public SearchTestRule searchTestRule = new SearchTestRule(operatePropertiesCustomizer);
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule(OPERATE_PROPERTIES_CUSTOMIZER);
   @Autowired private TestSearchRepository testSearchRepository;
   @Autowired private SchemaManager schemaManager;
   @Autowired private IncidentTemplate processInstanceTemplate;
@@ -88,7 +88,7 @@ public class SchemaCreationIT extends OperateAbstractIT {
 
   @Test
   public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {
-    for (IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertIndexAndAlias(indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias());
     }
 
@@ -98,35 +98,38 @@ public class SchemaCreationIT extends OperateAbstractIT {
 
   @Test
   public void testIndexCreationWithCustomNumberOfShards() throws IOException {
-    var settings = testSearchRepository.getIndexSettings(processIndex.getFullQualifiedName());
+    final var settings = testSearchRepository.getIndexSettings(processIndex.getFullQualifiedName());
     assertEquals(Integer.valueOf(3), settings.shards());
     assertEquals(Integer.valueOf(2), settings.replicas());
   }
 
   @Test
   public void testTemplateIndexCreationWithCustomNumberOfShards() throws IOException {
-    var settings = testSearchRepository.getIndexSettings(listViewTemplate.getFullQualifiedName());
+    final var settings =
+        testSearchRepository.getIndexSettings(listViewTemplate.getFullQualifiedName());
     assertEquals(Integer.valueOf(3), settings.shards());
     assertEquals(Integer.valueOf(2), settings.replicas());
   }
 
   @Test
   public void testIndexCreationWithDefaultNumberOfShards() throws IOException {
-    var settings = testSearchRepository.getIndexSettings(decisionIndex.getFullQualifiedName());
+    final var settings =
+        testSearchRepository.getIndexSettings(decisionIndex.getFullQualifiedName());
     assertEquals(Integer.valueOf(1), settings.shards());
     assertEquals(Integer.valueOf(0), settings.replicas());
   }
 
   @Test
   public void testTemplateIndexCreationWithDefaultNumberOfShards() throws IOException {
-    var settings = testSearchRepository.getIndexSettings(eventTemplate.getFullQualifiedName());
+    final var settings =
+        testSearchRepository.getIndexSettings(eventTemplate.getFullQualifiedName());
     assertEquals(Integer.valueOf(1), settings.shards());
     assertEquals(Integer.valueOf(0), settings.replicas());
   }
 
   @Test // OPE-1310
   public void testMigrationStepsRepositoryFields() throws IOException {
-    IndexDescriptor migrationStepsIndexDescriptor =
+    final IndexDescriptor migrationStepsIndexDescriptor =
         getIndexDescriptorBy(MigrationRepositoryIndex.INDEX_NAME);
     assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
     assertThat(
@@ -146,7 +149,7 @@ public class SchemaCreationIT extends OperateAbstractIT {
 
   @Test // OPE-1308
   public void testDynamicMappingsOfIndices() throws Exception {
-    IndexDescriptor sessionIndex =
+    final IndexDescriptor sessionIndex =
         indexDescriptors.stream()
             .filter(
                 indexDescriptor ->
@@ -155,14 +158,14 @@ public class SchemaCreationIT extends OperateAbstractIT {
             .orElseThrow();
     assertThatIndexHasDynamicMappingOf(sessionIndex, TestSearchRepository.DynamicMappingType.True);
 
-    List<IndexDescriptor> strictMappingIndices =
+    final List<IndexDescriptor> strictMappingIndices =
         indexDescriptors.stream()
             .filter(
                 indexDescriptor ->
                     !indexDescriptor.getIndexName().equals(OperateWebSessionIndex.INDEX_NAME))
             .collect(Collectors.toList());
 
-    for (IndexDescriptor indexDescriptor : strictMappingIndices) {
+    for (final IndexDescriptor indexDescriptor : strictMappingIndices) {
       assertThatIndexHasDynamicMappingOf(
           indexDescriptor, TestSearchRepository.DynamicMappingType.Strict);
     }
@@ -182,7 +185,7 @@ public class SchemaCreationIT extends OperateAbstractIT {
   }
 
   private void assertIndexAndAlias(String indexName, String aliasName) throws IOException {
-    List<String> aliaseNames = testSearchRepository.getAliasNames(indexName);
+    final List<String> aliaseNames = testSearchRepository.getAliasNames(indexName);
 
     assertThat(aliaseNames).hasSize(1);
     assertThat(aliaseNames.get(0)).isEqualTo(aliasName);

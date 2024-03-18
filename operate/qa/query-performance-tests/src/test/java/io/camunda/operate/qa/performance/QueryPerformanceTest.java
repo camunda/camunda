@@ -88,7 +88,7 @@ public class QueryPerformanceTest {
   public static Collection<TestQuery> readQueries() {
     final ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-    Collection<TestQuery> result = new ArrayList<>();
+    final Collection<TestQuery> result = new ArrayList<>();
     try (Stream<Path> paths =
         Files.walk(Paths.get(QueryPerformanceTest.class.getResource(QUERIES_PATH).toURI()))) {
       paths
@@ -129,14 +129,14 @@ public class QueryPerformanceTest {
 
     Instant start = Instant.now();
     try {
-      RequestEntity<String> requestEntity =
+      final RequestEntity<String> requestEntity =
           RequestEntity.method(
                   testQuery.getMethod(),
                   restTemplate.getURL(testQuery.getUrl(), testQuery.getPathParams()))
               .contentType(MediaType.APPLICATION_JSON)
               .body(testQuery.getBody());
       start = Instant.now();
-      ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
+      final ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
       assertThat(response.getStatusCode())
           .as(testQuery.getTitle() + " (status)")
           .isEqualTo(HttpStatus.OK);
@@ -146,8 +146,8 @@ public class QueryPerformanceTest {
               "Query %s failed with the error: %s",
               testQuery.getTitle(), ex.getResponseBodyAsString()));
     }
-    Instant finish = Instant.now();
-    long timeElapsed = Duration.between(start, finish).toMillis();
+    final Instant finish = Instant.now();
+    final long timeElapsed = Duration.between(start, finish).toMillis();
     //    logger.info("Running of query took {} milliseconds", timeElapsed);
 
     assertThat(timeElapsed).as(testQuery.getTitle() + " (duration)").isLessThan(timeout);

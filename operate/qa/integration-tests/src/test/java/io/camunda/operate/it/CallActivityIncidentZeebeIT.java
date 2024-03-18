@@ -125,7 +125,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testIncidentPropagatedInCoreStatistics() throws Exception {
     // when
-    ProcessInstanceCoreStatisticsDto coreStatistics =
+    final ProcessInstanceCoreStatisticsDto coreStatistics =
         mockMvcTestRule.fromResponse(
             getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
     // then return zero statistics
@@ -136,7 +136,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testIncidentPropagatedInIncidentsByProcess() throws Exception {
-    List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
+    final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
     assertThat(processGroups).hasSize(2);
     for (IncidentsByProcessGroupStatisticsDto stat : processGroups) {
       assertThat(stat.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
@@ -246,7 +246,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {
-    ListViewQueryDto q = RestAPITestUtil.createGetAllProcessInstancesQuery();
+    final ListViewQueryDto q = RestAPITestUtil.createGetAllProcessInstancesQuery();
     if (processDefinitionKeys != null && processDefinitionKeys.length > 0) {
       q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionKeys));
     }
@@ -271,7 +271,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(String processInstanceId)
       throws Exception {
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         getRequest(
             String.format(
                 ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states",
@@ -281,15 +281,15 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
       throws Exception {
-    String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
+    final String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
     final MvcResult result = getRequest(url);
     return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
   }
 
   private List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
       FlowNodeInstanceQueryDto query) throws Exception {
-    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
-    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
+    final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
+    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).hasSize(1);

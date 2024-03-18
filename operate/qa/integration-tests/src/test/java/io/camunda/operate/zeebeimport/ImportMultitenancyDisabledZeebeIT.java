@@ -59,7 +59,7 @@ public class ImportMultitenancyDisabledZeebeIT extends OperateZeebeAbstractIT {
         .getAuthenticatedTenants();
 
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
     // when

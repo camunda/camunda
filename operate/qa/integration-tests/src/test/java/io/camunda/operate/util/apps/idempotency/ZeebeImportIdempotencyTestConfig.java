@@ -46,7 +46,7 @@ public class ZeebeImportIdempotencyTestConfig {
     @Override
     public void performImport(ImportBatch importBatch) throws PersistenceException {
       super.performImport(importBatch);
-      ImportValueType importValueType = importBatch.getImportValueType();
+      final ImportValueType importValueType = importBatch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(

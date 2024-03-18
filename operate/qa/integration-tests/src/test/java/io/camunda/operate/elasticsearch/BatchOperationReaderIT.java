@@ -52,7 +52,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
   private Comparator<BatchOperationDto> batchOperationEntityComparator =
       (o1, o2) -> {
         if (o2.getEndDate() != null && o1.getEndDate() != null) {
-          int i = o2.getEndDate().compareTo(o1.getEndDate());
+          final int i = o2.getEndDate().compareTo(o1.getEndDate());
           if (i != 0) {
             return i;
           }
@@ -74,27 +74,27 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
   public void testUser1Operations() throws Exception {
     when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_1));
 
-    BatchOperationDto op1 = assert3Pages();
+    final BatchOperationDto op1 = assert3Pages();
 
     // finish 1st operation
-    BatchOperationEntity batchOperationEntity =
+    final BatchOperationEntity batchOperationEntity =
         createBatchOperationEntity(op1.getStartDate(), OffsetDateTime.now(), USER_1);
     batchOperationEntity.setId(op1.getId());
     searchTestRule.persistNew(batchOperationEntity);
     searchTestRule.refreshOperateSearchIndices();
 
-    BatchOperationDto op2 = assert3Pages();
+    final BatchOperationDto op2 = assert3Pages();
     assertThat(op1.getId()).isNotEqualTo(op2.getId());
   }
 
   private BatchOperationDto assert3Pages() throws Exception {
-    List<BatchOperationDto> page1 =
+    final List<BatchOperationDto> page1 =
         mockMvcTestRule.listFromResponse(
             postRequest(new BatchOperationRequestDto(2, null, null)), BatchOperationDto.class);
     assertThat(page1).hasSize(2);
     assertThat(page1).isSortedAccordingTo(batchOperationEntityComparator);
 
-    List<BatchOperationDto> page2 =
+    final List<BatchOperationDto> page2 =
         mockMvcTestRule.listFromResponse(
             postRequest(new BatchOperationRequestDto(2, page1.get(1).getSortValues(), null)),
             BatchOperationDto.class);
@@ -102,15 +102,15 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
     assertThat(page2).isSortedAccordingTo(batchOperationEntityComparator);
 
     // get again page1, but with searchBefore
-    List<BatchOperationDto> page1_2 =
+    final List<BatchOperationDto> page1WithSearchBefore =
         mockMvcTestRule.listFromResponse(
             postRequest(new BatchOperationRequestDto(2, null, page2.get(0).getSortValues())),
             BatchOperationDto.class);
-    assertThat(page1_2).hasSize(2);
-    assertThat(page1_2).isSortedAccordingTo(batchOperationEntityComparator);
-    assertThat(page1_2).containsExactlyElementsOf(page1);
+    assertThat(page1WithSearchBefore).hasSize(2);
+    assertThat(page1WithSearchBefore).isSortedAccordingTo(batchOperationEntityComparator);
+    assertThat(page1WithSearchBefore).containsExactlyElementsOf(page1);
 
-    List<BatchOperationDto> page3 =
+    final List<BatchOperationDto> page3 =
         mockMvcTestRule.listFromResponse(
             postRequest(new BatchOperationRequestDto(2, page2.get(1).getSortValues(), null)),
             BatchOperationDto.class);
@@ -127,13 +127,13 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
   public void testUser2Operations() throws Exception {
     when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_2));
 
-    List<BatchOperationDto> page1 =
+    final List<BatchOperationDto> page1 =
         mockMvcTestRule.listFromResponse(
             postRequest(new BatchOperationRequestDto(2, null, null)), BatchOperationDto.class);
     assertThat(page1).hasSize(2);
     assertThat(page1).isSortedAccordingTo(batchOperationEntityComparator);
 
-    List<BatchOperationDto> page2 =
+    final List<BatchOperationDto> page2 =
         mockMvcTestRule.listFromResponse(
             postRequest(new BatchOperationRequestDto(2, page1.get(1).getSortValues(), null)),
             BatchOperationDto.class);
@@ -144,9 +144,9 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   protected void createData() {
 
-    List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
 
-    OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime now = OffsetDateTime.now();
 
     entities.add(
         createBatchOperation(now.minus(5, ChronoUnit.MINUTES), null, USER_1, user1OperationIds));
@@ -181,7 +181,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
       OffsetDateTime endDate,
       String username,
       ArrayList<String> userList) {
-    BatchOperationEntity batchOperationEntity =
+    final BatchOperationEntity batchOperationEntity =
         createBatchOperationEntity(startDate, endDate, username);
     userList.add(batchOperationEntity.getId());
     return batchOperationEntity;

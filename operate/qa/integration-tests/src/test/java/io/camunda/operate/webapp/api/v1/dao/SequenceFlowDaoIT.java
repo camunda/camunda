@@ -36,7 +36,7 @@ public class SequenceFlowDaoIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String indexName = sequenceFlowIndex.getFullQualifiedName();
+    final String indexName = sequenceFlowIndex.getFullQualifiedName();
     testSearchRepository.createOrUpdateDocumentFromObject(
         indexName,
         new SequenceFlowEntity()
@@ -71,7 +71,7 @@ public class SequenceFlowDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnSequenceFlows() {
-    Results<SequenceFlow> sequenceFlowResults = dao.search(new Query<>());
+    final Results<SequenceFlow> sequenceFlowResults = dao.search(new Query<>());
 
     assertThat(sequenceFlowResults.getItems()).hasSize(4);
     assertThat(sequenceFlowResults.getItems())
@@ -82,7 +82,7 @@ public class SequenceFlowDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterSequenceFlows() {
-    Results<SequenceFlow> sequenceFlowResults =
+    final Results<SequenceFlow> sequenceFlowResults =
         dao.search(
             new Query<SequenceFlow>()
                 .setFilter(new SequenceFlow().setActivityId("sequenceFlow_01")));
@@ -94,7 +94,7 @@ public class SequenceFlowDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortSequenceFlowsDesc() {
-    Results<SequenceFlow> sequenceFlowResults =
+    final Results<SequenceFlow> sequenceFlowResults =
         dao.search(
             new Query<SequenceFlow>()
                 .setSort(Query.Sort.listOf(SequenceFlow.ACTIVITY_ID, Query.Sort.Order.DESC)));
@@ -108,7 +108,7 @@ public class SequenceFlowDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortSequenceFlowsAsc() {
-    Results<SequenceFlow> sequenceFlowResults =
+    final Results<SequenceFlow> sequenceFlowResults =
         dao.search(
             new Query<SequenceFlow>()
                 .setSort(Query.Sort.listOf(SequenceFlow.ACTIVITY_ID, Query.Sort.Order.ASC)));
@@ -135,7 +135,7 @@ public class SequenceFlowDaoIT extends OperateSearchAbstractIT {
     assertThat(sequenceFlowResults.getItems().get(1).getActivityId()).isEqualTo("sequenceFlow_03");
     assertThat(sequenceFlowResults.getItems().get(2).getActivityId()).isEqualTo("sequenceFlow_02");
 
-    Object[] searchAfter = sequenceFlowResults.getSortValues();
+    final Object[] searchAfter = sequenceFlowResults.getSortValues();
     assertThat(String.valueOf(sequenceFlowResults.getItems().get(2).getActivityId()))
         .isEqualTo(String.valueOf(searchAfter[0]));
 

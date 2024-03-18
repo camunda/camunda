@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ResultChecker {
 
-  private static final Logger logger = LoggerFactory.getLogger(ResultChecker.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ResultChecker.class);
 
   private static final double PRECISION_RATE = 0.01;
 
@@ -48,26 +48,26 @@ public class ResultChecker {
     assertProcessCount();
     assertProcessInstanceCount();
     //    assertIncidentCount();
-    logger.info("Assertions passed");
+    LOGGER.info("Assertions passed");
   }
 
   private boolean assertDocsCountWithRetry(
       int lastCount, int expectedCount, Supplier<Integer> cardinalityCounter) {
-    int newCount = cardinalityCounter.get();
-    logger.info("Asserting amount: {}", newCount);
+    final int newCount = cardinalityCounter.get();
+    LOGGER.info("Asserting amount: {}", newCount);
     if (((double) abs(newCount - expectedCount)) / expectedCount <= PRECISION_RATE) {
       return true;
     } else if (newCount > lastCount) { // data is still loading
-      logger.info("Not enough. Will wait and retry");
+      LOGGER.info("Not enough. Will wait and retry");
       try {
         esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
       } catch (IOException e) {
-        //
+        // noop
       }
       sleepFor(5000L);
       return assertDocsCountWithRetry(newCount, expectedCount, cardinalityCounter);
     } else {
-      logger.info("Not enough. Will fail");
+      LOGGER.info("Not enough. Will fail");
       return false;
     }
   }

@@ -51,8 +51,8 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    Long processInstanceKey = 2251799813685251L;
-    String indexName = listViewTemplate.getFullQualifiedName();
+    final Long processInstanceKey = 2251799813685251L;
+    final String indexName = listViewTemplate.getFullQualifiedName();
 
     processInstanceData =
         new ProcessInstanceForListViewEntity()
@@ -89,7 +89,7 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
   @Test
   public void testGetProcessInstanceWithOperationsByKeyWithCorrectKey() {
     // When
-    ListViewProcessInstanceDto processInstance =
+    final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(
             processInstanceData.getProcessInstanceKey());
     assertThat(processInstance.getId())
@@ -101,7 +101,7 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
   @Test
   public void testGetProcessInstanceWithCorrectKey() {
     // When
-    ProcessInstanceForListViewEntity processInstance =
+    final ProcessInstanceForListViewEntity processInstance =
         processInstanceReader.getProcessInstanceByKey(processInstanceData.getProcessInstanceKey());
     assertThat(processInstance.getId())
         .isEqualTo(String.valueOf(processInstanceData.getProcessInstanceKey()));

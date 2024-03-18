@@ -243,7 +243,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   public Long failTaskWithNoRetriesLeft(
       String taskName, long processInstanceKey, int numberOfFailure, String errorMessage) {
-    Long jobKey =
+    final Long jobKey =
         ZeebeTestUtil.failTask(
             getClient(), taskName, getWorkerName(), numberOfFailure, errorMessage);
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
@@ -252,14 +252,15 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   public Long failTaskWithNoRetriesLeft(
       String taskName, long processInstanceKey, String errorMessage) {
-    Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
+    final Long jobKey =
+        ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return jobKey;
   }
 
   public Long failTaskWithRetriesLeft(
       String taskName, long processInstanceKey, String errorMessage) {
-    Long jobKey =
+    final Long jobKey =
         ZeebeTestUtil.failTaskWithRetriesLeft(
             getClient(), taskName, getWorkerName(), 1, errorMessage);
     searchTestRule.processAllRecordsAndWait(jobWithRetriesCheck, processInstanceKey, jobKey, 1);
@@ -360,9 +361,9 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   protected void executeOneBatch() {
     try {
-      List<Future<?>> futures = operationExecutor.executeOneBatch();
+      final List<Future<?>> futures = operationExecutor.executeOneBatch();
       // wait till all scheduled tasks are executed
-      for (Future f : futures) {
+      for (final Future f : futures) {
         f.get();
       }
     } catch (Exception e) {
@@ -378,7 +379,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected MvcResult postOperation(
       Long processInstanceKey, CreateOperationRequestDto operationRequest, int expectedStatus)
       throws Exception {
-    MockHttpServletRequestBuilder postOperationRequest =
+    final MockHttpServletRequestBuilder postOperationRequest =
         post(String.format(POST_OPERATION_URL, processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
             .contentType(mockMvcTestRule.getContentType());
@@ -401,7 +402,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   protected MvcResult postBatchOperation(
       CreateBatchOperationRequestDto batchOperationDto, int expectedStatus) throws Exception {
-    MockHttpServletRequestBuilder postOperationRequest =
+    final MockHttpServletRequestBuilder postOperationRequest =
         post(POST_BATCH_OPERATION_URL)
             .content(mockMvcTestRule.json(batchOperationDto))
             .contentType(mockMvcTestRule.getContentType());
@@ -415,14 +416,14 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected MvcResult postBatchOperation(
       ListViewQueryDto query, OperationType operationType, String name, int expectedStatus)
       throws Exception {
-    CreateBatchOperationRequestDto batchOperationDto =
+    final CreateBatchOperationRequestDto batchOperationDto =
         createBatchOperationDto(operationType, name, query);
     return postBatchOperation(batchOperationDto, expectedStatus);
   }
 
   protected CreateBatchOperationRequestDto createBatchOperationDto(
       OperationType operationType, String name, ListViewQueryDto query) {
-    CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
+    final CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
     batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);
     if (name != null) {
@@ -432,8 +433,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected BatchOperationEntity deleteProcessWithOkResponse(String processId) throws Exception {
-    String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
-    MockHttpServletRequestBuilder request =
+    final String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
+    final MockHttpServletRequestBuilder request =
         delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
     final MvcResult mvcResult =
@@ -448,8 +449,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   protected BatchOperationEntity deleteDecisionWithOkResponse(String decisionDefinitionId)
       throws Exception {
-    String requestUrl = DecisionRestService.DECISION_URL + "/" + decisionDefinitionId;
-    MockHttpServletRequestBuilder request =
+    final String requestUrl = DecisionRestService.DECISION_URL + "/" + decisionDefinitionId;
+    final MockHttpServletRequestBuilder request =
         delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
     final MvcResult mvcResult =

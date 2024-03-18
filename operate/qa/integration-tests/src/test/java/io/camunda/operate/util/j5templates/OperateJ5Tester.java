@@ -48,7 +48,8 @@ public class OperateJ5Tester {
   }
 
   public Long deployProcessAndWait(String classpathResource) {
-    Long processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
+    final Long processDefinitionKey =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
 
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getProcessIsDeployedCheck(), processDefinitionKey);
@@ -61,7 +62,7 @@ public class OperateJ5Tester {
   }
 
   public Long startProcessAndWait(String bpmnProcessId, String payload) {
-    Long processInstanceKey =
+    final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));

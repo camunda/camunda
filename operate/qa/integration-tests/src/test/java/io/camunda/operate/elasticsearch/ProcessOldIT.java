@@ -48,12 +48,12 @@ public class ProcessOldIT extends OperateAbstractIT {
   @Test
   public void testProcessesGroupedWithPermissionWhenNotAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
 
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
@@ -63,10 +63,10 @@ public class ProcessOldIT extends OperateAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
+    final MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
-    List<ProcessGroupDto> response =
+    final List<ProcessGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).isEmpty();
@@ -75,12 +75,12 @@ public class ProcessOldIT extends OperateAbstractIT {
   @Test
   public void testProcessesGroupedWithPermisssionWhenAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
 
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
@@ -90,10 +90,10 @@ public class ProcessOldIT extends OperateAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
-    MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
+    final MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
-    List<ProcessGroupDto> response =
+    final List<ProcessGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(3);
@@ -105,12 +105,12 @@ public class ProcessOldIT extends OperateAbstractIT {
   @Test
   public void testProcessesGroupedWithPermisssionWhenSomeAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
 
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
@@ -120,10 +120,10 @@ public class ProcessOldIT extends OperateAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId2)));
-    MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
+    final MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
-    List<ProcessGroupDto> response =
+    final List<ProcessGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(1);

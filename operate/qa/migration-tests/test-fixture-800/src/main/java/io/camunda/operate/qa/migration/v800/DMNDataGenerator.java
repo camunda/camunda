@@ -52,7 +52,7 @@ public class DMNDataGenerator {
   public static final String PROCESS_BPMN_PROCESS_ID = "basicDecision";
   public static final int PROCESS_INSTANCE_COUNT = 13;
   public static final int DECISION_COUNT = 2;
-  private static final Logger logger = LoggerFactory.getLogger(DMNDataGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DMNDataGenerator.class);
 
   /**
    * ZeebeClient must not be reused between different test fixtures, as this may be different
@@ -86,7 +86,7 @@ public class DMNDataGenerator {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-      logger.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
+      LOGGER.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
 
       deployProcessAndDecision();
 
@@ -97,9 +97,9 @@ public class DMNDataGenerator {
       try {
         esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
       } catch (IOException e) {
-        logger.error("Error in refreshing indices", e);
+        LOGGER.error("Error in refreshing indices", e);
       }
-      logger.info(
+      LOGGER.info(
           "Data generation completed in: {} s",
           ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
       testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
@@ -116,7 +116,7 @@ public class DMNDataGenerator {
   }
 
   private void waitUntilAllDataIsImported() throws IOException {
-    logger.info("Wait till data is imported.");
+    LOGGER.info("Wait till data is imported.");
     // count process instances
     SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
     searchRequest.source().query(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
@@ -147,21 +147,21 @@ public class DMNDataGenerator {
 
   private List<Long> startProcessInstances(int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
-      String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
-      long processInstanceKey =
+      final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
+      final long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
               zeebeClient, bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}");
-      logger.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
+      LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
-    logger.info("{} processInstances started", processInstanceKeys.size());
+    LOGGER.info("{} processInstances started", processInstanceKeys.size());
     return processInstanceKeys;
   }
 
   private void deployProcessAndDecision() {
     final String demoDecisionId2 = "invoiceAssignApprover";
 
-    String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
+    final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
     final String elementId = "task";
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess(PROCESS_BPMN_PROCESS_ID)
@@ -172,16 +172,16 @@ public class DMNDataGenerator {
                     task.zeebeCalledDecisionId(demoDecisionId2)
                         .zeebeResultVariable("approverGroups"))
             .done();
-    String processDefinitionKey =
+    final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(zeebeClient, instance, bpmnProcessId + ".bpmn");
-    logger.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
+    LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
     ZeebeTestUtil.deployDecision(zeebeClient, "invoiceBusinessDecisions_v_1.dmn");
-    logger.info("Deployed decision {}", demoDecisionId2);
+    LOGGER.info("Deployed decision {}", demoDecisionId2);
   }
 
   private long countEntitiesFor(SearchRequest searchRequest) throws IOException {
     searchRequest.source().size(1000);
-    SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     return searchResponse.getHits().getTotalHits().value;
   }
 

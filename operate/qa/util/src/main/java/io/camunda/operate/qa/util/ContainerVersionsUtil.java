@@ -32,7 +32,7 @@ public class ContainerVersionsUtil {
 
   public static String readProperty(String propertyName) {
     try (InputStream propsFile = ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
-      Properties props = new Properties();
+      final Properties props = new Properties();
       props.load(propsFile);
       return props.getProperty(propertyName);
     } catch (IOException e) {

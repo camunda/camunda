@@ -54,7 +54,7 @@ public class ConnectionHolder {
   }
 
   private File createTemporaryFolder() {
-    File createdFolder;
+    final File createdFolder;
     try {
       createdFolder = File.createTempFile("junit", "", null);
       createdFolder.delete();

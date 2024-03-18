@@ -27,11 +27,11 @@ import org.springframework.stereotype.Component;
 @Component("schemaStartup")
 @Profile("test")
 public class TestSchemaStartup extends SchemaStartup {
-  private static final Logger logger = LoggerFactory.getLogger(TestSchemaStartup.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemaStartup.class);
 
   @PostConstruct
   @Override
   public void initializeSchema() throws MigrationException {
-    logger.info("TestSchemaStartup: no schema will be created, validated or migrated.");
+    LOGGER.info("TestSchemaStartup: no schema will be created, validated or migrated.");
   }
 }

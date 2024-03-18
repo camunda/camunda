@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.qa.migration.util;
 
+@SuppressWarnings("checkstyle:InterfaceIsType")
 public interface TestConstants {
 
   String DEFAULT_TENANT_ID = "<default>";

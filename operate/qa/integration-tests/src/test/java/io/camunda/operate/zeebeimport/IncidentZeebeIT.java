@@ -79,7 +79,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
         .waitUntil()
         .incidentIsActive();
     // then
-    List<IncidentDto> incidents = tester.getIncidents();
+    final List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
     assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
   }
@@ -90,8 +90,8 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
       value = "test") // Do not execute on 'old-zeebe' profile
   public void testErrorMessageSizeExceeded() throws Exception {
     // given
-    int variableCount = 4;
-    String largeValue =
+    final int variableCount = 4;
+    final String largeValue =
         "\"" + "x".repeat((int) (DataSize.ofMegabytes(4).toBytes() / variableCount)) + "\"";
 
     tester
@@ -116,7 +116,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
     // this triggers the incident, and the activate jobs command will not return a job
     tester.activateJob("task").waitUntil().incidentIsActive();
     // then
-    List<IncidentDto> incidents = tester.getIncidents();
+    final List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
     assertIncident(incidents.get(0), ErrorType.MESSAGE_SIZE_EXCEEDED);
   }
@@ -136,7 +136,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
         .incidentIsActive();
 
     // then
-    List<IncidentDto> incidents = tester.getIncidents();
+    final List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
     assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
   }
@@ -163,7 +163,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testIncidentsAreReturned() throws Exception {
     // having
-    String processId = "complexProcess";
+    final String processId = "complexProcess";
     deployProcess("complexProcess_v_3.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"count\":3}");
@@ -174,7 +174,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
     // elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // when
-    MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
+    final MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
     final IncidentResponseDto incidentResponse =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
@@ -276,7 +276,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     // get incidents for parent process instance
-    MvcResult mvcResult = getRequest(getIncidentsURL(parentProcessInstanceKey));
+    final MvcResult mvcResult = getRequest(getIncidentsURL(parentProcessInstanceKey));
     final IncidentResponseDto incidentResponse =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
@@ -285,10 +285,10 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
     assertThat(incidents.size()).isEqualTo(2);
 
     // -------------assert incident 1-------------------
-    Optional<IncidentDto> incident1Optional =
+    final Optional<IncidentDto> incident1Optional =
         incidents.stream().filter(inc -> inc.getErrorMessage().equals(errorMsg1)).findFirst();
     assertThat(incident1Optional).isNotEmpty();
-    IncidentDto incident1 = incident1Optional.get();
+    final IncidentDto incident1 = incident1Optional.get();
     assertThat(incident1.getFlowNodeId()).isEqualTo(callActivity1Id);
 
     // assert flow node instance id
@@ -312,10 +312,10 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
         .isEqualTo(calledProcessInstanceId1);
 
     // -------------assert incident 2-------------------
-    Optional<IncidentDto> incident2Optional =
+    final Optional<IncidentDto> incident2Optional =
         incidents.stream().filter(inc -> inc.getErrorMessage().equals(errorMsg2)).findFirst();
     assertThat(incident1Optional).isNotEmpty();
-    IncidentDto incident2 = incident2Optional.get();
+    final IncidentDto incident2 = incident2Optional.get();
     assertThat(incident2.getFlowNodeId()).isEqualTo(callActivity1Id);
 
     // assert flow node instance id

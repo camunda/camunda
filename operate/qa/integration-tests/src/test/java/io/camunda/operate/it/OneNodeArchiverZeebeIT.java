@@ -112,12 +112,12 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     // having
     // deploy process
     pinZeebeTime(currentTime.minus(4, ChronoUnit.DAYS));
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final String activityId = "task1";
     deployProcessWithOneActivity(processId, activityId);
 
     // start instances 3 days ago
-    int count = random.nextInt(6) + 5;
+    final int count = random.nextInt(6) + 5;
     final List<Long> ids1 = startInstances(processId, count, currentTime.minus(3, ChronoUnit.DAYS));
     createOperations(ids1);
     // finish instances 2 days ago
@@ -128,7 +128,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     pinZeebeTime(currentTime);
 
     // when
-    int expectedCount =
+    final int expectedCount =
         count
             / operateProperties
                 .getClusterNode()
@@ -148,7 +148,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
-      List<Long> ids = (List<Long>) objects[0];
+      final List<Long> ids = (List<Long>) objects[0];
       final ListViewRequestDto getFinishedRequest =
           createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
       getFinishedRequest.setPageSize(ids.size());
@@ -162,14 +162,14 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
   protected void createOperations(List<Long> ids1) {
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
-    CreateBatchOperationRequestDto batchOperationRequest =
+    final CreateBatchOperationRequestDto batchOperationRequest =
         new CreateBatchOperationRequestDto(
             query, OperationType.CANCEL_PROCESS_INSTANCE); // the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   private void deployProcessWithOneActivity(String processId, String activityId) {
-    BpmnModelInstance process =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask(activityId)
@@ -181,8 +181,8 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   private void assertInstancesInCorrectIndex(int instancesCount, Instant endDate)
       throws IOException {
-    List<Long> ids = assertProcessInstanceIndex(instancesCount, endDate);
-    for (ProcessInstanceDependant template : processInstanceDependantTemplates) {
+    final List<Long> ids = assertProcessInstanceIndex(instancesCount, endDate);
+    for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
       if (!(template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
         assertDependentIndex(
             template.getFullQualifiedName(),
@@ -213,7 +213,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
           .allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
     }
     // assert partitions
-    List<Integer> partitionIds = partitionHolder.getPartitionIds();
+    final List<Integer> partitionIds = partitionHolder.getPartitionIds();
     assertThat(processInstances)
         .extracting(ListViewTemplate.PARTITION_ID)
         .containsOnly(partitionIds.toArray());
@@ -259,7 +259,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
   private List<Long> startInstances(String processId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
-    List<Long> ids = new ArrayList<>();
+    final List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
     }

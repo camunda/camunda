@@ -86,7 +86,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
-  protected static final Logger logger =
+  protected static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchTestRuleProvider.class);
 
   // Scroll contexts constants
@@ -144,7 +144,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void finished(Description description) {
     TestUtil.removeIlmPolicy(esClient);
     if (!failed) {
-      String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+      final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient, indexPrefix);
     }
     operateProperties
@@ -169,22 +169,22 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshZeebeIndices() {
     try {
-      RefreshRequest refreshRequest =
+      final RefreshRequest refreshRequest =
           new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Exception t) {
-      logger.error("Could not refresh Zeebe Elasticsearch indices", t);
+      LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
     }
   }
 
   @Override
   public void refreshOperateSearchIndices() {
     try {
-      RefreshRequest refreshRequest =
+      final RefreshRequest refreshRequest =
           new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Exception t) {
-      logger.error("Could not refresh Operate Elasticsearch indices", t);
+      LOGGER.error("Could not refresh Operate Elasticsearch indices", t);
     }
   }
 
@@ -245,9 +245,10 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       Predicate<Object[]> predicate,
       Supplier<Object> supplier,
       Object... arguments) {
-    int waitingRound = 0, maxRounds = maxWaitingRounds;
+    int waitingRound = 0;
+    final int maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
-    long start = System.currentTimeMillis();
+    final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       testImportListener.resetCounters();
       try {
@@ -262,7 +263,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         }
 
       } catch (Exception e) {
-        logger.error(e.getMessage(), e);
+        LOGGER.error(e.getMessage(), e);
       }
       int waitForImports = 0;
       // Wait for imports max 30 sec (60 * 500 ms)
@@ -280,9 +281,9 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         } catch (Exception e) {
           waitingRound = 0;
           testImportListener.resetCounters();
-          logger.error(e.getMessage(), e);
+          LOGGER.error(e.getMessage(), e);
         }
-        logger.debug(
+        LOGGER.debug(
             " {} of {} imports processed",
             testImportListener.getImportedCount(),
             testImportListener.getScheduledCount());
@@ -294,12 +295,12 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         waitingRound++;
       }
     }
-    long finishedTime = System.currentTimeMillis() - start;
+    final long finishedTime = System.currentTimeMillis() - start;
 
     if (found) {
-      logger.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
+      LOGGER.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
     } else {
-      logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
+      LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
       //      throw new TestPrerequisitesFailedException("Conditions not met.");
     }
   }
@@ -308,7 +309,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     if (zeebePostImporter.getPostImportActions().size() == 0) {
       zeebePostImporter.initPostImporters();
     }
-    for (PostImportAction action : zeebePostImporter.getPostImportActions()) {
+    for (final PostImportAction action : zeebePostImporter.getPostImportActions()) {
       try {
         action.performOneRound();
       } catch (IOException e) {
@@ -326,7 +327,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       try {
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
-        logger.error(
+        LOGGER.error(
             "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
             checks,
@@ -334,7 +335,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         sleepFor(200);
       }
     }
-    logger.debug("Elasticsearch indices are created after {} checks", checks);
+    LOGGER.debug("Elasticsearch indices are created after {} checks", checks);
     return areCreated;
   }
 
@@ -348,7 +349,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     try {
       persistOperateEntitiesNew(Arrays.asList(entitiesToPersist));
     } catch (PersistenceException e) {
-      logger.error("Unable to persist entities: " + e.getMessage(), e);
+      LOGGER.error("Unable to persist entities: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }
     refreshSearchIndices();
@@ -357,8 +358,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
       throws PersistenceException {
     try {
-      BulkRequest bulkRequest = new BulkRequest();
-      for (OperateEntity entity : operateEntities) {
+      final BulkRequest bulkRequest = new BulkRequest();
+      for (final OperateEntity entity : operateEntities) {
         final String alias = getEntityToAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
@@ -421,28 +422,28 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public boolean indexExists(String index) throws IOException {
-    var request = new GetIndexRequest(index);
+    final var request = new GetIndexRequest(index);
     return esClient.indices().exists(request, RequestOptions.DEFAULT);
   }
 
   private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
       throws IOException {
-    GetIndexResponse response =
+    final GetIndexResponse response =
         esClient
             .indices()
             .get(
                 new GetIndexRequest(indexPrefix + "*")
                     .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
                 RequestOptions.DEFAULT);
-    String[] indices = response.getIndices();
+    final String[] indices = response.getIndices();
     return indices != null && indices.length >= minCountOfIndices;
   }
 
   private int getIntValueForJSON(
       final String path, final String fieldname, final int defaultValue) {
-    Optional<JsonNode> jsonNode = getJsonFor(path);
+    final Optional<JsonNode> jsonNode = getJsonFor(path);
     if (jsonNode.isPresent()) {
-      JsonNode field = jsonNode.get().findValue(fieldname);
+      final JsonNode field = jsonNode.get().findValue(fieldname);
       if (field != null) {
         return field.asInt(defaultValue);
       }
@@ -452,11 +453,12 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   private Optional<JsonNode> getJsonFor(final String path) {
     try {
-      ObjectMapper objectMapper = new ObjectMapper();
-      Response response = esClient.getLowLevelClient().performRequest(new Request("GET", path));
+      final ObjectMapper objectMapper = new ObjectMapper();
+      final Response response =
+          esClient.getLowLevelClient().performRequest(new Request("GET", path));
       return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
     } catch (Exception e) {
-      logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
+      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
       return Optional.empty();
     }
   }

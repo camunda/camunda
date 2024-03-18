@@ -30,13 +30,13 @@ import org.springframework.stereotype.Component;
 public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
     implements TestSchemaManager {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
   @Override
   public void deleteSchema() {
-    String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
-    logger.info("Removing indices {}*", prefix);
+    final String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
+    LOGGER.info("Removing indices {}*", prefix);
     retryElasticsearchClient.deleteIndicesFor(prefix + "*");
     retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
   }
@@ -46,7 +46,7 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
     try {
       deleteSchema();
     } catch (Exception t) {
-      logger.debug(t.getMessage());
+      LOGGER.debug(t.getMessage());
     }
   }
 

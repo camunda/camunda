@@ -92,7 +92,7 @@ public class ParametersResolver {
 
   @PostConstruct
   public void resolveParameters() throws URISyntaxException {
-    URI uri = new URI(elasticsearchUrl);
+    final URI uri = new URI(elasticsearchUrl);
     esClient =
         new RestHighLevelClient(
             RestClient.builder(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme())));
@@ -111,7 +111,8 @@ public class ParametersResolver {
               .from(0)
               .size(1)
               .sort(ListViewTemplate.START_DATE);
-      SearchRequest searchRequest = new SearchRequest(listViewAlias).source(searchSourceBuilder);
+      final SearchRequest searchRequest =
+          new SearchRequest(listViewAlias).source(searchSourceBuilder);
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final SearchHits hits = response.getHits();
       if (hits.getHits().length == 0) {
@@ -140,7 +141,8 @@ public class ParametersResolver {
               .fetchSource(false)
               .from(0)
               .size(50);
-      SearchRequest searchRequest = new SearchRequest(listViewAlias).source(searchSourceBuilder);
+      final SearchRequest searchRequest =
+          new SearchRequest(listViewAlias).source(searchSourceBuilder);
       processInstanceIds = requestIdsFor(searchRequest);
     } catch (IOException ex) {
       throw new RuntimeException(
@@ -156,7 +158,8 @@ public class ParametersResolver {
               .query(termQuery(VariableTemplate.NAME, "many_vars_0"))
               .fetchSource(VariableTemplate.PROCESS_INSTANCE_KEY, null)
               .size(1);
-      SearchRequest searchRequest = new SearchRequest(variableAlias).source(searchSourceBuilder);
+      final SearchRequest searchRequest =
+          new SearchRequest(variableAlias).source(searchSourceBuilder);
       final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
       processInstanceIdWithLotsOfVariables =
           hits.getAt(0).getSourceAsMap().get(VariableTemplate.PROCESS_INSTANCE_KEY).toString();

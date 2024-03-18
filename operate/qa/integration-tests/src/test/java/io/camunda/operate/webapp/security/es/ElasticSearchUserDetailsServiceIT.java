@@ -82,7 +82,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
     updateUserRealName();
 
     // then
-    User user = userDetailsService.loadUserByUsername(TEST_USER_ID);
+    final User user = userDetailsService.loadUserByUsername(TEST_USER_ID);
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(passwordEncoder.matches(TEST_PASSWORD, user.getPassword())).isTrue();
     assertThat(user.getDisplayName()).isEqualTo(TEST_USER_DISPLAYNAME);
@@ -90,7 +90,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
 
   private void updateUserRealName() {
     try {
-      Map<String, Object> jsonMap = Map.of(UserIndex.DISPLAY_NAME, TEST_USER_DISPLAYNAME);
+      final Map<String, Object> jsonMap = Map.of(UserIndex.DISPLAY_NAME, TEST_USER_DISPLAYNAME);
       testSearchRepository.update(userIndex.getFullQualifiedName(), TEST_USER_ID, jsonMap);
       searchTestRule.refreshOperateSearchIndices();
     } catch (IOException e) {
@@ -102,6 +102,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
     try {
       testSearchRepository.deleteById(userIndex.getFullQualifiedName(), id);
     } catch (IOException ex) {
+      // noop
     }
   }
 }

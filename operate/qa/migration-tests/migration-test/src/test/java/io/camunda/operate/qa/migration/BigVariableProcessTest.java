@@ -48,7 +48,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
     assumeThatProcessIsUnderTest(bpmnProcessId);
 
     ThreadUtil.sleepFor(5_000);
-    SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias());
     searchRequest
         .source()
         .query(
@@ -62,11 +62,11 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
 
     assertThat(vars).hasSize(3);
     // then "value" contains truncated value
-    Condition<String> suffix = new Condition<>(s -> s.contains(VAR_SUFFIX), "contains");
-    Condition<String> length =
+    final Condition<String> suffix = new Condition<>(s -> s.contains(VAR_SUFFIX), "contains");
+    final Condition<String> length =
         new Condition<>(
             s -> s.length() == ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD, "length");
-    Condition<String> lengthGt =
+    final Condition<String> lengthGt =
         new Condition<>(
             s -> s.length() > ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD, "length");
     assertThat(vars).extracting(VariableEntity::getValue).areNot(suffix).are(length);
@@ -76,9 +76,9 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testProcess() {
-    SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
     searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));
-    List<ProcessEntity> processes =
+    final List<ProcessEntity> processes =
         entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
     assertThat(processes).hasSize(1);
     assertThat(processes.get(0).getTenantId()).isEqualTo(DEFAULT_TENANT_ID);

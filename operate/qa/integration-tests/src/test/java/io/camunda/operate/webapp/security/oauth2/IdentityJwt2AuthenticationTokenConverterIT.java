@@ -123,7 +123,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
     doReturn(true).when(multiTenancyProperties).isEnabled();
 
-    List<Tenant> tenants =
+    final List<Tenant> tenants =
         new ObjectMapper()
             .readValue(
                 this.getClass().getResource("/security/identity/tenants.json"),
@@ -136,7 +136,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     final var tenantAwareAuth = (TenantAwareAuthentication) authenticationToken;
 
     //    //then tenants are properly converted and returned by tenant aware authentication
-    List<OperateTenant> returnedTenants = tenantAwareAuth.getTenants();
+    final List<OperateTenant> returnedTenants = tenantAwareAuth.getTenants();
 
     assertThat(returnedTenants).hasSize(3);
 

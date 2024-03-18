@@ -69,7 +69,7 @@ public class DecisionRequirementsControllerIT {
     final String expectedJSONContent =
         "{\"key\":0,\"decisionRequirementsId\":\"drdId-0\",\"name\":\"name-0\",\"version\":0}";
     // given
-    List<DecisionRequirements> decisionRequirements = createDecisionRequirementsOf(1);
+    final List<DecisionRequirements> decisionRequirements = createDecisionRequirementsOf(1);
     when(decisionRequirementsDao.byKey(0L)).thenReturn(decisionRequirements.get(0));
     // then
     assertGetToSucceed(URI + "/0").andExpect(content().string(expectedJSONContent));

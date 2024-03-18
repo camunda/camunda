@@ -28,31 +28,32 @@ public class IncidentByProcessStatisticsDtoTest {
 
   @Test
   public void testComparatorSameInstances() {
-    IncidentByProcessStatisticsDto moreIncidents = newWithInstancesAndIncidents(5, 3);
-    IncidentByProcessStatisticsDto lesserIncidents = newWithInstancesAndIncidents(5, 2);
+    final IncidentByProcessStatisticsDto moreIncidents = newWithInstancesAndIncidents(5, 3);
+    final IncidentByProcessStatisticsDto lesserIncidents = newWithInstancesAndIncidents(5, 2);
     assertIsBefore(moreIncidents, lesserIncidents);
   }
 
   @Test
   public void testComparatorNoInstances() {
-    IncidentByProcessStatisticsDto worfklowVersionOne = new IncidentByProcessStatisticsDto();
+    final IncidentByProcessStatisticsDto worfklowVersionOne = new IncidentByProcessStatisticsDto();
     worfklowVersionOne.setVersion(1);
-    IncidentByProcessStatisticsDto worfklowVersionThree = new IncidentByProcessStatisticsDto();
+    final IncidentByProcessStatisticsDto worfklowVersionThree =
+        new IncidentByProcessStatisticsDto();
     worfklowVersionThree.setVersion(3);
-    IncidentByProcessStatisticsDto processVersionFour = new IncidentByProcessStatisticsDto();
+    final IncidentByProcessStatisticsDto processVersionFour = new IncidentByProcessStatisticsDto();
     processVersionFour.setVersion(4);
 
     assertIsBefore(worfklowVersionOne, worfklowVersionThree);
     assertIsBefore(worfklowVersionThree, processVersionFour);
 
     // and with TreeSet
-    Set<IncidentByProcessStatisticsDto> processes =
+    final Set<IncidentByProcessStatisticsDto> processes =
         new TreeSet<>(IncidentByProcessStatisticsDto.COMPARATOR);
     processes.add(worfklowVersionThree);
     processes.add(worfklowVersionOne);
     processes.add(processVersionFour);
 
-    Iterator<IncidentByProcessStatisticsDto> processesIterator = processes.iterator();
+    final Iterator<IncidentByProcessStatisticsDto> processesIterator = processes.iterator();
     assertThat(processesIterator.next().getVersion()).isEqualTo(1);
     assertThat(processesIterator.next().getVersion()).isEqualTo(3);
     assertThat(processesIterator.next().getVersion()).isEqualTo(4);
@@ -60,30 +61,32 @@ public class IncidentByProcessStatisticsDtoTest {
 
   @Test
   public void testComparatorDifferentInstancesAndIncidents() {
-    IncidentByProcessStatisticsDto moreIncidents = newWithInstancesAndIncidents(1314 + 845, 845);
-    IncidentByProcessStatisticsDto lessIncidents = newWithInstancesAndIncidents(1351 + 831, 831);
+    final IncidentByProcessStatisticsDto moreIncidents =
+        newWithInstancesAndIncidents(1314 + 845, 845);
+    final IncidentByProcessStatisticsDto lessIncidents =
+        newWithInstancesAndIncidents(1351 + 831, 831);
     assertIsBefore(moreIncidents, lessIncidents);
   }
 
   @Test
   public void testComparatorZeroIncidents() {
-    IncidentByProcessStatisticsDto moreInstances = newWithInstancesAndIncidents(172, 0);
-    IncidentByProcessStatisticsDto lessInstances = newWithInstancesAndIncidents(114, 0);
+    final IncidentByProcessStatisticsDto moreInstances = newWithInstancesAndIncidents(172, 0);
+    final IncidentByProcessStatisticsDto lessInstances = newWithInstancesAndIncidents(114, 0);
     assertIsBefore(moreInstances, lessInstances);
   }
 
   @Test
   public void testComparatorSameIncidentsAndInstances() {
-    IncidentByProcessStatisticsDto onlyOtherBPMN1 = newWithInstancesAndIncidents(172, 0);
+    final IncidentByProcessStatisticsDto onlyOtherBPMN1 = newWithInstancesAndIncidents(172, 0);
     onlyOtherBPMN1.setBpmnProcessId("1");
-    IncidentByProcessStatisticsDto onlyOtherBPMN2 = newWithInstancesAndIncidents(172, 0);
+    final IncidentByProcessStatisticsDto onlyOtherBPMN2 = newWithInstancesAndIncidents(172, 0);
     onlyOtherBPMN2.setBpmnProcessId("2");
     assertIsBefore(onlyOtherBPMN1, onlyOtherBPMN2);
   }
 
   protected IncidentByProcessStatisticsDto newWithInstancesAndIncidents(
       int instances, int incidents) {
-    IncidentByProcessStatisticsDto newObject = new IncidentByProcessStatisticsDto();
+    final IncidentByProcessStatisticsDto newObject = new IncidentByProcessStatisticsDto();
     newObject.setActiveInstancesCount(Long.valueOf(instances));
     newObject.setInstancesWithActiveIncidentsCount(incidents);
     return newObject;

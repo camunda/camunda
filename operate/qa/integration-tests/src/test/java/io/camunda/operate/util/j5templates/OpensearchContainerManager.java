@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchContainerManager extends SearchContainerManager {
-  protected static final Logger logger = LoggerFactory.getLogger(OpensearchContainerManager.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(OpensearchContainerManager.class);
 
   protected RichOpenSearchClient richOpenSearchClient;
 
@@ -58,21 +58,21 @@ public class OpensearchContainerManager extends SearchContainerManager {
 
   protected boolean areIndicesCreated(String indexPrefix, int minCountOfIndices)
       throws IOException {
-    var indexRequestBuilder =
+    final var indexRequestBuilder =
         getIndexRequestBuilder(indexPrefix + "*")
             .ignoreUnavailable(true)
             .allowNoIndices(false)
             .expandWildcards(ExpandWildcard.Open);
 
-    GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
+    final GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
 
-    var result = response.result();
+    final var result = response.result();
     return result.size() >= minCountOfIndices;
   }
 
   @Override
   public void stopContainer() {
-    String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    final String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
     TestUtil.removeAllIndices(
         richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
     operateProperties
@@ -88,7 +88,7 @@ public class OpensearchContainerManager extends SearchContainerManager {
     try {
       return richOpenSearchClient.cluster().totalOpenContexts();
     } catch (Exception e) {
-      logger.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
+      LOGGER.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
       return 0;
     }
   }

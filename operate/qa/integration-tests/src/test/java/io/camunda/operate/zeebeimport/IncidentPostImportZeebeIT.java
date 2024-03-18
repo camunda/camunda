@@ -75,7 +75,7 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
             .failTask(taskId, errorMessage)
             .getProcessInstanceKey();
     processAllRecordsWithoutPostImporterAndWait(incidentsArePresentCheck, processInstanceKey, 1);
-    Tuple<Long, Long> incidentData = findSingleZeebeIncidentData(processInstanceKey);
+    final Tuple<Long, Long> incidentData = findSingleZeebeIncidentData(processInstanceKey);
     tester.resolveIncident(incidentData.getRight(), incidentData.getLeft());
     // let the Zeebe process incident RESOLVE and export
     while (countZeebeIncidentRecords(processInstanceKey) < 2) {
@@ -161,12 +161,10 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
 
   private Tuple<Long, Long> findSingleZeebeIncidentData(Long processInstanceKey) {
     record Value(Long jobKey) {}
-    ;
     record Result(Long key, Value value) {}
-    ;
 
-    var index = zeebeRule.getPrefix() + "_incident*";
-    List<Tuple<Long, Long>> tuples =
+    final var index = zeebeRule.getPrefix() + "_incident*";
+    final List<Tuple<Long, Long>> tuples =
         testZeebeRepository
             .scrollTerm(index, "value.processInstanceKey", processInstanceKey, Result.class)
             .stream()
@@ -178,7 +176,7 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private long countZeebeIncidentRecords(Long processInstanceKey) {
-    var index = zeebeRule.getPrefix() + "_incident*";
+    final var index = zeebeRule.getPrefix() + "_incident*";
     return testZeebeRepository
         .scrollTerm(index, "value.processInstanceKey", processInstanceKey, Object.class)
         .size();

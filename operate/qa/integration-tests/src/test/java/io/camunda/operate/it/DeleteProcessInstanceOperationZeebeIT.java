@@ -53,7 +53,7 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   }
 
   private long startDemoProcessInstance() {
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
 
     return tester
         .startProcessInstance(processId, "{\"a\": \"b\"}")
@@ -75,10 +75,10 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     // When
     tester.deleteProcessInstance().and().executeOperations();
     // then
-    List<BatchOperationEntity> operations =
+    final List<BatchOperationEntity> operations =
         batchOperationReader.getBatchOperations(new BatchOperationRequestDto().setPageSize(5));
     assertThat(operations.size()).isEqualTo(1);
-    BatchOperationEntity operation = operations.get(0);
+    final BatchOperationEntity operation = operations.get(0);
     assertThat(operation.getOperationsTotalCount()).isEqualTo(1);
     assertThat(operation.getOperationsFinishedCount()).isEqualTo(1);
   }
@@ -91,10 +91,10 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     // When
     tester.deleteProcessInstance().and().executeOperations();
     // then
-    List<BatchOperationEntity> operations =
+    final List<BatchOperationEntity> operations =
         batchOperationReader.getBatchOperations(new BatchOperationRequestDto().setPageSize(5));
     assertThat(operations.size()).isEqualTo(1);
-    BatchOperationEntity operation = operations.get(0);
+    final BatchOperationEntity operation = operations.get(0);
     assertThat(operation.getOperationsTotalCount()).isEqualTo(1);
     assertThat(operation.getOperationsFinishedCount()).isEqualTo(1);
   }

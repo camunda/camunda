@@ -100,8 +100,8 @@ public abstract class OperateAbstractIT {
   }
 
   protected MvcResult getRequest(String requestUrl, MediaType responseMediaType) throws Exception {
-    MockHttpServletRequestBuilder request = get(requestUrl).accept(responseMediaType);
-    MvcResult mvcResult =
+    final MockHttpServletRequestBuilder request = get(requestUrl).accept(responseMediaType);
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())
@@ -113,7 +113,7 @@ public abstract class OperateAbstractIT {
 
   protected MvcResult getRequestShouldFailWithException(
       String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         get(requestUrl).accept(mockMvcTestRule.getContentType());
 
     return mockMvc
@@ -125,7 +125,7 @@ public abstract class OperateAbstractIT {
 
   protected MvcResult postRequestShouldFailWithException(
       String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content("{}")
             .contentType(mockMvcTestRule.getContentType())
@@ -139,7 +139,7 @@ public abstract class OperateAbstractIT {
   }
 
   protected MvcResult postRequest(String requestUrl, Object query) throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
             .contentType(mockMvcTestRule.getContentType());
@@ -152,7 +152,7 @@ public abstract class OperateAbstractIT {
   }
 
   protected MvcResult postRequestThatShouldFail(String requestUrl, Object query) throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
             .contentType(mockMvcTestRule.getContentType());
@@ -162,14 +162,14 @@ public abstract class OperateAbstractIT {
 
   protected MvcResult postRequestThatShouldFail(String requestUrl, String stringContent)
       throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(requestUrl).content(stringContent).contentType(mockMvcTestRule.getContentType());
 
     return mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
   }
 
   protected MvcResult getRequestShouldFailWithNoAuthorization(String requestUrl) throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         get(requestUrl).accept(mockMvcTestRule.getContentType());
 
     return mockMvc
@@ -184,7 +184,7 @@ public abstract class OperateAbstractIT {
 
   protected MvcResult postRequestShouldFailWithNoAuthorization(String requestUrl, Object query)
       throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
             .contentType(mockMvcTestRule.getContentType());
@@ -201,7 +201,7 @@ public abstract class OperateAbstractIT {
 
   protected MvcResult deleteRequestShouldFailWithNoAuthorization(String requestUrl)
       throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
     return mockMvc
@@ -239,7 +239,7 @@ public abstract class OperateAbstractIT {
   }
 
   protected void mockPartitionHolder(PartitionHolder partitionHolder) {
-    List<Integer> partitions = new ArrayList<>();
+    final List<Integer> partitions = new ArrayList<>();
     partitions.add(1);
     when(partitionHolder.getPartitionIds()).thenReturn(partitions);
   }

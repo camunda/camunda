@@ -39,7 +39,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 public class MockMvcTestRule extends ExternalResource {
 
-  private static final Logger logger = LoggerFactory.getLogger(MockMvcTestRule.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MockMvcTestRule.class);
 
   @Autowired protected ObjectMapper objectMapper;
 
@@ -89,7 +89,7 @@ public class MockMvcTestRule extends ExternalResource {
   }
 
   public String json(Object o) {
-    MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();
+    final MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();
     try {
       mappingJackson2HttpMessageConverter.write(
           o, MediaType.APPLICATION_JSON, mockHttpOutputMessage);
@@ -100,7 +100,7 @@ public class MockMvcTestRule extends ExternalResource {
   }
 
   public <T> List<T> listFromResponse(MvcResult result, Class<T> clazz) {
-    JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, clazz);
+    final JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, clazz);
     return fromResponse(result, type);
   }
 

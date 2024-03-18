@@ -33,7 +33,7 @@ public class OpensearchContainerApplicationContextInitializer
   @Override
   public void initialize(ConfigurableApplicationContext applicationContext) {
     opensearch.start();
-    String osUrl =
+    final String osUrl =
         String.format("http://%s:%d/", opensearch.getHost(), opensearch.getFirstMappedPort());
     TestPropertyValues.of(
             "camunda.operate.opensearch.url=" + osUrl,

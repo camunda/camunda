@@ -71,7 +71,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   @Test
   public void shouldAdd() throws PersistenceException {
     // given
-    var batchRequest = richOpenSearchClient.batch().newBatchRequest();
+    final var batchRequest = richOpenSearchClient.batch().newBatchRequest();
     batchRequest
         .add(
             processIndex.getFullQualifiedName(),
@@ -93,10 +93,10 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
                 .setName("name2"))
         .executeWithRefresh();
     // when
-    var foundProcesses = searchForProcessEntity(matchAll());
+    final var foundProcesses = searchForProcessEntity(matchAll());
     // then
     assertThat(foundProcesses.size()).isEqualTo(2);
-    var firstFoundProcess = foundProcesses.get(0);
+    final var firstFoundProcess = foundProcesses.get(0);
     assertThat(firstFoundProcess.getName()).isEqualTo("name1");
     assertThat(firstFoundProcess.getId()).isEqualTo("1");
   }
@@ -105,7 +105,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   public void shouldUpdateWithIdAndOperateEntity() throws PersistenceException {
     // given
     shouldAdd();
-    var newProcessEntity =
+    final var newProcessEntity =
         new ProcessEntity()
             .setId("1")
             .setBpmnProcessId("bpmnProcessId")
@@ -118,7 +118,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
         .update(processIndex.getFullQualifiedName(), "1", newProcessEntity)
         .executeWithRefresh();
     // then
-    var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
+    final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
     assertThat(foundProcesses).size().isEqualTo(1);
     assertThat(foundProcesses.get(0).getName()).isEqualTo("newName");
   }
@@ -132,7 +132,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
         .update(processIndex.getFullQualifiedName(), "1", Map.of("name", "newName"))
         .executeWithRefresh();
     // then
-    var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
+    final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
     assertThat(foundProcesses).size().isEqualTo(1);
     assertThat(foundProcesses.get(0).getName()).isEqualTo("newName");
   }
@@ -142,13 +142,13 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     // given
     shouldAdd();
     // when
-    var script = "ctx._source.name += params.secondName;";
-    Map<String, Object> parameters = Map.of("secondName", "-anotherName");
+    final var script = "ctx._source.name += params.secondName;";
+    final Map<String, Object> parameters = Map.of("secondName", "-anotherName");
     newBatchRequest()
         .updateWithScript(processIndex.getFullQualifiedName(), "1", script, parameters)
         .executeWithRefresh();
     // then
-    var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
+    final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
     assertThat(foundProcesses).size().isEqualTo(1);
     assertThat(foundProcesses.get(0).getName()).isEqualTo("name1-anotherName");
   }
@@ -158,7 +158,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     // given
     shouldAdd();
     // when
-    var processEntity =
+    final var processEntity =
         new ProcessEntity()
             .setId("5")
             .setBpmnProcessId("bpmnProcessId")
@@ -170,7 +170,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
         .upsert(processIndex.getFullQualifiedName(), "5", processEntity, Map.of())
         .executeWithRefresh();
     // then
-    var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 5L));
+    final var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 5L));
     assertThat(foundProcesses).size().isEqualTo(1);
     assertThat(foundProcesses.get(0).getName()).isEqualTo("name5");
   }

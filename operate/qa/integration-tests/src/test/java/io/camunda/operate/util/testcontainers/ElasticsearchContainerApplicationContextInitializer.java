@@ -36,7 +36,7 @@ public class ElasticsearchContainerApplicationContextInitializer
   @Override
   public void initialize(ConfigurableApplicationContext applicationContext) {
     elasticsearch.start();
-    String elsUrl =
+    final String elsUrl =
         String.format("http://%s:%d/", elasticsearch.getHost(), elasticsearch.getFirstMappedPort());
     TestPropertyValues.of(
             "camunda.operate.elasticsearch.url=" + elsUrl,

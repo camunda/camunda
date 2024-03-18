@@ -71,7 +71,7 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnIncidents() {
-    Results<Incident> incidentResults = dao.search(new Query<>());
+    final Results<Incident> incidentResults = dao.search(new Query<>());
 
     assertThat(incidentResults.getItems()).hasSize(2);
 
@@ -106,7 +106,7 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortIncidentsDesc() {
-    Results<Incident> incidentResults =
+    final Results<Incident> incidentResults =
         dao.search(
             new Query<Incident>()
                 .setSort(
@@ -134,7 +134,7 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortIncidentsAsc() {
-    Results<Incident> incidentResults =
+    final Results<Incident> incidentResults =
         dao.search(
             new Query<Incident>()
                 .setSort(Query.Sort.listOf(Incident.PROCESS_DEFINITION_KEY, Query.Sort.Order.ASC)));
@@ -170,7 +170,7 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
     assertThat(incidentResults.getItems()).hasSize(1);
     assertThat(incidentResults.getTotal()).isEqualTo(2);
 
-    Object[] searchAfter = incidentResults.getSortValues();
+    final Object[] searchAfter = incidentResults.getSortValues();
     assertThat(incidentResults.getItems().get(0).getProcessDefinitionKey().toString())
         .isEqualTo(searchAfter[0].toString());
 
@@ -204,7 +204,7 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterIncidents() {
-    Results<Incident> incidentResults =
+    final Results<Incident> incidentResults =
         dao.search(
             new Query<Incident>().setFilter(new Incident().setProcessInstanceKey(6147483648L)));
 
@@ -224,7 +224,7 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnByKey() {
-    Incident checkIncident = dao.byKey(7147483648L);
+    final Incident checkIncident = dao.byKey(7147483648L);
 
     assertThat(checkIncident).isNotNull();
     assertThat(checkIncident)

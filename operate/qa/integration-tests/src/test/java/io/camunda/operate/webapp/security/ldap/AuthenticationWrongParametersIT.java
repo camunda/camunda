@@ -84,18 +84,18 @@ public class AuthenticationWrongParametersIT implements AuthenticationTestable {
   @Test
   public void shouldReturnCurrentUser() {
     // given authenticated user
-    ResponseEntity<?> response = loginAs("bob", "bobspassword");
+    final ResponseEntity<?> response = loginAs("bob", "bobspassword");
     // when
-    UserDto userInfo = getCurrentUser(response);
+    final UserDto userInfo = getCurrentUser(response);
     // then
     assertThat(userInfo.getUserId()).isEqualTo("bob");
   }
 
   protected ResponseEntity<?> loginAs(String user, String password) {
-    HttpHeaders headers = new HttpHeaders();
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
-    MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
     body.add("username", user);
     body.add("password", password);
 

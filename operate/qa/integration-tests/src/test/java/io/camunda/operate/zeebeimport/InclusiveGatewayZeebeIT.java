@@ -32,8 +32,8 @@ public class InclusiveGatewayZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldImportIntermediateThrowEvent() {
 
-    String bpmnProcessId = "inclusiveGateway";
-    BpmnModelInstance instance =
+    final String bpmnProcessId = "inclusiveGateway";
+    final BpmnModelInstance instance =
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent()
             .inclusiveGateway("gateway")
@@ -57,7 +57,7 @@ public class InclusiveGatewayZeebeIT extends OperateZeebeAbstractIT {
         .processInstanceIsFinished();
 
     // when
-    List<FlowNodeInstanceEntity> flowNodes =
+    final List<FlowNodeInstanceEntity> flowNodes =
         tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
     // then
     assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))

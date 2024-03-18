@@ -49,7 +49,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
 
@@ -64,21 +64,21 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Override
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
-    logger.info("Starting Zeebe with OS prefix: " + prefix);
+    LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
 
     startZeebe();
   }
 
   public void updateRefreshInterval(String value) {
-    ComponentTemplateSummary template =
+    final ComponentTemplateSummary template =
         zeebeRichOpenSearchClient.template().getComponentTemplate().get(prefix).template();
-    IndexSettings indexSettings = template.settings().get("index");
-    IndexSettings newSettings =
+    final IndexSettings indexSettings = template.settings().get("index");
+    final IndexSettings newSettings =
         IndexSettings.of(b -> b.index(indexSettings).refreshInterval(ri -> ri.time(value)));
-    IndexState newTemplate =
+    final IndexState newTemplate =
         IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
-    var requestBuilder = componentTemplateRequestBuilder(prefix).template(newTemplate);
+    final var requestBuilder = componentTemplateRequestBuilder(prefix).template(newTemplate);
     assertTrue(
         zeebeRichOpenSearchClient
             .template()
@@ -86,7 +86,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   public void refreshIndices(Instant instant) {
-    String date =
+    final String date =
         DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
     zeebeRichOpenSearchClient.index().refresh(prefix + "*" + date);
   }

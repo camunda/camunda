@@ -33,7 +33,7 @@ public class TestZeebeOpensearchRepository implements TestZeebeRepository {
 
   @Override
   public <R> List<R> scrollTerm(String index, String field, long value, Class<R> clazz) {
-    var requestBuilder = searchRequestBuilder(index).query(term(field, value));
+    final var requestBuilder = searchRequestBuilder(index).query(term(field, value));
 
     return zeebeRichOpenSearchClient.doc().scrollValues(requestBuilder, clazz);
   }

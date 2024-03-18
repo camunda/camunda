@@ -52,7 +52,7 @@ public class DMNTest extends AbstractMigrationTest {
   public void findProcessInstanceIds() {
     assumeThatProcessIsUnderTest(bpmnProcessId);
     if (processInstanceIds == null) {
-      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+      final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
       // Process instances list
       searchRequest
           .source()
@@ -71,7 +71,7 @@ public class DMNTest extends AbstractMigrationTest {
 
   @Test
   public void testDecisionDefinitions() {
-    List<DecisionDefinitionEntity> decisionDefinitions =
+    final List<DecisionDefinitionEntity> decisionDefinitions =
         entityReader.getEntitiesFor(decisionTemplate.getAlias(), DecisionDefinitionEntity.class);
     assertThat(decisionDefinitions).hasSize(DECISION_COUNT);
     decisionDefinitions.forEach(
@@ -82,7 +82,7 @@ public class DMNTest extends AbstractMigrationTest {
 
   @Test
   public void testDRD() {
-    List<DecisionRequirementsEntity> decisionRequirements =
+    final List<DecisionRequirementsEntity> decisionRequirements =
         entityReader.getEntitiesFor(
             decisionRequirementsIndex.getAlias(), DecisionRequirementsEntity.class);
     assertThat(decisionRequirements).hasSize(1);
@@ -94,11 +94,11 @@ public class DMNTest extends AbstractMigrationTest {
 
   @Test
   public void testDecisionInstances() {
-    SearchRequest searchRequest = new SearchRequest(decisionInstanceTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(decisionInstanceTemplate.getAlias());
     searchRequest
         .source()
         .query(termsQuery(DecisionInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds));
-    List<DecisionInstanceEntity> decisionInstances =
+    final List<DecisionInstanceEntity> decisionInstances =
         entityReader.searchEntitiesFor(searchRequest, DecisionInstanceEntity.class);
     assertThat(decisionInstances).hasSize(PROCESS_INSTANCE_COUNT * DECISION_COUNT);
     decisionInstances.forEach(

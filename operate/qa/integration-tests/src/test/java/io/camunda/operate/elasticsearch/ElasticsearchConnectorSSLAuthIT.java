@@ -84,7 +84,7 @@ public class ElasticsearchConnectorSSLAuthIT {
     public void initialize(ConfigurableApplicationContext applicationContext) {
       elasticsearch.start();
 
-      String elsUrl =
+      final String elsUrl =
           String.format(
               "https://%s:%d/", elasticsearch.getHost(), elasticsearch.getFirstMappedPort());
       TestPropertyValues.of(

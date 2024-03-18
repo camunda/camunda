@@ -39,14 +39,14 @@ public class OpenSearchAsyncDocumentOperationsIT extends AbstractOpenSearchOpera
     opensearchTestDataHelper.addUser("1", "test", "test");
 
     // when
-    var deleteByQueryRequestBuilder =
+    final var deleteByQueryRequestBuilder =
         deleteByQueryRequestBuilder(userIndex.getFullQualifiedName())
             .query(stringTerms("userId", List.of("1")))
             .waitForCompletion(false)
             .slices((long) operateProperties.getOpensearch().getNumberOfShards())
             .conflicts(Conflicts.Proceed);
 
-    var task =
+    final var task =
         richOpenSearchClient
             .async()
             .doc()
@@ -55,7 +55,7 @@ public class OpenSearchAsyncDocumentOperationsIT extends AbstractOpenSearchOpera
             .task();
 
     // then
-    var total =
+    final var total =
         withThreadPoolTaskScheduler(
             scheduler -> {
               try {
