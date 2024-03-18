@@ -561,7 +561,6 @@
 
             <!-- not clear why, but for now okay -->
             <dependency>io.swagger.core.v3:swagger-annotations</dependency>
-            <dependency>io.camunda:zeebe-gateway-rest</dependency>
 
             <!-- operate -->
             <dependency>io.camunda:operate-importer</dependency>
