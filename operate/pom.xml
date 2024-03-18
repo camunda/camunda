@@ -34,6 +34,22 @@
     <module>../distro</module>
   </modules>
 
+  <issueManagement>
+    <system>Jira</system>
+    <url>https://app.camunda.com/jira/browse/OPE/</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <repository>
+      <id>camunda-nexus</id>
+      <url>https://artifacts.camunda.com/artifactory/camunda-operate/</url>
+    </repository>
+    <snapshotRepository>
+      <id>camunda-nexus</id>
+      <url>https://artifacts.camunda.com/artifactory/camunda-operate-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <properties>
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.19.2</plugin.version.google-java-format>
@@ -346,7 +362,7 @@
                 <exclude>**/target/**/*.md</exclude>
                 <exclude>**/node_modules/**/*.md</exclude>
               </excludes>
-              <flexmark />
+              <flexmark></flexmark>
             </markdown>
           </configuration>
           <dependencies>
@@ -392,7 +408,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration></configuration>
             </execution>
           </executions>
         </plugin>
@@ -481,21 +497,5 @@
     </profile>
 
   </profiles>
-
-  <distributionManagement>
-    <snapshotRepository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-operate-snapshots/</url>
-    </snapshotRepository>
-    <repository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-operate/</url>
-    </repository>
-  </distributionManagement>
-
-  <issueManagement>
-    <system>Jira</system>
-    <url>https://app.camunda.com/jira/browse/OPE/</url>
-  </issueManagement>
 
 </project>
