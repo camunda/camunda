@@ -88,9 +88,8 @@ public class CompensationEventDefinitionValidator
   private static boolean isSubprocess(final Activity activity) {
     if (activity instanceof SubProcess) {
       return !((SubProcess) activity).triggeredByEvent();
-    } else {
-      return false;
     }
+    return false;
   }
 
   private static boolean hasCompensationActivityInSameScope(
@@ -106,8 +105,7 @@ public class CompensationEventDefinitionValidator
   private static boolean isEventSubprocess(final BpmnModelElementInstance elementInstance) {
     if (elementInstance instanceof SubProcess) {
       return ((SubProcess) elementInstance).triggeredByEvent();
-    } else {
-      return false;
     }
+    return false;
   }
 }
