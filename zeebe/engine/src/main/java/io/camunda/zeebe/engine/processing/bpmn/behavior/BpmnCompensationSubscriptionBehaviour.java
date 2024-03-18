@@ -104,6 +104,13 @@ public class BpmnCompensationSubscriptionBehaviour {
     return hasCompensationSubscriptionInScope(subscriptions, context.getElementInstanceKey());
   }
 
+  private static boolean hasCompensationSubscriptionInScope(
+      final Collection<CompensationSubscription> subscriptions, final long scopeKey) {
+    return subscriptions.stream()
+        .anyMatch(
+            subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
+  }
+
   private Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
     return element.getBoundaryEvents().stream()
         .map(ExecutableBoundaryEvent::getCompensation)
@@ -118,6 +125,19 @@ public class BpmnCompensationSubscriptionBehaviour {
       final ExecutableFlowElement element, final BpmnElementContext context) {
     // trigger the compensation in the scope of the compensation throw event
     return triggerCompensation(element, context, subscription -> true);
+  }
+
+  public boolean triggerCompensationForActivity(
+      final ExecutableFlowElement element,
+      final ExecutableActivity compensationActivity,
+      final BpmnElementContext context) {
+    final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
+    // trigger the compensation for the given activity
+    return triggerCompensation(
+        element,
+        context,
+        subscription ->
+            subscription.getRecord().getCompensableActivityId().equals(compensationActivityId));
   }
 
   private boolean triggerCompensation(
@@ -156,11 +176,6 @@ public class BpmnCompensationSubscriptionBehaviour {
     return true;
   }
 
-  private static boolean isCompensationTriggered(
-      final CompensationSubscription compensationSubscription) {
-    return !compensationSubscription.getRecord().getThrowEventId().isEmpty();
-  }
-
   private List<Long> getCompensationScopeKeys(
       final ExecutableFlowElement element, final BpmnElementContext context) {
     final long compensationEventScopeKey = context.getFlowScopeKey();
@@ -181,24 +196,9 @@ public class BpmnCompensationSubscriptionBehaviour {
     return element.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS;
   }
 
-  private static boolean hasCompensationSubscriptionInScope(
-      final Collection<CompensationSubscription> subscriptions, final long scopeKey) {
-    return subscriptions.stream()
-        .anyMatch(
-            subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
-  }
-
-  private void triggerCompensationFromTopToBottom(
-      final BpmnElementContext context,
-      final Collection<CompensationSubscription> subscriptions,
-      final long scopeKey) {
-
-    subscriptions.stream()
-        .filter(
-            subscription -> scopeKey == subscription.getRecord().getCompensableActivityScopeKey())
-        .forEach(
-            subscription ->
-                triggerCompensationForSubscription(context, subscriptions, subscription));
+  private static boolean isCompensationTriggered(
+      final CompensationSubscription compensationSubscription) {
+    return !compensationSubscription.getRecord().getThrowEventId().isEmpty();
   }
 
   private void triggerCompensationForSubscription(
@@ -251,22 +251,6 @@ public class BpmnCompensationSubscriptionBehaviour {
     return compensationHandlerInstanceKey;
   }
 
-  private void appendCompensationSubscriptionTriggerEvent(
-      final BpmnElementContext context,
-      final CompensationSubscription subscription,
-      final long compensationHandlerInstanceKey) {
-
-    final var key = subscription.getKey();
-    final var compensationRecord = subscription.getRecord();
-    compensationRecord
-        .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
-        .setThrowEventInstanceKey(context.getElementInstanceKey())
-        .setCompensationHandlerInstanceKey(compensationHandlerInstanceKey);
-
-    stateWriter.appendFollowUpEvent(
-        key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
-  }
-
   private ExecutableBoundaryEvent getCompensationBoundaryEvent(
       final BpmnElementContext context, final String elementId) {
 
@@ -314,17 +298,33 @@ public class BpmnCompensationSubscriptionBehaviour {
         boundaryEventKey, ProcessInstanceIntent.ELEMENT_COMPLETED, boundaryEventRecord);
   }
 
-  public boolean triggerCompensationForActivity(
-      final ExecutableFlowElement element,
-      final ExecutableActivity compensationActivity,
-      final BpmnElementContext context) {
-    final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
-    // trigger the compensation for the given activity
-    return triggerCompensation(
-        element,
-        context,
-        subscription ->
-            subscription.getRecord().getCompensableActivityId().equals(compensationActivityId));
+  private void appendCompensationSubscriptionTriggerEvent(
+      final BpmnElementContext context,
+      final CompensationSubscription subscription,
+      final long compensationHandlerInstanceKey) {
+
+    final var key = subscription.getKey();
+    final var compensationRecord = subscription.getRecord();
+    compensationRecord
+        .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
+        .setThrowEventInstanceKey(context.getElementInstanceKey())
+        .setCompensationHandlerInstanceKey(compensationHandlerInstanceKey);
+
+    stateWriter.appendFollowUpEvent(
+        key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
+  }
+
+  private void triggerCompensationFromTopToBottom(
+      final BpmnElementContext context,
+      final Collection<CompensationSubscription> subscriptions,
+      final long scopeKey) {
+
+    subscriptions.stream()
+        .filter(
+            subscription -> scopeKey == subscription.getRecord().getCompensableActivityScopeKey())
+        .forEach(
+            subscription ->
+                triggerCompensationForSubscription(context, subscriptions, subscription));
   }
 
   public void completeCompensationHandler(final BpmnElementContext context) {
