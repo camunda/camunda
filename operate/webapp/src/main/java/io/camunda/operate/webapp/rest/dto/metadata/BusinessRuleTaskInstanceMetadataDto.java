@@ -76,9 +76,15 @@ public class BusinessRuleTaskInstanceMetadataDto extends JobFlowNodeInstanceMeta
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
     final BusinessRuleTaskInstanceMetadataDto that = (BusinessRuleTaskInstanceMetadataDto) o;
     return Objects.equals(calledDecisionInstanceId, that.calledDecisionInstanceId)
         && Objects.equals(calledDecisionDefinitionName, that.calledDecisionDefinitionName);
