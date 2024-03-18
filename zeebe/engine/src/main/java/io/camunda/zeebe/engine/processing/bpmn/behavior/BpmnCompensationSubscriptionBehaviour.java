@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
 import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -53,13 +54,12 @@ public class BpmnCompensationSubscriptionBehaviour {
 
   public BpmnCompensationSubscriptionBehaviour(
       final KeyGenerator keyGenerator,
-      final ProcessState processState,
-      final CompensationSubscriptionState compensationSubscriptionState,
+      final ProcessingState processingState,
       final Writers writers,
       final BpmnStateBehavior stateBehavior) {
     this.keyGenerator = keyGenerator;
-    this.processState = processState;
-    this.compensationSubscriptionState = compensationSubscriptionState;
+    processState = processingState.getProcessState();
+    compensationSubscriptionState = processingState.getCompensationSubscriptionState();
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.stateBehavior = stateBehavior;

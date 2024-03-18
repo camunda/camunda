@@ -173,11 +173,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
-            processingState.getKeyGenerator(),
-            processingState.getProcessState(),
-            processingState.getCompensationSubscriptionState(),
-            writers,
-            stateBehavior);
+            processingState.getKeyGenerator(), processingState, writers, stateBehavior);
   }
 
   @Override
