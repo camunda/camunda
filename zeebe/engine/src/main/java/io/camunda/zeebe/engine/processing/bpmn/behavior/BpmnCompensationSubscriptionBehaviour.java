@@ -41,6 +41,9 @@ public class BpmnCompensationSubscriptionBehaviour {
   /** Default instance key if no compensation handler was activated. */
   private static final long NONE_COMPENSATION_HANDLER_INSTANCE_KEY = -1L;
 
+  private static final Predicate<CompensationSubscription> TRIGGER_ALL_SUBSCRIPTIONS =
+      subscription -> true;
+
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final CompensationSubscriptionState compensationSubscriptionState;
@@ -124,7 +127,7 @@ public class BpmnCompensationSubscriptionBehaviour {
   public boolean triggerCompensation(
       final ExecutableFlowElement element, final BpmnElementContext context) {
     // trigger the compensation in the scope of the compensation throw event
-    return triggerCompensation(element, context, subscription -> true);
+    return triggerCompensationInScope(element, context, TRIGGER_ALL_SUBSCRIPTIONS);
   }
 
   public boolean triggerCompensationForActivity(
@@ -133,14 +136,14 @@ public class BpmnCompensationSubscriptionBehaviour {
       final BpmnElementContext context) {
     final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
     // trigger the compensation for the given activity
-    return triggerCompensation(
+    return triggerCompensationInScope(
         element,
         context,
         subscription ->
             subscription.getRecord().getCompensableActivityId().equals(compensationActivityId));
   }
 
-  private boolean triggerCompensation(
+  private boolean triggerCompensationInScope(
       final ExecutableFlowElement element,
       final BpmnElementContext context,
       final Predicate<CompensationSubscription> subscriptionFilter) {
