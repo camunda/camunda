@@ -64,7 +64,7 @@ public abstract class AbstractUserTaskWriter {
         .collect(Collectors.toList());
   }
 
-  private ScriptData createUpdateScript(List<FlowNodeInstanceDto> userTasks) {
+  private ScriptData createUpdateScript(final List<FlowNodeInstanceDto> userTasks) {
     final ImmutableMap<String, Object> scriptParameters =
         ImmutableMap.of(FLOW_NODE_INSTANCES, userTasks);
     return DatabaseWriterUtil.createScriptData(

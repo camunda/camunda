@@ -132,7 +132,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
         .collect(Collectors.toList());
   }
 
-  private List<String> extractCandidateGroups(List<CandidateGroupOperationDto> identityLinkLogs) {
+  private List<String> extractCandidateGroups(final List<CandidateGroupOperationDto> identityLinkLogs) {
     List<String> candidates = new ArrayList<>();
     identityLinkLogs.forEach(
         logEntry -> {
@@ -147,7 +147,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     return candidates;
   }
 
-  private String extractAssignee(List<AssigneeOperationDto> assigneeOps) {
+  private String extractAssignee(final List<AssigneeOperationDto> assigneeOps) {
     return assigneeOps.stream()
         // get last added assignee. In case the last two operations are add and delete and
         // both occurred at the same time, then ignore the delete and just take the add. We need to
@@ -167,7 +167,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
         .orElse(null);
   }
 
-  private String mapLogEntryToAssignee(AssigneeOperationDto logEntry) {
+  private String mapLogEntryToAssignee(final AssigneeOperationDto logEntry) {
     switch (logEntry.getOperationType()) {
       case IDENTITY_LINK_OPERATION_ADD:
         return logEntry.getUserId();
