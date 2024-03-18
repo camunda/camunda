@@ -1,10 +1,12 @@
 component/zeebe:
   - changed-files:
-    - all-globs-to-any-file: 
-      - '!operate/**'
+    - all-globs-to-any-file:
       - '!.github/workflows/operate-*'
+      - '!distro/**'
+      - '!operate/**'
 component/operate:
   - changed-files:
     - all-globs-to-any-file:
-      - '!zeebe/**'
       - '!.github/workflows/zeebe-*'
+      - '!dist/**'
+      - '!zeebe/**'

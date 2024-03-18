@@ -1,4 +1,4 @@
-# This GitHub Actions workflow that is triggered on push to `master` and `stable/**` branch or on any pull request creation
+# This GitHub Actions workflow that is triggered on push to `main` and `stable/**` branch or on any pull request creation
 # and invokes `ci-build-reusable` and `ci-test-reusable` workflows.
 ---
 name: Operate CI
@@ -6,14 +6,16 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'master'
+      - 'main'
       - 'stable/**'
     paths-ignore:
       - '.github/workflows/zeebe-*'
+      - 'dist/**'
       - 'zeebe/**'
   pull_request:
     paths-ignore:
       - '.github/workflows/zeebe-*'
+      - 'dist/**'
       - 'zeebe/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
@@ -28,7 +30,7 @@ jobs:
     uses: ./.github/workflows/operate-ci-build-reusable.yml
     secrets: inherit
     with:
-      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
 
   run-tests:
     name: run-tests
@@ -36,3 +38,13 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
+
+  test-summary:
+    # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
+    # https://github.com/orgs/community/discussions/26251
+    # This name is hard-coded in the branch rules; remember to update that if this name changes
+    name: Test summary
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0

@@ -15,7 +15,7 @@
 # This can be done through GitHub's UI by navigating to the "Actions" tab of the `operate` repository, then clicking on the
 # "Run workflow" dropdown, selecting the workflow, filling in the input fields and clicking "Run workflow".
 #
-# Link to Release manual workflow: https://github.com/camunda/operate/actions/workflows/release-manual.yml
+# Link to Release manual workflow: https://github.com/camunda/zeebe/actions/workflows/release-manual.yml
 
 name: Release manual
 
@@ -58,7 +58,7 @@ on:
 jobs:
   release:
     name: "release manually v${{ inputs.releaseVersion }}"
-    uses: camunda/operate/.github/workflows/operate-release-reusable.yml@master
+    uses: camunda/zeebe/.github/workflows/operate-release-reusable.yml@main
     secrets: inherit
     with:
       branch: ${{ inputs.branch }}

@@ -318,8 +318,8 @@ public class IntermediateThrowEventProcessor
       final var isCompensationTriggered =
           compensation.hasReferenceActivity()
               ? compensationSubscriptionBehaviour.triggerCompensationForActivity(
-                  compensation.getReferenceCompensationActivity(), activated)
-              : compensationSubscriptionBehaviour.triggerCompensation(activating);
+                  element, compensation.getReferenceCompensationActivity(), activated)
+              : compensationSubscriptionBehaviour.triggerCompensation(element, activating);
 
       if (isCompensationTriggered) {
         return SUCCESS;

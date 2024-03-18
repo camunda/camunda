@@ -98,7 +98,7 @@ paths:
             The assignment of the user task with the given key cannot be completed.
             More details are provided in the response body.
           $ref: "#/components/responses/ProblemResponse"
-  /user-tasks/{userTaskKey}/update:
+  /user-tasks/{userTaskKey}:
     patch:
       summary: Update a user task.
       description: Update a user task with the given key.
@@ -324,10 +324,12 @@ components:
       properties:
         dueDate:
           type: string
+          format: date-time
           description: The due date of the task. Reset by providing an empty String.
           nullable: true
         followUpDate:
           type: string
+          format: date-time
           description: The follow-up date of the task. Reset by providing an empty String.
           nullable: true
         candidateUsers:

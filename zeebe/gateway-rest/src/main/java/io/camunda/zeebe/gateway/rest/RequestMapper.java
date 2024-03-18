@@ -24,6 +24,9 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +41,14 @@ public class RequestMapper {
 
   // TODO: create proper multi-tenancy handling, e.g. via HTTP filter
   public static final String TENANT_CTX_KEY = "io.camunda.zeebe.broker.rest.tenantIds";
+
+  private static final String ERROR_MESSAGE_EMPTY_ASSIGNEE = "No assignee provided";
+  private static final String ERROR_MESSAGE_DATE_PARSING =
+      "The provided %s '%s' cannot be parsed as a date according to RFC 3339, section 5.6.";
+  private static final String ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET =
+      """
+      No update data provided. Provide at least an \"action\" or a non-null value \
+      for a supported attribute in the \"changeset\".""";
 
   public static Either<ProblemDetail, BrokerUserTaskCompletionRequest> toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest,
@@ -97,18 +108,6 @@ public class RequestMapper {
     return Either.right(brokerRequest);
   }
 
-  private static Optional<ProblemDetail> validateAssignmentRequest(
-      final UserTaskAssignmentRequest assignmentRequest) {
-    if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
-      final String message = "No assignee provided";
-      final ProblemDetail problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, message, INVALID_ARGUMENT.name());
-      return Optional.of(problemDetail);
-    }
-    return Optional.empty();
-  }
-
   public static Either<ProblemDetail, BrokerUserTaskUpdateRequest> toUserTaskUpdateRequest(
       final UserTaskUpdateRequest updateRequest,
       final long userTaskKey,
@@ -130,18 +129,46 @@ public class RequestMapper {
     return Either.right(brokerRequest);
   }
 
-  private static Optional<ProblemDetail> validateUpdateRequest(
-      final UserTaskUpdateRequest updateRequest) {
-    if (updateRequest == null
-        || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
-      final String message =
-          "No update data provided. Provide at least an \"action\" or a non-null value for a supported attribute in the \"changeset\".";
+  private static Optional<ProblemDetail> validateAssignmentRequest(
+      final UserTaskAssignmentRequest assignmentRequest) {
+    if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
       final ProblemDetail problemDetail =
           RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, message, INVALID_ARGUMENT.name());
+              HttpStatus.BAD_REQUEST, ERROR_MESSAGE_EMPTY_ASSIGNEE, INVALID_ARGUMENT.name());
       return Optional.of(problemDetail);
     }
     return Optional.empty();
+  }
+
+  private static Optional<ProblemDetail> validateUpdateRequest(
+      final UserTaskUpdateRequest updateRequest) {
+    final List<String> violations = new ArrayList<>();
+    if (updateRequest == null
+        || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
+      violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
+    }
+    if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
+      final Changeset changeset = updateRequest.getChangeset();
+      validateDate(changeset.getDueDate(), "due date", violations);
+      validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
+    }
+    if (violations.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        RestErrorMapper.createProblemDetail(
+            HttpStatus.BAD_REQUEST, String.join(" ", violations), INVALID_ARGUMENT.name()));
+  }
+
+  private static void validateDate(
+      final String dateString, final String attributeName, final List<String> violations) {
+    if (dateString != null && !dateString.isEmpty()) {
+      try {
+        ZonedDateTime.parse(dateString);
+      } catch (final DateTimeParseException ex) {
+        violations.add(ERROR_MESSAGE_DATE_PARSING.formatted(attributeName, dateString));
+      }
+    }
   }
 
   private static boolean isEmpty(final Changeset changeset) {

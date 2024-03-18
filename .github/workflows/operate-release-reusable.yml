@@ -67,6 +67,7 @@ env:
   JAVA_VERSION: 17
   LIMITS_CPU: 2
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
+  TAG_VERSION: operate-${{ inputs.releaseVersion }}
   GITHUB_UPLOAD_RELEASE: ${{ inputs.githubUploadRelease }}
   DRY_RUN: ${{ inputs.dryRun }}
   CREATE_A_RELEASE: ${{ inputs.dryRun == false && inputs.branch != 'stable/opensearch-8.2' && inputs.fromCommit != '' }}
@@ -156,7 +157,7 @@ jobs:
           -DlocalCheckout=true \
           -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-          -Dtag=$RELEASE_VERSION \
+          -Dtag=$TAG_VERSION \
           -DreleaseVersion=$RELEASE_VERSION \
           -DdevelopmentVersion=$NEXT_DEVELOPMENT_VERSION \
           -Darguments='-Dmaven.deploy.skip=$SKIP_DEPLOY -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$SKIP_DEPLOY -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
@@ -167,10 +168,10 @@ jobs:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
         uses: octokit/request-action@v2.1.9
         with:
-          route: POST /repos/camunda/operate/releases
+          route: POST /repos/camunda/zeebe/releases
           draft: false
-          name: ${{ inputs.releaseVersion }}
-          tag_name: ${{ inputs.releaseVersion }}
+          name: ${{ env.TAG_VERSION }}
+          tag_name: ${{ env.TAG_VERSION }}
           body: ${{ toJSON(format('{0}', steps.changelog.outputs.body)) }}
 
       # Upload: Upload to GitHub Release
@@ -179,7 +180,6 @@ jobs:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
         run: |
           ARTIFACT="camunda-operate"
-          ZEEBE_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
 
           cd target/checkout/distro/target
 
@@ -195,8 +195,8 @@ jobs:
             if $DRY_RUN; then
               echo "'${f}' file was created, skip upload in dryRun mode"
             elif $GITHUB_UPLOAD_RELEASE; then
-              echo "Uploading '${f}' file to operate repo on GitHub"
-              ./github-release upload --user camunda --repo operate --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
+              echo "Uploading '${f}' file to zeebe repo on GitHub"
+              ./github-release upload --user camunda --repo zeebe --tag ${TAG_VERSION} --name "${f}" --file "${f}"
             else
               echo "'${f}' file was created, skip upload"
             fi
@@ -294,7 +294,7 @@ jobs:
           payload: |
             {
               "workflow_name": "${{ github.workflow }}",
-              "github_run_url": "https://github.com/camunda/operate/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}",
               "dry_run": "${{ inputs.dryRun }}",
               "release_version": "${{ inputs.releaseVersion }}",
               "branch": "${{ inputs.branch }}"
