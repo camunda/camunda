@@ -267,9 +267,17 @@ public final class Gateway implements CloseableSilently {
     healthManager.setStatus(Status.SHUTDOWN);
 
     if (server != null && !server.isShutdown()) {
-      server.shutdownNow();
+      server.shutdown();
       try {
-        server.awaitTermination();
+        final var shutdownTimeout = Duration.ofSeconds(30);
+        LOG.debug("Waiting {} for server to shut down cleanly", shutdownTimeout);
+        final var cleanTermination =
+            server.awaitTermination(shutdownTimeout.getSeconds(), TimeUnit.SECONDS);
+        if (!cleanTermination) {
+          LOG.warn("Server did not shut down cleanly within {}", shutdownTimeout);
+          server.shutdownNow();
+          server.awaitTermination();
+        }
       } catch (final InterruptedException e) {
         LOG.warn("Failed to await termination of gRPC server", e);
         Thread.currentThread().interrupt();
