@@ -102,20 +102,34 @@ public class CreateOperationRequestDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    CreateOperationRequestDto that = (CreateOperationRequestDto) o;
-
-    if (operationType != that.operationType) return false;
-    if (name != null ? !name.equals(that.name) : that.name != null) return false;
-    if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
+    }
+
+    final CreateOperationRequestDto that = (CreateOperationRequestDto) o;
+
+    if (operationType != that.operationType) {
+      return false;
+    }
+    if (name != null ? !name.equals(that.name) : that.name != null) {
+      return false;
+    }
+    if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null) {
+      return false;
+    }
     if (variableScopeId != null
         ? !variableScopeId.equals(that.variableScopeId)
-        : that.variableScopeId != null) return false;
-    if (variableName != null ? !variableName.equals(that.variableName) : that.variableName != null)
+        : that.variableScopeId != null) {
       return false;
+    }
+    if (variableName != null
+        ? !variableName.equals(that.variableName)
+        : that.variableName != null) {
+      return false;
+    }
     return variableValue != null
         ? variableValue.equals(that.variableValue)
         : that.variableValue == null;

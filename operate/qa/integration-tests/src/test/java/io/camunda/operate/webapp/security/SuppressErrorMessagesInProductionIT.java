@@ -50,17 +50,17 @@ public class SuppressErrorMessagesInProductionIT implements AuthenticationTestab
   @Test
   public void shouldSuppressErrorMessage() {
     // given authenticated user
-    ResponseEntity<Void> loginResponse = login("demo", "demo");
-    HttpHeaders headers = new HttpHeaders();
+    final ResponseEntity<Void> loginResponse = login("demo", "demo");
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", getSessionCookies(loginResponse).stream().findFirst().orElse(""));
     // when requesting with invalid JSON payload
-    HttpEntity<String> request = new HttpEntity<>(INVALID_JSON_PAYLOAD, headers);
+    final HttpEntity<String> request = new HttpEntity<>(INVALID_JSON_PAYLOAD, headers);
     final ResponseEntity<String> response =
         getTestRestTemplate().postForEntity(PROCESS_INSTANCE_URL, request, String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    String content = response.getBody();
+    final String content = response.getBody();
     assertThat(content).doesNotContain("JSON parse error");
   }
 

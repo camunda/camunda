@@ -227,9 +227,13 @@ public class DecisionInstanceDto
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionInstanceDto that = (DecisionInstanceDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceDto that = (DecisionInstanceDto) o;
     return decisionVersion == that.decisionVersion
         && Objects.equals(id, that.id)
         && state == that.state

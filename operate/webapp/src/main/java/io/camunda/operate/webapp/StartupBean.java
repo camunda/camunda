@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Profile("!test")
 public class StartupBean {
 
-  private static final Logger logger = LoggerFactory.getLogger(StartupBean.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StartupBean.class);
 
   @Autowired(required = false)
   private RestHighLevelClient esClient;
@@ -61,26 +61,26 @@ public class StartupBean {
   @PostConstruct
   public void initApplication() {
     if (operateUserDetailsService != null) {
-      logger.info(
+      LOGGER.info(
           "INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().getCode());
       operateUserDetailsService.initializeUsers();
     }
-    logger.debug("INIT: Generate demo data...");
+    LOGGER.debug("INIT: Generate demo data...");
     try {
       dataGenerator.createZeebeDataAsync(false);
     } catch (Exception ex) {
-      logger.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
-      logger.error("Error occurred when generating demo data.", ex);
+      LOGGER.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
+      LOGGER.error("Error occurred when generating demo data.", ex);
     }
-    logger.info("INIT: Start operation executor...");
+    LOGGER.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
-    logger.info("INIT: DONE");
+    LOGGER.info("INIT: DONE");
   }
 
   @PreDestroy
   public void shutdown() {
     if (DatabaseInfo.isElasticsearch()) {
-      logger.info("Shutdown elasticsearch clients.");
+      LOGGER.info("Shutdown elasticsearch clients.");
       ElasticsearchConnector.closeEsClient(esClient);
       ElasticsearchConnector.closeEsClient(zeebeEsClient);
     }

@@ -36,8 +36,8 @@ public class SwaggerAccessIT extends OperateAbstractIT {
   @Test
   public void shouldReturnSwaggerUI() throws Exception {
     // when
-    MockHttpServletRequestBuilder request = get("/swagger-ui/index.html");
-    MvcResult mvcResult =
+    final MockHttpServletRequestBuilder request = get("/swagger-ui/index.html");
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())

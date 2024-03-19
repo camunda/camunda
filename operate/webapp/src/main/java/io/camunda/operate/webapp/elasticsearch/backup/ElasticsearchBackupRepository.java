@@ -79,13 +79,13 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
   private static final String REPOSITORY_MISSING_EXCEPTION_TYPE =
       "type=repository_missing_exception";
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   @Autowired private RestHighLevelClient esClient;
   @Autowired private ObjectMapper objectMapper;
 
   @Override
   public void deleteSnapshot(String repositoryName, String snapshotName) {
-    DeleteSnapshotRequest request = new DeleteSnapshotRequest(repositoryName);
+    final DeleteSnapshotRequest request = new DeleteSnapshotRequest(repositoryName);
     request.snapshots(snapshotName);
     esClient.snapshot().deleteAsync(request, RequestOptions.DEFAULT, getDeleteListener());
   }
@@ -95,7 +95,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     final GetRepositoriesRequest getRepositoriesRequest =
         new GetRepositoriesRequest().repositories(new String[] {repositoryName});
     try {
-      GetRepositoriesResponse repository =
+      final GetRepositoriesResponse repository =
           esClient.snapshot().getRepository(getRepositoriesRequest, RequestOptions.DEFAULT);
     } catch (IOException | TransportException ex) {
       final String reason =
@@ -123,7 +123,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         new GetSnapshotsRequest()
             .repository(repositoryName)
             .snapshots(new String[] {Metadata.buildSnapshotNamePrefix(backupId) + "*"});
-    GetSnapshotsResponse response;
+    final GetSnapshotsResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
     } catch (IOException | TransportException ex) {
@@ -157,8 +157,8 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
   @Override
   public GetBackupStateResponseDto getBackupState(String repositoryName, Long backupId) {
-    List<SnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
-    GetBackupStateResponseDto response = getBackupResponse(backupId, snapshots);
+    final List<SnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
+    final GetBackupStateResponseDto response = getBackupResponse(backupId, snapshots);
     return response;
   }
 
@@ -172,20 +172,20 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             // additionally before return
             .sort(GetSnapshotsRequest.SortBy.START_TIME)
             .order(SortOrder.DESC);
-    GetSnapshotsResponse response;
+    final GetSnapshotsResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
-      List<SnapshotInfo> snapshots =
+      final List<SnapshotInfo> snapshots =
           response.getSnapshots().stream()
               .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
               .collect(toList());
 
-      LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
+      final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
               .collect(
                   groupingBy(
                       si -> {
-                        Metadata metadata =
+                        final Metadata metadata =
                             objectMapper.convertValue(si.userMetadata(), Metadata.class);
                         Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1
@@ -198,7 +198,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                       LinkedHashMap::new,
                       toList()));
 
-      List<GetBackupStateResponseDto> responses =
+      final List<GetBackupStateResponseDto> responses =
           groupedSnapshotInfos.entrySet().stream()
               .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
               .collect(toList());
@@ -229,7 +229,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   @Override
   public void executeSnapshotting(
       BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure) {
-    var request =
+    final var request =
         new CreateSnapshotRequest()
             .repository(snapshotRequest.repositoryName())
             .snapshot(snapshotRequest.snapshotName())
@@ -241,7 +241,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                 objectMapper.convertValue(snapshotRequest.metadata(), new TypeReference<>() {}))
             .featureStates(new String[] {"none"})
             .waitForCompletion(true);
-    var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
+    final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
 
     esClient.snapshot().createAsync(request, RequestOptions.DEFAULT, listener);
   }
@@ -250,7 +250,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     return new ActionListener<>() {
       @Override
       public void onResponse(AcknowledgedResponse response) {
-        logger.debug(
+        LOGGER.debug(
             "Delete snapshot was acknowledged by Elasticsearch node: " + response.isAcknowledged());
       }
 
@@ -258,9 +258,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       public void onFailure(Exception e) {
         if (isSnapshotMissingException(e)) {
           // no snapshot with given backupID exists, this is fine, log warning
-          logger.warn("No snapshot found for snapshot deletion: " + e.getMessage());
+          LOGGER.warn("No snapshot found for snapshot deletion: " + e.getMessage());
         } else {
-          logger.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
+          LOGGER.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
         }
       }
     };
@@ -285,7 +285,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         new GetSnapshotsRequest()
             .repository(repositoryName)
             .snapshots(new String[] {Metadata.buildSnapshotNamePrefix(backupId) + "*"});
-    GetSnapshotsResponse response;
+    final GetSnapshotsResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
       return response.getSnapshots();
@@ -313,8 +313,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   }
 
   private GetBackupStateResponseDto getBackupResponse(Long backupId, List<SnapshotInfo> snapshots) {
-    GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
-    Metadata metadata = objectMapper.convertValue(snapshots.get(0).userMetadata(), Metadata.class);
+    final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
+    final Metadata metadata =
+        objectMapper.convertValue(snapshots.get(0).userMetadata(), Metadata.class);
     final Integer expectedSnapshotsCount = metadata.getPartCount();
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(SnapshotInfo::state).allMatch(s -> SUCCESS.equals(s))) {
@@ -332,9 +333,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     } else {
       response.setState(BackupStateDto.FAILED);
     }
-    List<GetBackupStateResponseDetailDto> details = new ArrayList<>();
+    final List<GetBackupStateResponseDetailDto> details = new ArrayList<>();
     for (SnapshotInfo snapshot : snapshots) {
-      GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
+      final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.snapshotId().getName());
       detail.setStartTime(
           OffsetDateTime.ofInstant(
@@ -351,7 +352,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     response.setDetails(details);
     if (response.getState().equals(BackupStateDto.FAILED)) {
       String failureReason = null;
-      String failedSnapshots =
+      final String failedSnapshots =
           snapshots.stream()
               .filter(s -> s.state().equals(FAILED))
               .map(s -> s.snapshotId().getName())
@@ -360,7 +361,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         failureReason =
             String.format("There were failures with the following snapshots: %s", failedSnapshots);
       } else {
-        String partialSnapshot =
+        final String partialSnapshot =
             snapshots.stream()
                 .filter(s -> s.state().equals(PARTIAL))
                 .map(s -> s.snapshotId().getName())
@@ -403,22 +404,22 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     public void onFailure(Exception ex) {
       if (ex instanceof SocketTimeoutException) {
         // This is thrown even if the backup is still running
-        logger.warn(
+        LOGGER.warn(
             String.format(
                 "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
                 snapshotRequest.snapshotName(), backupId));
         // Keep waiting
         while (true) {
-          List<SnapshotInfo> snapshotInfos =
+          final List<SnapshotInfo> snapshotInfos =
               findSnapshots(snapshotRequest.repositoryName(), backupId);
-          SnapshotInfo currentSnapshot =
+          final SnapshotInfo currentSnapshot =
               snapshotInfos.stream()
                   .filter(
                       x -> Objects.equals(x.snapshotId().getName(), snapshotRequest.snapshotName()))
                   .findFirst()
                   .orElse(null);
           if (currentSnapshot == null) {
-            logger.error(
+            LOGGER.error(
                 String.format(
                     "Expected (but not found) snapshot [%s] for backupId [%d].",
                     snapshotRequest.snapshotName(), backupId));
@@ -434,7 +435,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
           }
         }
       } else {
-        logger.error(
+        LOGGER.error(
             String.format(
                 "Exception while creating snapshot [%s] for backup id [%d].",
                 snapshotRequest.snapshotName(), backupId),
@@ -446,17 +447,17 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
     private void handleSnapshotReceived(SnapshotInfo snapshotInfo) {
       if (snapshotInfo.state() == SUCCESS) {
-        logger.info("Snapshot done: " + snapshotInfo.snapshotId());
+        LOGGER.info("Snapshot done: " + snapshotInfo.snapshotId());
         onSuccess.run();
       } else if (snapshotInfo.state() == FAILED) {
-        logger.error(
+        LOGGER.error(
             String.format(
                 "Snapshot taking failed for %s, reason %s",
                 snapshotInfo.snapshotId(), snapshotInfo.reason()));
         // No need to continue
         onFailure.run();
       } else {
-        logger.warn(
+        LOGGER.warn(
             String.format(
                 "Snapshot state is %s for snapshot %s",
                 snapshotInfo.state(), snapshotInfo.snapshotId()));

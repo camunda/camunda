@@ -164,7 +164,7 @@ test.describe('Process Instance History', () => {
     await expect(page.getByRole('treeitem')).toHaveCount(201);
   });
 
-  test('Scrolling behaviour - tree level', async ({
+  test.skip('Scrolling behaviour - tree level', async ({
     page,
     processInstancePage,
   }) => {

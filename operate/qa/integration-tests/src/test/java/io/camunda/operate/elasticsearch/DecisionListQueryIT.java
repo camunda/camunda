@@ -116,12 +116,12 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   public void testQueryAll() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto =
+    final DecisionInstanceListRequestDto decisionInstanceQueryDto =
         createGetAllDecisionInstancesRequest();
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(5);
@@ -130,12 +130,12 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   public void testQueryEvaluated() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto =
+    final DecisionInstanceListRequestDto decisionInstanceQueryDto =
         createDecisionInstanceRequest(q -> q.setEvaluated(true));
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(3);
@@ -147,12 +147,12 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   public void testQueryFailed() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto =
+    final DecisionInstanceListRequestDto decisionInstanceQueryDto =
         createDecisionInstanceRequest(q -> q.setFailed(true));
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(2);
@@ -164,13 +164,13 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   public void testQueryByDecisionDefinitionId() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto =
+    final DecisionInstanceListRequestDto decisionInstanceQueryDto =
         createGetAllDecisionInstancesRequest(
             q -> q.setDecisionDefinitionIds(asList(DECISION_DEFINITION_ID_1)));
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(2);
@@ -182,12 +182,12 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   public void testQueryByNonExistingDecisionDefinitionId() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto =
+    final DecisionInstanceListRequestDto decisionInstanceQueryDto =
         createGetAllDecisionInstancesRequest(q -> q.setDecisionDefinitionIds(asList("wrongId")));
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(0);
@@ -196,13 +196,13 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   public void testQueryByIds() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto =
+    final DecisionInstanceListRequestDto decisionInstanceQueryDto =
         createGetAllDecisionInstancesRequest(
             q -> q.setIds(asList(DECISION_INSTANCE_ID_1_1, DECISION_INSTANCE_ID_2_1)));
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(2);
@@ -214,13 +214,13 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   public void testQueryByProcessInstanceId() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto =
+    final DecisionInstanceListRequestDto decisionInstanceQueryDto =
         createGetAllDecisionInstancesRequest(
             q -> q.setProcessInstanceId(String.valueOf(PROCESS_INSTANCE_ID)));
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(2);
@@ -287,8 +287,8 @@ public class DecisionListQueryIT extends OperateAbstractIT {
   private void requestAndAssertIds(
       DecisionInstanceListRequestDto request, String testCaseName, String... ids) throws Exception {
     // then
-    MvcResult mvcResult = postRequest(query(), request);
-    DecisionInstanceListResponseDto response =
+    final MvcResult mvcResult = postRequest(query(), request);
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances())
@@ -299,12 +299,13 @@ public class DecisionListQueryIT extends OperateAbstractIT {
 
   private void testPagination() throws Exception {
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceRequest = createGetAllDecisionInstancesRequest();
+    final DecisionInstanceListRequestDto decisionInstanceRequest =
+        createGetAllDecisionInstancesRequest();
     decisionInstanceRequest.setPageSize(2);
 
     // page 1
     MvcResult mvcResult = postRequest(query(), decisionInstanceRequest);
-    DecisionInstanceListResponseDto page1Response =
+    final DecisionInstanceListResponseDto page1Response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(page1Response.getDecisionInstances().size()).isEqualTo(2);
     assertThat(page1Response.getTotalCount()).isEqualTo(5);
@@ -317,7 +318,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
             .getSortValues());
     decisionInstanceRequest.setPageSize(3);
     mvcResult = postRequest(query(), decisionInstanceRequest);
-    DecisionInstanceListResponseDto page2Response =
+    final DecisionInstanceListResponseDto page2Response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(page2Response.getDecisionInstances().size()).isEqualTo(3);
     assertThat(page2Response.getTotalCount()).isEqualTo(5);
@@ -330,7 +331,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
         page2Response.getDecisionInstances().get(0).getSortValues());
     decisionInstanceRequest.setPageSize(5);
     mvcResult = postRequest(query(), decisionInstanceRequest);
-    DecisionInstanceListResponseDto page1Response2 =
+    final DecisionInstanceListResponseDto page1Response2 =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(page1Response2.getDecisionInstances().size()).isEqualTo(2);
     assertThat(page1Response2.getTotalCount()).isEqualTo(5);
@@ -345,15 +346,15 @@ public class DecisionListQueryIT extends OperateAbstractIT {
       throws Exception {
 
     // query running instances
-    DecisionInstanceListRequestDto decisionInstanceRequestDto =
+    final DecisionInstanceListRequestDto decisionInstanceRequestDto =
         createGetAllDecisionInstancesRequest();
     if (sorting != null) {
       decisionInstanceRequestDto.setSorting(sorting);
     }
 
-    MvcResult mvcResult = postRequest(query(), decisionInstanceRequestDto);
+    final MvcResult mvcResult = postRequest(query(), decisionInstanceRequestDto);
 
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size())
@@ -567,7 +568,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
             + "\"sorting\": { \"sortBy\": \""
             + wrongSortParameter
             + "\"}}}";
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(query()).content(query.getBytes()).contentType(mockMvcTestRule.getContentType());
     final MvcResult mvcResult =
         mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
@@ -587,11 +588,11 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
-    DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
-    MvcResult mvcResult = postRequest(query(), query);
+    final DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(5);
@@ -608,11 +609,11 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
-    DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
-    MvcResult mvcResult = postRequest(query(), query);
+    final DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().isEmpty());
@@ -623,19 +624,19 @@ public class DecisionListQueryIT extends OperateAbstractIT {
   public void testQueryWithPermisssionForSpecificDecisions() throws Exception {
 
     // given
-    String decisionId = "invoiceClassification";
-    String decisionName = "Invoice Classification";
+    final String decisionId = "invoiceClassification";
+    final String decisionName = "Invoice Classification";
     createData();
 
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId)));
 
-    DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
-    MvcResult mvcResult = postRequest(query(), query);
+    final DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    DecisionInstanceListResponseDto response =
+    final DecisionInstanceListResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionInstances().size()).isEqualTo(3);

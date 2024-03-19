@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Component("indicesCheck")
 public class IndicesHealthIndicator implements HealthIndicator {
 
-  private static final Logger logger = LoggerFactory.getLogger(IndicesHealthIndicator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndicesHealthIndicator.class);
 
   @Autowired private IndicesCheck indicesCheck;
 
@@ -37,7 +37,7 @@ public class IndicesHealthIndicator implements HealthIndicator {
 
   @Override
   public Health health() {
-    logger.debug("Indices check is called");
+    LOGGER.debug("Indices check is called");
     if (indicesCheck.isHealthy() && indicesCheck.indicesArePresent()) {
       return Health.up().build();
     } else {

@@ -77,7 +77,7 @@ public class IncidentStatisticsReader extends AbstractReader
 
   private static final String GROUP_BY_PROCESS_KEYS = "group_by_processDefinitionKeys";
 
-  private static final Logger logger = LoggerFactory.getLogger(IncidentStatisticsReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentStatisticsReader.class);
 
   @Autowired private ListViewTemplate processInstanceTemplate;
 
@@ -97,10 +97,10 @@ public class IncidentStatisticsReader extends AbstractReader
 
   @Override
   public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError() {
-    Set<IncidentsByErrorMsgStatisticsDto> result =
+    final Set<IncidentsByErrorMsgStatisticsDto> result =
         new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
 
-    Map<Long, ProcessEntity> processes =
+    final Map<Long, ProcessEntity> processes =
         processReader.getProcessesWithFields(
             ProcessIndex.KEY,
             ProcessIndex.NAME,
@@ -108,7 +108,7 @@ public class IncidentStatisticsReader extends AbstractReader
             ProcessIndex.TENANT_ID,
             ProcessIndex.VERSION);
 
-    TermsAggregationBuilder aggregation =
+    final TermsAggregationBuilder aggregation =
         terms(GROUP_BY_ERROR_MESSAGE_HASH)
             .field(IncidentTemplate.ERROR_MSG_HASH)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
@@ -136,7 +136,7 @@ public class IncidentStatisticsReader extends AbstractReader
     try {
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
-      Terms errorMessageAggregation =
+      final Terms errorMessageAggregation =
           searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGE_HASH);
       for (Bucket bucket : errorMessageAggregation.getBuckets()) {
         result.add(getIncidentsByErrorMsgStatistic(processes, bucket));
@@ -145,16 +145,16 @@ public class IncidentStatisticsReader extends AbstractReader
       final String message =
           String.format(
               "Exception occurred, while obtaining incidents by error message: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
     return result;
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess() {
-    Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>();
+    final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>();
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(processInstanceTemplate, ONLY_RUNTIME)
             .source(
                 new SearchSourceBuilder()
@@ -163,13 +163,13 @@ public class IncidentStatisticsReader extends AbstractReader
                     .size(0));
 
     try {
-      SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
-      List<? extends Bucket> buckets =
+      final List<? extends Bucket> buckets =
           ((Terms) searchResponse.getAggregations().get(PROCESS_KEYS)).getBuckets();
       for (Bucket bucket : buckets) {
-        Long processDefinitionKey = (Long) bucket.getKey();
-        long incidents = bucket.getDocCount();
+        final Long processDefinitionKey = (Long) bucket.getKey();
+        final long incidents = bucket.getDocCount();
         results.put(
             processDefinitionKey,
             new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), incidents, 0));
@@ -179,20 +179,20 @@ public class IncidentStatisticsReader extends AbstractReader
       final String message =
           String.format(
               "Exception occurred, while obtaining incidents by process: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
       Map<Long, IncidentByProcessStatisticsDto> statistics) {
-    QueryBuilder runningInstanceQuery =
+    final QueryBuilder runningInstanceQuery =
         joinWithAnd(
             termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
             termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
-    Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
+    final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
     try {
-      SearchRequest searchRequest =
+      final SearchRequest searchRequest =
           ElasticsearchUtil.createSearchRequest(processInstanceTemplate, ONLY_RUNTIME)
               .source(
                   new SearchSourceBuilder()
@@ -200,13 +200,13 @@ public class IncidentStatisticsReader extends AbstractReader
                       .aggregation(COUNT_PROCESS_KEYS)
                       .size(0));
 
-      SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
-      List<? extends Bucket> buckets =
+      final List<? extends Bucket> buckets =
           ((Terms) searchResponse.getAggregations().get(PROCESS_KEYS)).getBuckets();
       for (Bucket bucket : buckets) {
-        Long processDefinitionKey = (Long) bucket.getKey();
-        long runningCount = bucket.getDocCount();
+        final Long processDefinitionKey = (Long) bucket.getKey();
+        final long runningCount = bucket.getDocCount();
         IncidentByProcessStatisticsDto statistic = results.get(processDefinitionKey);
         if (statistic != null) {
           statistic.setActiveInstancesCount(
@@ -221,7 +221,7 @@ public class IncidentStatisticsReader extends AbstractReader
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining active processes: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -229,14 +229,14 @@ public class IncidentStatisticsReader extends AbstractReader
   private Set<IncidentsByProcessGroupStatisticsDto> collectStatisticsForProcessGroups(
       Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap) {
 
-    Set<IncidentsByProcessGroupStatisticsDto> result =
+    final Set<IncidentsByProcessGroupStatisticsDto> result =
         new TreeSet<>(IncidentsByProcessGroupStatisticsDto.COMPARATOR);
 
     final var processGroups = processReader.getProcessesGrouped(new ProcessRequestDto());
 
     // iterate over process groups (bpmnProcessId)
     for (List<ProcessEntity> processes : processGroups.values()) {
-      IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
+      final IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
       stat.setBpmnProcessId(processes.get(0).getBpmnProcessId());
       stat.setTenantId(processes.get(0).getTenantId());
 
@@ -286,9 +286,11 @@ public class IncidentStatisticsReader extends AbstractReader
    * @return query that matches the processes for which the user has the given permission
    */
   private QueryBuilder createQueryForProcessesByPermission(IdentityPermission permission) {
-    PermissionsService.ResourcesAllowed allowed =
+    final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
-    if (allowed == null) return null;
+    if (allowed == null) {
+      return null;
+    }
     return allowed.isAll()
         ? QueryBuilders.matchAllQuery()
         : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
@@ -296,27 +298,27 @@ public class IncidentStatisticsReader extends AbstractReader
 
   private IncidentsByErrorMsgStatisticsDto getIncidentsByErrorMsgStatistic(
       Map<Long, ProcessEntity> processes, Bucket errorMessageBucket) {
-    SearchHits searchHits =
+    final SearchHits searchHits =
         ((TopHits) errorMessageBucket.getAggregations().get(ERROR_MESSAGE)).getHits();
-    SearchHit searchHit = searchHits.getHits()[0];
-    String errorMessage = (String) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG);
+    final SearchHit searchHit = searchHits.getHits()[0];
+    final String errorMessage = (String) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG);
 
-    IncidentsByErrorMsgStatisticsDto processStatistics =
+    final IncidentsByErrorMsgStatisticsDto processStatistics =
         new IncidentsByErrorMsgStatisticsDto(errorMessage);
 
-    Terms processDefinitionKeyAggregation =
+    final Terms processDefinitionKeyAggregation =
         (Terms) errorMessageBucket.getAggregations().get(GROUP_BY_PROCESS_KEYS);
     for (Bucket processDefinitionKeyBucket : processDefinitionKeyAggregation.getBuckets()) {
-      Long processDefinitionKey = (Long) processDefinitionKeyBucket.getKey();
-      long incidentsCount =
+      final Long processDefinitionKey = (Long) processDefinitionKeyBucket.getKey();
+      final long incidentsCount =
           ((Cardinality) processDefinitionKeyBucket.getAggregations().get(UNIQ_PROCESS_INSTANCES))
               .getValue();
 
       if (processes.containsKey(processDefinitionKey)) {
-        IncidentByProcessStatisticsDto statisticForProcess =
+        final IncidentByProcessStatisticsDto statisticForProcess =
             new IncidentByProcessStatisticsDto(
                 processDefinitionKey.toString(), errorMessage, incidentsCount);
-        ProcessEntity process = processes.get(processDefinitionKey);
+        final ProcessEntity process = processes.get(processDefinitionKey);
         statisticForProcess.setName(process.getName());
         statisticForProcess.setBpmnProcessId(process.getBpmnProcessId());
         statisticForProcess.setTenantId(process.getTenantId());

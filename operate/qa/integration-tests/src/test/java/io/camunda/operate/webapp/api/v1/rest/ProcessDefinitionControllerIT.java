@@ -145,7 +145,7 @@ public class ProcessDefinitionControllerIT {
     final String expectedJSONContent =
         "{\"key\":0,\"name\":\"name-0\",\"version\":0,\"bpmnProcessId\":\"bpmnProcessId-0\"}";
     // given
-    List<ProcessDefinition> processDefinitions = createProcessDefinitionsOf(1);
+    final List<ProcessDefinition> processDefinitions = createProcessDefinitionsOf(1);
     when(processDefinitionDao.byKey(0L)).thenReturn(processDefinitions.get(0));
     // then
     assertGetToSucceed(URI + "/0").andExpect(content().string(expectedJSONContent));

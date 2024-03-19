@@ -50,12 +50,12 @@ public class ProcessGroupDto {
   public static List<ProcessGroupDto> createFrom(
       Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped,
       PermissionsService permissionsService) {
-    List<ProcessGroupDto> groups = new ArrayList<>();
+    final List<ProcessGroupDto> groups = new ArrayList<>();
     processesGrouped.values().stream()
         .forEach(
             group -> {
-              ProcessGroupDto groupDto = new ProcessGroupDto();
-              ProcessEntity process0 = group.get(0);
+              final ProcessGroupDto groupDto = new ProcessGroupDto();
+              final ProcessEntity process0 = group.get(0);
               groupDto.setBpmnProcessId(process0.getBpmnProcessId());
               groupDto.setTenantId(process0.getTenantId());
               groupDto.setName(process0.getName());
@@ -119,10 +119,14 @@ public class ProcessGroupDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    ProcessGroupDto that = (ProcessGroupDto) o;
+    final ProcessGroupDto that = (ProcessGroupDto) o;
 
     return bpmnProcessId != null
         ? bpmnProcessId.equals(that.bpmnProcessId)

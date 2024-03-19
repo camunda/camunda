@@ -105,7 +105,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processDefinitionKey = (Long) objects[0];
+      final Long processDefinitionKey = (Long) objects[0];
       try {
         final ProcessEntity process = processReader.getProcess(processDefinitionKey);
         return process != null;
@@ -125,7 +125,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Integer.class);
-      int count = (Integer) objects[0];
+      final int count = (Integer) objects[0];
       try {
         final int docCount =
             io.camunda.operate.qa.util.ElasticsearchUtil.getDocCount(
@@ -147,7 +147,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Integer.class);
-      int count = (Integer) objects[0];
+      final int count = (Integer) objects[0];
       try {
         final int docCount =
             io.camunda.operate.qa.util.ElasticsearchUtil.getDocCount(
@@ -171,10 +171,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -201,9 +201,9 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      String jobType = (String) objects[1];
-      List<EventEntity> events = getAllEvents(processInstanceKey);
+      final Long processInstanceKey = (Long) objects[0];
+      final String jobType = (String) objects[1];
+      final List<EventEntity> events = getAllEvents(processInstanceKey);
       return events.stream()
               .filter(
                   e ->
@@ -222,10 +222,10 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
       assertThat(objects[2]).isInstanceOf(EventType.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
-      EventType eventType = (EventType) objects[2];
-      List<EventEntity> events = getAllEvents(processInstanceKey);
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
+      final EventType eventType = (EventType) objects[2];
+      final List<EventEntity> events = getAllEvents(processInstanceKey);
       return events.stream()
           .anyMatch(
               e ->
@@ -241,10 +241,10 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(Integer.class);
-      Long processInstanceKey = (Long) objects[0];
-      Long jobKey = (Long) objects[1];
-      Integer numberOfRetriesLeft = (Integer) objects[2];
-      List<EventEntity> events = getAllEvents(processInstanceKey);
+      final Long processInstanceKey = (Long) objects[0];
+      final Long jobKey = (Long) objects[1];
+      final Integer numberOfRetriesLeft = (Integer) objects[2];
+      final List<EventEntity> events = getAllEvents(processInstanceKey);
       return events.stream()
               .filter(
                   e ->
@@ -269,10 +269,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -302,10 +302,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -334,7 +334,7 @@ public class ElasticsearchChecks {
       final String flowNodeId = (String) objects[1];
       final Integer instancesCount = (Integer) objects[2];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -366,10 +366,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -401,11 +401,11 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
       assertThat(objects[2]).isInstanceOf(Integer.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
-      Integer instancesCount = (Integer) objects[2];
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
+      final Integer instancesCount = (Integer) objects[2];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -432,11 +432,11 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
       assertThat(objects[2]).isInstanceOf(Integer.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
-      Integer instancesCount = (Integer) objects[2];
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
+      final Integer instancesCount = (Integer) objects[2];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -461,11 +461,11 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
       assertThat(objects[2]).isInstanceOf(Integer.class);
-      Long processInstanceKey = (Long) objects[0];
-      String flowNodeId = (String) objects[1];
-      Integer instancesCount = (Integer) objects[2];
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
+      final Integer instancesCount = (Integer) objects[2];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances =
+        final List<FlowNodeInstanceEntity> flowNodeInstances =
             getAllFlowNodeInstances(processInstanceKey);
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
@@ -484,10 +484,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(String.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      String flowNodeId = (String) objects[0];
-      Integer instancesCount = (Integer) objects[1];
+      final String flowNodeId = (String) objects[0];
+      final Integer instancesCount = (Integer) objects[1];
       try {
-        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances();
+        final List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances();
         final List<FlowNodeInstanceEntity> flowNodes =
             flowNodeInstances.stream()
                 .filter(a -> a.getFlowNodeId().equals(flowNodeId))
@@ -559,10 +559,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      String varName = (String) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final String varName = (String) objects[1];
       try {
-        List<VariableEntity> variables = getAllVariables(processInstanceKey);
+        final List<VariableEntity> variables = getAllVariables(processInstanceKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
       } catch (NotFoundException ex) {
         return false;
@@ -577,9 +577,9 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
       assertThat(objects[2]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
-      String varName = (String) objects[1];
-      Long scopeKey = (Long) objects[2];
+      final Long processInstanceKey = (Long) objects[0];
+      final String varName = (String) objects[1];
+      final Long scopeKey = (Long) objects[2];
       try {
         return null
             != variableReader.getVariableByName(processInstanceKey + "", scopeKey + "", varName);
@@ -637,12 +637,12 @@ public class ElasticsearchChecks {
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
       assertThat(objects[3]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      Long scopeKey = (Long) objects[1];
-      String varName = (String) objects[2];
-      String varValue = (String) objects[3];
+      final Long processInstanceKey = (Long) objects[0];
+      final Long scopeKey = (Long) objects[1];
+      final String varName = (String) objects[2];
+      final String varValue = (String) objects[3];
       try {
-        List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
+        final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
         return variables.stream()
             .anyMatch(v -> v.getName().equals(varName) && v.getValue().equals(varValue));
       } catch (NotFoundException ex) {
@@ -667,13 +667,13 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
+      final Long processInstanceKey = (Long) objects[0];
       try {
         final List<FlowNodeInstanceEntity> allActivityInstances =
             getAllFlowNodeInstances(processInstanceKey);
         boolean found = allActivityInstances.stream().anyMatch(ai -> ai.isIncident());
         if (found) {
-          List<IncidentEntity> allIncidents =
+          final List<IncidentEntity> allIncidents =
               incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
           found = allIncidents.size() > 0;
         }
@@ -696,14 +696,14 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long processInstanceKey = (Long) objects[0];
-      String errorMessage = (String) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final String errorMessage = (String) objects[1];
       try {
         final List<FlowNodeInstanceEntity> allActivityInstances =
             getAllFlowNodeInstances(processInstanceKey);
         boolean found = allActivityInstances.stream().anyMatch(ai -> ai.isIncident());
         if (found) {
-          List<IncidentEntity> allIncidents =
+          final List<IncidentEntity> allIncidents =
               incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
           found =
               allIncidents.stream().filter(ie -> ie.getErrorMessage().equals(errorMessage)).count()
@@ -726,7 +726,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long count = (Long) objects[0];
+      final Long count = (Long) objects[0];
       try {
         return getActiveIncidentsCount() == count && getPendingIncidentsCount() == 0;
       } catch (NotFoundException ex) {
@@ -745,7 +745,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Integer.class);
-      Integer count = (Integer) objects[0];
+      final Integer count = (Integer) objects[0];
       try {
         return getPostImporterQueueCount() == count;
       } catch (NotFoundException ex) {
@@ -892,8 +892,8 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      Long processInstanceKey = (Long) objects[0];
-      int incidentsCount = (int) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final int incidentsCount = (int) objects[1];
       try {
         return getActiveIncidentsCount(processInstanceKey) == incidentsCount;
       } catch (NotFoundException ex) {
@@ -914,8 +914,8 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(String.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      String bpmnProcessId = (String) objects[0];
-      int incidentsCount = (int) objects[1];
+      final String bpmnProcessId = (String) objects[0];
+      final int incidentsCount = (int) objects[1];
       try {
         return getIncidentsCount(bpmnProcessId, IncidentState.ACTIVE) == incidentsCount;
       } catch (NotFoundException ex) {
@@ -936,8 +936,8 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      Long processInstanceKey = (Long) objects[0];
-      int incidentsCount = (int) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final int incidentsCount = (int) objects[1];
       try {
         return getIncidentsCount(processInstanceKey) == incidentsCount;
       } catch (NotFoundException ex) {
@@ -957,7 +957,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Integer.class);
-      int incidentsCount = (int) objects[0];
+      final int incidentsCount = (int) objects[0];
       try {
         return getIncidentsCount() == incidentsCount;
       } catch (NotFoundException ex) {
@@ -976,7 +976,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
+      final Long processInstanceKey = (Long) objects[0];
       try {
         final List<FlowNodeInstanceEntity> allActivityInstances =
             getAllFlowNodeInstances(processInstanceKey);
@@ -998,8 +998,8 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      Long processInstanceKey = (Long) objects[0];
-      int resolvedIncidentsCount = (int) objects[1];
+      final Long processInstanceKey = (Long) objects[0];
+      final int resolvedIncidentsCount = (int) objects[1];
       try {
         return getIncidentsCount(processInstanceKey, IncidentState.RESOLVED)
             == resolvedIncidentsCount;
@@ -1019,7 +1019,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
+      final Long processInstanceKey = (Long) objects[0];
       try {
         final ProcessInstanceForListViewEntity instance =
             processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -1040,7 +1040,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
+      final Long processInstanceKey = (Long) objects[0];
       try {
         processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return true;
@@ -1060,7 +1060,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
+      final Long processInstanceKey = (Long) objects[0];
       try {
         final ProcessInstanceForListViewEntity instance =
             processInstanceReader.getProcessInstanceByKey(processInstanceKey);
@@ -1082,7 +1082,7 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
-      List<Long> ids = (List<Long>) objects[0];
+      final List<Long> ids = (List<Long>) objects[0];
       final ListViewRequestDto getFinishedRequest =
           createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
       getFinishedRequest.setPageSize(ids.size());
@@ -1104,8 +1104,8 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      Long processDefinitionId = (Long) objects[0];
-      Integer count = (Integer) objects[1];
+      final Long processDefinitionId = (Long) objects[0];
+      final Integer count = (Integer) objects[1];
       final ListViewRequestDto getActiveRequest =
           createProcessInstanceRequest(
               q -> {
@@ -1132,7 +1132,7 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
-      List<Long> ids = (List<Long>) objects[0];
+      final List<Long> ids = (List<Long>) objects[0];
       final ListViewRequestDto getActiveRequest =
           createProcessInstanceRequest(
               q -> {
@@ -1159,7 +1159,7 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
-      List<Long> ids = (List<Long>) objects[0];
+      final List<Long> ids = (List<Long>) objects[0];
       final ListViewRequestDto getActiveRequest =
           createGetAllProcessInstancesRequest(
               q -> {
@@ -1182,8 +1182,8 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
-      ListViewProcessInstanceDto processInstance =
+      final Long processInstanceKey = (Long) objects[0];
+      final ListViewProcessInstanceDto processInstance =
           processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
       return processInstance.getOperations().stream()
           .allMatch(
@@ -1203,8 +1203,8 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long processInstanceKey = (Long) objects[0];
-      ListViewProcessInstanceDto processInstance =
+      final Long processInstanceKey = (Long) objects[0];
+      final ListViewProcessInstanceDto processInstance =
           processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
       return processInstance.getOperations().stream()
           .allMatch(
@@ -1219,7 +1219,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Integer.class);
-      Integer count = (Integer) objects[0];
+      final Integer count = (Integer) objects[0];
       try {
         final List<UserTaskEntity> userTasks = userTaskReader.getUserTasks();
         return userTasks.size() == count;

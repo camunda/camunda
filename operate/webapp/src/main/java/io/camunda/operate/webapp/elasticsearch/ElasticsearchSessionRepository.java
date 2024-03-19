@@ -50,7 +50,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchSessionRepository implements SessionRepository {
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchSessionRepository.class);
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
@@ -71,8 +71,9 @@ public class ElasticsearchSessionRepository implements SessionRepository {
 
   @Override
   public List<String> getExpiredSessionIds() {
-    SearchRequest searchRequest = new SearchRequest(operateWebSessionIndex.getFullQualifiedName());
-    List<String> result = new ArrayList<>();
+    final SearchRequest searchRequest =
+        new SearchRequest(operateWebSessionIndex.getFullQualifiedName());
+    final List<String> result = new ArrayList<>();
 
     retryElasticsearchClient.doWithEachSearchResult(
         searchRequest,
@@ -81,7 +82,7 @@ public class ElasticsearchSessionRepository implements SessionRepository {
           final Optional<OperateSession> maybeSession = documentToSession(document);
           if (maybeSession.isPresent()) {
             final OperateSession session = maybeSession.get();
-            logger.debug("Check if session {} is expired: {}", session, session.isExpired());
+            LOGGER.debug("Check if session {} is expired: {}", session, session.isExpired());
             if (session.isExpired()) {
               result.add(session.getId());
             }
@@ -103,7 +104,7 @@ public class ElasticsearchSessionRepository implements SessionRepository {
   @Override
   public Optional<OperateSession> findById(final String id) {
     try {
-      Optional<Map<String, Object>> maybeDocument =
+      final Optional<Map<String, Object>> maybeDocument =
           Optional.ofNullable(
               retryElasticsearchClient.getDocument(
                   operateWebSessionIndex.getFullQualifiedName(), id));
@@ -130,7 +131,7 @@ public class ElasticsearchSessionRepository implements SessionRepository {
   }
 
   private Map<String, Object> sessionToDocument(OperateSession session) {
-    Map<String, byte[]> attributes = new HashMap<>();
+    final Map<String, byte[]> attributes = new HashMap<>();
     session
         .getAttributeNames()
         .forEach(name -> attributes.put(name, serialize(session.getAttribute(name))));
@@ -149,16 +150,16 @@ public class ElasticsearchSessionRepository implements SessionRepository {
   private Optional<OperateSession> documentToSession(Map<String, Object> document) {
     try {
       final String sessionId = getSessionIdFrom(document);
-      OperateSession session = new OperateSession(sessionId);
+      final OperateSession session = new OperateSession(sessionId);
       session.setCreationTime(getInstantFor(document.get(CREATION_TIME)));
       session.setLastAccessedTime(getInstantFor(document.get(LAST_ACCESSED_TIME)));
       session.setMaxInactiveInterval(
           getDurationFor(document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS)));
 
-      Object attributesObject = document.get(ATTRIBUTES);
+      final Object attributesObject = document.get(ATTRIBUTES);
       if (attributesObject != null
           && attributesObject.getClass().isInstance(new HashMap<String, String>())) {
-        Map<String, String> attributes = (Map<String, String>) document.get(ATTRIBUTES);
+        final Map<String, String> attributes = (Map<String, String>) document.get(ATTRIBUTES);
         attributes
             .keySet()
             .forEach(
@@ -168,7 +169,7 @@ public class ElasticsearchSessionRepository implements SessionRepository {
       }
       return Optional.of(session);
     } catch (Exception e) {
-      logger.error("Could not restore session.", e);
+      LOGGER.error("Could not restore session.", e);
       return Optional.empty();
     }
   }

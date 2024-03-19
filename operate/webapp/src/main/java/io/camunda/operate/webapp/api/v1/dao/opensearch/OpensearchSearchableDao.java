@@ -50,14 +50,14 @@ public abstract class OpensearchSearchableDao<T, R> {
   }
 
   public Results<T> search(Query<T> query) {
-    var request = buildSearchRequest(query);
+    final var request = buildSearchRequest(query);
 
     buildSorting(query, getUniqueSortKey(), request);
     buildFiltering(query, request);
     buildPaging(query, request);
 
     try {
-      HitsMetadata<R> results =
+      final HitsMetadata<R> results =
           richOpenSearchClient.doc().search(request, getInternalDocumentModelClass()).hits();
 
       return formatHitsIntoResults(results);
@@ -79,11 +79,11 @@ public abstract class OpensearchSearchableDao<T, R> {
   protected abstract String getIndexName();
 
   protected void buildSorting(Query<T> query, String uniqueSortKey, SearchRequest.Builder request) {
-    List<Query.Sort> sorts = query.getSort();
+    final List<Query.Sort> sorts = query.getSort();
     if (sorts != null) {
       sorts.forEach(
           sort -> {
-            Query.Sort.Order order = sort.getOrder();
+            final Query.Sort.Order order = sort.getOrder();
             if (order.equals(Query.Sort.Order.DESC)) {
               request.sort(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Desc));
             } else {
@@ -96,7 +96,7 @@ public abstract class OpensearchSearchableDao<T, R> {
   }
 
   protected void buildPaging(Query<T> query, SearchRequest.Builder request) {
-    Object[] searchAfter = query.getSearchAfter();
+    final Object[] searchAfter = query.getSearchAfter();
     if (searchAfter != null) {
       request.searchAfter(CollectionUtil.toSafeListOfStrings(searchAfter));
     }
@@ -106,16 +106,16 @@ public abstract class OpensearchSearchableDao<T, R> {
   protected abstract void buildFiltering(Query<T> query, SearchRequest.Builder request);
 
   protected Results<T> formatHitsIntoResults(HitsMetadata<R> results) {
-    List<Hit<R>> hits = results.hits();
+    final List<Hit<R>> hits = results.hits();
 
     if (!hits.isEmpty()) {
-      List<T> items =
+      final List<T> items =
           hits.stream()
               .map(hit -> convertInternalToApiResult(hit.source()))
               .filter(Objects::nonNull)
               .toList();
 
-      List<String> sortValues = hits.get(hits.size() - 1).sort();
+      final List<String> sortValues = hits.get(hits.size() - 1).sort();
 
       return new Results<T>()
           .setTotal(results.total().value())

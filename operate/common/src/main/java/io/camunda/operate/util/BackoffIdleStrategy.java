@@ -48,7 +48,7 @@ public class BackoffIdleStrategy {
         idles = 1;
         break;
 
-      case IDLE:
+      default:
         idles++;
         idles = Math.min(idles, maxIdles);
     }

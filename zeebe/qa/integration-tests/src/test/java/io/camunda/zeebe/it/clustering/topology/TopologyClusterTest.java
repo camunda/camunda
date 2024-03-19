@@ -18,10 +18,10 @@ import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -53,7 +53,7 @@ public final class TopologyClusterTest {
 
   @ParameterizedTest
   @MethodSource("communicationApi")
-  public void shouldContainAllBrokers(final boolean useRest) {
+  public void shouldContainAllBrokers(final boolean useRest) throws URISyntaxException {
     try (final var client = createZeebeClient()) {
       // when
       final Topology topology = sendRequest(client, useRest);
@@ -68,7 +68,7 @@ public final class TopologyClusterTest {
 
   @ParameterizedTest
   @MethodSource("communicationApi")
-  public void shouldContainAllPartitions(final boolean useRest) {
+  public void shouldContainAllPartitions(final boolean useRest) throws URISyntaxException {
     try (final var client = createZeebeClient()) {
       // when
       final Topology topology = sendRequest(client, useRest);
@@ -91,7 +91,7 @@ public final class TopologyClusterTest {
 
   @ParameterizedTest
   @MethodSource("communicationApi")
-  public void shouldExposeClusterSettings(final boolean useRest) {
+  public void shouldExposeClusterSettings(final boolean useRest) throws URISyntaxException {
     try (final var client = createZeebeClient()) {
       // when
       final Topology topology = sendRequest(client, useRest);
@@ -126,8 +126,7 @@ public final class TopologyClusterTest {
     final var gateway = CLUSTER.anyGateway();
     return CLUSTER
         .newClientBuilder()
-        .gatewayAddress(gateway.gatewayAddress())
-        .gatewayRestApiPort(gateway.mappedPort(TestZeebePort.REST))
+        .restAddress(gateway.restAddress())
         .defaultRequestTimeout(Duration.ofSeconds(15))
         .build();
   }

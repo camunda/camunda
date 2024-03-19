@@ -44,13 +44,13 @@ public abstract class ElasticsearchUtil {
       RestHighLevelClient esClient, String aliasName, String fieldName, QueryBuilder query)
       throws IOException {
     final String aggName = "agg";
-    AggregationBuilder agg =
+    final AggregationBuilder agg =
         AggregationBuilders.cardinality(aggName).field(fieldName).precisionThreshold(40000);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().aggregation(agg);
     if (query != null) {
       searchSourceBuilder.query(query);
     }
-    SearchRequest searchRequest = new SearchRequest(aliasName).source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(aliasName).source(searchSourceBuilder);
     final long value =
         ((Cardinality)
                 esClient
@@ -74,7 +74,8 @@ public abstract class ElasticsearchUtil {
   }
 
   public static int getDocCount(RestHighLevelClient esClient, String aliasName) throws IOException {
-    SearchRequest searchRequest = new SearchRequest(aliasName).source(new SearchSourceBuilder());
+    final SearchRequest searchRequest =
+        new SearchRequest(aliasName).source(new SearchSourceBuilder());
     return (int)
         esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getTotalHits().value;
   }
@@ -84,7 +85,7 @@ public abstract class ElasticsearchUtil {
     try {
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder().fetchSource(false).from(0).size(size);
-      SearchRequest searchRequest = new SearchRequest(indexAlias).source(searchSourceBuilder);
+      final SearchRequest searchRequest = new SearchRequest(indexAlias).source(searchSourceBuilder);
       return requestIdsFor(esClient, searchRequest);
     } catch (IOException ex) {
       throw new RuntimeException("Error occurred when reading processIds from Elasticsearch", ex);

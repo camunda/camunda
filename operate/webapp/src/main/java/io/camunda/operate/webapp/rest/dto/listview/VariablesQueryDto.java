@@ -74,9 +74,13 @@ public class VariablesQueryDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    VariablesQueryDto that = (VariablesQueryDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final VariablesQueryDto that = (VariablesQueryDto) o;
     return Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
         && Arrays.equals(values, that.values);

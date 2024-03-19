@@ -55,7 +55,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String indexName = decisionRequirementsIndex.getFullQualifiedName();
+    final String indexName = decisionRequirementsIndex.getFullQualifiedName();
 
     String resourceXml =
         testResourceManager.readResourceFileContentsAsString("invoiceBusinessDecisions_v_1.dmn");
@@ -90,7 +90,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnDecisionRequirements() {
-    Results<DecisionRequirements> decisionRequirementsResults = dao.search(new Query<>());
+    final Results<DecisionRequirements> decisionRequirementsResults = dao.search(new Query<>());
 
     assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
     assertThat(decisionRequirementsResults.getItems())
@@ -107,7 +107,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortDecisionRequirementsDesc() {
-    Results<DecisionRequirements> decisionRequirementsResults =
+    final Results<DecisionRequirements> decisionRequirementsResults =
         dao.search(
             new Query<DecisionRequirements>()
                 .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.DESC)));
@@ -120,7 +120,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortDecisionRequirementsAsc() {
-    Results<DecisionRequirements> decisionRequirementsResults =
+    final Results<DecisionRequirements> decisionRequirementsResults =
         dao.search(
             new Query<DecisionRequirements>()
                 .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.ASC)));
@@ -144,7 +144,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
     assertThat(decisionRequirementsResults.getItems().get(0).getResourceName())
         .isEqualTo("invoiceBusinessDecisions_v_2.dmn");
 
-    Object[] searchAfter = decisionRequirementsResults.getSortValues();
+    final Object[] searchAfter = decisionRequirementsResults.getSortValues();
 
     decisionRequirementsResults =
         dao.search(
@@ -161,7 +161,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterDecisionRequirements() {
-    Results<DecisionRequirements> decisionRequirementsResults =
+    final Results<DecisionRequirements> decisionRequirementsResults =
         dao.search(
             new Query<DecisionRequirements>()
                 .setFilter(
@@ -176,7 +176,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnWhenByKey() {
-    DecisionRequirements decisionRequirements = dao.byKey(2251799813685249L);
+    final DecisionRequirements decisionRequirements = dao.byKey(2251799813685249L);
 
     assertThat(decisionRequirements.getResourceName())
         .isEqualTo("invoiceBusinessDecisions_v_1.dmn");
@@ -189,28 +189,29 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnEmptyListWhenByKeysEmpty() {
-    List<DecisionRequirements> decisionRequirementsList = dao.byKeys(Set.of());
+    final List<DecisionRequirements> decisionRequirementsList = dao.byKeys(Set.of());
 
     assertThat(decisionRequirementsList).isEmpty();
   }
 
   @Test
   public void shouldReturnEmptyListWhenByKeysNotExist() {
-    List<DecisionRequirements> decisionRequirementsList = dao.byKeys(Set.of(-10L, -20L));
+    final List<DecisionRequirements> decisionRequirementsList = dao.byKeys(Set.of(-10L, -20L));
 
     assertThat(decisionRequirementsList).isEmpty();
   }
 
   @Test
   public void shouldReturnEmptyListWhenByKeysNullKey() {
-    List<DecisionRequirements> decisionRequirementsList = dao.byKeys(Collections.singleton(null));
+    final List<DecisionRequirements> decisionRequirementsList =
+        dao.byKeys(Collections.singleton(null));
 
     assertThat(decisionRequirementsList).isEmpty();
   }
 
   @Test
   public void shouldReturnEmptyListWhenByKeysNotExistAndNullKey() {
-    List<DecisionRequirements> decisionRequirementsList =
+    final List<DecisionRequirements> decisionRequirementsList =
         dao.byKeys(new HashSet<>(Arrays.asList(-10L, null)));
 
     assertThat(decisionRequirementsList).isEmpty();
@@ -218,9 +219,9 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnWhenByKeys() {
-    Set<Long> keys = Set.of(2251799813685249L, 2251799813685253L);
+    final Set<Long> keys = Set.of(2251799813685249L, 2251799813685253L);
 
-    List<DecisionRequirements> decisionRequirementsList = dao.byKeys(keys);
+    final List<DecisionRequirements> decisionRequirementsList = dao.byKeys(keys);
 
     assertThat(decisionRequirementsList).hasSize(2);
     assertThat(decisionRequirementsList)
@@ -233,7 +234,7 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnWhenXmlByKey() {
-    String decisionRequirementsXml = dao.xmlByKey(2251799813685249L);
+    final String decisionRequirementsXml = dao.xmlByKey(2251799813685249L);
 
     assertThat(decisionRequirementsXml).contains("id=\"invoiceBusinessDecisions\"");
     try {

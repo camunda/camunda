@@ -86,7 +86,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @Scope(SCOPE_PROTOTYPE)
 public class OperateTester {
 
-  protected static final Logger logger = LoggerFactory.getLogger(OperateTester.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(OperateTester.class);
   @Autowired protected OperationExecutor operationExecutor;
   @Autowired protected io.camunda.operate.webapp.reader.VariableReader variableReader;
   @Autowired protected IncidentReader incidentReader;
@@ -251,7 +251,7 @@ public class OperateTester {
   }
 
   public OperateTester createAndDeploySimpleProcess(String processId, String activityId) {
-    BpmnModelInstance process =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask(activityId)
@@ -265,7 +265,7 @@ public class OperateTester {
 
   public OperateTester deployProcess(String... classpathResources) {
     Validate.notNull(zeebeClient, "ZeebeClient should be set.");
-    logger.debug("Deploy process(es) {}", List.of(classpathResources));
+    LOGGER.debug("Deploy process(es) {}", List.of(classpathResources));
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResources);
     return this;
   }
@@ -284,7 +284,7 @@ public class OperateTester {
 
   public OperateTester processIsDeployed() {
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
-    logger.debug("Process is deployed with key: {}", processDefinitionKey);
+    LOGGER.debug("Process is deployed with key: {}", processDefinitionKey);
     return this;
   }
 
@@ -304,7 +304,7 @@ public class OperateTester {
   }
 
   public OperateTester startProcessInstance(String bpmnProcessId) {
-    logger.debug("Start process instance '{}'", bpmnProcessId);
+    LOGGER.debug("Start process instance '{}'", bpmnProcessId);
     return startProcessInstance(bpmnProcessId, null);
   }
 
@@ -319,7 +319,7 @@ public class OperateTester {
 
   public OperateTester startProcessInstance(
       String bpmnProcessId, Integer processVersion, String payload, String tenantId) {
-    logger.debug(
+    LOGGER.debug(
         "Start process instance '{}' version '{}' with payload '{}' and tenant '{}'",
         bpmnProcessId,
         processVersion,
@@ -417,7 +417,7 @@ public class OperateTester {
 
   public OperateTester flowNodeIsActive(String activityId) {
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, activityId);
-    logger.debug("FlowNode {} is active.", activityId);
+    LOGGER.debug("FlowNode {} is active.", activityId);
     return this;
   }
 
@@ -435,14 +435,14 @@ public class OperateTester {
   public OperateTester flowNodesAreActive(String activityId, int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesAreActiveCheck, processInstanceKey, activityId, count);
-    logger.debug("{} FlowNodes {} are active.", count, activityId);
+    LOGGER.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
 
   public OperateTester flowNodesExist(String activityId, int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesExistCheck, processInstanceKey, activityId, count);
-    logger.debug("{} FlowNodes {} exist.", count, activityId);
+    LOGGER.debug("{} FlowNodes {} exist.", count, activityId);
     return this;
   }
 
@@ -455,14 +455,14 @@ public class OperateTester {
   public OperateTester flowNodeIsCompleted(String activityId) {
     searchTestRule.processAllRecordsAndWait(
         flowNodeIsCompletedCheck, processInstanceKey, activityId);
-    logger.debug("FlowNode {} is completed.", activityId);
+    LOGGER.debug("FlowNode {} is completed.", activityId);
     return this;
   }
 
   public OperateTester flowNodesAreCompleted(String activityId, int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesAreCompletedCheck, processInstanceKey, activityId, count);
-    logger.debug("{} FlowNodes {} is completed.", count, activityId);
+    LOGGER.debug("{} FlowNodes {} is completed.", count, activityId);
     return this;
   }
 
@@ -485,7 +485,7 @@ public class OperateTester {
   public OperateTester flowNodeIsTerminated(final String activityId) {
     searchTestRule.processAllRecordsAndWait(
         flowNodeIsTerminatedCheck, processInstanceKey, activityId);
-    logger.debug("FlowNode {} is terminated.", activityId);
+    LOGGER.debug("FlowNode {} is terminated.", activityId);
     return this;
   }
 
@@ -496,7 +496,7 @@ public class OperateTester {
   public OperateTester flowNodesAreTerminated(final String activityId, final int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesAreTerminatedCheck, processInstanceKey, activityId, count);
-    logger.debug("{} FlowNodes {} are active.", count, activityId);
+    LOGGER.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
 
@@ -554,7 +554,7 @@ public class OperateTester {
   }
 
   private MvcResult postOperation(CreateOperationRequestDto operationRequest) throws Exception {
-    MockHttpServletRequestBuilder postOperationRequest =
+    final MockHttpServletRequestBuilder postOperationRequest =
         post(format("/api/process-instances/%s/operation", processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
             .contentType(mockMvcTestRule.getContentType());
@@ -591,7 +591,7 @@ public class OperateTester {
         createGetAllProcessInstancesQuery()
             .setIds(Collections.singletonList(processInstanceKey.toString()));
 
-    CreateBatchOperationRequestDto batchOperationDto =
+    final CreateBatchOperationRequestDto batchOperationDto =
         new CreateBatchOperationRequestDto(
             processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
 
@@ -654,7 +654,7 @@ public class OperateTester {
 
   private MvcResult postOperation(CreateBatchOperationRequestDto operationRequest)
       throws Exception {
-    MockHttpServletRequestBuilder postOperationRequest =
+    final MockHttpServletRequestBuilder postOperationRequest =
         post(format("/api/process-instances/%s/operation", processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
             .contentType(mockMvcTestRule.getContentType());
@@ -673,9 +673,9 @@ public class OperateTester {
     if (!operationExecutorEnabled) {
       return 0;
     }
-    List<Future<?>> futures = operationExecutor.executeOneBatch();
+    final List<Future<?>> futures = operationExecutor.executeOneBatch();
     // wait till all scheduled tasks are executed
-    for (Future f : futures) {
+    for (final Future f : futures) {
       f.get();
     }
     return 0; // return futures.size()
@@ -697,9 +697,9 @@ public class OperateTester {
 
   public OperateTester archive() {
     try {
-      ArchiveBatch finishedAtDateIds =
+      final ArchiveBatch finishedAtDateIds =
           new ArchiveBatch("_test_archived", Arrays.asList(processInstanceKey));
-      io.camunda.operate.archiver.ProcessInstancesArchiverJob archiverJob =
+      final io.camunda.operate.archiver.ProcessInstancesArchiverJob archiverJob =
           beanFactory.getBean(ProcessInstancesArchiverJob.class);
       archiverJob.archiveBatch(finishedAtDateIds).join();
     } catch (Exception e) {
@@ -753,8 +753,8 @@ public class OperateTester {
   }
 
   public String getVariable(String name, Long scopeKey) {
-    List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
-    List<VariableDto> variablesWithGivenName =
+    final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
+    final List<VariableDto> variablesWithGivenName =
         filter(variables, variable -> variable.getName().equals(name));
     if (variablesWithGivenName.isEmpty()) {
       return null;
@@ -773,7 +773,7 @@ public class OperateTester {
   }
 
   public boolean hasVariable(String name, String value) {
-    String variableValue = getVariable(name);
+    final String variableValue = getVariable(name);
     return value == null ? (variableValue == null) : value.contains(variableValue);
   }
 
@@ -815,8 +815,8 @@ public class OperateTester {
 
   public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
       FlowNodeInstanceQueryDto query) throws Exception {
-    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
-    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
+    final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
+    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).hasSize(1);
@@ -834,7 +834,7 @@ public class OperateTester {
             .setFlowNodeId(flowNodeId)
             .setFlowNodeType(flowNodeType)
             .setFlowNodeInstanceId(flowNodeInstanceId);
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         postRequest(
             format(PROCESS_INSTANCE_URL + "/%s/flow-node-metadata", processInstanceId), request);
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
@@ -910,7 +910,7 @@ public class OperateTester {
   }
 
   private MvcResult postRequest(String requestUrl, Object query) throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
             .contentType(mockMvcTestRule.getContentType());
@@ -937,15 +937,15 @@ public class OperateTester {
   }
 
   public void waitIndexDeletion(String index, int maxWaitMillis) throws IOException {
-    var start = System.currentTimeMillis();
+    final var start = System.currentTimeMillis();
     var deleted = false;
 
     assertTrue(format("Index %s doesn't exist!", index), searchTestRule.indexExists(index));
-    logger.info(format("Index exists %s", index));
+    LOGGER.info(format("Index exists %s", index));
 
     while (!deleted & System.currentTimeMillis() < start + maxWaitMillis) {
       deleted = !searchTestRule.indexExists(index);
-      logger.info(
+      LOGGER.info(
           format(
               "Index %s is deleted after %s seconds: %s. Expectation is 1000 seconds",
               index, (System.currentTimeMillis() - start) / 1000, deleted));

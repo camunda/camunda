@@ -47,7 +47,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
 
   private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchDecisionStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchDecisionStore.class);
 
   @Autowired private DecisionIndex decisionIndex;
 
@@ -60,7 +60,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
     final String indexAlias = decisionIndex.getAlias();
-    logger.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
+    LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
     final SearchRequest searchRequest =
         new SearchRequest(indexAlias)
             .source(
@@ -77,7 +77,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
           searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
     } catch (Exception e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.", fieldName, indexAlias),
           e);
@@ -94,8 +94,8 @@ public class ElasticsearchDecisionStore implements DecisionStore {
   public long deleteDocuments(String indexName, String idField, String id) throws IOException {
     final DeleteByQueryRequest query =
         new DeleteByQueryRequest(indexName).setQuery(QueryBuilders.termsQuery(idField, id));
-    BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
-    logger.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
+    final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+    LOGGER.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
     return response.getDeleted();
   }
 }

@@ -45,7 +45,7 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
         .userTasksAreCreated(3);
     assertThat(tester.getProcessInstanceKey()).isNotNull();
 
-    var userTasks = userTaskReader.getUserTasks();
+    final var userTasks = userTaskReader.getUserTasks();
     assertThat(userTasks).hasSize(3);
   }
 
@@ -61,10 +61,10 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
         .userTasksAreCreated(1);
     assertThat(tester.getProcessInstanceKey()).isNotNull();
 
-    var userTasks = userTaskReader.getUserTasks();
+    final var userTasks = userTaskReader.getUserTasks();
     assertThat(userTasks).hasSize(1);
 
-    UserTaskEntity userTask = userTasks.get(0);
+    final UserTaskEntity userTask = userTasks.get(0);
 
     assertThat(userTask.getKey()).isGreaterThan(0);
     assertThat(userTask.getPartitionId()).isGreaterThan(0);
@@ -88,11 +88,11 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
         .flowNodesExist("taskRequestLeave", 1);
     assertThat(tester.getProcessInstanceKey()).isNotNull();
 
-    var userTasks = userTaskReader.getUserTasks();
+    final var userTasks = userTaskReader.getUserTasks();
     assertThat(userTasks).hasSize(1);
 
-    var flowNodeInstanceEntities = tester.getAllFlowNodeInstances();
-    FlowNodeInstanceEntity flowNodeUserTask =
+    final var flowNodeInstanceEntities = tester.getAllFlowNodeInstances();
+    final FlowNodeInstanceEntity flowNodeUserTask =
         flowNodeInstanceEntities.stream()
             .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId()))
             .findFirst()
@@ -115,11 +115,11 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
         .eventIsImportedForFlowNode("taskRequestLeaveTimer", EventType.ELEMENT_TERMINATED);
     assertThat(tester.getProcessInstanceKey()).isNotNull();
 
-    var userTasks = userTaskReader.getUserTasks();
+    final var userTasks = userTaskReader.getUserTasks();
     assertThat(userTasks).hasSize(1);
 
-    var events = searchAllDocuments(eventTemplate.getAlias(), EventEntity.class);
-    var userTaskEvents =
+    final var events = searchAllDocuments(eventTemplate.getAlias(), EventEntity.class);
+    final var userTaskEvents =
         events.stream()
             .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId()))
             .toList();

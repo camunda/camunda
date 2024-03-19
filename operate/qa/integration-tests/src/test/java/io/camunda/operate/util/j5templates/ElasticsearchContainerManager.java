@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchContainerManager extends SearchContainerManager {
 
-  protected static final Logger logger =
+  protected static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchContainerManager.class);
 
   private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
@@ -73,20 +73,20 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
 
   protected boolean areIndicesCreated(String indexPrefix, int minCountOfIndices)
       throws IOException {
-    GetIndexResponse response =
+    final GetIndexResponse response =
         esClient
             .indices()
             .get(
                 new GetIndexRequest(indexPrefix + "*")
                     .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
                 RequestOptions.DEFAULT);
-    String[] indices = response.getIndices();
+    final String[] indices = response.getIndices();
     return indices != null && indices.length >= minCountOfIndices;
   }
 
   public void stopContainer() {
     // TestUtil.removeIlmPolicy(esClient);
-    String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+    final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
     TestUtil.removeAllIndices(esClient, indexPrefix);
     operateProperties
         .getElasticsearch()
@@ -99,16 +99,17 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
 
   private int getIntValueForJSON(
       final String path, final String fieldname, final int defaultValue) {
-    ObjectMapper objectMapper = new ObjectMapper();
+    final ObjectMapper objectMapper = new ObjectMapper();
     try {
-      Response response = esClient.getLowLevelClient().performRequest(new Request("GET", path));
-      JsonNode jsonNode = objectMapper.readTree(response.getEntity().getContent());
-      JsonNode field = jsonNode.findValue(fieldname);
+      final Response response =
+          esClient.getLowLevelClient().performRequest(new Request("GET", path));
+      final JsonNode jsonNode = objectMapper.readTree(response.getEntity().getContent());
+      final JsonNode field = jsonNode.findValue(fieldname);
       if (field != null) {
         return field.asInt(defaultValue);
       }
     } catch (Exception e) {
-      logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
+      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
     }
 
     return defaultValue;

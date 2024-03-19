@@ -43,7 +43,7 @@ public class OpenSearchAsyncTaskOperations extends OpenSearchAsyncOperation {
 
   public CompletableFuture<Long> totalImpactedByTask(
       String taskId, ThreadPoolTaskScheduler executor) {
-    CompletableFuture<Long> result = new CompletableFuture<>();
+    final CompletableFuture<Long> result = new CompletableFuture<>();
 
     final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(1_000, 1.2f, 5_000);
     final Runnable checkTaskResultRunnable =
@@ -59,7 +59,7 @@ public class OpenSearchAsyncTaskOperations extends OpenSearchAsyncOperation {
                               new OperateRuntimeException("Task not found: " + taskId, e));
                         } else {
                           if (response.completed()) {
-                            var status = response.task().status();
+                            final var status = response.task().status();
 
                             if (status.created() + status.updated() + status.deleted()
                                 < status.total()) {

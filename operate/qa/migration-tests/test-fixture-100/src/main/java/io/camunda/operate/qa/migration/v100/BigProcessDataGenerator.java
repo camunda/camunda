@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
 public class BigProcessDataGenerator {
 
   public static final String PROCESS_BPMN_PROCESS_ID = "sequential-noop";
-  private static final Logger logger = LoggerFactory.getLogger(BigProcessDataGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BigProcessDataGenerator.class);
   private ZeebeClient zeebeClient;
 
   @Autowired private RestHighLevelClient esClient;
@@ -65,7 +65,7 @@ public class BigProcessDataGenerator {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-      logger.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
+      LOGGER.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
 
       deployProcess();
       startBigProcessInstance();
@@ -73,7 +73,7 @@ public class BigProcessDataGenerator {
 
       waitUntilAllDataIsImported();
 
-      logger.info(
+      LOGGER.info(
           "Data generation completed in: {} s",
           ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
       testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
@@ -83,8 +83,8 @@ public class BigProcessDataGenerator {
   }
 
   private void waitUntilAllDataIsImported() throws IOException {
-    logger.info("Wait till data is imported.");
-    SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
+    LOGGER.info("Wait till data is imported.");
+    final SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
     searchRequest
         .source()
         .query(
@@ -93,7 +93,8 @@ public class BigProcessDataGenerator {
                 termQuery(BPMN_PROCESS_ID, PROCESS_BPMN_PROCESS_ID),
                 termQuery(STATE, COMPLETED)));
     SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    int count = 0, maxWait = 101;
+    int count = 0;
+    final int maxWait = 101;
     while (searchResponse.getHits().getTotalHits().value < 1 && count < maxWait) {
       count++;
       ThreadUtil.sleepFor(2000L);
@@ -107,16 +108,17 @@ public class BigProcessDataGenerator {
   private void finishEndTask() {
     // wait for task "endTask" of long-running process and complete it
     ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
-    logger.info("Task endTask completed.");
+    LOGGER.info("Task endTask completed.");
   }
 
   private void deployProcess() {
-    String processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
-    logger.info("Deployed process {} with key {}", PROCESS_BPMN_PROCESS_ID, processDefinitionKey);
+    final String processDefinitionKey =
+        ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
+    LOGGER.info("Deployed process {} with key {}", PROCESS_BPMN_PROCESS_ID, processDefinitionKey);
   }
 
   private void startBigProcessInstance() {
-    String payload =
+    final String payload =
         "{\"items\": ["
             + IntStream.range(1, 1000)
                 .boxed()
@@ -124,7 +126,7 @@ public class BigProcessDataGenerator {
                 .collect(Collectors.joining(","))
             + "]}";
     ZeebeTestUtil.startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, payload);
-    logger.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
+    LOGGER.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
   }
 
   private String getAliasFor(String index) {

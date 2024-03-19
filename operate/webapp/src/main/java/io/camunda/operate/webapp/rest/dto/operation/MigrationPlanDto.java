@@ -51,11 +51,12 @@ public class MigrationPlanDto implements RequestValidator {
   public void validate() {
     Long processDefinitionKey = null;
     try {
-      long key = Long.parseLong(targetProcessDefinitionKey);
+      final long key = Long.parseLong(targetProcessDefinitionKey);
       if (key > 0) {
         processDefinitionKey = key;
       }
     } catch (Exception ex) {
+      // noop
     }
     if (processDefinitionKey == null) {
       throw new InvalidRequestException("Target process definition key must be a positive number.");
@@ -63,11 +64,11 @@ public class MigrationPlanDto implements RequestValidator {
     if (mappingInstructions == null || mappingInstructions.isEmpty()) {
       throw new InvalidRequestException("Mapping instructions are missing.");
     }
-    boolean hasNullMappings = mappingInstructions.stream().anyMatch(Objects::isNull);
+    final boolean hasNullMappings = mappingInstructions.stream().anyMatch(Objects::isNull);
     if (hasNullMappings) {
       throw new InvalidRequestException("Mapping instructions cannot be null.");
     }
-    boolean hasEmptyElements =
+    final boolean hasEmptyElements =
         mappingInstructions.stream()
             .anyMatch(
                 x ->
@@ -85,9 +86,13 @@ public class MigrationPlanDto implements RequestValidator {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    MigrationPlanDto that = (MigrationPlanDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MigrationPlanDto that = (MigrationPlanDto) o;
     return Objects.equals(targetProcessDefinitionKey, that.targetProcessDefinitionKey)
         && Objects.equals(mappingInstructions, that.mappingInstructions);
   }
@@ -123,9 +128,13 @@ public class MigrationPlanDto implements RequestValidator {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      MappingInstruction that = (MappingInstruction) o;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final MappingInstruction that = (MappingInstruction) o;
       return Objects.equals(sourceElementId, that.sourceElementId)
           && Objects.equals(targetElementId, that.targetElementId);
     }

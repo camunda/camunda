@@ -186,7 +186,7 @@ public class OpensearchConnector {
   }
 
   private boolean isAws() {
-    AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
     try {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
@@ -240,8 +240,8 @@ public class OpensearchConnector {
 
   private OpenSearchClient getAwsClient(OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-    AwsSdk2Transport transport =
+    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
             osConfig.getHost(),
@@ -254,8 +254,8 @@ public class OpensearchConnector {
 
   private OpenSearchAsyncClient getAwsAsyncClient(OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-    AwsSdk2Transport transport =
+    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
             osConfig.getHost(),

@@ -45,7 +45,7 @@ public class RetryAfterFailureTestConfig {
 
     @Override
     public void performImport(ImportBatch importBatch) throws PersistenceException {
-      ImportValueType importValueType = importBatch.getImportValueType();
+      final ImportValueType importValueType = importBatch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(

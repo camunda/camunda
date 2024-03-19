@@ -136,24 +136,43 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-
-    BatchOperationEntity that = (BatchOperationEntity) o;
-
-    if (name != null ? !name.equals(that.name) : that.name != null) return false;
-    if (type != that.type) return false;
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) return false;
-    if (username != null ? !username.equals(that.username) : that.username != null) return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final BatchOperationEntity that = (BatchOperationEntity) o;
+
+    if (name != null ? !name.equals(that.name) : that.name != null) {
+      return false;
+    }
+    if (type != that.type) {
+      return false;
+    }
+    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null) {
+      return false;
+    }
+    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) {
+      return false;
+    }
+    if (username != null ? !username.equals(that.username) : that.username != null) {
+      return false;
+    }
     if (instancesCount != null
         ? !instancesCount.equals(that.instancesCount)
-        : that.instancesCount != null) return false;
+        : that.instancesCount != null) {
+      return false;
+    }
     if (operationsTotalCount != null
         ? !operationsTotalCount.equals(that.operationsTotalCount)
-        : that.operationsTotalCount != null) return false;
+        : that.operationsTotalCount != null) {
+      return false;
+    }
     return operationsFinishedCount != null
         ? operationsFinishedCount.equals(that.operationsFinishedCount)
         : that.operationsFinishedCount == null;

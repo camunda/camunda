@@ -50,7 +50,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FlowNodeInstanceZeebeRecordProcessor {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceZeebeRecordProcessor.class);
 
   private static final Set<String> AI_FINISH_STATES =
@@ -90,7 +90,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       entity.setIncidentKey(null);
     }
 
-    logger.debug("Flow node instance: id {}", entity.getId());
+    LOGGER.debug("Flow node instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
     batchRequest.upsert(
@@ -113,7 +113,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         }
       }
       if (fniEntity != null) {
-        logger.debug("Flow node instance: id {}", fniEntity.getId());
+        LOGGER.debug("Flow node instance: id {}", fniEntity.getId());
         if (canOptimizeFlowNodeInstanceIndexing(fniEntity)) {
           batchRequest.add(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity);
         } else {
@@ -229,7 +229,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       }
 
       if (parentTreePath == null) {
-        logger.warn(
+        LOGGER.warn(
             "Unable to find parent tree path for flow node instance id ["
                 + record.getKey()
                 + "], parent flow node instance id ["

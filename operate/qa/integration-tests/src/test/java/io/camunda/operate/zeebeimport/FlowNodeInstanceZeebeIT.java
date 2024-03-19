@@ -58,7 +58,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testFlowNodeInstanceTreeForNonInterruptingBoundaryEvent() throws Exception {
     // having
-    String processId = "nonInterruptingBoundaryEvent";
+    final String processId = "nonInterruptingBoundaryEvent";
     deployProcess("nonInterruptingBoundaryEvent_v_2.bpmn");
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
@@ -68,9 +68,9 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     final String processInstanceId = String.valueOf(processInstanceKey);
-    FlowNodeInstanceQueryDto request =
+    final FlowNodeInstanceQueryDto request =
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceOneListFromRest(request);
+    final List<FlowNodeInstanceDto> instances = getFlowNodeInstanceOneListFromRest(request);
 
     // then
     assertThat(instances).hasSize(4);
@@ -111,7 +111,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
     final String flowNodeId1 = "task1";
     final String flowNodeId2 = "task2";
     final String processId = "testProcess";
-    String subprocessFlowNodeId = "subprocess";
+    final String subprocessFlowNodeId = "subprocess";
     final BpmnModelInstance testProcess =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -158,11 +158,11 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
         String.format("%s/%s", multiInstanceBodyTreePath, subprocessInstanceIds.get(0));
     final String subprocess2ParentTreePath =
         String.format("%s/%s", multiInstanceBodyTreePath, subprocessInstanceIds.get(1));
-    FlowNodeInstanceQueryDto query1 =
+    final FlowNodeInstanceQueryDto query1 =
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    FlowNodeInstanceQueryDto query2 =
+    final FlowNodeInstanceQueryDto query2 =
         new FlowNodeInstanceQueryDto(processInstanceId, subprocess1ParentTreePath);
-    FlowNodeInstanceQueryDto query3 =
+    final FlowNodeInstanceQueryDto query3 =
         new FlowNodeInstanceQueryDto(processInstanceId, subprocess2ParentTreePath);
     final Map<String, FlowNodeInstanceResponseDto> response =
         getFlowNodeInstanceListsFromRest(query1, query2, query3);
@@ -212,7 +212,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testFlowNodeInstanceTreeIsBuild() throws Exception {
     // having
-    String processId = "prWithSubprocess";
+    final String processId = "prWithSubprocess";
     deployProcess("subProcess.bpmn");
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
@@ -486,7 +486,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   public void testFlowNodeInstanceTreeIncidentStatePropagated() throws Exception {
 
     // having
-    String processId = "prWithSubprocess";
+    final String processId = "prWithSubprocess";
     deployProcess("subProcess.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"items\": [0]}");
@@ -540,7 +540,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   public void testFlowNodeInstanceTreeIncidentStatePropagatedWithPageSize() throws Exception {
 
     // having
-    String processId = "prWithSubprocess";
+    final String processId = "prWithSubprocess";
     deployProcess("subProcess.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"items\": [0]}");
@@ -595,9 +595,9 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testFlowNodeInstanceTreeFailsWithAbsentQueries() throws Exception {
-    FlowNodeInstanceRequestDto treeRequest = new FlowNodeInstanceRequestDto();
+    final FlowNodeInstanceRequestDto treeRequest = new FlowNodeInstanceRequestDto();
 
-    MvcResult mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
+    final MvcResult mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
 
     assertErrorMessageIsEqualTo(
         mvcResult,
@@ -636,7 +636,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
             .setTreePath("123")
             .setSearchAfter(new SortValuesWrapper[] {})
             .setSearchBeforeOrEqual(new SortValuesWrapper[] {});
-    FlowNodeInstanceRequestDto treeRequest = new FlowNodeInstanceRequestDto(treeQuery);
+    final FlowNodeInstanceRequestDto treeRequest = new FlowNodeInstanceRequestDto(treeQuery);
 
     MvcResult mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
     assertErrorMessageIsEqualTo(
@@ -674,15 +674,15 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
 
   protected Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstanceListsFromRest(
       FlowNodeInstanceQueryDto... queries) throws Exception {
-    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(queries);
-    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
+    final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(queries);
+    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
   }
 
   protected List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
       FlowNodeInstanceQueryDto query) throws Exception {
-    FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
-    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
+    final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
+    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).hasSize(1);
@@ -691,7 +691,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
 
   protected Map<String, FlowNodeStateDto> getFlowNodeStateDtosFromRest(String processInstanceId)
       throws Exception {
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         getRequest(
             String.format(
                 ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states",
@@ -704,7 +704,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testFlowNodeStateDtosIncidentIsPropagated() throws Exception {
     // having
-    String processId = "prWithSubprocess";
+    final String processId = "prWithSubprocess";
     deployProcess("subProcess.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"items\": [0]}");
@@ -714,25 +714,25 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     // when
-    final Map<String, FlowNodeStateDto> FlowNodeStateDtos =
+    final Map<String, FlowNodeStateDto> flowNodeStateDtos =
         getFlowNodeStateDtosFromRest(String.valueOf(processInstanceKey));
 
     // then
-    assertThat(FlowNodeStateDtos).hasSize(7);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "startEvent", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "taskA", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "subprocess", FlowNodeStateDto.INCIDENT);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "startEventSubprocess", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "innerSubprocess", FlowNodeStateDto.INCIDENT);
+    assertThat(flowNodeStateDtos).hasSize(7);
+    assertFlowNodeStateDto(flowNodeStateDtos, "startEvent", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "taskA", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "subprocess", FlowNodeStateDto.INCIDENT);
+    assertFlowNodeStateDto(flowNodeStateDtos, "startEventSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "innerSubprocess", FlowNodeStateDto.INCIDENT);
     assertFlowNodeStateDto(
-        FlowNodeStateDtos, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "taskB", FlowNodeStateDto.INCIDENT);
+        flowNodeStateDtos, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "taskB", FlowNodeStateDto.INCIDENT);
   }
 
   @Test
   public void testFlowNodeStateDtos() throws Exception {
     // having
-    String processId = "prWithSubprocess";
+    final String processId = "prWithSubprocess";
     deployProcess("subProcess.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
@@ -744,19 +744,19 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
         flowNodesAreCompletedCheck, processInstanceKey, "taskB", 9);
 
     // when
-    final Map<String, FlowNodeStateDto> FlowNodeStateDtos =
+    final Map<String, FlowNodeStateDto> flowNodeStateDtos =
         getFlowNodeStateDtosFromRest(String.valueOf(processInstanceKey));
 
     // then
-    assertThat(FlowNodeStateDtos).hasSize(7);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "startEvent", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "taskA", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "subprocess", FlowNodeStateDto.ACTIVE);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "startEventSubprocess", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "innerSubprocess", FlowNodeStateDto.ACTIVE);
+    assertThat(flowNodeStateDtos).hasSize(7);
+    assertFlowNodeStateDto(flowNodeStateDtos, "startEvent", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "taskA", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "subprocess", FlowNodeStateDto.ACTIVE);
+    assertFlowNodeStateDto(flowNodeStateDtos, "startEventSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "innerSubprocess", FlowNodeStateDto.ACTIVE);
     assertFlowNodeStateDto(
-        FlowNodeStateDtos, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "taskB", FlowNodeStateDto.ACTIVE);
+        flowNodeStateDtos, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "taskB", FlowNodeStateDto.ACTIVE);
   }
 
   @Test
@@ -781,19 +781,19 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
             .getProcessInstanceKey();
 
     // when
-    final Map<String, FlowNodeStateDto> FlowNodeStateDtos =
+    final Map<String, FlowNodeStateDto> flowNodeStateDtos =
         getFlowNodeStateDtosFromRest(String.valueOf(processInstanceKey));
 
     // then
-    assertThat(FlowNodeStateDtos).hasSize(2);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "start", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(FlowNodeStateDtos, "taskA", FlowNodeStateDto.TERMINATED);
+    assertThat(flowNodeStateDtos).hasSize(2);
+    assertFlowNodeStateDto(flowNodeStateDtos, "start", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(flowNodeStateDtos, "taskA", FlowNodeStateDto.TERMINATED);
   }
 
   private void assertFlowNodeStateDto(
-      Map<String, FlowNodeStateDto> FlowNodeStateDtos,
+      Map<String, FlowNodeStateDto> flowNodeStateDtos,
       String flowNodeId,
       FlowNodeStateDto... states) {
-    assertThat(FlowNodeStateDtos.get(flowNodeId)).isIn(states);
+    assertThat(flowNodeStateDtos.get(flowNodeId)).isIn(states);
   }
 }

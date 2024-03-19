@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 public class ZeebePostImporter {
 
-  private static final Logger logger = LoggerFactory.getLogger(ZeebePostImporter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebePostImporter.class);
 
   @Autowired
   @Qualifier("postImportThreadPoolScheduler")
@@ -57,7 +57,7 @@ public class ZeebePostImporter {
   }
 
   public void start() {
-    logger.info("INIT: Init post importers...");
+    LOGGER.info("INIT: Init post importers...");
     initPostImporters();
     postImportActions.forEach(action -> postImportScheduler.submit(action));
   }

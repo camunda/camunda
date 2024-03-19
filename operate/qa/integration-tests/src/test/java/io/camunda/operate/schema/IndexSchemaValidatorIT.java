@@ -212,7 +212,7 @@ public class IndexSchemaValidatorIT {
   @Test
   public void testIsNotValidForANewerVersion() {
     // 1 newer version for index
-    var newerVersion = "10.0.0";
+    final var newerVersion = "10.0.0";
     whenDatabaseClientReturnsIndexNames(
         Set.of(getFullQualifiedIndexName(processIndex, newerVersion)));
     assertThatExceptionOfType(OperateRuntimeException.class)
@@ -239,7 +239,7 @@ public class IndexSchemaValidatorIT {
 
   private void mockOpenSearchReturnIndexNames(
       Set<String> givenIndexNames, Set<String> givenAliasesNames) {
-    OpenSearchIndexOperations indexMock = mock(OpenSearchIndexOperations.class);
+    final OpenSearchIndexOperations indexMock = mock(OpenSearchIndexOperations.class);
     when(indexMock.getIndexNamesWithRetries(anyString())).thenReturn(givenIndexNames);
     if (givenAliasesNames != null) {
       when(indexMock.getAliasesNamesWithRetries(anyString())).thenReturn(givenAliasesNames);

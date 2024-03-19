@@ -52,7 +52,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ImportPerformanceStaticDataTest {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ImportPerformanceStaticDataTest.class);
 
   private static final double PRECISION_RATE = 0.01;
@@ -62,7 +62,7 @@ public class ImportPerformanceStaticDataTest {
 
   @Before
   public void setup() {
-    logger.info("Operate will be started");
+    LOGGER.info("Operate will be started");
     final SpringApplication application =
         new SpringApplicationBuilder(Application.class)
             .addCommandLineProperties(true)
@@ -92,7 +92,7 @@ public class ImportPerformanceStaticDataTest {
     final ZeebeImporter zeebeImporter = applicationContext.getBean(ZeebeImporter.class);
 
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-    logger.info("Starting data import...");
+    LOGGER.info("Starting data import...");
 
     zeebeImporter.scheduleReaders();
 
@@ -100,7 +100,7 @@ public class ImportPerformanceStaticDataTest {
 
     waitImportFinish();
 
-    logger.info(
+    LOGGER.info(
         "Data import completed in: "
             + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now())
             + " s");
@@ -109,9 +109,9 @@ public class ImportPerformanceStaticDataTest {
       assertData();
     } catch (AssertionError as) {
       // wait more
-      logger.info("Assertion failed: " + as.getMessage() + " Wait more.");
+      LOGGER.info("Assertion failed: " + as.getMessage() + " Wait more.");
       waitImportFinish();
-      logger.info(
+      LOGGER.info(
           "Data import completed in: "
               + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now())
               + " s");
@@ -125,7 +125,7 @@ public class ImportPerformanceStaticDataTest {
     int countImported = 0;
     while (countImportListener.getImportedCount() > countImported) {
       countImported = countImportListener.getImportedCount();
-      logger.debug(countImported + " records imported");
+      LOGGER.debug(countImported + " records imported");
       sleepFor(60_000L);
     }
   }
@@ -134,7 +134,7 @@ public class ImportPerformanceStaticDataTest {
   public void testBArchiver() throws ArchiverException {
     final Archiver archiver = applicationContext.getBean(Archiver.class);
     final PartitionHolder partitionHolder = applicationContext.getBean(PartitionHolder.class);
-    ProcessInstancesArchiverJob archiverJob =
+    final ProcessInstancesArchiverJob archiverJob =
         applicationContext.getBean(
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     final int archivedCount = archiverJob.archiveNextBatch().join();

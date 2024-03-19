@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 
@@ -85,6 +87,21 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    */
   default String address(final TestZeebePort port) {
     return address(mappedPort(port));
+  }
+
+  /**
+   * Returns the address of this node for the given port and scheme as a URI.
+   *
+   * @param scheme the URI scheme, e.g. http, or https
+   * @param port the target port
+   * @return externally accessible address for {@code port}
+   */
+  default URI parsedAddress(final String scheme, final TestZeebePort port) {
+    try {
+      return new URI(scheme + "://" + address(port));
+    } catch (final URISyntaxException e) {
+      throw new IllegalArgumentException("Failed to parse URI", e);
+    }
   }
 
   /**

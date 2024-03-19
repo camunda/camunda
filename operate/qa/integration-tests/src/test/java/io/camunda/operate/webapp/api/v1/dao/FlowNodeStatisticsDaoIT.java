@@ -39,7 +39,7 @@ public class FlowNodeStatisticsDaoIT extends OperateSearchAbstractIT {
 
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {
-    String indexName = flowNodeInstanceIndex.getFullQualifiedName();
+    final String indexName = flowNodeInstanceIndex.getFullQualifiedName();
     testSearchRepository.createOrUpdateDocumentFromObject(
         indexName,
         new FlowNodeInstanceEntity()
@@ -101,7 +101,7 @@ public class FlowNodeStatisticsDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnFlowNodeStatistics() {
-    List<FlowNodeStatistics> flowNodeStatistics =
+    final List<FlowNodeStatistics> flowNodeStatistics =
         dao.getFlowNodeStatisticsForProcessInstance(PROCESS_INSTANCE_KEY);
 
     assertThat(flowNodeStatistics).hasSize(4);

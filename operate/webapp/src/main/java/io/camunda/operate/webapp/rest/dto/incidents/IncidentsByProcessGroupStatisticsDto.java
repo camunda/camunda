@@ -103,9 +103,13 @@ public class IncidentsByProcessGroupStatisticsDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    IncidentsByProcessGroupStatisticsDto that = (IncidentsByProcessGroupStatisticsDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IncidentsByProcessGroupStatisticsDto that = (IncidentsByProcessGroupStatisticsDto) o;
     return instancesWithActiveIncidentsCount == that.instancesWithActiveIncidentsCount
         && activeInstancesCount == that.activeInstancesCount
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)

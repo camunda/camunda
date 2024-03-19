@@ -37,7 +37,7 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String indexName = variableIndex.getFullQualifiedName();
+    final String indexName = variableIndex.getFullQualifiedName();
     testSearchRepository.createOrUpdateDocumentFromObject(
         indexName,
         new VariableEntity()
@@ -71,7 +71,7 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnVariables() {
-    Results<Variable> variableResults = dao.search(new Query<>());
+    final Results<Variable> variableResults = dao.search(new Query<>());
     assertThat(variableResults.getItems()).hasSize(3);
 
     assertThat(variableResults.getItems())
@@ -81,7 +81,7 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortVariablesDesc() {
-    Results<Variable> variableResults =
+    final Results<Variable> variableResults =
         dao.search(new Query<Variable>().setSort(Query.Sort.listOf("name", Query.Sort.Order.DESC)));
 
     assertThat(variableResults.getItems()).hasSize(3);
@@ -92,7 +92,7 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortVariablesAsc() {
-    Results<Variable> variableResults =
+    final Results<Variable> variableResults =
         dao.search(new Query<Variable>().setSort(Query.Sort.listOf("name", Query.Sort.Order.ASC)));
 
     assertThat(variableResults.getItems()).hasSize(3);
@@ -103,8 +103,8 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnVariableByKey() {
-    Long key = 5147483648L;
-    Variable variable = dao.byKey(key);
+    final Long key = 5147483648L;
+    final Variable variable = dao.byKey(key);
 
     assertThat(variable.getValue()).isEqualTo("\"5\"");
     assertThat(variable.getKey()).isEqualTo(key);
@@ -117,7 +117,7 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterVariables() {
-    Results<Variable> variableResults =
+    final Results<Variable> variableResults =
         dao.search(new Query<Variable>().setFilter(new Variable().setName("orderId")));
 
     assertThat(variableResults.getItems()).hasSize(1);
@@ -126,7 +126,7 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldPageVariables() {
-    Results<Variable> variableResults =
+    final Results<Variable> variableResults =
         dao.search(
             new Query<Variable>()
                 .setSize(2)
@@ -138,11 +138,11 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
         .extracting(Variable.NAME)
         .containsExactly("orderId", "k1");
 
-    Object[] searchAfter = variableResults.getSortValues();
+    final Object[] searchAfter = variableResults.getSortValues();
     assertThat(String.valueOf(variableResults.getItems().get(1).getName()))
         .isEqualTo(String.valueOf(searchAfter[0]));
 
-    Results<Variable> nextResults =
+    final Results<Variable> nextResults =
         dao.search(
             new Query<Variable>()
                 .setSearchAfter(searchAfter)

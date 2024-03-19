@@ -43,7 +43,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class AbstractMigrationTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(AbstractMigrationTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractMigrationTest.class);
 
   @Autowired protected EntityReader entityReader;
 

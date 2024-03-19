@@ -36,7 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class AbstractDataGenerator implements DataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(AbstractDataGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
   @Autowired protected ZeebeClient client;
   @Autowired protected OperateProperties operateProperties;
   protected boolean manuallyCalled = false;
@@ -46,7 +46,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @PreDestroy
   public void shutdown() {
-    logger.info("Shutdown DataGenerator");
+    LOGGER.info("Shutdown DataGenerator");
     shutdown = true;
     if (scheduler != null && !scheduler.isShutdown()) {
       scheduler.shutdown();
@@ -69,7 +69,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
             try {
               zeebeDataCreated = createZeebeData(manuallyCalled);
             } catch (final Exception ex) {
-              logger.error(
+              LOGGER.error(
                   String.format(
                       "Error occurred when creating demo data: %s. Retrying...", ex.getMessage()),
                   ex);
@@ -96,13 +96,14 @@ public abstract class AbstractDataGenerator implements DataGenerator {
               operateProperties.getZeebeElasticsearch().getPrefix() + "*");
       if (exists) {
         // data already exists
-        logger.debug("Data already exists in Zeebe.");
+        LOGGER.debug("Data already exists in Zeebe.");
         return false;
       }
     }
     return true;
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   protected JobWorker progressSimpleTask(final String taskType) {
     return client
         .newWorker()

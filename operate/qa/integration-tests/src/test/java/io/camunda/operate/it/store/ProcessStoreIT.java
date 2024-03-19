@@ -60,7 +60,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String resourceXml =
+    final String resourceXml =
         testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn");
     firstProcessDefinition =
         new ProcessEntity()
@@ -157,7 +157,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessByKey() {
-    ProcessEntity result = processStore.getProcessByKey(secondProcessDefinition.getKey());
+    final ProcessEntity result = processStore.getProcessByKey(secondProcessDefinition.getKey());
 
     assertThat(result).isNotNull();
     assertThat(result.getBpmnProcessId()).isEqualTo(secondProcessDefinition.getBpmnProcessId());
@@ -166,14 +166,14 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetDiagramByKey() {
-    String xml = processStore.getDiagramByKey(secondProcessDefinition.getKey());
+    final String xml = processStore.getDiagramByKey(secondProcessDefinition.getKey());
     assertThat(xml)
         .isEqualTo(testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn"));
   }
 
   @Test
   public void testGetProcessesGrouped() {
-    Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
+    final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
         processStore.getProcessesGrouped(
             DEFAULT_TENANT_ID,
             Set.of(
@@ -199,7 +199,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessesIdsToProcessesWithFields() {
-    Map<Long, ProcessEntity> results =
+    final Map<Long, ProcessEntity> results =
         processStore.getProcessesIdsToProcessesWithFields(
             Set.of(
                 firstProcessDefinition.getBpmnProcessId(),
@@ -217,7 +217,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessInstanceListViewByKey() {
-    ProcessInstanceForListViewEntity result =
+    final ProcessInstanceForListViewEntity result =
         processStore.getProcessInstanceListViewByKey(thirdProcessInstance.getProcessInstanceKey());
 
     assertThat(result).isNotNull();
@@ -227,7 +227,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetCoreStatistics() {
-    Map<String, Long> results = processStore.getCoreStatistics(Set.of("demoProcess-1"));
+    final Map<String, Long> results = processStore.getCoreStatistics(Set.of("demoProcess-1"));
     assertThat(results.size()).isEqualTo(2);
     assertThat(results.get("running")).isEqualTo(1);
     assertThat(results.get("incidents")).isEqualTo(1);
@@ -235,13 +235,13 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessInstanceTreePathById() {
-    String result = processStore.getProcessInstanceTreePathById(thirdProcessInstance.getId());
+    final String result = processStore.getProcessInstanceTreePathById(thirdProcessInstance.getId());
     assertThat(result).isEqualTo(thirdProcessInstance.getTreePath());
   }
 
   @Test
   public void testDeleteDocument() throws IOException {
-    Long processKey = 2951799813685251L;
+    final Long processKey = 2951799813685251L;
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(),
         new ProcessInstanceForListViewEntity()
@@ -252,7 +252,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate-list*");
 
-    long deleted =
+    final long deleted =
         processStore.deleteDocument(
             listViewTemplate.getFullQualifiedName(),
             ListViewTemplate.KEY,
@@ -260,7 +260,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate-list*");
 
-    var response =
+    final var response =
         testSearchRepository.searchTerm(
             listViewTemplate.getFullQualifiedName(),
             ListViewTemplate.PROCESS_INSTANCE_KEY,
@@ -273,7 +273,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessInstancesByProcessAndStates() {
-    List<ProcessInstanceForListViewEntity> results =
+    final List<ProcessInstanceForListViewEntity> results =
         processStore.getProcessInstancesByProcessAndStates(
             secondProcessDefinition.getKey(), Set.of(ProcessInstanceState.COMPLETED), 10, null);
 
@@ -285,7 +285,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessInstancesByProcessAndStatesWithMultipleStates() {
-    List<ProcessInstanceForListViewEntity> results =
+    final List<ProcessInstanceForListViewEntity> results =
         processStore.getProcessInstancesByProcessAndStates(
             secondProcessDefinition.getKey(),
             Set.of(ProcessInstanceState.COMPLETED, ProcessInstanceState.ACTIVE),
@@ -315,7 +315,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testGetProcessInstancesByParentKeys() {
-    List<ProcessInstanceForListViewEntity> results =
+    final List<ProcessInstanceForListViewEntity> results =
         processStore.getProcessInstancesByParentKeys(
             Set.of(secondProcessInstance.getParentProcessInstanceKey()), 10, null);
 
@@ -362,7 +362,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setName("Test process 2"));
     searchContainerManager.refreshIndices("*operate-process*");
 
-    long deleted =
+    final long deleted =
         processStore.deleteProcessDefinitionsByKeys(2251799813685298L, 2251799813685299L);
     assertThat(deleted).isEqualTo(2);
 
@@ -371,7 +371,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testDeleteProcessInstancesAndDependants() throws IOException {
-    Long processKey = 2951799813685251L;
+    final Long processKey = 2951799813685251L;
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(),
         new ProcessInstanceForListViewEntity()
@@ -392,10 +392,10 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*");
 
-    long deleted = processStore.deleteProcessInstancesAndDependants(Set.of(processKey));
+    final long deleted = processStore.deleteProcessInstancesAndDependants(Set.of(processKey));
 
     searchContainerManager.refreshIndices("*");
-    var response =
+    final var response =
         testSearchRepository.searchTerm(
             listViewTemplate.getFullQualifiedName(),
             ListViewTemplate.PROCESS_INSTANCE_KEY,
@@ -407,7 +407,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   }
 
   private String getFullIndexNameForDependant(String indexName) {
-    ProcessInstanceDependant dependant =
+    final ProcessInstanceDependant dependant =
         processInstanceDependantTemplates.stream()
             .filter(template -> template.getFullQualifiedName().contains(indexName))
             .findAny()

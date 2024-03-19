@@ -111,9 +111,15 @@ public class JobFlowNodeInstanceMetadataDto extends FlowNodeInstanceMetadataDto
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
     final JobFlowNodeInstanceMetadataDto that = (JobFlowNodeInstanceMetadataDto) o;
     return Objects.equals(jobDeadline, that.jobDeadline)
         && Objects.equals(jobType, that.jobType)

@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessReader {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(io.camunda.operate.webapp.reader.ProcessReader.class);
 
   @Autowired private ProcessStore processStore;
@@ -91,7 +91,9 @@ public class ProcessReader {
   }
 
   private Set<String> getAllowedProcessIdsOrNullForAll() {
-    if (permissionsService == null) return null;
+    if (permissionsService == null) {
+      return null;
+    }
 
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(IdentityPermission.READ);

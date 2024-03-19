@@ -48,14 +48,14 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {
     // Write the decision requirements
-    DecisionRequirementsEntity requirementsV1 =
+    final DecisionRequirementsEntity requirementsV1 =
         new DecisionRequirementsEntity()
             .setKey(2251799813685249L)
             .setId(String.valueOf(2251799813685249L))
             .setName("Invoice Business Decisions")
             .setVersion(1)
             .setDecisionRequirementsId("invoiceBusinessDecisions");
-    DecisionRequirementsEntity requirementsV2 =
+    final DecisionRequirementsEntity requirementsV2 =
         new DecisionRequirementsEntity()
             .setKey(2251799813685253L)
             .setId(String.valueOf(2251799813685253L))
@@ -122,7 +122,7 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnDecisionDefinitionsOnSearch() {
-    Results<DecisionDefinition> decisionDefinitionResults = dao.search(new Query<>());
+    final Results<DecisionDefinition> decisionDefinitionResults = dao.search(new Query<>());
 
     assertThat(decisionDefinitionResults.getTotal()).isEqualTo(4);
     assertThat(decisionDefinitionResults.getItems())
@@ -149,11 +149,11 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortDecisionDefinitionsDesc() {
-    var sorts =
+    final var sorts =
         List.of(
             Query.Sort.of(DECISION_ID, Query.Sort.Order.DESC),
             Query.Sort.of(VERSION, Query.Sort.Order.DESC));
-    Results<DecisionDefinition> decisionDefinitionResults =
+    final Results<DecisionDefinition> decisionDefinitionResults =
         dao.search(new Query<DecisionDefinition>().setSort(sorts));
 
     assertThat(decisionDefinitionResults.getTotal()).isEqualTo(4);
@@ -172,11 +172,11 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortDecisionDefinitionsAsc() {
-    var sorts =
+    final var sorts =
         List.of(
             Query.Sort.of(DECISION_ID, Query.Sort.Order.ASC),
             Query.Sort.of(VERSION, Query.Sort.Order.ASC));
-    Results<DecisionDefinition> decisionDefinitionResults =
+    final Results<DecisionDefinition> decisionDefinitionResults =
         dao.search(new Query<DecisionDefinition>().setSort(sorts));
 
     assertThat(decisionDefinitionResults.getTotal()).isEqualTo(4);
@@ -196,7 +196,7 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
   @Test
   public void shouldPageDecisionDefinitions() {
     // Get first page of 3/4 results
-    var sorts =
+    final var sorts =
         List.of(
             Query.Sort.of(DECISION_ID, Query.Sort.Order.DESC),
             Query.Sort.of(VERSION, Query.Sort.Order.DESC));
@@ -211,7 +211,7 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
         .containsExactly("invoiceClassification", "invoiceClassification", "invoiceAssignApprover");
     assertThat(decisionDefinitionResults.getItems()).extracting(VERSION).containsExactly(2, 1, 2);
 
-    Object[] searchAfter = decisionDefinitionResults.getSortValues();
+    final Object[] searchAfter = decisionDefinitionResults.getSortValues();
 
     // Get second page with last result
     decisionDefinitionResults =
@@ -228,7 +228,7 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterDecisionDefinitions() {
-    Results<DecisionDefinition> decisionDefinitionResults =
+    final Results<DecisionDefinition> decisionDefinitionResults =
         dao.search(
             new Query<DecisionDefinition>()
                 .setFilter(new DecisionDefinition().setDecisionId("invoiceAssignApprover")));
@@ -245,7 +245,7 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterByDecisionRequirements() {
-    Results<DecisionDefinition> decisionDefinitionResults =
+    final Results<DecisionDefinition> decisionDefinitionResults =
         dao.search(
             new Query<DecisionDefinition>()
                 .setFilter(
@@ -255,7 +255,7 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
     assertThat(decisionDefinitionResults.getItems()).hasSize(1);
 
-    DecisionDefinition result = decisionDefinitionResults.getItems().get(0);
+    final DecisionDefinition result = decisionDefinitionResults.getItems().get(0);
     assertThat(result.getDecisionId()).isEqualTo("invoiceClassification");
     assertThat(result.getVersion()).isEqualTo(2);
     assertThat(result.getDecisionRequirementsVersion()).isEqualTo(2);
@@ -264,7 +264,7 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnWhenByKey() {
-    DecisionDefinition decisionDefinition = dao.byKey(2251799813685250L);
+    final DecisionDefinition decisionDefinition = dao.byKey(2251799813685250L);
 
     assertThat(decisionDefinition.getKey()).isEqualTo(2251799813685250L);
     assertThat(decisionDefinition.getDecisionId()).isEqualTo("invoiceAssignApprover");

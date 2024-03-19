@@ -135,10 +135,10 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
 
   @Override
   public List<Step> readStepsFromClasspath() throws IOException {
-    List<Step> steps = new ArrayList<>();
-    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    final List<Step> steps = new ArrayList<>();
+    final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
     try {
-      Resource[] resources =
+      final Resource[] resources =
           resolver.getResources(
               ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER
                   + "/*"
@@ -161,7 +161,7 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
     final SearchSourceBuilder searchSpec =
         new SearchSourceBuilder().sort(Step.VERSION + ".keyword", SortOrder.ASC);
     query.ifPresent(searchSpec::query);
-    SearchRequest request =
+    final SearchRequest request =
         new SearchRequest(getName())
             .source(searchSpec)
             .indicesOptions(IndicesOptions.lenientExpandOpen());

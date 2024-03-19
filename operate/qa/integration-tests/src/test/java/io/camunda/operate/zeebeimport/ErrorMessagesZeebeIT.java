@@ -61,11 +61,11 @@ public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testErrorMessageIsTrimmedBeforeSave() throws Exception {
     // Given
-    String errorMessageWithWhitespaces = "   Error message with white spaces   ";
-    String errorMessageWithoutWhiteSpaces = "Error message with white spaces";
+    final String errorMessageWithWhitespaces = "   Error message with white spaces   ";
+    final String errorMessageWithoutWhiteSpaces = "Error message with white spaces";
 
     // when
-    Long processInstanceKey = setupIncidentWith(errorMessageWithWhitespaces);
+    final Long processInstanceKey = setupIncidentWith(errorMessageWithWhitespaces);
     tester.updateVariableOperation("a", "wrong value").waitUntil().operationIsFailed();
 
     // then
@@ -75,9 +75,9 @@ public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
                 .get(0)
                 .getErrorMessage())
         .isEqualTo(errorMessageWithoutWhiteSpaces);
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         listViewReader.queryProcessInstances(createGetAllProcessInstancesRequest());
-    ListViewProcessInstanceDto processInstances = response.getProcessInstances().get(0);
+    final ListViewProcessInstanceDto processInstances = response.getProcessInstances().get(0);
     assertThat(processInstances).isNotNull();
     assertThat(processInstances.getOperations().get(0).getErrorMessage())
         .doesNotStartWith(" ")
@@ -88,12 +88,14 @@ public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testFilterErrorMessagesBySubstring() throws Exception {
     // Given
-    String errorMessageToFind = "   Find me by query only a substring  ";
-    String anotherErrorMessageToFind = "   Unexpected error while executing query 'all_users'";
+    final String errorMessageToFind = "   Find me by query only a substring  ";
+    final String anotherErrorMessageToFind =
+        "   Unexpected error while executing query 'all_users'";
 
     // when
-    String processInstanceKey = setupIncidentWith(errorMessageToFind).toString();
-    String anotherProcessInstanceKey = setupIncidentWith(anotherErrorMessageToFind).toString();
+    final String processInstanceKey = setupIncidentWith(errorMessageToFind).toString();
+    final String anotherProcessInstanceKey =
+        setupIncidentWith(anotherErrorMessageToFind).toString();
 
     // then ensure that ...
 
@@ -127,7 +129,7 @@ public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected ListViewResponseDto searchForErrorMessages(String errorMessage) {
-    ListViewRequestDto queriesRequest = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto queriesRequest = createGetAllProcessInstancesRequest();
     queriesRequest.getQuery().setErrorMessage(errorMessage);
     return listViewReader.queryProcessInstances(queriesRequest);
   }

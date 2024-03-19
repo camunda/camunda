@@ -68,8 +68,8 @@ public class OpensearchDecisionDefinitionDao
 
   @Override
   public DecisionDefinition byKey(Long key) {
-    var decisionDefinition = super.byKey(key);
-    DecisionRequirements decisionRequirements =
+    final var decisionDefinition = super.byKey(key);
+    final DecisionRequirements decisionRequirements =
         decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
     decisionDefinition.setDecisionRequirementsName(decisionRequirements.getName());
     decisionDefinition.setDecisionRequirementsVersion(decisionRequirements.getVersion());
@@ -98,8 +98,8 @@ public class OpensearchDecisionDefinitionDao
 
   @Override
   public Results<DecisionDefinition> search(Query<DecisionDefinition> query) {
-    var results = super.search(query);
-    var decisionDefinitions = results.getItems();
+    final var results = super.search(query);
+    final var decisionDefinitions = results.getItems();
     populateDecisionRequirementsNameAndVersion(decisionDefinitions);
     return results;
   }
@@ -121,10 +121,10 @@ public class OpensearchDecisionDefinitionDao
 
   @Override
   protected void buildFiltering(Query<DecisionDefinition> query, SearchRequest.Builder request) {
-    DecisionDefinition filter = query.getFilter();
+    final DecisionDefinition filter = query.getFilter();
 
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(DecisionDefinition.ID, filter.getId()),
                   queryDSLWrapper.term(DecisionDefinition.KEY, filter.getKey()),
@@ -161,19 +161,19 @@ public class OpensearchDecisionDefinitionDao
    */
   private void populateDecisionRequirementsNameAndVersion(
       List<DecisionDefinition> decisionDefinitions) {
-    Set<Long> decisionRequirementsKeys =
+    final Set<Long> decisionRequirementsKeys =
         decisionDefinitions.stream()
             .map(DecisionDefinition::getDecisionRequirementsKey)
             .collect(Collectors.toSet());
-    List<DecisionRequirements> decisionRequirements =
+    final List<DecisionRequirements> decisionRequirements =
         decisionRequirementsDao.byKeys(decisionRequirementsKeys);
 
-    Map<Long, DecisionRequirements> decisionReqMap = new HashMap<>();
+    final Map<Long, DecisionRequirements> decisionReqMap = new HashMap<>();
     decisionRequirements.forEach(
         decisionReq -> decisionReqMap.put(decisionReq.getKey(), decisionReq));
     decisionDefinitions.forEach(
         decisionDef -> {
-          DecisionRequirements decisionReq =
+          final DecisionRequirements decisionReq =
               (decisionDef.getDecisionRequirementsKey() == null)
                   ? null
                   : decisionReqMap.get(decisionDef.getDecisionRequirementsKey());
@@ -187,21 +187,22 @@ public class OpensearchDecisionDefinitionDao
   private org.opensearch.client.opensearch._types.query_dsl.Query buildFilteringBy(
       String decisionRequirementsName, Integer decisionRequirementsVersion) {
     try {
-      List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
+      final List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms =
+          new LinkedList<>();
       queryTerms.add(
           queryDSLWrapper.term(DecisionRequirementsIndex.NAME, decisionRequirementsName));
       queryTerms.add(
           queryDSLWrapper.term(DecisionRequirementsIndex.VERSION, decisionRequirementsVersion));
-      var query = queryDSLWrapper.and(queryTerms);
+      final var query = queryDSLWrapper.and(queryTerms);
       if (query == null) {
         return null;
       }
-      var request =
+      final var request =
           requestDSLWrapper
               .searchRequestBuilder(decisionRequirementsIndex.getAlias())
               .query(queryDSLWrapper.withTenantCheck(query))
               .source(queryDSLWrapper.sourceInclude(DecisionRequirementsIndex.KEY));
-      var decisionRequirements =
+      final var decisionRequirements =
           richOpenSearchClient.doc().scrollValues(request, DecisionRequirements.class);
       final List<Long> nonNullKeys =
           decisionRequirements.stream()

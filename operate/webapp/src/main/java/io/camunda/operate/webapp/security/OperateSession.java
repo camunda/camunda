@@ -147,7 +147,7 @@ public class OperateSession implements Session {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OperateSession session = (OperateSession) o;
+    final OperateSession session = (OperateSession) o;
     return Objects.equals(getId(), session.getId());
   }
 

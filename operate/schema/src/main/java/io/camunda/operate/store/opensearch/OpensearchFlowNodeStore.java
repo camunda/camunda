@@ -58,7 +58,7 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? RequestDSL.QueryType.ALL
             : RequestDSL.QueryType.ONLY_RUNTIME;
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, queryType)
             .query(
                 withTenantCheck(
@@ -76,7 +76,7 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
   public Map<String, String> getFlowNodeIdsForFlowNodeInstances(Set<String> flowNodeInstanceIds) {
     record Result(String flowNodeId) {}
     final Map<String, String> flowNodeIdsMap = new HashMap<>();
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate, RequestDSL.QueryType.ONLY_RUNTIME)
             .query(withTenantCheck(stringTerms(FlowNodeInstanceTemplate.ID, flowNodeInstanceIds)));
     final Consumer<List<Hit<Result>>> hitsConsumer =
@@ -98,7 +98,7 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? RequestDSL.QueryType.ALL
             : RequestDSL.QueryType.ONLY_RUNTIME;
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate, queryType)
             .query(withTenantCheck(term(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey)));
 

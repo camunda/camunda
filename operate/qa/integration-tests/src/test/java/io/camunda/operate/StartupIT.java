@@ -42,7 +42,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 public class StartupIT {
 
   public static final String VERSION = "current-test";
-  private static final Logger logger = LoggerFactory.getLogger(StartupIT.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StartupIT.class);
   //  values for local test:
   //  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
   //  public static final String VERSION = "8.1.0-alpha4";
@@ -65,10 +65,10 @@ public class StartupIT {
             .createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
             .withCreateContainerCmdModifier(
                 cmd -> ((CreateContainerCmd) cmd).withUser("1000620000:0"))
-            .withLogConsumer(new Slf4jLogConsumer(logger));
+            .withLogConsumer(new Slf4jLogConsumer(LOGGER));
 
-    String elsHost = testContext.getInternalElsHost();
-    Integer elsPort = testContext.getInternalElsPort();
+    final String elsHost = testContext.getInternalElsHost();
+    final Integer elsPort = testContext.getInternalElsPort();
 
     operateContainer
         .withEnv(
@@ -82,10 +82,10 @@ public class StartupIT {
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
 
     testContainerUtil.startOperateContainer(operateContainer, testContext);
-    logger.info("************ Operate started  ************");
+    LOGGER.info("************ Operate started  ************");
 
     // when
-    ResponseEntity<String> clientConfig =
+    final ResponseEntity<String> clientConfig =
         restTemplate.getForEntity(
             String.format(
                 "http://%s:%s/client-config.js",

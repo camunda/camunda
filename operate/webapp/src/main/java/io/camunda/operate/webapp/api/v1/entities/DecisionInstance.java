@@ -224,9 +224,13 @@ public class DecisionInstance {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionInstance that = (DecisionInstance) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstance that = (DecisionInstance) o;
     return Objects.equals(id, that.id)
         && Objects.equals(key, that.key)
         && state == that.state

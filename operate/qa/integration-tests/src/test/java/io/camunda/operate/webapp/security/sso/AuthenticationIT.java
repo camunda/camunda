@@ -138,10 +138,10 @@ public class AuthenticationIT implements AuthenticationTestable {
   @MockBean private IndicesCheck probes;
 
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
-    String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
-    long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    Map<String, Object> orgMap = Map.of("id", organization);
-    String accountData =
+    final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
+    final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
+    final Map<String, Object> orgMap = Map.of("id", organization);
+    final String accountData =
         toEncodedToken(
             asMap(
                 claim,
@@ -176,7 +176,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void setUp() {
     new SpringContextHolder().setApplicationContext(applicationContext);
     // mock building authorizeUrl
-    AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
+    final AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
     given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull(), isNotNull()))
         .willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withAudience(isNotNull())).willReturn(mockedAuthorizedUrl);
@@ -190,7 +190,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testHandleInvalidRequestException() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    HttpEntity<?> cookies = httpEntityWithCookie(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
@@ -229,7 +229,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     mockPermissionAllowed();
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    HttpEntity<?> cookies = httpEntityWithCookie(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
@@ -331,7 +331,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginFailedWithNoPermissions() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    HttpEntity<?> cookies = httpEntityWithCookie(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
@@ -361,7 +361,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginFailedWithOtherException() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    HttpEntity<?> cookies = httpEntityWithCookie(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
@@ -388,7 +388,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     // Step 1 Login
     mockPermissionAllowed();
     ResponseEntity<String> response = get(ROOT);
-    HttpEntity<?> cookies = httpEntityWithCookie(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
     response = get(LOGIN_RESOURCE, cookies);
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
@@ -415,7 +415,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Test
   public void testLoginToAPIResource() throws Exception {
     // Step 1 try to access user info
-    String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
+    final String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
     ResponseEntity<String> response = get(userInfoUrl);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
@@ -467,11 +467,11 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testCanParseResponseWithConnectorsUrl() throws Exception {
 
     // given
-    String jsonResponse =
+    final String jsonResponse =
         "[{\"uuid\":null,\"name\":null,\"urls\":{\"connectors\":\"http://connectors-url\"}}]";
 
     // when
-    ClusterMetadata[] clusterMetadatas =
+    final ClusterMetadata[] clusterMetadatas =
         objectMapper.readValue(jsonResponse, ClusterMetadata[].class);
 
     // then
@@ -481,14 +481,14 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
-    HttpHeaders headers = new HttpHeaders();
+    final HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
     return new HttpEntity<>(new HashMap<>(), headers);
   }
 
   @Test
   public void testAccessNoPermission() {
-    ResponseEntity<String> response = get(NO_PERMISSION);
+    final ResponseEntity<String> response = get(NO_PERMISSION);
     assertThat(response.getBody()).contains("No permission for Operate");
   }
 
@@ -553,7 +553,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   private void mockClusterMetadata() {
-    ClusterMetadata clusterMetadata =
+    final ClusterMetadata clusterMetadata =
         new ClusterMetadata()
             .setName("test-cluster")
             .setUuid("test-clusterId")
@@ -563,7 +563,7 @@ public class AuthenticationIT implements AuthenticationTestable {
                     ClusterMetadata.AppName.TASKLIST, "http://tasklist-url",
                     ClusterMetadata.AppName.OPTIMIZE, "http://optimize-url",
                     ClusterMetadata.AppName.ZEEBE, "grpc://zeebe-url"));
-    ClusterMetadata[] clusterMetadatas = new ClusterMetadata[] {clusterMetadata};
+    final ClusterMetadata[] clusterMetadatas = new ClusterMetadata[] {clusterMetadata};
     when(restTemplate.exchange(
             eq("https://consoleUrl/external/organizations/3/clusters"),
             eq(HttpMethod.GET),

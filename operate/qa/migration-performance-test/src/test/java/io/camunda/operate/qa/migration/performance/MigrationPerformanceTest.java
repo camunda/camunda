@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MigrationPerformanceTest {
-  private static final Logger logger = LoggerFactory.getLogger(MigrationPerformanceTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MigrationPerformanceTest.class);
 
   @Test
   public void testPerformanceDuration() {
@@ -34,14 +34,14 @@ public class MigrationPerformanceTest {
     try {
       timeoutInMinutes = Integer.parseInt(System.getProperty("MIGRATION_TIMEOUT"));
     } catch (NumberFormatException e) {
-      logger.error(
+      LOGGER.error(
           "Couldn't parse integer value of environment variable MIGRATION_TIMEOUT use default {} minutes.",
           timeoutInMinutes);
     }
-    long timeout = TimeUnit.MINUTES.toMillis(timeoutInMinutes);
-    Instant start = Instant.now();
-    Instant finish = Instant.now();
-    long timeElapsed = Duration.between(start, finish).toMillis();
+    final long timeout = TimeUnit.MINUTES.toMillis(timeoutInMinutes);
+    final Instant start = Instant.now();
+    final Instant finish = Instant.now();
+    final long timeElapsed = Duration.between(start, finish).toMillis();
     assertThat(timeElapsed)
         .as(
             "Needed "

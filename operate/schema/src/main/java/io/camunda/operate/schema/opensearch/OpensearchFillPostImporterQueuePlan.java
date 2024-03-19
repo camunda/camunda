@@ -52,7 +52,7 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueuePlan {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchFillPostImporterQueuePlan.class);
 
   private final OperateProperties operateProperties;
@@ -114,15 +114,15 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
 
   @Override
   public void executeOn(final SchemaManager schemaManager) throws MigrationException {
-    long srcCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
+    final long srcCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
     if (srcCount > 0) {
-      logger.info("No migration needed for postImporterQueueIndex, already contains data.");
+      LOGGER.info("No migration needed for postImporterQueueIndex, already contains data.");
       return;
     }
     // iterate over flow node instances with pending incidents
     try {
-      String incidentKeysFieldName = "incidentKeys";
-      var request =
+      final String incidentKeysFieldName = "incidentKeys";
+      final var request =
           searchRequestBuilder(listViewIndexName + "*")
               .query(
                   and(term(JOIN_RELATION, ACTIVITIES_JOIN_RELATION), term("pendingIncident", true)))
@@ -138,11 +138,11 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
                   hits -> {
                     final List<IncidentEntity> incidents =
                         getIncidentEntities(incidentKeysFieldName, hits);
-                    var batchRequest = richOpenSearchClient.batch().newBatchRequest();
+                    final var batchRequest = richOpenSearchClient.batch().newBatchRequest();
                     int index = 0;
                     for (IncidentEntity incident : incidents) {
                       index++;
-                      PostImporterQueueEntity entity =
+                      final PostImporterQueueEntity entity =
                           createPostImporterQueueEntity(incident, index);
                       batchRequest.add(postImporterQueueIndexName, entity);
                     }
@@ -161,7 +161,7 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
   @Override
   public void validateMigrationResults(final SchemaManager schemaManager)
       throws MigrationException {
-    long dstCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
+    final long dstCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
     if (flowNodesWithIncidentsCount != null && flowNodesWithIncidentsCount > dstCount) {
       throw new MigrationException(
           String.format(
@@ -172,8 +172,8 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
 
   private List<IncidentEntity> getIncidentEntities(
       String incidentKeysFieldName, List<Hit<Long>> hits) {
-    var incidentKeys = hits.stream().map(Hit::source).toList();
-    var request =
+    final var incidentKeys = hits.stream().map(Hit::source).toList();
+    final var request =
         searchRequestBuilder(incidentKeysFieldName + "*")
             .query(longTerms(IncidentTemplate.ID, incidentKeys))
             .sort(sortOptions(IncidentTemplate.ID, SortOrder.Asc))

@@ -100,7 +100,7 @@ public class AuthenticationIT {
     doReturn(new IdentityProperties().setResourcePermissionsEnabled(true))
         .when(operateProperties)
         .getIdentity();
-    List<Authorization> permissions =
+    final List<Authorization> permissions =
         new ObjectMapper()
             .readValue(
                 this.getClass().getResource("/security/identity/authorizations.json"),
@@ -108,7 +108,7 @@ public class AuthenticationIT {
     doReturn(permissions).when(authorizations).forToken(any());
 
     // then permissions are properly converted and returned by identityAuthentication
-    List<IdentityAuthorization> resourceBasedPermissions =
+    final List<IdentityAuthorization> resourceBasedPermissions =
         identityAuthentication.getAuthorizations();
     assertThat(resourceBasedPermissions).hasSize(4);
     assertThat(resourceBasedPermissions)
@@ -175,7 +175,7 @@ public class AuthenticationIT {
     doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
     doReturn(true).when(multiTenancyProperties).isEnabled();
 
-    List<Tenant> tenants =
+    final List<Tenant> tenants =
         new ObjectMapper()
             .readValue(
                 this.getClass().getResource("/security/identity/tenants.json"),
@@ -183,7 +183,7 @@ public class AuthenticationIT {
     doReturn(tenants).when(this.tenants).forToken(any());
 
     // then tenants are properly converted and returned by identityAuthentication
-    List<OperateTenant> returnedTenants = identityAuthentication.getTenants();
+    final List<OperateTenant> returnedTenants = identityAuthentication.getTenants();
     assertThat(returnedTenants).hasSize(3);
 
     assertThat(returnedTenants)

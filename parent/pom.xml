@@ -102,7 +102,7 @@
     <version.kryo>5.6.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
-    <version.jqwik>1.8.3</version.jqwik>
+    <version.jqwik>1.8.4</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.4.8</version.json-smart>
@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.34.0</version.google-sdk>
     <version.azure-sdk>1.2.21</version.azure-sdk>
-    <version.awssdk>2.25.11</version.awssdk>
+    <version.awssdk>2.25.12</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -143,7 +143,7 @@
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
-    <plugin.version.assembly>3.7.0</plugin.version.assembly>
+    <plugin.version.assembly>3.7.1</plugin.version.assembly>
     <plugin.version.build-helper>3.5.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
     <plugin.version.compiler>3.12.1</plugin.version.compiler>

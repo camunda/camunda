@@ -51,7 +51,7 @@ public class OpensearchListViewStore implements ListViewStore {
   @Override
   public Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds)
       throws IOException {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, RequestDSL.QueryType.ALL)
             .query(
                 withTenantCheck(
@@ -83,12 +83,12 @@ public class OpensearchListViewStore implements ListViewStore {
         operateProperties.getImporter().isReadArchivedParents()
             ? RequestDSL.QueryType.ALL
             : RequestDSL.QueryType.ONLY_RUNTIME;
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, queryType)
             .query(withTenantCheck(term(ListViewTemplate.KEY, processInstanceKey)))
             .source(sourceInclude(ListViewTemplate.TREE_PATH));
 
-    List<Hit<Result>> hits =
+    final List<Hit<Result>> hits =
         richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
 
     if (hits.size() > 0) {
@@ -99,7 +99,7 @@ public class OpensearchListViewStore implements ListViewStore {
 
   @Override
   public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(Long processDefinitionKey) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate.getAlias())
             .query(
                 withTenantCheck(

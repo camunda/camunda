@@ -66,7 +66,7 @@ import org.springframework.util.StringUtils;
 public abstract class TestUtil {
 
   public static final String ERROR_MSG = "No more retries left.";
-  private static final Logger logger = LoggerFactory.getLogger(TestUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestUtil.class);
   private static Random random = new Random();
 
   public static String createRandomString(int length) {
@@ -118,7 +118,7 @@ public abstract class TestUtil {
       String treePath,
       boolean incident,
       String tenantId) {
-    ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
+    final ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
 
     processInstance.setStartDate(DateUtil.getRandomStartDate());
     if (state.equals(ProcessInstanceState.COMPLETED)
@@ -156,7 +156,7 @@ public abstract class TestUtil {
 
   public static ProcessInstanceForListViewEntity createProcessInstance(
       OffsetDateTime startDate, OffsetDateTime endDate) {
-    ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
+    final ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
     final int i = random.nextInt(10);
     processInstance.setBpmnProcessId("testProcess" + i);
     processInstance.setProcessName("Test process" + i);
@@ -173,7 +173,7 @@ public abstract class TestUtil {
 
   public static FlowNodeInstanceForListViewEntity createFlowNodeInstanceWithIncident(
       Long processInstanceKey, FlowNodeState state, String errorMsg) {
-    FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity =
+    final FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity =
         createFlowNodeInstance(processInstanceKey, state);
     createIncident(activityInstanceForListViewEntity, errorMsg);
     return activityInstanceForListViewEntity;
@@ -205,10 +205,10 @@ public abstract class TestUtil {
       String activityId,
       FlowNodeType activityType,
       Boolean retriesLeft) {
-    FlowNodeInstanceForListViewEntity activityInstanceEntity =
+    final FlowNodeInstanceForListViewEntity activityInstanceEntity =
         new FlowNodeInstanceForListViewEntity();
     activityInstanceEntity.setProcessInstanceKey(processInstanceKey);
-    Long activityInstanceId = random.nextLong();
+    final Long activityInstanceId = random.nextLong();
     activityInstanceEntity.setId(activityInstanceId.toString());
     activityInstanceEntity.setActivityId(activityId);
     activityInstanceEntity.setActivityType(activityType);
@@ -237,7 +237,7 @@ public abstract class TestUtil {
       Long processDefinitionKey,
       String bpmnProcessId,
       boolean incident) {
-    ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
+    final ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
     final int i = random.nextInt(10);
     processInstance.setBpmnProcessId(bpmnProcessId);
     processInstance.setProcessName("Test process" + i);
@@ -256,8 +256,8 @@ public abstract class TestUtil {
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstanceEntityWithIds() {
-    ProcessInstanceForListViewEntity processInstance = new ProcessInstanceForListViewEntity();
-    Long processInstanceKey = Math.abs(random.nextLong());
+    final ProcessInstanceForListViewEntity processInstance = new ProcessInstanceForListViewEntity();
+    final Long processInstanceKey = Math.abs(random.nextLong());
     processInstance.setId(processInstanceKey.toString());
     processInstance.setProcessInstanceKey(processInstanceKey);
     processInstance.setKey(processInstanceKey);
@@ -269,7 +269,7 @@ public abstract class TestUtil {
 
   public static ProcessInstanceForListViewEntity createProcessInstanceEntity(
       OffsetDateTime startDate, OffsetDateTime endDate) {
-    ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
+    final ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
     final int i = random.nextInt(10);
     processInstance.setBpmnProcessId("testProcess" + i);
     processInstance.setProcessName("Test process" + i);
@@ -340,7 +340,7 @@ public abstract class TestUtil {
       Long processInstanceKey,
       Long processDefinitionKey,
       String bpmnProcessId) {
-    IncidentEntity incidentEntity = new IncidentEntity();
+    final IncidentEntity incidentEntity = new IncidentEntity();
     if (incidentKey == null) {
       incidentEntity.setKey(random.nextLong());
       incidentEntity.setId(String.valueOf(incidentEntity.getKey()));
@@ -374,11 +374,11 @@ public abstract class TestUtil {
 
   public static List<ProcessEntity> createProcessVersions(
       String bpmnProcessId, String name, int versionsCount, String tenantId) {
-    List<ProcessEntity> result = new ArrayList<>();
-    Random processIdGenerator = new Random();
+    final List<ProcessEntity> result = new ArrayList<>();
+    final Random processIdGenerator = new Random();
     for (int i = 1; i <= versionsCount; i++) {
-      ProcessEntity processEntity = new ProcessEntity();
-      Long processId = processIdGenerator.nextLong();
+      final ProcessEntity processEntity = new ProcessEntity();
+      final Long processId = processIdGenerator.nextLong();
       processEntity.setKey(processId);
       processEntity.setId(processId.toString());
       processEntity.setBpmnProcessId(bpmnProcessId);
@@ -392,7 +392,7 @@ public abstract class TestUtil {
 
   public static VariableForListViewEntity createVariableForListView(
       Long processInstanceKey, Long scopeKey, String name, String value) {
-    VariableForListViewEntity variable = new VariableForListViewEntity();
+    final VariableForListViewEntity variable = new VariableForListViewEntity();
     variable.setId(scopeKey + "_" + name);
     variable.setProcessInstanceKey(processInstanceKey);
     variable.setScopeKey(scopeKey);
@@ -414,7 +414,7 @@ public abstract class TestUtil {
       Long scopeKey,
       String name,
       String value) {
-    VariableEntity variable = new VariableEntity();
+    final VariableEntity variable = new VariableEntity();
     variable.setId(scopeKey + "_" + name);
     variable.setProcessInstanceKey(processInstanceKey);
     variable.setProcessDefinitionKey(processDefinitionKey);
@@ -427,25 +427,25 @@ public abstract class TestUtil {
 
   public static void removeAllIndices(RestHighLevelClient esClient, String prefix) {
     try {
-      logger.info("Removing indices");
-      var indexResponses =
+      LOGGER.info("Removing indices");
+      final var indexResponses =
           esClient.indices().get(new GetIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
-      for (String index : indexResponses.getIndices()) {
+      for (final String index : indexResponses.getIndices()) {
         esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
       }
-      var templateResponses =
+      final var templateResponses =
           esClient
               .indices()
               .getIndexTemplate(
                   new GetComposableIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
-      for (String template : templateResponses.getIndexTemplates().keySet()) {
+      for (final String template : templateResponses.getIndexTemplates().keySet()) {
         esClient
             .indices()
             .deleteIndexTemplate(
                 new DeleteComposableIndexTemplateRequest(template), RequestOptions.DEFAULT);
       }
     } catch (ElasticsearchStatusException | IOException ex) {
-      logger.error(ex.getMessage(), ex);
+      LOGGER.error(ex.getMessage(), ex);
     }
   }
 
@@ -454,30 +454,30 @@ public abstract class TestUtil {
       OpenSearchTemplateOperations templateOperations,
       String prefix) {
     try {
-      logger.info("Removing indices");
+      LOGGER.info("Removing indices");
       indexOperations.deleteIndicesWithRetries(prefix + "*");
       templateOperations.deleteTemplatesWithRetries(prefix + "*");
     } catch (Exception ex) {
-      logger.error(ex.getMessage(), ex);
+      LOGGER.error(ex.getMessage(), ex);
     }
   }
 
   public static void removeIlmPolicy(RestHighLevelClient esClient) {
     try {
-      logger.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
-      var request = new DeleteLifecyclePolicyRequest(OPERATE_DELETE_ARCHIVED_INDICES);
+      LOGGER.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
+      final var request = new DeleteLifecyclePolicyRequest(OPERATE_DELETE_ARCHIVED_INDICES);
       esClient.indexLifecycle().deleteLifecyclePolicy(request, RequestOptions.DEFAULT);
     } catch (ElasticsearchStatusException | IOException ex) {
-      logger.error(ex.getMessage(), ex);
+      LOGGER.error(ex.getMessage(), ex);
     }
   }
 
   public static void removeIlmPolicy(RichOpenSearchClient richOpenSearchClient) {
     try {
-      logger.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
+      LOGGER.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
       richOpenSearchClient.ism().deletePolicy(OPERATE_DELETE_ARCHIVED_INDICES);
     } catch (Exception ex) {
-      logger.error(ex.getMessage(), ex);
+      LOGGER.error(ex.getMessage(), ex);
     }
   }
 
@@ -507,7 +507,7 @@ public abstract class TestUtil {
       OperationState state,
       String username,
       boolean lockExpired) {
-    OperationEntity oe = new OperationEntity();
+    final OperationEntity oe = new OperationEntity();
     oe.generateId();
     oe.setProcessInstanceKey(processInstanceKey);
     oe.setProcessDefinitionKey(processDefinitionKey);

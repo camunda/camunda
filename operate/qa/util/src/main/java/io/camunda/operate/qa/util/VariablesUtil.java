@@ -36,7 +36,7 @@ public abstract class VariablesUtil {
 
   public static String createBigVarsWithSuffix(
       final String varNamePrefix, final int size, final String varSuffix) {
-    StringBuffer vars = new StringBuffer("{");
+    final StringBuffer vars = new StringBuffer("{");
     for (int i = 0; i < 3; i++) {
       if (vars.length() > 1) {
         vars.append(",\n");
@@ -55,8 +55,8 @@ public abstract class VariablesUtil {
   }
 
   public static String createBigVariable(int size) {
-    Random random = new Random();
-    StringBuffer sb = new StringBuffer();
+    final Random random = new Random();
+    final StringBuffer sb = new StringBuffer();
     for (int i = 0; i < size; i++) {
       sb.append(random.nextInt(9));
     }
@@ -64,9 +64,9 @@ public abstract class VariablesUtil {
   }
 
   public static String createALotOfVarsPayload() {
-    Map<String, String> payload = new HashMap<>();
+    final Map<String, String> payload = new HashMap<>();
     payload.put("var1", "value1");
-    int numberOfVars = 600;
+    final int numberOfVars = 600;
     IntStream.range(0, numberOfVars)
         .forEach(
             value -> {

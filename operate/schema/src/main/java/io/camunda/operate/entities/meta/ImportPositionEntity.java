@@ -106,10 +106,16 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    ImportPositionEntity that = (ImportPositionEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ImportPositionEntity that = (ImportPositionEntity) o;
     return partitionId == that.partitionId
         && position == that.position
         && sequence == that.sequence

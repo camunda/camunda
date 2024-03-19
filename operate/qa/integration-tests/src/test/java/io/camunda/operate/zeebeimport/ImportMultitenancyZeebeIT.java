@@ -76,7 +76,7 @@ public class ImportMultitenancyZeebeIT extends IdentityOperateZeebeAbstractIT {
         .getAuthenticatedTenants();
 
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcessWithTenant(TENANT_1, "demoProcess_v_1.bpmn");
 
     // when

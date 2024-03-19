@@ -32,7 +32,6 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBu
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpHeaders;
-import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.config.CharCodingConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.net.URIBuilder;
@@ -67,11 +66,7 @@ public class HttpClientFactory {
 
   private URI buildGatewayAddress() {
     try {
-      final URIBuilder builder =
-          new URIBuilder("")
-              .setHttpHost(HttpHost.create(config.getGatewayAddress()))
-              .setPort(config.getGatewayRestApiPort())
-              .setPath(REST_API_PATH);
+      final URIBuilder builder = new URIBuilder(config.getRestAddress()).setPath(REST_API_PATH);
       builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
       return builder.build();

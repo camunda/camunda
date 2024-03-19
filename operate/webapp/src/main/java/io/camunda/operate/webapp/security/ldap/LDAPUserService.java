@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component;
 @Profile(LDAP_AUTH_PROFILE)
 public class LDAPUserService extends AbstractUserService<Authentication> {
 
-  private static final Logger logger = LoggerFactory.getLogger(LDAPUserService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(LDAPUserService.class);
 
   @Autowired private LdapTemplate ldapTemplate;
 
@@ -57,7 +57,7 @@ public class LDAPUserService extends AbstractUserService<Authentication> {
     final LdapUserDetails userDetails = (LdapUserDetails) authentication.getPrincipal();
     final String dn = userDetails.getDn();
     if (!ldapDnToUser.containsKey(dn)) {
-      logger.info(String.format("Do a LDAP Lookup for user DN: %s)", dn));
+      LOGGER.info(String.format("Do a LDAP Lookup for user DN: %s)", dn));
       try {
         ldapDnToUser.put(dn, ldapTemplate.lookup(dn, new LdapUserAttributesMapper()));
       } catch (Exception ex) {
@@ -78,7 +78,7 @@ public class LDAPUserService extends AbstractUserService<Authentication> {
     throw new UnsupportedOperationException("Get token is not supported for LDAP authentication");
   }
 
-  private class LdapUserAttributesMapper implements AttributesMapper<UserDto> {
+  private final class LdapUserAttributesMapper implements AttributesMapper<UserDto> {
 
     private LdapUserAttributesMapper() {}
 

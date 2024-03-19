@@ -57,7 +57,7 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate-decision*");
 
-    long deleted = decisionWriter.deleteDecisionRequirements(2251799813685249L);
+    final long deleted = decisionWriter.deleteDecisionRequirements(2251799813685249L);
 
     assertThat(deleted).isEqualTo(1);
   }
@@ -89,7 +89,7 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate-decision*");
 
-    long deleted = decisionWriter.deleteDecisionDefinitionsFor(2251799813685249L);
+    final long deleted = decisionWriter.deleteDecisionDefinitionsFor(2251799813685249L);
     // then
     assertThat(deleted).isEqualTo(2);
   }
@@ -119,18 +119,18 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
 
     searchContainerManager.refreshIndices("*operate-decision*");
 
-    long deleted = decisionWriter.deleteDecisionInstancesFor(2251799813685249L);
+    final long deleted = decisionWriter.deleteDecisionInstancesFor(2251799813685249L);
     // then
     assertThat(deleted).isEqualTo(2);
   }
 
   @Test
   public void shouldNotDeleteWhenNothingFound() throws IOException {
-    long decisionRequirementsKey = 123L;
+    final long decisionRequirementsKey = 123L;
     // when
-    long deleted1 = decisionWriter.deleteDecisionRequirements(decisionRequirementsKey);
-    long deleted2 = decisionWriter.deleteDecisionDefinitionsFor(decisionRequirementsKey);
-    long deleted3 = decisionWriter.deleteDecisionInstancesFor(decisionRequirementsKey);
+    final long deleted1 = decisionWriter.deleteDecisionRequirements(decisionRequirementsKey);
+    final long deleted2 = decisionWriter.deleteDecisionDefinitionsFor(decisionRequirementsKey);
+    final long deleted3 = decisionWriter.deleteDecisionInstancesFor(decisionRequirementsKey);
     // then
     assertThat(deleted1).isZero();
     assertThat(deleted2).isZero();

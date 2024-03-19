@@ -20,6 +20,7 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -93,13 +94,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   @Override
-  public String gatewayAddress() {
+  public URI grpcAddress() {
     if (!isGateway()) {
       throw new IllegalStateException(
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
 
-    return TestGateway.super.gatewayAddress();
+    return TestGateway.super.grpcAddress();
   }
 
   @Override

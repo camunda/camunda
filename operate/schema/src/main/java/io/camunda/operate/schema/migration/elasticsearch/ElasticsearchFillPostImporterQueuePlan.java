@@ -65,7 +65,7 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQueuePlan {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchFillPostImporterQueuePlan.class);
 
   @Autowired private OperateProperties operateProperties;
@@ -114,15 +114,15 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
 
   @Override
   public void executeOn(final SchemaManager schemaManager) throws MigrationException {
-    long srcCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
+    final long srcCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
     if (srcCount > 0) {
-      logger.info("No migration needed for postImporterQueueIndex, already contains data.");
+      LOGGER.info("No migration needed for postImporterQueueIndex, already contains data.");
       return;
     }
 
     // iterate over flow node instances with pending incidents
-    String incidentKeysFieldName = "incidentKeys";
-    SearchRequest searchRequest =
+    final String incidentKeysFieldName = "incidentKeys";
+    final SearchRequest searchRequest =
         new SearchRequest(listViewIndexName + "*")
             .source(
                 new SearchSourceBuilder()
@@ -144,11 +144,11 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
                 }
                 final List<IncidentEntity> incidents =
                     getIncidentEntities(incidentKeysFieldName, esClient, hits);
-                BulkRequest bulkRequest = new BulkRequest();
+                final BulkRequest bulkRequest = new BulkRequest();
                 final int[] index = {0};
                 for (IncidentEntity incident : incidents) {
                   index[0]++;
-                  PostImporterQueueEntity entity =
+                  final PostImporterQueueEntity entity =
                       createPostImporterQueueEntity(incident, index[0]);
                   bulkRequest.add(
                       new IndexRequest()
@@ -170,7 +170,7 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   @Override
   public void validateMigrationResults(final SchemaManager schemaManager)
       throws MigrationException {
-    long dstCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
+    final long dstCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
     if (flowNodesWithIncidentsCount != null && flowNodesWithIncidentsCount > dstCount) {
       throw new MigrationException(
           String.format(
@@ -182,12 +182,12 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   private List<IncidentEntity> getIncidentEntities(
       String incidentKeysFieldName, RestHighLevelClient esClient, SearchHits hits)
       throws IOException {
-    List<Long> incidentKeys =
+    final List<Long> incidentKeys =
         Arrays.stream(hits.getHits())
             .map(sh -> (List<Long>) sh.getSourceAsMap().get(incidentKeysFieldName))
             .flatMap(List::stream)
             .collect(Collectors.toList());
-    SearchRequest incidentSearchRequest =
+    final SearchRequest incidentSearchRequest =
         new SearchRequest(incidentsIndexName + "*")
             .source(
                 new SearchSourceBuilder()

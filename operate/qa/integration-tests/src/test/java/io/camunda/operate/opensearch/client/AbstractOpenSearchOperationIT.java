@@ -51,7 +51,7 @@ public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbs
   }
 
   public <R> R withThreadPoolTaskScheduler(Function<ThreadPoolTaskScheduler, R> f) {
-    ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+    final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
     scheduler.setPoolSize(5);
     scheduler.setThreadNamePrefix(this.getClass().getSimpleName());
     scheduler.initialize();

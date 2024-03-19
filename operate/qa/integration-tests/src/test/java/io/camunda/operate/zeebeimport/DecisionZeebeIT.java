@@ -80,8 +80,8 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
         .decisionsAreDeployed(4);
 
     // when
-    MockHttpServletRequestBuilder request = get(QUERY_DECISIONS_GROUPED_URL);
-    MvcResult mvcResult =
+    final MockHttpServletRequestBuilder request = get(QUERY_DECISIONS_GROUPED_URL);
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())
@@ -89,7 +89,7 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
             .andReturn();
 
     // then
-    List<DecisionGroupDto> decisionGroupDtos =
+    final List<DecisionGroupDto> decisionGroupDtos =
         mockMvcTestRule.listFromResponse(mvcResult, DecisionGroupDto.class);
     assertThat(decisionGroupDtos).hasSize(2);
     assertThat(decisionGroupDtos)
@@ -143,21 +143,22 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
         get(String.format(QUERY_DECISION_XML_URL, decision1V1Id));
     MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
-    final String invoiceClassification_v_1 = mvcResult.getResponse().getContentAsString();
+    final String invoiceClassificationVersion1 = mvcResult.getResponse().getContentAsString();
 
     // and invoiceClassification version 1
     request = get(String.format(QUERY_DECISION_XML_URL, decision2V1Id));
     mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
-    final String invoiceAssignApprover_v_1 = mvcResult.getResponse().getContentAsString();
+    final String invoiceAssignApproverVersion1 = mvcResult.getResponse().getContentAsString();
 
     // then one and the same DRD is returned
-    assertThat(invoiceAssignApprover_v_1).isEqualTo(invoiceClassification_v_1);
+    assertThat(invoiceAssignApproverVersion1).isEqualTo(invoiceClassificationVersion1);
 
     // it is of version 1
-    assertThat(invoiceAssignApprover_v_1).isNotEmpty();
-    assertThat(invoiceAssignApprover_v_1).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    assertThat(invoiceAssignApprover_v_1).doesNotContain("exceptional");
+    assertThat(invoiceAssignApproverVersion1).isNotEmpty();
+    assertThat(invoiceAssignApproverVersion1)
+        .contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    assertThat(invoiceAssignApproverVersion1).doesNotContain("exceptional");
   }
 
   @Test
@@ -173,21 +174,22 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
         get(String.format(QUERY_DECISION_XML_URL, decision1V2Id));
     MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
-    final String invoiceClassification_v_2 = mvcResult.getResponse().getContentAsString();
+    final String invoiceClassificationVersion2 = mvcResult.getResponse().getContentAsString();
 
     // and invoiceClassification version 2
     request = get(String.format(QUERY_DECISION_XML_URL, decision2V2Id));
     mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
-    final String invoiceAssignApprover_v_2 = mvcResult.getResponse().getContentAsString();
+    final String invoiceAssignApproverVersion2 = mvcResult.getResponse().getContentAsString();
 
     // then
     // one and the same DRD is returned
-    assertThat(invoiceAssignApprover_v_2).isEqualTo(invoiceClassification_v_2);
+    assertThat(invoiceAssignApproverVersion2).isEqualTo(invoiceClassificationVersion2);
     // it is of version 2
-    assertThat(invoiceAssignApprover_v_2).isNotEmpty();
-    assertThat(invoiceAssignApprover_v_2).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    assertThat(invoiceAssignApprover_v_2).contains("exceptional");
+    assertThat(invoiceAssignApproverVersion2).isNotEmpty();
+    assertThat(invoiceAssignApproverVersion2)
+        .contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    assertThat(invoiceAssignApproverVersion2).contains("exceptional");
   }
 
   @Test
@@ -197,7 +199,7 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
     // no decisions deployed
 
     // when
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         get(String.format(QUERY_DECISION_XML_URL, decisionDefinitionId));
     mockMvc.perform(request).andExpect(status().isNotFound());
   }
@@ -215,11 +217,11 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
         .decisionsAreDeployed(2);
 
     // when
-    Map<String, List<DecisionDefinitionEntity>> decisionsGrouped =
+    final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped =
         decisionReader.getDecisionsGrouped(new DecisionRequestDto());
-    DecisionDefinitionEntity entity1 = decisionsGrouped.values().iterator().next().get(0);
-    Long decisionDefinitionKey = Long.valueOf(entity1.getId());
-    DecisionDefinitionEntity entity2 = decisionReader.getDecision(decisionDefinitionKey);
+    final DecisionDefinitionEntity entity1 = decisionsGrouped.values().iterator().next().get(0);
+    final Long decisionDefinitionKey = Long.valueOf(entity1.getId());
+    final DecisionDefinitionEntity entity2 = decisionReader.getDecision(decisionDefinitionKey);
 
     // then
     assertThat(entity2.getId()).isEqualTo(entity1.getId());

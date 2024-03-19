@@ -51,7 +51,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class BatchOperationReader implements io.camunda.operate.webapp.reader.BatchOperationReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(BatchOperationReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationReader.class);
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
@@ -65,15 +65,15 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
   public List<BatchOperationEntity> getBatchOperations(
       BatchOperationRequestDto batchOperationRequestDto) {
 
-    SearchRequest searchRequest = createSearchRequest(batchOperationRequestDto);
+    final SearchRequest searchRequest = createSearchRequest(batchOperationRequestDto);
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      List<BatchOperationEntity> batchOperationEntities =
+      final List<BatchOperationEntity> batchOperationEntities =
           ElasticsearchUtil.mapSearchHits(
               searchResponse.getHits().getHits(),
               (sh) -> {
-                BatchOperationEntity entity =
+                final BatchOperationEntity entity =
                     ElasticsearchUtil.fromSearchHit(
                         sh.getSourceAsString(), objectMapper, BatchOperationEntity.class);
                 entity.setSortValues(sh.getSortValues());
@@ -88,20 +88,20 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
           String.format(
               "Exception occurred, while getting page of batch operations list: %s",
               e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
 
   private SearchRequest createSearchRequest(BatchOperationRequestDto batchOperationRequestDto) {
-    QueryBuilder queryBuilder =
+    final QueryBuilder queryBuilder =
         termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
 
-    SortBuilder sort1, sort2;
-    Object[] querySearchAfter;
+    final SortBuilder sort1, sort2;
+    final Object[] querySearchAfter;
 
-    Object[] searchAfter = batchOperationRequestDto.getSearchAfter(objectMapper);
-    Object[] searchBefore = batchOperationRequestDto.getSearchBefore(objectMapper);
+    final Object[] searchAfter = batchOperationRequestDto.getSearchAfter(objectMapper);
+    final Object[] searchBefore = batchOperationRequestDto.getSearchBefore(objectMapper);
     if (searchAfter != null
         || searchBefore == null) { // this sorting is also the default one for 1st page
       sort1 =
@@ -120,7 +120,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
       querySearchAfter = searchBefore;
     }
 
-    SearchSourceBuilder sourceBuilder =
+    final SearchSourceBuilder sourceBuilder =
         searchSource()
             .query(constantScoreQuery(queryBuilder))
             .sort(sort1)

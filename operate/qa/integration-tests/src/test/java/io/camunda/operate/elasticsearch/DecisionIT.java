@@ -65,12 +65,12 @@ public class DecisionIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
 
     final DecisionDefinitionEntity decision1 =
         new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
@@ -83,10 +83,10 @@ public class DecisionIT extends OperateAbstractIT {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
+    final MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
 
     // then
-    List<DecisionGroupDto> response =
+    final List<DecisionGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).isEmpty();
@@ -95,12 +95,12 @@ public class DecisionIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedWithPermisssionWhenAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
 
     final DecisionDefinitionEntity decision1 =
         new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
@@ -113,10 +113,10 @@ public class DecisionIT extends OperateAbstractIT {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
-    MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
+    final MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
 
     // then
-    List<DecisionGroupDto> response =
+    final List<DecisionGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(3);
@@ -127,12 +127,12 @@ public class DecisionIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedWithPermisssionWhenSomeAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
 
     final DecisionDefinitionEntity decision1 =
         new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
@@ -145,10 +145,10 @@ public class DecisionIT extends OperateAbstractIT {
     // when
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId2)));
-    MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
+    final MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
 
     // then
-    List<DecisionGroupDto> response =
+    final List<DecisionGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(1);
@@ -159,37 +159,37 @@ public class DecisionIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedWithTenantId() throws Exception {
     // given
-    String id111 = "111";
-    String id121 = "121";
-    String id112 = "112";
-    String id122 = "122";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
-    String tenantId1 = "tenant1";
-    String tenantId2 = "tenant2";
+    final String id111 = "111";
+    final String id121 = "121";
+    final String id112 = "112";
+    final String id122 = "122";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
+    final String tenantId1 = "tenant1";
+    final String tenantId2 = "tenant2";
 
-    final DecisionDefinitionEntity decision1_1_1 =
+    final DecisionDefinitionEntity decision111 =
         new DecisionDefinitionEntity()
             .setId(id111)
             .setVersion(1)
             .setDecisionId(decisionId1)
             .setTenantId(tenantId1);
-    final DecisionDefinitionEntity decision1_2_1 =
+    final DecisionDefinitionEntity decision121 =
         new DecisionDefinitionEntity()
             .setId(id121)
             .setVersion(2)
             .setDecisionId(decisionId1)
             .setTenantId(tenantId1);
-    final DecisionDefinitionEntity decision1_1_2 =
+    final DecisionDefinitionEntity decision112 =
         new DecisionDefinitionEntity()
             .setId(id112)
             .setVersion(1)
             .setDecisionId(decisionId1)
             .setTenantId(tenantId2);
-    final DecisionDefinitionEntity decision1_2_2 =
+    final DecisionDefinitionEntity decision122 =
         new DecisionDefinitionEntity()
             .setId(id122)
             .setVersion(2)
@@ -208,7 +208,7 @@ public class DecisionIT extends OperateAbstractIT {
             .setDecisionId(decisionId3)
             .setTenantId(tenantId2);
     searchTestRule.persistNew(
-        decision1_1_1, decision1_2_1, decision1_1_2, decision1_2_2, decision2, decision3);
+        decision111, decision121, decision112, decision122, decision2, decision3);
 
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
@@ -270,40 +270,40 @@ public class DecisionIT extends OperateAbstractIT {
   @Test
   public void testDecisionsGroupedFilteredByUserTenants() throws Exception {
     // given
-    String id111 = "111";
-    String id121 = "121";
-    String id112 = "112";
-    String id122 = "122";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
-    String tenantId1 = "tenant1";
-    String tenantId2 = "tenant2";
+    final String id111 = "111";
+    final String id121 = "121";
+    final String id112 = "112";
+    final String id122 = "122";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
+    final String tenantId1 = "tenant1";
+    final String tenantId2 = "tenant2";
     doReturn(TenantService.AuthenticatedTenants.assignedTenants(List.of(tenantId1)))
         .when(tenantService)
         .getAuthenticatedTenants();
 
-    final DecisionDefinitionEntity decision1_1_1 =
+    final DecisionDefinitionEntity decision111 =
         new DecisionDefinitionEntity()
             .setId(id111)
             .setVersion(1)
             .setDecisionId(decisionId1)
             .setTenantId(tenantId1);
-    final DecisionDefinitionEntity decision1_2_1 =
+    final DecisionDefinitionEntity decision121 =
         new DecisionDefinitionEntity()
             .setId(id121)
             .setVersion(2)
             .setDecisionId(decisionId1)
             .setTenantId(tenantId1);
-    final DecisionDefinitionEntity decision1_1_2 =
+    final DecisionDefinitionEntity decision112 =
         new DecisionDefinitionEntity()
             .setId(id112)
             .setVersion(1)
             .setDecisionId(decisionId1)
             .setTenantId(tenantId2);
-    final DecisionDefinitionEntity decision1_2_2 =
+    final DecisionDefinitionEntity decision122 =
         new DecisionDefinitionEntity()
             .setId(id122)
             .setVersion(2)
@@ -322,7 +322,7 @@ public class DecisionIT extends OperateAbstractIT {
             .setDecisionId(decisionId3)
             .setTenantId(tenantId2);
     searchTestRule.persistNew(
-        decision1_1_1, decision1_2_1, decision1_1_2, decision1_2_2, decision2, decision3);
+        decision111, decision121, decision112, decision122, decision2, decision3);
 
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
@@ -369,24 +369,24 @@ public class DecisionIT extends OperateAbstractIT {
   @Test
   public void testDecisionXMLWithUserTenantCheck() throws Exception {
     // given
-    String id111 = "111";
-    String id112 = "112";
-    String id2 = "222";
-    String id3 = "333";
-    String decisionId1 = "decisionId1";
-    String decisionId2 = "decisionId2";
-    String decisionId3 = "decisionId3";
-    long decisionReqId1 = 1;
-    long decisionReqId2 = 2;
-    String tenantId1 = "tenant1";
-    String tenantId2 = "tenant2";
-    String tenant1Xml = "<xml>tenant1<xml>";
-    String tenant2Xml = "<xml>tenant2<xml>";
+    final String id111 = "111";
+    final String id112 = "112";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String decisionId1 = "decisionId1";
+    final String decisionId2 = "decisionId2";
+    final String decisionId3 = "decisionId3";
+    final long decisionReqId1 = 1;
+    final long decisionReqId2 = 2;
+    final String tenantId1 = "tenant1";
+    final String tenantId2 = "tenant2";
+    final String tenant1Xml = "<xml>tenant1<xml>";
+    final String tenant2Xml = "<xml>tenant2<xml>";
     doReturn(TenantService.AuthenticatedTenants.assignedTenants(List.of(tenantId1)))
         .when(tenantService)
         .getAuthenticatedTenants();
 
-    final DecisionDefinitionEntity decision1_1_1 =
+    final DecisionDefinitionEntity decision111 =
         new DecisionDefinitionEntity()
             .setId(id111)
             .setKey(Long.valueOf(id111))
@@ -394,7 +394,7 @@ public class DecisionIT extends OperateAbstractIT {
             .setDecisionId(decisionId1)
             .setTenantId(tenantId1)
             .setDecisionRequirementsKey(decisionReqId1);
-    final DecisionDefinitionEntity decision1_1_2 =
+    final DecisionDefinitionEntity decision112 =
         new DecisionDefinitionEntity()
             .setId(id112)
             .setKey(Long.valueOf(id112))
@@ -431,7 +431,7 @@ public class DecisionIT extends OperateAbstractIT {
             .setXml(tenant2Xml)
             .setTenantId(tenantId2);
     searchTestRule.persistNew(
-        decision1_1_1, decisionReq1, decision1_1_2, decisionReq2, decision2, decision3);
+        decision111, decisionReq1, decision112, decisionReq2, decision2, decision3);
 
     when(permissionsService.hasPermissionForDecision(decisionId1, IdentityPermission.READ))
         .thenReturn(true);

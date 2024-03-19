@@ -34,7 +34,7 @@ public class OpenSearchOperation {
 
   protected String getIndex(ObjectBuilderBase builder) {
     try {
-      Field indexField = builder.getClass().getDeclaredField("index");
+      final Field indexField = builder.getClass().getDeclaredField("index");
       indexField.setAccessible(true);
       return indexField.get(builder).toString();
     } catch (Exception e) {

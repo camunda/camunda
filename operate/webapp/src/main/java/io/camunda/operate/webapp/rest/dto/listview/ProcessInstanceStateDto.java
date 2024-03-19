@@ -30,7 +30,7 @@ public enum ProcessInstanceStateDto {
     if (state == null) {
       return UNSPECIFIED;
     }
-    ProcessInstanceStateDto stateDto = valueOf(state.name());
+    final ProcessInstanceStateDto stateDto = valueOf(state.name());
     if (stateDto == null) {
       return UNKNOWN;
     }

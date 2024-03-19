@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
-  private static final Logger logger = LoggerFactory.getLogger(ProcessInstancesArchiverJob.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstancesArchiverJob.class);
 
   private final List<Integer> partitionIds;
 
@@ -57,7 +57,7 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
     final CompletableFuture<Integer> archiveBatchFuture;
 
     if (archiveBatch != null) {
-      logger.debug("Following process instances are found for archiving: {}", archiveBatch);
+      LOGGER.debug("Following process instances are found for archiving: {}", archiveBatch);
 
       archiveBatchFuture = new CompletableFuture<Integer>();
       final var finishDate = archiveBatch.getFinishDate();
@@ -80,7 +80,7 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
               });
 
     } else {
-      logger.debug("Nothing to archive");
+      LOGGER.debug("Nothing to archive");
       archiveBatchFuture = CompletableFuture.completedFuture(0);
     }
 

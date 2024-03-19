@@ -35,7 +35,7 @@ public enum OperationTypeDto {
     if (type == null) {
       return UNSPECIFIED;
     }
-    OperationTypeDto typeDto = valueOf(type.name());
+    final OperationTypeDto typeDto = valueOf(type.name());
     if (typeDto == null) {
       return UNKNOWN;
     }

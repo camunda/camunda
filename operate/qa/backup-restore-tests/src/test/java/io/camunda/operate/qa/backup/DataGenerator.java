@@ -67,7 +67,7 @@ public class DataGenerator {
   public static final String NEW_BPMN_PROCESS_ID = "testProcess2";
   public static final int CANCELLED_PROCESS_INSTANCES = 3;
   public static final int NEW_PROCESS_INSTANCES_COUNT = 13;
-  private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
   private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
@@ -100,7 +100,7 @@ public class DataGenerator {
   public void createData(BackupRestoreTestContext testContext) {
     init(testContext);
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-    logger.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
+    LOGGER.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
 
     deployProcess(PROCESS_BPMN_PROCESS_ID);
     processInstanceKeys = startProcessInstances(PROCESS_BPMN_PROCESS_ID, PROCESS_INSTANCE_COUNT);
@@ -112,7 +112,7 @@ public class DataGenerator {
     for (int i = 0; i < COUNT_OF_CANCEL_OPERATION; i++) {
       createOperation(OperationType.CANCEL_PROCESS_INSTANCE, processInstanceKeys.size() * 10);
     }
-    logger.info(
+    LOGGER.info(
         "{} operations of type {} started",
         COUNT_OF_CANCEL_OPERATION,
         OperationType.CANCEL_PROCESS_INSTANCE);
@@ -120,7 +120,7 @@ public class DataGenerator {
     for (int i = 0; i < COUNT_OF_RESOLVE_OPERATION; i++) {
       createOperation(OperationType.RESOLVE_INCIDENT, processInstanceKeys.size() * 10);
     }
-    logger.info(
+    LOGGER.info(
         "{} operations of type {} started",
         COUNT_OF_RESOLVE_OPERATION,
         OperationType.RESOLVE_INCIDENT);
@@ -130,9 +130,9 @@ public class DataGenerator {
     try {
       esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
     } catch (IOException e) {
-      logger.error("Error in refreshing indices", e);
+      LOGGER.error("Error in refreshing indices", e);
     }
-    logger.info(
+    LOGGER.info(
         "Data generation completed in: {} s",
         ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
     testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
@@ -156,24 +156,26 @@ public class DataGenerator {
   private void waitTillSomeInstancesAreArchived() {
     waitUntilAllDataAreImported();
 
-    int count = 0, maxWait = 30;
-    logger.info("Waiting for archived data (max: {} sec)", maxWait * 10);
+    int count = 0;
+    final int maxWait = 30;
+    LOGGER.info("Waiting for archived data (max: {} sec)", maxWait * 10);
     while (!someInstancesAreArchived() && count < maxWait) {
       ThreadUtil.sleepFor(10 * 1000L);
       count++;
     }
     if (count == maxWait) {
-      logger.error("There must be some archived instances");
+      LOGGER.error("There must be some archived instances");
       throw new RuntimeException("Data generation was not full: no archived instances");
     }
   }
 
   private void waitUntilAllDataAreImported() {
-    logger.info("Wait till data is imported.");
-    SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
+    LOGGER.info("Wait till data is imported.");
+    final SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
     searchRequest.source().query(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
     long loadedProcessInstances = 0;
-    int count = 0, maxWait = 101;
+    int count = 0;
+    final int maxWait = 101;
     while (PROCESS_INSTANCE_COUNT > loadedProcessInstances && count < maxWait) {
       count++;
       loadedProcessInstances = countEntitiesFor(searchRequest);
@@ -186,7 +188,7 @@ public class DataGenerator {
 
   private boolean someInstancesAreArchived() {
     try {
-      SearchResponse search =
+      final SearchResponse search =
           esClient.search(
               new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
               RequestOptions.DEFAULT);
@@ -198,16 +200,16 @@ public class DataGenerator {
   }
 
   private void createOperation(OperationType operationType, int maxAttempts) {
-    logger.debug("Try to create Operation {} ( {} attempts)", operationType.name(), maxAttempts);
+    LOGGER.debug("Try to create Operation {} ( {} attempts)", operationType.name(), maxAttempts);
     boolean operationStarted = false;
     int attempts = 0;
     while (!operationStarted && attempts < maxAttempts) {
-      Long processInstanceKey = chooseKey(processInstanceKeys);
+      final Long processInstanceKey = chooseKey(processInstanceKeys);
       operationStarted = operateAPICaller.createOperation(processInstanceKey, operationType);
       attempts++;
     }
     if (operationStarted) {
-      logger.debug("Operation {} started", operationType.name());
+      LOGGER.debug("Operation {} started", operationType.name());
     } else {
       throw new RuntimeException(
           String.format("Operation %s could not started", operationType.name()));
@@ -216,31 +218,31 @@ public class DataGenerator {
 
   private void createIncidents(String jobType, int numberOfIncidents) {
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
-    logger.info("{} incidents in {} created", numberOfIncidents, jobType);
+    LOGGER.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
   private void completeTasks(String jobType, int count) {
     ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
-    logger.info("{} tasks {} completed", count, jobType);
+    LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
   private List<Long> startProcessInstances(String bpmnProcessId, int numberOfProcessInstances) {
-    List<Long> processInstanceKeys = new ArrayList<>();
+    final List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < numberOfProcessInstances; i++) {
-      long processInstanceKey =
+      final long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
-      logger.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
+      LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
-    logger.info("{} processInstances started", processInstanceKeys.size());
+    LOGGER.info("{} processInstances started", processInstanceKeys.size());
     return processInstanceKeys;
   }
 
   private void deployProcess(String bpmnProcessId) {
-    String processDefinitionKey =
+    final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
             zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
-    logger.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
+    LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
   private BpmnModelInstance createModel(String bpmnProcessId) {
@@ -269,7 +271,7 @@ public class DataGenerator {
   private long countEntitiesFor(SearchRequest searchRequest) {
     try {
       searchRequest.source().size(1000);
-      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return searchResponse.getHits().getTotalHits().value;
     } catch (IOException e) {
       throw new OperateRuntimeException(e);
@@ -304,17 +306,17 @@ public class DataGenerator {
   }
 
   private void assertDataOneAttempt() {
-    ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
+    final ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
     assertThat(groupedProcesses).hasSize(1);
     assertThat(groupedProcesses[0].getBpmnProcessId()).isEqualTo(PROCESS_BPMN_PROCESS_ID);
 
-    ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
+    final ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
     assertThat(processInstances.getProcessInstances().size()).isEqualTo(PROCESS_INSTANCE_COUNT);
 
     // check sequence flows from random process instances
     int count = 0;
     while (count <= 10) {
-      SequenceFlowDto[] sequenceFlows =
+      final SequenceFlowDto[] sequenceFlows =
           operateAPICaller.getSequenceFlows(
               processInstances
                   .getProcessInstances()
@@ -325,7 +327,8 @@ public class DataGenerator {
     }
 
     // count incident process instances
-    ListViewResponseDto incidentProcessInstances = operateAPICaller.getIncidentProcessInstances();
+    final ListViewResponseDto incidentProcessInstances =
+        operateAPICaller.getIncidentProcessInstances();
     assertThat(incidentProcessInstances.getProcessInstances().size())
         .isEqualTo(PROCESS_INSTANCE_COUNT);
     assertThat(incidentProcessInstances.getTotalCount())
@@ -336,12 +339,13 @@ public class DataGenerator {
 
   public void changeData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-    logger.info("Starting changing the data...");
+    LOGGER.info("Starting changing the data...");
 
     deployProcess(NEW_BPMN_PROCESS_ID);
     startProcessInstances(NEW_BPMN_PROCESS_ID, NEW_PROCESS_INSTANCES_COUNT);
 
-    ListViewResponseDto incidentProcessInstances = operateAPICaller.getIncidentProcessInstances();
+    final ListViewResponseDto incidentProcessInstances =
+        operateAPICaller.getIncidentProcessInstances();
     // resolve several incidents
     for (int i = 0; i < 10; i++) {
       operateAPICaller.createOperation(
@@ -364,7 +368,7 @@ public class DataGenerator {
           OperationType.CANCEL_PROCESS_INSTANCE);
     }
 
-    logger.info(
+    LOGGER.info(
         "Data changing completed in: "
             + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now())
             + " s");
@@ -378,12 +382,12 @@ public class DataGenerator {
         .retryConsumer(
             () -> {
               try {
-                ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
+                final ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
                 assertThat(groupedProcesses).hasSize(2);
                 assertThat(groupedProcesses)
                     .extracting(ProcessGroupDto::getBpmnProcessId)
                     .containsExactlyInAnyOrder(PROCESS_BPMN_PROCESS_ID, NEW_BPMN_PROCESS_ID);
-                ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
+                final ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
                 assertThat(processInstances.getProcessInstances().size())
                     .isEqualTo(
                         PROCESS_INSTANCE_COUNT

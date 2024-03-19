@@ -43,10 +43,14 @@ public class HealthStateDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    HealthStateDto that = (HealthStateDto) o;
+    final HealthStateDto that = (HealthStateDto) o;
 
     return state != null ? state.equals(that.state) : that.state == null;
   }

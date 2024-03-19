@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class VariableZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(VariableZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(VariableZeebeRecordProcessor.class);
 
   @Autowired private VariableTemplate variableTemplate;
 
@@ -70,7 +70,7 @@ public class VariableZeebeRecordProcessor {
         final var initialIntent = cachedVariable.getLeft();
         final var variableEntity = cachedVariable.getRight();
 
-        logger.debug("Variable instance: id {}", variableEntity.getId());
+        LOGGER.debug("Variable instance: id {}", variableEntity.getId());
 
         if (initialIntent == VariableIntent.CREATED) {
           batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);

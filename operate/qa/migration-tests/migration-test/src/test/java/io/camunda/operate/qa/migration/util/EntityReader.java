@@ -49,7 +49,7 @@ public class EntityReader {
 
   public long countEntitiesFor(String index) {
     try {
-      SearchResponse searchResponse =
+      final SearchResponse searchResponse =
           esClient.search(new SearchRequest(index), RequestOptions.DEFAULT);
       return searchResponse.getHits().getTotalHits().value;
     } catch (IOException e) {
@@ -60,7 +60,7 @@ public class EntityReader {
   public <T> List<T> searchEntitiesFor(SearchRequest searchRequest, Class<T> entityClass) {
     searchRequest.source().size(1000);
     try {
-      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return mapSearchHits(searchResponse.getHits().getHits(), objectMapper, entityClass);
     } catch (IOException e) {
       throw new UncheckedIOException(e);

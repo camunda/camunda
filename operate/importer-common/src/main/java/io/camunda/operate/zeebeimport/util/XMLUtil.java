@@ -41,7 +41,7 @@ import org.xml.sax.helpers.DefaultHandler;
 @Configuration
 public class XMLUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(XMLUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(XMLUtil.class);
 
   @Bean
   public SAXParserFactory getSAXParserFactory() {
@@ -54,7 +54,7 @@ public class XMLUtil {
           "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
       return saxParserFactory;
     } catch (final ParserConfigurationException | SAXException e) {
-      logger.error("Error creating SAXParser", e);
+      LOGGER.error("Error creating SAXParser", e);
       throw new RuntimeException(e);
     }
   }
@@ -84,7 +84,7 @@ public class XMLUtil {
                       .add(new ProcessFlowNodeEntity(x.getId(), x.getName())));
       return Optional.of(processEntity);
     } catch (final ParserConfigurationException | SAXException | IOException | ModelException e) {
-      logger.warn("Unable to parse diagram: " + e.getMessage(), e);
+      LOGGER.warn("Unable to parse diagram: " + e.getMessage(), e);
       return Optional.empty();
     }
   }

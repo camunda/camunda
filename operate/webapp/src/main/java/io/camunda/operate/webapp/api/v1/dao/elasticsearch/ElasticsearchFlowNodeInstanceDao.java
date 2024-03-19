@@ -79,7 +79,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
   @Override
   public FlowNodeInstance byKey(final Long key) throws APIException {
     logger.debug("byKey {}", key);
-    List<FlowNodeInstance> flowNodeInstances;
+    final List<FlowNodeInstance> flowNodeInstances;
     try {
       flowNodeInstances =
           searchFor(new SearchSourceBuilder().query(termQuery(FlowNodeInstance.KEY, key)));
@@ -111,7 +111,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<FlowNodeInstance> flowNodeInstances =
+        final List<FlowNodeInstance> flowNodeInstances =
             ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToFlowNodeInstance);
         return new Results<FlowNodeInstance>()
             .setTotal(searchHits.getTotalHits().value)
@@ -127,7 +127,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
 
   private FlowNodeInstance searchHitToFlowNodeInstance(final SearchHit searchHit) {
     final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
-    FlowNodeInstance flowNodeInstance =
+    final FlowNodeInstance flowNodeInstance =
         new FlowNodeInstance()
             .setKey((Long) searchHitAsMap.get(FlowNodeInstance.KEY))
             .setProcessInstanceKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_INSTANCE_KEY))
@@ -147,7 +147,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
             .setTenantId((String) searchHitAsMap.get(FlowNodeInstance.TENANT_ID));
 
     if (flowNodeInstance.getFlowNodeId() != null) {
-      String flowNodeName =
+      final String flowNodeName =
           processCache.getFlowNodeNameOrDefaultValue(
               flowNodeInstance.getProcessDefinitionKey(), flowNodeInstance.getFlowNodeId(), null);
       flowNodeInstance.setFlowNodeName(flowNodeName);

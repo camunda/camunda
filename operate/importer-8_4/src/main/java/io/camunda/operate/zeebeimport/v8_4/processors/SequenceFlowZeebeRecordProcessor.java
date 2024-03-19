@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SequenceFlowZeebeRecordProcessor {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(SequenceFlowZeebeRecordProcessor.class);
   private static final String ID_PATTERN = "%s_%s";
 
@@ -64,7 +64,7 @@ public class SequenceFlowZeebeRecordProcessor {
             .setActivityId(recordValue.getElementId())
             .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-    logger.debug("Index sequence flow: id {}", entity.getId());
+    LOGGER.debug("Index sequence flow: id {}", entity.getId());
     batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);
   }
 }

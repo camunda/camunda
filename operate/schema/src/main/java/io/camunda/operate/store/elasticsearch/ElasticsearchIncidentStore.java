@@ -63,9 +63,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchIncidentStore implements IncidentStore {
 
-  public static QueryBuilder ACTIVE_INCIDENT_QUERY =
+  public static final QueryBuilder ACTIVE_INCIDENT_QUERY =
       termQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
@@ -101,7 +101,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incident: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -143,14 +143,14 @@ public class ElasticsearchIncidentStore implements IncidentStore {
                         .getBuckets()
                         .forEach(
                             b -> {
-                              ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
+                              final ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
                               errorTypes.add(Map.of(errorType, b.getDocCount()));
                             }));
           });
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -179,7 +179,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -201,7 +201,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
                     .fetchSource(IncidentTemplate.PROCESS_INSTANCE_KEY, null)
                     .size(batchSize));
 
-    Map<Long, List<Long>> result = new HashMap<>();
+    final Map<Long, List<Long>> result = new HashMap<>();
     try {
       tenantAwareClient.search(
           searchRequest,
@@ -228,7 +228,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
