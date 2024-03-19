@@ -26,14 +26,17 @@ on:
         description: "The branch name to build release from."
         type: string
         required: true
+        default: "c8as-dry-run-test"
       releaseVersion:
         description: "Version to release (applied to pom.xml and Git tag)."
         type: string
         required: true
+        default: "99.0.0"
       nextDevelopmentVersion:
         description: "Next development version."
         type: string
         required: true
+        default: "0.0.0-SNAPSHOT"
       dryRun:
         description: "Whether to perform a dry release, where no changes or artifacts(Docker, Maven) are pushed, defaults to `true`."
         type: boolean
@@ -53,12 +56,12 @@ on:
         description: "Commit id which the changelog should be generated from."
         type: string
         required: true
-        default: ""
+        default: "operate-8.5.0-alpha2"
 
 jobs:
   release:
     name: "release manually v${{ inputs.releaseVersion }}"
-    uses: camunda/zeebe/.github/workflows/operate-release-reusable.yml@main
+    uses: camunda/zeebe/.github/workflows/operate-release-reusable.yml@c8as-dry-run-test
     secrets: inherit
     with:
       branch: ${{ inputs.branch }}
