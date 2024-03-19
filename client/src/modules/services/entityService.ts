@@ -7,6 +7,7 @@
 
 import {get, post} from 'request';
 import {GenericEntity, GenericReport} from 'types';
+import {track} from 'tracking';
 
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
   let url = 'api/report';
@@ -60,4 +61,15 @@ export async function copyEntity(
   const json = await response.json();
 
   return json.id as string;
+}
+
+export async function createEntity(
+  type: string,
+  initialValues = {},
+  context?: string
+): Promise<GenericReport> {
+  const response = await post('api/' + type, initialValues);
+  const json = await response.json();
+  track(createEventName('create', type), {entityId: json.id, context});
+  return json.id;
 }

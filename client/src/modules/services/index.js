@@ -21,16 +21,8 @@ export {default as reportConfig, createReportUpdate, getDefaultSorting} from './
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getTooltipText} from './getTooltipText';
 export {default as getScreenBounds} from './getScreenBounds';
-export {
-  loadEntity,
-  loadReports,
-  createEntity,
-  updateEntity,
-  deleteEntity,
-  copyReport,
-} from './entityService';
-
-export {loadEntities, copyEntity} from './entityService.ts';
+export {loadEntity, loadReports, updateEntity, deleteEntity, copyReport} from './entityService';
+export {loadEntities, copyEntity, createEntity} from './entityService.ts';
 
 export {
   evaluateReport,

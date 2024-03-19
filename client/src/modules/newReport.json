@@ -1,6 +1,7 @@
 {
   "new": {
     "id": "new",
+    "collectionId": null,
     "data": {
       "configuration": {
         "color": "#1991c8",

@@ -54,6 +54,7 @@ export {AlertModal} from './AlertModal';
 export {AlertsDropdown} from './AlertsDropdown';
 export {DurationChart} from './DurationChart';
 export {ReportTemplateModal, DashboardTemplateModal} from './TemplateModal';
+export {KpiCreationModal} from './KpiCreationModal';
 export {EmptyState} from './EmptyState';
 export {PageTitle} from './PageTitle';
 export {TextEditor} from './TextEditor';

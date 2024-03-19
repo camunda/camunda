@@ -20,13 +20,6 @@ export async function loadEntity(type, id, query) {
   return await json;
 }
 
-export async function createEntity(type, initialValues = {}, context) {
-  const response = await post('api/' + type, initialValues);
-  const json = await response.json();
-  track(createEventName('create', type), {entityId: json.id, context});
-  return json.id;
-}
-
 export async function copyReport(id) {
   const response = await post(`api/report/${id}/copy`);
   const json = await response.json();

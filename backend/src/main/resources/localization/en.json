@@ -385,6 +385,13 @@
       "monitorTargetsOverTime": "Monitor targets over time",
       "monitorTargetsOverTime-description": "Monitor targets over time on duration, percentage, and count of a process."
     },
+    "kpiTemplates": {
+      "create": "Create process KPI",
+      "step": "Step {count}",
+      "selectKpi": "Select process KPI",
+      "automationRate": "Automation rate",
+      "automationRate-description": "The automation rate measures which percentage of the process is executed without human interaction."
+    },
     "instanceCount": {
       "appliedFilters": "Applied filters",
       "reportFiltersHeading": "Report level filters",

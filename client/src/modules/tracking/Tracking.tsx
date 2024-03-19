@@ -9,20 +9,27 @@ import {useEffect, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 
 import {getMixpanelConfig, getOptimizeVersion} from 'config';
-import {withUser} from 'HOC';
+import {useUser} from 'hooks';
 
 import './Tracking.scss';
 
+declare const window: {
+  mixpanel: any;
+  Osano: any;
+} & Window;
+
 let trackingEnabled = false;
-export function track(eventName, properties) {
+
+export function track(eventName: string, properties: {[key: string]: unknown}) {
   if (trackingEnabled) {
-    window.mixpanel.track('optimize:' + eventName, properties);
+    window.mixpanel.track(`optimize:${eventName}`, properties);
   }
 }
 
-export function Tracking({user}) {
+export default function Tracking() {
   const location = useLocation();
   const [initialized, setInitialized] = useState(false);
+  const {user} = useUser();
 
   useEffect(() => {
     if (initialized) {
@@ -39,13 +46,16 @@ export function Tracking({user}) {
       if (enabled && osanoScriptUrl) {
         await loadOsanoScript(osanoScriptUrl);
 
-        window.Osano?.cm?.addEventListener('osano-cm-consent-saved', async ({ANALYTICS}) => {
-          if (ANALYTICS === 'ACCEPT') {
-            await initMixpanel();
-            setInitialized(true);
-            trackingEnabled = true;
+        window.Osano?.cm?.addEventListener(
+          'osano-cm-consent-saved',
+          async ({ANALYTICS}: {ANALYTICS: string}) => {
+            if (ANALYTICS === 'ACCEPT') {
+              await initMixpanel();
+              setInitialized(true);
+              trackingEnabled = true;
+            }
           }
-        });
+        );
       }
     })();
   }, []);
@@ -85,13 +95,11 @@ async function initMixpanel() {
   });
 }
 
-async function loadOsanoScript(osanoScriptUrl) {
-  return new Promise((resolve) => {
+async function loadOsanoScript(osanoScriptUrl: string) {
+  return new Promise<void>((resolve) => {
     const osanoScriptElement = document.createElement('script');
     osanoScriptElement.src = osanoScriptUrl;
     document.head.appendChild(osanoScriptElement);
-    osanoScriptElement.onload = resolve;
+    osanoScriptElement.onload = () => resolve();
   });
 }
-
-export default withUser(Tracking);

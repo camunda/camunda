@@ -26,12 +26,13 @@ interface Report<Data> {
   id: string;
   owner: string;
   lastModified: string;
-  collectionId: string;
+  collectionId?: string | null;
   created: string;
   lastModifier: string;
   data: Data;
   combined: boolean;
   reportType: ReportType;
+  description: string | null;
 }
 
 type FilterFilterApplicationLevel = 'instance' | 'view';
@@ -297,7 +298,7 @@ interface SingleReportData {
   definitions: SingleReportDataDefinition[];
 }
 
-interface SingleProcessReportData extends SingleReportData {
+export interface SingleProcessReportData extends SingleReportData {
   filter: ProcessFilter<any>[];
   view: ProcessView;
   groupBy: GroupProcessGroupByDto<any>;

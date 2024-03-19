@@ -385,6 +385,13 @@
       "monitorTargetsOverTime": "Messe Ziele für einen Zeitraum",
       "monitorTargetsOverTime-description": "Messe Ziele über die Zeit für zeitliche, prozentuale und zählbare Metriken eines Prozesses."
     },
+    "kpiTemplates": {
+      "create": "Prozess-KPI erstellen",
+      "step": "Schritt {count}",
+      "selectKpi": "Prozess-KPI auswählen",
+      "automationRate": "Automatisierungsgrad",
+      "automationRate-description": "Der Automatisierungsgrad misst, wie viel Prozent des Prozesses ohne menschliche Interaktion ausgeführt werden."
+    },
     "instanceCount": {
       "appliedFilters": "Angewandte Filter",
       "reportFiltersHeading": "Berichtsfilter",

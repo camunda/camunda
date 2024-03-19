@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList, Deleter, ReportTemplateModal} from 'components';
+import {EntityList, Deleter, ReportTemplateModal, KpiCreationModal} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 import {isUserSearchAvailable} from 'config';
@@ -135,9 +135,17 @@ it('should modify the collections name with the edit modal', async () => {
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('action')().props.createProcessReport();
+  node.find('EntityList').prop('action')().props.create('report');
 
   expect(node.find(ReportTemplateModal)).toExist();
+});
+
+it('should show kpiCreationModal', () => {
+  const node = shallow(<Collection {...props} />);
+
+  node.find('EntityList').prop('action')().props.create('kpi');
+
+  expect(node.find(KpiCreationModal)).toExist();
 });
 
 it('should hide edit/delete from context menu for collection items that does not have a "manager" role', () => {

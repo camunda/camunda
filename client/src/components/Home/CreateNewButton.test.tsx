@@ -18,9 +18,7 @@ jest.mock('config', () => ({
 }));
 
 const props = {
-  createCollection: jest.fn(),
-  createProcessReport: jest.fn(),
-  createDashboard: jest.fn(),
+  create: jest.fn(),
   importEntity: jest.fn(),
 };
 
@@ -47,29 +45,40 @@ it('should not show decision and combined report options in cloud environment', 
 
 it('should call the createCollection prop', () => {
   const spy = jest.fn();
-  const node = shallow(<CreateNewButton {...props} createCollection={spy} />);
+  const node = shallow(<CreateNewButton {...props} create={spy} />);
 
   node.find(MenuItem).at(0).simulate('click');
 
-  expect(spy).toHaveBeenCalled();
+  expect(spy).toHaveBeenCalledWith('collection');
 });
 
 it('should call the createProcessReport prop', async () => {
   const spy = jest.fn();
-  const node = shallow(<CreateNewButton {...props} createProcessReport={spy} />);
+  const node = shallow(<CreateNewButton {...props} create={spy} />);
 
   await runLastEffect();
 
   node.find({label: 'Report'}).childAt(0).simulate('click');
 
-  expect(spy).toHaveBeenCalled();
+  expect(spy).toHaveBeenCalledWith('report');
 });
 
 it('should call the createDashboard prop', () => {
   const spy = jest.fn();
-  const node = shallow(<CreateNewButton {...props} createDashboard={spy} />);
+  const node = shallow(<CreateNewButton {...props} create={spy} />);
 
   node.find(MenuItem).at(1).simulate('click');
 
-  expect(spy).toHaveBeenCalled();
+  expect(spy).toHaveBeenCalledWith('dashboard');
+});
+
+it('should call the createKpi prop', async () => {
+  const spy = jest.fn();
+  const node = shallow(<CreateNewButton {...props} create={spy} />);
+
+  await runLastEffect();
+
+  node.find({label: 'Report'}).childAt(1).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('kpi');
 });
