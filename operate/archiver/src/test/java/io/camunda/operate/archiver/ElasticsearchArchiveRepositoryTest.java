@@ -214,51 +214,59 @@ public class ElasticsearchArchiveRepositoryTest {
                 when(mock.requestCache(false)).thenReturn(searchRequest);
               })) {
         try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
-          try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
-              mockStatic(ElasticsearchUtil.class)) {
-            final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
-                setHistogramMockForBatchOperations(mockedStatic);
-            final TopHitsAggregationBuilder topHitsAggregationBuilder =
-                setTopHitsAggregationBuilder(mockedStatic);
-            mockedStatic
-                .when(() -> AggregationBuilders.topHits(anyString()))
-                .thenReturn(topHitsAggregationBuilder);
-            final Timer.Sample timer = mock(Timer.Sample.class);
-            when(timer.stop(any())).thenReturn(1000L);
-            mockedTimer.when(Timer::start).thenReturn(timer);
-            elasticsearchUtilMockedStatic
-                .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
-                .thenReturn(CompletableFuture.completedFuture(searchResponse));
-            final Aggregations aggregations = mock(Aggregations.class);
-            final Histogram histogram = mock(Histogram.class);
-            final CompletableFuture<SearchResponse> completableFuture = new CompletableFuture<>();
-            when(searchResponse.getAggregations()).thenReturn(aggregations);
-            when(aggregations.get(anyString())).thenReturn(histogram);
-            when(histogram.getBuckets()).thenReturn(new ArrayList<>());
-            completableFuture.complete(searchResponse);
-            final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
-            assertThat(res).isCompleted();
-
-            verify(dateHistogramAggregationBuilder, times(1)).field("endDate");
-            verify(dateHistogramAggregationBuilder, times(1))
-                .calendarInterval(new DateHistogramInterval("1m"));
-            verify(dateHistogramAggregationBuilder, times(1)).format("format");
-            verify(dateHistogramAggregationBuilder, times(1)).keyed(true);
-            verify(dateHistogramAggregationBuilder, times(1))
-                .subAggregation((AggregationBuilder) any());
-            verify(dateHistogramAggregationBuilder, times(1))
-                .subAggregation((PipelineAggregationBuilder) any());
-            verify(topHitsAggregationBuilder, times(1)).size(0);
-            verify(topHitsAggregationBuilder, times(1)).sort("id", SortOrder.ASC);
-            verify(topHitsAggregationBuilder, times(1)).fetchSource("id", null);
-            verify(searchRequest, times(1)).requestCache(false);
-            verify(searchResponse, times(1)).getAggregations();
-            verify(timer, times(1)).stop(any());
-            verify(aggregations, times(1)).get("datesAgg");
-            verify(histogram, times(1)).getBuckets();
-          }
+          testGetBatchOperationsNextBatchEmptyBucketHelper(
+              searchResponse, mockedStatic, mockedTimer);
+          verify(searchRequest, times(1)).requestCache(false);
         }
       }
+    }
+  }
+
+  public void testGetBatchOperationsNextBatchEmptyBucketHelper(
+      final SearchResponse searchResponse,
+      final MockedStatic<AggregationBuilders> mockedStatic,
+      final MockedStatic<Timer> mockedTimer) {
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
+          setHistogramMockForBatchOperations(mockedStatic);
+      final TopHitsAggregationBuilder topHitsAggregationBuilder =
+          setTopHitsAggregationBuilder(mockedStatic);
+      mockedStatic
+          .when(() -> AggregationBuilders.topHits(anyString()))
+          .thenReturn(topHitsAggregationBuilder);
+      final Timer.Sample timer = mock(Timer.Sample.class);
+      when(timer.stop(any())).thenReturn(1000L);
+      mockedTimer.when(Timer::start).thenReturn(timer);
+      elasticsearchUtilMockedStatic
+          .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(searchResponse));
+      final Aggregations aggregations = mock(Aggregations.class);
+      final Histogram histogram = mock(Histogram.class);
+      final CompletableFuture<SearchResponse> completableFuture = new CompletableFuture<>();
+      when(searchResponse.getAggregations()).thenReturn(aggregations);
+      when(aggregations.get(anyString())).thenReturn(histogram);
+      when(histogram.getBuckets()).thenReturn(new ArrayList<>());
+      completableFuture.complete(searchResponse);
+      final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
+      assertThat(res).isCompleted();
+
+      verify(dateHistogramAggregationBuilder, times(1)).field("endDate");
+      verify(dateHistogramAggregationBuilder, times(1))
+          .calendarInterval(new DateHistogramInterval("1m"));
+      verify(dateHistogramAggregationBuilder, times(1)).format("format");
+      verify(dateHistogramAggregationBuilder, times(1)).keyed(true);
+      verify(dateHistogramAggregationBuilder, times(1)).subAggregation((AggregationBuilder) any());
+      verify(dateHistogramAggregationBuilder, times(1))
+          .subAggregation((PipelineAggregationBuilder) any());
+      verify(topHitsAggregationBuilder, times(1)).size(0);
+      verify(topHitsAggregationBuilder, times(1)).sort("id", SortOrder.ASC);
+      verify(topHitsAggregationBuilder, times(1)).fetchSource("id", null);
+      verify(searchResponse, times(1)).getAggregations();
+      verify(timer, times(1)).stop(any());
+      verify(aggregations, times(1)).get("datesAgg");
+      verify(histogram, times(1)).getBuckets();
     }
   }
 

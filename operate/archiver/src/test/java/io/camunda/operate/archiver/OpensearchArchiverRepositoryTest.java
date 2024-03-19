@@ -191,101 +191,107 @@ public class OpensearchArchiverRepositoryTest {
     try (final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class)) {
       try (final MockedStatic<AggregationDSL> aggregationDSLMockedStatic =
           mockStatic(AggregationDSL.class)) {
-        try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class)) {
-          try (final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class)) {
-            final Query query = mock(Query.class);
-            queryDSLMockedStatic.when(() -> QueryDSL.constantScore(any())).thenReturn(query);
-            final SearchRequest.Builder searchRequestBuilder = mock(SearchRequest.Builder.class);
-            when(batchOperationTemplate.getFullQualifiedName()).thenReturn("fullQualifiedName");
-            when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-            when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
-            when(archiverProperties.getRolloverInterval()).thenReturn("1m");
-            when(archiverProperties.getRolloverBatchSize()).thenReturn(12);
-            final Aggregation aggregation = mock(Aggregation.class);
-            final DateHistogramAggregation dateHistogramAggregation =
-                mock(DateHistogramAggregation.class);
-            final Aggregation bucketAggregation = mock(Aggregation.class);
-            final Aggregation topHitAggregation = mock(Aggregation.class);
-            final BucketSortAggregation bucketSortAggregation = mock(BucketSortAggregation.class);
-            final TopHitsAggregation topHitsAggregation = mock(TopHitsAggregation.class);
-            when(topHitsAggregation._toAggregation()).thenReturn(topHitAggregation);
-            aggregationDSLMockedStatic
-                .when(() -> AggregationDSL.bucketSortAggregation(any(), any()))
-                .thenReturn(bucketSortAggregation);
-            when(bucketSortAggregation._toAggregation()).thenReturn(bucketAggregation);
-            aggregationDSLMockedStatic
-                .when(
-                    () ->
-                        AggregationDSL.dateHistogramAggregation(
-                            any(), any(), anyString(), anyBoolean()))
-                .thenReturn(dateHistogramAggregation);
-            aggregationDSLMockedStatic
-                .when(
-                    () ->
-                        AggregationDSL.withSubaggregations(
-                            (DateHistogramAggregation) any(), (Map<String, Aggregation>) any()))
-                .thenReturn(aggregation);
-            aggregationDSLMockedStatic
-                .when(
-                    () -> AggregationDSL.topHitsAggregation((List<String>) any(), anyInt(), any()))
-                .thenReturn(topHitsAggregation);
-            requestDSLMockedStatic
-                .when(() -> RequestDSL.searchRequestBuilder(anyString()))
-                .thenReturn(searchRequestBuilder);
-            when(searchRequestBuilder.query(query)).thenReturn(searchRequestBuilder);
-            when(searchRequestBuilder.aggregations(anyString(), (Aggregation) any()))
-                .thenReturn(searchRequestBuilder);
-            when(searchRequestBuilder.source((SourceConfig) any()))
-                .thenReturn(searchRequestBuilder);
-            when(searchRequestBuilder.size(0)).thenReturn(searchRequestBuilder);
-            when(searchRequestBuilder.sort((SortOptions) any())).thenReturn(searchRequestBuilder);
-            when(searchRequestBuilder.requestCache(false)).thenReturn(searchRequestBuilder);
-
-            final RichOpenSearchClient.Async asyncClient = mock(RichOpenSearchClient.Async.class);
-            final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations =
-                mock(OpenSearchAsyncDocumentOperations.class);
-            when(richOpenSearchClient.async()).thenReturn(asyncClient);
-            when(asyncClient.doc()).thenReturn(openSearchAsyncDocumentOperations);
-            final SearchResponse searchResponse = mock(SearchResponse.class);
-            final CompletableFuture<SearchResponse<Object>> completableFuture =
-                new CompletableFuture<>();
-            completableFuture.complete(searchResponse);
-            when(openSearchAsyncDocumentOperations.search(any(), any(), any()))
-                .thenReturn(completableFuture);
-            final Map<String, Aggregate> aggregations = new HashMap<>();
-            when(searchResponse.aggregations()).thenReturn(aggregations);
-            final Aggregate aggregate = mock(Aggregate.class);
-            aggregations.put(DATES_AGG, aggregate);
-            final DateHistogramAggregate dateHistogramAggregate =
-                mock(DateHistogramAggregate.class);
-            when(aggregate.dateHistogram()).thenReturn(dateHistogramAggregate);
-            final Buckets buckets = mock(Buckets.class);
-            when(dateHistogramAggregate.buckets()).thenReturn(buckets);
-            final Map<String, String> bucketsMap = new HashMap<>();
-            when(buckets.keyed()).thenReturn(bucketsMap);
-            final Timer timer = mock(Timer.class);
-            final Timer.Sample timerSample = mock(Timer.Sample.class);
-            when(metrics.getTimer(any())).thenReturn(timer);
-            timerMockedStatic.when(Timer::start).thenReturn(timerSample);
-            when(timerSample.stop(any())).thenReturn(5L);
-            final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
-            assertThat(res).isCompleted();
-            verify(searchRequestBuilder, times(1)).query(query);
-            verify(searchRequestBuilder, times(1)).aggregations(DATES_AGG, aggregation);
-            verify(searchRequestBuilder, times(1)).source((SourceConfig) any());
-            verify(searchRequestBuilder, times(1)).size(0);
-            verify(searchRequestBuilder, times(1)).sort(sortOptions("endDate", Asc));
-            verify(searchRequestBuilder, times(1)).requestCache(false);
-            verify(bucketSortAggregation, times(1))._toAggregation();
-            verify(topHitsAggregation, times(1))._toAggregation();
-            verify(asyncClient, times(1)).doc();
-            verify(openSearchAsyncDocumentOperations, times(1)).search(any(), any(), any());
-            verify(searchResponse, times(1)).aggregations();
-            verify(aggregate, times(1)).dateHistogram();
-            verify(dateHistogramAggregate, times(1)).buckets();
-          }
-        }
+        testGetBatchOperationsNextBatchHelper(queryDSLMockedStatic, aggregationDSLMockedStatic);
       }
     }
+  }
+
+  public void testGetBatchOperationsNextBatchHelper(final MockedStatic<QueryDSL> queryDSLMockedStatic, final MockedStatic<AggregationDSL> aggregationDSLMockedStatic) {
+
+    try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class)) {
+      try (final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class)) {
+        final Query query = mock(Query.class);
+        queryDSLMockedStatic.when(() -> QueryDSL.constantScore(any())).thenReturn(query);
+        final SearchRequest.Builder searchRequestBuilder = mock(SearchRequest.Builder.class);
+        when(batchOperationTemplate.getFullQualifiedName()).thenReturn("fullQualifiedName");
+        when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+        when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+        when(archiverProperties.getRolloverInterval()).thenReturn("1m");
+        when(archiverProperties.getRolloverBatchSize()).thenReturn(12);
+        final Aggregation aggregation = mock(Aggregation.class);
+        final DateHistogramAggregation dateHistogramAggregation =
+            mock(DateHistogramAggregation.class);
+        final Aggregation bucketAggregation = mock(Aggregation.class);
+        final Aggregation topHitAggregation = mock(Aggregation.class);
+        final BucketSortAggregation bucketSortAggregation = mock(BucketSortAggregation.class);
+        final TopHitsAggregation topHitsAggregation = mock(TopHitsAggregation.class);
+        when(topHitsAggregation._toAggregation()).thenReturn(topHitAggregation);
+        aggregationDSLMockedStatic
+            .when(() -> AggregationDSL.bucketSortAggregation(any(), any()))
+            .thenReturn(bucketSortAggregation);
+        when(bucketSortAggregation._toAggregation()).thenReturn(bucketAggregation);
+        aggregationDSLMockedStatic
+            .when(
+                () ->
+                    AggregationDSL.dateHistogramAggregation(
+                        any(), any(), anyString(), anyBoolean()))
+            .thenReturn(dateHistogramAggregation);
+        aggregationDSLMockedStatic
+            .when(
+                () ->
+                    AggregationDSL.withSubaggregations(
+                        (DateHistogramAggregation) any(), (Map<String, Aggregation>) any()))
+            .thenReturn(aggregation);
+        aggregationDSLMockedStatic
+            .when(
+                () -> AggregationDSL.topHitsAggregation((List<String>) any(), anyInt(), any()))
+            .thenReturn(topHitsAggregation);
+        requestDSLMockedStatic
+            .when(() -> RequestDSL.searchRequestBuilder(anyString()))
+            .thenReturn(searchRequestBuilder);
+        when(searchRequestBuilder.query(query)).thenReturn(searchRequestBuilder);
+        when(searchRequestBuilder.aggregations(anyString(), (Aggregation) any()))
+            .thenReturn(searchRequestBuilder);
+        when(searchRequestBuilder.source((SourceConfig) any()))
+            .thenReturn(searchRequestBuilder);
+        when(searchRequestBuilder.size(0)).thenReturn(searchRequestBuilder);
+        when(searchRequestBuilder.sort((SortOptions) any())).thenReturn(searchRequestBuilder);
+        when(searchRequestBuilder.requestCache(false)).thenReturn(searchRequestBuilder);
+
+        final RichOpenSearchClient.Async asyncClient = mock(RichOpenSearchClient.Async.class);
+        final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations =
+            mock(OpenSearchAsyncDocumentOperations.class);
+        when(richOpenSearchClient.async()).thenReturn(asyncClient);
+        when(asyncClient.doc()).thenReturn(openSearchAsyncDocumentOperations);
+        final SearchResponse searchResponse = mock(SearchResponse.class);
+        final CompletableFuture<SearchResponse<Object>> completableFuture =
+            new CompletableFuture<>();
+        completableFuture.complete(searchResponse);
+        when(openSearchAsyncDocumentOperations.search(any(), any(), any()))
+            .thenReturn(completableFuture);
+        final Map<String, Aggregate> aggregations = new HashMap<>();
+        when(searchResponse.aggregations()).thenReturn(aggregations);
+        final Aggregate aggregate = mock(Aggregate.class);
+        aggregations.put(DATES_AGG, aggregate);
+        final DateHistogramAggregate dateHistogramAggregate =
+            mock(DateHistogramAggregate.class);
+        when(aggregate.dateHistogram()).thenReturn(dateHistogramAggregate);
+        final Buckets buckets = mock(Buckets.class);
+        when(dateHistogramAggregate.buckets()).thenReturn(buckets);
+        final Map<String, String> bucketsMap = new HashMap<>();
+        when(buckets.keyed()).thenReturn(bucketsMap);
+        final Timer timer = mock(Timer.class);
+        final Timer.Sample timerSample = mock(Timer.Sample.class);
+        when(metrics.getTimer(any())).thenReturn(timer);
+        timerMockedStatic.when(Timer::start).thenReturn(timerSample);
+        when(timerSample.stop(any())).thenReturn(5L);
+        final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
+        assertThat(res).isCompleted();
+        verify(searchRequestBuilder, times(1)).query(query);
+        verify(searchRequestBuilder, times(1)).aggregations(DATES_AGG, aggregation);
+        verify(searchRequestBuilder, times(1)).source((SourceConfig) any());
+        verify(searchRequestBuilder, times(1)).size(0);
+        verify(searchRequestBuilder, times(1)).sort(sortOptions("endDate", Asc));
+        verify(searchRequestBuilder, times(1)).requestCache(false);
+        verify(bucketSortAggregation, times(1))._toAggregation();
+        verify(topHitsAggregation, times(1))._toAggregation();
+        verify(asyncClient, times(1)).doc();
+        verify(openSearchAsyncDocumentOperations, times(1)).search(any(), any(), any());
+        verify(searchResponse, times(1)).aggregations();
+        verify(aggregate, times(1)).dateHistogram();
+        verify(dateHistogramAggregate, times(1)).buckets();
+      }
+    }
+
   }
 }
