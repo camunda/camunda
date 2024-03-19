@@ -20,7 +20,7 @@ import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
 public class MethodInfo implements BeanInfo {
 
-  private static final StandardReflectionParameterNameDiscoverer parameterNameDiscoverer =
+  private static final StandardReflectionParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
       new StandardReflectionParameterNameDiscoverer();
 
   protected ClassInfo classInfo;
@@ -71,7 +71,7 @@ public class MethodInfo implements BeanInfo {
 
   public List<ParameterInfo> getParameters() {
     final Parameter[] parameters = method.getParameters();
-    final String[] parameterNames = parameterNameDiscoverer.getParameterNames(method);
+    final String[] parameterNames = PARAMETER_NAME_DISCOVERER.getParameterNames(method);
 
     final ArrayList<ParameterInfo> result = new ArrayList<>();
     for (int i = 0; i < parameters.length; i++) {
@@ -82,7 +82,7 @@ public class MethodInfo implements BeanInfo {
 
   public List<ParameterInfo> getParametersFilteredByAnnotation(final Class type) {
     final Parameter[] parameters = method.getParameters();
-    final String[] parameterNames = parameterNameDiscoverer.getParameterNames(method);
+    final String[] parameterNames = PARAMETER_NAME_DISCOVERER.getParameterNames(method);
 
     final ArrayList<ParameterInfo> result = new ArrayList<>();
     for (int i = 0; i < parameters.length; i++) {

@@ -88,18 +88,22 @@ class CopyNotNullBeanUtilsBeanTest {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(first, second, third);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       final ForTestWithBoolean that = (ForTestWithBoolean) o;
       return second == that.second
           && Objects.equals(first, that.first)
           && Objects.equals(third, that.third);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(first, second, third);
     }
 
     @Override
@@ -151,18 +155,22 @@ class CopyNotNullBeanUtilsBeanTest {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(first, second, third);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       final ForTest forTest = (ForTest) o;
       return Objects.equals(first, forTest.first)
           && Objects.equals(second, forTest.second)
           && Objects.equals(third, forTest.third);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(first, second, third);
     }
 
     @Override

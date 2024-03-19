@@ -21,7 +21,7 @@ public class CommandWrapper {
   private final ActivatedJob job;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
 
-  private long currentRetryDelay = 50l;
+  private long currentRetryDelay = 50L;
   private int invocationCounter = 0;
   private final int maxRetries = 20; // TODO: Make configurable
 

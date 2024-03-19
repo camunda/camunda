@@ -32,16 +32,20 @@ public class ZeebeDeploymentValue implements ZeebeAnnotationValue<ClassInfo> {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    final ZeebeDeploymentValue that = (ZeebeDeploymentValue) o;
-    return Objects.equals(resources, that.resources) && Objects.equals(beanInfo, that.beanInfo);
+  public int hashCode() {
+    return Objects.hash(resources, beanInfo);
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(resources, beanInfo);
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeDeploymentValue that = (ZeebeDeploymentValue) o;
+    return Objects.equals(resources, that.resources) && Objects.equals(beanInfo, that.beanInfo);
   }
 
   @Override

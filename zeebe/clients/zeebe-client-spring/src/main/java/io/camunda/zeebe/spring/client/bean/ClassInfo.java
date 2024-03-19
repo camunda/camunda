@@ -13,7 +13,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
-public class ClassInfo implements BeanInfo {
+public final class ClassInfo implements BeanInfo {
 
   private final Object bean;
   private final String beanName;

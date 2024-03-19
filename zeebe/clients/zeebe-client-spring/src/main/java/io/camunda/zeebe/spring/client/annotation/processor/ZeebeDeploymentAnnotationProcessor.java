@@ -36,7 +36,7 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ZeebeDeploymentAnnotationProcessor.class);
 
-  private static final ResourcePatternResolver resourceResolver =
+  private static final ResourcePatternResolver RESOURCE_RESOLVER =
       new PathMatchingResourcePatternResolver();
 
   private final List<ZeebeDeploymentValue> deploymentValues = new ArrayList<>();
@@ -120,7 +120,7 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
 
   public Resource[] getResources(final String resources) {
     try {
-      return resourceResolver.getResources(resources);
+      return RESOURCE_RESOLVER.getResources(resources);
     } catch (final IOException e) {
       return new Resource[0];
     }
