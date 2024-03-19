@@ -21,7 +21,6 @@ import org.junit.Rule;
 
 public abstract class ClientTest {
 
-  // TODO: refactor when tests can support both gRPC and REST
   @Rule
   public final TestEnvironmentRule rule =
       new TestEnvironmentRule(builder -> builder.preferRestOverGrpc(false));
