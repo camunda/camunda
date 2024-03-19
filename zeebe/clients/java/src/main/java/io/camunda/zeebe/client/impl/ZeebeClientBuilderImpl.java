@@ -58,7 +58,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String ZEEBE_CLIENT_WORKER_STREAM_ENABLED =
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
-  public static final URI DEFAULT_GRPC_ADDRESS = getURIFromString("https://" + DEFAULT_GATEWAY_ADDRESS);
+  public static final URI DEFAULT_GRPC_ADDRESS =
+      getURIFromString("https://" + DEFAULT_GATEWAY_ADDRESS);
   public static final URI DEFAULT_REST_ADDRESS = getURIFromString("https://0.0.0.0:8080");
   public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
   public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
