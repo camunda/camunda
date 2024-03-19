@@ -86,7 +86,7 @@ class IncidentsByError extends NetworkReconnectionHandler {
 
   handlePolling = async () => {
     this.isPollRequestRunning = true;
-    const response = await fetchIncidentsByError();
+    const response = await fetchIncidentsByError({isPolling: true});
 
     if (this.intervalId !== null) {
       if (response.isSuccess) {

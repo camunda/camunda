@@ -222,9 +222,12 @@ class Operations extends NetworkReconnectionHandler {
 
   handlePolling = async () => {
     this.isPollRequestRunning = true;
-    const response = await fetchBatchOperations({
-      pageSize: MAX_OPERATIONS_PER_REQUEST * this.state.page,
-    });
+    const response = await fetchBatchOperations(
+      {
+        pageSize: MAX_OPERATIONS_PER_REQUEST * this.state.page,
+      },
+      {isPolling: true},
+    );
 
     if (this.intervalId !== null && response.isSuccess) {
       this.setOperations(response.data);

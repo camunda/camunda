@@ -17,21 +17,27 @@
 
 import {requestAndParse} from 'modules/request';
 
-const fetchBatchOperations = async ({
-  pageSize,
-  searchAfter,
-}: {
-  pageSize: number;
-  searchAfter?: OperationEntity['sortValues'];
-}) => {
-  return requestAndParse<OperationEntity[]>({
-    url: '/api/batch-operations',
-    method: 'POST',
-    body: {
-      pageSize,
-      searchAfter,
+const fetchBatchOperations = async (
+  {
+    pageSize,
+    searchAfter,
+  }: {
+    pageSize: number;
+    searchAfter?: OperationEntity['sortValues'];
+  },
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<OperationEntity[]>(
+    {
+      url: '/api/batch-operations',
+      method: 'POST',
+      body: {
+        pageSize,
+        searchAfter,
+      },
     },
-  });
+    options,
+  );
 };
 
 export {fetchBatchOperations};

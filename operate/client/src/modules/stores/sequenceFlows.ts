@@ -92,7 +92,9 @@ class SequenceFlows extends NetworkReconnectionHandler {
 
   handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
     this.isPollRequestRunning = true;
-    const {isSuccess, data} = await fetchSequenceFlows(instanceId);
+    const {isSuccess, data} = await fetchSequenceFlows(instanceId, {
+      isPolling: true,
+    });
 
     if (this.intervalId !== null && isSuccess) {
       this.setItems(getProcessedSequenceFlows(data));

@@ -24,10 +24,16 @@ type SequenceFlowDto = {
 
 type SequenceFlowsDto = SequenceFlowDto[];
 
-const fetchSequenceFlows = async (processInstanceId: string) => {
-  return requestAndParse<SequenceFlowsDto>({
-    url: `/api/process-instances/${processInstanceId}/sequence-flows`,
-  });
+const fetchSequenceFlows = async (
+  processInstanceId: string,
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<SequenceFlowsDto>(
+    {
+      url: `/api/process-instances/${processInstanceId}/sequence-flows`,
+    },
+    options,
+  );
 };
 
 export {fetchSequenceFlows};

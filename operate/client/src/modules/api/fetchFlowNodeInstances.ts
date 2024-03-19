@@ -45,12 +45,18 @@ type FlowNodeInstancesDto<T> = {
   };
 };
 
-const fetchFlowNodeInstances = async (queries: Query[]) => {
-  return requestAndParse<FlowNodeInstancesDto<FlowNodeInstanceDto>>({
-    url: '/api/flow-node-instances',
-    method: 'POST',
-    body: {queries},
-  });
+const fetchFlowNodeInstances = async (
+  queries: Query[],
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<FlowNodeInstancesDto<FlowNodeInstanceDto>>(
+    {
+      url: '/api/flow-node-instances',
+      method: 'POST',
+      body: {queries},
+    },
+    options,
+  );
 };
 
 export {fetchFlowNodeInstances};

@@ -246,4 +246,38 @@ describe('stores/currentInstance', () => {
 
     window.addEventListener = originalEventListener;
   });
+
+  it('should poll with polling header', async () => {
+    jest.useFakeTimers();
+
+    // expect the first request not to be a polling request
+    mockFetchProcessInstance().withSuccess(currentInstanceMock, {
+      expectPolling: false,
+    });
+
+    processInstanceDetailsStore.init({id: '1'});
+    await waitFor(() =>
+      expect(processInstanceDetailsStore.state.processInstance).toEqual(
+        currentInstanceMock,
+      ),
+    );
+
+    const secondCurrentInstanceMock = createInstance();
+
+    // expect the second request to be a polling request
+    mockFetchProcessInstance().withSuccess(secondCurrentInstanceMock, {
+      expectPolling: true,
+    });
+
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(processInstanceDetailsStore.state.processInstance).toEqual(
+        secondCurrentInstanceMock,
+      ),
+    );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 });
