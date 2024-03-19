@@ -1,4 +1,4 @@
-name: Check project versions
+name: Operate Check project versions
 
 on:
   workflow_dispatch:
