@@ -29,7 +29,7 @@ import org.springframework.util.StringUtils;
 
 @Component
 public class CancelTokenHandler {
-  private static final Logger logger = LoggerFactory.getLogger(CancelTokenHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CancelTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;
   private final CancelFlowNodeHelper cancelFlowNodeHelper;
 
@@ -48,7 +48,7 @@ public class CancelTokenHandler {
     final String flowNodeInstanceKeyAsString = modification.getFromFlowNodeInstanceKey();
     if (StringUtils.hasText(flowNodeInstanceKeyAsString)) {
       final Long flowNodeInstanceKey = Long.parseLong(flowNodeInstanceKeyAsString);
-      logger.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
+      LOGGER.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
       return cancelFlowNodeHelper.cancelFlowNodeInstances(
           currentStep, List.of(flowNodeInstanceKey));
     } else {
@@ -61,7 +61,7 @@ public class CancelTokenHandler {
                 "Abort CANCEL_TOKEN: Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
                 processInstanceKey, flowNodeId));
       }
-      logger.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
+      LOGGER.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
       return cancelFlowNodeHelper.cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
     }
   }

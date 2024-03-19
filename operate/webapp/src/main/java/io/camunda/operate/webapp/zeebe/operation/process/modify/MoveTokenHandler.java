@@ -33,7 +33,7 @@ import org.springframework.util.StringUtils;
 
 @Component
 public class MoveTokenHandler {
-  private static final Logger logger = LoggerFactory.getLogger(MoveTokenHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MoveTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;
   private final CancelFlowNodeHelper cancelFlowNodeHelper;
 
@@ -59,7 +59,7 @@ public class MoveTokenHandler {
 
       return cancelTokensOnOriginalNodes(nextStep, processInstanceKey, modification);
     } else {
-      logger.info(
+      LOGGER.info(
           "Skipping MOVE_TOKEN processing for flowNode {} and process instance {} since newTokensCount is {}",
           modification.getFromFlowNodeId(),
           processInstanceKey,
@@ -84,13 +84,13 @@ public class MoveTokenHandler {
     final Queue<Map<String, Object>> activatedNodeVariables =
         new LinkedList<>(variablesToMoveByFlownodeId.getOrDefault(toFlowNodeId, List.of()));
 
-    logger.debug(
+    LOGGER.debug(
         "Move [Add token to flowNodeId: {} with variables: {} ]",
         toFlowNodeId,
         activatedNodeVariables);
 
     if (newTokensCount > activatedNodeVariables.size()) {
-      logger.warn(
+      LOGGER.warn(
           "There are {} variables to move but only {} elements to activate, some variables might be lost",
           newTokensCount,
           activatedNodeVariables.size());
@@ -183,13 +183,13 @@ public class MoveTokenHandler {
         // will correctly fail attempts to migrate off an invalid flow node
         newTokensCount = 1;
       } else {
-        logger.warn(
+        LOGGER.warn(
             "MOVE_TOKEN attempted with no flowNodeId, flowNodeInstanceKey, or newTokenCount specified");
         newTokensCount = 0;
       }
     }
 
-    logger.info("MOVE_TOKEN has a newTokensCount value of {}", newTokensCount);
+    LOGGER.info("MOVE_TOKEN has a newTokensCount value of {}", newTokensCount);
     return newTokensCount;
   }
 }

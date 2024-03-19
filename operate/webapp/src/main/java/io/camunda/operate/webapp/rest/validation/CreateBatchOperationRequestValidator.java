@@ -30,7 +30,7 @@ import org.springframework.util.CollectionUtils;
 @Component
 public class CreateBatchOperationRequestValidator {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(CreateBatchOperationRequestValidator.class);
 
   public void validate(final CreateBatchOperationRequestDto batchOperationRequest) {
@@ -61,6 +61,7 @@ public class CreateBatchOperationRequestValidator {
 
       case MODIFY_PROCESS_INSTANCE:
         validateModifyProcessInstanceType(batchOperationRequest);
+        break;
       default:
         break;
     }
@@ -72,7 +73,7 @@ public class CreateBatchOperationRequestValidator {
     if (CollectionUtils.isEmpty(modifications)) {
       throw new InvalidRequestException("Operation requires a single modification entry.");
     } else if (modifications.size() > 1) {
-      logger.warn("Multiple modifications in request, only one will be processed.");
+      LOGGER.warn("Multiple modifications in request, only one will be processed.");
       batchOperationRequest.setModifications(List.of(modifications.get(0)));
     }
   }

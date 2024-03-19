@@ -24,12 +24,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CancelFlowNodeHelper {
-  private static final Logger logger = LoggerFactory.getLogger(CancelFlowNodeHelper.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CancelFlowNodeHelper.class);
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
       cancelFlowNodeInstances(
           ModifyProcessInstanceCommandStep1 currentStep, final List<Long> flowNodeInstanceKeys) {
-    logger.debug("Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeys);
+    LOGGER.debug("Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeys);
     ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep = null;
     final int size = flowNodeInstanceKeys.size();
     for (int i = 0; i < size; i++) {

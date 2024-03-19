@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AddTokenHandler {
-  private static final Logger logger = LoggerFactory.getLogger(AddTokenHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(AddTokenHandler.class);
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 addToken(
       final ModifyProcessInstanceCommandStep1 currentStep, final Modification modification) {
@@ -34,7 +34,7 @@ public class AddTokenHandler {
     final String flowNodeId = modification.getToFlowNodeId();
     final Map<String, List<Map<String, Object>>> flowNodeId2variables =
         modification.variablesForAddToken();
-    logger.debug("Add token to flowNodeId {} with variables: {}", flowNodeId, flowNodeId2variables);
+    LOGGER.debug("Add token to flowNodeId {} with variables: {}", flowNodeId, flowNodeId2variables);
     ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep;
     // 1. Activate
     if (modification.getAncestorElementInstanceKey() != null) {

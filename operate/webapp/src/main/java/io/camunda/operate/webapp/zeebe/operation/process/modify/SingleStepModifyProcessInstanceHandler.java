@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component;
 public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHandler
     implements ModifyProcessInstanceHandler {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(SingleStepModifyProcessInstanceHandler.class);
   @Autowired private ObjectMapper objectMapper;
   @Autowired private OperationsManager operationsManager;
@@ -111,7 +111,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
           nextStep = moveTokenHandler.moveToken(currentStep, processInstanceKey, modification);
           break;
         default:
-          logger.warn(
+          LOGGER.warn(
               "SingleStepModifyProcessInstanceHandler encountered a modification type that should have been filtered out: {}",
               modification.getModification());
           break;
