@@ -21,6 +21,7 @@ import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessIn
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
@@ -50,6 +52,7 @@ import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
+@Tag(OPENSEARCH_PASSING)
 public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
   @Test
@@ -537,6 +540,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
   @ParameterizedTest
   @MethodSource("allUserTaskReports")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void userTaskFrequencyReportsCanBeEvaluatedWithOnlyCancellationUserTaskDataImported(ProcessReportDataType reportDataType) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();

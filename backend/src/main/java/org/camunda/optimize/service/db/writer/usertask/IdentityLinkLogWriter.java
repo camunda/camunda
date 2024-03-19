@@ -152,10 +152,8 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     return assigneeOps.stream()
         // get last added assignee. In case the last two operations are add and delete and
         // both occurred at the same time, then ignore the delete and just take the add. We need to
-        // do
-        // that since changing the assignee in tasklist results in those two operations, which will
-        // have the
-        // exact same timestamp.
+        // do that since changing the assignee in tasklist results in those two operations, which
+        // will have the exact same timestamp.
         .reduce(
             (first, second) -> {
               boolean sameTimestampAndFirstIsAddOperation =
