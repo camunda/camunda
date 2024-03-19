@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 public class ClassInfoTest {
 
   @Test
-  public void getBeanInfo() throws Exception {
+  public void getBeanInfo() {
     final WithDeploymentAnnotation withDeploymentAnnotation = new WithDeploymentAnnotation();
 
     final ClassInfo beanInfo = beanInfo(withDeploymentAnnotation);
@@ -27,24 +27,24 @@ public class ClassInfoTest {
   }
 
   @Test
-  public void hasZeebeeDeploymentAnnotation() throws Exception {
+  public void hasZeebeeDeploymentAnnotation() {
     assertThat(beanInfo(new WithDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isTrue();
   }
 
   @Test
-  public void hasNoZeebeeDeploymentAnnotation() throws Exception {
+  public void hasNoZeebeeDeploymentAnnotation() {
     assertThat(beanInfo(new WithoutDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isFalse();
   }
 
   @Test
-  public void hasZeebeWorkerMethod() throws Exception {
+  public void hasZeebeWorkerMethod() {
     assertThat(beanInfo(new WithZeebeWorker()).hasMethodAnnotation(JobWorker.class)).isTrue();
   }
 
   @Test
-  public void hasNotZeebeWorkerMethod() throws Exception {
+  public void hasNotZeebeWorkerMethod() {
     assertThat(beanInfo("normal String").hasMethodAnnotation(JobWorker.class)).isFalse();
   }
 
@@ -79,26 +79,6 @@ public class ClassInfoTest {
         autoComplete = true,
         enabled = true)
     public void handle() {}
-  }
-
-  public static class WithZeebeWorkerVariables {
-    @JobWorker(type = "bar", timeout = 100L, fetchVariables = "var3", autoComplete = false)
-    public void handle(@Variable final String var1, @Variable final int var2) {}
-  }
-
-  public static class WithDisabledZeebeWorker {
-    @JobWorker(type = "bar", enabled = false, autoComplete = false)
-    public void handle(@Variable final String var1, @Variable final int var2) {}
-  }
-
-  public static class WithZeebeWorkerVariablesComplexType {
-    @JobWorker(type = "bar", timeout = 100L, fetchVariables = "var2", autoComplete = false)
-    public void handle(@Variable final String var1, @Variable final ComplexTypeDTO var2) {}
-
-    public static class ComplexTypeDTO {
-      private String var1;
-      private String var2;
-    }
   }
 
   public static class NoPropertiesSet {
