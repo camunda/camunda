@@ -26,7 +26,7 @@ public class ReadZeebeDeploymentValueTest {
 
   @BeforeEach
   public void init() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
     annotationProcessor = new ZeebeDeploymentAnnotationProcessor();
   }
 

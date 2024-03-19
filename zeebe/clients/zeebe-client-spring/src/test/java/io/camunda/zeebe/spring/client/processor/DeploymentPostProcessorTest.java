@@ -45,7 +45,7 @@ public class DeploymentPostProcessorTest {
 
   @BeforeEach
   public void init() {
-    MockitoAnnotations.initMocks(this);
+    MockitoAnnotations.openMocks(this);
     deploymentPostProcessor = Mockito.spy(new ZeebeDeploymentAnnotationProcessor());
   }
 
@@ -126,7 +126,8 @@ public class DeploymentPostProcessorTest {
         IllegalArgumentException.class,
         () -> {
           // given
-          final ClassInfo classInfo = ClassInfo.builder().bean(new WithNoClassPathResource()).build();
+          final ClassInfo classInfo =
+              ClassInfo.builder().bean(new WithNoClassPathResource()).build();
 
           when(client.newDeployResourceCommand()).thenReturn(deployStep1);
 
