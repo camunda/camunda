@@ -7,52 +7,29 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
-
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.Task;
-import io.camunda.zeebe.stream.api.scheduling.TaskResult;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
-import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutChecker.class);
-  private final JobState state;
   private final Duration pollingInterval;
-  private final int batchLimit;
-
-  private boolean shouldReschedule = false;
-
-  private ReadonlyStreamProcessorContext processingContext;
-  private final Task deactivateTimedOutJobs;
-
-  /** Keeps track of the timestamp to compare the message deadlines against. */
-  private long executionTimestamp = -1;
-
-  /** Keeps track of where to continue between iterations. */
-  private DeadlineIndex startAtIndex = null;
+  private final DeactivateTimeOutJobs deactivateTimedOutJobs;
 
   public JobTimeoutChecker(
       final JobState state, final Duration pollingInterval, final int batchLimit) {
-    this.state = state;
     this.pollingInterval = pollingInterval;
-    this.batchLimit = batchLimit;
-    deactivateTimedOutJobs = new DeactivateTimeOutJobs();
+    deactivateTimedOutJobs = new DeactivateTimeOutJobs(state, pollingInterval, batchLimit);
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    this.processingContext = processingContext;
-    shouldReschedule = true;
-
-    scheduleDeactivateTimedOutJobsTask(pollingInterval);
+    deactivateTimedOutJobs.setProcessingContext(processingContext);
+    deactivateTimedOutJobs.setShouldReschedule(true);
+    deactivateTimedOutJobs.schedule(pollingInterval);
   }
 
   @Override
@@ -72,58 +49,12 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
 
   @Override
   public void onResumed() {
-    shouldReschedule = true;
-    scheduleDeactivateTimedOutJobsTask(pollingInterval);
-  }
-
-  private void scheduleDeactivateTimedOutJobsTask(final Duration idleInterval) {
-    processingContext.getScheduleService().runDelayed(idleInterval, deactivateTimedOutJobs);
+    deactivateTimedOutJobs.setShouldReschedule(true);
+    deactivateTimedOutJobs.schedule(pollingInterval);
   }
 
   private void cancelTimer() {
-    shouldReschedule = false;
+    deactivateTimedOutJobs.setShouldReschedule(false);
     LOG.trace("Job timout checker canceled!");
-  }
-
-  private final class DeactivateTimeOutJobs implements Task {
-
-    @Override
-    public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-      LOG.trace("Job timout checker running...");
-      if (executionTimestamp == -1) {
-        executionTimestamp = currentTimeMillis();
-      }
-
-      final var counter = new MutableInteger(0);
-
-      final DeadlineIndex nextIndex =
-          state.forEachTimedOutEntry(
-              executionTimestamp,
-              startAtIndex,
-              (key, record) -> {
-                if (counter.getAndIncrement() >= batchLimit) {
-                  return false;
-                }
-
-                return taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record);
-              });
-
-      if (shouldReschedule) {
-        if (nextIndex != null) {
-          LOG.trace(
-              "Job timout checker yielded early. will reschedule immediately from where it left of.");
-          startAtIndex = nextIndex;
-          scheduleDeactivateTimedOutJobsTask(Duration.ZERO);
-        } else {
-          executionTimestamp = -1;
-          startAtIndex = null;
-          scheduleDeactivateTimedOutJobsTask(pollingInterval);
-        }
-      }
-
-      LOG.trace("{} jobs has been marked to timeout", counter.get());
-
-      return taskResultBuilder.build();
-    }
   }
 }
