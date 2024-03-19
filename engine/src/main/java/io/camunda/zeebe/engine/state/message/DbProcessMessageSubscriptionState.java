@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -26,12 +27,14 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public final class DbProcessMessageSubscriptionState
     implements MutableProcessMessageSubscriptionState,
         PendingProcessMessageSubscriptionState,
         StreamProcessorLifecycleAware {
 
+  private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   // (elementInstanceKey, tenant aware messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
 
@@ -171,7 +174,14 @@ public final class DbProcessMessageSubscriptionState
               pendingSubscription.elementInstanceKey(),
               BufferUtil.wrapString(pendingSubscription.messageName()),
               pendingSubscription.tenantId());
-
+      if (subscription == null) {
+        LOG.warn(
+            "Expected to find subscription with key {} messageName {} tenantId: {}, but no subscription found",
+            pendingSubscription.elementInstanceKey(),
+            pendingSubscription.messageName(),
+            pendingSubscription.tenantId());
+        continue;
+      }
       visitor.visit(subscription);
     }
   }
