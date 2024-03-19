@@ -103,7 +103,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
-      assertThat(configuration.preferRestOverGrpc()).isTrue();
+      assertThat(configuration.preferRestOverGrpc()).isFalse();
     }
   }
 
