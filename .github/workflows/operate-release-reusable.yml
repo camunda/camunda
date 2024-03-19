@@ -181,7 +181,7 @@ jobs:
         run: |
           ARTIFACT="camunda-operate"
 
-          cd target/checkout/distro/target
+          cd operate/target/checkout/distro/target
 
           # create checksums
           sha1sum ${ARTIFACT}-${RELEASE_VERSION}.tar.gz > ${ARTIFACT}-${RELEASE_VERSION}.tar.gz.sha1sum
