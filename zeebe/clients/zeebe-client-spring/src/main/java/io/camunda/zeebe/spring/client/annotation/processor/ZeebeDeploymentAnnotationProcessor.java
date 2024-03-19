@@ -106,7 +106,7 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
     // noop for deployment
   }
 
-  private Optional<ZeebeDeploymentValue> readAnnotation(final ClassInfo beanInfo) {
+  public Optional<ZeebeDeploymentValue> readAnnotation(final ClassInfo beanInfo) {
     final Optional<Deployment> annotation = beanInfo.getAnnotation(Deployment.class);
     if (annotation.isEmpty()) {
       return Optional.empty();
