@@ -76,7 +76,6 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     }
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void allProcessInstancesEventsAndVariablesAreImported() {
     // given
@@ -93,7 +92,6 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     assertProcessInstanceImportResults(processInstances, PROCESS_KEY_1, PROCESS_KEY_2);
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void allProcessInstancesEventsAndVariablesAreImported_importDeactivatedForOneEngine() {
     // given
@@ -114,7 +112,6 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     }
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() {
     // given
