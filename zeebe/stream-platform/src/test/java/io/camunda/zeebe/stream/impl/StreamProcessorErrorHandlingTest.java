@@ -11,12 +11,16 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
@@ -62,8 +66,15 @@ class StreamProcessorErrorHandlingTest {
     final var record = logStreamReader.next();
     final var recordMetadata = new RecordMetadata();
     record.readMetadata(recordMetadata);
-    assertThat(recordMetadata.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(recordMetadata.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(recordMetadata.getIntent()).isEqualTo(ErrorIntent.CREATED);
     assertThat(record.getSourceEventPosition()).isEqualTo(1);
+
+    final var commandResponseWriter = streamPlatform.getMockCommandResponseWriter();
+
+    verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.COMMAND_REJECTION);
+    verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.ERROR);
+    verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
   @Test
