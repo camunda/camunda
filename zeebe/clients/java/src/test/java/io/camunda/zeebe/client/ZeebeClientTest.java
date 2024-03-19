@@ -562,7 +562,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetGrpcAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
-    final URI grpcAddress = new URI("http://localhost:9090");
+    final URI grpcAddress = new URI("https://localhost:9090");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.grpcAddress(grpcAddress);
 
@@ -576,7 +576,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetGrpcAddressFromPropertyWithClientBuilder() throws URISyntaxException {
     // given
-    final URI grpcAddress = new URI("http://localhost:9090");
+    final URI grpcAddress = new URI("https://localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(ClientProperties.GRPC_ADDRESS, grpcAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -592,7 +592,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetGrpcAddressFromEnvVarWithClientBuilder() throws URISyntaxException {
     // given
-    final URI grpcAddress = new URI("http://localhost:9090");
+    final URI grpcAddress = new URI("https://localhost:9090");
     Environment.system().put(GRPC_ADDRESS_VAR, grpcAddress.toString());
 
     // when
