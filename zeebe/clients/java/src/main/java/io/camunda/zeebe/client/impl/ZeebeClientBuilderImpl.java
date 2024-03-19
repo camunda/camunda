@@ -58,8 +58,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String ZEEBE_CLIENT_WORKER_STREAM_ENABLED =
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
-  public static final URI DEFAULT_GRPC_ADDRESS;
-  public static final URI DEFAULT_REST_ADDRESS;
+  public static final URI DEFAULT_GRPC_ADDRESS = getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
+  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
   public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
   public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
   public static final String PREFER_REST_VAR = "ZEEBE_PREFER_REST";
@@ -69,16 +69,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String DEFAULT_JOB_WORKER_NAME = "default";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
-  private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = true;
-
-  static {
-    try {
-      DEFAULT_GRPC_ADDRESS = new URI("http://" + DEFAULT_GATEWAY_ADDRESS);
-      DEFAULT_REST_ADDRESS = new URI("http://0.0.0.0:8080");
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException("Failed to parse URI string", e);
-    }
-  }
+  private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
 
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -610,7 +601,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     return builder.build();
   }
 
-  private URI getURIFromString(final String uri) {
+  private static URI getURIFromString(final String uri) {
     try {
       return new URI(uri);
     } catch (final URISyntaxException e) {

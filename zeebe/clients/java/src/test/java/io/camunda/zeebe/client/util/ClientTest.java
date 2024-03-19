@@ -22,8 +22,7 @@ import org.junit.Rule;
 public abstract class ClientTest {
 
   @Rule
-  public final TestEnvironmentRule rule =
-      new TestEnvironmentRule(builder -> builder.preferRestOverGrpc(false));
+  public final TestEnvironmentRule rule = new TestEnvironmentRule();
 
   public RecordingGatewayService gatewayService;
   public ZeebeClient client;
