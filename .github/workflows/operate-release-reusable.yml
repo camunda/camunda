@@ -152,8 +152,7 @@ jobs:
           SKIP_DEPLOY: ${{ inputs.dryRun }}
           NEXT_DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
         run: |
-          cd operate
-          mvn release:prepare release:perform -P -docker \
+          mvn -f operate release:prepare release:perform -P -docker \
           -DpushChanges=$PUSH_CHANGES \
           -DlocalCheckout=true \
           -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
@@ -161,7 +160,7 @@ jobs:
           -Dtag=$TAG_VERSION \
           -DreleaseVersion=$RELEASE_VERSION \
           -DdevelopmentVersion=$NEXT_DEVELOPMENT_VERSION \
-          -Darguments='-Dmaven.deploy.skip=$SKIP_DEPLOY -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$SKIP_DEPLOY -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+          -Darguments='-Dmaven.deploy.skip=$SKIP_DEPLOY -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$SKIP_DEPLOY -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml'
 
       - name: Create a release
         if: ${{ env.CREATE_A_RELEASE == 'true' }}
