@@ -55,8 +55,8 @@ const batchModificationHandlers = IS_BATCH_MOVE_MODIFICATION_ENABLED
         async (req, res, ctx) => {
           const request = await req.json();
 
-          if (request.operationType !== 'MOVE_TOKEN') {
-            req.passthrough();
+          if (request.operationType !== 'MODIFY_PROCESS_INSTANCE') {
+            return req.passthrough();
           }
 
           return res(

@@ -27,6 +27,7 @@ import {
   RetryFailed,
   Edit,
   MigrateAlt,
+  Move,
 } from '@carbon/react/icons';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
@@ -39,7 +40,8 @@ type OperationLabelType =
   | 'Cancel'
   | 'Modify'
   | 'Delete'
-  | 'Migrate';
+  | 'Migrate'
+  | 'Batch Modification';
 
 const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
   ADD_VARIABLE: 'Edit',
@@ -51,6 +53,7 @@ const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
   DELETE_PROCESS_DEFINITION: 'Delete',
   DELETE_DECISION_DEFINITION: 'Delete',
   MIGRATE_PROCESS_INSTANCE: 'Migrate',
+  MOVE_TOKEN: 'Batch Modification',
 };
 
 type Props = {
@@ -113,6 +116,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         )}
         {label === 'Migrate' && (
           <MigrateAlt size={16} data-testid="operation-migrate-icon" />
+        )}
+        {label === 'Batch Modification' && (
+          <Move size={16} data-testid="operation-move-icon" />
         )}
       </Header>
       {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED && shouldHaveIdLink ? (
