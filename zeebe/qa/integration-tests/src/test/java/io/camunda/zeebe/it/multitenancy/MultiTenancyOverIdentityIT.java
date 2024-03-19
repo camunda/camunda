@@ -1390,11 +1390,11 @@ public class MultiTenancyOverIdentityIT {
       try (final var resultSet =
           postgres.executeQuery(
                   """
-              INSERT INTO access_rules \
-                (member_id, member_type, global) \
-              VALUES ('%s', 'APPLICATION', false) \
-              ON CONFLICT DO NOTHING \
-              RETURNING id"""
+                  INSERT INTO access_rules \
+                    (member_id, member_type, global) \
+                  VALUES ('%s', 'APPLICATION', false) \
+                  ON CONFLICT DO NOTHING \
+                  RETURNING id"""
                   .formatted(clientId))) {
         if (!resultSet.next()) {
           throw new IllegalStateException(
@@ -1409,10 +1409,10 @@ public class MultiTenancyOverIdentityIT {
           (tenantId) ->
               postgres.execute(
                       """
-                  INSERT INTO tenants \
-                    (name, tenant_id) \
-                  VALUES ('%s', '%s') \
-                  ON CONFLICT DO NOTHING"""
+                      INSERT INTO tenants \
+                        (name, tenant_id) \
+                      VALUES ('%s', '%s') \
+                      ON CONFLICT DO NOTHING"""
                       .formatted(tenantId, tenantId)));
 
       // Connect tenants to access rule

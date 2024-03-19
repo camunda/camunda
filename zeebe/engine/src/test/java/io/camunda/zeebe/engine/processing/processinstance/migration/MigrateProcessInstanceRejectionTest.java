@@ -601,9 +601,9 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
                 """
-            Expected to migrate process instance '%s' \
-            but active element with id 'A' has one or more boundary events of types 'TIMER'. \
-            Migrating active elements with boundary events of these types is not possible yet."""
+                Expected to migrate process instance '%s' \
+                but active element with id 'A' has one or more boundary events of types 'TIMER'. \
+                Migrating active elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
   }
@@ -723,9 +723,9 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
                 """
-              Expected to migrate process instance '%s' \
-              but target element with id 'A' has a boundary event. \
-              Migrating target elements with boundary events is not possible yet."""
+                Expected to migrate process instance '%s' \
+                but target element with id 'A' has a boundary event. \
+                Migrating target elements with boundary events is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
   }
@@ -1023,9 +1023,9 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
                 """
-              Expected to migrate process instance '%s' \
-              but target element with id 'sub1' has a boundary event. \
-              Migrating target elements with boundary events is not possible yet."""
+                Expected to migrate process instance '%s' \
+                but target element with id 'sub1' has a boundary event. \
+                Migrating target elements with boundary events is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
   }

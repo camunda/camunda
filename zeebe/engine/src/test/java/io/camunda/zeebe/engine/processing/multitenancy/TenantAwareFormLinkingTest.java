@@ -88,9 +88,9 @@ public class TenantAwareFormLinkingTest {
             tuple(
                 ErrorType.FORM_NOT_FOUND,
                     """
-                Expected to find a form with id '%s', but no form with this id is found, at least \
-                a form with this id should be available. To resolve the Incident please deploy a \
-                form with the same id"""
+                    Expected to find a form with id '%s', but no form with this id is found, at least \
+                    a form with this id should be available. To resolve the Incident please deploy a \
+                    form with the same id"""
                     .formatted(FORM_ID),
                 TENANT));
   }

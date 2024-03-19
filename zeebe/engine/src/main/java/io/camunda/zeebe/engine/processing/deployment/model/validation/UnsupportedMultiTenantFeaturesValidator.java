@@ -132,9 +132,9 @@ public final class UnsupportedMultiTenantFeaturesValidator {
         unsupportedElements.stream().map(ElementInfo::new).toList();
     final var failureMessage =
             """
-        Processes belonging to custom tenants are not allowed to contain elements unsupported with multi-tenancy. \
-        Only the default tenant '<default>' supports these elements currently: %s. \
-        See https://github.com/camunda/zeebe/issues/12653 for more details."""
+            Processes belonging to custom tenants are not allowed to contain elements unsupported with multi-tenancy. \
+            Only the default tenant '<default>' supports these elements currently: %s. \
+            See https://github.com/camunda/zeebe/issues/12653 for more details."""
             .formatted(String.join(" > ", unsupportedElementsInfo.toString()));
     return createFormattedFailureMessage(resource, executableProcess, failureMessage);
   }
