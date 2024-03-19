@@ -110,7 +110,11 @@ public final class MultiInstanceBodyProcessor
 
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
-        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+        .thenDo(
+            completed -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            });
   }
 
   @Override
