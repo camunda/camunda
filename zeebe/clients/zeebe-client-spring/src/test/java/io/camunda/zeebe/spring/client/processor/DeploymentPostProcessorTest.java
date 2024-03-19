@@ -169,11 +169,11 @@ public class DeploymentPostProcessorTest {
   }
 
   @Deployment(resources = "/1.bpmn")
-  private static class WithSingleClassPathResource {}
+  private static final class WithSingleClassPathResource {}
 
   @Deployment(resources = {"classpath*:/1.bpmn", "classpath*:/2.bpmn"})
-  private static class WithDoubleClassPathResource {}
+  private static final class WithDoubleClassPathResource {}
 
   @Deployment(resources = {})
-  private static class WithNoClassPathResource {}
+  private static final class WithNoClassPathResource {}
 }

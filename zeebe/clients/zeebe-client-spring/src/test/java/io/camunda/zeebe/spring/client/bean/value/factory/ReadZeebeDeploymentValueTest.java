@@ -87,10 +87,10 @@ public class ReadZeebeDeploymentValueTest {
   }
 
   @Deployment(resources = "classpath*:/1.bpmn")
-  private static class WithSingleClassPathResource {}
+  private static final class WithSingleClassPathResource {}
 
   @Deployment(resources = {"classpath*:/1.bpmn", "classpath*:/2.bpmn"})
-  private static class WithMultipleClassPathResource {}
+  private static final class WithMultipleClassPathResource {}
 
-  private static class WithoutAnnotation {}
+  private static final class WithoutAnnotation {}
 }

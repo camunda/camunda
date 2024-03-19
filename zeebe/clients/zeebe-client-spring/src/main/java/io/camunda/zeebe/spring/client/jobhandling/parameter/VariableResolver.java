@@ -9,18 +9,18 @@ public class VariableResolver implements ParameterResolver {
   private final Class<?> variableType;
   private final JsonMapper jsonMapper;
 
-  public VariableResolver(String variableName, Class<?> variableType, JsonMapper jsonMapper) {
+  public VariableResolver(final String variableName, final Class<?> variableType, final JsonMapper jsonMapper) {
     this.variableName = variableName;
     this.variableType = variableType;
     this.jsonMapper = jsonMapper;
   }
 
   @Override
-  public Object resolve(JobClient jobClient, ActivatedJob job) {
-    Object variableValue = getVariable(job);
+  public Object resolve(final JobClient jobClient, final ActivatedJob job) {
+    final Object variableValue = getVariable(job);
     try {
       return mapZeebeVariable(variableValue);
-    } catch (ClassCastException | IllegalArgumentException ex) {
+    } catch (final ClassCastException | IllegalArgumentException ex) {
       throw new RuntimeException(
           "Cannot assign process variable '"
               + variableName
@@ -31,11 +31,11 @@ public class VariableResolver implements ParameterResolver {
     }
   }
 
-  protected Object getVariable(ActivatedJob job) {
+  protected Object getVariable(final ActivatedJob job) {
     return job.getVariable(variableName);
   }
 
-  protected Object mapZeebeVariable(Object variableValue) {
+  protected Object mapZeebeVariable(final Object variableValue) {
     if (variableValue != null && !variableType.isInstance(variableValue)) {
       return jsonMapper.fromJson(jsonMapper.toJson(variableValue), variableType);
     } else {

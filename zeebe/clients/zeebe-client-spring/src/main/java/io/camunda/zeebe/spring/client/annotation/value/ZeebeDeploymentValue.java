@@ -11,7 +11,7 @@ import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import java.util.List;
 import java.util.Objects;
 
-public class ZeebeDeploymentValue implements ZeebeAnnotationValue<ClassInfo> {
+public final class ZeebeDeploymentValue implements ZeebeAnnotationValue<ClassInfo> {
 
   private final List<String> resources;
 
