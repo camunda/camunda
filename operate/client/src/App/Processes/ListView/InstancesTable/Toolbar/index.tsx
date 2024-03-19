@@ -53,7 +53,10 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   const handleApplyClick = () => {
     closeModal();
     if (modalMode !== null) {
-      applyBatchOperation(modalMode, panelStatesStore.expandOperationsPanel);
+      applyBatchOperation({
+        operationType: modalMode,
+        onSuccess: panelStatesStore.expandOperationsPanel,
+      });
     }
   };
 
