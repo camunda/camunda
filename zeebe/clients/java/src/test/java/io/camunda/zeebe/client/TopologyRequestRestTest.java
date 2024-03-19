@@ -122,6 +122,7 @@ public final class TopologyRequestRestTest {
   private ZeebeClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
+        .preferRestOverGrpc(true)
         .restAddress(new URI(mockInfo.getHttpBaseUrl()))
         .build();
   }
