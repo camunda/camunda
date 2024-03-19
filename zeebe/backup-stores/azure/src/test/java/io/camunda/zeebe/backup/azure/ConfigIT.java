@@ -13,12 +13,11 @@ import org.junit.jupiter.api.Test;
 
 public class ConfigIT {
 
+  private static final String VALID_ENDPOINT = "https://127.0.0.1";
   private static final String VALID_CONNECTION_STRING =
       "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
           + "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
           + "BlobEndpoint=http://127.0.0.1:";
-
-  private static final String VALID_ENDPOINT = "http://127.0.0.1";
 
   @Test
   void shouldSuccessfullyValidateCredentialsConfig() {
@@ -53,11 +52,27 @@ public class ConfigIT {
   }
 
   @Test
-  void shouldValidateEndpointConfig() {
+  void shouldFailDueToMissingEndpointOnAutoAuthConfig() {
+
+    final AzureBackupConfig azureBackupConfig =
+        new AzureBackupConfig.Builder()
+            .withAuth("auto")
+            .withContainerName(UUID.randomUUID().toString())
+            .build();
+
+    Assertions.assertThatCode(() -> new AzureBackupStore(azureBackupConfig))
+        .hasMessage("The Azure Storage endpoint url is malformed.");
+    Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
+        .hasMessage("Config is set as auto, but endpoint is not provided.");
+  }
+
+  @Test
+  void shouldValidateAutoAuthConfig() {
 
     final AzureBackupConfig azureBackupConfig =
         new AzureBackupConfig.Builder()
             .withEndpoint(VALID_ENDPOINT)
+            .withAuth("auto")
             .withContainerName(UUID.randomUUID().toString())
             .build();
 
@@ -82,7 +97,7 @@ public class ConfigIT {
         .hasMessage("'accountName' cannot be null.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
         .hasMessage(
-            "Connection string, endpoint, or all of connection information (account name, account key, and endpoint) must be provided.");
+            "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
   }
 
   @Test
@@ -98,7 +113,7 @@ public class ConfigIT {
         .hasMessage("The Azure Storage endpoint url is malformed.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
         .hasMessage(
-            "Connection string, endpoint, or all of connection information (account name, account key, and endpoint) must be provided.");
+            "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
   }
 
   @Test
