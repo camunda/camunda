@@ -526,7 +526,8 @@ public final class ProcessingStateMachine {
     final ProcessingResultBuilder processingResultBuilder =
         new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
     final var errorRecord = new ErrorRecord();
-    errorRecord.initErrorRecord(new RuntimeException(rejectionReason), currentRecord.getPosition());
+    errorRecord.initErrorRecord(
+        new CommandRejectionException(rejectionReason), currentRecord.getPosition());
 
     final var recordMetadata =
         new RecordMetadata()
