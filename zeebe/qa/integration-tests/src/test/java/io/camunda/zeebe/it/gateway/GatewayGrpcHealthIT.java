@@ -34,8 +34,9 @@ class GatewayGrpcHealthIT {
   @ValueSource(strings = {GatewayGrpc.SERVICE_NAME, HealthStatusManager.SERVICE_NAME_ALL_SERVICES})
   void shouldReturnServingStatusWhenGatewayIsStarted(final String serviceName) {
     // given
+    final var address = gateway.grpcAddress();
     final ManagedChannel channel =
-        NettyChannelBuilder.forTarget(gateway.gatewayAddress()).usePlaintext().build();
+        NettyChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext().build();
     final HealthCheckResponse response;
 
     // when

@@ -88,7 +88,6 @@ import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -111,11 +110,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
-  }
-
-  public ZeebeClientImpl(
-      final ZeebeClientConfiguration configuration, final HttpClient httpClient) {
-    this(configuration, buildChannel(configuration), httpClient);
   }
 
   public ZeebeClientImpl(
@@ -178,12 +172,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
     final URI address;
-
-    try {
-      address = new URI("zb://" + config.getGatewayAddress());
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException("Failed to parse broker contact point", e);
-    }
+    address = config.getGrpcAddress();
 
     final NettyChannelBuilder channelBuilder =
         NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
@@ -292,7 +281,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
         asyncStub,
         httpClient,
         config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        config.preferRestOverGrpc());
   }
 
   @Override

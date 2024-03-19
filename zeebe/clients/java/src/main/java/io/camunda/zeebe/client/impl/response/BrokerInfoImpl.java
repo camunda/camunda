@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.netty.util.NetUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public final class BrokerInfoImpl implements BrokerInfo {
 
@@ -99,5 +100,28 @@ public final class BrokerInfoImpl implements BrokerInfo {
         + ", partitions="
         + partitions
         + '}';
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(nodeId, host, port, version, partitions);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final BrokerInfoImpl that = (BrokerInfoImpl) o;
+    return nodeId == that.nodeId
+        && port == that.port
+        && Objects.equals(host, that.host)
+        && Objects.equals(version, that.version)
+        && Objects.equals(partitions, that.partitions);
   }
 }

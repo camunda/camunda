@@ -16,7 +16,6 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
-import static io.camunda.zeebe.client.ClientProperties.DEFAULT_COMMUNICATION_API;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
@@ -24,13 +23,17 @@ import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_COMMUNICATION_API_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.GATEWAY_REST_API_PORT_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.GRPC_ADDRESS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PREFER_REST_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.REST_ADDRESS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
@@ -41,7 +44,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
@@ -52,6 +54,8 @@ import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
 import io.camunda.zeebe.client.util.ClientTest;
 import java.io.FileNotFoundException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -82,7 +86,9 @@ public final class ZeebeClientTest extends ClientTest {
       final ZeebeClientConfiguration configuration = client.getConfiguration();
 
       // then
-      assertThat(configuration.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
+      assertThat(configuration.getGatewayAddress()).isEqualTo(DEFAULT_GATEWAY_ADDRESS);
+      assertThat(configuration.getGrpcAddress()).isEqualTo(DEFAULT_GRPC_ADDRESS);
+      assertThat(configuration.getRestAddress()).isEqualTo(DEFAULT_REST_ADDRESS);
       assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
       assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
       assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
@@ -97,6 +103,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(configuration.preferRestOverGrpc()).isFalse();
     }
   }
 
@@ -363,8 +370,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("%s.%s.zeebe.camunda.io:443", clusterId, region));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.%s.zeebe.camunda.io", clusterId, region))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -383,8 +392,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("%s.bru-2.zeebe.camunda.io:443", clusterId));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.bru-2.zeebe.camunda.io", clusterId))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -425,8 +436,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", region));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", region))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -445,8 +458,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", defaultRegion));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", defaultRegion))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -501,52 +516,25 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
-  public void shouldUseClientDefaultCommunicationApi() {
+  public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
+    final URI restAddress = new URI("localhost:9090");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.restAddress(restAddress);
 
     // when
     builder.build();
 
     // then
-    assertThat(builder.getDefaultCommunicationApi())
-        .isEqualTo(CommandWithCommunicationApiStep.DEFAULT_COMMUNICATION_API);
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
   }
 
   @Test
-  public void shouldSetDefaultCommunicationApiFromSetterWithClientBuilder() {
+  public void shouldSetRestAddressPortFromPropertyWithClientBuilder() throws URISyntaxException {
     // given
-    final String overrideCommunicationApi = "GRPC";
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder.defaultCommunicationApi(overrideCommunicationApi);
-
-    // when
-    builder.build();
-
-    // then
-    assertThat(builder.getDefaultCommunicationApi()).isEqualTo(overrideCommunicationApi);
-  }
-
-  @Test
-  public void shouldNotSetIncorrectValueForDefaultCommunicationApiFromSetterWithClientBuilder() {
-    // given
-    final String overrideCommunicationApi = "FALSE";
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-
-    // when / then
-    assertThatThrownBy(() -> builder.defaultCommunicationApi(overrideCommunicationApi))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
-            "The default communication API must be one of %s but was '%s'.",
-            CommandWithCommunicationApiStep.AVAILABLE_COMMUNICATION_API, overrideCommunicationApi);
-  }
-
-  @Test
-  public void shouldSetDefaultCommunicationApiFromPropertyWithClientBuilder() {
-    // given
-    final String overrideCommunicationApi = "GRPC";
+    final URI restAddress = new URI("localhost:9090");
     final Properties properties = new Properties();
-    properties.setProperty(DEFAULT_COMMUNICATION_API, overrideCommunicationApi);
+    properties.setProperty(ClientProperties.REST_ADDRESS, restAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -554,70 +542,43 @@ public final class ZeebeClientTest extends ClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultCommunicationApi()).isEqualTo(overrideCommunicationApi);
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
   }
 
   @Test
-  public void shouldSetDefaultCommunicationApiFromEnvVarWithClientBuilder() {
+  public void shouldSetRestAddressPortFromEnvVarWithClientBuilder() throws URISyntaxException {
     // given
-    final String overrideCommunicationApi = "GRPC";
-    Environment.system().put(DEFAULT_COMMUNICATION_API_VAR, overrideCommunicationApi);
+    final URI restAddress = new URI("localhost:9090");
+    Environment.system().put(REST_ADDRESS_VAR, restAddress.toString());
 
     // when
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.build();
 
     // then
-    assertThat(builder.getDefaultCommunicationApi()).isEqualTo(overrideCommunicationApi);
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
   }
 
   @Test
-  public void shouldUseClientDefaultRestApiPort() {
+  public void shouldSetGrpcAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
+    final URI grpcAddress = new URI("https://localhost:9090");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.grpcAddress(grpcAddress);
 
     // when
     builder.build();
 
     // then
-    assertThat(builder.getGatewayRestApiPort())
-        .isEqualTo(ZeebeClientBuilderImpl.DEFAULT_GATEWAY_REST_API_PORT);
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
   }
 
   @Test
-  public void shouldSetRestApiPortFromSetterWithClientBuilder() {
+  public void shouldSetGrpcAddressFromPropertyWithClientBuilder() throws URISyntaxException {
     // given
-    final int restApiPort = 9090;
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder.gatewayRestApiPort(restApiPort);
-
-    // when
-    builder.build();
-
-    // then
-    assertThat(builder.getGatewayRestApiPort()).isEqualTo(restApiPort);
-  }
-
-  @Test
-  public void shouldNotSetIncorrectValueForRestApiPortFromSetterWithClientBuilder() {
-    // given
-    final int falseRestApiPort = -9090;
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-
-    // when / then
-    assertThatThrownBy(() -> builder.gatewayRestApiPort(falseRestApiPort))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
-            "The REST API port must be a number between 0 and 65535, but was '%s'.",
-            falseRestApiPort);
-  }
-
-  @Test
-  public void shouldSetRestApiPortFromPropertyWithClientBuilder() {
-    // given
-    final int restApiPort = 9090;
+    final URI grpcAddress = new URI("https://localhost:9090");
     final Properties properties = new Properties();
-    properties.setProperty(ClientProperties.GATEWAY_REST_API_PORT, String.valueOf(restApiPort));
+    properties.setProperty(ClientProperties.GRPC_ADDRESS, grpcAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -625,21 +586,82 @@ public final class ZeebeClientTest extends ClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getGatewayRestApiPort()).isEqualTo(restApiPort);
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
   }
 
   @Test
-  public void shouldSetRestApiPortFromEnvVarWithClientBuilder() {
+  public void shouldSetGrpcAddressFromEnvVarWithClientBuilder() throws URISyntaxException {
     // given
-    final int restApiPort = 9090;
-    Environment.system().put(GATEWAY_REST_API_PORT_VAR, String.valueOf(restApiPort));
+    final URI grpcAddress = new URI("https://localhost:9090");
+    Environment.system().put(GRPC_ADDRESS_VAR, grpcAddress.toString());
 
     // when
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.build();
 
     // then
-    assertThat(builder.getGatewayRestApiPort()).isEqualTo(restApiPort);
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @Test
+  public void shouldSetPreferRestFromSetterWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.preferRestOverGrpc(false);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetPreferRestFromPropertyWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final Properties properties = new Properties();
+    properties.setProperty(ClientProperties.PREFER_REST_OVER_GRPC, "false");
+
+    // when
+    builder.withProperties(properties);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetPreferRestFromEnvVarWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    Environment.system().put(PREFER_REST_VAR, "false");
+
+    // when
+    builder.preferRestOverGrpc(true);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetGrpcAddressFromGatewayAddressIfUnderfined() throws URISyntaxException {
+    // given
+    final String gatewayAddress = "localhost:26500";
+    final Properties properties = new Properties();
+    properties.setProperty(ClientProperties.GATEWAY_ADDRESS, gatewayAddress);
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress().toString()).contains(gatewayAddress);
   }
 
   @Test

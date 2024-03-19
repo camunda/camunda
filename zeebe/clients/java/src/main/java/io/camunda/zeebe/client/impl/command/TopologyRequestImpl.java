@@ -45,13 +45,14 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
       final GatewayStub asyncStub,
       final HttpClient httpClient,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<Throwable> retryPredicate,
+      final boolean useRest) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    useRest = false;
+    this.useRest = useRest;
   }
 
   @Override
@@ -75,22 +76,30 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
   @Override
   public ZeebeFuture<Topology> send() {
     if (useRest) {
-      final HttpZeebeFuture<Topology> result = new HttpZeebeFuture<>();
-      sendHttpRequest(result);
-      return result;
+      return sendRestRequest();
     } else {
-      final TopologyRequest request = TopologyRequest.getDefaultInstance();
-
-      final RetriableClientFutureImpl<Topology, TopologyResponse> future =
-          new RetriableClientFutureImpl<>(
-              TopologyImpl::new,
-              retryPredicate,
-              streamObserver -> sendGrpcRequest(request, streamObserver));
-
-      sendGrpcRequest(request, future);
-
-      return future;
+      return sendGrpcRequest();
     }
+  }
+
+  private HttpZeebeFuture<Topology> sendRestRequest() {
+    final HttpZeebeFuture<Topology> result = new HttpZeebeFuture<>();
+    sendHttpRequest(result);
+    return result;
+  }
+
+  private RetriableClientFutureImpl<Topology, TopologyResponse> sendGrpcRequest() {
+    final TopologyRequest request = TopologyRequest.getDefaultInstance();
+
+    final RetriableClientFutureImpl<Topology, TopologyResponse> future =
+        new RetriableClientFutureImpl<>(
+            TopologyImpl::new,
+            retryPredicate,
+            streamObserver -> sendGrpcRequest(request, streamObserver));
+
+    sendGrpcRequest(request, future);
+
+    return future;
   }
 
   private void sendGrpcRequest(

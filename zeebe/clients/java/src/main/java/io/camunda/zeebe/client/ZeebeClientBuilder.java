@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
@@ -45,40 +46,26 @@ public interface ZeebeClientBuilder {
       final boolean applyEnvironmentVariableOverrides);
 
   /**
+   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
+   *     ZeebeClientBuilder#grpcAddress(URI)}
    * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .
    */
+  @Deprecated
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the client builder when called. Until this warning is removed, anything described below may
-   * not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
-   * @param restApiPort the port of the REST API of a gateway that the client can connect to.
-   *     Default value is <code>8080</code>.
+   * @param restAddress the REST API address of a gateway that the client can connect to. The
+   *     default value is {@code 0.0.0.0:8080}.
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
-  ZeebeClientBuilder gatewayRestApiPort(int restApiPort);
+  ZeebeClientBuilder restAddress(URI restAddress);
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the client builder when called. Until this warning is removed, anything described below may
-   * not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
-   * @param communicationApi the communication API to use. It can be one of:
-   *     <ul>
-   *       <li>REST
-   *       <li>GRPC
-   *     </ul>
-   *     The default value is {@link
-   *     io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep#DEFAULT_COMMUNICATION_API}.
+   * @param grpcAddress the gRPC address of a gateway that the client can connect to. The default
+   *     value is {@code 0.0.0.0:26500}.
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
-  ZeebeClientBuilder defaultCommunicationApi(String communicationApi);
+  ZeebeClientBuilder grpcAddress(URI grpcAddress);
 
   /**
    * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant
@@ -212,6 +199,21 @@ public interface ZeebeClientBuilder {
    * {@code io.camunda:zeebe-gateway-protocol-impl} JAR.
    */
   ZeebeClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy);
+
+  /**
+   * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
+   * This is an experimental API which is present while we migrate the bulk of the API from gRPC to
+   * REST. Once done, this will also be removed.
+   *
+   * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+   *
+   * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
+   * @deprecated since 8.5, will be removed in 8.8
+   * @return this builder for chaining
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @Deprecated
+  ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**
    * @return a new {@link ZeebeClient} with the provided configuration options.

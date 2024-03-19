@@ -18,6 +18,7 @@ package io.camunda.zeebe.client;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,36 +26,22 @@ import java.util.concurrent.ScheduledExecutorService;
 public interface ZeebeClientConfiguration {
 
   /**
-   * @see ZeebeClientBuilder#gatewayAddress(String)
+   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
+   *     ZeebeClientConfiguration#getGrpcAddress()}
+   * @see ZeebeClientBuilder#grpcAddress(URI)
    */
+  @Deprecated
   String getGatewayAddress();
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the client builder when called. Until this warning is removed, anything described below may
-   * not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
-   * @see ZeebeClientBuilder#gatewayRestApiPort(int)
+   * @see ZeebeClientBuilder#restAddress(URI)
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
-  int getGatewayRestApiPort();
+  URI getRestAddress();
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the client builder when called. Until this warning is removed, anything described below may
-   * not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
-   * @see ZeebeClientBuilder#defaultCommunicationApi(String)
+   * @see ZeebeClientBuilder#grpcAddress(URI)
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
-  String getDefaultCommunicationApi();
-
-  /**
-   * @see ZeebeClientBuilder#defaultCommunicationApi(String)
-   */
-  boolean useRestApi();
+  URI getGrpcAddress();
 
   /**
    * @see ZeebeClientBuilder#defaultTenantId(String)
@@ -157,4 +144,10 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#useDefaultRetryPolicy(boolean)
    */
   boolean useDefaultRetryPolicy();
+
+  /**
+   * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  boolean preferRestOverGrpc();
 }

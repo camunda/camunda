@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 
@@ -27,19 +28,27 @@ public final class ClientProperties {
       "zeebe.client.applyEnvironmentVariableOverrides";
 
   /**
+   * @deprecated since 8.5 for removal with 8.8, replaced by {@link ClientProperties#GRPC_ADDRESS}
    * @see ZeebeClientBuilder#gatewayAddress(String)
    */
-  public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
+  @Deprecated public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
   /**
-   * @see ZeebeClientBuilder#gatewayRestApiPort(int)
+   * @deprecated since 8.5 for removal with 8.8, where toggling between both will not be possible
+   * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
-  public static final String GATEWAY_REST_API_PORT = "zeebe.client.gateway.restApi.port";
+  @Deprecated
+  public static final String PREFER_REST_OVER_GRPC = "zeebe.client.gateway.preferRestOverGrpc";
 
   /**
-   * @see ZeebeClientBuilder#defaultCommunicationApi(String)
+   * @see ZeebeClientBuilder#restAddress(URI)
    */
-  public static final String DEFAULT_COMMUNICATION_API = "zeebe.client.communicationApi";
+  public static final String REST_ADDRESS = "zeebe.client.gateway.rest.address";
+
+  /**
+   * @see ZeebeClientBuilder#grpcAddress(URI)
+   */
+  public static final String GRPC_ADDRESS = "zeebe.client.gateway.grpc.address";
 
   /**
    * @see ZeebeClientBuilder#defaultTenantId(String)

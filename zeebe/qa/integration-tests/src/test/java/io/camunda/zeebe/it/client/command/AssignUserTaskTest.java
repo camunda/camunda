@@ -15,7 +15,6 @@ import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -42,8 +41,7 @@ class AssignUserTaskTest {
     client =
         CLUSTER
             .newClientBuilder()
-            .gatewayAddress(gateway.gatewayAddress())
-            .gatewayRestApiPort(gateway.mappedPort(TestZeebePort.REST))
+            .restAddress(gateway.restAddress())
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .build();
     final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);

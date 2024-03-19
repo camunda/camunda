@@ -30,6 +30,8 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -120,14 +122,14 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientBuilder gatewayRestApiPort(final int restApiPort) {
-    innerBuilder.gatewayRestApiPort(restApiPort);
+  public ZeebeClientBuilder restAddress(final URI restAddress) {
+    innerBuilder.restAddress(restAddress);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultCommunicationApi(final String communicationApi) {
-    innerBuilder.defaultCommunicationApi(communicationApi);
+  public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
+    innerBuilder.grpcAddress(grpcAddress);
     return this;
   }
 
@@ -258,22 +260,54 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
+    innerBuilder.preferRestOverGrpc(preferRestOverGrpc);
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
-    innerBuilder.gatewayAddress(determineGatewayAddress());
+    innerBuilder.grpcAddress(determineGrpcAddress());
+    innerBuilder.restAddress(determineRestAddress());
     innerBuilder.credentialsProvider(determineCredentialsProvider());
     return innerBuilder.build();
   }
 
-  private String determineGatewayAddress() {
-    if (isNeedToSetCloudGatewayAddress()) {
+  private URI determineRestAddress() {
+    if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
-      return String.format("%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
+      final String cloudRestAddress =
+          String.format("https://%s.zeebe.%s:443/%s", region, BASE_ADDRESS, clusterId);
+      return getURIFromString(cloudRestAddress);
     } else {
+      Loggers.LOGGER.debug(
+          "Expected to use 'cluster id' to set REST API address in the client cloud builder, "
+              + "but overwriting with explicitly defined REST API address: {}.",
+          innerBuilder.getRestAddress());
+      return innerBuilder.getRestAddress();
+    }
+  }
+
+  private URI determineGrpcAddress() {
+    if (isNeedToSetCloudGrpcAddress() && isNeedToSetCloudGatewayAddress()) {
+      ensureNotNull("cluster id", clusterId);
+      final String cloudGrpcAddress =
+          String.format("https://%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
+      return getURIFromString(cloudGrpcAddress);
+    } else {
+      if (!isNeedToSetCloudGrpcAddress()) {
+        Loggers.LOGGER.debug(
+            "Expected to use 'cluster id' to set gateway address in the client cloud builder, "
+                + "but overwriting with explicitly defined gateway address: {}.",
+            innerBuilder.getGrpcAddress());
+        return innerBuilder.getGrpcAddress();
+      }
+
       Loggers.LOGGER.debug(
           "Expected to use 'cluster id' to set gateway address in the client cloud builder, "
               + "but overwriting with explicitly defined gateway address: {}.",
           innerBuilder.getGatewayAddress());
-      return innerBuilder.getGatewayAddress();
+      return getURIFromString("https://" + innerBuilder.getGatewayAddress());
     }
   }
 
@@ -302,10 +336,30 @@ public class ZeebeClientCloudBuilderImpl
     }
   }
 
+  private boolean isNeedToSetCloudGrpcAddress() {
+    return innerBuilder.getGrpcAddress() == null
+        || Objects.equals(
+            innerBuilder.getGrpcAddress(), ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS);
+  }
+
   private boolean isNeedToSetCloudGatewayAddress() {
     return innerBuilder.getGatewayAddress() == null
         || Objects.equals(
             innerBuilder.getGatewayAddress(), ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS);
+  }
+
+  private boolean isNeedToSetCloudRestAddress() {
+    return innerBuilder.getRestAddress() == null
+        || Objects.equals(
+            innerBuilder.getRestAddress(), ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS);
+  }
+
+  private URI getURIFromString(final String uri) {
+    try {
+      return new URI(uri);
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException("Failed to parse URI string", e);
+    }
   }
 
   @Override
