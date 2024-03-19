@@ -46,6 +46,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -75,46 +76,37 @@ public class ElasticsearchArchiveRepositoryTest {
     @Mock private Metrics metrics;
     @Mock private RestHighLevelClient esClient;
     @Mock private ObjectMapper objectMapper;
-    @Mock private RichOpenSearchClient richOpenSearchClient;
 
     @Mock private ArchiverProperties archiverProperties;
 
     @Test
     public void testSetIndexLifeCycle() throws ClassNotFoundException, IOException {
-        final OpenSearchIndexOperations openSearchIndexOperations =
-                mock(OpenSearchIndexOperations.class);
         final IndicesClient indicesClient = mock(IndicesClient.class);
         when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-        when(richOpenSearchClient.index()).thenReturn(openSearchIndexOperations);
         when(esClient.indices()).thenReturn(indicesClient);
+        when(indicesClient.exists((GetIndexRequest) any(), any())).thenReturn(true);
         when(archiverProperties.isIlmEnabled()).thenReturn(true);
-        when(openSearchIndexOperations.indexExists(anyString())).thenReturn(true);
         underTest.setIndexLifeCycle("destinationIndexName");
 
         verify(archiverProperties, times(1)).isIlmEnabled();
         assertThat(archiverProperties.isIlmEnabled()).isTrue();
-        verify(openSearchIndexOperations, times(1)).indexExists("destinationIndexName");
-        assertThat(openSearchIndexOperations.indexExists("destinationIndexName")).isTrue();
-        verify(esClient, times(1)).indices();
+        verify(esClient, times(2)).indices();
         verify(indicesClient, times(1)).putSettings(any(), any());
+        verify(indicesClient, times(1)).exists((GetIndexRequest) any(), any());
     }
 
     @Test
-    public void testSetIndexLifeCycleNoIndex() throws ClassNotFoundException, IOException {
-        final OpenSearchIndexOperations openSearchIndexOperations =
-                mock(OpenSearchIndexOperations.class);
+    public void testSetIndexLifeCycleNoIndex() throws IOException {
         final IndicesClient indicesClient = mock(IndicesClient.class);
         when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-        when(richOpenSearchClient.index()).thenReturn(openSearchIndexOperations);
         when(archiverProperties.isIlmEnabled()).thenReturn(true);
-        when(openSearchIndexOperations.indexExists(anyString())).thenReturn(false);
+        when(esClient.indices()).thenReturn(indicesClient);
+        when(indicesClient.exists((GetIndexRequest) any(), any())).thenReturn(false);
         underTest.setIndexLifeCycle("destinationIndexName");
 
         verify(archiverProperties, times(1)).isIlmEnabled();
         assertThat(archiverProperties.isIlmEnabled()).isTrue();
-        verify(openSearchIndexOperations, times(1)).indexExists("destinationIndexName");
-        assertThat(openSearchIndexOperations.indexExists("destinationIndexName")).isFalse();
-        verify(esClient, times(0)).indices();
+        verify(esClient, times(1)).indices();
         verify(indicesClient, times(0)).putSettings(any(), any());
     }
 

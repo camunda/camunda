@@ -52,6 +52,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
@@ -93,7 +94,6 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   @Autowired private Metrics metrics;
   @Autowired private RestHighLevelClient esClient;
   @Autowired private ObjectMapper objectMapper;
-  @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   private ArchiveBatch createArchiveBatch(
       final SearchResponse searchResponse,
@@ -168,7 +168,9 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   @Override
   public void setIndexLifeCycle(final String destinationIndexName) {
     try {
-      if (operateProperties.getArchiver().isIlmEnabled() && richOpenSearchClient.index().indexExists(destinationIndexName)) {
+      if (operateProperties.getArchiver().isIlmEnabled() && esClient
+              .indices()
+              .exists(new GetIndexRequest(destinationIndexName), RequestOptions.DEFAULT)) {
         esClient
             .indices()
             .putSettings(
