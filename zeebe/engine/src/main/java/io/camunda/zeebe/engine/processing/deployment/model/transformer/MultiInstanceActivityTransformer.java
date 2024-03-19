@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLoopCharacteristics;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.instance.LoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
 import java.util.Optional;
@@ -75,6 +77,8 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
           .addAll(Collections.unmodifiableList(innerActivity.getOutgoing()));
       innerActivity.getOutgoing().clear();
 
+      replaceCompensationHandler(process, innerActivity, multiInstanceBody);
+
       // replace the inner element with the body
       process.addFlowElement(multiInstanceBody);
     }
@@ -122,5 +126,19 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
         inputElement,
         outputCollection,
         outputElement);
+  }
+
+  private static void replaceCompensationHandler(
+      final ExecutableProcess process,
+      final ExecutableActivity innerActivity,
+      final ExecutableMultiInstanceBody multiInstanceBody) {
+
+    process.getFlowElements().stream()
+        .filter(ExecutableBoundaryEvent.class::isInstance)
+        .map(ExecutableBoundaryEvent.class::cast)
+        .filter(boundaryEvent -> boundaryEvent.getEventType() == BpmnEventType.COMPENSATION)
+        .map(ExecutableBoundaryEvent::getCompensation)
+        .filter(compensation -> compensation.getCompensationHandler() == innerActivity)
+        .forEach(compensation -> compensation.setCompensationHandler(multiInstanceBody));
   }
 }
