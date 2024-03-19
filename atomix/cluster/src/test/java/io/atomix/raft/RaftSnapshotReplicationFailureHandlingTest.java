@@ -27,12 +27,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class RaftSnapshotReplicationFailureHandlingTest {
-  private static final int NUMBER_OF_CHUNKS = 10;
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
   private RaftServer follower;
@@ -52,28 +52,31 @@ public class RaftSnapshotReplicationFailureHandlingTest {
   @Test
   public void shouldNotRestartFromFirstChunkWhenInstallRequestTimesOut() throws Throwable {
     // given
-    disconnectFollowerAndTakeSnapshot();
+    final int numberOfChunks = 10;
+    disconnectFollowerAndTakeSnapshot(numberOfChunks);
 
     leaderProtocol.interceptResponse(
-        InstallResponse.class, new TimingOutInterceptor(NUMBER_OF_CHUNKS - 1));
+        InstallResponse.class, new TimingOutInterceptor(numberOfChunks - 1));
 
     // when
     reconnectFollowerAndAwaitSnapshot();
 
     // then
-    // Total 10 chunks + 1 retry
     assertThat(totalInstallRequest.get())
         .describedAs("Should only resend one snapshot chunk")
-        .isEqualTo(NUMBER_OF_CHUNKS + 1);
+        // Before follower reconnects, sometimes leader sends an InstallRequest which
+        // ends up in connect exception
+        .isLessThan(numberOfChunks + 3);
   }
 
   @Test
   public void shouldRestartSnapshotReplicationIfFollowerRejectedRequest() throws Throwable {
     // given
-    disconnectFollowerAndTakeSnapshot();
+    final int numberOfChunks = 10;
+    disconnectFollowerAndTakeSnapshot(numberOfChunks);
 
     leaderProtocol.interceptResponse(
-        InstallResponse.class, new RejectingInterceptor(NUMBER_OF_CHUNKS - 1));
+        InstallResponse.class, new RejectingInterceptor(numberOfChunks - 1));
 
     // when
     reconnectFollowerAndAwaitSnapshot();
@@ -81,7 +84,33 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     // then
     assertThat(totalInstallRequest.get())
         .describedAs("Should resent chunks from 0 to 8")
-        .isEqualTo(2 * NUMBER_OF_CHUNKS - 1);
+        // Before follower reconnects, sometimes leader sends an InstallRequest which
+        // ends up in connect exception
+        .isLessThan(2 * numberOfChunks + 1);
+  }
+
+  @Test
+  public void shouldResentSnapshotIfFirstChunkTimedOut() throws Throwable {
+    // given
+    final int numberOfChunks = 1;
+    disconnectFollowerAndTakeSnapshot(numberOfChunks);
+
+    leaderProtocol.interceptResponse(InstallResponse.class, new TimingOutInterceptor(1));
+
+    // when
+    reconnectFollowerAndAwaitSnapshot();
+
+    // then
+    // We have to wait because, the snapshot is persisted when receiving the first chunk. The
+    // interceptor is only called after the first chunks is processed. Hence, the await snapshot is
+    // completed before the leader resend the request. To ensure that the leader resent the request,
+    // we wait until the totalInstallRequest includes the retry.
+    Awaitility.await("Snapshot chunk-0 is resend")
+        .untilAsserted(
+            () ->
+                assertThat(totalInstallRequest.get())
+                    .describedAs("Should resent snapshot chunk")
+                    .isEqualTo(numberOfChunks + 1));
   }
 
   private void reconnectFollowerAndAwaitSnapshot() throws InterruptedException {
@@ -94,14 +123,14 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     assertThat(snapshotReceived.await(30, TimeUnit.SECONDS)).isTrue();
   }
 
-  private void disconnectFollowerAndTakeSnapshot() throws Exception {
+  private void disconnectFollowerAndTakeSnapshot(final int numberOfChunks) throws Exception {
     follower = raftRule.getFollower().orElseThrow();
     raftRule.partition(follower);
 
     leader.getContext().setPreferSnapshotReplicationThreshold(1);
     final var commitIndex = raftRule.appendEntries(2); // awaits commit
 
-    raftRule.takeSnapshot(leader, commitIndex, NUMBER_OF_CHUNKS);
+    raftRule.takeSnapshot(leader, commitIndex, numberOfChunks);
     raftRule.appendEntry();
   }
 
