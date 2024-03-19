@@ -113,11 +113,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   public ZeebeClientImpl(
-      final ZeebeClientConfiguration configuration, final HttpClient httpClient) {
-    this(configuration, buildChannel(configuration), httpClient);
-  }
-
-  public ZeebeClientImpl(
       final ZeebeClientConfiguration configuration, final ManagedChannel channel) {
     this(configuration, channel, buildGatewayStub(channel, configuration));
   }
