@@ -23,12 +23,15 @@ import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
+@ExtendWith(MockitoExtension.class)
 public class DeploymentPostProcessorTest {
 
   @Mock private ZeebeClient client;
@@ -41,11 +44,10 @@ public class DeploymentPostProcessorTest {
 
   @Mock private DeploymentEvent deploymentEvent;
 
-  private ZeebeDeploymentAnnotationProcessor deploymentPostProcessor;
+  @InjectMocks private ZeebeDeploymentAnnotationProcessor deploymentPostProcessor;
 
   @BeforeEach
   public void init() {
-    MockitoAnnotations.openMocks(this);
     deploymentPostProcessor = Mockito.spy(new ZeebeDeploymentAnnotationProcessor());
   }
 
@@ -130,8 +132,6 @@ public class DeploymentPostProcessorTest {
               ClassInfo.builder().bean(new WithNoClassPathResource()).build();
 
           when(client.newDeployResourceCommand()).thenReturn(deployStep1);
-
-          when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
           // when
           deploymentPostProcessor.configureFor(classInfo);

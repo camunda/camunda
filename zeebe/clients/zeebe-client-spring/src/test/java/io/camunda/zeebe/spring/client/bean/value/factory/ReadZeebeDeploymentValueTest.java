@@ -18,15 +18,17 @@ import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ReadZeebeDeploymentValueTest {
 
-  private ZeebeDeploymentAnnotationProcessor annotationProcessor;
+  @InjectMocks private ZeebeDeploymentAnnotationProcessor annotationProcessor;
 
   @BeforeEach
   public void init() {
-    MockitoAnnotations.openMocks(this);
     annotationProcessor = new ZeebeDeploymentAnnotationProcessor();
   }
 
