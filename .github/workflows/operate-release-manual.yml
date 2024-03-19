@@ -58,7 +58,7 @@ on:
 jobs:
   release:
     name: "release manually v${{ inputs.releaseVersion }}"
-    uses: camunda/zeebe/.github/workflows/operate-release-reusable.yml@fix-operate-mvn-release
+    uses: camunda/zeebe/.github/workflows/operate-release-reusable.yml@main
     secrets: inherit
     with:
       branch: ${{ inputs.branch }}
