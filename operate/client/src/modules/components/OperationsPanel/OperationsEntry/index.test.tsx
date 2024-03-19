@@ -29,7 +29,7 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Filters} from 'App/Processes/ListView/Filters';
-import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED} from 'modules/feature-flags';
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -208,7 +208,7 @@ describe('OperationsEntry', () => {
     expect(screen.queryByText('3 Instances')).not.toBeInTheDocument();
   });
 
-  (IS_BATCH_MOVE_MODIFICATION_ENABLED ? it : it.skip)(
+  (IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED ? it : it.skip)(
     'should render id link for non-delete instance operations',
     () => {
       render(
@@ -276,7 +276,7 @@ describe('OperationsEntry', () => {
     ).not.toBeInTheDocument();
   });
 
-  (IS_BATCH_MOVE_MODIFICATION_ENABLED ? it : it.skip)(
+  (IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED ? it : it.skip)(
     'should filter by Operation and expand Filters Panel',
     async () => {
       panelStatesStore.toggleFiltersPanel();
@@ -303,7 +303,7 @@ describe('OperationsEntry', () => {
     },
   );
 
-  (IS_BATCH_MOVE_MODIFICATION_ENABLED ? it : it.skip)(
+  (IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED ? it : it.skip)(
     'should not remove optional operation id filter when operation filter is applied twice',
     async () => {
       const {user} = render(

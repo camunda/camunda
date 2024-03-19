@@ -16,7 +16,7 @@
  */
 
 import {RequestHandler, rest} from 'msw';
-import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED} from 'modules/feature-flags';
 
 const mocks = [
   {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //delete instance
@@ -28,7 +28,7 @@ const mocks = [
   {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //single success
 ];
 
-const batchOperationHandlers = IS_BATCH_MOVE_MODIFICATION_ENABLED
+const batchOperationHandlers = IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED
   ? [
       rest.post('api/batch-operations', async (req, res, ctx) => {
         const originalResponse = await ctx.fetch(req);
