@@ -12,7 +12,8 @@ public record AzureBackupConfig(
     String accountName,
     String accountKey,
     String connectionString,
-    String containerName) {
+    String containerName,
+    String auth) {
 
   public static class Builder {
 
@@ -23,6 +24,7 @@ public record AzureBackupConfig(
 
     // maps to the basePath env variable
     private String containerName;
+    private String auth;
 
     public Builder withEndpoint(final String endpoint) {
       this.endpoint = endpoint;
@@ -49,10 +51,15 @@ public record AzureBackupConfig(
       return this;
     }
 
+    public Builder withAuth(final String auth) {
+      this.auth = auth;
+      return this;
+    }
+
     public AzureBackupConfig build() {
 
       return new AzureBackupConfig(
-          endpoint, accountName, accountKey, conectionString, containerName);
+          endpoint, accountName, accountKey, conectionString, containerName, auth);
     }
   }
 }
