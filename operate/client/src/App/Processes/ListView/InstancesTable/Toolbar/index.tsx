@@ -19,7 +19,7 @@ import {TableToolbar, Modal, TableBatchAction} from '@carbon/react';
 import {TableBatchActions} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
-import useOperationApply from './useOperationApply';
+import useOperationApply from '../useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';

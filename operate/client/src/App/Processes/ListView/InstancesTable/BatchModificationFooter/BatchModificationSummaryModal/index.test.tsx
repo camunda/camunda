@@ -17,7 +17,7 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -32,6 +32,9 @@ import {
 } from 'modules/testUtils';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
+import * as hooks from 'App/Processes/ListView/InstancesTable/useOperationApply';
+
+jest.mock('App/Processes/ListView/InstancesTable/useOperationApply');
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {
@@ -45,27 +48,26 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
     });
 
     return (
-      <>
-        <MemoryRouter
-          initialEntries={[
-            `${Paths.processes()}?process=bigVarProcess&version=1&flowNodeId=ServiceTask_0kt6c5i`,
-          ]}
+      <MemoryRouter
+        initialEntries={[
+          `${Paths.processes()}?process=bigVarProcess&version=1&flowNodeId=ServiceTask_0kt6c5i`,
+        ]}
+      >
+        {children}
+        <button
+          onClick={async () => {
+            await processesStore.fetchProcesses();
+            await processXmlStore.fetchProcessXml();
+            processStatisticsBatchModificationStore.setStatistics(
+              mockProcessStatistics,
+            );
+            batchModificationStore.enable();
+            batchModificationStore.selectTargetFlowNode('StartEvent_1');
+          }}
         >
-          {children}
-          <button
-            onClick={async () => {
-              await processesStore.fetchProcesses();
-              await processXmlStore.fetchProcessXml();
-              processStatisticsBatchModificationStore.setStatistics(
-                mockProcessStatistics,
-              );
-              batchModificationStore.selectTargetFlowNode('StartEvent_1');
-            }}
-          >
-            init
-          </button>
-        </MemoryRouter>
-      </>
+          init
+        </button>
+      </MemoryRouter>
     );
   },
 );
@@ -74,6 +76,11 @@ describe('BatchModificationSummaryModal', () => {
   it('should render batch modification summary', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    const applyBatchOperationMock = jest.fn();
+    jest.spyOn(hooks, 'default').mockImplementation(() => ({
+      applyBatchOperation: applyBatchOperationMock,
+    }));
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
@@ -96,5 +103,44 @@ describe('BatchModificationSummaryModal', () => {
         name: /Service Task 1 --> Start Event 1/i,
       }),
     ).toBeInTheDocument();
+  });
+
+  it('should apply batch operation', async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    const applyBatchOperationMock = jest.fn();
+    jest.spyOn(hooks, 'default').mockImplementation(() => ({
+      applyBatchOperation: applyBatchOperationMock,
+    }));
+
+    const {user} = render(
+      <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.getByRole('button', {name: /apply/i})).toBeDisabled();
+
+    await user.click(screen.getByRole('button', {name: /init/i}));
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /apply/i})).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', {name: /apply/i}));
+
+    expect(batchModificationStore.state.isEnabled).toBe(false);
+    expect(applyBatchOperationMock).toHaveBeenCalledTimes(1);
+    expect(applyBatchOperationMock).toHaveBeenCalledWith({
+      modifications: [
+        {
+          fromFlowNodeId: 'ServiceTask_0kt6c5i',
+          modification: 'MOVE_TOKEN',
+          toFlowNodeId: 'StartEvent_1',
+        },
+      ],
+      onSuccess: expect.any(Function),
+      operationType: 'MODIFY_PROCESS_INSTANCE',
+    });
   });
 });

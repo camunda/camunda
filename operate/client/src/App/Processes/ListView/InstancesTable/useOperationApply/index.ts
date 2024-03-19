@@ -29,7 +29,7 @@ type ApplyBatchOperationParams = {
   modifications?: Modifications;
 };
 
-export default function useOperationApply() {
+function useOperationApply() {
   const {selectedProcessInstanceIds, excludedProcessInstanceIds, reset} =
     processInstancesSelectionStore;
 
@@ -97,3 +97,5 @@ export default function useOperationApply() {
     },
   };
 }
+
+export default useOperationApply;
