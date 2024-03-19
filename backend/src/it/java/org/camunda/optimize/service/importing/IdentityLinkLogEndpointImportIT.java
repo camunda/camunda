@@ -5,13 +5,15 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.junit.jupiter.params.provider.Arguments;
-
-import java.util.stream.Stream;
-
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_LOG_ENDPOINT;
 
-public class IndentityLinkLogEndpointImportIT extends AbstractImportEndpointFailureIT {
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.provider.Arguments;
+
+@Tag(OPENSEARCH_PASSING)
+public class IdentityLinkLogEndpointImportIT extends AbstractImportEndpointFailureIT {
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {

@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.junit.jupiter.params.provider.Arguments;
-
-import java.util.stream.Stream;
-
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_UPDATE_ENDPOINT;
 
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.provider.Arguments;
+
+@Tag(OPENSEARCH_PASSING)
 public class VariableUpdateEndpointImportIT extends AbstractImportEndpointFailureIT {
 
   @Override

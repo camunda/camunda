@@ -5,12 +5,33 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -85,28 +106,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
-import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-
 @Slf4j
 public class EmbeddedOptimizeExtension
   implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
@@ -135,26 +134,26 @@ public class EmbeddedOptimizeExtension
   }
 
   public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
+    log.info("Running tests with database {}", IntegrationTestConfigurationUtil.getDatabaseType());
+    System.setProperty(CAMUNDA_OPTIMIZE_DATABASE, IntegrationTestConfigurationUtil.getDatabaseType().getId());
     this.beforeAllMode = beforeAllMode;
   }
 
   @SneakyThrows
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
-    log.info("Running tests with database {}", IntegrationTestConfigurationUtil.getDatabaseType());
-    System.setProperty(CAMUNDA_OPTIMIZE_DATABASE, IntegrationTestConfigurationUtil.getDatabaseType().getId());
     setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
-
     if (serializedDefaultConfiguration == null) {
       // store the default configuration to restore it later
-      serializedDefaultConfiguration = configObjectMapper.writeValueAsString(getConfigurationService());
+      serializedDefaultConfiguration = configObjectMapper.writeValueAsString(
+          getConfigurationService());
     }
     if (beforeAllMode) {
       setupOptimize();
     }
   }
 
-  public void setApplicationContext(ApplicationContext applicationContext) {
+  public void setApplicationContext(final ApplicationContext applicationContext) {
     this.applicationContext = applicationContext;
     applicationContext.getBean(ApplicationContextProvider.class).setApplicationContext(applicationContext);
   }
@@ -195,13 +194,14 @@ public class EmbeddedOptimizeExtension
         new OptimizeRequestExecutor(
           DEFAULT_USERNAME,
           DEFAULT_PASSWORD,
-          IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(applicationContext)
+          IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(
+              applicationContext)
         ).initAuthCookie();
       if (isResetImportOnStart()) {
         resetImportStartIndexes();
         setResetImportOnStart(true);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message = "Failed starting embedded Optimize.";
       log.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
@@ -210,12 +210,12 @@ public class EmbeddedOptimizeExtension
 
   public void afterTest() {
     try {
-      this.getAlertService().getScheduler().clear();
+      getAlertService().getScheduler().clear();
       stopImportScheduling();
       resetConfiguration();
       LocalDateUtil.reset();
       reloadConfiguration();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Failed to clean up after test", e);
     }
   }
@@ -252,7 +252,7 @@ public class EmbeddedOptimizeExtension
     boolean isDoneImporting;
     do {
       isDoneImporting = true;
-      for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
+      for (final EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
         scheduler.runImportRound(false);
         isDoneImporting &= !scheduler.isImporting();
       }
@@ -262,14 +262,14 @@ public class EmbeddedOptimizeExtension
   public void importAllEngineEntitiesFromScratch() {
     try {
       resetImportStartIndexes();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // nothing to do
     }
     importAllEngineEntitiesFromLastIndex();
   }
 
   public void importAllEngineEntitiesFromLastIndex() {
-    for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
+    for (final EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
       log.debug("scheduling import round");
       scheduleImportAndWaitUntilIsFinished(scheduler);
     }
@@ -279,7 +279,7 @@ public class EmbeddedOptimizeExtension
   public void importIngestedDataFromScratch() {
     try {
       resetImportStartIndexes();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // nothing to do
     }
     final IngestedDataImportScheduler scheduler = getImportSchedulerManager().getIngestedDataImportScheduler()
@@ -298,7 +298,7 @@ public class EmbeddedOptimizeExtension
   public void importAllZeebeEntitiesFromScratch() {
     try {
       resetImportStartIndexes();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // nothing to do
     }
     importAllZeebeEntitiesFromLastIndex();
@@ -312,25 +312,25 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
-  public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
-    RunningActivityInstanceWriter writer = getBean(RunningActivityInstanceWriter.class);
-    ProcessDefinitionResolverService processDefinitionResolverService =
-      getBean(ProcessDefinitionResolverService.class);
-    CamundaEventImportServiceFactory camundaEventServiceFactory =
-      getBean(CamundaEventImportServiceFactory.class);
+  public void importRunningActivityInstance(final List<HistoricActivityInstanceEngineDto> activities) {
+    final RunningActivityInstanceWriter writer = getBean(RunningActivityInstanceWriter.class);
+    final ProcessDefinitionResolverService processDefinitionResolverService =
+        getBean(ProcessDefinitionResolverService.class);
+    final CamundaEventImportServiceFactory camundaEventServiceFactory =
+        getBean(CamundaEventImportServiceFactory.class);
 
-    for (EngineContext configuredEngine : getConfiguredEngines()) {
+    for (final EngineContext configuredEngine : getConfiguredEngines()) {
       final RunningActivityInstanceImportService service =
         new RunningActivityInstanceImportService(
           writer,
           camundaEventServiceFactory.createCamundaEventService(configuredEngine),
           configuredEngine,
-          getConfigurationService(),
+            getConfigurationService(),
           processDefinitionResolverService,
-          getOptimizeDatabaseClient()
+            getOptimizeDatabaseClient()
         );
       try {
-        CompletableFuture<Void> done = new CompletableFuture<>();
+        final CompletableFuture<Void> done = new CompletableFuture<>();
         service.executeImport(activities, () -> done.complete(null));
         done.get();
       } finally {
@@ -341,9 +341,9 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionFromResolverService(final String definitionId) {
-    DecisionDefinitionResolverService resolverService =
-      getBean(DecisionDefinitionResolverService.class);
-    for (EngineContext configuredEngine : getConfiguredEngines()) {
+    final DecisionDefinitionResolverService resolverService =
+        getBean(DecisionDefinitionResolverService.class);
+    for (final EngineContext configuredEngine : getConfiguredEngines()) {
       final Optional<DecisionDefinitionOptimizeDto> definition =
         resolverService.getDefinition(definitionId, configuredEngine);
       if (definition.isPresent()) {
@@ -355,9 +355,9 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromResolverService(final String definitionId) {
-    ProcessDefinitionResolverService resolverService =
-      getBean(ProcessDefinitionResolverService.class);
-    for (EngineContext configuredEngine : getConfiguredEngines()) {
+    final ProcessDefinitionResolverService resolverService =
+        getBean(ProcessDefinitionResolverService.class);
+    for (final EngineContext configuredEngine : getConfiguredEngines()) {
       final Optional<ProcessDefinitionOptimizeDto> definition =
         resolverService.getDefinition(definitionId, configuredEngine);
       if (definition.isPresent()) {
@@ -368,7 +368,7 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
-  private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
+  private void scheduleImportAndWaitUntilIsFinished(final EngineImportScheduler scheduler) {
     scheduler.runImportRound(true).get();
     // as the definition is imported in two steps,
     // we need to run the xml imports once more as they depend on the definition entry to be present in elastic
@@ -378,7 +378,7 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
-  private void runDefinitionXmlImporterMediators(EngineImportScheduler scheduler) {
+  private void runDefinitionXmlImporterMediators(final EngineImportScheduler scheduler) {
     final List<ImportMediator> definitionXmlMediators = scheduler.getImportMediators()
       .stream()
       .filter(mediator -> mediator instanceof DefinitionXmlImportMediator)
@@ -391,7 +391,7 @@ public class EmbeddedOptimizeExtension
     final List<AbstractImportScheduler<?>> importSchedulers = getImportSchedulerManager().getImportSchedulers()
       .stream().filter(scheduler -> getConfigurationService().isImportEnabled(scheduler.getDataImportSourceDto()))
       .collect(Collectors.toList());
-    for (AbstractImportScheduler<?> scheduler : importSchedulers) {
+    for (final AbstractImportScheduler<?> scheduler : importSchedulers) {
       synchronizationCompletables.addAll(
         scheduler.getImportMediators()
           .stream()
@@ -419,10 +419,10 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
-  public void ensureImportSchedulerIsIdle(long timeoutSeconds) {
+  public void ensureImportSchedulerIsIdle(final long timeoutSeconds) {
     final CountDownLatch importIdleLatch = new CountDownLatch(
-      getImportSchedulerManager().getEngineImportSchedulers().size());
-    for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
+        getImportSchedulerManager().getEngineImportSchedulers().size());
+    for (final EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
       if (scheduler.isImporting()) {
         log.info("Scheduler is still importing, waiting for it to finish.");
         final ImportObserver importObserver = new ImportObserver() {
@@ -448,7 +448,7 @@ public class EmbeddedOptimizeExtension
 
     try {
       importIdleLatch.await(timeoutSeconds, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
     }
   }
@@ -465,12 +465,12 @@ public class EmbeddedOptimizeExtension
     return authenticateUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public String authenticateUser(String username, String password) {
-    Response tokenResponse = authenticateUserRequest(username, password);
+  public String authenticateUser(final String username, final String password) {
+    final Response tokenResponse = authenticateUserRequest(username, password);
     return tokenResponse.readEntity(String.class);
   }
 
-  public Response authenticateUserRequest(String username, String password) {
+  public Response authenticateUserRequest(final String username, final String password) {
     final CredentialsRequestDto entity = new CredentialsRequestDto(username, password);
     return target("authentication")
       .request()
@@ -491,10 +491,10 @@ public class EmbeddedOptimizeExtension
     }
 
     final Map<String, ?> refreshableServices = getApplicationContext().getBeansOfType(ConfigurationReloadable.class);
-    for (Map.Entry<String, ?> entry : refreshableServices.entrySet()) {
-      Object beanRef = entry.getValue();
+    for (final Map.Entry<String, ?> entry : refreshableServices.entrySet()) {
+      final Object beanRef = entry.getValue();
       if (beanRef instanceof ConfigurationReloadable) {
-        ConfigurationReloadable reloadable = (ConfigurationReloadable) beanRef;
+        final ConfigurationReloadable reloadable = (ConfigurationReloadable) beanRef;
         reloadable.reloadConfiguration(getApplicationContext());
       }
     }
@@ -509,7 +509,7 @@ public class EmbeddedOptimizeExtension
     // copy all properties from the default configuration to the embedded optimize
     BeanUtils.copyProperties(
       configObjectMapper.readValue(serializedDefaultConfiguration, ConfigurationService.class),
-      getBean(ConfigurationService.class)
+        getBean(ConfigurationService.class)
     );
     log.info("done resetting config");
   }
@@ -518,7 +518,7 @@ public class EmbeddedOptimizeExtension
     getPlatformTenantService().reloadConfiguration(null);
   }
 
-  public final WebTarget target(String path) {
+  public final WebTarget target(final String path) {
     return requestExecutor.getDefaultWebTarget().path(path);
   }
 
@@ -526,25 +526,27 @@ public class EmbeddedOptimizeExtension
     return requestExecutor.getDefaultWebTarget();
   }
 
-  public final WebTarget rootTarget(String path) {
-    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint(applicationContext))
+  public final WebTarget rootTarget(final String path) {
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint(
+            applicationContext))
       .path(path);
   }
 
   public final WebTarget securedRootTarget() {
-    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint(applicationContext));
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint(
+        applicationContext));
   }
 
   public List<Long> getImportIndexes() {
-    List<Long> indexes = new LinkedList<>();
-    for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
+    final List<Long> indexes = new LinkedList<>();
+    for (final String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
       getIndexHandlerRegistry()
         .getAllEntitiesBasedHandlers(engineAlias)
         .forEach(handler -> indexes.add(handler.getImportIndex()));
       getIndexHandlerRegistry()
         .getTimestampEngineBasedHandlers(engineAlias)
         .forEach(handler -> {
-          TimestampBasedImportPage page = handler.getNextPage();
+          final TimestampBasedImportPage page = handler.getNextPage();
           indexes.add(page.getTimestampOfLastEntity().toEpochSecond());
         });
     }
@@ -552,26 +554,27 @@ public class EmbeddedOptimizeExtension
   }
 
   public void resetImportStartIndexes() {
-    for (EngineImportIndexHandler<?, ?> engineImportIndexHandler :
-      getIndexHandlerRegistry().getAllEngineImportHandlers()) {
+    for (final EngineImportIndexHandler<?, ?> engineImportIndexHandler :
+        getIndexHandlerRegistry().getAllEngineImportHandlers()) {
       engineImportIndexHandler.resetImportIndex();
     }
     getAllPositionBasedImportHandlers().forEach(PositionBasedImportIndexHandler::resetImportIndex);
   }
 
   public List<PositionBasedImportIndexHandler> getAllPositionBasedImportHandlers() {
-    List<PositionBasedImportIndexHandler> positionBasedHandlers = new LinkedList<>();
+    final List<PositionBasedImportIndexHandler> positionBasedHandlers = new LinkedList<>();
     for (int partitionId = 1; partitionId <=
-      getConfigurationService().getConfiguredZeebe().getPartitionCount(); partitionId++) {
-      positionBasedHandlers.addAll(getIndexHandlerRegistry().getPositionBasedHandlers(partitionId));
+        getConfigurationService().getConfiguredZeebe().getPartitionCount(); partitionId++) {
+      positionBasedHandlers.addAll(
+          getIndexHandlerRegistry().getPositionBasedHandlers(partitionId));
     }
     return positionBasedHandlers;
   }
 
   public void resetInstanceDataWriters() {
     final Map<String, AbstractProcessInstanceDataWriter> writers =
-      getApplicationContext().getBeansOfType(AbstractProcessInstanceDataWriter.class);
-    for (AbstractProcessInstanceDataWriter<?> writer : writers.values()) {
+        getApplicationContext().getBeansOfType(AbstractProcessInstanceDataWriter.class);
+    for (final AbstractProcessInstanceDataWriter<?> writer : writers.values()) {
       writer.reloadConfiguration(getApplicationContext());
     }
   }
@@ -584,7 +587,7 @@ public class EmbeddedOptimizeExtension
     return applicationContext;
   }
 
-  public <T> T getBean(Class<T> clazz) {
+  public <T> T getBean(final Class<T> clazz) {
     return applicationContext.getBean(clazz);
   }
 
@@ -674,7 +677,7 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   public void processEvents() {
-    EventTraceStateProcessingScheduler eventProcessingScheduler = getEventProcessingScheduler();
+    final EventTraceStateProcessingScheduler eventProcessingScheduler = getEventProcessingScheduler();
 
     // run one cycle
     eventProcessingScheduler.runImportRound(true).get();
@@ -727,8 +730,8 @@ public class EmbeddedOptimizeExtension
     this.resetImportOnStart = resetImportOnStart;
   }
 
-  public String format(OffsetDateTime offsetDateTime) {
-    return this.getDateTimeFormatter().format(offsetDateTime);
+  public String format(final OffsetDateTime offsetDateTime) {
+    return getDateTimeFormatter().format(offsetDateTime);
   }
 
   public String formatToHistogramBucketKey(final OffsetDateTime offsetDateTime, final ChronoUnit unit) {

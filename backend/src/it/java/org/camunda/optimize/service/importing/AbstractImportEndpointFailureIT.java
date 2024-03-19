@@ -5,7 +5,24 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static jakarta.ws.rs.HttpMethod.GET;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.mockserver.model.HttpRequest.request;
+
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -35,24 +52,6 @@ import org.mockserver.model.HttpRequest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import static jakarta.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
-import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.mockserver.model.HttpRequest.request;
 
 @TestInstance(PER_CLASS)
 @SpringBootTest(
@@ -111,8 +110,8 @@ public abstract class AbstractImportEndpointFailureIT {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("getEndpointAndErrorResponses")
-  public void importWorksDespiteTemporaryFetchingFailures(String endpoint,
-                                                          ErrorResponseMock mockResp) {
+  public void importWorksDespiteTemporaryFetchingFailures(final String endpoint,
+                                                          final ErrorResponseMock mockResp) {
     // given
     embeddedOptimizeExtension.resetImportStartIndexes();
     embeddedOptimizeExtension.reloadConfiguration();
@@ -166,7 +165,7 @@ public abstract class AbstractImportEndpointFailureIT {
   private static ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcessWithVariables(
     final Map<String, Object> variables) {
     // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+    final BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1)
       .userTask(USER_TASK_2)
@@ -188,8 +187,8 @@ public abstract class AbstractImportEndpointFailureIT {
     assertThat(docCount.longValue()).isEqualTo(count);
   }
 
-  private ClientAndServer useAndGetMockServerForEngine(String engineName) {
-    String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
+  private ClientAndServer useAndGetMockServerForEngine(final String engineName) {
+    final String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
       IntegrationTestConfigurationUtil.getEngineMockServerPort() + "/engine-rest";
     embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(engineName, mockServerUrl);
     return engineIntegrationExtension.useEngineMockServer();
