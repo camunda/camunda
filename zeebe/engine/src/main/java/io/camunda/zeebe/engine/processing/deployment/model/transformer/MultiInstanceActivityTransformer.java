@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
-import io.camunda.zeebe.model.bpmn.instance.LoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -40,47 +39,16 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
     final ExecutableActivity innerActivity =
         process.getElementById(element.getId(), ExecutableActivity.class);
 
-    final LoopCharacteristics loopCharacteristics = element.getLoopCharacteristics();
-    if (loopCharacteristics instanceof MultiInstanceLoopCharacteristics) {
+    if (element.getLoopCharacteristics()
+        instanceof final MultiInstanceLoopCharacteristics loopCharacteristics) {
 
       final ExecutableLoopCharacteristics miLoopCharacteristics =
-          transformLoopCharacteristics(
-              context, (MultiInstanceLoopCharacteristics) loopCharacteristics);
+          transformLoopCharacteristics(context, loopCharacteristics);
 
       final ExecutableMultiInstanceBody multiInstanceBody =
           new ExecutableMultiInstanceBody(element.getId(), miLoopCharacteristics, innerActivity);
 
-      multiInstanceBody.setElementType(BpmnElementType.MULTI_INSTANCE_BODY);
-
-      multiInstanceBody.setFlowScope(innerActivity.getFlowScope());
-      innerActivity.setFlowScope(multiInstanceBody);
-
-      // attach boundary events to the multi-instance body
-      innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);
-
-      innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
-      innerActivity.getEventSubprocesses().stream()
-          .map(ExecutableFlowElementContainer::getStartEvents)
-          .forEach(innerActivity.getEvents()::remove);
-
-      innerActivity.getInterruptingElementIds().clear();
-
-      // remove boundary events from inner activity
-      innerActivity.getBoundaryEvents().clear();
-
-      // attach incoming and outgoing sequence flows to the multi-instance body
-      innerActivity.getIncoming().forEach(flow -> flow.setTarget(multiInstanceBody));
-      innerActivity.getOutgoing().forEach(flow -> flow.setSource(multiInstanceBody));
-
-      multiInstanceBody
-          .getOutgoing()
-          .addAll(Collections.unmodifiableList(innerActivity.getOutgoing()));
-      innerActivity.getOutgoing().clear();
-
-      replaceCompensationHandler(process, innerActivity, multiInstanceBody);
-
-      // replace the inner element with the body
-      process.addFlowElement(multiInstanceBody);
+      transformMultiInstanceBody(process, innerActivity, multiInstanceBody);
     }
   }
 
@@ -128,7 +96,51 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
         outputElement);
   }
 
-  private static void replaceCompensationHandler(
+  private static void transformMultiInstanceBody(
+      final ExecutableProcess process,
+      final ExecutableActivity innerActivity,
+      final ExecutableMultiInstanceBody multiInstanceBody) {
+
+    multiInstanceBody.setElementType(BpmnElementType.MULTI_INSTANCE_BODY);
+
+    multiInstanceBody.setFlowScope(innerActivity.getFlowScope());
+    innerActivity.setFlowScope(multiInstanceBody);
+
+    attachEventsToMultiInstanceBody(innerActivity, multiInstanceBody);
+    connectSequenceFlowsToMultiInstanceBody(innerActivity, multiInstanceBody);
+    replaceCompensationHandlerWithMultiInstanceBody(process, innerActivity, multiInstanceBody);
+
+    // replace the inner element with the body
+    process.addFlowElement(multiInstanceBody);
+  }
+
+  private static void attachEventsToMultiInstanceBody(
+      final ExecutableActivity innerActivity, final ExecutableMultiInstanceBody multiInstanceBody) {
+    // attach boundary events to the multi-instance body
+    innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);
+
+    innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
+    innerActivity.getEventSubprocesses().stream()
+        .map(ExecutableFlowElementContainer::getStartEvents)
+        .forEach(innerActivity.getEvents()::remove);
+
+    innerActivity.getInterruptingElementIds().clear();
+    innerActivity.getBoundaryEvents().clear();
+  }
+
+  private static void connectSequenceFlowsToMultiInstanceBody(
+      final ExecutableActivity innerActivity, final ExecutableMultiInstanceBody multiInstanceBody) {
+    // attach incoming and outgoing sequence flows to the multi-instance body
+    innerActivity.getIncoming().forEach(flow -> flow.setTarget(multiInstanceBody));
+    innerActivity.getOutgoing().forEach(flow -> flow.setSource(multiInstanceBody));
+
+    multiInstanceBody
+        .getOutgoing()
+        .addAll(Collections.unmodifiableList(innerActivity.getOutgoing()));
+    innerActivity.getOutgoing().clear();
+  }
+
+  private static void replaceCompensationHandlerWithMultiInstanceBody(
       final ExecutableProcess process,
       final ExecutableActivity innerActivity,
       final ExecutableMultiInstanceBody multiInstanceBody) {
