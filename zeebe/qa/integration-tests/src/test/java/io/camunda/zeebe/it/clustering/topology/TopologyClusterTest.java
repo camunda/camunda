@@ -21,7 +21,6 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
@@ -123,11 +122,11 @@ public final class TopologyClusterTest {
             PartitionBrokerRole.LEADER, PartitionBrokerRole.FOLLOWER, PartitionBrokerRole.FOLLOWER);
   }
 
-  private static ZeebeClient createZeebeClient() throws URISyntaxException {
+  private static ZeebeClient createZeebeClient() {
     final var gateway = CLUSTER.anyGateway();
     return CLUSTER
         .newClientBuilder()
-        .restAddress(new URI(gateway.restAddress()))
+        .restAddress(gateway.restAddress())
         .defaultRequestTimeout(Duration.ofSeconds(15))
         .build();
   }
