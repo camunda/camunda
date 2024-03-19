@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class ZeebeClientExecutorService {
 
+  /** TODO: consider moving this class to starter */
   private final ScheduledExecutorService scheduledExecutorService;
 
   public ZeebeClientExecutorService(final ScheduledExecutorService scheduledExecutorService) {

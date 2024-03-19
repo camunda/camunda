@@ -15,7 +15,6 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.camunda.zeebe.spring.client.metrics.ZeebeClientMetricsBridge;
-import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class JobWorkerManager {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerManager.class);
 
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final JsonMapper jsonMapper;

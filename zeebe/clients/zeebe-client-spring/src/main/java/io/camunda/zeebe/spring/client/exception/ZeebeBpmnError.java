@@ -17,13 +17,7 @@ public class ZeebeBpmnError extends RuntimeException {
 
   private final String errorCode;
   private final String errorMessage;
-  private Map<String, Object> variables;
-
-  public ZeebeBpmnError(final String errorCode, final String errorMessage) {
-    super("[" + errorCode + "] " + errorMessage);
-    this.errorCode = errorCode;
-    this.errorMessage = errorMessage;
-  }
+  private final Map<String, Object> variables;
 
   public ZeebeBpmnError(final String errorCode, final String errorMessage, final Map<String, Object> variables) {
     super("[" + errorCode + "] " + errorMessage);

@@ -74,7 +74,7 @@ public class CommandWrapper {
     return (invocationCounter < maxRetries);
   }
 
-  public boolean jobDeadlineExceeded() {
+  private boolean jobDeadlineExceeded() {
     return (Instant.now().getEpochSecond() > job.getDeadline());
   }
 }

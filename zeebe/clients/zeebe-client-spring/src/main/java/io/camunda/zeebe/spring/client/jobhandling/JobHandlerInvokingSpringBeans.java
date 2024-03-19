@@ -205,10 +205,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
 
   private <T> T mapZeebeVariable(final Object toMap, final Class<T> clazz) {
     if (toMap != null && !clazz.isInstance(toMap)) {
-      //      if (jsonMapper != null) {
       return jsonMapper.fromJson(jsonMapper.toJson(toMap), clazz);
-      //      }
-      //      return DEFAULT_OBJECT_MAPPER.convertValue(toMap, clazz);
     } else {
       return clazz.cast(toMap);
     }
