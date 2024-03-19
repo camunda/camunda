@@ -63,18 +63,15 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
-
     // BlobServiceClientBuilder has their own validations, for building the client
-    if (config.connectionString() != null) {
-      return new BlobServiceClientBuilder()
-          .connectionString(config.connectionString())
-          .buildClient();
-    } else if (config.endpoint() != null
-        && config.accountName() == null
-        && config.accountKey() == null) {
+    if (config.auth() != null && config.auth().equals("auto")) {
       return new BlobServiceClientBuilder()
           .endpoint(config.endpoint())
           .credential(new DefaultAzureCredentialBuilder().build())
+          .buildClient();
+    } else if (config.connectionString() != null) {
+      return new BlobServiceClientBuilder()
+          .connectionString(config.connectionString())
           .buildClient();
     } else {
       return new BlobServiceClientBuilder()
@@ -189,13 +186,16 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static void validateConfig(final AzureBackupConfig config) {
-    if (config.connectionString() == null
-        && config.endpoint() == null
+    if (config.auth() != null && config.auth().equals("auto")) {
+      if (config.endpoint() == null) {
+        throw new IllegalArgumentException("Config is set as auto, but endpoint is not provided.");
+      }
+    } else if (config.connectionString() == null
         && (config.accountKey() == null
             || config.accountName() == null
             || config.endpoint() == null)) {
       throw new IllegalArgumentException(
-          "Connection string, endpoint, or all of connection information (account name, account key, and endpoint) must be provided.");
+          "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
     }
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");
