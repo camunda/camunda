@@ -489,7 +489,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
 
     if (!grpcAddressUsed) {
-      grpcAddress(getURIFromString("https://" + getGatewayAddress()));
+      final String scheme = usePlaintextConnection ? "http://" : "https://";
+      grpcAddress(getURIFromString(scheme + getGatewayAddress()));
     }
 
     return new ZeebeClientImpl(this);
