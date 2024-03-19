@@ -23,6 +23,12 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from '.';
 
+jest.mock('./BatchModificationSummaryModal', () => ({
+  BatchModificationSummaryModal: () => (
+    <div>MockedBatchModificationSummaryModal</div>
+  ),
+}));
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {
     useEffect(() => {
@@ -148,5 +154,26 @@ describe('BatchModificationFooter', () => {
     expect(
       screen.getByRole('button', {name: /apply modification/i}),
     ).toBeEnabled();
+  });
+
+  it('should render modal on button click', async () => {
+    const {user} = render(<BatchModificationFooter />, {wrapper: Wrapper});
+
+    await user.click(
+      screen.getByRole('button', {name: /select target flow node/i}),
+    );
+    await user.click(
+      screen.getByRole('button', {name: /select single instance/i}),
+    );
+
+    expect(
+      screen.queryByText('MockedBatchModificationSummaryModal'),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /apply modification/i}));
+
+    expect(
+      screen.getByText('MockedBatchModificationSummaryModal'),
+    ).toBeInTheDocument();
   });
 });

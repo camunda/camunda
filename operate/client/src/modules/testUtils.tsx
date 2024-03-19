@@ -377,10 +377,10 @@ export const mockProcessStatistics = [
 export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1771k9d" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.5.0">
   <bpmn:process id="bigVarProcess" isExecutable="true" name="Big variable process">
-    <bpmn:startEvent id="StartEvent_1">
+    <bpmn:startEvent id="StartEvent_1" name="Start Event 1">
       <bpmn:outgoing>SequenceFlow_04ev4jl</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="ServiceTask_0kt6c5i">
+    <bpmn:serviceTask id="ServiceTask_0kt6c5i" name="Service Task 1">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="task" />
       </bpmn:extensionElements>
@@ -388,7 +388,7 @@ export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
       <bpmn:outgoing>SequenceFlow_1njhlr0</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_04ev4jl" sourceRef="StartEvent_1" targetRef="ServiceTask_0kt6c5i" />
-    <bpmn:endEvent id="EndEvent_0crvjrk">
+    <bpmn:endEvent id="EndEvent_0crvjrk" name="End Event">
       <bpmn:incoming>SequenceFlow_1njhlr0</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1njhlr0" sourceRef="ServiceTask_0kt6c5i" targetRef="EndEvent_0crvjrk" />

@@ -15,43 +15,84 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Button} from '@carbon/react';
+import React from 'react';
 import {observer} from 'mobx-react';
+import {Modal} from '@carbon/react';
+import {useLocation} from 'react-router-dom';
+import {StateProps} from 'modules/components/ModalStateManager';
+import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {processesStore} from 'modules/stores/processes/processes.list';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
-import {Stack} from './styled';
+import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
+import {Title, DataTable} from './styled';
 
-const BatchModificationFooter: React.FC = observer(() => {
-  const isButtonDisabled =
-    processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
-    batchModificationStore.state.selectedTargetFlowNodeId === null;
+const BatchModificationSummaryModal: React.FC<StateProps> = observer(
+  ({open, setOpen}) => {
+    const location = useLocation();
+    const {flowNodeId: sourceFlowNodeId, process: bpmnProcessId} =
+      getProcessInstanceFilters(location.search);
+    const process = processesStore.getProcess({bpmnProcessId});
+    const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
+    const {selectedTargetFlowNodeId: targetFlowNodeId} =
+      batchModificationStore.state;
+    const sourceFlowNodeName = sourceFlowNodeId
+      ? processXmlStore.getFlowNodeName(sourceFlowNodeId)
+      : undefined;
+    const targetFlowNodeName = targetFlowNodeId
+      ? processXmlStore.getFlowNodeName(targetFlowNodeId)
+      : undefined;
+    const instancesCount =
+      processStatisticsBatchModificationStore.getInstancesCount(
+        sourceFlowNodeId,
+      );
+    const headers = [
+      {
+        header: 'Operation',
+        key: 'operation',
+        width: '30%',
+      },
+      {
+        header: 'Flow Node',
+        key: 'flowNode',
+        width: '40%',
+      },
+      {
+        header: 'Affected instances',
+        key: 'affectedInstances',
+        width: '30%',
+      },
+    ];
+    const rows = [
+      {
+        id: 'batchMove',
+        operation: 'Batch move',
+        flowNode: `${sourceFlowNodeName} --> ${targetFlowNodeName}`,
+        affectedInstances: instancesCount,
+      },
+    ];
 
-  return (
-    <>
-      <Stack orientation="horizontal" gap={5}>
-        <Button
-          kind="secondary"
-          size="sm"
-          onClick={batchModificationStore.reset}
-        >
-          Exit
-        </Button>
-        <ModalStateManager
-          renderLauncher={({setOpen}) => (
-            <Button size="sm" disabled={isButtonDisabled} onClick={setOpen}>
-              Apply Modification
-            </Button>
-          )}
-        >
-          {({open, setOpen}) => (
-            <BatchModificationSummaryModal open={open} setOpen={setOpen} />
-          )}
-        </ModalStateManager>
-      </Stack>
-    </>
-  );
-});
+    return (
+      <Modal
+        modalHeading="Apply Modifications"
+        size="lg"
+        primaryButtonText="Apply"
+        secondaryButtonText="Cancel"
+        open={open}
+        onRequestClose={() => setOpen(false)}
+        preventCloseOnClickOutside
+        onRequestSubmit={() => {
+          setOpen(false);
+        }}
+      >
+        <p>
+          {`Planned modifications for "${processName}". Click "Apply" to proceed.`}
+        </p>
+        <Title>Flow Node Modifications</Title>
+        <DataTable headers={headers} rows={rows} />
+      </Modal>
+    );
+  },
+);
 
-export {BatchModificationFooter};
+export {BatchModificationSummaryModal};

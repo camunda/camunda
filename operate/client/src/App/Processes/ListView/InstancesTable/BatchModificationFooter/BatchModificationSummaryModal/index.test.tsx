@@ -15,43 +15,86 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Button} from '@carbon/react';
+import {useEffect} from 'react';
 import {observer} from 'mobx-react';
+import {render, screen} from 'modules/testing-library';
+import {processesStore} from 'modules/stores/processes/processes.list';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
-import {Stack} from './styled';
+import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
+import {BatchModificationSummaryModal} from '.';
+import {MemoryRouter} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+import {
+  groupedProcessesMock,
+  mockProcessStatistics,
+  mockProcessXML,
+} from 'modules/testUtils';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 
-const BatchModificationFooter: React.FC = observer(() => {
-  const isButtonDisabled =
-    processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
-    batchModificationStore.state.selectedTargetFlowNodeId === null;
+const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
+  ({children}) => {
+    useEffect(() => {
+      return () => {
+        processesStore.reset();
+        processXmlStore.reset();
+        batchModificationStore.reset();
+        processStatisticsBatchModificationStore.reset();
+      };
+    });
 
-  return (
-    <>
-      <Stack orientation="horizontal" gap={5}>
-        <Button
-          kind="secondary"
-          size="sm"
-          onClick={batchModificationStore.reset}
+    return (
+      <>
+        <MemoryRouter
+          initialEntries={[
+            `${Paths.processes()}?process=bigVarProcess&version=1&flowNodeId=ServiceTask_0kt6c5i`,
+          ]}
         >
-          Exit
-        </Button>
-        <ModalStateManager
-          renderLauncher={({setOpen}) => (
-            <Button size="sm" disabled={isButtonDisabled} onClick={setOpen}>
-              Apply Modification
-            </Button>
-          )}
-        >
-          {({open, setOpen}) => (
-            <BatchModificationSummaryModal open={open} setOpen={setOpen} />
-          )}
-        </ModalStateManager>
-      </Stack>
-    </>
-  );
+          {children}
+          <button
+            onClick={async () => {
+              await processesStore.fetchProcesses();
+              await processXmlStore.fetchProcessXml();
+              processStatisticsBatchModificationStore.setStatistics(
+                mockProcessStatistics,
+              );
+              batchModificationStore.selectTargetFlowNode('StartEvent_1');
+            }}
+          >
+            init
+          </button>
+        </MemoryRouter>
+      </>
+    );
+  },
+);
+
+describe('BatchModificationSummaryModal', () => {
+  it('should render batch modification summary', async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    const {user} = render(
+      <BatchModificationSummaryModal setOpen={() => {}} open={true} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    await user.click(screen.getByRole('button', {name: /init/i}));
+
+    expect(
+      await screen.findByText(
+        /Planned modifications for "Big variable process". Click "Apply" to proceed./i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('cell', {name: /batch move/i})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: /^1$/})).toBeInTheDocument();
+    expect(
+      await screen.findByRole('cell', {
+        name: /Service Task 1 --> Start Event 1/i,
+      }),
+    ).toBeInTheDocument();
+  });
 });
-
-export {BatchModificationFooter};

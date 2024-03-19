@@ -89,6 +89,7 @@ describe('stores/processInstanceDiagram', () => {
     ).toEqual({
       $type: 'bpmn:StartEvent',
       id: 'StartEvent_1',
+      name: 'Start Event 1',
     });
 
     expect(
@@ -105,6 +106,7 @@ describe('stores/processInstanceDiagram', () => {
         ],
       },
       id: 'ServiceTask_0kt6c5i',
+      name: 'Service Task 1',
     });
 
     expect(
@@ -112,6 +114,7 @@ describe('stores/processInstanceDiagram', () => {
     ).toEqual({
       $type: 'bpmn:EndEvent',
       id: 'EndEvent_0crvjrk',
+      name: 'End Event',
     });
   });
 
