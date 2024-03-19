@@ -17,7 +17,6 @@ import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.bean.MethodInfo;
 import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.JobWorkerManager;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +34,7 @@ import org.springframework.util.ReflectionUtils;
 public class ZeebeWorkerAnnotationProcessor extends AbstractZeebeAnnotationProcessor {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+      LoggerFactory.getLogger(ZeebeWorkerAnnotationProcessor.class);
 
   private final JobWorkerManager jobWorkerManager;
 

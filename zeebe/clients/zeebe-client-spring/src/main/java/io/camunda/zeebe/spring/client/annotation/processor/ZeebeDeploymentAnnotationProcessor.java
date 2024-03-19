@@ -16,7 +16,6 @@ import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,7 +34,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationProcessor {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+      LoggerFactory.getLogger(ZeebeDeploymentAnnotationProcessor.class);
 
   private static final ResourcePatternResolver resourceResolver =
       new PathMatchingResourcePatternResolver();
@@ -107,7 +106,7 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
     // noop for deployment
   }
 
-  public Optional<ZeebeDeploymentValue> readAnnotation(final ClassInfo beanInfo) {
+  private Optional<ZeebeDeploymentValue> readAnnotation(final ClassInfo beanInfo) {
     final Optional<Deployment> annotation = beanInfo.getAnnotation(Deployment.class);
     if (annotation.isEmpty()) {
       return Optional.empty();
