@@ -16,17 +16,8 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
-import java.util.Arrays;
-import java.util.List;
 
 public interface CommandWithCommunicationApiStep<T> {
-
-  String REST = "REST";
-  String GRPC = "GRPC";
-  List<String> AVAILABLE_COMMUNICATION_API = Arrays.asList(REST, GRPC);
-
-  /** The communication API for commands to use if no communication API is explicitly set. */
-  String DEFAULT_COMMUNICATION_API = REST;
 
   /**
    * <strong>Experimental: This method is under development, and as such using it may have no effect
@@ -40,11 +31,13 @@ public interface CommandWithCommunicationApiStep<T> {
    * <p>Sets REST as the communication API for this command. If this command doesn't support
    * communication over REST, it simply returns the command builder instance unchanged. The default
    * communication API can be configured using {@link
-   * io.camunda.zeebe.client.ZeebeClientBuilder#defaultCommunicationApi(String)}.
+   * io.camunda.zeebe.client.ZeebeClientBuilder#preferRestOverGrpc(boolean)}.
    *
+   * @deprecated since 8.5, to be removed with 8.8
    * @return the configured command
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @Deprecated
   T useRest();
 
   /**
@@ -59,10 +52,12 @@ public interface CommandWithCommunicationApiStep<T> {
    * <p>Sets gRPC as the communication API for this command. If this command doesn't support
    * communication over gRPC, it simply returns the command builder instance unchanged. The default
    * communication API can be configured using {@link
-   * io.camunda.zeebe.client.ZeebeClientBuilder#defaultCommunicationApi(String)}.
+   * io.camunda.zeebe.client.ZeebeClientBuilder#preferRestOverGrpc(boolean)}.
    *
+   * @deprecated since 8.5, to be removed with 8.8
    * @return the configured command
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @Deprecated
   T useGrpc();
 }

@@ -21,6 +21,7 @@ import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY;
+import static io.camunda.zeebe.client.ClientProperties.PREFER_REST_OVER_GRPC;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
@@ -61,12 +62,14 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final URI DEFAULT_REST_ADDRESS;
   public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
   public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
+  public static final String PREFER_REST_VAR = "ZEEBE_PREFER_REST";
   public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
   public static final String DEFAULT_JOB_WORKER_NAME = "default";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
+  private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = true;
 
   static {
     try {
@@ -83,6 +86,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private URI restAddress = DEFAULT_REST_ADDRESS;
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
+  private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
@@ -227,6 +231,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public boolean preferRestOverGrpc() {
+    return preferRestOverGrpc;
+  }
+
+  @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
     if (properties.containsKey(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)) {
       applyEnvironmentVariableOverrides(
@@ -243,6 +252,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
+    }
+    if (properties.containsKey(PREFER_REST_OVER_GRPC)) {
+      preferRestOverGrpc(Boolean.parseBoolean(properties.getProperty(PREFER_REST_OVER_GRPC)));
     }
     if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
       defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
@@ -472,6 +484,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     return this;
   }
 
+  public ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
+    this.preferRestOverGrpc = preferRestOverGrpc;
+    return this;
+  }
+
   @Override
   public ZeebeClient build() {
     if (applyEnvironmentVariableOverrides) {
@@ -524,6 +541,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       restAddress(restAddr);
     }
 
+    if (Environment.system().isDefined(PREFER_REST_VAR)) {
+      preferRestOverGrpc(Environment.system().getBoolean(PREFER_REST_VAR));
+    }
+
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
       defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
     }
@@ -565,6 +586,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "jobWorkerExecutor", jobWorkerExecutor);
     appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
     appendProperty(sb, "streamEnabled", streamEnabled);
+    appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
 
     return sb.toString();
   }
@@ -591,7 +613,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     try {
       return new URI(uri);
     } catch (final URISyntaxException e) {
-      throw new RuntimeException("Failed to parse URI string", e);
+      throw new IllegalArgumentException("Failed to parse URI string", e);
     }
   }
 }

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
@@ -198,6 +199,21 @@ public interface ZeebeClientBuilder {
    * {@code io.camunda:zeebe-gateway-protocol-impl} JAR.
    */
   ZeebeClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy);
+
+  /**
+   * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
+   * This is an experimental API which is present while we migrate the bulk of the API from gRPC to
+   * REST. Once done, this will also be removed.
+   *
+   * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+   *
+   * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
+   * @deprecated since 8.5, will be removed in 8.8
+   * @return this builder for chaining
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @Deprecated
+  ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**
    * @return a new {@link ZeebeClient} with the provided configuration options.

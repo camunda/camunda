@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class PartitionInfoImpl implements PartitionInfo {
 
@@ -124,5 +125,26 @@ public class PartitionInfoImpl implements PartitionInfo {
         + ", health="
         + partitionBrokerHealth
         + '}';
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(partitionId, role, partitionBrokerHealth);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final PartitionInfoImpl that = (PartitionInfoImpl) o;
+    return partitionId == that.partitionId
+        && role == that.role
+        && partitionBrokerHealth == that.partitionBrokerHealth;
   }
 }

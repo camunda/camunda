@@ -32,6 +32,7 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.GRPC_ADDRESS_V
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PREFER_REST_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.REST_ADDRESS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
@@ -102,6 +103,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(configuration.preferRestOverGrpc()).isTrue();
     }
   }
 
@@ -599,6 +601,51 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @Test
+  public void shouldSetPreferRestFromSetterWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.preferRestOverGrpc(false);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetPreferRestFromPropertyWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final Properties properties = new Properties();
+    properties.setProperty(ClientProperties.PREFER_REST_OVER_GRPC, "false");
+
+    // when
+    builder.withProperties(properties);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetPreferRestFromEnvVarWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    Environment.system().put(PREFER_REST_VAR, "false");
+
+    // when
+    builder.preferRestOverGrpc(true);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
   }
 
   @Test
