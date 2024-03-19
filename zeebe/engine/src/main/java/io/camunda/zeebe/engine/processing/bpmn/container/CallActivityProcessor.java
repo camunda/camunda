@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -40,6 +41,7 @@ public final class CallActivityProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public CallActivityProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -50,6 +52,7 @@ public final class CallActivityProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -103,7 +106,11 @@ public final class CallActivityProcessor
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+        .thenDo(
+            completed -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            });
   }
 
   @Override
