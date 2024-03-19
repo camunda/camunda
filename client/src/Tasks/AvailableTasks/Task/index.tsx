@@ -6,7 +6,7 @@
  */
 
 import React, {useMemo} from 'react';
-import {Row, Label, TaskLink, Stack, Container} from './styled';
+import {Row, Label, TaskLink, Stack, Container, DateLabel} from './styled';
 import {pages} from 'modules/routing';
 import {formatDate} from 'modules/utils/formatDate';
 import {CurrentUser, Task as TaskType} from 'modules/types';
@@ -15,6 +15,7 @@ import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {BodyCompact} from 'modules/components/FontTokens';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
+import {Calendar, CheckmarkFilled} from '@carbon/icons-react';
 
 type Props = {
   taskId: TaskType['id'];
@@ -24,6 +25,7 @@ type Props = {
   creationDate: TaskType['creationDate'];
   followUpDate: TaskType['followUpDate'];
   dueDate: TaskType['dueDate'];
+  completionDate: TaskType['completionDate'];
   currentUser: CurrentUser;
   position: number;
 };
@@ -38,6 +40,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
       creationDate,
       followUpDate,
       dueDate,
+      completionDate,
       currentUser,
       position,
     },
@@ -50,12 +53,22 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const location = useLocation();
     const isActive = match?.params?.id === taskId;
     const {filter, sortBy} = useTaskFilters();
+    const showCompletionDate =
+      completionDate !== null &&
+      formatDate(completionDate) !== '' &&
+      sortBy !== 'follow-up' &&
+      sortBy !== 'due';
+    const showDueDate =
+      !showCompletionDate &&
+      dueDate !== null &&
+      formatDate(dueDate) !== '' &&
+      sortBy !== 'follow-up' &&
+      sortBy !== 'completion';
     const showFollowupDate =
+      !showDueDate &&
       followUpDate !== null &&
       formatDate(followUpDate) !== '' &&
       sortBy === 'follow-up';
-    const showDueDate =
-      dueDate !== null && formatDate(dueDate) !== '' && sortBy !== 'follow-up';
 
     const searchWithRefTag = useMemo(() => {
       const params = new URLSearchParams(location.search);
@@ -101,34 +114,54 @@ const Task = React.forwardRef<HTMLElement, Props>(
             </Row>
             <Row data-testid="creation-time" $direction="row">
               {formatDate(creationDate) === '' ? null : (
-                <Label
+                <DateLabel
                   $variant="primary"
                   title={`Created at ${formatDate(creationDate)}`}
                 >
-                  <Label $variant="secondary">Created</Label>
-                  <br />
-                  {formatDate(creationDate)}
-                </Label>
+                  <Stack orientation="vertical" gap={1}>
+                    <Label $variant="secondary">Created</Label>
+                    <Stack orientation="horizontal" gap={2}>
+                      <Calendar />
+                      {formatDate(creationDate)}
+                    </Stack>
+                  </Stack>
+                </DateLabel>
               )}
               {showFollowupDate ? (
-                <Label
+                <DateLabel
                   $variant="primary"
                   title={`Follow-up at ${formatDate(followUpDate!, false)}`}
                 >
-                  <Label $variant="secondary">Follow-up</Label>
-                  <br />
-                  {formatDate(followUpDate!, false)}
-                </Label>
+                  <Stack orientation="vertical" gap={1}>
+                    <Label $variant="secondary">Follow-up</Label>
+                    {formatDate(followUpDate!, false)}
+                  </Stack>
+                </DateLabel>
               ) : null}
               {showDueDate ? (
-                <Label
+                <DateLabel
                   $variant="primary"
                   title={`Due at ${formatDate(dueDate!, false)}`}
                 >
-                  <Label $variant="secondary">Due</Label>
-                  <br />
-                  {formatDate(dueDate!, false)}
-                </Label>
+                  <Stack orientation="vertical" gap={1}>
+                    <Label $variant="secondary">Due</Label>
+                    {formatDate(dueDate!, false)}
+                  </Stack>
+                </DateLabel>
+              ) : null}
+              {showCompletionDate ? (
+                <DateLabel
+                  $variant="primary"
+                  title={`Completed at ${formatDate(completionDate!, false)}`}
+                >
+                  <Stack orientation="vertical" gap={1}>
+                    <Label $variant="secondary">Completed</Label>
+                    <Stack orientation="horizontal" gap={2}>
+                      <CheckmarkFilled color="green" />
+                      {formatDate(completionDate!, false)}
+                    </Stack>
+                  </Stack>
+                </DateLabel>
               ) : null}
             </Row>
           </Stack>

@@ -93,13 +93,10 @@ test.describe('task details page', () => {
     ).toBeVisible();
     await expect(taskDetailsPage.detailsPanel).toContainText('Candidates');
     await expect(taskDetailsPage.detailsPanel).toContainText('No candidates');
-    await expect(taskDetailsPage.detailsPanel).toContainText('Completion date');
-    await expect(taskDetailsPage.detailsPanel).toContainText('Pending task');
     await expect(taskDetailsPage.detailsPanel).toContainText('Due date');
     await expect(taskDetailsPage.detailsPanel).toContainText('No due date');
-    await expect(taskDetailsPage.detailsPanel).toContainText('Follow up date');
-    await expect(taskDetailsPage.detailsPanel).toContainText(
-      'No follow up date',
+    await expect(taskDetailsPage.detailsPanel).not.toContainText(
+      'Completion date',
     );
   });
 
@@ -116,12 +113,16 @@ test.describe('task details page', () => {
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeEnabled();
-    await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
+    await expect(taskDetailsPage.assignee).toHaveText('Assigned to me', {
+      useInnerText: true,
+    });
 
     await taskDetailsPage.unassignButton.click();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeDisabled();
-    await expect(taskDetailsPage.assignee).toHaveText('Unassigned');
+    await expect(taskDetailsPage.assignee).toHaveText('Unassigned', {
+      useInnerText: true,
+    });
 
     await page.reload();
 
@@ -131,7 +132,6 @@ test.describe('task details page', () => {
   test('complete task', async ({page, taskDetailsPage, taskPanelPage}) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
 
-    await expect(taskDetailsPage.pendingTaskDescription).toBeVisible();
     const taskUrl = page.url();
     await taskDetailsPage.assignToMeButton.click();
     await taskDetailsPage.completeTaskButton.click();
@@ -142,7 +142,6 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.assignToMeButton).not.toBeVisible();
     await expect(taskDetailsPage.unassignButton).not.toBeVisible();
     await expect(taskDetailsPage.completeTaskButton).not.toBeVisible();
-    await expect(taskDetailsPage.pendingTaskDescription).not.toBeVisible();
   });
 
   test('task completion with form', async ({

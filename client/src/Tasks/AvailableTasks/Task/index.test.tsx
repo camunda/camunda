@@ -43,6 +43,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -69,6 +70,7 @@ describe('<Task />', () => {
         assignee={null}
         followUpDate={null}
         dueDate={null}
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -90,6 +92,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -111,6 +114,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -133,6 +137,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -158,6 +163,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate="2021-05-29T14:00:00.000Z"
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -169,7 +175,7 @@ describe('<Task />', () => {
     expect(screen.getByTitle('Due at 29 May 2021')).toBeInTheDocument();
   });
 
-  it('should render a task with due date when filtered', async () => {
+  it('should render a task with due date when filtered by due date', async () => {
     render(
       <Task
         taskId="1"
@@ -179,6 +185,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate="2021-05-29T14:00:00.000Z"
         dueDate="2021-05-29T14:00:00.000Z"
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -189,9 +196,10 @@ describe('<Task />', () => {
 
     expect(screen.getByTitle('Due at 29 May 2021')).toBeInTheDocument();
     expect(screen.queryByText('Follow-up at')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completed at')).not.toBeInTheDocument();
   });
 
-  it('should render a task with follow-up date when filtered', async () => {
+  it('should render a task with follow-up date when filtered by follow-up date', async () => {
     render(
       <Task
         taskId="1"
@@ -201,6 +209,7 @@ describe('<Task />', () => {
         assignee={currentUser.userId}
         followUpDate="2021-05-29T14:00:00.000Z"
         dueDate="2021-05-29T14:00:00.000Z"
+        completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -210,6 +219,30 @@ describe('<Task />', () => {
     );
 
     expect(screen.getByTitle('Follow-up at 29 May 2021')).toBeInTheDocument();
+    expect(screen.queryByText('Due at')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completed at')).not.toBeInTheDocument();
+  });
+
+  it('should render a task with completion date', async () => {
+    render(
+      <Task
+        taskId="1"
+        name="name"
+        processName="processName"
+        creationDate="2020-05-29T14:00:00.000Z"
+        assignee={currentUser.userId}
+        followUpDate={null}
+        dueDate="2021-05-29T14:00:00.000Z"
+        completionDate="2021-05-28T14:00:00.000Z"
+        currentUser={userMocks.currentUser}
+        position={0}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    expect(screen.getByTitle('Completed at 28 May 2021')).toBeInTheDocument();
     expect(screen.queryByText('Due at')).not.toBeInTheDocument();
   });
 });

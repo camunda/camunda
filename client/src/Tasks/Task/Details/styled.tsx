@@ -8,7 +8,7 @@
 import {rem} from '@carbon/elements';
 import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import styled, {css} from 'styled-components';
-import {SkeletonText as BaseSkeletonText, Section} from '@carbon/react';
+import {SkeletonText as BaseSkeletonText, Section, Stack} from '@carbon/react';
 
 const AssignButtonContainer = styled.span`
   flex-shrink: 0;
@@ -72,6 +72,10 @@ const Container = styled.div`
   }
 `;
 
+const StackCenterAligned = styled(Stack)`
+  align-items: center;
+`;
+
 type SkeletonTextProps = {
   $disabledMargin?: boolean;
 };
@@ -95,4 +99,5 @@ export {
   Aside,
   SkeletonText,
   NotificationSection,
+  StackCenterAligned,
 };

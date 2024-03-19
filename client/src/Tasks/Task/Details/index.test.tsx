@@ -71,11 +71,12 @@ describe('<Details />', () => {
 
     expect(screen.getByText('My Task')).toBeInTheDocument();
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
+    expect(screen.getByText('Completed by')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /^unassign$/i}),
     ).not.toBeInTheDocument();
     expect(screen.getByText('01 Jan 2019 - 12:00 AM')).toBeInTheDocument();
+    expect(screen.getByText('Completion date')).toBeInTheDocument();
     expect(screen.getByText('01 Jan 2020 - 12:00 AM')).toBeInTheDocument();
     expect(screen.getByText('No candidates')).toBeInTheDocument();
   });
@@ -106,7 +107,6 @@ describe('<Details />', () => {
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
     expect(screen.getByText('Unassigned')).toBeInTheDocument();
     expect(screen.getByText('01 Jan 2019 - 12:00 AM')).toBeInTheDocument();
-    expect(screen.getByText('Pending task')).toBeInTheDocument();
     expect(screen.getByText('accounting candidate')).toBeInTheDocument();
     expect(screen.getByText('jane candidate')).toBeInTheDocument();
   });

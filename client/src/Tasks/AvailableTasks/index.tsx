@@ -89,6 +89,7 @@ const AvailableTasks: React.FC<Props> = ({
                     creationDate={task.creationDate}
                     followUpDate={task.followUpDate}
                     dueDate={task.dueDate}
+                    completionDate={task.completionDate}
                     currentUser={data!}
                     position={i}
                   />

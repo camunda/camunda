@@ -81,7 +81,7 @@ const Stack = styled(BaseStack)`
 
 const Container = styled.article`
   cursor: pointer;
-  height: ${rem(144)};
+  min-height: ${rem(144)};
 
   &.active ${TaskLink} {
     background-color: var(--cds-layer-selected);
@@ -164,4 +164,8 @@ const SkeletonContainer = styled.article`
   }
 `;
 
-export {Row, Label, TaskLink, Stack, Container, SkeletonContainer};
+const DateLabel = styled(Label)`
+  padding: var(--cds-spacing-01) var(--cds-spacing-02);
+`;
+
+export {Row, Label, TaskLink, Stack, Container, SkeletonContainer, DateLabel};

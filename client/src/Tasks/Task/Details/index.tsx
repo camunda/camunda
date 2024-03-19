@@ -14,6 +14,7 @@ import {
   Header,
   HeaderLeftContainer,
   HeaderRightContainer,
+  StackCenterAligned,
 } from './styled';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
@@ -30,6 +31,7 @@ import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
+import {CheckmarkFilled} from '@carbon/icons-react';
 
 type AssignmentStatus =
   | 'off'
@@ -141,13 +143,39 @@ const Details: React.FC<Props> = ({
             <Label $color="secondary">{processName}</Label>
           </HeaderLeftContainer>
           <HeaderRightContainer>
-            <Label $color="secondary" data-testid="assignee">
-              <AssigneeTag
-                currentUser={user}
-                assignee={assignee}
-                isShortFormat={false}
-              />
-            </Label>
+            {taskState === 'COMPLETED' ? (
+              <Label
+                $color="secondary"
+                data-testid="completion-label"
+                title="Completed by"
+              >
+                <StackCenterAligned orientation="horizontal" gap={2}>
+                  <CheckmarkFilled size={16} color="green" />
+                  Completed
+                  {assignee ? (
+                    <>
+                      {' '}
+                      by
+                      <Label $color="secondary" data-testid="assignee">
+                        <AssigneeTag
+                          currentUser={user}
+                          assignee={assignee}
+                          isShortFormat={true}
+                        />
+                      </Label>
+                    </>
+                  ) : null}
+                </StackCenterAligned>
+              </Label>
+            ) : (
+              <Label $color="secondary" data-testid="assignee">
+                <AssigneeTag
+                  currentUser={user}
+                  assignee={assignee}
+                  isShortFormat={false}
+                />
+              </Label>
+            )}
             {taskState === 'CREATED' && (
               <Restricted scopes={['write']}>
                 <AssignButtonContainer>
@@ -215,13 +243,13 @@ const Details: React.FC<Props> = ({
               </Tag>
             ))}
           </ContainedListItem>
-          <ContainedListItem>
-            <BodyCompact $color="secondary">Completion date</BodyCompact>
-            <br />
-            <BodyCompact>
-              {completionDate ? formatDate(completionDate) : 'Pending task'}
-            </BodyCompact>
-          </ContainedListItem>
+          {completionDate ? (
+            <ContainedListItem>
+              <BodyCompact $color="secondary">Completion date</BodyCompact>
+              <br />
+              <BodyCompact>{formatDate(completionDate)}</BodyCompact>
+            </ContainedListItem>
+          ) : null}
           <ContainedListItem>
             <BodyCompact $color="secondary">Due date</BodyCompact>
             <br />
@@ -229,13 +257,13 @@ const Details: React.FC<Props> = ({
               {dueDate ? formatDate(dueDate) : 'No due date'}
             </BodyCompact>
           </ContainedListItem>
-          <ContainedListItem>
-            <BodyCompact $color="secondary">Follow up date</BodyCompact>
-            <br />
-            <BodyCompact>
-              {followUpDate ? formatDate(followUpDate) : 'No follow up date'}
-            </BodyCompact>
-          </ContainedListItem>
+          {followUpDate ? (
+            <ContainedListItem>
+              <BodyCompact $color="secondary">Follow up date</BodyCompact>
+              <br />
+              <BodyCompact>{formatDate(followUpDate)}</BodyCompact>
+            </ContainedListItem>
+          ) : null}
         </ContainedList>
       </Aside>
     </Container>
