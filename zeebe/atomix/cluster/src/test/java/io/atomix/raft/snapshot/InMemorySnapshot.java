@@ -100,6 +100,11 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
       private NavigableMap<String, String> iterator = chunks;
 
       @Override
+      public void reset() {
+        iterator = chunks;
+      }
+
+      @Override
       public void seek(final ByteBuffer id) {
         final var chunkId = BufferUtil.bufferAsString(new UnsafeBuffer(id));
         iterator = chunks.tailMap(chunkId, true);
