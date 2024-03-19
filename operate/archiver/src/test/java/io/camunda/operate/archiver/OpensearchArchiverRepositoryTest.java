@@ -196,7 +196,9 @@ public class OpensearchArchiverRepositoryTest {
     }
   }
 
-  public void testGetBatchOperationsNextBatchHelper(final MockedStatic<QueryDSL> queryDSLMockedStatic, final MockedStatic<AggregationDSL> aggregationDSLMockedStatic) {
+  public void testGetBatchOperationsNextBatchHelper(
+      final MockedStatic<QueryDSL> queryDSLMockedStatic,
+      final MockedStatic<AggregationDSL> aggregationDSLMockedStatic) {
 
     try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class)) {
       try (final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class)) {
@@ -233,8 +235,7 @@ public class OpensearchArchiverRepositoryTest {
                         (DateHistogramAggregation) any(), (Map<String, Aggregation>) any()))
             .thenReturn(aggregation);
         aggregationDSLMockedStatic
-            .when(
-                () -> AggregationDSL.topHitsAggregation((List<String>) any(), anyInt(), any()))
+            .when(() -> AggregationDSL.topHitsAggregation((List<String>) any(), anyInt(), any()))
             .thenReturn(topHitsAggregation);
         requestDSLMockedStatic
             .when(() -> RequestDSL.searchRequestBuilder(anyString()))
@@ -242,8 +243,7 @@ public class OpensearchArchiverRepositoryTest {
         when(searchRequestBuilder.query(query)).thenReturn(searchRequestBuilder);
         when(searchRequestBuilder.aggregations(anyString(), (Aggregation) any()))
             .thenReturn(searchRequestBuilder);
-        when(searchRequestBuilder.source((SourceConfig) any()))
-            .thenReturn(searchRequestBuilder);
+        when(searchRequestBuilder.source((SourceConfig) any())).thenReturn(searchRequestBuilder);
         when(searchRequestBuilder.size(0)).thenReturn(searchRequestBuilder);
         when(searchRequestBuilder.sort((SortOptions) any())).thenReturn(searchRequestBuilder);
         when(searchRequestBuilder.requestCache(false)).thenReturn(searchRequestBuilder);
@@ -263,8 +263,7 @@ public class OpensearchArchiverRepositoryTest {
         when(searchResponse.aggregations()).thenReturn(aggregations);
         final Aggregate aggregate = mock(Aggregate.class);
         aggregations.put(DATES_AGG, aggregate);
-        final DateHistogramAggregate dateHistogramAggregate =
-            mock(DateHistogramAggregate.class);
+        final DateHistogramAggregate dateHistogramAggregate = mock(DateHistogramAggregate.class);
         when(aggregate.dateHistogram()).thenReturn(dateHistogramAggregate);
         final Buckets buckets = mock(Buckets.class);
         when(dateHistogramAggregate.buckets()).thenReturn(buckets);
@@ -292,6 +291,5 @@ public class OpensearchArchiverRepositoryTest {
         verify(dateHistogramAggregate, times(1)).buckets();
       }
     }
-
   }
 }
