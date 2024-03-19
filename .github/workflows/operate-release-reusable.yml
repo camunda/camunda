@@ -221,6 +221,10 @@ jobs:
           echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USERNAME --password-stdin
           docker buildx create --use
 
+          mkdir -p distro/target
+          touch distro/target/${ARTIFACT}-${RELEASE_VERSION}.tar.gz
+          touch distro/target/${ARTIFACT}-${RELEASE_VERSION}.zip
+
           commit_hash=$(git rev-parse --verify HEAD)
           date_time_stamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
