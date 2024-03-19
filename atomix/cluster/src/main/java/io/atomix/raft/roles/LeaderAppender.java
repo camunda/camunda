@@ -376,7 +376,10 @@ final class LeaderAppender {
     try {
       if (member.getNextSnapshotChunk() != null) {
         reader.seek(member.getNextSnapshotChunk());
+      } else {
+        reader.reset();
       }
+
       if (!reader.hasNext()) {
         return Optional.empty();
       }
