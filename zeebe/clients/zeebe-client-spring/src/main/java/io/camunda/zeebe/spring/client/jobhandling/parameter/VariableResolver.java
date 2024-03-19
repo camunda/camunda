@@ -9,7 +9,8 @@ public class VariableResolver implements ParameterResolver {
   private final Class<?> variableType;
   private final JsonMapper jsonMapper;
 
-  public VariableResolver(final String variableName, final Class<?> variableType, final JsonMapper jsonMapper) {
+  public VariableResolver(
+      final String variableName, final Class<?> variableType, final JsonMapper jsonMapper) {
     this.variableName = variableName;
     this.variableType = variableType;
     this.jsonMapper = jsonMapper;

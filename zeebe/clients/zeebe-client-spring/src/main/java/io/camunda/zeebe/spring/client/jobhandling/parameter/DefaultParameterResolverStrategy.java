@@ -52,12 +52,14 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
 
   protected String getVariableName(final ParameterInfo param) {
     if (param.getParameterInfo().isAnnotationPresent(Variable.class)) {
-      final String nameFromAnnotation = param.getParameterInfo().getAnnotation(Variable.class).name();
+      final String nameFromAnnotation =
+          param.getParameterInfo().getAnnotation(Variable.class).name();
       if (!Objects.equals(nameFromAnnotation, Variable.DEFAULT_NAME)) {
         LOG.trace("Extracting name {} from Variable.name", nameFromAnnotation);
         return nameFromAnnotation;
       }
-      final String valueFromAnnotation = param.getParameterInfo().getAnnotation(Variable.class).value();
+      final String valueFromAnnotation =
+          param.getParameterInfo().getAnnotation(Variable.class).value();
       if (!Objects.equals(valueFromAnnotation, Variable.DEFAULT_NAME)) {
         LOG.trace("Extracting name {} from Variable.value", valueFromAnnotation);
         return valueFromAnnotation;

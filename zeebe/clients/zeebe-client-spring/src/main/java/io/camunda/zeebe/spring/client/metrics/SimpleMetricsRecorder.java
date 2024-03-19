@@ -18,7 +18,8 @@ public class SimpleMetricsRecorder implements MetricsRecorder {
   public HashMap<String, Long> timers = new HashMap<>();
 
   @Override
-  public void increase(final String metricName, final String action, final String type, final int count) {
+  public void increase(
+      final String metricName, final String action, final String type, final int count) {
     final String key = key(metricName, action, type);
     if (!counters.containsKey(key)) {
       counters.put(key, new AtomicLong(count));
@@ -28,7 +29,8 @@ public class SimpleMetricsRecorder implements MetricsRecorder {
   }
 
   @Override
-  public void executeWithTimer(final String metricName, final String jobType, final Runnable methodToExecute) {
+  public void executeWithTimer(
+      final String metricName, final String jobType, final Runnable methodToExecute) {
     final long startTime = System.currentTimeMillis();
     methodToExecute.run();
     timers.put(metricName + "#" + jobType, System.currentTimeMillis() - startTime);

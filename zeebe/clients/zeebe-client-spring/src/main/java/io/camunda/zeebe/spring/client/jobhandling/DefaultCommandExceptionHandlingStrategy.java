@@ -44,7 +44,8 @@ public class DefaultCommandExceptionHandlingStrategy implements CommandException
   private final ScheduledExecutorService scheduledExecutorService;
 
   public DefaultCommandExceptionHandlingStrategy(
-      final BackoffSupplier backoffSupplier, final ScheduledExecutorService scheduledExecutorService) {
+      final BackoffSupplier backoffSupplier,
+      final ScheduledExecutorService scheduledExecutorService) {
     this.backoffSupplier = backoffSupplier;
     this.scheduledExecutorService = scheduledExecutorService;
   }
