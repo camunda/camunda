@@ -124,6 +124,18 @@ public class DeactivateTimeOutJobsTest {
     verifyNoMoreInteractions(mockTaskResultBuilder);
 
     verify(mockScheduleService, times(1)).runDelayed(eq(Duration.ZERO), any(Task.class));
+
+    /* TEST verify next execute will start where left off */
+
+    // When
+    task.execute(mockTaskResultBuilder);
+
+    // then
+    for (long i = batchLimit + 1; i <= 2 * batchLimit; i++) {
+      inOrder.verify(mockTaskResultBuilder).appendCommandRecord(eq(i), eq(TIME_OUT), any());
+    }
+    inOrder.verify(mockTaskResultBuilder).build();
+    verifyNoMoreInteractions(mockTaskResultBuilder);
   }
 
   @Test
