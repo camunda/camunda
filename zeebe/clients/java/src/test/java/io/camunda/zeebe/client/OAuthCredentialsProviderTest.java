@@ -19,7 +19,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_AUTHORIZATION_SERVER;
 import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET;
@@ -31,7 +30,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -72,15 +72,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.EnableJUnit4MigrationSupport;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
+@EnableJUnit4MigrationSupport
+@WireMockTest
 public final class OAuthCredentialsProviderTest {
 
   public static final ZonedDateTime EXPIRY =
@@ -93,19 +96,20 @@ public final class OAuthCredentialsProviderTest {
   private static final String ACCESS_TOKEN = "someToken";
   private static final String TOKEN_TYPE = "Bearer";
   private static final String CLIENT_ID = "client";
+
   @Rule public final GrpcServerRule serverRule = new GrpcServerRule();
   @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
   @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
-
-  @Rule public final WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+  private WireMockRuntimeInfo wireMockInfo;
 
   private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
   private final RecordingGatewayService gatewayService = new RecordingGatewayService();
   private ZeebeClient client;
   private String cachedUserHome;
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp(final WireMockRuntimeInfo wireMockInfo) {
+    this.wireMockInfo = wireMockInfo;
     serverRule
         .getServiceRegistry()
         .addService(ServerInterceptors.intercept(gatewayService, recordingInterceptor));
@@ -115,8 +119,8 @@ public final class OAuthCredentialsProviderTest {
     System.setProperty("user.home", tempFolder.getRoot().getAbsolutePath());
   }
 
-  @After
-  public void tearDown() {
+  @AfterEach
+  void tearDown() {
     if (client != null) {
       client.close();
       client = null;
@@ -127,7 +131,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldRequestTokenAndAddToCall() throws IOException {
+  void shouldRequestTokenAndAddToCall() throws IOException {
     // given
     mockCredentials(ACCESS_TOKEN);
 
@@ -139,7 +143,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .credentialsCachePath(tempFolder.newFile().getPath())
                 .build())
         .build()
@@ -155,7 +159,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldRequestTokenWithScopeAndAddToCall() throws IOException {
+  void shouldRequestTokenWithScopeAndAddToCall() throws IOException {
     // given
     mockCredentialsWithScope(ACCESS_TOKEN, SCOPE);
 
@@ -168,7 +172,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
                 .scope(SCOPE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .credentialsCachePath(tempFolder.newFile().getPath())
                 .build())
         .build()
@@ -184,7 +188,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldRetryRequestWithNewCredentials() throws IOException {
+  void shouldRetryRequestWithNewCredentials() throws IOException {
     // given
     final String firstToken = "firstToken";
     mockCredentials(firstToken);
@@ -211,7 +215,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .credentialsCachePath(tempFolder.newFile().getPath())
                 .build())
         .build()
@@ -232,7 +236,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldNotRetryWithSameCredentials() throws IOException {
+  void shouldNotRetryWithSameCredentials() throws IOException {
     // given
     mockCredentials(ACCESS_TOKEN);
     final BiConsumer<ServerCall, Metadata> interceptAction =
@@ -254,7 +258,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .credentialsCachePath(tempFolder.newFile().getPath())
                 .build())
         .build()
@@ -269,12 +273,12 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldUseClientContactPointAsDefaultAudience() {
+  void shouldUseClientContactPointAsDefaultAudience() {
     // given
     final String contactPointHost = "some.domain";
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     final String authorizationServerUrl =
-        "http://localhost:" + wireMockRule.port() + "/oauth/token";
+        "http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token";
 
     Environment.system().put(OAUTH_ENV_CLIENT_ID, CLIENT_ID);
     Environment.system().put(OAUTH_ENV_CLIENT_SECRET, SECRET);
@@ -289,7 +293,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldUseCachedCredentials() throws IOException {
+  void shouldUseCachedCredentials() throws IOException {
     // given
     mockCredentials(ACCESS_TOKEN);
     final String cachePath = tempFolder.getRoot().getPath() + File.separator + ".credsCache";
@@ -304,7 +308,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .credentialsCachePath(cachePath)
                 .build())
         .build()
@@ -321,7 +325,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldCacheAndReuseCredentials() throws IOException {
+  void shouldCacheAndReuseCredentials() throws IOException {
     // given
     mockCredentials(ACCESS_TOKEN);
     final String cachePath = tempFolder.getRoot().getPath() + File.separator + ".credsCache";
@@ -332,7 +336,7 @@ public final class OAuthCredentialsProviderTest {
             .clientId(CLIENT_ID)
             .clientSecret(SECRET)
             .audience(AUDIENCE)
-            .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+            .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
             .credentialsCachePath(cachePath);
     builder.usePlaintext().credentialsProvider(credsBuilder.build()).build().close();
     client = new ZeebeClientImpl(builder, serverRule.getChannel());
@@ -353,7 +357,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldUpdateCacheIfStale() throws IOException {
+  void shouldUpdateCacheIfStale() throws IOException {
     // given
     mockCredentials(ACCESS_TOKEN);
     recordingInterceptor.setInterceptAction(
@@ -375,7 +379,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .credentialsCachePath(cachePath)
                 .build())
         .build()
@@ -393,7 +397,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldFailWithNoAudience() {
+  void shouldFailWithNoAudience() {
     // when/then
     assertThatThrownBy(
             () ->
@@ -408,7 +412,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldFailWithNoClientId() {
+  void shouldFailWithNoClientId() {
     // when/then
     assertThatThrownBy(
             () ->
@@ -423,7 +427,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldFailWithNoClientSecret() {
+  void shouldFailWithNoClientSecret() {
     // when/then
     assertThatThrownBy(
             () ->
@@ -438,7 +442,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldFailWithMalformedServerUrl() {
+  void shouldFailWithMalformedServerUrl() {
     // when/then
     assertThatThrownBy(
             () ->
@@ -453,7 +457,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldFailIfSpecifiedCacheIsDir() {
+  void shouldFailIfSpecifiedCacheIsDir() {
     // given
     final String cachePath = tempFolder.getRoot().getAbsolutePath() + File.separator + "404_folder";
     new File(cachePath).mkdir();
@@ -474,7 +478,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfTimeout() {
+  void shouldThrowExceptionIfTimeout() {
     // given
     mockCredentials(10_000);
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -485,7 +489,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .readTimeout(Duration.ofMillis(5))
                 .build())
         .build()
@@ -499,7 +503,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfTimeoutIsZero() {
+  void shouldThrowExceptionIfTimeoutIsZero() {
 
     // when/then
     assertThatThrownBy(
@@ -512,7 +516,7 @@ public final class OAuthCredentialsProviderTest {
                             .clientSecret(SECRET)
                             .audience(AUDIENCE)
                             .authorizationServerUrl(
-                                "http://localhost:" + wireMockRule.port() + "/oauth/token")
+                                "http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                             .readTimeout(Duration.ZERO)
                             .build())
                     .build()
@@ -524,7 +528,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfTimeoutTooLarge() {
+  void shouldThrowExceptionIfTimeoutTooLarge() {
 
     // when/then
     assertThatThrownBy(
@@ -537,7 +541,7 @@ public final class OAuthCredentialsProviderTest {
                             .clientSecret(SECRET)
                             .audience(AUDIENCE)
                             .authorizationServerUrl(
-                                "http://localhost:" + wireMockRule.port() + "/oauth/token")
+                                "http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                             .readTimeout(Duration.ofDays(1_000_000))
                             .build())
                     .build()
@@ -549,7 +553,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
-  public void shouldCallOauthServerOnlyOnceInMultithreadMode() throws IOException {
+  void shouldCallOauthServerOnlyOnceInMultithreadMode() throws IOException {
     // given
     mockCredentials(ACCESS_TOKEN);
 
@@ -559,7 +563,7 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
                 .credentialsCachePath(tempFolder.newFile().getPath())
                 .build());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -632,7 +636,8 @@ public final class OAuthCredentialsProviderTest {
             .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
             .collect(Collectors.joining("&"));
 
-    wireMockRule.stubFor(
+
+    wireMockInfo.getWireMock().register(
         WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
             .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
             .withHeader("Accept", equalTo("application/json"))
