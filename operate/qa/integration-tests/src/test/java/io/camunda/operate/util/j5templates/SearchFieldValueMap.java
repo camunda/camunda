@@ -16,89 +16,11 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import io.camunda.operate.property.OperateProperties;
-import java.util.function.Predicate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import java.util.HashMap;
 
-@Component
-@ConditionalOnProperty(
-    prefix = OperateProperties.PREFIX,
-    name = "webappEnabled",
-    havingValue = "true",
-    matchIfMissing = true)
-public class SearchCheckPredicatesHolder {
-  @Autowired
-  @Qualifier("processInstancesAreStartedCheck")
-  private Predicate<Object[]> processInstancesAreStartedCheck;
-
-  @Autowired
-  @Qualifier("flowNodeIsActiveCheck")
-  private Predicate<Object[]> flowNodeIsActiveCheck;
-
-  @Autowired
-  @Qualifier("operationsByProcessInstanceAreCompletedCheck")
-  private Predicate<Object[]> operationsByProcessInstanceAreCompletedCheck;
-
-  @Autowired
-  @Qualifier("processIsDeployedCheck")
-  private Predicate<Object[]> processIsDeployedCheck;
-
-  @Autowired
-  @Qualifier("processInstanceExistsCheck")
-  private Predicate<Object[]> processInstanceExistsCheck;
-
-  @Autowired
-  @Qualifier("flowNodeIsCompletedCheck")
-  private Predicate<Object[]> flowNodeIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("processInstancesAreFinishedCheck")
-  private Predicate<Object[]> processInstancesAreFinishedCheck;
-
-  @Autowired
-  @Qualifier("incidentsAreActiveCheck")
-  private Predicate<Object[]> incidentsAreActiveCheck;
-
-  @Autowired
-  @Qualifier("incidentsInProcessAreActiveCheck")
-  private Predicate<Object[]> incidentsInProcessAreActiveCheck;
-
-  public Predicate<Object[]> getProcessIsDeployedCheck() {
-    return processIsDeployedCheck;
-  }
-
-  public Predicate<Object[]> getProcessInstanceExistsCheck() {
-    return processInstanceExistsCheck;
-  }
-
-  public Predicate<Object[]> getFlowNodeIsCompletedCheck() {
-    return flowNodeIsCompletedCheck;
-  }
-
-  public Predicate<Object[]> getProcessInstancesAreFinishedCheck() {
-    return processInstancesAreFinishedCheck;
-  }
-
-  public Predicate<Object[]> getIncidentsAreActiveCheck() {
-    return incidentsAreActiveCheck;
-  }
-
-  public Predicate<Object[]> getIncidentsInProcessAreActiveCheck() {
-    return incidentsInProcessAreActiveCheck;
-  }
-
-  public Predicate<Object[]> getOperationsByProcessInstanceAreCompletedCheck() {
-    return operationsByProcessInstanceAreCompletedCheck;
-  }
-
-  public Predicate<Object[]> getFlowNodeIsActiveCheck() {
-    return flowNodeIsActiveCheck;
-  }
-
-  public Predicate<Object[]> getProcessInstancesAreStartedCheck() {
-    return processInstancesAreStartedCheck;
+public class SearchFieldValueMap extends HashMap<String, Object> {
+  public SearchFieldValueMap addFieldValue(final String field, final Object val) {
+    put(field, val);
+    return this;
   }
 }

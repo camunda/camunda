@@ -67,11 +67,13 @@ public class OperateZeebeSearchAbstractIT {
   // These are mocked so we can bypass authentication issues when connecting to zeebe and search
   @MockBean protected UserService userService;
   @MockBean protected TenantService tenantService;
+  @MockBean protected ZeebeClient mockZeebeClient;
 
   @Autowired protected ZeebeContainerManager zeebeContainerManager;
   @Autowired protected SearchContainerManager searchContainerManager;
   @Autowired protected TestResourceManager testResourceManager;
   @Autowired protected TestSearchRepository testSearchRepository;
+  @Autowired protected MockMvcManager mockMvcManager;
 
   // Used to control and clear process/import info between test suites
   @Autowired protected ProcessCache processCache;
@@ -81,9 +83,7 @@ public class OperateZeebeSearchAbstractIT {
   @Autowired protected BeanFactory beanFactory;
 
   @Autowired protected ObjectMapper objectMapper;
-
   protected ZeebeClient zeebeClient;
-
   protected OperateJ5Tester operateTester;
 
   @BeforeAll
@@ -120,7 +120,7 @@ public class OperateZeebeSearchAbstractIT {
   protected void zeebeStabilityDelay() {
     try {
       Thread.sleep(3000);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new RuntimeException(e);
     }
   }

@@ -21,8 +21,13 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import io.camunda.operate.util.SearchTestRuleProvider;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Future;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -37,18 +42,30 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class OperateJ5Tester {
 
+  @Autowired protected SearchTestRuleProvider searchTestRuleProvider;
+  @Autowired protected OperationExecutor operationExecutor;
   private final ZeebeClient zeebeClient;
-
-  @Autowired private SearchTestRuleProvider searchTestRuleProvider;
-
   @Autowired private SearchCheckPredicatesHolder searchPredicates;
 
-  public OperateJ5Tester(ZeebeClient zeebeClient) {
+  @Autowired private MockMvcManager mockMvcManager;
+
+  public OperateJ5Tester(final ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
   }
 
-  public Long deployProcessAndWait(String classpathResource) {
-    Long processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
+  public Long deployProcess(final String classpathResource) {
+    return ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
+  }
+
+  public void waitForProcessDeployed(final Long processDefinitionKey) {
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getProcessIsDeployedCheck(), processDefinitionKey);
+  }
+
+  // Deprecated
+  public Long deployProcessAndWait(final String classpathResource) {
+    final Long processDefinitionKey =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
 
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getProcessIsDeployedCheck(), processDefinitionKey);
@@ -56,29 +73,59 @@ public class OperateJ5Tester {
     return processDefinitionKey;
   }
 
-  public Long startProcessAndWait(String bpmnProcessId) {
-    return startProcessAndWait(bpmnProcessId, null);
+  public Long startProcess(final String bpmnProcessId, final String payload) {
+    return ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
   }
 
-  public Long startProcessAndWait(String bpmnProcessId, String payload) {
-    Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
+  public void waitForProcessInstanceStarted(final Long processInstanceKey) {
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getProcessInstancesAreStartedCheck(), Arrays.asList(processInstanceKey));
+  }
+
+  public void waitForProcessInstanceExists(final Long processInstanceKey) {
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
+  }
+
+  // Deprecated
+  public Long startProcessAndWait(final String bpmnProcessId) {
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, null);
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
     return processInstanceKey;
   }
 
+  public void modifyProcessInstanceOperation(
+      final Long processInstanceKey, final List<Modification> modifications) throws Exception {
+    final ModifyProcessInstanceRequestDto op =
+        new ModifyProcessInstanceRequestDto()
+            .setProcessInstanceKey(processInstanceKey + "")
+            .setModifications(modifications);
+
+    mockMvcManager.postOperation(op);
+    searchTestRuleProvider.refreshSearchIndices();
+  }
+
+  public void waitForOperationFinished(final Long processInstanceKey) throws Exception {
+    executeOneBatch();
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getOperationsByProcessInstanceAreCompletedCheck(), processInstanceKey);
+  }
+
+  public void waitForFlowNode(final Long processInstanceKey, final String flowNodeId) {
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getFlowNodeIsActiveCheck(), processInstanceKey, flowNodeId);
+  }
+
   public void completeTaskAndWaitForProcessFinish(
-      Long processInstanceKey, String activityId, String jobKey, String payload) {
+      final Long processInstanceKey,
+      final String activityId,
+      final String jobKey,
+      final String payload) {
     ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getFlowNodeIsCompletedCheck(), processInstanceKey, activityId);
-    searchTestRuleProvider.processAllRecordsAndWait(
-        searchPredicates.getProcessInstancesAreFinishedCheck(), Arrays.asList(processInstanceKey));
-  }
-
-  public void cancelProcessAndWait(Long processInstanceKey) {
-    ZeebeTestUtil.cancelProcessInstance(zeebeClient, processInstanceKey);
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getProcessInstancesAreFinishedCheck(), Arrays.asList(processInstanceKey));
   }
@@ -87,15 +134,26 @@ public class OperateJ5Tester {
     searchTestRuleProvider.refreshSearchIndices();
   }
 
-  public OperateJ5Tester waitUntilIncidentsAreActive(Long processInstanceKey, int count) {
+  public OperateJ5Tester waitUntilIncidentsAreActive(
+      final Long processInstanceKey, final int count) {
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getIncidentsAreActiveCheck(), processInstanceKey, count);
     return this;
   }
 
-  public OperateJ5Tester waitUntilIncidentsInProcessAreActive(String bpmnProcessId, int count) {
+  public OperateJ5Tester waitUntilIncidentsInProcessAreActive(
+      final String bpmnProcessId, final int count) {
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getIncidentsInProcessAreActiveCheck(), bpmnProcessId, count);
     return this;
+  }
+
+  private int executeOneBatch() throws Exception {
+    final List<Future<?>> futures = operationExecutor.executeOneBatch();
+    // wait till all scheduled tasks are executed
+    for (final Future f : futures) {
+      f.get();
+    }
+    return 0; // return futures.size()
   }
 }

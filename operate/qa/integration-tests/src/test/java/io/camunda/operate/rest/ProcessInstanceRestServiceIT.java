@@ -17,54 +17,41 @@
 package io.camunda.operate.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import io.camunda.operate.util.j5templates.SearchFieldValueMap;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
-import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
-
-  @MockBean private ProcessInstanceReader processInstanceReader;
-
-  @MockBean private VariableReader variableReader;
-
-  @MockBean private BatchOperationWriter batchOperationWriter;
-
-  @MockBean private PermissionsService permissionsService;
+public class ProcessInstanceRestServiceIT extends OperateZeebeSearchAbstractIT {
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired private VariableTemplate variableTemplate;
+  @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
 
   @Override
-  @Before
-  public void before() {
-    super.before();
-    when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
+  protected void runAdditionalBeforeAllSetup() {
+    modifyProcessInstanceHandler.setZeebeClient(zeebeClient);
+    final Long processDefinitionKey = operateTester.deployProcess("demoProcess_v_2.bpmn");
+    operateTester.waitForProcessDeployed(processDefinitionKey);
   }
 
   @Test
   public void testGetInstanceByIdWithInvalidId() throws Exception {
     final String url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/4503599627535750:";
     final MvcResult mvcResult =
-        getRequestShouldFailWithException(url, ConstraintViolationException.class);
+        mockMvcManager.getRequestShouldFailWithException(url, ConstraintViolationException.class);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
   }
@@ -74,7 +61,7 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     final String url =
         ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/incidents";
     final MvcResult mvcResult =
-        getRequestShouldFailWithException(url, ConstraintViolationException.class);
+        mockMvcManager.getRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
   }
 
@@ -83,7 +70,7 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     final String url =
         ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/variables";
     final MvcResult mvcResult =
-        postRequestShouldFailWithException(url, ConstraintViolationException.class);
+        mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
   }
 
@@ -92,7 +79,7 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     final String url =
         ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/flow-node-states";
     final MvcResult mvcResult =
-        getRequestShouldFailWithException(url, ConstraintViolationException.class);
+        mockMvcManager.getRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
   }
 
@@ -101,107 +88,57 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     final String url =
         ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/flow-node-metadata";
     final MvcResult mvcResult =
-        postRequestShouldFailWithException(url, ConstraintViolationException.class);
+        mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
   }
 
   @Test
-  public void testProcessInstanceDeleteOperationOkWhenHasPermissions() throws Exception {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    final CreateOperationRequestDto request =
-        new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE);
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE))
-        .thenReturn(true);
-    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request))
-        .thenReturn(new BatchOperationEntity());
-    final String url =
-        ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + processInstanceId + "/operation";
-    final MvcResult mvcResult = postRequest(url, request);
-    // then
-    final BatchOperationEntity response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(response).isNotNull();
-  }
+  public void shouldAddTokenWithVariables() throws Exception {
+    final Long processInstanceKey = operateTester.startProcess("demoProcess", "{\"a\": \"b\"}");
+    operateTester.waitForProcessInstanceStarted(processInstanceKey);
 
-  @Test
-  public void testProcessInstanceUpdateOperationOkWhenHasPermissions() throws Exception {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    final CreateOperationRequestDto request =
-        new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
-        .thenReturn(true);
-    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request))
-        .thenReturn(new BatchOperationEntity());
-    final String url =
-        ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + processInstanceId + "/operation";
-    final MvcResult mvcResult = postRequest(url, request);
-    // then
-    final BatchOperationEntity response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(response).isNotNull();
-  }
+    var result =
+        testSearchRepository.searchTerms(
+            flowNodeInstanceTemplate.getFullQualifiedName(),
+            new SearchFieldValueMap()
+                .addFieldValue(FlowNodeInstanceTemplate.FLOW_NODE_ID, "taskB")
+                .addFieldValue(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+            FlowNodeInstanceEntity.class,
+            1);
+    assertThat(result).isEmpty();
 
-  @Test
-  public void testProcessInstanceModifyOperationOkWhenHasPermissions() throws Exception {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    final ModifyProcessInstanceRequestDto.Modification modification =
-        new Modification()
-            .setModification(Modification.Type.ADD_VARIABLE)
-            .setVariables(Map.of("var", 11));
-    final ModifyProcessInstanceRequestDto request =
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(modification));
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
-        .thenReturn(true);
-    when(batchOperationWriter.scheduleModifyProcessInstance(any()))
-        .thenReturn(new BatchOperationEntity());
-    final String url =
-        ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + processInstanceId + "/modify";
-    final MvcResult mvcResult = postRequest(url, request);
-    // then
-    final BatchOperationEntity response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(response).isNotNull();
-  }
+    final List<Modification> modifications =
+        List.of(
+            new Modification()
+                .setModification(Modification.Type.ADD_TOKEN)
+                .setToFlowNodeId("taskB")
+                .setVariables(Map.of("taskB", List.of(Map.of("c", "d")))));
 
-  @Test
-  public void testProcessInstanceSingleVariableOkWhenHasPermissions() throws Exception {
-    // given
-    final String variableId = "var1";
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
-        .thenReturn(true);
-    when(variableReader.getVariable(variableId)).thenReturn(new VariableDto());
-    final String url =
-        ProcessInstanceRestService.PROCESS_INSTANCE_URL
-            + "/"
-            + processInstanceId
-            + "/variables/"
-            + variableId;
-    final MvcResult mvcResult = getRequest(url);
-    // then
-    final VariableDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(response).isNotNull();
+    operateTester.modifyProcessInstanceOperation(processInstanceKey, modifications);
+    operateTester.waitForOperationFinished(processInstanceKey);
+    operateTester.waitForFlowNode(processInstanceKey, "taskB");
+
+    result =
+        testSearchRepository.searchTerms(
+            flowNodeInstanceTemplate.getFullQualifiedName(),
+            new SearchFieldValueMap()
+                .addFieldValue(FlowNodeInstanceTemplate.FLOW_NODE_ID, "taskB")
+                .addFieldValue(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+            FlowNodeInstanceEntity.class,
+            1);
+    assertThat(result).isNotEmpty();
+    assertThat(result.get(0).getState()).isEqualTo(FlowNodeState.ACTIVE);
+
+    final var variableResult =
+        testSearchRepository.searchTerms(
+            variableTemplate.getFullQualifiedName(),
+            new SearchFieldValueMap()
+                .addFieldValue(VariableTemplate.NAME, "c")
+                .addFieldValue(VariableTemplate.SCOPE_KEY, result.get(0).getKey()),
+            VariableEntity.class,
+            10);
+    assertThat(variableResult).isNotEmpty();
+    assertThat(variableResult.get(0).getValue()).isEqualTo("\"d\"");
   }
 }
