@@ -13,6 +13,7 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import java.net.URI;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
@@ -36,14 +37,40 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    *     .build();
    * }</pre>
    *
-   * @return the gateway address
+   * @return the address for the gRPC gateway
    */
-  default String grpcAddress() {
-    return address(TestZeebePort.GATEWAY);
+  default URI grpcAddress() {
+    return parsedAddress(TestZeebePort.GATEWAY);
   }
 
-  default String restAddress() {
-    return address(TestZeebePort.REST);
+  /**
+   * Returns the address used by clients to interact with the gateway.
+   *
+   * <p>You can build your client like this:
+   *
+   * <pre>@{code
+   *    ZeebeClient.newClientBuilder()
+   *      .restAddress(gateway.restAddress())
+   *      .usePlaintext()
+   *      .build();
+   *  }</pre>
+   *
+   * @return the REST gateway address
+   */
+  default URI restAddress() {
+    return parsedAddress(TestZeebePort.REST);
+  }
+
+  /**
+   * Returns the address of this node for the given port, using the security config to determine the
+   * default scheme (http for plaintext, https as default).
+   *
+   * @param port the target port
+   * @return externally accessible address for {@code port}
+   */
+  default URI parsedAddress(final TestZeebePort port) {
+    final var scheme = gatewayConfig().getSecurity().isEnabled() ? "https" : "http";
+    return parsedAddress(scheme, port);
   }
 
   /**
@@ -75,7 +102,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
 
   /** Returns a new pre-configured client builder for this gateway */
   default ZeebeClientBuilder newClientBuilder() {
-    final var builder = ZeebeClient.newClientBuilder().gatewayAddress(grpcAddress());
+    final var builder = ZeebeClient.newClientBuilder().grpcAddress(grpcAddress());
     final var security = gatewayConfig().getSecurity();
     if (security.isEnabled()) {
       builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());
