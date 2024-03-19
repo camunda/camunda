@@ -484,6 +484,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     return this;
   }
 
+  @Override
   public ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
     this.preferRestOverGrpc = preferRestOverGrpc;
     return this;
