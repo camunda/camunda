@@ -260,6 +260,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
+    innerBuilder.preferRestOverGrpc(preferRestOverGrpc);
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     innerBuilder.grpcAddress(determineGrpcAddress());
     innerBuilder.restAddress(determineRestAddress());
@@ -270,9 +276,8 @@ public class ZeebeClientCloudBuilderImpl
   private URI determineRestAddress() {
     if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
-      // TODO: adjust cloud REST address format once the port is defined
       final String cloudRestAddress =
-          String.format("http://%s.%s.%s:8080", clusterId, region, BASE_ADDRESS);
+          String.format("http://%s.zeebe.%s:443/%s", region, BASE_ADDRESS, clusterId);
       return getURIFromString(cloudRestAddress);
     } else {
       Loggers.LOGGER.debug(
