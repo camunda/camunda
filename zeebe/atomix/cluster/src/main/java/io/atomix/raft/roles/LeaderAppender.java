@@ -398,13 +398,13 @@ final class LeaderAppender {
     }
 
     final SnapshotChunkReader reader = member.getSnapshotChunkReader();
-    if (!reader.hasNext()) {
-      return Optional.empty();
-    }
 
     try {
       if (member.getNextSnapshotChunk() != null) {
         reader.seek(member.getNextSnapshotChunk());
+      }
+      if (!reader.hasNext()) {
+        return Optional.empty();
       }
       final SnapshotChunk chunk = reader.next();
 
