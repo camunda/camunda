@@ -53,6 +53,7 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
 /**
@@ -402,6 +403,9 @@ final class LeaderAppender {
     }
 
     try {
+      if (member.getNextSnapshotChunk() != null) {
+        reader.seek(member.getNextSnapshotChunk());
+      }
       final SnapshotChunk chunk = reader.next();
 
       // Create the install request, indicating whether this is the last chunk of data based on
@@ -430,6 +434,7 @@ final class LeaderAppender {
           e);
       // If snapshot was deleted, a new reader should be created with the new snapshot
       member.setNextSnapshotIndex(0);
+      member.setNextSnapshotChunk(null);
       return Optional.empty();
     }
   }
@@ -467,8 +472,14 @@ final class LeaderAppender {
       final RaftMemberContext member, final InstallRequest request, final Throwable error) {
     // Reset the member's snapshot index and offset to resend the snapshot from the start
     // once a connection to the member is re-established.
-    member.setNextSnapshotIndex(0);
-    member.setNextSnapshotChunk(null);
+    final boolean isTimeout =
+        error instanceof TimeoutException
+            || (error != null && error.getCause() instanceof TimeoutException);
+
+    if (!isTimeout) {
+      member.setNextSnapshotIndex(0);
+      member.setNextSnapshotChunk(null);
+    }
 
     // Log the failed attempt to contact the member.
     failAttempt(member, request, error);
