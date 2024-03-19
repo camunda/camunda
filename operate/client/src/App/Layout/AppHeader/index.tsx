@@ -224,18 +224,6 @@ const AppHeader: React.FC = observer(() => {
                 }
               },
             },
-            {
-              key: 'slackCommunityChannel',
-              label: 'Slack Community Channel',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'info-bar',
-                  link: 'slack',
-                });
-
-                window.open('https://camunda.com/slack', '_blank');
-              },
-            },
           ],
         }}
         userSideBar={{
