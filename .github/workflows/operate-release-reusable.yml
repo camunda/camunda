@@ -209,7 +209,7 @@ jobs:
 
       # Upload: Upload Docker Image
       - name: Upload Docker Image
-        if: ${{ inputs.dryRun == false }}
+        # if: ${{ inputs.dryRun == false }}
         env:
           IMAGE_NAME: 'camunda/operate'
           IMAGE_TAG: ${{ inputs.releaseVersion }}
@@ -268,25 +268,25 @@ jobs:
           export ARCHITECTURE=arm64
           bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
 
-          docker buildx build -f $DOCKER_FILE_NAME . \
-          --platform linux/arm64,linux/amd64 \
-          --build-arg VERSION=$VERSION \
-          --build-arg REVISION=$commit_hash \
-          --build-arg DATE=$date_time_stamp \
-          --provenance false \
-          -t $IMAGE_NAME:$IMAGE_TAG \
-          --push
+          # docker buildx build -f $DOCKER_FILE_NAME . \
+          # --platform linux/arm64,linux/amd64 \
+          # --build-arg VERSION=$VERSION \
+          # --build-arg REVISION=$commit_hash \
+          # --build-arg DATE=$date_time_stamp \
+          # --provenance false \
+          # -t $IMAGE_NAME:$IMAGE_TAG \
+          # --push
 
-          if ${IS_LATEST}; then
-            docker buildx build -f $DOCKER_FILE_NAME . \
-            --platform linux/arm64,linux/amd64 \
-            --build-arg VERSION=$VERSION \
-            --build-arg REVISION=$commit_hash \
-            --build-arg DATE=$date_time_stamp \
-            --provenance false \
-            -t $IMAGE_NAME:latest \
-            --push
-          fi
+          # if ${IS_LATEST}; then
+          #   docker buildx build -f $DOCKER_FILE_NAME . \
+          #   --platform linux/arm64,linux/amd64 \
+          #   --build-arg VERSION=$VERSION \
+          #   --build-arg REVISION=$commit_hash \
+          #   --build-arg DATE=$date_time_stamp \
+          #   --provenance false \
+          #   -t $IMAGE_NAME:latest \
+          #   --push
+          # fi
 
       #########################################################################
       # Notify: send Slack notification of release failure
