@@ -221,6 +221,7 @@ jobs:
           echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USERNAME --password-stdin
           docker buildx create --use
 
+          ARTIFACT="camunda-operate"
           mkdir -p distro/target
           touch distro/target/${ARTIFACT}-${RELEASE_VERSION}.tar.gz
           touch distro/target/${ARTIFACT}-${RELEASE_VERSION}.zip
