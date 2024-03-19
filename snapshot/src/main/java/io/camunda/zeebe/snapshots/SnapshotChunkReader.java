@@ -17,6 +17,8 @@ import java.util.Iterator;
  */
 public interface SnapshotChunkReader extends Iterator<SnapshotChunk>, CloseableSilently {
 
+  void reset();
+
   /**
    * Skips all chunks up to the one with the given ID, inclusively, such that the next chunk would
    * be the chunk right after it (if any). If no ID is given then should not do anything.
