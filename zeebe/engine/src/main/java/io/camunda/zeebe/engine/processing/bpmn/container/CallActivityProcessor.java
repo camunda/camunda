@@ -104,6 +104,7 @@ public final class CallActivityProcessor
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .thenDo(
