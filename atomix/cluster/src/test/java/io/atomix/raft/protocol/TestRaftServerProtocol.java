@@ -36,6 +36,13 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
   private final Set<MemberId> partitions = Sets.newCopyOnWriteArraySet();
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
+=======
+  private final Map<Class<?>, Consumer<?>> interceptors = new ConcurrentHashMap<>();
+  private final Map<MemberId, TestRaftServerProtocol> servers;
+  private final Map<Class<?>, ResponseInterceptor<?>> responseInterceptors =
+      new ConcurrentHashMap<>();
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
 
   public TestRaftServerProtocol(
       final MemberId memberId,
@@ -64,43 +71,134 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public CompletableFuture<ConfigureResponse> configure(
       final MemberId memberId, final ConfigureRequest request) {
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
     return scheduleTimeout(
         getServer(memberId).thenCompose(listener -> listener.configure(request)));
+=======
+    intercept(request, ConfigureRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.configure(request))
+        .thenCompose(response -> transformResponse(response, ConfigureResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
   }
 
   @Override
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final MemberId memberId, final ReconfigureRequest request) {
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
     return scheduleTimeout(
         getServer(memberId).thenCompose(listener -> listener.reconfigure(request)));
+=======
+    intercept(request, ReconfigureRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.reconfigure(request))
+        .thenCompose(response -> transformResponse(response, ReconfigureResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> forceConfigure(
+      final MemberId memberId, final ForceConfigureRequest request) {
+    intercept(request, ForceConfigureRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.forceConfigure(request))
+        .thenCompose(response -> transformResponse(response, ForceConfigureResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
+    intercept(request, JoinRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.join(request))
+        .thenCompose(response -> transformResponse(response, JoinResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+  public CompletableFuture<LeaveResponse> leave(
+      final MemberId memberId, final LeaveRequest request) {
+    intercept(request, LeaveRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.leave(request))
+        .thenCompose(response -> transformResponse(response, LeaveResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
   }
 
   @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.install(request)));
+=======
+    intercept(request, InstallRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.install(request))
+        .thenCompose(response -> transformResponse(response, InstallResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
   }
 
   @Override
   public CompletableFuture<TransferResponse> transfer(
       final MemberId memberId, final TransferRequest request) {
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.transfer(request)));
+=======
+    intercept(request, TransferRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.transfer(request))
+        .thenCompose(response -> transformResponse(response, TransferResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
   }
 
   @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.poll(request)));
+=======
+    intercept(request, PollRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.poll(request))
+        .thenCompose(response -> transformResponse(response, PollResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
   }
 
   @Override
   public CompletableFuture<VoteResponse> vote(final MemberId memberId, final VoteRequest request) {
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.vote(request)));
+=======
+    intercept(request, VoteRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.vote(request))
+        .thenCompose(response -> transformResponse(response, VoteResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
   }
 
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.append(request)));
+=======
+    throw new IllegalArgumentException("Using old version not supported in tests");
+  }
+
+  @Override
+  public CompletableFuture<AppendResponse> append(
+      final MemberId memberId, final VersionedAppendRequest request) {
+    intercept(request, VersionedAppendRequest.class);
+    return getServer(memberId)
+        .thenCompose(listener -> listener.append(request))
+        .thenCompose(response -> transformResponse(response, AppendResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
   }
 
   @Override
@@ -244,4 +342,37 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       return CompletableFuture.failedFuture(new ConnectException());
     }
   }
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
+=======
+
+  public <T> void interceptRequest(final Class<T> requestType, final Consumer<T> interceptor) {
+    interceptors.put(requestType, interceptor);
+  }
+
+  public <T extends RaftResponse> void interceptResponse(
+      final Class<T> responseType, final ResponseInterceptor<T> interceptor) {
+    responseInterceptors.put(responseType, interceptor);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> CompletableFuture<T> transformResponse(
+      final T response, final Class<T> responseType) {
+    final var interceptor = (ResponseInterceptor<T>) responseInterceptors.get(responseType);
+    if (interceptor != null) {
+      return interceptor.apply(response);
+    }
+    return CompletableFuture.completedFuture(response);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> void intercept(final T request, final Class<T> requestType) {
+    final var interceptor = (Consumer<T>) interceptors.get(requestType);
+    if (interceptor != null) {
+      interceptor.accept(request);
+    }
+  }
+
+  @FunctionalInterface
+  public interface ResponseInterceptor<T> extends Function<T, CompletableFuture<T>> {}
+>>>>>>> 281eb95c (test: verify install requests retry behavior on timeout):zeebe/atomix/cluster/src/test/java/io/atomix/raft/protocol/TestRaftServerProtocol.java
 }
