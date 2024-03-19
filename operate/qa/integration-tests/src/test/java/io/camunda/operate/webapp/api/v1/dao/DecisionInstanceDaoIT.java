@@ -47,7 +47,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String indexName = decisionInstanceIndex.getFullQualifiedName();
+    final String indexName = decisionInstanceIndex.getFullQualifiedName();
     testSearchRepository.createOrUpdateDocumentFromObject(
         indexName,
         new DecisionInstanceEntity()
@@ -87,7 +87,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnDecisionInstances() {
-    Results<DecisionInstance> decisionInstanceResults = dao.search(new Query<>());
+    final Results<DecisionInstance> decisionInstanceResults = dao.search(new Query<>());
 
     assertThat(decisionInstanceResults.getTotal()).isEqualTo(2);
 
@@ -138,7 +138,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortDecisionInstancesDesc() {
-    Results<DecisionInstance> decisionInstanceResults =
+    final Results<DecisionInstance> decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
                 .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.DESC)));
@@ -151,7 +151,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortDecisionInstancesAsc() {
-    Results<DecisionInstance> decisionInstanceResults =
+    final Results<DecisionInstance> decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
                 .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.ASC)));
@@ -176,7 +176,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
     assertThat(decisionInstanceResults.getItems().get(0).getDecisionId())
         .isEqualTo("invoiceClassification");
 
-    Object[] searchAfter = decisionInstanceResults.getSortValues();
+    final Object[] searchAfter = decisionInstanceResults.getSortValues();
     decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
@@ -193,7 +193,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterDecisionInstances() {
-    Results<DecisionInstance> decisionInstanceResults =
+    final Results<DecisionInstance> decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
                 .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.DESC))
@@ -207,8 +207,8 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnById() {
-    String decisionInstanceId = "2251799813685262-2";
-    DecisionInstance decisionInstance = dao.byId(decisionInstanceId);
+    final String decisionInstanceId = "2251799813685262-2";
+    final DecisionInstance decisionInstance = dao.byId(decisionInstanceId);
 
     assertThat(decisionInstance).isNotNull();
     assertThat(decisionInstance.getDecisionId()).isEqualTo("invoiceAssignApprover");

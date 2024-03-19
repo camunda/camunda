@@ -29,7 +29,6 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
   private String xml;
   private String resourceName;
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
 
   public String getDecisionRequirementsId() {
     return decisionRequirementsId;
@@ -87,10 +86,16 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    DecisionRequirementsEntity that = (DecisionRequirementsEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DecisionRequirementsEntity that = (DecisionRequirementsEntity) o;
     return version == that.version
         && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
         && Objects.equals(name, that.name)

@@ -73,7 +73,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceCreated() {
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
     // when
@@ -116,7 +116,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testVariablesAreLoaded() {
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
 
     // when TC 1
@@ -144,7 +144,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertVariableExists(Long processInstanceKey, String name, String value) {
-    ListViewProcessInstanceDto pi =
+    final ListViewProcessInstanceDto pi =
         getSingleProcessInstanceForListView(
             createGetAllProcessInstancesRequest(
                 q -> {
@@ -177,8 +177,8 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceAndActivityCompleted() {
     // having
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask("task1")
@@ -217,8 +217,8 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceStartTimeDoesNotChange() {
     // having
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask("task1")
@@ -252,9 +252,9 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testIncidentDeleted() {
     // having
-    String activityId = "taskA";
+    final String activityId = "taskA";
 
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -290,10 +290,10 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceWithIncidentCreated() {
     // having
-    String activityId = "taskA";
+    final String activityId = "taskA";
     final String errorMessage = "Error occurred when working on the job";
 
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -306,7 +306,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     final List<IncidentEntity> allIncidents =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    IncidentEntity incidentEntity = allIncidents.get(0);
+    final IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
@@ -332,10 +332,10 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceWithIncidentOnGateway() {
     // having
-    String activityId = "xor";
+    final String activityId = "xor";
 
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .exclusiveGateway(activityId)
@@ -364,7 +364,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     final List<IncidentEntity> allIncidents =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    IncidentEntity incidentEntity = allIncidents.get(0);
+    final IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
@@ -410,10 +410,10 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceWithIncidentOnGatewayIsCanceled() {
     // having
-    String activityId = "xor";
+    final String activityId = "xor";
 
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .exclusiveGateway(activityId)
@@ -442,7 +442,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     List<IncidentEntity> allIncidents =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    IncidentEntity incidentEntity = allIncidents.get(0);
+    final IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
@@ -453,7 +453,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     // then incident is deleted
-    ProcessInstanceForListViewEntity processInstanceEntity =
+    final ProcessInstanceForListViewEntity processInstanceEntity =
         processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
     allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
@@ -476,10 +476,10 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceGatewayIsPassed() {
     // having
-    String activityId = "xor";
+    final String activityId = "xor";
 
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .exclusiveGateway(activityId)
@@ -516,10 +516,10 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstanceEventBasedGatewayIsActive() {
     // having
-    String activityId = "gateway";
+    final String activityId = "gateway";
 
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .eventBasedGateway(activityId)
@@ -555,7 +555,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -598,7 +598,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
-    String processId = "eventProcess";
+    final String processId = "eventProcess";
     deployProcess("messageEventProcess_v_1.bpmn");
     //    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId,
     // "{\"a\": \"b\"}");
@@ -643,7 +643,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
-    String processId = "eventProcess";
+    final String processId = "eventProcess";
     deployProcess("messageEventProcess_v_1.bpmn");
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
@@ -670,7 +670,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testProcessInstanceById() {
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -684,9 +684,9 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testProcessInstanceWithIncidentById() {
-    String activityId = "taskA";
+    final String activityId = "taskA";
     final String errorMessage = "Error occurred when working on the job";
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -705,10 +705,10 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testJobFailedWithRetriesLeft() {
-    String activityId = "taskA";
+    final String activityId = "taskA";
     final String errorMessage = "Error occurred when working on the job";
-    String processId = "demoProcess";
-    String processId2 = "simpleProcess";
+    final String processId = "demoProcess";
+    final String processId2 = "simpleProcess";
     deployProcess("demoProcess_v_1.bpmn");
     deployProcess(
         Bpmn.createExecutableProcess(processId2)
@@ -791,7 +791,8 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     final String calledProcessInstanceId = response.getProcessInstances().get(0).getId();
 
     // when
-    ListViewProcessInstanceDto processInstance = getProcessInstanceById(calledProcessInstanceId);
+    final ListViewProcessInstanceDto processInstance =
+        getProcessInstanceById(calledProcessInstanceId);
 
     // then
     assertThat(processInstance).isNotNull();
@@ -811,7 +812,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
       throws Exception {
-    String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
+    final String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
     final MvcResult result = getRequest(url);
     return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
   }
@@ -821,7 +822,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
-    String processId = "eventSubProcess";
+    final String processId = "eventSubProcess";
     deployProcess("eventSubProcess.bpmn");
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
@@ -843,7 +844,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
   @Test(expected = NotFoundException.class)
   public void testProcessInstanceByIdFailForUnknownId() {
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -857,7 +858,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   public void testSequenceFlowEntityCreated() {
 
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
     // when
@@ -870,7 +871,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
         sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(processInstanceKey);
     assertThat(sequenceFlowEntities).hasSize(1);
 
-    SequenceFlowEntity sequenceFlowEntity = sequenceFlowEntities.get(0);
+    final SequenceFlowEntity sequenceFlowEntity = sequenceFlowEntities.get(0);
     assertThat(sequenceFlowEntity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(sequenceFlowEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(sequenceFlowEntity.getBpmnProcessId()).isEqualTo(processId);
@@ -881,7 +882,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   public void testVariableEntityCreated() {
 
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
     // when
@@ -895,7 +896,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
             variableTemplate.getAlias(), processInstanceKey);
     assertThat(variableEntities).isNotEmpty();
 
-    VariableEntity variableEntity = variableEntities.get(0);
+    final VariableEntity variableEntity = variableEntities.get(0);
     assertThat(variableEntity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(variableEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(variableEntity.getBpmnProcessId()).isEqualTo(processId);

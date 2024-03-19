@@ -74,16 +74,16 @@ public class InternalAPIErrorControllerIT {
 
   @Test
   public void shouldReturn500ForOperateRuntimeException() throws Exception {
-    OperateRuntimeException exception = new OperateRuntimeException("runtime exception");
+    final OperateRuntimeException exception = new OperateRuntimeException("runtime exception");
 
     when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
 
-    MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
+    final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
     assertThat(result.getResponse().getStatus())
         .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
 
-    Map<String, Object> resultBody =
+    final Map<String, Object> resultBody =
         objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
 
     assertThat(resultBody.get("status")).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -93,16 +93,16 @@ public class InternalAPIErrorControllerIT {
 
   @Test
   public void shouldReturn404ForRuntimeNotFoundException() throws Exception {
-    io.camunda.operate.store.NotFoundException exception =
+    final io.camunda.operate.store.NotFoundException exception =
         new io.camunda.operate.store.NotFoundException("not found exception");
 
     when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
 
-    MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
+    final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
     assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
 
-    Map<String, Object> resultBody =
+    final Map<String, Object> resultBody =
         objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
 
     assertThat(resultBody.get("status")).isEqualTo(HttpStatus.NOT_FOUND.value());
@@ -112,16 +112,16 @@ public class InternalAPIErrorControllerIT {
 
   @Test
   public void shouldReturn400ForInternalAPIException() throws Exception {
-    InternalAPIException exception = new InternalAPIException("internal api exception") {};
+    final InternalAPIException exception = new InternalAPIException("internal api exception") {};
     exception.setInstance("instanceId");
 
     when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
 
-    MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
+    final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
     assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
 
-    Map<String, Object> resultBody =
+    final Map<String, Object> resultBody =
         objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
 
     assertThat(resultBody.get("status")).isEqualTo(HttpStatus.BAD_REQUEST.value());
@@ -131,16 +131,16 @@ public class InternalAPIErrorControllerIT {
 
   @Test
   public void shouldReturn404ForInternalNotFoundException() throws Exception {
-    NotFoundException exception = new NotFoundException("not found exception");
+    final NotFoundException exception = new NotFoundException("not found exception");
     exception.setInstance("instanceId");
 
     when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
 
-    MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
+    final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
     assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
 
-    Map<String, Object> resultBody =
+    final Map<String, Object> resultBody =
         objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
 
     assertThat(resultBody.get("status")).isEqualTo(HttpStatus.NOT_FOUND.value());
@@ -150,16 +150,16 @@ public class InternalAPIErrorControllerIT {
 
   @Test
   public void shouldReturn403ForNotAuthorizedException() throws Exception {
-    NotAuthorizedException exception = new NotAuthorizedException("not authorized exception");
+    final NotAuthorizedException exception = new NotAuthorizedException("not authorized exception");
     exception.setInstance("instanceId");
 
     when(operationReader.getOperationsByBatchOperationId(any())).thenThrow(exception);
 
-    MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
+    final MvcResult result = mockMvc.perform(mockGetRequest).andReturn();
 
     assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
 
-    Map<String, Object> resultBody =
+    final Map<String, Object> resultBody =
         objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
 
     assertThat(resultBody.get("status")).isEqualTo(HttpStatus.FORBIDDEN.value());

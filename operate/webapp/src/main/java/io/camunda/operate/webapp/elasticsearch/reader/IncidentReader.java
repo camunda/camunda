@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component;
 public class IncidentReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.IncidentReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(IncidentReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentReader.class);
 
   @Autowired private OperationReader operationReader;
 
@@ -83,8 +83,8 @@ public class IncidentReader extends AbstractReader
     // get treePath for process instance
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
-    List<Map<ErrorType, Long>> errorTypes = new ArrayList<>();
-    List<IncidentEntity> incidents =
+    final List<Map<ErrorType, Long>> errorTypes = new ArrayList<>();
+    final List<IncidentEntity> incidents =
         incidentStore.getIncidentsWithErrorTypesFor(treePath, errorTypes);
 
     final IncidentResponseDto incidentResponse = new IncidentResponseDto();
@@ -92,7 +92,7 @@ public class IncidentReader extends AbstractReader
         errorTypes.stream()
             .map(
                 m -> {
-                  var entry = m.entrySet().iterator().next();
+                  final var entry = m.entrySet().iterator().next();
                   return IncidentErrorTypeDto.createFrom(entry.getKey())
                       .setCount(entry.getValue().intValue());
                 })
@@ -148,7 +148,7 @@ public class IncidentReader extends AbstractReader
     final Set<String> flowNodeInstanceIdsSet = new HashSet<>();
     final Map<String, IncidentDataHolder> incDatas = new HashMap<>();
     for (IncidentEntity inc : incidents) {
-      IncidentDataHolder incData = new IncidentDataHolder().setIncidentId(inc.getId());
+      final IncidentDataHolder incData = new IncidentDataHolder().setIncidentId(inc.getId());
       if (!String.valueOf(inc.getProcessInstanceKey()).equals(processInstanceId)) {
         final String callActivityInstanceId =
             TreePath.extractFlowNodeInstanceId(inc.getTreePath(), currentTreePath);

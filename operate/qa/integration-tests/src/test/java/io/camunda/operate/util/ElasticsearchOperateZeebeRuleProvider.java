@@ -55,7 +55,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
 
@@ -73,7 +73,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Override
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
-    logger.info("Starting Zeebe with ELS prefix: " + prefix);
+    LOGGER.info("Starting Zeebe with ELS prefix: " + prefix);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
 
     startZeebe();
@@ -81,18 +81,18 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   public void updateRefreshInterval(String value) {
     try {
-      GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
-      GetComponentTemplatesResponse response =
+      final GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
+      final GetComponentTemplatesResponse response =
           zeebeEsClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
-      ComponentTemplate componentTemplate = response.getComponentTemplates().get(prefix);
-      Settings settings = componentTemplate.template().settings();
+      final ComponentTemplate componentTemplate = response.getComponentTemplates().get(prefix);
+      final Settings settings = componentTemplate.template().settings();
 
-      PutComponentTemplateRequest request = new PutComponentTemplateRequest().name(prefix);
-      Settings newSettings =
+      final PutComponentTemplateRequest request = new PutComponentTemplateRequest().name(prefix);
+      final Settings newSettings =
           Settings.builder().put(settings).put("index.refresh_interval", value).build();
-      Template newTemplate =
+      final Template newTemplate =
           new Template(newSettings, componentTemplate.template().mappings(), null);
-      ComponentTemplate newComponentTemplate = new ComponentTemplate(newTemplate, null, null);
+      final ComponentTemplate newComponentTemplate = new ComponentTemplate(newTemplate, null, null);
       request.componentTemplate(newComponentTemplate);
       assertThat(
               zeebeEsClient
@@ -107,9 +107,9 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   public void refreshIndices(Instant instant) {
     try {
-      String date =
+      final String date =
           DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
-      RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
+      final RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (IOException ex) {
       throw new RuntimeException(ex);
@@ -192,7 +192,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
         ex.printStackTrace();
         // retry
       } catch (Exception e) {
-        logger.error("Topology cannot be retrieved.");
+        LOGGER.error("Topology cannot be retrieved.");
         e.printStackTrace();
         break;
         // exit

@@ -49,7 +49,7 @@ import org.springframework.util.StringUtils;
 public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHandler
     implements ModifyProcessInstanceHandler {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(SingleStepModifyProcessInstanceHandler.class);
   @Autowired private ObjectMapper objectMapper;
   @Autowired private OperationsManager operationsManager;
@@ -66,30 +66,30 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     // Variables first
     modifyVariables(processInstanceKey, getVariableModifications(modifications), operation);
     // Token Modifications in given order
-    List<Modification> tokenModifications = getTokenModifications(modifications);
+    final List<Modification> tokenModifications = getTokenModifications(modifications);
 
     ModifyProcessInstanceCommandStep1 currentStep =
         zeebeClient.newModifyProcessInstanceCommand(processInstanceKey);
     ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep = null;
     final int lastModificationIndex = tokenModifications.size() - 1;
     for (int i = 0; i < tokenModifications.size(); i++) {
-      Modification modification = tokenModifications.get(i);
+      final Modification modification = tokenModifications.get(i);
       if (modification.getModification().equals(ADD_TOKEN)) {
-        var nextStep = addToken(currentStep, modification);
+        final var nextStep = addToken(currentStep, modification);
         if (i < lastModificationIndex) {
           currentStep = nextStep.and();
         } else {
           lastStep = nextStep;
         }
       } else if (modification.getModification().equals(CANCEL_TOKEN)) {
-        var nextStep = cancelToken(currentStep, processInstanceKey, modification);
+        final var nextStep = cancelToken(currentStep, processInstanceKey, modification);
         if (i < lastModificationIndex) {
           currentStep = nextStep.and();
         } else {
           lastStep = nextStep;
         }
       } else if (modification.getModification().equals(MOVE_TOKEN)) {
-        var nextStep = moveToken(currentStep, processInstanceKey, modification);
+        final var nextStep = moveToken(currentStep, processInstanceKey, modification);
         if (i < lastModificationIndex) {
           currentStep = nextStep.and();
         } else {
@@ -173,7 +173,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     final String flowNodeId = modification.getToFlowNodeId();
     final Map<String, List<Map<String, Object>>> flowNodeId2variables =
         modification.variablesForAddToken();
-    logger.debug("Add token to flowNodeId {} with variables: {}", flowNodeId, flowNodeId2variables);
+    LOGGER.debug("Add token to flowNodeId {} with variables: {}", flowNodeId, flowNodeId2variables);
     ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep;
     // 1. Activate
     if (modification.getAncestorElementInstanceKey() != null) {
@@ -202,7 +202,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     final String flowNodeInstanceKeyAsString = modification.getFromFlowNodeInstanceKey();
     if (StringUtils.hasText(flowNodeInstanceKeyAsString)) {
       final Long flowNodeInstanceKey = Long.parseLong(flowNodeInstanceKeyAsString);
-      logger.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
+      LOGGER.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
       return cancelFlowNodeInstances(currentStep, List.of(flowNodeInstanceKey));
     } else {
       final List<Long> flowNodeInstanceKeys =
@@ -213,7 +213,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
                 "Abort CANCEL_TOKEN: Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
                 processInstanceKey, flowNodeId));
       }
-      logger.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
+      LOGGER.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
       return cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
     }
   }
@@ -242,7 +242,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     // Create flowNodes with variables
     final List<Map<String, Object>> toFlowNodeIdVariables =
         flowNodeId2variables.getOrDefault(toFlowNodeId, List.of());
-    logger.debug(
+    LOGGER.debug(
         "Move [Add token to flowNodeId: {} with variables: {} ]",
         toFlowNodeId,
         toFlowNodeIdVariables);
@@ -279,7 +279,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     // 2. cancel
     final String fromFlowNodeId = modification.getFromFlowNodeId();
     final String fromFlowNodeInstanceKey = modification.getFromFlowNodeInstanceKey();
-    List<Long> flowNodeInstanceKeysToCancel;
+    final List<Long> flowNodeInstanceKeysToCancel;
     if (StringUtils.hasText(fromFlowNodeInstanceKey)) {
       final Long flowNodeInstanceKey = Long.parseLong(fromFlowNodeInstanceKey);
       flowNodeInstanceKeysToCancel = List.of(flowNodeInstanceKey);
@@ -293,7 +293,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
                 processInstanceKey, fromFlowNodeId));
       }
     }
-    logger.debug(
+    LOGGER.debug(
         "Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeysToCancel);
     return cancelFlowNodeInstances(nextStep.and(), flowNodeInstanceKeysToCancel);
   }

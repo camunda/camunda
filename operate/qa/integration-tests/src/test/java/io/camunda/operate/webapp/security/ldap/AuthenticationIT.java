@@ -95,23 +95,23 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @Test
   public void testLoginSuccess() {
-    ResponseEntity<?> response = login("fry", "fry");
+    final ResponseEntity<?> response = login("fry", "fry");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThatCookiesAndSecurityHeadersAreSet(response);
   }
 
   @Test
   public void testLoginFailed() {
-    ResponseEntity<?> response = login("amy", "dont-know");
+    final ResponseEntity<?> response = login("amy", "dont-know");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
   @Test
   public void testLogout() {
     // Given
-    ResponseEntity<?> response = login("fry", "fry");
+    final ResponseEntity<?> response = login("fry", "fry");
     // When
-    ResponseEntity<?> logoutResponse = logout(response);
+    final ResponseEntity<?> logoutResponse = logout(response);
     // Then
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThatCookiesAreDeleted(logoutResponse);
@@ -120,9 +120,9 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Test
   public void shouldReturnCurrentUser() {
     // given authenticated user
-    ResponseEntity<?> response = login("bender", "bender");
+    final ResponseEntity<?> response = login("bender", "bender");
     // when
-    UserDto userInfo = getCurrentUser(response);
+    final UserDto userInfo = getCurrentUser(response);
     // then
     assertThat(userInfo.getUserId()).isEqualTo("bender");
     assertThat(userInfo.getDisplayName()).isEqualTo("Bender");

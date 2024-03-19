@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchZeebeManager extends ZeebeContainerManager {
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchZeebeManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchZeebeManager.class);
 
   private final RestHighLevelClient zeebeEsClient;
 
@@ -43,7 +43,7 @@ public class ElasticsearchZeebeManager extends ZeebeContainerManager {
   }
 
   protected void updatePrefix() {
-    logger.info("Starting Zeebe with ELS prefix: " + prefix);
+    LOGGER.info("Starting Zeebe with ELS prefix: " + prefix);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
   }
 

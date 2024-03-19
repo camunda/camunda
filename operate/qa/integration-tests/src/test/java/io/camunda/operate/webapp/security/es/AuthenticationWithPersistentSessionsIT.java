@@ -118,7 +118,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @Before
   public void setUp() {
-    UserEntity user =
+    final UserEntity user =
         new UserEntity()
             .setUserId(USER_ID)
             .setPassword(encoder.encode(PASSWORD))
@@ -132,7 +132,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void shouldSetCookie() {
     // given
     // when
-    ResponseEntity<Void> response = login(USER_ID, PASSWORD);
+    final ResponseEntity<Void> response = login(USER_ID, PASSWORD);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -142,7 +142,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Test
   public void shouldFailWhileLogin() {
     // when
-    ResponseEntity<Void> response = login(USER_ID, String.format("%s%d", PASSWORD, 123));
+    final ResponseEntity<Void> response = login(USER_ID, String.format("%s%d", PASSWORD, 123));
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
@@ -152,13 +152,13 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Test
   public void shouldResetCookie() {
     // given
-    ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
+    final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThatCookiesAndSecurityHeadersAreSet(loginResponse);
     // when
-    ResponseEntity<?> logoutResponse = logout(loginResponse);
+    final ResponseEntity<?> logoutResponse = logout(loginResponse);
 
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThatCookiesAreDeleted(logoutResponse);
@@ -167,9 +167,9 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Test
   public void shouldReturnCurrentUser() {
     // given authenticated user
-    ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
+    final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
 
-    UserDto userDto = getCurrentUser(loginResponse);
+    final UserDto userDto = getCurrentUser(loginResponse);
     assertThat(userDto.getUserId()).isEqualTo(USER_ID);
     assertThat(userDto.getDisplayName()).isEqualTo(FIRSTNAME + " " + LASTNAME);
     assertThat(userDto.isCanLogout()).isTrue();
@@ -179,7 +179,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Test
   public void testEndpointsNotAccessibleAfterLogout() {
     // when user is logged in
-    ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
+    final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
 
     // then endpoint are accessible
     ResponseEntity<Object> responseEntity =
@@ -207,11 +207,12 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @Test
   public void testCanAccessMetricsEndpoint() {
-    ResponseEntity<String> response = testRestTemplate.getForEntity("/actuator", String.class);
+    final ResponseEntity<String> response =
+        testRestTemplate.getForEntity("/actuator", String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("actuator/info");
 
-    ResponseEntity<String> prometheusResponse =
+    final ResponseEntity<String> prometheusResponse =
         testRestTemplate.getForEntity("/actuator/prometheus", String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
@@ -224,9 +225,9 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"DEBUG\"");
 
-    HttpHeaders headers = new HttpHeaders();
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    HttpEntity<String> request =
+    final HttpEntity<String> request =
         new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
     response =
         testRestTemplate.postForEntity(

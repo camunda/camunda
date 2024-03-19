@@ -129,9 +129,13 @@ public class DecisionInstanceListQueryDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionInstanceListQueryDto that = (DecisionInstanceListQueryDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceListQueryDto that = (DecisionInstanceListQueryDto) o;
     return evaluated == that.evaluated
         && failed == that.failed
         && Objects.equals(decisionDefinitionIds, that.decisionDefinitionIds)

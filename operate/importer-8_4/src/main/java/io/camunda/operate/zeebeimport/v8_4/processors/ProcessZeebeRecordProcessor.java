@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(ProcessZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessZeebeRecordProcessor.class);
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
@@ -72,7 +72,7 @@ public class ProcessZeebeRecordProcessor {
   private void persistProcess(final Process process, final BatchRequest batchRequest)
       throws PersistenceException {
     final ProcessEntity processEntity = createEntity(process);
-    logger.debug(
+    LOGGER.debug(
         "Process: key {}, bpmnProcessId {}",
         processEntity.getKey(),
         processEntity.getBpmnProcessId());

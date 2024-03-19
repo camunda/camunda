@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessInstanceReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceReader.class);
 
   @Autowired protected ObjectMapper objectMapper;
   @Autowired private ListViewTemplate listViewTemplate;
@@ -99,7 +99,7 @@ public class ProcessInstanceReader {
   public ProcessInstanceCoreStatisticsDto getCoreStatistics() {
     final Map<String, Long> statistics;
     if (permissionsService != null) {
-      PermissionsService.ResourcesAllowed allowed =
+      final PermissionsService.ResourcesAllowed allowed =
           permissionsService.getProcessesWithPermission(IdentityPermission.READ);
       statistics =
           processStore.getCoreStatistics(
@@ -109,7 +109,7 @@ public class ProcessInstanceReader {
     }
     final Long runningCount = statistics.get("running");
     final Long incidentCount = statistics.get("incidents");
-    ProcessInstanceCoreStatisticsDto processInstanceCoreStatisticsDto =
+    final ProcessInstanceCoreStatisticsDto processInstanceCoreStatisticsDto =
         new ProcessInstanceCoreStatisticsDto()
             .setRunning(runningCount)
             .setActive(runningCount - incidentCount)

@@ -74,9 +74,13 @@ public class GetBackupStateResponseDetailDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    GetBackupStateResponseDetailDto that = (GetBackupStateResponseDetailDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final GetBackupStateResponseDetailDto that = (GetBackupStateResponseDetailDto) o;
     return Objects.equals(snapshotName, that.snapshotName)
         && Objects.equals(state, that.state)
         && Objects.equals(startTime, that.startTime)

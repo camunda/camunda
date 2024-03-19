@@ -57,7 +57,7 @@ public class JdkAuthenticationDefaultIT {
   public void shouldReturnConcatUrlForJdkAuth() {
     when(identityConfiguration.getIssuerBackendUrl()).thenReturn("http://localhost:1111");
 
-    String result =
+    final String result =
         (String)
             (ReflectionTestUtils.invokeGetterMethod(
                 identityOAuth2WebConfigurer, "getJwkSetUriProperty"));

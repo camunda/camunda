@@ -55,7 +55,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchListViewReader implements ListViewReader {
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchListViewReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchListViewReader.class);
 
   private final RichOpenSearchClient richOpenSearchClient;
 
@@ -114,7 +114,7 @@ public class OpensearchListViewReader implements ListViewReader {
                     term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
                     openSearchQueryHelper.createQueryFragment(processInstanceRequest.getQuery()))));
 
-    logger.debug("Process instance search request: \n{}", query);
+    LOGGER.debug("Process instance search request: \n{}", query);
 
     final var searchRequestBuilder = searchRequestBuilder(listViewTemplate, queryType).query(query);
 

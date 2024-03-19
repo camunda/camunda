@@ -38,12 +38,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
     matchIfMissing = true)
 public class ArchiverModuleConfiguration {
 
-  private static final Logger logger = LoggerFactory.getLogger(ArchiverModuleConfiguration.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverModuleConfiguration.class);
   @Autowired private OperateProperties operateProperties;
 
   @PostConstruct
   public void logModule() {
-    logger.info("Starting module: archiver");
+    LOGGER.info("Starting module: archiver");
   }
 
   @Bean("archiverThreadPoolExecutor")

@@ -60,7 +60,7 @@ public class BackupRestoreTest {
   public static final String VERSION = "SNAPSHOT";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
-  private static final Logger logger = LoggerFactory.getLogger(BackupRestoreTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
   private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
   @Autowired private OperateAPICaller operateAPICaller;
 
@@ -118,7 +118,7 @@ public class BackupRestoreTest {
                           RequestOptions.DEFAULT))
           .build()
           .retry();
-      logger.info("************ Operate indices deleted ************");
+      LOGGER.info("************ Operate indices deleted ************");
     } catch (IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred while removing Operate and Zeebe indices: " + e.getMessage(), e);
@@ -126,7 +126,7 @@ public class BackupRestoreTest {
   }
 
   private void createBackup() throws Exception {
-    TakeBackupResponseDto backupResponse = operateAPICaller.backup(BACKUP_ID);
+    final TakeBackupResponseDto backupResponse = operateAPICaller.backup(BACKUP_ID);
     snapshots = backupResponse.getScheduledSnapshots();
 
     RetryOperation.newBuilder()
@@ -135,13 +135,14 @@ public class BackupRestoreTest {
         .retryPredicate(result -> !(boolean) result)
         .retryConsumer(
             () -> {
-              GetBackupStateResponseDto backupState = operateAPICaller.getBackupState(BACKUP_ID);
+              final GetBackupStateResponseDto backupState =
+                  operateAPICaller.getBackupState(BACKUP_ID);
               assertThat(backupState.getState()).isIn(IN_PROGRESS, COMPLETED);
               return backupState.getState().equals(COMPLETED);
             })
         .build()
         .retry();
-    logger.info("************ Backup created ************");
+    LOGGER.info("************ Backup created ************");
   }
 
   private void startAllApps() throws IOException {
@@ -162,22 +163,22 @@ public class BackupRestoreTest {
     operateContainer =
         testContainerUtil
             .createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
-            .withLogConsumer(new Slf4jLogConsumer(logger));
+            .withLogConsumer(new Slf4jLogConsumer(LOGGER));
     operateContainer.withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
 
     startOperate();
   }
 
   private void startOperate() {
-    logger.info("************ Starting Operate ************");
+    LOGGER.info("************ Starting Operate ************");
     testContainerUtil.startOperateContainer(operateContainer, testContext);
-    logger.info("************ Operate started  ************");
+    LOGGER.info("************ Operate started  ************");
     testContext.setOperateRestClient(operateAPICaller.createRestTemplate(testContext));
   }
 
   private void stopOperate() {
     operateContainer.stop();
-    logger.info("************ Operate stopped  ************");
+    LOGGER.info("************ Operate stopped  ************");
   }
 
   private void restoreBackup() {
@@ -197,7 +198,7 @@ public class BackupRestoreTest {
                     "Exception occurred while restoring the backup: " + e.getMessage(), e);
               }
             });
-    logger.info("************ Backup restored ************");
+    LOGGER.info("************ Backup restored ************");
   }
 
   private void createSnapshotRepository(BackupRestoreTestContext testContext) throws IOException {

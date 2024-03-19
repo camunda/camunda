@@ -150,9 +150,13 @@ public class DecisionInstanceForListDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    DecisionInstanceForListDto that = (DecisionInstanceForListDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceForListDto that = (DecisionInstanceForListDto) o;
     return Objects.equals(id, that.id)
         && state == that.state
         && Objects.equals(decisionName, that.decisionName)

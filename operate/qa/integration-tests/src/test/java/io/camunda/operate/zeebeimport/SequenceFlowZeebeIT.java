@@ -41,8 +41,8 @@ public class SequenceFlowZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testSequenceFlowsAreLoaded() throws Exception {
     // having
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .sequenceFlowId("sf1")
@@ -63,7 +63,7 @@ public class SequenceFlowZeebeIT extends OperateZeebeAbstractIT {
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
 
     // when
-    List<SequenceFlowDto> sequenceFlows = getSequenceFlows(processInstanceKey);
+    final List<SequenceFlowDto> sequenceFlows = getSequenceFlows(processInstanceKey);
 
     assertThat(sequenceFlows)
         .extracting(SequenceFlowTemplate.ACTIVITY_ID)
@@ -71,7 +71,7 @@ public class SequenceFlowZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private List<SequenceFlowDto> getSequenceFlows(Long processInstanceKey) throws Exception {
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(get(getSequenceFlowURL(processInstanceKey)))
             .andExpect(status().isOk())

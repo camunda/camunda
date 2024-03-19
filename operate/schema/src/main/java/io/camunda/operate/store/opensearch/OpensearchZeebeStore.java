@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchZeebeStore implements ZeebeStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchZeebeStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchZeebeStore.class);
 
   @Autowired
   @Qualifier("zeebeOpensearchClient")
@@ -40,29 +40,29 @@ public class OpensearchZeebeStore implements ZeebeStore {
   @Override
   public void refreshIndex(String indexPattern) {
     try {
-      var response = openSearchClient.indices().refresh(r -> r.index(indexPattern));
+      final var response = openSearchClient.indices().refresh(r -> r.index(indexPattern));
       if (!response.shards().failures().isEmpty()) {
-        logger.warn("Unable to refresh indices: {}", indexPattern);
+        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
       }
     } catch (Exception ex) {
-      logger.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
     }
   }
 
   @Override
   public boolean zeebeIndicesExists(String indexPattern) {
     try {
-      var exists =
+      final var exists =
           openSearchClient
               .indices()
               .exists(r -> r.index(indexPattern).allowNoIndices(false).ignoreUnavailable(true))
               .value();
       if (exists) {
-        logger.debug("Data already exists in Zeebe.");
+        LOGGER.debug("Data already exists in Zeebe.");
       }
       return exists;
     } catch (IOException io) {
-      logger.debug(
+      LOGGER.debug(
           "Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.",
           io.getMessage());
       return false;

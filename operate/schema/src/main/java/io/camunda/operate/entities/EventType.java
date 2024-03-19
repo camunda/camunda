@@ -51,13 +51,13 @@ public enum EventType {
   MIGRATED,
   UNKNOWN;
 
-  private static final Logger logger = LoggerFactory.getLogger(EventType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(EventType.class);
 
   public static EventType fromZeebeIntent(String intent) {
     try {
       return EventType.valueOf(intent);
     } catch (IllegalArgumentException ex) {
-      logger.error("Event type not found for value [{}]. UNKNOWN type will be assigned.", intent);
+      LOGGER.error("Event type not found for value [{}]. UNKNOWN type will be assigned.", intent);
       return UNKNOWN;
     }
   }

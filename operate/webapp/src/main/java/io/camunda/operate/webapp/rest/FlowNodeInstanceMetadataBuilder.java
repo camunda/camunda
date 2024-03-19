@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FlowNodeInstanceMetadataBuilder {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceMetadataBuilder.class);
   private final DecisionInstanceReader decisionInstanceReader;
 
@@ -77,7 +77,7 @@ public class FlowNodeInstanceMetadataBuilder {
   public FlowNodeInstanceMetadata buildFrom(final FlowNodeInstanceEntity flowNodeInstance) {
     final FlowNodeType type = flowNodeInstance.getType();
     if (type == null) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "FlowNodeType for FlowNodeInstance with id %s is null", flowNodeInstance.getId()));
       return null;

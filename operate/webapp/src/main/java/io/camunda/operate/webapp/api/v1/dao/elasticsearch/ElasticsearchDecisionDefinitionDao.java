@@ -58,7 +58,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
 
   @Override
   public DecisionDefinition byKey(Long key) throws APIException {
-    List<DecisionDefinition> decisionDefinitions;
+    final List<DecisionDefinition> decisionDefinitions;
     try {
       decisionDefinitions =
           searchFor(new SearchSourceBuilder().query(termQuery(DecisionIndex.KEY, key)));
@@ -75,8 +75,8 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
           String.format("Found more than one decision definition for key %s", key));
     }
 
-    DecisionDefinition decisionDefinition = decisionDefinitions.get(0);
-    DecisionRequirements decisionRequirements =
+    final DecisionDefinition decisionDefinition = decisionDefinitions.get(0);
+    final DecisionRequirements decisionRequirements =
         decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
     decisionDefinition.setDecisionRequirementsName(decisionRequirements.getName());
     decisionDefinition.setDecisionRequirementsVersion(decisionRequirements.getVersion());
@@ -97,7 +97,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<DecisionDefinition> decisionDefinitions =
+        final List<DecisionDefinition> decisionDefinitions =
             ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, DecisionDefinition.class);
         populateDecisionRequirementsNameAndVersion(decisionDefinitions);
         return new Results<DecisionDefinition>()
@@ -128,7 +128,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
       final Query<DecisionDefinition> query, final SearchSourceBuilder searchSourceBuilder) {
     final DecisionDefinition filter = query.getFilter();
     if (filter != null) {
-      List<QueryBuilder> queryBuilders = new ArrayList<>();
+      final List<QueryBuilder> queryBuilders = new ArrayList<>();
       queryBuilders.add(buildTermQuery(DecisionDefinition.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(DecisionDefinition.KEY, filter.getKey()));
       queryBuilders.add(buildTermQuery(DecisionDefinition.DECISION_ID, filter.getDecisionId()));
@@ -159,23 +159,23 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
   private QueryBuilder buildFilteringBy(
       String decisionRequirementsName, Integer decisionRequirementsVersion) {
 
-    List<QueryBuilder> queryBuilders = new ArrayList<>();
+    final List<QueryBuilder> queryBuilders = new ArrayList<>();
     queryBuilders.add(buildTermQuery(DecisionRequirementsIndex.NAME, decisionRequirementsName));
     queryBuilders.add(
         buildTermQuery(DecisionRequirementsIndex.VERSION, decisionRequirementsVersion));
 
-    QueryBuilder query =
+    final QueryBuilder query =
         ElasticsearchUtil.joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {}));
     if (query == null) {
       return null;
     }
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).fetchSource(DecisionRequirementsIndex.KEY, null);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(decisionRequirementsIndex.getAlias()).source(searchSourceBuilder);
     try {
-      List<DecisionRequirements> decisionRequirements =
+      final List<DecisionRequirements> decisionRequirements =
           tenantAwareClient.search(
               searchRequest,
               () -> {
@@ -202,19 +202,19 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
    */
   private void populateDecisionRequirementsNameAndVersion(
       List<DecisionDefinition> decisionDefinitions) {
-    Set<Long> decisionRequirementsKeys =
+    final Set<Long> decisionRequirementsKeys =
         decisionDefinitions.stream()
             .map(DecisionDefinition::getDecisionRequirementsKey)
             .collect(Collectors.toSet());
-    List<DecisionRequirements> decisionRequirements =
+    final List<DecisionRequirements> decisionRequirements =
         decisionRequirementsDao.byKeys(decisionRequirementsKeys);
 
-    Map<Long, DecisionRequirements> decisionReqMap = new HashMap<>();
+    final Map<Long, DecisionRequirements> decisionReqMap = new HashMap<>();
     decisionRequirements.forEach(
         decisionReq -> decisionReqMap.put(decisionReq.getKey(), decisionReq));
     decisionDefinitions.forEach(
         decisionDef -> {
-          DecisionRequirements decisionReq =
+          final DecisionRequirements decisionReq =
               (decisionDef.getDecisionRequirementsKey() == null)
                   ? null
                   : decisionReqMap.get(decisionDef.getDecisionRequirementsKey());

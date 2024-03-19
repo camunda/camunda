@@ -106,7 +106,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       Class<R> clazz,
       boolean retry)
       throws IOException {
-    var request = searchRequestBuilder.scroll(time(SCROLL_KEEP_ALIVE_MS)).build();
+    final var request = searchRequestBuilder.scroll(time(SCROLL_KEEP_ALIVE_MS)).build();
 
     return retry
         ? executeWithRetries(() -> scrollWith(request, hitsConsumer, hitsMetadataConsumer, clazz))
@@ -123,7 +123,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
     try {
       SearchResponse<R> response = openSearchClient.search(request, clazz);
-      var aggregates = response.aggregations();
+      final var aggregates = response.aggregations();
 
       if (hitsMetadataConsumer != null) {
         hitsMetadataConsumer.accept(response.hits());
@@ -174,7 +174,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   private <R> AggregatedResult<R> scroll(
       SearchRequest.Builder searchRequestBuilder, Class<R> clazz, boolean retry)
       throws IOException {
-    var result = scrollHits(searchRequestBuilder, clazz, retry);
+    final var result = scrollHits(searchRequestBuilder, clazz, retry);
     return new AggregatedResult<>(
         result.values().stream().map(Hit::source).toList(), result.aggregates());
   }
@@ -182,7 +182,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public <R> AggregatedResult<Hit<R>> scrollHits(
       SearchRequest.Builder searchRequestBuilder, Class<R> clazz) throws IOException {
     final List<Hit<R>> result = new ArrayList<>();
-    var aggregates = unsafeScrollWith(searchRequestBuilder, result::addAll, null, clazz, false);
+    final var aggregates =
+        unsafeScrollWith(searchRequestBuilder, result::addAll, null, clazz, false);
     return new AggregatedResult<>(result, aggregates);
   }
 
@@ -190,7 +191,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       SearchRequest.Builder searchRequestBuilder, Class<R> clazz, boolean retry)
       throws IOException {
     final List<Hit<R>> result = new ArrayList<>();
-    var aggregates = unsafeScrollWith(searchRequestBuilder, result::addAll, null, clazz, retry);
+    final var aggregates =
+        unsafeScrollWith(searchRequestBuilder, result::addAll, null, clazz, retry);
     return new AggregatedResult<>(result, aggregates);
   }
 
@@ -234,7 +236,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   private <R> SearchResponse<R> unsafeSearch(SearchRequest request, Class<R> entityClass)
       throws IOException {
-    var response = openSearchClient.search(request, entityClass);
+    final var response = openSearchClient.search(request, entityClass);
     checkFailedShards(request, response);
     return response;
   }
@@ -245,7 +247,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public <R> SearchResponse<R> search(
       SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
-    var request = requestBuilder.build();
+    final var request = requestBuilder.build();
     return retry
         ? executeWithRetries(() -> unsafeSearch(request, entityClass))
         : safe(
@@ -291,10 +293,10 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public Map<String, String> getIndexNames(String index, Collection<String> ids) {
     final Map<String, String> result = new HashMap<>();
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         new SearchRequest.Builder().index(index).query(ids(ids)).source(s -> s.fetch(false));
 
-    Consumer<List<Hit<Void>>> hitsConsumer =
+    final Consumer<List<Hit<Void>>> hitsConsumer =
         hits -> hits.forEach(hit -> result.put(hit.id(), hit.index()));
 
     safeScrollWith(searchRequestBuilder, Void.class, hitsConsumer);
@@ -320,7 +322,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public DeleteResponse delete(String index, String id) {
-    var deleteRequestBuilder = new DeleteRequest.Builder().index(index).id(id);
+    final var deleteRequestBuilder = new DeleteRequest.Builder().index(index).id(id);
 
     return safe(
         () -> openSearchClient.delete(deleteRequestBuilder.build()),
@@ -328,7 +330,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public DeleteByQueryResponse delete(String index, String field, String value) {
-    var deleteRequestBuilder =
+    final var deleteRequestBuilder =
         new DeleteByQueryRequest.Builder().index(index).query(term(field, value));
 
     return safe(
@@ -397,7 +399,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public Map<String, Object> searchAsMap(SearchRequest.Builder requestBuilder) {
-    var request = requestBuilder.size(0).build();
+    final var request = requestBuilder.size(0).build();
     if (openSearchClient instanceof ExtendedOpenSearchClient extendedOpenSearchClient) {
       return safe(
           () -> extendedOpenSearchClient.searchAsMap(request),

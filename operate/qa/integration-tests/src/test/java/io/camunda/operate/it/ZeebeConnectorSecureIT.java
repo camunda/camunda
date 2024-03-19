@@ -87,7 +87,8 @@ public class ZeebeConnectorSecureIT {
                 .setSecure(true)
                 .setCertificatePath(certsDir.getFilesystemPath() + "/" + CERTIFICATE_FILE));
     // when
-    List<BrokerInfo> brokerInfos = zeebeClient.newTopologyRequest().send().join().getBrokers();
+    final List<BrokerInfo> brokerInfos =
+        zeebeClient.newTopologyRequest().send().join().getBrokers();
     // then
     assertThat(brokerInfos).isNotEmpty();
   }

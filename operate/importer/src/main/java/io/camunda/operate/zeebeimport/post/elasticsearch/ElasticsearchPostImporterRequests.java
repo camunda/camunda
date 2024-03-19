@@ -69,7 +69,7 @@ public class ElasticsearchPostImporterRequests {
   public boolean execute(RestHighLevelClient esClient, OperateProperties operateProperties)
       throws PersistenceException {
 
-    BulkRequest bulkRequest = new BulkRequest();
+    final BulkRequest bulkRequest = new BulkRequest();
 
     listViewRequests.values().stream().forEach(bulkRequest::add);
     flowNodeInstanceRequests.values().stream().forEach(bulkRequest::add);

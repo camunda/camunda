@@ -67,8 +67,8 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testVariablesLoaded() throws Exception {
     // having
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask("task1")
@@ -285,7 +285,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
   public void testVariablesPagesWithAfterBeforeOrEqual() throws Exception {
     // given
     final String bpmnProcessId = "testProcess";
-    StringBuffer vars = new StringBuffer("{");
+    final StringBuffer vars = new StringBuffer("{");
     for (int i = 0; i < 10; i++) {
       if (vars.length() > 1) {
         vars.append(",\n");
@@ -381,7 +381,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     // given
     final int size = operateProperties.getImporter().getVariableSizeThreshold();
     final String bpmnProcessId = "testProcess";
-    String vars = createBigVarsWithSuffix(size);
+    final String vars = createBigVarsWithSuffix(size);
     final String flowNodeId = "taskA";
     final Long processInstanceKey =
         tester
@@ -392,7 +392,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
             .getProcessInstanceKey();
 
     // when requesting list of variables
-    List<VariableDto> variables =
+    final List<VariableDto> variables =
         getVariables(
             processInstanceKey,
             new VariableRequestDto()
@@ -400,11 +400,11 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
                 .setPageSize(10));
 
     // then "value" contains truncated value
-    Condition<String> suffix = new Condition<>(s -> s.contains(VAR_SUFFIX), "contains");
-    Condition<String> length = new Condition<>(s -> s.length() == size, "length");
+    final Condition<String> suffix = new Condition<>(s -> s.contains(VAR_SUFFIX), "contains");
+    final Condition<String> length = new Condition<>(s -> s.length() == size, "length");
     assertThat(variables).extracting(VariableDto::getValue).areNot(suffix).are(length);
     assertThat(variables).extracting(VariableDto::getIsPreview).containsOnly(true);
-    String variableId = variables.get(0).getId();
+    final String variableId = variables.get(0).getId();
 
     // when requesting one variable
     final VariableDto variable = getOneVariable(processInstanceKey, variableId);
@@ -419,7 +419,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     // given
     final int size = operateProperties.getImporter().getVariableSizeThreshold();
     final String bpmnProcessId = "testProcess";
-    String vars = createBigVarsWithSuffix(size);
+    final String vars = createBigVarsWithSuffix(size);
     final String flowNodeId = "taskA";
     final Long processInstanceKey =
         tester
@@ -440,7 +440,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
         operationsByProcessInstanceAreCompleted, processInstanceKey);
 
     // when one variable is requested
-    VariableDto variable =
+    final VariableDto variable =
         getOneVariable(processInstanceKey, String.format("%d-%s", processInstanceKey, varName));
 
     // then variable with new small value is returned
@@ -448,7 +448,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     assertThat(variable.getIsPreview()).isFalse();
 
     // when get list of variables
-    List<VariableDto> variables = getVariables(processInstanceKey);
+    final List<VariableDto> variables = getVariables(processInstanceKey);
 
     // then new value is returned
     final Optional<VariableDto> var =
@@ -463,7 +463,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     // given
     final int size = operateProperties.getImporter().getVariableSizeThreshold();
     final String bpmnProcessId = "testProcess";
-    String vars = createBigVarsWithSuffix(size);
+    final String vars = createBigVarsWithSuffix(size);
     final String flowNodeId = "taskA";
     final Long processInstanceKey =
         tester
@@ -483,7 +483,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     searchTestRule.refreshOperateSearchIndices();
 
     // then variable with new value is returned
-    List<VariableDto> variables = getVariables(processInstanceKey);
+    final List<VariableDto> variables = getVariables(processInstanceKey);
 
     // then "value" contains truncated value
     assertThat(variables)
@@ -496,7 +496,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testVariablesRequestFailOnEmptyScopeId() throws Exception {
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(
                 post(getVariablesURL(0L))
@@ -517,7 +517,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected List<VariableDto> getVariables(Long processInstanceKey) throws Exception {
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(
                 post(getVariablesURL(processInstanceKey))
@@ -537,7 +537,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     final List<FlowNodeInstanceEntity> allActivityInstances =
         tester.getAllFlowNodeInstances(processInstanceKey);
     final Long task1Id = findActivityInstanceId(allActivityInstances, activityId);
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(
                 post(getVariablesURL(processInstanceKey))
@@ -553,7 +553,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
 
   protected List<VariableDto> getVariables(Long processInstanceKey, VariableRequestDto request)
       throws Exception {
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(
                 post(getVariablesURL(processInstanceKey))
@@ -567,7 +567,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
 
   protected VariableDto getOneVariable(Long processInstanceKey, String variableId)
       throws Exception {
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(get(getVariableURL(processInstanceKey, variableId)))
             .andExpect(status().isOk())

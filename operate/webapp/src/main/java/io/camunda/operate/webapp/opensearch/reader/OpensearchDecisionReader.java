@@ -49,7 +49,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchDecisionReader implements DecisionReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchDecisionReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchDecisionReader.class);
 
   @Autowired private DecisionIndex decisionIndex;
 
@@ -64,23 +64,23 @@ public class OpensearchDecisionReader implements DecisionReader {
 
   @Override
   public String getDiagram(Long decisionDefinitionKey) {
-    record decisionRequirementsIdRecord(Long decisionRequirementsKey) {}
-    var request =
+    record DecisionRequirementsIdRecord(Long decisionRequirementsKey) {}
+    final var request =
         searchRequestBuilder(decisionIndex.getAlias())
             .query(withTenantCheck(ids(decisionDefinitionKey.toString())));
-    var hits =
-        richOpenSearchClient.doc().search(request, decisionRequirementsIdRecord.class).hits();
+    final var hits =
+        richOpenSearchClient.doc().search(request, DecisionRequirementsIdRecord.class).hits();
     if (hits.total().value() == 0) {
       throw new NotFoundException("No decision definition found for id " + decisionDefinitionKey);
     }
-    var decisionRequirementsId = hits.hits().get(0).source().decisionRequirementsKey;
+    final var decisionRequirementsId = hits.hits().get(0).source().decisionRequirementsKey;
 
-    var xmlRequest =
+    final var xmlRequest =
         searchRequestBuilder(decisionRequirementsIndex.getAlias())
             .query(withTenantCheck(ids(decisionRequirementsId.toString())))
             .source(sourceInclude(DecisionRequirementsIndex.XML));
-    record xmlRecord(String xml) {}
-    var xmlHits = richOpenSearchClient.doc().search(xmlRequest, xmlRecord.class).hits();
+    record XmlRecord(String xml) {}
+    final var xmlHits = richOpenSearchClient.doc().search(xmlRequest, XmlRecord.class).hits();
     if (xmlHits.total().value() == 1) {
       return xmlHits.hits().get(0).source().xml;
     } else if (hits.total().value() > 1) {
@@ -94,10 +94,11 @@ public class OpensearchDecisionReader implements DecisionReader {
 
   @Override
   public DecisionDefinitionEntity getDecision(Long decisionDefinitionKey) {
-    var request =
+    final var request =
         searchRequestBuilder(decisionIndex.getAlias())
             .query(withTenantCheck(term(DecisionIndex.KEY, decisionDefinitionKey)));
-    var hits = richOpenSearchClient.doc().search(request, DecisionDefinitionEntity.class).hits();
+    final var hits =
+        richOpenSearchClient.doc().search(request, DecisionDefinitionEntity.class).hits();
     if (hits.total().value() == 1) {
       return hits.hits().get(0).source();
     } else if (hits.total().value() > 1) {
@@ -112,10 +113,10 @@ public class OpensearchDecisionReader implements DecisionReader {
   @Override
   public Map<String, List<DecisionDefinitionEntity>> getDecisionsGrouped(
       DecisionRequestDto request) {
-    var tenantsGroupsAggName = "group_by_tenantId";
-    var groupsAggName = "group_by_decisionId";
-    var decisionsAggName = "decisions";
-    var sourceFields =
+    final var tenantsGroupsAggName = "group_by_tenantId";
+    final var groupsAggName = "group_by_decisionId";
+    final var decisionsAggName = "decisions";
+    final var sourceFields =
         List.of(
             DecisionIndex.ID,
             DecisionIndex.NAME,
@@ -123,7 +124,7 @@ public class OpensearchDecisionReader implements DecisionReader {
             DecisionIndex.DECISION_ID,
             DecisionIndex.TENANT_ID);
 
-    var aggregationsRequest =
+    final var aggregationsRequest =
         searchRequestBuilder(decisionIndex.getAlias())
             .query(withTenantCheck(buildQuery(request.getTenantId())))
             .size(0)
@@ -143,8 +144,8 @@ public class OpensearchDecisionReader implements DecisionReader {
                                         sortOptions(DecisionIndex.VERSION, SortOrder.Desc))
                                     ._toAggregation())))));
 
-    Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
-    var response = richOpenSearchClient.doc().search(aggregationsRequest, Object.class);
+    final Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
+    final var response = richOpenSearchClient.doc().search(aggregationsRequest, Object.class);
 
     response
         .aggregations()
@@ -162,8 +163,8 @@ public class OpensearchDecisionReader implements DecisionReader {
                     .array()
                     .forEach(
                         decisionIdBucket -> {
-                          String key = tenantBucket.key() + "_" + decisionIdBucket.key();
-                          List<DecisionDefinitionEntity> value =
+                          final String key = tenantBucket.key() + "_" + decisionIdBucket.key();
+                          final List<DecisionDefinitionEntity> value =
                               decisionIdBucket
                                   .aggregations()
                                   .get(decisionsAggName)
@@ -182,7 +183,7 @@ public class OpensearchDecisionReader implements DecisionReader {
   private Query buildQuery(String tenantId) {
     Query decisionIdQuery = null;
     if (permissionsService != null) {
-      var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+      final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
       if (allowed != null && !allowed.isAll()) {
         decisionIdQuery = stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());
       }
@@ -191,7 +192,7 @@ public class OpensearchDecisionReader implements DecisionReader {
     if (operateProperties.getMultiTenancy().isEnabled()) {
       tenantIdQuery = tenantId != null ? term(DecisionIndex.TENANT_ID, tenantId) : null;
     }
-    var query = and(decisionIdQuery, tenantIdQuery);
+    final var query = and(decisionIdQuery, tenantIdQuery);
     return query == null ? matchAll() : query;
   }
 }

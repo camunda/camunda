@@ -87,7 +87,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnProcessDefinitions() {
-    Results<ProcessDefinition> processDefinitionResults = dao.search(new Query<>());
+    final Results<ProcessDefinition> processDefinitionResults = dao.search(new Query<>());
 
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
     assertThat(processDefinitionResults.getItems())
@@ -97,7 +97,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnWhenByKey() {
-    ProcessDefinition processDefinition = dao.byKey(2251799813685249L);
+    final ProcessDefinition processDefinition = dao.byKey(2251799813685249L);
 
     assertThat(processDefinition.getBpmnProcessId()).isEqualTo("demoProcess");
     assertThat(processDefinition.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
@@ -110,7 +110,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnWhenXmlByKey() {
-    String processDefinitionAsXml = dao.xmlByKey(2251799813685249L);
+    final String processDefinitionAsXml = dao.xmlByKey(2251799813685249L);
 
     assertThat(processDefinitionAsXml).contains("demoProcess");
 
@@ -134,7 +134,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterProcessDefinitions() {
-    Results<ProcessDefinition> processDefinitionResults =
+    final Results<ProcessDefinition> processDefinitionResults =
         dao.search(
             new Query<ProcessDefinition>()
                 .setFilter(new ProcessDefinition().setBpmnProcessId("demoProcess")));
@@ -145,7 +145,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortProcessDefinitionsDesc() {
-    Results<ProcessDefinition> processDefinitionResults =
+    final Results<ProcessDefinition> processDefinitionResults =
         dao.search(
             new Query<ProcessDefinition>()
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC)));
@@ -158,7 +158,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortProcessDefinitionsAsc() {
-    Results<ProcessDefinition> processDefinitionResults =
+    final Results<ProcessDefinition> processDefinitionResults =
         dao.search(
             new Query<ProcessDefinition>()
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.ASC)));
@@ -184,7 +184,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
         .extracting(BPMN_PROCESS_ID)
         .containsExactly("errorProcess", "demoProcess");
 
-    Object[] searchAfter = processDefinitionResults.getSortValues();
+    final Object[] searchAfter = processDefinitionResults.getSortValues();
     assertThat(processDefinitionResults.getItems().get(1).getBpmnProcessId())
         .isEqualTo(searchAfter[0].toString());
 

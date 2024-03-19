@@ -77,7 +77,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
-  protected static final Logger logger = LoggerFactory.getLogger(OpensearchTestRuleProvider.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(OpensearchTestRuleProvider.class);
 
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
 
@@ -126,7 +126,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void finished(Description description) {
     TestUtil.removeIlmPolicy(richOpenSearchClient);
-    String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    final String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
     TestUtil.removeAllIndices(
         richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
     operateProperties
@@ -155,7 +155,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
           .indices()
           .refresh(r -> r.index(operateProperties.getZeebeOpensearch().getPrefix() + "*"));
     } catch (Exception t) {
-      logger.error("Could not refresh Zeebe Opensearch indices", t);
+      LOGGER.error("Could not refresh Zeebe Opensearch indices", t);
     }
   }
 
@@ -167,7 +167,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
           .refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
       Thread.sleep(3000); // TODO: Find a way to wait for refresh completion
     } catch (Exception t) {
-      logger.error("Could not refresh Operate Opensearch indices", t);
+      LOGGER.error("Could not refresh Operate Opensearch indices", t);
     }
   }
 
@@ -228,9 +228,10 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       Predicate<Object[]> predicate,
       Supplier<Object> supplier,
       Object... arguments) {
-    int waitingRound = 0, maxRounds = maxWaitingRounds;
+    int waitingRound = 0;
+    final int maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
-    long start = System.currentTimeMillis();
+    final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       testImportListener.resetCounters();
       try {
@@ -245,7 +246,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
         }
 
       } catch (Exception e) {
-        logger.error(e.getMessage(), e);
+        LOGGER.error(e.getMessage(), e);
       }
       int waitForImports = 0;
       // Wait for imports max 30 sec (60 * 500 ms)
@@ -263,9 +264,9 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
         } catch (Exception e) {
           waitingRound = 0;
           testImportListener.resetCounters();
-          logger.error(e.getMessage(), e);
+          LOGGER.error(e.getMessage(), e);
         }
-        logger.debug(
+        LOGGER.debug(
             " {} of {} imports processed",
             testImportListener.getImportedCount(),
             testImportListener.getScheduledCount());
@@ -277,12 +278,12 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
         waitingRound++;
       }
     }
-    long finishedTime = System.currentTimeMillis() - start;
+    final long finishedTime = System.currentTimeMillis() - start;
 
     if (found) {
-      logger.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
+      LOGGER.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
     } else {
-      logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
+      LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
       //      throw new TestPrerequisitesFailedException("Conditions not met.");
     }
   }
@@ -309,7 +310,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       try {
         areCreated = areIndicesCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
-        logger.error(
+        LOGGER.error(
             "Opensearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
             checks,
@@ -317,7 +318,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
         sleepFor(200);
       }
     }
-    logger.debug("Opensearch indices are created after {} checks", checks);
+    LOGGER.debug("Opensearch indices are created after {} checks", checks);
     return areCreated;
   }
 
@@ -331,7 +332,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     try {
       persistOperateEntitiesNew(Arrays.asList(entitiesToPersist));
     } catch (PersistenceException e) {
-      logger.error("Unable to persist entities: " + e.getMessage(), e);
+      LOGGER.error("Unable to persist entities: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }
     refreshSearchIndices();
@@ -339,9 +340,9 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
       throws PersistenceException {
-    var batchRequest = richOpenSearchClient.batch().newBatchRequest();
+    final var batchRequest = richOpenSearchClient.batch().newBatchRequest();
 
-    for (OperateEntity entity : operateEntities) {
+    for (final OperateEntity entity : operateEntities) {
       final String alias = getEntityToAliasMap().get(entity.getClass());
       if (alias == null) {
         throw new RuntimeException("Index not configured for " + entity.getClass().getName());
@@ -387,7 +388,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     try {
       return richOpenSearchClient.cluster().totalOpenContexts();
     } catch (Exception e) {
-      logger.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
+      LOGGER.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
       return 0;
     }
   }
@@ -402,15 +403,15 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   private boolean areIndicesCreated(String indexPrefix, int minCountOfIndices) throws IOException {
-    var indexRequestBuilder =
+    final var indexRequestBuilder =
         getIndexRequestBuilder(indexPrefix + "*")
             .ignoreUnavailable(true)
             .allowNoIndices(false)
             .expandWildcards(ExpandWildcard.Open);
 
-    GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
+    final GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
 
-    var result = response.result();
+    final var result = response.result();
     return result.size() >= minCountOfIndices;
   }
 }

@@ -58,8 +58,8 @@ public class BatchOperationPerformanceIT {
 
   public static final long ZEEBE_RESPONSE_TIME = 300L;
   protected static final String USERNAME = "testuser";
-  private static final Logger logger = LoggerFactory.getLogger(BatchOperationPerformanceIT.class);
-  private static long TEST_TIMEOUT_SECONDS = 60 * 60; // 1 hour
+  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationPerformanceIT.class);
+  private static final long TEST_TIMEOUT_SECONDS = 60 * 60; // 1 hour
   @Autowired private OperateProperties operateProperties;
   @Autowired private BatchOperationWriter batchOperationWriter;
   @Autowired private RestHighLevelClient esClient;
@@ -72,7 +72,7 @@ public class BatchOperationPerformanceIT {
 
   @Before
   public void setup() {
-    Answer answerWithDelay =
+    final Answer answerWithDelay =
         invocation -> {
           sleepFor(ZEEBE_RESPONSE_TIME);
           return null;
@@ -94,9 +94,10 @@ public class BatchOperationPerformanceIT {
   }
 
   private void createResolveIncidentOperations() {
-    CreateBatchOperationRequestDto resolveIncidentRequest = new CreateBatchOperationRequestDto();
+    final CreateBatchOperationRequestDto resolveIncidentRequest =
+        new CreateBatchOperationRequestDto();
     resolveIncidentRequest.setOperationType(OperationType.RESOLVE_INCIDENT);
-    ListViewQueryDto queryForResolveIncident = new ListViewQueryDto();
+    final ListViewQueryDto queryForResolveIncident = new ListViewQueryDto();
     queryForResolveIncident.setRunning(true);
     queryForResolveIncident.setIncidents(true);
     queryForResolveIncident.setProcessIds(
@@ -104,15 +105,15 @@ public class BatchOperationPerformanceIT {
     resolveIncidentRequest.setQuery(queryForResolveIncident);
     final BatchOperationEntity batchOperationEntity =
         batchOperationWriter.scheduleBatchOperation(resolveIncidentRequest);
-    logger.info(
+    LOGGER.info(
         "RESOLVE_INCIDENT operations scheduled: {}",
         batchOperationEntity.getOperationsTotalCount());
   }
 
   private void createCancelOperations() {
-    CreateBatchOperationRequestDto cancelRequest = new CreateBatchOperationRequestDto();
+    final CreateBatchOperationRequestDto cancelRequest = new CreateBatchOperationRequestDto();
     cancelRequest.setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
-    ListViewQueryDto queryForCancel = new ListViewQueryDto();
+    final ListViewQueryDto queryForCancel = new ListViewQueryDto();
     queryForCancel.setRunning(true);
     queryForCancel.setActive(true);
     queryForCancel.setProcessIds(
@@ -120,14 +121,15 @@ public class BatchOperationPerformanceIT {
     cancelRequest.setQuery(queryForCancel);
     final BatchOperationEntity batchOperationEntity =
         batchOperationWriter.scheduleBatchOperation(cancelRequest);
-    logger.info(
+    LOGGER.info(
         "CANCEL_PROCESS_INSTANCE operations scheduled: {}",
         batchOperationEntity.getOperationsTotalCount());
   }
 
   @Test
   public void test() {
-    BenchmarkingExecutionFinishedListener listener = new BenchmarkingExecutionFinishedListener();
+    final BenchmarkingExecutionFinishedListener listener =
+        new BenchmarkingExecutionFinishedListener();
     operationExecutor.registerListener(listener);
 
     final Instant start = Instant.now();
@@ -145,7 +147,7 @@ public class BatchOperationPerformanceIT {
         "%s-%s-*_alias", operateProperties.getElasticsearch().getIndexPrefix(), indexName);
   }
 
-  private class BenchmarkingExecutionFinishedListener implements ExecutionFinishedListener {
+  private final class BenchmarkingExecutionFinishedListener implements ExecutionFinishedListener {
 
     private Instant operationExecutionStart = Instant.now();
 
@@ -157,10 +159,10 @@ public class BatchOperationPerformanceIT {
 
     @Override
     public void onExecutionFinished() {
-      Instant operationExecutionEnd = Instant.now();
-      long timeElapsed =
+      final Instant operationExecutionEnd = Instant.now();
+      final long timeElapsed =
           Duration.between(operationExecutionStart, operationExecutionEnd).getSeconds();
-      logger.info("Batch operation execution finished in {} s", timeElapsed);
+      LOGGER.info("Batch operation execution finished in {} s", timeElapsed);
       assertThat(timeElapsed).isLessThan(TEST_TIMEOUT_SECONDS);
       finished = true;
     }

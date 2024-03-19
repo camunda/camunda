@@ -60,9 +60,13 @@ public class ClusterMetadata implements Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ClusterMetadata that = (ClusterMetadata) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ClusterMetadata that = (ClusterMetadata) o;
     return Objects.equals(uuid, that.uuid)
         && Objects.equals(name, that.name)
         && Objects.equals(urls, that.urls);

@@ -105,7 +105,7 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern) {
-    IndexSettings indexSettings =
+    final IndexSettings indexSettings =
         new IndexSettings.Builder()
             .refreshInterval(ri -> ri.time(((String) settings.get(REFRESH_INTERVAL))))
             .numberOfReplicas(String.valueOf(settings.get(NUMBERS_OF_REPLICA)))
@@ -170,12 +170,12 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
-    IndexSettings indexSettings =
+    final IndexSettings indexSettings =
         richOpenSearchClient.index().getIndexSettingsWithRetries(indexName);
-    var result = new HashMap<String, String>();
+    final var result = new HashMap<String, String>();
     for (String field : fields) {
       if (field.equals(REFRESH_INTERVAL)) {
-        var refreshInterval = indexSettings.refreshInterval();
+        final var refreshInterval = indexSettings.refreshInterval();
         result.put(REFRESH_INTERVAL, refreshInterval != null ? refreshInterval.time() : null);
       }
       if (field.equals(NUMBERS_OF_REPLICA)) {
@@ -220,11 +220,11 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   private IndexSettings getIndexSettings(String indexName) {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
-    var shards =
+    final var shards =
         osConfig
             .getNumberOfShardsForIndices()
             .getOrDefault(indexName, osConfig.getNumberOfShards());
-    var replicas =
+    final var replicas =
         osConfig
             .getNumberOfReplicasForIndices()
             .getOrDefault(indexName, osConfig.getNumberOfReplicas());
@@ -245,20 +245,20 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   private IndexSettings templateSettings(final TemplateDescriptor templateDescriptor) {
-    var shards =
+    final var shards =
         operateProperties
             .getOpensearch()
             .getNumberOfShardsForIndices()
             .get(templateDescriptor.getIndexName());
 
-    var replicas =
+    final var replicas =
         operateProperties
             .getOpensearch()
             .getNumberOfReplicasForIndices()
             .get(templateDescriptor.getIndexName());
 
     if (shards != null || replicas != null) {
-      var indexSettingsBuilder = new IndexSettings.Builder();
+      final var indexSettingsBuilder = new IndexSettings.Builder();
 
       if (shards != null) {
         indexSettingsBuilder.numberOfShards(shards.toString());
@@ -275,8 +275,8 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
-    var templateSettings = templateSettings(templateDescriptor);
-    var templateBuilder =
+    final var templateSettings = templateSettings(templateDescriptor);
+    final var templateBuilder =
         new IndexTemplateMapping.Builder()
             .aliases(templateDescriptor.getAlias(), new Alias.Builder().build());
 
@@ -301,7 +301,7 @@ public class OpensearchSchemaManager implements SchemaManager {
     try {
       final InputStream description =
           OpensearchSchemaManager.class.getResourceAsStream(templateFileName);
-      var request =
+      final var request =
           createIndexFromJson(
               StreamUtils.copyToString(description, Charset.defaultCharset()),
               templateDescriptor.getFullQualifiedName(),
@@ -338,7 +338,7 @@ public class OpensearchSchemaManager implements SchemaManager {
           format(SCHEMA_OPENSEARCH_CREATE_INDEX_JSON, indexDescriptor.getIndexName());
       final InputStream description =
           OpensearchSchemaManager.class.getResourceAsStream(indexFilename);
-      var request =
+      final var request =
           createIndexFromJson(
               StreamUtils.copyToString(description, Charset.defaultCharset()),
               indexDescriptor.getFullQualifiedName(),
@@ -355,10 +355,10 @@ public class OpensearchSchemaManager implements SchemaManager {
   private CreateIndexRequest createIndexFromJson(
       String json, String indexName, Map<String, Alias> aliases, IndexSettings settings) {
     try {
-      var indexAsJSONNode = objectMapper.readTree(new StringReader(json));
+      final var indexAsJSONNode = objectMapper.readTree(new StringReader(json));
 
-      var customSettings = getCustomSettings(settings, indexAsJSONNode);
-      var mappings = getMappings(indexAsJSONNode.get(MAPPINGS));
+      final var customSettings = getCustomSettings(settings, indexAsJSONNode);
+      final var mappings = getMappings(indexAsJSONNode.get(MAPPINGS));
 
       return new CreateIndexRequest.Builder()
           .index(indexName)
@@ -372,17 +372,17 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   private TypeMapping getMappings(JsonNode mappingsAsJSON) {
-    JsonParser jsonParser =
+    final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
     return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
   }
 
   private IndexSettings getCustomSettings(IndexSettings defaultSettings, JsonNode indexAsJSONNode) {
     if (indexAsJSONNode.has(SETTINGS)) {
-      var settingsJSON = indexAsJSONNode.get(SETTINGS);
-      JsonParser jsonParser =
+      final var settingsJSON = indexAsJSONNode.get(SETTINGS);
+      final JsonParser jsonParser =
           JsonProvider.provider().createParser(new StringReader(settingsJSON.toPrettyString()));
-      var updatedSettings = IndexSettings._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
+      final var updatedSettings = IndexSettings._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
       return new IndexSettings.Builder()
           .index(defaultSettings)
           .analysis(updatedSettings.analysis())
@@ -408,10 +408,10 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   private String loadIsmPolicy() throws IOException {
-    var policyFilename =
+    final var policyFilename =
         format(SCHEMA_OPENSEARCH_CREATE_POLICY_JSON, OPERATE_DELETE_ARCHIVED_INDICES);
-    var inputStream = OpensearchSchemaManager.class.getResourceAsStream(policyFilename);
-    var policyContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+    final var inputStream = OpensearchSchemaManager.class.getResourceAsStream(policyFilename);
+    final var policyContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
     return policyContent.replace(
         "$MIN_INDEX_AGE", operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
   }

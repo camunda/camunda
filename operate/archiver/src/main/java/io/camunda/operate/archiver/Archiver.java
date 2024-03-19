@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("schemaStartup")
 public class Archiver {
   protected static final String INDEX_NAME_PATTERN = "%s%s";
-  private static final Logger logger = LoggerFactory.getLogger(Archiver.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Archiver.class);
 
   @Autowired protected BeanFactory beanFactory;
 
@@ -52,14 +52,14 @@ public class Archiver {
   @PostConstruct
   public void startArchiving() {
     if (operateProperties.getArchiver().isRolloverEnabled()) {
-      logger.info("INIT: Start archiving data...");
+      LOGGER.info("INIT: Start archiving data...");
 
       // split the list of partitionIds to parallelize
       final List<Integer> partitionIds = partitionHolder.getPartitionIds();
-      logger.info("Starting archiver for partitions: {}", partitionIds);
+      LOGGER.info("Starting archiver for partitions: {}", partitionIds);
       final int threadsCount = operateProperties.getArchiver().getThreadsCount();
       if (threadsCount > partitionIds.size()) {
-        logger.warn(
+        LOGGER.warn(
             "Too many archiver threads are configured, not all of them will be in use. Number of threads: {}, number of partitions to parallelize by: {}",
             threadsCount,
             partitionIds.size());

@@ -52,8 +52,8 @@ public class IndexControllerIT {
 
   @Test
   public void shouldReturnCurrentContextPath() {
-    String baseTagWithContextPath = String.format("<base href=\"%s\"/>", CONTEXT_PATH);
-    ResponseEntity<String> response = webclient.getForEntity("/login", String.class);
+    final String baseTagWithContextPath = String.format("<base href=\"%s\"/>", CONTEXT_PATH);
+    final ResponseEntity<String> response = webclient.getForEntity("/login", String.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).contains(baseTagWithContextPath);
   }

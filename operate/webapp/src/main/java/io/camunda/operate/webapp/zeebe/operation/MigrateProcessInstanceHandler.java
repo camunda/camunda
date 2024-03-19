@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 public class MigrateProcessInstanceHandler extends AbstractOperationHandler
     implements OperationHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(MigrateProcessInstanceHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MigrateProcessInstanceHandler.class);
 
   @Autowired private OperationsManager operationsManager;
 
@@ -54,18 +54,18 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
 
-    Long processInstanceKey = operation.getProcessInstanceKey();
+    final Long processInstanceKey = operation.getProcessInstanceKey();
     if (processInstanceKey == null) {
       failOperation(operation, "No process instance key is provided.");
       return;
     }
 
-    MigrationPlanDto migrationPlanDto =
+    final MigrationPlanDto migrationPlanDto =
         objectMapper.readValue(operation.getMigrationPlan(), MigrationPlanDto.class);
-    long targetProcessDefinitionKey =
+    final long targetProcessDefinitionKey =
         Long.parseLong(migrationPlanDto.getTargetProcessDefinitionKey());
 
-    MigrationPlan migrationPlan =
+    final MigrationPlan migrationPlan =
         new MigrationPlanImpl(targetProcessDefinitionKey, new ArrayList<>());
     migrationPlanDto
         .getMappingInstructions()
@@ -77,7 +77,7 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
                         new MigrationPlanBuilderImpl.MappingInstruction(
                             mapping.getSourceElementId(), mapping.getTargetElementId())));
 
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Sending Zeebe migrate command for processInstanceKey [%s]...",
             operation.getId(), processInstanceKey));
@@ -87,7 +87,7 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
         .send()
         .join();
     markAsSent(operation);
-    logger.info(
+    LOGGER.info(
         String.format(
             "Operation [%s]: Migrate command sent to Zeebe for processInstanceKey [%s]",
             operation.getId(), processInstanceKey));

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 
 public interface UserService<T extends Authentication> {
-  Logger logger = LoggerFactory.getLogger(UserService.class);
+  Logger LOGGER = LoggerFactory.getLogger(UserService.class);
 
   UserDto getCurrentUser();
 

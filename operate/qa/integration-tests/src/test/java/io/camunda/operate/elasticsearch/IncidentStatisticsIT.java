@@ -73,17 +73,17 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
 
   @Test
   public void testAbsentProcessDoesntThrowExceptions() throws Exception {
-    List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
 
     // Create a processInstance that has no matching process
-    Long processDefinitionKey = 0L;
-    ProcessInstanceForListViewEntity processInstance =
+    final Long processDefinitionKey = 0L;
+    final ProcessInstanceForListViewEntity processInstance =
         createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, "process");
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 1, 0));
     searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
-    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
     assertThat(response).hasSize(1);
   }
@@ -92,7 +92,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   public void testIncidentStatisticsByError() throws Exception {
     createData();
 
-    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
     assertThat(response).hasSize(2);
 
     // assert NO_RETRIES_LEFT
@@ -143,7 +143,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   public void testProcessAndIncidentStatistics() throws Exception {
     createData();
 
-    List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
+    final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
 
     assertThat(processGroups).hasSize(3);
     assertDemoProcess(processGroups.get(0));
@@ -155,13 +155,14 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   public void testProcessWithoutInstancesIsSortedByVersionAscending() throws Exception {
     createNoInstancesProcessData(3);
 
-    List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
+    final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
 
     assertThat(processGroups).hasSize(1);
-    Collection<IncidentByProcessStatisticsDto> processes = processGroups.get(0).getProcesses();
+    final Collection<IncidentByProcessStatisticsDto> processes =
+        processGroups.get(0).getProcesses();
     assertThat(processes).hasSize(3);
 
-    Iterator<IncidentByProcessStatisticsDto> processIterator = processes.iterator();
+    final Iterator<IncidentByProcessStatisticsDto> processIterator = processes.iterator();
     assertNoInstancesProcess(processIterator.next(), 1);
     assertNoInstancesProcess(processIterator.next(), 2);
     assertNoInstancesProcess(processIterator.next(), 3);
@@ -178,7 +179,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
     // then
-    List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
+    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
 
     assertThat(response).hasSize(3);
     assertThat(
@@ -202,7 +203,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
                 Set.of(DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID)));
 
     // then
-    List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
+    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
 
     assertThat(response).hasSize(2);
     assertThat(
@@ -223,11 +224,11 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
     // then
-    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
     assertThat(response).hasSize(2);
 
-    IncidentsByErrorMsgStatisticsDto incidentsByError1 =
+    final IncidentsByErrorMsgStatisticsDto incidentsByError1 =
         response.stream()
             .filter(x -> Objects.equals(x.getErrorMessage(), TestUtil.ERROR_MSG))
             .findFirst()
@@ -241,7 +242,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
                 .collect(Collectors.toList()))
         .containsExactlyInAnyOrder(DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID);
 
-    IncidentsByErrorMsgStatisticsDto incidentsByError2 =
+    final IncidentsByErrorMsgStatisticsDto incidentsByError2 =
         response.stream()
             .filter(x -> Objects.equals(x.getErrorMessage(), ERRMSG_OTHER))
             .findFirst()
@@ -266,7 +267,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
     // then
-    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
     assertThat(response).isEmpty();
   }
@@ -282,11 +283,11 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(DEMO_BPMN_PROCESS_ID)));
 
     // then
-    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
     assertThat(response).hasSize(2);
 
-    IncidentsByErrorMsgStatisticsDto incidentsByError1 =
+    final IncidentsByErrorMsgStatisticsDto incidentsByError1 =
         response.stream()
             .filter(x -> Objects.equals(x.getErrorMessage(), TestUtil.ERROR_MSG))
             .findFirst()
@@ -299,7 +300,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
                 .collect(Collectors.toList()))
         .containsExactly(DEMO_BPMN_PROCESS_ID);
 
-    IncidentsByErrorMsgStatisticsDto incidentsByError2 =
+    final IncidentsByErrorMsgStatisticsDto incidentsByError2 =
         response.stream()
             .filter(x -> Objects.equals(x.getErrorMessage(), ERRMSG_OTHER))
             .findFirst()
@@ -324,11 +325,11 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(ORDER_BPMN_PROCESS_ID)));
 
     // then
-    List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
 
     assertThat(response).hasSize(1);
 
-    IncidentsByErrorMsgStatisticsDto incidentsByError1 =
+    final IncidentsByErrorMsgStatisticsDto incidentsByError1 =
         response.stream()
             .filter(x -> Objects.equals(x.getErrorMessage(), TestUtil.ERROR_MSG))
             .findFirst()
@@ -362,7 +363,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
 
     // assert Loan process version 1
     assertThat(loanProcessGroup.getProcesses()).hasSize(1);
-    IncidentByProcessStatisticsDto loanProcessProcessStatistic =
+    final IncidentByProcessStatisticsDto loanProcessProcessStatistic =
         loanProcessGroup.getProcesses().iterator().next();
     assertThat(loanProcessProcessStatistic.getName()).isEqualTo(LOAN_PROCESS_NAME + "1");
     assertThat(loanProcessProcessStatistic.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
@@ -420,11 +421,11 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   }
 
   private void createDemoProcessData() {
-    List<ProcessEntity> processVersions =
+    final List<ProcessEntity> processVersions =
         createProcessVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2, tenantId1);
     searchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
 
-    List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
 
     // Demo process v1
     Long processDefinitionKey = processVersions.get(0).getKey();
@@ -478,11 +479,11 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   }
 
   private void createOrderProcessData() {
-    List<ProcessEntity> processVersions =
+    final List<ProcessEntity> processVersions =
         createProcessVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2, tenantId2);
     searchTestRule.persistNew(processVersions.toArray(new OperateEntity[processVersions.size()]));
 
-    List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
     // Order process v1
     Long processDefinitionKey = processVersions.get(0).getKey();
     // entities #1-5
@@ -518,15 +519,15 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
 
   private void createLoanProcessData() {
     // Loan process v1
-    List<ProcessEntity> processVersions =
+    final List<ProcessEntity> processVersions =
         createProcessVersions(LOAN_BPMN_PROCESS_ID, LOAN_PROCESS_NAME, 1, tenantId1);
     searchTestRule.persistNew(processVersions.get(0));
 
-    List<OperateEntity> entities = new ArrayList<>();
-    Long processDefinitionKey = processVersions.get(0).getKey();
+    final List<OperateEntity> entities = new ArrayList<>();
+    final Long processDefinitionKey = processVersions.get(0).getKey();
     // entities #1-3
     for (int i = 1; i <= 3; i++) {
-      ProcessInstanceForListViewEntity processInstance =
+      final ProcessInstanceForListViewEntity processInstance =
           createProcessInstanceEntity(
               ProcessInstanceState.ACTIVE, processDefinitionKey, LOAN_BPMN_PROCESS_ID);
       entities.add(processInstance);
@@ -571,25 +572,25 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   }
 
   private List<OperateEntity> createIncidents(
-      ProcessInstanceForListViewEntity processInstance,
+      final ProcessInstanceForListViewEntity processInstance,
       int activeIncidentsCount,
       int resolvedIncidentsCount) {
     return createIncidents(processInstance, activeIncidentsCount, resolvedIncidentsCount, false);
   }
 
   private List<OperateEntity> createIncidents(
-      ProcessInstanceForListViewEntity processInstance,
+      final ProcessInstanceForListViewEntity processInstance,
       int activeIncidentsCount,
       int resolvedIncidentsCount,
       boolean withOtherMsg) {
-    List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
     for (int i = 0; i < activeIncidentsCount; i++) {
       final FlowNodeInstanceForListViewEntity activityInstance =
           TestUtil.createFlowNodeInstance(
               processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
       createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null);
       entities.add(activityInstance);
-      IncidentEntity incidentEntity =
+      final IncidentEntity incidentEntity =
           TestUtil.createIncident(
               IncidentState.ACTIVE,
               activityInstance.getActivityId(),
@@ -606,14 +607,14 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
               processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
       entities.add(activityInstance);
     }
-    int pendingIncidentsCount = random.nextInt(5) + 1;
+    final int pendingIncidentsCount = random.nextInt(5) + 1;
     for (int i = 0; i < pendingIncidentsCount; i++) {
       final FlowNodeInstanceForListViewEntity activityInstance =
           TestUtil.createFlowNodeInstance(
               processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
       createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null);
       entities.add(activityInstance);
-      IncidentEntity incidentEntity =
+      final IncidentEntity incidentEntity =
           TestUtil.createIncident(
               IncidentState.ACTIVE,
               activityInstance.getActivityId(),

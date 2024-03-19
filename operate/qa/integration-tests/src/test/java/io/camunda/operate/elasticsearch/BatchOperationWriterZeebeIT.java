@@ -67,8 +67,8 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void testBatchUpdateWithPermisssionWhenAllowed() throws Exception {
     // given
     createData();
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setOperationType(OperationType.CANCEL_PROCESS_INSTANCE)
             .setQuery(query);
@@ -76,10 +76,10 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(UPDATE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
-    MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
+    final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
-    BatchOperationEntity response =
+    final BatchOperationEntity response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getInstancesCount()).isEqualTo(3);
@@ -90,8 +90,8 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void testBatchUpdateWithPermisssionWhenNotAllowed() throws Exception {
     // given
     createData();
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setOperationType(OperationType.CANCEL_PROCESS_INSTANCE)
             .setQuery(query);
@@ -99,10 +99,10 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(UPDATE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
+    final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
-    BatchOperationEntity response =
+    final BatchOperationEntity response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getInstancesCount()).isEqualTo(0);
@@ -113,8 +113,8 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void testBatchUpdateWithPermisssionWhenSomeAllowed() throws Exception {
     // given
     createData();
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setOperationType(OperationType.CANCEL_PROCESS_INSTANCE)
             .setQuery(query);
@@ -123,10 +123,10 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     when(permissionsService.getProcessesWithPermission(UPDATE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
 
-    MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
+    final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
-    BatchOperationEntity response =
+    final BatchOperationEntity response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getInstancesCount()).isEqualTo(1);
@@ -137,8 +137,8 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void testBatchDeleteWithPermisssionWhenAllowed() throws Exception {
     // given
     createData();
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)
             .setQuery(query);
@@ -147,10 +147,10 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     when(permissionsService.getProcessesWithPermission(DELETE))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
-    MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
+    final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
-    BatchOperationEntity response =
+    final BatchOperationEntity response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getInstancesCount()).isEqualTo(3);
@@ -161,8 +161,8 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void testBatchDeleteWithPermisssionWhenNotAllowed() throws Exception {
     // given
     createData();
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)
             .setQuery(query);
@@ -170,10 +170,10 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(DELETE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
+    final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
-    BatchOperationEntity response =
+    final BatchOperationEntity response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getInstancesCount()).isEqualTo(0);
@@ -184,8 +184,8 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void testBatchDeleteWithPermisssionWhenSomeAllowed() throws Exception {
     // given
     createData();
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)
             .setQuery(query);
@@ -193,10 +193,10 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(DELETE))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1)));
-    MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
+    final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
-    BatchOperationEntity response =
+    final BatchOperationEntity response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getInstancesCount()).isEqualTo(1);
@@ -220,18 +220,19 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void shouldValidateMigrationPlanForMigrateProcessInstance1() throws Exception {
 
     // given
-    MigrationPlanDto invalidPlan = new MigrationPlanDto().setTargetProcessDefinitionKey("123");
+    final MigrationPlanDto invalidPlan =
+        new MigrationPlanDto().setTargetProcessDefinitionKey("123");
 
     // when
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
             .setQuery(query)
             .setMigrationPlan(invalidPlan);
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResponse().getStatus()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
@@ -241,7 +242,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void shouldValidateMigrationPlanForMigrateProcessInstance2() throws Exception {
 
     // given
-    MigrationPlanDto invalidPlan =
+    final MigrationPlanDto invalidPlan =
         new MigrationPlanDto()
             .setMappingInstructions(
                 List.of(
@@ -250,15 +251,15 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
                         .setTargetElementId("target")));
 
     // when
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
             .setQuery(query)
             .setMigrationPlan(invalidPlan);
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResponse().getStatus()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
@@ -268,21 +269,21 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
   public void shouldValidateMigrationPlanForMigrateProcessInstance3() throws Exception {
 
     // given
-    MigrationPlanDto invalidPlan =
+    final MigrationPlanDto invalidPlan =
         new MigrationPlanDto()
             .setTargetProcessDefinitionKey("123")
             .setMappingInstructions(List.of());
 
     // when
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
             .setQuery(query)
             .setMigrationPlan(invalidPlan);
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResponse().getStatus()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
@@ -322,8 +323,8 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(any()))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -337,7 +338,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
                                 .setSourceElementId("source")
                                 .setTargetElementId("target"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
 
     // then
     final BatchOperationEntity batchOperationEntity =

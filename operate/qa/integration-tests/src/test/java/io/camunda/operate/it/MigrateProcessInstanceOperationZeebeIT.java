@@ -82,7 +82,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
   @Test
   public void testCanMigrateZeebeUserTask() throws Exception {
-    var processDefinitionKey =
+    final var processDefinitionKey =
         tester
             .deployProcess("three-zeebe-user-tasks.bpmn")
             .waitUntil()
@@ -95,19 +95,19 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
             .userTasksAreCreated(3)
             .getProcessDefinitionKey();
 
-    var beforeUserTasks = userTaskReader.getUserTasks();
-    var userTask1 =
+    final var beforeUserTasks = userTaskReader.getUserTasks();
+    final var userTask1 =
         beforeUserTasks.stream()
             .filter(u -> "UserTask-1".equals(u.getElementId()))
             .findFirst()
             .get();
-    var userTask3 =
+    final var userTask3 =
         beforeUserTasks.stream()
             .filter(u -> "UserTask-3".equals(u.getElementId()))
             .findFirst()
             .get();
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -127,7 +127,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("UserTask-3")
                                 .setTargetElementId("UserTask-3"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     tester.waitUntil().operationIsCompleted();
 
@@ -140,14 +140,14 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
         searchAllDocuments(operationTemplate.getAlias(), OperationEntity.class);
     final String migrationPlanJson = objectMapper.writeValueAsString(request.getMigrationPlan());
 
-    var afterUserTasks = userTaskReader.getUserTasks();
-    var afterUserTask1 =
+    final var afterUserTasks = userTaskReader.getUserTasks();
+    final var afterUserTask1 =
         afterUserTasks.stream()
             .filter(u -> "UserTask-1".equals(u.getElementId()))
             .findFirst()
             .get();
     assertThat(userTask1.getUserTaskKey()).isNotEqualTo(afterUserTask1.getUserTaskKey());
-    var afterUserTask3 =
+    final var afterUserTask3 =
         afterUserTasks.stream()
             .filter(u -> "UserTask-3".equals(u.getElementId()))
             .findFirst()
@@ -173,8 +173,8 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -188,7 +188,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("source")
                                 .setTargetElementId("target"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     executeOneBatch();
     sleepFor(2000);
@@ -244,8 +244,8 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -259,7 +259,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("task")
                                 .setTargetElementId("task"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     executeOneBatch();
     sleepFor(2000);
@@ -314,8 +314,8 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -329,7 +329,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("source")
                                 .setTargetElementId("target"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     executeOneBatch();
     sleepFor(2000);
@@ -381,12 +381,12 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
             .processInstanceIsStarted()
             .getProcessInstanceKey();
 
-    String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
+    final String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -400,7 +400,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("taskA")
                                 .setTargetElementId("taskA"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     executeOneBatch();
     sleepFor(2000);
@@ -454,8 +454,8 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetAllProcessInstancesQuery();
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -469,7 +469,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("task")
                                 .setTargetElementId("task"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     tester.waitUntil().operationIsCompleted();
 
@@ -521,12 +521,13 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
             .processIsDeployed()
             .getProcessDefinitionKey();
 
-    String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
+    final String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query =
+        createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -540,7 +541,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("taskA")
                                 .setTargetElementId("taskA"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     tester.waitUntil().operationIsCompleted();
 
@@ -588,12 +589,13 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
             .processIsDeployed()
             .getProcessDefinitionKey();
 
-    String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
+    final String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query =
+        createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -607,7 +609,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("taskA")
                                 .setTargetElementId("taskA"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     tester.waitUntil().operationIsCompleted();
 
@@ -617,9 +619,9 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
         objectMapper.readValue(
             mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
 
-    List<ListViewProcessInstanceDto> migratedPIs =
+    final List<ListViewProcessInstanceDto> migratedPIs =
         tester.getProcessInstanceByIds(List.of(processInstanceKey1));
-    ListViewProcessInstanceDto migratedPI = migratedPIs.get(0);
+    final ListViewProcessInstanceDto migratedPI = migratedPIs.get(0);
 
     assertThat(migratedPIs).size().isEqualTo(1);
     assertThat(migratedPI.getProcessId()).isEqualTo(targetProcessDefinitionKey);
@@ -658,12 +660,13 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
             .processIsDeployed()
             .getProcessDefinitionKey();
 
-    String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
+    final String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query =
+        createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -677,15 +680,15 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("taskA")
                                 .setTargetElementId("taskA"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     tester.waitUntil().operationIsCompleted();
 
     // then
     // the flow node is migrated
-    List<FlowNodeInstanceEntity> flowNodes =
+    final List<FlowNodeInstanceEntity> flowNodes =
         searchAllDocuments(flowNodeInstanceTemplate.getAlias(), FlowNodeInstanceEntity.class);
-    FlowNodeInstanceEntity migratedFlowNode =
+    final FlowNodeInstanceEntity migratedFlowNode =
         flowNodes.stream()
             .filter(
                 x ->
@@ -724,12 +727,13 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
             .processIsDeployed()
             .getProcessDefinitionKey();
 
-    String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
+    final String targetProcessDefinitionKey = String.valueOf(processDefinitionKey2);
 
     // when
     // we call MIGRATE_PROCESS_INSTANCE operation
-    ListViewQueryDto query = createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
-    CreateBatchOperationRequestDto request =
+    final ListViewQueryDto query =
+        createGetProcessInstancesByIdsQuery(List.of(processInstanceKey1));
+    final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()
             .setName("batch-1")
             .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
@@ -743,15 +747,15 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
                                 .setSourceElementId("taskA")
                                 .setTargetElementId("taskA"))));
 
-    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    final MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
     // and execute the operation
     tester.waitUntil().operationIsCompleted();
 
     // then
     // the variable is migrated
-    List<VariableEntity> variables =
+    final List<VariableEntity> variables =
         searchAllDocuments(variableTemplate.getAlias(), VariableEntity.class);
-    List<VariableEntity> migratedVariables =
+    final List<VariableEntity> migratedVariables =
         variables.stream().filter(x -> List.of("aaa", "bbb").contains(x.getName())).toList();
 
     assertThat(migratedVariables).size().isEqualTo(2);

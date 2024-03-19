@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MigrationRunner {
 
-  private static final Logger logger = LoggerFactory.getLogger(MigrationRunner.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MigrationRunner.class);
 
   @Autowired private TestContext testContext;
 
@@ -63,21 +63,21 @@ public class MigrationRunner {
   }
 
   private void selectAndRunTestFixtures() {
-    logger.info("Upgrade path under test: {}", upgradePath);
+    LOGGER.info("Upgrade path under test: {}", upgradePath);
     for (String version : upgradePath) {
       final TestFixture testFixture = testFixtureMap.get(version);
       if (testFixture == null) {
         throw new RuntimeException("No test fixture found for version " + version);
       }
-      logger.info("************ Applying test fixture for v. {} ************", version);
+      LOGGER.info("************ Applying test fixture for v. {} ************", version);
       testFixture.setup(testContext);
     }
   }
 
   private void runMigration() {
-    logger.info("************ Migrating data to current version ************");
+    LOGGER.info("************ Migrating data to current version ************");
     try {
-      String[] args = new String[4];
+      final String[] args = new String[4];
       args[0] = "--camunda.operate.elasticsearch.host=" + testContext.getExternalElsHost();
       args[1] = "--camunda.operate.elasticsearch.port=" + testContext.getExternalElsPort();
       args[2] = "--camunda.operate.zeebeelasticsearch.host=" + testContext.getExternalElsHost();

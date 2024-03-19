@@ -35,12 +35,12 @@ public class OpensearchTestDataHelper {
   @Autowired UserIndex userIndex;
 
   public void addUser(String id, String name, String password) {
-    var user = new UserEntity();
+    final var user = new UserEntity();
     user.setUserId(id);
     user.setDisplayName(name);
     user.setPassword(password);
 
-    var indexRequestBuilder =
+    final var indexRequestBuilder =
         indexRequestBuilder(userIndex.getFullQualifiedName())
             .id(id)
             .document(user)

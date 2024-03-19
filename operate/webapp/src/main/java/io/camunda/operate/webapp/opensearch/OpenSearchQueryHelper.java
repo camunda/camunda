@@ -100,13 +100,13 @@ public class OpenSearchQueryHelper {
   }
 
   private Query runningFinishedQuery(ListViewQueryDto query, RequestDSL.QueryType queryType) {
-    boolean active = query.isActive();
-    boolean incidents = query.isIncidents();
-    boolean running = query.isRunning();
+    final boolean active = query.isActive();
+    final boolean incidents = query.isIncidents();
+    final boolean running = query.isRunning();
 
-    boolean completed = query.isCompleted();
-    boolean canceled = query.isCanceled();
-    boolean finished = query.isFinished();
+    final boolean completed = query.isCompleted();
+    final boolean canceled = query.isCanceled();
+    final boolean finished = query.isFinished();
 
     if (!running && !finished) {
       // empty list should be returned
@@ -124,8 +124,8 @@ public class OpenSearchQueryHelper {
       // running query
       runningQuery = not(exists(END_DATE));
 
-      Query activeQuery = query.isActive() ? term(INCIDENT, false) : null;
-      Query incidentsQuery = query.isIncidents() ? term(INCIDENT, true) : null;
+      final Query activeQuery = query.isActive() ? term(INCIDENT, false) : null;
+      final Query incidentsQuery = query.isIncidents() ? term(INCIDENT, true) : null;
 
       if (query.getActivityId() == null && query.isActive() && query.isIncidents()) {
         // we request all running instances
@@ -141,9 +141,9 @@ public class OpenSearchQueryHelper {
       // add finished query
       finishedQuery = exists(END_DATE);
 
-      Query completedQuery =
+      final Query completedQuery =
           query.isCompleted() ? term(STATE, ProcessInstanceState.COMPLETED.toString()) : null;
-      Query canceledQuery =
+      final Query canceledQuery =
           query.isCanceled() ? term(STATE, ProcessInstanceState.CANCELED.toString()) : null;
 
       if (query.getActivityId() == null && query.isCompleted() && query.isCanceled()) {
@@ -164,7 +164,7 @@ public class OpenSearchQueryHelper {
 
   private Query createRetriesLeftQuery(ListViewQueryDto query) {
     if (query.isRetriesLeft()) {
-      Query retriesLeftQuery = term(JOB_FAILED_WITH_RETRIES_LEFT, true);
+      final Query retriesLeftQuery = term(JOB_FAILED_WITH_RETRIES_LEFT, true);
       return QueryDSL.hasChildQuery(ACTIVITIES_JOIN_RELATION, retriesLeftQuery);
     }
     return null;
@@ -216,7 +216,7 @@ public class OpenSearchQueryHelper {
   }
 
   private Query errorMessageQuery(ListViewQueryDto query) {
-    String errorMessage = query.getErrorMessage();
+    final String errorMessage = query.getErrorMessage();
     if (StringUtils.hasLength(errorMessage)) {
       if (errorMessage.contains(WILD_CARD)) {
         return QueryDSL.hasChildQuery(
@@ -269,9 +269,9 @@ public class OpenSearchQueryHelper {
   }
 
   private Query variablesQuery(ListViewQueryDto query) {
-    VariablesQueryDto variablesQuery = query.getVariable();
+    final VariablesQueryDto variablesQuery = query.getVariable();
     // We consider the query as non-empty if it is not null and has either a value or values
-    var nonEmptyQuery =
+    final var nonEmptyQuery =
         variablesQuery != null
             && (StringUtils.hasLength(variablesQuery.getValue())
                 || !ArrayUtils.isEmpty(variablesQuery.getValues()));
@@ -279,7 +279,7 @@ public class OpenSearchQueryHelper {
       if (!StringUtils.hasLength(variablesQuery.getName())) {
         throw new InvalidRequestException("Variables query must provide not-null variable name.");
       }
-      Query valueQuery =
+      final Query valueQuery =
           variablesQuery.getValue() != null
               ? term(VAR_VALUE, variablesQuery.getValue())
               : stringTerms(VAR_VALUE, Arrays.asList(variablesQuery.getValues()));
@@ -308,9 +308,13 @@ public class OpenSearchQueryHelper {
   }
 
   private Query readPermissionQuery() {
-    if (permissionsService == null) return null;
-    var allowed = permissionsService.getProcessesWithPermission(IdentityPermission.READ);
-    if (allowed == null) return null;
+    if (permissionsService == null) {
+      return null;
+    }
+    final var allowed = permissionsService.getProcessesWithPermission(IdentityPermission.READ);
+    if (allowed == null) {
+      return null;
+    }
     return allowed.isAll()
         ? matchAll()
         : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());

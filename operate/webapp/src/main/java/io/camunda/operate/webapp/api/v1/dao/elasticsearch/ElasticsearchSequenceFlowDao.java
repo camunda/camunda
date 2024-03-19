@@ -52,7 +52,7 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
   protected void buildFiltering(
       final Query<SequenceFlow> query, final SearchSourceBuilder searchSourceBuilder) {
     final SequenceFlow filter = query.getFilter();
-    List<QueryBuilder> queryBuilders = new ArrayList<>();
+    final List<QueryBuilder> queryBuilders = new ArrayList<>();
     if (filter != null) {
       queryBuilders.add(buildTermQuery(SequenceFlow.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(SequenceFlow.ACTIVITY_ID, filter.getActivityId()));
@@ -76,7 +76,7 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<SequenceFlow> sequenceFlows =
+        final List<SequenceFlow> sequenceFlows =
             ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToSequenceFlow);
         return new Results<SequenceFlow>()
             .setTotal(searchHits.getTotalHits().value)

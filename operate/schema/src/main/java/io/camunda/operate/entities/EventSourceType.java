@@ -27,7 +27,7 @@ public enum EventSourceType {
   UNKNOWN,
   UNSPECIFIED;
 
-  private static final Logger logger = LoggerFactory.getLogger(EventSourceType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(EventSourceType.class);
 
   public static EventSourceType fromZeebeValueType(String valueType) {
     if (valueType == null) {
@@ -36,7 +36,7 @@ public enum EventSourceType {
     try {
       return EventSourceType.valueOf(valueType);
     } catch (IllegalArgumentException ex) {
-      logger.error(
+      LOGGER.error(
           "Value type not found for value [{}]. UNKNOWN type will be assigned.", valueType);
       return UNKNOWN;
     }

@@ -34,7 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportFieldsZeebeIT.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportFieldsZeebeIT.class);
 
   @Autowired private PayloadUtil payloadUtil;
 
@@ -53,9 +53,10 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
   public void testVariableValueSizeCanBeHigherThan32KB() throws Exception {
     // having
     //  big json string
-    String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.json");
+    final String bigJSONVariablePayload =
+        payloadUtil.readStringFromClasspath("/large-payload.json");
     //  and object with two vars
-    Map<String, Object> variables = payloadUtil.parsePayload(bigJSONVariablePayload);
+    final Map<String, Object> variables = payloadUtil.parsePayload(bigJSONVariablePayload);
 
     // when
     tester
@@ -84,8 +85,8 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
   public void testUpdateVariableValueSizeCanBeHigherThan32KB() throws Exception {
     // having
     //  big json string
-    String bigJSONVariablePayload = "\"" + buildStringWithLengthOf(32 * 1024 + 42) + "\"";
-    String varName = "name";
+    final String bigJSONVariablePayload = "\"" + buildStringWithLengthOf(32 * 1024 + 42) + "\"";
+    final String varName = "name";
 
     // when
     tester
@@ -111,12 +112,12 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
     // having
     ElasticsearchUtil.setRequestOptions(requestOptionsFor(1024 * 32 * 10));
 
-    var bigVarBuilder = new StringBuilder();
+    final var bigVarBuilder = new StringBuilder();
     for (int i = 0; i < 1024 * 32; i++) {
       bigVarBuilder.append("a");
     }
 
-    var vars = new StringBuilder("{");
+    final var vars = new StringBuilder("{");
     for (int i = 0; i < 50; i++) {
       vars.append("\"test" + i + "\" : \"" + bigVarBuilder.toString() + "\", ");
     }
@@ -125,7 +126,7 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
     // when
     tester.deployProcess("single-task.bpmn").waitUntil().processIsDeployed();
 
-    var processInstanceKeys = new ArrayList<Long>();
+    final var processInstanceKeys = new ArrayList<Long>();
     for (int i = 0; i < 5; i++) {
       processInstanceKeys.add(
           tester
@@ -140,8 +141,8 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected String buildStringWithLengthOf(int length) {
-    StringBuilder result = new StringBuilder();
-    String fillChar = "a";
+    final StringBuilder result = new StringBuilder();
+    final String fillChar = "a";
     for (int i = 0; i < length; i++) {
       result.append(fillChar);
     }

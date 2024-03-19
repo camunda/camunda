@@ -36,7 +36,7 @@ public class CustomSecurityExpressionRoot extends SecurityExpressionRoot
 
   // is used as SPEL for preauthorize annotation
   public boolean hasPermission(String permission) {
-    List<Permission> permissions = userService.getCurrentUser().getPermissions();
+    final List<Permission> permissions = userService.getCurrentUser().getPermissions();
     return permissions != null && permissions.contains(Permission.fromString(permission));
   }
 

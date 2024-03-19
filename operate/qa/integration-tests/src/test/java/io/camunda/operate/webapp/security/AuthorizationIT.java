@@ -103,7 +103,7 @@ public class AuthorizationIT {
     // given
     userHasPermission(Permission.WRITE);
     // when
-    BatchOperationEntity batchOperationEntity =
+    final BatchOperationEntity batchOperationEntity =
         processInstanceRestService.createBatchOperation(
             new CreateBatchOperationRequestDto()
                 .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)
@@ -117,7 +117,7 @@ public class AuthorizationIT {
     // given
     userHasPermission(Permission.WRITE);
 
-    Exception e =
+    final Exception e =
         assertThrows(
             OperateRuntimeException.class,
             () -> {
@@ -128,9 +128,9 @@ public class AuthorizationIT {
                       .setOperationType(OperationType.DELETE_PROCESS_INSTANCE));
             });
     // then
-    Throwable cause = e.getCause();
+    final Throwable cause = e.getCause();
     assertThat(cause).isInstanceOf(NotFoundException.class);
-    String errorMsg =
+    final String errorMsg =
         DatabaseInfo.isOpensearch()
             ? "Process instances [23] doesn't exists."
             : "Could not find process instance with id '23'.";

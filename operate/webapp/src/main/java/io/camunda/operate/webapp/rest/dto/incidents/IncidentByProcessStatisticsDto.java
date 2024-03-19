@@ -136,9 +136,13 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    IncidentByProcessStatisticsDto that = (IncidentByProcessStatisticsDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IncidentByProcessStatisticsDto that = (IncidentByProcessStatisticsDto) o;
     return version == that.version
         && instancesWithActiveIncidentsCount == that.instancesWithActiveIncidentsCount
         && activeInstancesCount == that.activeInstancesCount
@@ -158,6 +162,7 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
       implements Comparator<IncidentByProcessStatisticsDto> {
 
     @Override
+    @SuppressWarnings("checkstyle:NestedIfDepth")
     public int compare(IncidentByProcessStatisticsDto o1, IncidentByProcessStatisticsDto o2) {
       if (o1 == null) {
         if (o2 == null) {

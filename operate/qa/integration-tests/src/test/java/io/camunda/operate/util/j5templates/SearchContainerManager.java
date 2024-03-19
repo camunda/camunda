@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class SearchContainerManager {
-  protected static final Logger logger = LoggerFactory.getLogger(SearchContainerManager.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(SearchContainerManager.class);
 
   protected final OperateProperties operateProperties;
   protected final SchemaManager schemaManager;
@@ -68,7 +68,7 @@ public abstract class SearchContainerManager {
       try {
         areCreated = areIndicesCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
-        logger.error(
+        LOGGER.error(
             "Search indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
             checks,
@@ -76,7 +76,7 @@ public abstract class SearchContainerManager {
         sleepFor(200);
       }
     }
-    logger.debug("Search indices are created after {} checks", checks);
+    LOGGER.debug("Search indices are created after {} checks", checks);
     return areCreated;
   }
 

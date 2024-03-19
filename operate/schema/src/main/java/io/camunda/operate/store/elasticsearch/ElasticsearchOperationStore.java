@@ -60,7 +60,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchOperationStore implements OperationStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchOperationStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchOperationStore.class);
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private RestHighLevelClient esClient;
@@ -86,20 +86,20 @@ public class ElasticsearchOperationStore implements OperationStore {
       throw new OperateRuntimeException(
           "Wrong call to search for operation. Not enough parameters.");
     }
-    TermQueryBuilder zeebeCommandKeyQ =
+    final TermQueryBuilder zeebeCommandKeyQ =
         zeebeCommandKey != null
             ? termQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey)
             : null;
-    TermQueryBuilder processInstanceKeyQ =
+    final TermQueryBuilder processInstanceKeyQ =
         processInstanceKey != null
             ? termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
             : null;
-    TermQueryBuilder incidentKeyQ =
+    final TermQueryBuilder incidentKeyQ =
         incidentKey != null ? termQuery(OperationTemplate.INCIDENT_KEY, incidentKey) : null;
-    TermQueryBuilder operationTypeQ =
+    final TermQueryBuilder operationTypeQ =
         operationType != null ? termQuery(OperationTemplate.TYPE, operationType.name()) : null;
 
-    QueryBuilder query =
+    final QueryBuilder query =
         joinWithAnd(
             zeebeCommandKeyQ,
             processInstanceKeyQ,
@@ -122,13 +122,13 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Override
   public String add(BatchOperationEntity batchOperationEntity) throws PersistenceException {
     try {
-      var indexRequest =
+      final var indexRequest =
           new IndexRequest(batchOperationTemplate.getFullQualifiedName())
               .id(batchOperationEntity.getId())
               .source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
       esClient.index(indexRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      logger.error("Error persisting batch operation", e);
+      LOGGER.error("Error persisting batch operation", e);
       throw new PersistenceException(
           String.format(
               "Error persisting batch operation of type [%s]", batchOperationEntity.getType()),
@@ -141,7 +141,7 @@ public class ElasticsearchOperationStore implements OperationStore {
   public void update(OperationEntity operation, boolean refreshImmediately)
       throws PersistenceException {
     try {
-      Map<String, Object> jsonMap =
+      final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
       UpdateRequest updateRequest =

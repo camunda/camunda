@@ -62,7 +62,7 @@ public class OperateAPICaller {
   }
 
   public ListViewResponseDto getProcessInstances() {
-    ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
     return restTemplate.postForObject(
         restTemplate.getURL("/api/process-instances"),
         processInstanceQueryDto,
@@ -70,7 +70,7 @@ public class OperateAPICaller {
   }
 
   public ListViewResponseDto getIncidentProcessInstances() {
-    ListViewRequestDto processInstanceQueryDto =
+    final ListViewRequestDto processInstanceQueryDto =
         createGetAllProcessInstancesRequest(
             q ->
                 q.setIncidents(true)
@@ -92,7 +92,7 @@ public class OperateAPICaller {
   }
 
   public TakeBackupResponseDto backup(Long backupId) {
-    TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
+    final TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
     return restTemplate.postForObject(
         restTemplate.getURL("/actuator/backups"), takeBackupRequest, TakeBackupResponseDto.class);
   }
@@ -103,11 +103,11 @@ public class OperateAPICaller {
   }
 
   boolean createOperation(Long processInstanceKey, OperationType operationType) {
-    Map<String, Object> operationRequest =
+    final Map<String, Object> operationRequest =
         CollectionUtil.asMap("operationType", operationType.name());
     final URI url =
         restTemplate.getURL("/api/process-instances/" + processInstanceKey + "/operation");
-    ResponseEntity<Map> operationResponse =
+    final ResponseEntity<Map> operationResponse =
         restTemplate.postForEntity(url, operationRequest, Map.class);
     return operationResponse.getStatusCode().equals(HttpStatus.OK)
         && operationResponse.getBody().get(BatchOperationTemplate.ID) != null;

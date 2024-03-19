@@ -68,7 +68,7 @@ public class DecisionDefinitionControllerIT {
     final String expectedJSONContent =
         "{\"key\":0,\"decisionId\":\"decisionId-0\",\"name\":\"name-0\",\"version\":0}";
     // given
-    List<DecisionDefinition> decisionDefinitions = createDecisionDefinitionsOf(1);
+    final List<DecisionDefinition> decisionDefinitions = createDecisionDefinitionsOf(1);
     when(decisionDefinitionDao.byKey(0L)).thenReturn(decisionDefinitions.get(0));
     // then
     assertGetToSucceed(URI + "/0").andExpect(content().string(expectedJSONContent));

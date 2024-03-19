@@ -49,7 +49,7 @@ public interface AggregationDSL {
         .findFirst()
         .orElseThrow(
             () -> {
-              List<String> legalAliases =
+              final List<String> legalAliases =
                   Arrays.stream(CalendarInterval.values())
                       .flatMap(v -> Arrays.stream(v.aliases()))
                       .sorted()

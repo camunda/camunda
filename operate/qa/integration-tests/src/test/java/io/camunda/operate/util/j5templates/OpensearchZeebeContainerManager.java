@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchZeebeContainerManager.class);
 
   private final ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
@@ -43,7 +43,7 @@ public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
   }
 
   protected void updatePrefix() {
-    logger.info("Starting Zeebe with OS prefix: " + prefix);
+    LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
   }
 

@@ -34,7 +34,7 @@ public enum ErrorType {
 
   FORM_NOT_FOUND("Form not found");
 
-  private static final Logger logger = LoggerFactory.getLogger(ErrorType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ErrorType.class);
 
   private String title;
 
@@ -49,7 +49,7 @@ public enum ErrorType {
     try {
       return ErrorType.valueOf(errorType);
     } catch (IllegalArgumentException ex) {
-      logger.error(
+      LOGGER.error(
           "Error type not found for value [{}]. UNKNOWN type will be assigned.", errorType);
       return UNKNOWN;
     }

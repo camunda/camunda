@@ -86,7 +86,7 @@ public class ElasticsearchProcessStoreTest {
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
-    Optional<Long> result = underTest.getDistinctCountFor("foo");
+    final Optional<Long> result = underTest.getDistinctCountFor("foo");
 
     assertThat(result).isNotNull();
     assertThat(result.isEmpty());
@@ -96,11 +96,11 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessByKeyTooManyResults() throws IOException {
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
     // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
+    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
+    final TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
 
     when(mockResponse.getHits()).thenReturn(mockHits);
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
@@ -113,11 +113,11 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessByKeyNoResults() throws IOException {
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
     // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
+    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
+    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
 
     when(mockResponse.getHits()).thenReturn(mockHits);
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
@@ -138,11 +138,11 @@ public class ElasticsearchProcessStoreTest {
   public void testGetDiagramByKeyNoResults() throws IOException {
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
     // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
+    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
+    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
 
     when(mockResponse.getHits()).thenReturn(mockHits);
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
@@ -155,11 +155,11 @@ public class ElasticsearchProcessStoreTest {
   public void testGetDiagramByKeyTooManyResults() throws IOException {
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
     // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
+    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
+    final TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
 
     when(mockResponse.getHits()).thenReturn(mockHits);
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
@@ -202,11 +202,11 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessInstanceListViewByKeyTooManyResults() throws IOException {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
 
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
     // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
+    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
+    final TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
 
     when(mockResponse.getHits()).thenReturn(mockHits);
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
@@ -219,11 +219,11 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessInstanceListViewByKeyNoResults() throws IOException {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
 
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
     // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
+    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
+    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
 
     when(mockResponse.getHits()).thenReturn(mockHits);
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
@@ -254,11 +254,11 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessInstanceTreePathByIdNoResults() throws IOException {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
 
-    SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
     // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
+    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
+    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
 
     when(mockResponse.getHits()).thenReturn(mockHits);
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
@@ -291,7 +291,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstancesByProcessAndStatesWithNullStates() {
-    Exception exception =
+    final Exception exception =
         assertThrows(
             OperateRuntimeException.class,
             () -> underTest.getProcessInstancesByProcessAndStates(123L, null, 10, null));
@@ -301,7 +301,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstancesByProcessAndStatesWithEmptyStates() {
-    Exception exception =
+    final Exception exception =
         assertThrows(
             OperateRuntimeException.class,
             () -> underTest.getProcessInstancesByProcessAndStates(123L, Set.of(), 10, null));
@@ -314,7 +314,7 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    Exception exception =
+    final Exception exception =
         assertThrows(
             OperateRuntimeException.class,
             () ->
@@ -326,7 +326,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstancesByParentKeysWithNullKeys() {
-    Exception exception =
+    final Exception exception =
         assertThrows(
             OperateRuntimeException.class,
             () -> underTest.getProcessInstancesByParentKeys(null, 10, null));
@@ -336,7 +336,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstancesByParentKeysWithEmptyKeys() {
-    Exception exception =
+    final Exception exception =
         assertThrows(
             OperateRuntimeException.class,
             () -> underTest.getProcessInstancesByParentKeys(Set.of(), 10, null));
@@ -349,7 +349,7 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(tenantAwareClient.search(any(), any())).thenThrow(new IOException());
 
-    Exception exception =
+    final Exception exception =
         assertThrows(
             OperateRuntimeException.class,
             () -> underTest.getProcessInstancesByParentKeys(Set.of(123L), 10, null));
@@ -359,13 +359,13 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testDeleteProcessInstancesAndDependantsWithNullKey() {
-    long deleted = underTest.deleteProcessInstancesAndDependants(null);
+    final long deleted = underTest.deleteProcessInstancesAndDependants(null);
     assertThat(deleted).isEqualTo(0);
   }
 
   @Test
   public void testDeleteProcessInstancesAndDependantsWithEmptyKey() {
-    long deleted = underTest.deleteProcessInstancesAndDependants(Set.of());
+    final long deleted = underTest.deleteProcessInstancesAndDependants(Set.of());
     assertThat(deleted).isEqualTo(0);
   }
 
@@ -381,14 +381,14 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testDeleteProcessDefinitionsByKeysWithNullKey() {
-    Long[] keys = null;
-    long deleted = underTest.deleteProcessDefinitionsByKeys(keys);
+    final Long[] keys = null;
+    final long deleted = underTest.deleteProcessDefinitionsByKeys(keys);
     assertThat(deleted).isEqualTo(0);
   }
 
   @Test
   public void testDeleteProcessDefinitionsByKeysWithEmptyKey() {
-    long deleted = underTest.deleteProcessDefinitionsByKeys(new Long[0]);
+    final long deleted = underTest.deleteProcessDefinitionsByKeys(new Long[0]);
     assertThat(deleted).isEqualTo(0);
   }
 
@@ -403,8 +403,8 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testRefreshIndicesWithNullIndex() {
-    String[] indices = null;
-    Exception exception =
+    final String[] indices = null;
+    final Exception exception =
         assertThrows(OperateRuntimeException.class, () -> underTest.refreshIndices(indices));
     assertThat(exception.getMessage())
         .isEqualTo("Refresh indices needs at least one index to refresh.");
@@ -412,7 +412,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testRefreshIndicesWithEmptyIndexArray() {
-    Exception exception =
+    final Exception exception =
         assertThrows(OperateRuntimeException.class, () -> underTest.refreshIndices(new String[0]));
     assertThat(exception.getMessage())
         .isEqualTo("Refresh indices needs at least one index to refresh.");

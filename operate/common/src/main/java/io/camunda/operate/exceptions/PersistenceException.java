@@ -20,6 +20,7 @@ public class PersistenceException extends Exception {
 
   private static final long serialVersionUID = 1L;
 
+  @SuppressWarnings("checkstyle:MutableException")
   private Integer failingRequestId;
 
   public PersistenceException() {}

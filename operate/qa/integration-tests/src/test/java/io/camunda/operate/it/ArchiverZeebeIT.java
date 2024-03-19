@@ -119,12 +119,12 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     // having
     // deploy process
     offsetZeebeTime(Duration.ofDays(-4));
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final String activityId = "task1";
     deployProcessWithOneActivity(processId, activityId);
 
     // start instances 3 days ago
-    int count1 = random.nextInt(6) + 5;
+    final int count1 = random.nextInt(6) + 5;
     final List<Long> ids1 =
         startInstances(processId, count1, currentTime.minus(3, ChronoUnit.DAYS));
     createOperations(ids1);
@@ -134,7 +134,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
 
     // start instances 2 days ago
-    int count2 = random.nextInt(6) + 5;
+    final int count2 = random.nextInt(6) + 5;
     final List<Long> ids2 = startInstances(processId, count2, endDate1);
     createOperations(ids2);
     // finish instances 1 day ago
@@ -150,7 +150,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
             d -> d.doubleValue() == count1 + count2));
 
     // start instances 1 day ago
-    int count3 = random.nextInt(6) + 5;
+    final int count3 = random.nextInt(6) + 5;
     final List<Long> ids3 = startInstances(processId, count3, endDate2);
 
     resetZeebeTime();
@@ -188,7 +188,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   protected void createOperations(List<Long> ids1) {
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
-    CreateBatchOperationRequestDto batchOperationRequest =
+    final CreateBatchOperationRequestDto batchOperationRequest =
         new CreateBatchOperationRequestDto(
             query, OperationType.CANCEL_PROCESS_INSTANCE); // the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
@@ -205,19 +205,19 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   public void testArchivingBatchOperations() throws Exception {
     // having
     // create batch operations
-    OffsetDateTime now = OffsetDateTime.now();
-    OffsetDateTime twoHoursAgo = now.minus(2, ChronoUnit.HOURS);
-    BatchOperationEntity bo1 = createBatchOperationEntity(now);
+    final OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime twoHoursAgo = now.minus(2, ChronoUnit.HOURS);
+    final BatchOperationEntity bo1 = createBatchOperationEntity(now);
     searchTestRule.persistNew(bo1);
-    BatchOperationEntity bo2 = createBatchOperationEntity(twoHoursAgo);
+    final BatchOperationEntity bo2 = createBatchOperationEntity(twoHoursAgo);
     searchTestRule.persistNew(bo2);
-    BatchOperationEntity bo3 = createBatchOperationEntity(twoHoursAgo);
+    final BatchOperationEntity bo3 = createBatchOperationEntity(twoHoursAgo);
     searchTestRule.persistNew(bo3);
 
     // when
-    BatchOperationArchiverJob batchOperationArchiverJob =
+    final BatchOperationArchiverJob batchOperationArchiverJob =
         beanFactory.getBean(BatchOperationArchiverJob.class);
-    int count = batchOperationArchiverJob.archiveNextBatch().join();
+    final int count = batchOperationArchiverJob.archiveNextBatch().join();
     assertThat(count).isEqualTo(2);
     searchTestRule.refreshOperateSearchIndices();
 
@@ -273,7 +273,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private BatchOperationEntity createBatchOperationEntity(OffsetDateTime endDate) {
-    BatchOperationEntity batchOperationEntity1 = new BatchOperationEntity();
+    final BatchOperationEntity batchOperationEntity1 = new BatchOperationEntity();
     batchOperationEntity1.generateId();
     batchOperationEntity1.setStartDate(endDate.minus(5, ChronoUnit.MINUTES));
     batchOperationEntity1.setEndDate(endDate);
@@ -287,12 +287,12 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     // having
     // deploy process
     offsetZeebeTime(Duration.ofDays(-4));
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final String activityId = "task1";
     deployProcessWithOneActivity(processId, activityId);
 
     // start instances 2 hours ago
-    int count1 = random.nextInt(6) + 5;
+    final int count1 = random.nextInt(6) + 5;
     final List<Long> ids1 =
         startInstances(processId, count1, currentTime.minus(2, ChronoUnit.HOURS));
     createOperations(ids1);
@@ -302,7 +302,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
 
     // start instances 1 hour ago
-    int count2 = random.nextInt(6) + 5;
+    final int count2 = random.nextInt(6) + 5;
     final List<Long> ids2 =
         startInstances(processId, count2, currentTime.minus(1, ChronoUnit.HOURS));
     // finish instances 59 minutes ago
@@ -344,10 +344,10 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     pinZeebeTime(endDate);
     final Long processDefinitionKey = deployProcess("sequential-noop.bpmn");
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
-    String processId = "sequential-noop";
+    final String processId = "sequential-noop";
 
     // start instance with 3000 of vars in loop
-    String payload =
+    final String payload =
         "{\"items\": ["
             + IntStream.range(1, 3000)
                 .boxed()
@@ -371,7 +371,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void deployProcessWithOneActivity(String processId, String activityId) {
-    BpmnModelInstance process =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask(activityId)
@@ -476,7 +476,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   private List<Long> startInstances(String processId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
-    List<Long> ids = new ArrayList<>();
+    final List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
     }

@@ -27,11 +27,11 @@ public class OpenSearchAsyncTaskOperationsIT extends AbstractOpenSearchOperation
   @Test
   public void totalImpactedByTaskShouldHandleMissingTask() throws Exception {
     // given
-    var node = richOpenSearchClient.cluster().nodesStats().keySet().iterator().next();
-    var missingTaskId = node + ":" + Long.MAX_VALUE;
+    final var node = richOpenSearchClient.cluster().nodesStats().keySet().iterator().next();
+    final var missingTaskId = node + ":" + Long.MAX_VALUE;
 
     // when
-    ThrowableAssert.ThrowingCallable throwingCallable =
+    final ThrowableAssert.ThrowingCallable throwingCallable =
         () ->
             withThreadPoolTaskScheduler(
                 scheduler -> {

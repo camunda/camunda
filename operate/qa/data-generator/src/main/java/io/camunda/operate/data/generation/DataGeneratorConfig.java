@@ -36,7 +36,7 @@ public class DataGeneratorConfig {
   @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
   public ZeebeClient createZeebeClient() {
-    String gatewayAddress = dataGeneratorProperties.getZeebeGatewayAddress();
+    final String gatewayAddress = dataGeneratorProperties.getZeebeGatewayAddress();
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(gatewayAddress)
@@ -63,7 +63,7 @@ public class DataGeneratorConfig {
   @Bean("dataGeneratorThreadPoolExecutor")
   public ThreadPoolTaskExecutor getDataGeneratorTaskExecutor(
       DataGeneratorProperties dataGeneratorProperties) {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setThreadFactory(getThreadFactory());
     executor.setCorePoolSize(dataGeneratorProperties.getThreadCount());
     executor.setMaxPoolSize(dataGeneratorProperties.getThreadCount());
@@ -77,7 +77,7 @@ public class DataGeneratorConfig {
     return new CustomizableThreadFactory("data_generator_") {
       @Override
       public Thread newThread(final Runnable runnable) {
-        Thread thread =
+        final Thread thread =
             new DataGeneratorThread(
                 this.getThreadGroup(), runnable, this.nextThreadName(), createZeebeClient());
         thread.setPriority(this.getThreadPriority());

@@ -63,7 +63,7 @@ public class BasicProcessDataGenerator {
   public static final int INCIDENT_COUNT = 32;
   public static final int COUNT_OF_CANCEL_OPERATION = 9;
   public static final int COUNT_OF_RESOLVE_OPERATION = 8;
-  private static final Logger logger = LoggerFactory.getLogger(BasicProcessDataGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BasicProcessDataGenerator.class);
   private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
@@ -99,7 +99,7 @@ public class BasicProcessDataGenerator {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-      logger.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
+      LOGGER.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
 
       deployProcess();
       processInstanceKeys = startProcessInstances(PROCESS_INSTANCE_COUNT);
@@ -112,7 +112,7 @@ public class BasicProcessDataGenerator {
       for (int i = 0; i < COUNT_OF_CANCEL_OPERATION; i++) {
         createOperation(OperationType.CANCEL_PROCESS_INSTANCE, processInstanceKeys.size() * 10);
       }
-      logger.info(
+      LOGGER.info(
           "{} operations of type {} started",
           COUNT_OF_CANCEL_OPERATION,
           OperationType.CANCEL_PROCESS_INSTANCE);
@@ -120,7 +120,7 @@ public class BasicProcessDataGenerator {
       for (int i = 0; i < COUNT_OF_RESOLVE_OPERATION; i++) {
         createOperation(OperationType.RESOLVE_INCIDENT, processInstanceKeys.size() * 10);
       }
-      logger.info(
+      LOGGER.info(
           "{} operations of type {} started",
           COUNT_OF_RESOLVE_OPERATION,
           OperationType.RESOLVE_INCIDENT);
@@ -130,9 +130,9 @@ public class BasicProcessDataGenerator {
       try {
         esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
       } catch (IOException e) {
-        logger.error("Error in refreshing indices", e);
+        LOGGER.error("Error in refreshing indices", e);
       }
-      logger.info(
+      LOGGER.info(
           "Data generation completed in: {} s",
           ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
       testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
@@ -151,24 +151,26 @@ public class BasicProcessDataGenerator {
   private void waitTillSomeInstancesAreArchived() throws IOException {
     waitUntilAllDataAreImported();
 
-    int count = 0, maxWait = 30;
-    logger.info("Waiting for archived data (max: {} sec)", maxWait * 10);
+    int count = 0;
+    final int maxWait = 30;
+    LOGGER.info("Waiting for archived data (max: {} sec)", maxWait * 10);
     while (!someInstancesAreArchived() && count < maxWait) {
       ThreadUtil.sleepFor(10 * 1000L);
       count++;
     }
     if (count == maxWait) {
-      logger.error("There must be some archived instances");
+      LOGGER.error("There must be some archived instances");
       throw new RuntimeException("Data generation was not full: no archived instances");
     }
   }
 
   private void waitUntilAllDataAreImported() throws IOException {
-    logger.info("Wait till data is imported.");
-    SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
+    LOGGER.info("Wait till data is imported.");
+    final SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
     searchRequest.source().query(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
     long loadedProcessInstances = 0;
-    int count = 0, maxWait = 101;
+    int count = 0;
+    final int maxWait = 101;
     while (PROCESS_INSTANCE_COUNT > loadedProcessInstances && count < maxWait) {
       count++;
       loadedProcessInstances = countEntitiesFor(searchRequest);
@@ -181,7 +183,7 @@ public class BasicProcessDataGenerator {
 
   private boolean someInstancesAreArchived() {
     try {
-      SearchResponse search =
+      final SearchResponse search =
           esClient.search(
               new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
               RequestOptions.DEFAULT);
@@ -193,16 +195,16 @@ public class BasicProcessDataGenerator {
   }
 
   private void createOperation(OperationType operationType, int maxAttempts) {
-    logger.debug("Try to create Operation {} ( {} attempts)", operationType.name(), maxAttempts);
+    LOGGER.debug("Try to create Operation {} ( {} attempts)", operationType.name(), maxAttempts);
     boolean operationStarted = false;
     int attempts = 0;
     while (!operationStarted && attempts < maxAttempts) {
-      Long processInstanceKey = chooseKey(processInstanceKeys);
+      final Long processInstanceKey = chooseKey(processInstanceKeys);
       operationStarted = createOperation(processInstanceKey, operationType);
       attempts++;
     }
     if (operationStarted) {
-      logger.debug("Operation {} started", operationType.name());
+      LOGGER.debug("Operation {} started", operationType.name());
     } else {
       throw new RuntimeException(
           String.format("Operation %s could not started", operationType.name()));
@@ -210,11 +212,11 @@ public class BasicProcessDataGenerator {
   }
 
   private boolean createOperation(Long processInstanceKey, OperationType operationType) {
-    Map<String, Object> operationRequest =
+    final Map<String, Object> operationRequest =
         CollectionUtil.asMap("operationType", operationType.name());
     final URI url =
         operateRestClient.getURL("/api/process-instances/" + processInstanceKey + "/operation");
-    ResponseEntity<Map> operationResponse =
+    final ResponseEntity<Map> operationResponse =
         operateRestClient.postForEntity(url, operationRequest, Map.class);
     return operationResponse.getStatusCode().equals(HttpStatus.OK)
         && operationResponse.getBody().get(BatchOperationTemplate.ID) != null;
@@ -222,32 +224,32 @@ public class BasicProcessDataGenerator {
 
   private void createIncidents(String jobType, int numberOfIncidents) {
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
-    logger.info("{} incidents in {} created", numberOfIncidents, jobType);
+    LOGGER.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
   private void completeTasks(String jobType, int count) {
     ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
-    logger.info("{} tasks {} completed", count, jobType);
+    LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
   private List<Long> startProcessInstances(int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
-      String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
-      long processInstanceKey =
+      final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
+      final long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
-      logger.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
+      LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
-    logger.info("{} processInstances started", processInstanceKeys.size());
+    LOGGER.info("{} processInstances started", processInstanceKeys.size());
     return processInstanceKeys;
   }
 
   private void deployProcess() {
-    String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
-    String processDefinitionKey =
+    final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
+    final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
             zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
-    logger.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
+    LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
   private BpmnModelInstance createModel(String bpmnProcessId) {
@@ -275,7 +277,7 @@ public class BasicProcessDataGenerator {
 
   private long countEntitiesFor(SearchRequest searchRequest) throws IOException {
     searchRequest.source().size(1000);
-    SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     return searchResponse.getHits().getTotalHits().value;
   }
 

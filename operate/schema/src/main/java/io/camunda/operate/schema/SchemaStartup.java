@@ -52,7 +52,7 @@ public class SchemaStartup {
       LOGGER.info("SchemaStartup started.");
       LOGGER.info("SchemaStartup: validate schema.");
       schemaValidator.validate();
-      boolean createSchema =
+      final boolean createSchema =
           DatabaseInfo.isOpensearch()
               ? operateProperties.getOpensearch().isCreateSchema()
               : operateProperties.getElasticsearch().isCreateSchema();

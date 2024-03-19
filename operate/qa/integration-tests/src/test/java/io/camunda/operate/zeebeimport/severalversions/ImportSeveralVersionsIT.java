@@ -60,7 +60,7 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
 public class ImportSeveralVersionsIT extends OperateAbstractIT {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportSeveralVersionsIT.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportSeveralVersionsIT.class);
   private static final int TIMEOUT_IN_SECONDS = 5 * 60; // 5 minutes
   private static final int TIMEOUT_IN_MILLIS = TIMEOUT_IN_SECONDS * 1000; // 5 minutes
 
@@ -110,18 +110,18 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
   @Ignore("https://github.com/camunda/operate/issues/3713")
   public void shouldImportFromSeveralZeebeVersions() throws PersistenceException {
     // when
-    AtomicBoolean hold = new AtomicBoolean(true);
+    final AtomicBoolean hold = new AtomicBoolean(true);
     zeebeImporter.scheduleReaders();
     countImportListener.setBatchFinishedListener(
         () -> {
-          logger.info(
+          LOGGER.info(
               "Batch finished. Imported batches: "
                   + countImportListener.getImportedCount()
                   + "   ::   scheduled: "
                   + countImportListener.getScheduledCount());
           if (countImportListener.getImportedCount() == countImportListener.getScheduledCount()) {
             hold.set(false);
-            logger.info("All readers have finished importing batch");
+            LOGGER.info("All readers have finished importing batch");
           }
         });
 

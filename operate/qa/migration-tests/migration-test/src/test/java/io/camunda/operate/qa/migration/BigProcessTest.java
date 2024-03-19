@@ -48,7 +48,7 @@ public class BigProcessTest extends AbstractMigrationTest {
     assumeThatProcessIsUnderTest(bpmnProcessId);
 
     ThreadUtil.sleepFor(10_000);
-    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
     searchRequest
         .source()
         .query(
@@ -64,9 +64,9 @@ public class BigProcessTest extends AbstractMigrationTest {
 
   @Test
   public void testProcess() {
-    SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
+    final SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
     searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));
-    List<ProcessEntity> processes =
+    final List<ProcessEntity> processes =
         entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
     assertThat(processes).hasSize(1);
     assertThat(processes.get(0).getTenantId()).isEqualTo(DEFAULT_TENANT_ID);

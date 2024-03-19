@@ -54,12 +54,18 @@ public class IncidentFlowNodeDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    IncidentFlowNodeDto that = (IncidentFlowNodeDto) o;
+    final IncidentFlowNodeDto that = (IncidentFlowNodeDto) o;
 
-    if (count != that.count) return false;
+    if (count != that.count) {
+      return false;
+    }
     return id != null ? id.equals(that.id) : that.id == null;
   }
 }

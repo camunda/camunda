@@ -85,8 +85,8 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessInstancesCompletedNextDay() throws IOException {
     // having
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask("task1")
@@ -105,13 +105,13 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
     fillIndicesWithData(processId, firstDate);
 
     // start process instance
-    long processInstanceKey =
+    final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     completeTask(processInstanceKey, "task1", null, false);
     // let Zeebe export data
     sleepFor(5000);
     // complete instances next day
-    Instant secondDate = firstDate.plus(1, ChronoUnit.DAYS);
+    final Instant secondDate = firstDate.plus(1, ChronoUnit.DAYS);
     pinZeebeTime(secondDate);
     completeTask(processInstanceKey, "task2", null, false);
     // let Zeebe export data
@@ -129,7 +129,7 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
         processInstanceKey);
 
     // then internally previous index will also be refreshed and full data will be loaded
-    ProcessInstanceForListViewEntity pi =
+    final ProcessInstanceForListViewEntity pi =
         processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(pi.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
 
@@ -151,12 +151,12 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void duplicateRecords(Instant firstDate, Instant secondDate) throws IOException {
-    DateTimeFormatter dateTimeFormatter =
+    final DateTimeFormatter dateTimeFormatter =
         DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat())
             .withZone(ZoneId.systemDefault());
-    String firstDateStr = dateTimeFormatter.format(firstDate);
-    String secondDateStr = dateTimeFormatter.format(secondDate);
-    String script =
+    final String firstDateStr = dateTimeFormatter.format(firstDate);
+    final String secondDateStr = dateTimeFormatter.format(secondDate);
+    final String script =
         "ctx._index = ctx._index.replace( \"" + firstDateStr + "\", \"" + secondDateStr + "\");";
 
     testSearchRepository.reindex(zeebeRule.getPrefix() + "*", "generated", script, Map.of());
@@ -167,7 +167,7 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
    * reread returned empty batch
    */
   private void mockRecordsReaderToImitateNPE() {
-    RecordsReader processInstanceRecordsReader =
+    final RecordsReader processInstanceRecordsReader =
         recordsReaderHolder.getRecordsReader(1, PROCESS_INSTANCE);
     when(recordsReaderHolder.getRecordsReader(eq(1), eq(PROCESS_INSTANCE)))
         .thenReturn(

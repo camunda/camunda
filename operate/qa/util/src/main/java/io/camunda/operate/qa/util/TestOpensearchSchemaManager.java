@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 public class TestOpensearchSchemaManager extends OpensearchSchemaManager
     implements TestSchemaManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(TestOpensearchSchemaManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestOpensearchSchemaManager.class);
 
   @Autowired
   public TestOpensearchSchemaManager(
@@ -49,8 +49,8 @@ public class TestOpensearchSchemaManager extends OpensearchSchemaManager
 
   @Override
   public void deleteSchema() {
-    String prefix = this.operateProperties.getOpensearch().getIndexPrefix();
-    logger.info("Removing indices {}*", prefix);
+    final String prefix = this.operateProperties.getOpensearch().getIndexPrefix();
+    LOGGER.info("Removing indices {}*", prefix);
     richOpenSearchClient.index().deleteIndicesWithRetries(prefix + "*");
     richOpenSearchClient.template().deleteTemplatesWithRetries(prefix + "*");
   }
@@ -60,7 +60,7 @@ public class TestOpensearchSchemaManager extends OpensearchSchemaManager
     try {
       deleteSchema();
     } catch (Exception t) {
-      logger.debug(t.getMessage());
+      LOGGER.debug(t.getMessage());
     }
   }
 

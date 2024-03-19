@@ -132,11 +132,11 @@ public class ProcessInstanceControllerIT {
 
   @Test
   public void shouldNotIncludeParentProcessInstanceKeyInSerializedResult() throws Exception {
-    ProcessInstance processInstance = new ProcessInstance();
+    final ProcessInstance processInstance = new ProcessInstance();
     processInstance.setParentProcessInstanceKey(123L);
     processInstance.setProcessVersion(5);
 
-    String jsonResult = springObjectMapper.writeValueAsString(processInstance);
+    final String jsonResult = springObjectMapper.writeValueAsString(processInstance);
     assertFalse(jsonResult.contains("parentProcessInstanceKey"));
     assertTrue(jsonResult.contains("parentKey"));
   }
@@ -232,7 +232,7 @@ public class ProcessInstanceControllerIT {
     final String expectedJSONContent = "[]";
     final Long processInstanceKey = 123L;
     // given
-    Results<SequenceFlow> results = new Results<>();
+    final Results<SequenceFlow> results = new Results<>();
     when(sequenceFlowDao.search(
             new Query<SequenceFlow>()
                 .setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey))
@@ -248,7 +248,7 @@ public class ProcessInstanceControllerIT {
     final String expectedJSONContent = "[\"SF1\",\"SF2\"]";
     final Long processInstanceKey = 123L;
     // given
-    Results<SequenceFlow> results = new Results<>();
+    final Results<SequenceFlow> results = new Results<>();
     results
         .getItems()
         .addAll(
@@ -270,7 +270,7 @@ public class ProcessInstanceControllerIT {
         "[{\"activityId\":\"A1\",\"active\":1,\"canceled\":2,\"incidents\":4,\"completed\":3},{\"activityId\":\"A2\",\"active\":5,\"canceled\":6,\"incidents\":8,\"completed\":7}]";
     final Long processInstanceKey = 123L;
     // given
-    List<FlowNodeStatistics> results =
+    final List<FlowNodeStatistics> results =
         Arrays.asList(
             new FlowNodeStatistics()
                 .setActivityId("A1")

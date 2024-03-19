@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionRequirementsZeebeRecordProcessor {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(DecisionRequirementsZeebeRecordProcessor.class);
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -65,7 +65,7 @@ public class DecisionRequirementsZeebeRecordProcessor {
       final DecisionRequirementsRecordValue decision, final BatchRequest batchRequest)
       throws PersistenceException {
     final DecisionRequirementsEntity decisionReqEntity = createEntity(decision);
-    logger.debug(
+    LOGGER.debug(
         "Process: key {}, decisionRequirementsId {}",
         decisionReqEntity.getKey(),
         decisionReqEntity.getDecisionRequirementsId());

@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class RecordsReaderHolder {
 
-  private static final Logger logger = LoggerFactory.getLogger(RecordsReaderHolder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderHolder.class);
 
   private Set<RecordsReader> recordsReaders = null;
 
@@ -56,7 +56,7 @@ public class RecordsReaderHolder {
     final int queueSize = operateProperties.getImporter().getQueueSize();
     // create readers
     final List<Integer> partitionIds = partitionHolder.getPartitionIds();
-    logger.info("Starting import for partitions: {}", partitionIds);
+    LOGGER.info("Starting import for partitions: {}", partitionIds);
     for (final Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
       for (final ImportValueType importValueType : IMPORT_VALUE_TYPES) {

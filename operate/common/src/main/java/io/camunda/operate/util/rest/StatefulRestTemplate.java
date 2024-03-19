@@ -101,7 +101,7 @@ public class StatefulRestTemplate extends RestTemplate {
   @Override
   public <T> ResponseEntity<T> postForEntity(URI url, Object request, Class<T> responseType)
       throws RestClientException {
-    RequestEntity<Object> requestEntity =
+    final RequestEntity<Object> requestEntity =
         RequestEntity.method(HttpMethod.POST, url)
             .headers(getCsrfHeader())
             .contentType(MediaType.APPLICATION_JSON)
@@ -162,7 +162,7 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   private ResponseEntity<?> saveCSRFTokenWhenAvailable(ResponseEntity<?> response) {
-    List<String> csrfHeaders = response.getHeaders().get(CSRF_TOKEN_HEADER_NAME);
+    final List<String> csrfHeaders = response.getHeaders().get(CSRF_TOKEN_HEADER_NAME);
     if (csrfHeaders != null && !csrfHeaders.isEmpty()) {
       csrfToken = csrfHeaders.get(0);
     }

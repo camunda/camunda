@@ -138,16 +138,16 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testQueryAllRunning() throws Exception {
     // query running instances
-    ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
+    final ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getProcessInstances().size()).isEqualTo(6);
     assertThat(response.getTotalCount()).isEqualTo(6);
-    for (ListViewProcessInstanceDto processInstanceDto : response.getProcessInstances()) {
+    for (final ListViewProcessInstanceDto processInstanceDto : response.getProcessInstances()) {
       assertThat(processInstanceDto.getEndDate()).isNull();
       assertThat(processInstanceDto.getState())
           .isIn(ProcessInstanceStateDto.ACTIVE, ProcessInstanceStateDto.INCIDENT);
@@ -246,8 +246,8 @@ public class ListViewQueryIT extends OperateAbstractIT {
   private void requestAndAssertIds(ListViewRequestDto query, String testCaseName, String... ids)
       throws Exception {
     // then
-    MvcResult mvcResult = postRequest(query(), query);
-    ListViewResponseDto response =
+    final MvcResult mvcResult = postRequest(query(), query);
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getProcessInstances())
@@ -278,13 +278,13 @@ public class ListViewQueryIT extends OperateAbstractIT {
         processInstance1, activityInstance1, processInstance2, activityInstance2);
 
     // given
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         new ListViewRequestDto(
             createGetAllProcessInstancesQuery(q -> q.setErrorMessage(errorMessage)));
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -297,13 +297,13 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testQueryByVariableValue() throws Exception {
     // given
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(q -> q.setVariable(new VariablesQueryDto("var1", "X")));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -316,14 +316,14 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testQueryByVariableInValues() throws Exception {
     // given
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(
             q -> q.setVariable(new VariablesQueryDto("var2", new String[] {"Y", "Z", "A"})));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -335,13 +335,13 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testQueryByVariableValueNotExists() throws Exception {
     // given
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(q -> q.setVariable(new VariablesQueryDto("var1", "A")));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -350,14 +350,14 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testQueryByVariableInValuesNotExists() throws Exception {
     // given
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(
             q -> q.setVariable(new VariablesQueryDto("var1", new String[] {"A", "B"})));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -373,15 +373,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
     searchTestRule.persistNew(data);
 
     // when
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createProcessInstanceRequest(
             q -> {
               q.setRunning(true).setActive(true).setActivityId(activityId);
             });
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -392,8 +392,8 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   /** 1st entity must be selected */
   private OperateEntity[] createDataForActiveActivityIdQuery(String activityId) {
-    List<OperateEntity> entities = new ArrayList<>();
-    List<OperateEntity> activityInstances = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> activityInstances = new ArrayList<>();
 
     // pi 1: active with active activity with given id
     final ProcessInstanceForListViewEntity processInstance1 =
@@ -441,15 +441,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
     searchTestRule.persistNew(data);
 
     // when
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createProcessInstanceRequest(
             q -> {
               q.setRunning(true).setIncidents(true).setActivityId(activityId);
             });
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -460,8 +460,8 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   /** 1st entity must be selected */
   private OperateEntity[] createDataForIncidentActivityIdQuery(String activityId) {
-    List<OperateEntity> entities = new ArrayList<>();
-    List<OperateEntity> activityInstances = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> activityInstances = new ArrayList<>();
 
     // wi1: active with activity in INCIDENT state with given id
     final ProcessInstanceForListViewEntity processInstance1 =
@@ -526,15 +526,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
     searchTestRule.persistNew(data);
 
     // when
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createProcessInstanceRequest(
             q -> {
               q.setFinished(true).setCanceled(true).setActivityId(activityId);
             });
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -545,7 +545,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   /** 1st entity must be selected */
   private OperateEntity[] createDataForTerminatedActivityIdQuery(String activityId) {
-    List<OperateEntity> entities = new ArrayList<>();
+    final List<OperateEntity> entities = new ArrayList<>();
 
     // wi1: canceled with TERMINATED activity with given id
     final ProcessInstanceForListViewEntity processInstance1 =
@@ -606,7 +606,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
   public void testQueryByCombinedStateActivityId() throws Exception {
     final String activityId = "taskA";
 
-    List<String> selectedIds = new ArrayList<>();
+    final List<String> selectedIds = new ArrayList<>();
 
     OperateEntity[] data = createDataForActiveActivityIdQuery(activityId);
     selectedIds.add(data[0].getId());
@@ -624,7 +624,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
     searchTestRule.persistNew(data);
 
     // when
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createProcessInstanceRequest(
             q -> {
               q.setRunning(true)
@@ -635,9 +635,9 @@ public class ListViewQueryIT extends OperateAbstractIT {
                   .setActivityId(activityId);
             });
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -709,15 +709,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
         completedEndEventWithIdActivityInstance2);
 
     // when
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createProcessInstanceRequest(
             q -> {
               q.setFinished(true).setCompleted(true).setActivityId(activityId);
             });
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     // then
@@ -737,15 +737,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
         createProcessInstance(ProcessInstanceState.COMPLETED);
     searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(
             q -> q.setIds(Arrays.asList(processInstance1.getId(), processInstance2.getId())));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getProcessInstances()).hasSize(2);
@@ -756,14 +756,14 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   public void testQueryByBatchOperationId() throws Exception {
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(q -> q.setBatchOperationId(batchOperationId));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getProcessInstances()).hasSize(2);
@@ -787,16 +787,16 @@ public class ListViewQueryIT extends OperateAbstractIT {
     searchTestRule.persistNew(
         processInstance1, processInstance2, processInstance3, processInstance4);
 
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(
             q ->
                 q.setExcludeIds(Arrays.asList(processInstance1.getId(), processInstance3.getId())));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getProcessInstances()).hasSize(2);
@@ -809,7 +809,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
   @Test
   public void testQueryByProcessDefinitionKeys() throws Exception {
     // given
-    Long wfKey1 = 1L, wfKey2 = 2L, wfKey3 = 3L;
+    final Long wfKey1 = 1L, wfKey2 = 2L, wfKey3 = 3L;
     final ProcessInstanceForListViewEntity processInstance1 =
         createProcessInstance(ProcessInstanceState.ACTIVE);
     processInstance1.setProcessDefinitionKey(wfKey1);
@@ -826,15 +826,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
     searchTestRule.persistNew(
         processInstance1, processInstance2, processInstance3, processInstance4);
 
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(
             q -> q.setProcessIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getProcessInstances()).hasSize(3);
@@ -848,10 +848,10 @@ public class ListViewQueryIT extends OperateAbstractIT {
   @Test
   public void testQueryByBpmnProcessIdAndVersion() throws Exception {
     // given
-    String bpmnProcessId1 = "pr1";
-    int version1 = 1;
-    String bpmnProcessId2 = "pr2";
-    int version2 = 2;
+    final String bpmnProcessId1 = "pr1";
+    final int version1 = 1;
+    final String bpmnProcessId2 = "pr2";
+    final int version2 = 2;
     final ProcessInstanceForListViewEntity processInstance1 =
         createProcessInstance(ProcessInstanceState.ACTIVE);
     processInstance1.setBpmnProcessId(bpmnProcessId1);
@@ -867,7 +867,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
     searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(
             q -> {
               q.setBpmnProcessId(bpmnProcessId1);
@@ -875,10 +875,10 @@ public class ListViewQueryIT extends OperateAbstractIT {
             });
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getProcessInstances()).hasSize(1);
@@ -890,14 +890,14 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testQueryByParentProcessId() throws Exception {
     // given
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(q -> q.setParentInstanceId(parentInstanceKey1));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getProcessInstances()).hasSize(2);
@@ -912,15 +912,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testQueryByNonExistingParentProcessId() throws Exception {
     // given
-    long nonExistingParentId = 333L;
-    ListViewRequestDto query =
+    final long nonExistingParentId = 333L;
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(q -> q.setParentInstanceId(nonExistingParentId));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response.getProcessInstances()).hasSize(0);
   }
@@ -928,13 +928,13 @@ public class ListViewQueryIT extends OperateAbstractIT {
   @Test
   public void testQueryByProcessVersionFail() throws Exception {
     // when
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(
             q -> {
               q.setProcessVersion(1);
             });
     // then
-    MvcResult mvcResult = postRequestThatShouldFail(query(), query);
+    final MvcResult mvcResult = postRequestThatShouldFail(query(), query);
 
     assertThat(mvcResult.getResolvedException().getMessage())
         .contains("BpmnProcessId must be provided in request, when process version is not null");
@@ -943,10 +943,10 @@ public class ListViewQueryIT extends OperateAbstractIT {
   @Test
   public void testQueryByBpmnProcessIdAllVersions() throws Exception {
     // given
-    String bpmnProcessId1 = "pr1";
-    int version1 = 1;
-    String bpmnProcessId2 = "pr2";
-    int version2 = 2;
+    final String bpmnProcessId1 = "pr1";
+    final int version1 = 1;
+    final String bpmnProcessId2 = "pr2";
+    final int version2 = 2;
     final ProcessInstanceForListViewEntity processInstance1 =
         createProcessInstance(ProcessInstanceState.ACTIVE);
     processInstance1.setBpmnProcessId(bpmnProcessId1);
@@ -962,14 +962,14 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
     searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query =
+    final ListViewRequestDto query =
         createGetAllProcessInstancesRequest(q -> q.setBpmnProcessId(bpmnProcessId1));
 
     // when
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getProcessInstances()).hasSize(2);
@@ -981,7 +981,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
   private void testPagination() throws Exception {
     // query running instances
-    ListViewRequestDto processInstanceRequest = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto processInstanceRequest = createGetAllProcessInstancesRequest();
     processInstanceRequest.setSorting(
         new SortingDto()
             .setSortBy(ListViewTemplate.END_DATE)
@@ -990,7 +990,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
 
     // page 1
     MvcResult mvcResult = postRequest(query(), processInstanceRequest);
-    ListViewResponseDto page1Response =
+    final ListViewResponseDto page1Response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(page1Response.getProcessInstances().size()).isEqualTo(5);
     assertThat(page1Response.getTotalCount()).isEqualTo(8);
@@ -1003,7 +1003,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
             .getSortValues());
     processInstanceRequest.setPageSize(3);
     mvcResult = postRequest(query(), processInstanceRequest);
-    ListViewResponseDto page2Response =
+    final ListViewResponseDto page2Response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(page2Response.getProcessInstances().size()).isEqualTo(3);
     assertThat(page2Response.getTotalCount()).isEqualTo(8);
@@ -1016,7 +1016,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
         page2Response.getProcessInstances().get(0).getSortValues());
     processInstanceRequest.setPageSize(5);
     mvcResult = postRequest(query(), processInstanceRequest);
-    ListViewResponseDto page1Response2 =
+    final ListViewResponseDto page1Response2 =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
     assertThat(page1Response2.getProcessInstances().size()).isEqualTo(5);
     assertThat(page1Response2.getTotalCount()).isEqualTo(8);
@@ -1031,14 +1031,14 @@ public class ListViewQueryIT extends OperateAbstractIT {
       throws Exception {
 
     // query running instances
-    ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
     if (sorting != null) {
       processInstanceQueryDto.setSorting(sorting);
     }
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getProcessInstances().size())
@@ -1293,7 +1293,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
             + "\"sorting\": { \"sortBy\": \""
             + wrongSortParameter
             + "\"}}}";
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(query()).content(query.getBytes()).contentType(mockMvcTestRule.getContentType());
     final MvcResult mvcResult =
         mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
@@ -1304,16 +1304,16 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void testQueryAllFinished() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = createGetAllFinishedRequest();
+    final ListViewRequestDto processInstanceQueryDto = createGetAllFinishedRequest();
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(2);
     assertThat(response.getProcessInstances().size()).isEqualTo(2);
-    for (ListViewProcessInstanceDto processInstanceDto : response.getProcessInstances()) {
+    for (final ListViewProcessInstanceDto processInstanceDto : response.getProcessInstances()) {
       assertThat(processInstanceDto.getEndDate()).isNotNull();
       assertThat(processInstanceDto.getState())
           .isIn(ProcessInstanceStateDto.COMPLETED, ProcessInstanceStateDto.CANCELED);
@@ -1321,11 +1321,11 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void testQueryFinishedAndRunning() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(8);
@@ -1333,15 +1333,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void testQueryFinishedCompleted() throws Exception {
-    ListViewRequestDto processInstanceQueryDto =
+    final ListViewRequestDto processInstanceQueryDto =
         createProcessInstanceRequest(
             q -> {
               q.setFinished(true).setCompleted(true);
             });
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(1);
@@ -1352,15 +1352,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void testQueryRetriesLeft() throws Exception {
-    ListViewRequestDto processInstanceQueryDto =
+    final ListViewRequestDto processInstanceQueryDto =
         createGetAllProcessInstancesRequest(
             q -> {
               q.setRetriesLeft(true);
             });
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(2);
@@ -1371,15 +1371,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void testQueryFinishedCanceled() throws Exception {
-    ListViewRequestDto processInstanceQueryDto =
+    final ListViewRequestDto processInstanceQueryDto =
         createProcessInstanceRequest(
             q -> {
               q.setFinished(true).setCanceled(true);
             });
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(1);
@@ -1391,15 +1391,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void testQueryRunningWithIncidents() throws Exception {
-    ListViewRequestDto processInstanceQueryDto =
+    final ListViewRequestDto processInstanceQueryDto =
         createProcessInstanceRequest(
             q -> {
               q.setRunning(true).setIncidents(true);
             });
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(1);
@@ -1409,15 +1409,15 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void testQueryRunningWithoutIncidents() throws Exception {
-    ListViewRequestDto processInstanceQueryDto =
+    final ListViewRequestDto processInstanceQueryDto =
         createProcessInstanceRequest(
             q -> {
               q.setRunning(true).setActive(true);
             });
 
-    MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
+    final MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(5);
@@ -1429,9 +1429,9 @@ public class ListViewQueryIT extends OperateAbstractIT {
   @Test
   public void testQueryWithPermisssionForAllProcesses() throws Exception {
     // given
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
     final ProcessInstanceForListViewEntity processInstance1 =
         createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 =
@@ -1440,16 +1440,16 @@ public class ListViewQueryIT extends OperateAbstractIT {
         createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
     searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto query = createGetAllProcessInstancesRequest();
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getProcessInstances()).hasSize(3);
@@ -1462,9 +1462,9 @@ public class ListViewQueryIT extends OperateAbstractIT {
   @Test
   public void testQueryWithPermisssionForNoProcesses() throws Exception {
     // given
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
     final ProcessInstanceForListViewEntity processInstance1 =
         createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 =
@@ -1473,16 +1473,16 @@ public class ListViewQueryIT extends OperateAbstractIT {
         createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
     searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto query = createGetAllProcessInstancesRequest();
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getProcessInstances()).isEmpty();
@@ -1491,9 +1491,9 @@ public class ListViewQueryIT extends OperateAbstractIT {
   @Test
   public void testQueryWithPermisssionForSpecificProcesses() throws Exception {
     // given
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
     final ProcessInstanceForListViewEntity processInstance1 =
         createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
     final ProcessInstanceForListViewEntity processInstance2 =
@@ -1502,17 +1502,17 @@ public class ListViewQueryIT extends OperateAbstractIT {
         createProcessInstance(ProcessInstanceState.COMPLETED).setBpmnProcessId(bpmnProcessId3);
     searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto query = createGetAllProcessInstancesRequest();
 
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(
             PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId1, bpmnProcessId2)));
 
-    MvcResult mvcResult = postRequest(query(), query);
+    final MvcResult mvcResult = postRequest(query(), query);
 
     // then
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getProcessInstances()).hasSize(2);
@@ -1529,7 +1529,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
   //    MockHttpServletRequestBuilder request = get(String.format(GET_INSTANCE_URL,
   // instanceWithoutIncident.getId()));
   //
-  //    MvcResult mvcResult = mockMvc
+  //    final MvcResult mvcResult = mockMvc
   //      .perform(request)
   //      .andExpect(status().isOk())
   //      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
@@ -1567,11 +1567,11 @@ public class ListViewQueryIT extends OperateAbstractIT {
   // {"queries":[{"running":true,"completed":false,"canceled":false,"ids":["2251799813685731","2251799813685734"],"errorMessage":"","startDateAfter":null,"startDateBefore":null,"endDateAfter":null,"endDateBefore":null,"activityId":"","variable":{"name":"","value":""},"active":true,"incidents":true}]}
   private void testParamsAreEmptyStringsInsteadOfNull() throws Exception {
 
-    List<String> processInstanceIds =
+    final List<String> processInstanceIds =
         CollectionUtil.toSafeListOfStrings(
             runningInstance.getProcessInstanceKey().toString(),
             instanceWithoutIncident.getProcessInstanceKey().toString());
-    ListViewRequestDto queryRequest = createGetAllRunningRequest();
+    final ListViewRequestDto queryRequest = createGetAllRunningRequest();
     queryRequest
         .getQuery()
         .setCompleted(false)
@@ -1582,9 +1582,9 @@ public class ListViewQueryIT extends OperateAbstractIT {
         .setVariable(new VariablesQueryDto("", ""))
         .setIds(processInstanceIds);
 
-    MvcResult mvcResult = postRequest(query(), queryRequest);
+    final MvcResult mvcResult = postRequest(query(), queryRequest);
 
-    ListViewResponseDto response =
+    final ListViewResponseDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
 
     assertThat(response.getTotalCount()).isEqualTo(2);
@@ -1592,11 +1592,11 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void createProcessInstanceWithUpperLowerCaseProcessname() {
-    ProcessInstanceForListViewEntity upperProcess =
+    final ProcessInstanceForListViewEntity upperProcess =
         createProcessInstance(ProcessInstanceState.ACTIVE, 42L, null);
     upperProcess.setProcessName("UPPER_LOWER_PROCESS_NAME");
 
-    ProcessInstanceForListViewEntity lowerProcess =
+    final ProcessInstanceForListViewEntity lowerProcess =
         createProcessInstance(ProcessInstanceState.ACTIVE, 23L, null);
     lowerProcess.setProcessName("upper_lower_process_name");
 
@@ -1604,7 +1604,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   private void createProcessInstanceWithoutProcessname() {
-    ProcessInstanceForListViewEntity processWithoutName =
+    final ProcessInstanceForListViewEntity processWithoutName =
         createProcessInstance(ProcessInstanceState.ACTIVE, 27L, null);
     processWithoutName.setBpmnProcessId("lower_process_id");
     processWithoutName.setProcessName(processWithoutName.getBpmnProcessId());
@@ -1613,7 +1613,7 @@ public class ListViewQueryIT extends OperateAbstractIT {
   }
 
   protected void createData() {
-    List<VariableForListViewEntity> vars = new ArrayList<>();
+    final List<VariableForListViewEntity> vars = new ArrayList<>();
 
     createProcessInstanceWithUpperLowerCaseProcessname();
     createProcessInstanceWithoutProcessname();

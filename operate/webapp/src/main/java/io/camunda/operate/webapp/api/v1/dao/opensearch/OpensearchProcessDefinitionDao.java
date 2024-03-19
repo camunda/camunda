@@ -75,13 +75,13 @@ public class OpensearchProcessDefinitionDao
   @Override
   public String xmlByKey(Long key) throws APIException {
     validateKey(key);
-    var request =
+    final var request =
         requestDSLWrapper
             .searchRequestBuilder(processIndex.getAlias())
             .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(ProcessIndex.KEY, key)))
             .source(queryDSLWrapper.sourceInclude(ProcessIndex.BPMN_XML));
     try {
-      var response = richOpenSearchClient.doc().search(request, Map.class);
+      final var response = richOpenSearchClient.doc().search(request, Map.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source().get(ProcessIndex.BPMN_XML).toString();
       }
@@ -112,7 +112,7 @@ public class OpensearchProcessDefinitionDao
   protected void buildFiltering(Query<ProcessDefinition> query, SearchRequest.Builder request) {
     final ProcessDefinition filter = query.getFilter();
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(ProcessDefinition.NAME, filter.getName()),
                   queryDSLWrapper.term(

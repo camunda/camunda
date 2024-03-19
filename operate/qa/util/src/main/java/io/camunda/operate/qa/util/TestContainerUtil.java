@@ -94,7 +94,7 @@ public class TestContainerUtil {
   public static final String IDENTITY_DATABASE_PASSWORD = "t2L@!AqSMg8%I%NmHM";
   public static final String TENANT_1 = "tenant_1";
   public static final String TENANT_2 = "tenant_2";
-  private static final Logger logger = LoggerFactory.getLogger(TestContainerUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
   private static final String DOCKER_OPERATE_IMAGE_NAME = "camunda/operate";
   private static final Integer OPERATE_HTTP_PORT = 8080;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
@@ -123,7 +123,7 @@ public class TestContainerUtil {
     startPostgres(testContext);
     startKeyCloak(testContext);
 
-    logger.info("************ Starting Identity ************");
+    LOGGER.info("************ Starting Identity ************");
     identityContainer =
         new GenericContainer<>(String.format("%s:%s", "camunda/identity", version))
             .withExposedPorts(IDENTITY_PORT)
@@ -199,7 +199,7 @@ public class TestContainerUtil {
     testContext.setExternalIdentityPort(identityContainer.getMappedPort(IDENTITY_PORT));
     testContext.setInternalIdentityHost(IDENTITY_NETWORK_ALIAS);
     testContext.setInternalIdentityPort(IDENTITY_PORT);
-    logger.info(
+    LOGGER.info(
         "************ Identity started on {}:{} ************",
         testContext.getExternalIdentityHost(),
         testContext.getExternalIdentityPort());
@@ -228,7 +228,7 @@ public class TestContainerUtil {
   }
 
   public void startKeyCloak(final TestContext testContext) {
-    logger.info("************ Starting Keycloak ************");
+    LOGGER.info("************ Starting Keycloak ************");
     keycloakContainer =
         new GenericContainer<>(DockerImageName.parse("bitnami/keycloak:22.0.1"))
             .withExposedPorts(KEYCLOAK_PORT)
@@ -257,7 +257,7 @@ public class TestContainerUtil {
     testContext.setInternalKeycloakHost(KEYCLOAK_NETWORK_ALIAS);
     testContext.setInternalKeycloakPort(KEYCLOAK_PORT);
 
-    logger.info(
+    LOGGER.info(
         "************ Keycloak started on {}:{} ************",
         testContext.getExternalKeycloakHost(),
         testContext.getExternalKeycloakPort());
@@ -272,7 +272,7 @@ public class TestContainerUtil {
   }
 
   public void startPostgres(final TestContext testContext) {
-    logger.info("************ Starting Postgres ************");
+    LOGGER.info("************ Starting Postgres ************");
     postgreSQLContainer =
         new PostgreSQLContainer("postgres:15.2-alpine")
             .withDatabaseName(IDENTITY_DATABASE_NAME)
@@ -287,14 +287,14 @@ public class TestContainerUtil {
     testContext.setExternalPostgresPort(postgreSQLContainer.getMappedPort(POSTGRES_PORT));
     testContext.setInternalPostgresHost(POSTGRES_NETWORK_ALIAS);
     testContext.setInternalPostgresPort(POSTGRES_PORT);
-    logger.info(
+    LOGGER.info(
         "************ Postgres started on {}:{} ************",
         testContext.getExternalPostgresHost(),
         testContext.getExternalPostgresPort());
   }
 
   public void startElasticsearch(final TestContext testContext) {
-    logger.info("************ Starting Elasticsearch ************");
+    LOGGER.info("************ Starting Elasticsearch ************");
     elsContainer =
         new ElasticsearchContainer(
                 String.format(
@@ -316,7 +316,7 @@ public class TestContainerUtil {
     testContext.setInternalElsHost(ELS_NETWORK_ALIAS);
     testContext.setInternalElsPort(ELS_PORT);
 
-    logger.info(
+    LOGGER.info(
         "************ Elasticsearch started on {}:{} ************",
         testContext.getExternalElsHost(),
         testContext.getExternalElsPort());
@@ -348,10 +348,10 @@ public class TestContainerUtil {
 
   public GenericContainer startOperate(final String version, final TestContext testContext) {
     if (operateContainer == null) {
-      logger.info("************ Starting Operate {} ************", version);
+      LOGGER.info("************ Starting Operate {} ************", version);
       operateContainer = createOperateContainer(version, testContext);
       startOperateContainer(operateContainer, testContext);
-      logger.info("************ Operate started  ************");
+      LOGGER.info("************ Operate started  ************");
     } else {
       throw new IllegalStateException("Operate is already started. Call stopOperate first.");
     }
@@ -480,7 +480,7 @@ public class TestContainerUtil {
 
   public ZeebeContainer startZeebe(final String version, final TestContext testContext) {
     if (broker == null) {
-      logger.info("************ Starting Zeebe {} ************", version);
+      LOGGER.info("************ Starting Zeebe {} ************", version);
       final long startTime = System.currentTimeMillis();
       Testcontainers.exposeHostPorts(ELS_PORT);
       broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version));
@@ -491,7 +491,7 @@ public class TestContainerUtil {
         broker.withFileSystemBind(
             testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data");
       }
-      if (version.equals("SNAPSHOT")) {
+      if ("SNAPSHOT".equals(version)) {
         broker.withImagePullPolicy(alwaysPull());
       }
       broker
@@ -551,7 +551,7 @@ public class TestContainerUtil {
       }
       broker.start();
 
-      logger.info(
+      LOGGER.info(
           "\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
 
       testContext.setInternalZeebeContactPoint(
@@ -579,6 +579,7 @@ public class TestContainerUtil {
     testContext.setExternalZeebeContactPoint(null);
   }
 
+  @SuppressWarnings("checkstyle:NestedIfDepth")
   public void stopZeebe(final File tmpFolder) {
     if (broker != null) {
       try {
@@ -594,7 +595,7 @@ public class TestContainerUtil {
             if (files.size() == 1 && Files.isDirectory(files.get(0))) {
               if (Files.walk(files.get(0)).count() > 1) {
                 found = true;
-                logger.debug(
+                LOGGER.debug(
                     "Zeebe snapshot was found in "
                         + Files.walk(files.get(0)).findFirst().toString());
               }
@@ -614,13 +615,13 @@ public class TestContainerUtil {
         try {
           broker.shutdownGracefully(Duration.ofSeconds(3));
         } catch (final Exception ex) {
-          logger.error("broker.shutdownGracefully failed", ex);
+          LOGGER.error("broker.shutdownGracefully failed", ex);
           // ignore
         }
         try {
           broker.stop();
         } catch (final Exception ex) {
-          logger.error("broker.stop failed", ex);
+          LOGGER.error("broker.stop failed", ex);
           // ignore
         }
         broker = null;

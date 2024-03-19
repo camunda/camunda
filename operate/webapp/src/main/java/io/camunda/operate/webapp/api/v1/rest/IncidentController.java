@@ -54,9 +54,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class IncidentController extends ErrorController implements SearchController<Incident> {
 
   public static final String URI = "/v1/incidents";
-  private static final CustomQueryValidator<Incident> messageSortValidator =
+  private static final CustomQueryValidator<Incident> MESSAGE_SORT_VALIDATOR =
       query -> {
-        List<Sort> sorts = query.getSort();
+        final List<Sort> sorts = query.getSort();
         if (sorts != null) {
           for (Sort sort : sorts) {
             if (sort.getField().equals(Incident.MESSAGE_FIELD)) {
@@ -156,7 +156,7 @@ public class IncidentController extends ErrorController implements SearchControl
   @Override
   public Results<Incident> search(@RequestBody final Query<Incident> query) {
     logger.debug("search for query {}", query);
-    queryValidator.validate(query, Incident.class, messageSortValidator);
+    queryValidator.validate(query, Incident.class, MESSAGE_SORT_VALIDATOR);
     return incidentDao.search(query);
   }
 

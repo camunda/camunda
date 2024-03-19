@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchSequenceFlowStore.class);
   @Autowired private SequenceFlowTemplate sequenceFlowTemplate;
 
@@ -77,7 +77,7 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
           String.format(
               "Exception occurred, while obtaining sequence flows: %s for processInstanceKey %s",
               e.getMessage(), processInstanceKey);
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }

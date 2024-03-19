@@ -59,7 +59,7 @@ public class DecisionInstanceReaderIT extends OperateAbstractIT {
     final DecisionInstanceEntity entity = createData();
 
     final MvcResult mvcResult = getRequest(getQuery(DECISION_INSTANCE_ID_1_1));
-    DecisionInstanceDto response =
+    final DecisionInstanceDto response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response.getDecisionDefinitionId()).isEqualTo(entity.getDecisionDefinitionId());
@@ -134,7 +134,7 @@ public class DecisionInstanceReaderIT extends OperateAbstractIT {
   @Test
   public void testGetDecisionInstanceDrdDataByWrongId() throws Exception {
     createData();
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         getRequestShouldFailWithException(getDrdDataQuery("55555-1"), NotFoundException.class);
     assertThat(mvcResult.getResolvedException().getMessage())
         .contains("Decision instance nor found: 55555-1");

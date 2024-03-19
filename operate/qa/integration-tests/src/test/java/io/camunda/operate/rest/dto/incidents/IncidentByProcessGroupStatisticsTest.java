@@ -25,39 +25,42 @@ public class IncidentByProcessGroupStatisticsTest {
 
   @Test
   public void testComparatorSameInstances() {
-    IncidentsByProcessGroupStatisticsDto moreIncidents = newWithInstancesAndIncidents(5, 3);
-    IncidentsByProcessGroupStatisticsDto lesserIncidents = newWithInstancesAndIncidents(5, 2);
+    final IncidentsByProcessGroupStatisticsDto moreIncidents = newWithInstancesAndIncidents(5, 3);
+    final IncidentsByProcessGroupStatisticsDto lesserIncidents = newWithInstancesAndIncidents(5, 2);
     assertIsBefore(moreIncidents, lesserIncidents);
   }
 
   @Test
   public void testComparatorDifferentInstancesAndIncidents() {
-    IncidentsByProcessGroupStatisticsDto moreIncidents =
+    final IncidentsByProcessGroupStatisticsDto moreIncidents =
         newWithInstancesAndIncidents(1314 + 845, 845);
-    IncidentsByProcessGroupStatisticsDto lessIncidents =
+    final IncidentsByProcessGroupStatisticsDto lessIncidents =
         newWithInstancesAndIncidents(1351 + 831, 831);
     assertIsBefore(moreIncidents, lessIncidents);
   }
 
   @Test
   public void testComparatorZeroIncidents() {
-    IncidentsByProcessGroupStatisticsDto moreInstances = newWithInstancesAndIncidents(172, 0);
-    IncidentsByProcessGroupStatisticsDto lessInstances = newWithInstancesAndIncidents(114, 0);
+    final IncidentsByProcessGroupStatisticsDto moreInstances = newWithInstancesAndIncidents(172, 0);
+    final IncidentsByProcessGroupStatisticsDto lessInstances = newWithInstancesAndIncidents(114, 0);
     assertIsBefore(moreInstances, lessInstances);
   }
 
   @Test
   public void testComparatorSameIncidentsAndInstances() {
-    IncidentsByProcessGroupStatisticsDto onlyOtherBPMN1 = newWithInstancesAndIncidents(172, 0);
+    final IncidentsByProcessGroupStatisticsDto onlyOtherBPMN1 =
+        newWithInstancesAndIncidents(172, 0);
     onlyOtherBPMN1.setBpmnProcessId("1");
-    IncidentsByProcessGroupStatisticsDto onlyOtherBPMN2 = newWithInstancesAndIncidents(172, 0);
+    final IncidentsByProcessGroupStatisticsDto onlyOtherBPMN2 =
+        newWithInstancesAndIncidents(172, 0);
     onlyOtherBPMN2.setBpmnProcessId("2");
     assertIsBefore(onlyOtherBPMN1, onlyOtherBPMN2);
   }
 
   protected IncidentsByProcessGroupStatisticsDto newWithInstancesAndIncidents(
       int instances, int incidents) {
-    IncidentsByProcessGroupStatisticsDto newObject = new IncidentsByProcessGroupStatisticsDto();
+    final IncidentsByProcessGroupStatisticsDto newObject =
+        new IncidentsByProcessGroupStatisticsDto();
     newObject.setActiveInstancesCount(Long.valueOf(instances));
     newObject.setInstancesWithActiveIncidentsCount(incidents);
     return newObject;

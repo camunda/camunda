@@ -38,7 +38,6 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   private String bpmnProcessId;
 
   private String tenantId = DEFAULT_TENANT_ID;
-  ;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -134,10 +133,16 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    VariableEntity that = (VariableEntity) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final VariableEntity that = (VariableEntity) o;
     return isPreview == that.isPreview
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)

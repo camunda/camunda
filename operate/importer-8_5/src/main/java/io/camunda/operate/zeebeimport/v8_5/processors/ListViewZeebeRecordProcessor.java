@@ -59,7 +59,7 @@ import org.springframework.util.StringUtils;
 public class ListViewZeebeRecordProcessor {
 
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
-  private static final Logger logger = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
   private static final Set<String> FAILED_JOB_EVENTS = new HashSet<>();
@@ -141,7 +141,7 @@ public class ListViewZeebeRecordProcessor {
     final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
 
-    logger.debug("Activity instance for list view: id {}", entity.getId());
+    LOGGER.debug("Activity instance for list view: id {}", entity.getId());
     final var updateFields = new HashMap<String, Object>();
     updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
     batchRequest.upsertWithRouting(
@@ -179,7 +179,7 @@ public class ListViewZeebeRecordProcessor {
         final var initialIntent = cachedVariable.getLeft();
         final var variableEntity = cachedVariable.getRight();
 
-        logger.debug("Variable for list view: id {}", variableEntity.getId());
+        LOGGER.debug("Variable for list view: id {}", variableEntity.getId());
         if (initialIntent == VariableIntent.CREATED) {
           batchRequest.addWithRouting(
               listViewTemplate.getFullQualifiedName(),
@@ -241,7 +241,7 @@ public class ListViewZeebeRecordProcessor {
         }
       }
       if (piEntity != null) {
-        logger.debug("Process instance for list view: id {}", piEntity.getId());
+        LOGGER.debug("Process instance for list view: id {}", piEntity.getId());
 
         if (canOptimizeProcessInstanceIndexing(piEntity)) {
           batchRequest.add(listViewTemplate.getFullQualifiedName(), piEntity);
@@ -266,7 +266,7 @@ public class ListViewZeebeRecordProcessor {
         }
       }
       for (final FlowNodeInstanceForListViewEntity actEntity : actEntities.values()) {
-        logger.debug("Flow node instance for list view: id {}", actEntity.getId());
+        LOGGER.debug("Flow node instance for list view: id {}", actEntity.getId());
         if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
           batchRequest.addWithRouting(
               listViewTemplate.getFullQualifiedName(), actEntity, processInstanceKey.toString());
@@ -438,7 +438,7 @@ public class ListViewZeebeRecordProcessor {
           .put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
       return treePath;
     } else {
-      logger.warn(
+      LOGGER.warn(
           "Unable to find parent tree path for parent instance id "
               + recordValue.getParentProcessInstanceKey());
       final String treePath =
@@ -482,7 +482,7 @@ public class ListViewZeebeRecordProcessor {
       entity.setJobFailedWithRetriesLeft(false);
     }
 
-    logger.debug(
+    LOGGER.debug(
         "Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
         entity.getId(),
         entity.isJobFailedWithRetriesLeft());

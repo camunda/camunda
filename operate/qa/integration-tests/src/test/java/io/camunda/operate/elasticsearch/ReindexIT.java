@@ -45,7 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ReindexIT extends OperateAbstractIT {
 
   @ClassRule
-  public static final LoggerContextRule loggerRule =
+  public static final LoggerContextRule LOGGER_RULE =
       new LoggerContextRule("log4j2-listAppender.xml");
 
   @Autowired private TestSearchRepository searchRepository;
@@ -81,7 +81,7 @@ public class ReindexIT extends OperateAbstractIT {
     createIndex(idxName("index-1.2.4_"), List.of());
 
     schemaManager.refresh(idxName("index-*"));
-    Plan plan =
+    final Plan plan =
         beanFactory
             .getBean(ReindexPlan.class)
             .setSrcIndex(idxName("index-1.2.3"))
@@ -101,7 +101,7 @@ public class ReindexIT extends OperateAbstractIT {
   @Test
   public void logReindexProgress() throws Exception {
     // given
-    ListAppender logListAppender = loggerRule.getListAppender("OperateElasticLogsList");
+    final ListAppender logListAppender = LOGGER_RULE.getListAppender("OperateElasticLogsList");
     // slow the reindex down, to increase chance of sub 100% progress logged
     migrationProperties.setReindexBatchSize(1);
     /// Old index
@@ -112,7 +112,7 @@ public class ReindexIT extends OperateAbstractIT {
     createIndex(idxName("index-1.2.4_"), List.of());
 
     schemaManager.refresh(idxName("index-*"));
-    Plan plan =
+    final Plan plan =
         beanFactory
             .getBean(ReindexPlan.class)
             .setSrcIndex(idxName("index-1.2.3"))
@@ -130,7 +130,7 @@ public class ReindexIT extends OperateAbstractIT {
             // old indices:
             idxName("index-1.2.3_"));
 
-    var events = logListAppender.getEvents();
+    final var events = logListAppender.getEvents();
     final List<String> progressLogMessages =
         events.stream()
             .filter(event -> event.getMessage().getFormat().startsWith("TaskId: "))
@@ -160,7 +160,7 @@ public class ReindexIT extends OperateAbstractIT {
             NUMBERS_OF_REPLICA, NO_REPLICA,
             REFRESH_INTERVAL, NO_REFRESH),
         idxName("index-1.2.3_"));
-    Map<String, String> reindexSettings =
+    final Map<String, String> reindexSettings =
         schemaManager.getIndexSettingsFor(
             idxName("index-1.2.3_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings)

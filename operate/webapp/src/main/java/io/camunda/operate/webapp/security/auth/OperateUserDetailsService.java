@@ -46,10 +46,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
         + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class OperateUserDetailsService implements UserDetailsService {
 
-  private static final Logger logger = LoggerFactory.getLogger(OperateUserDetailsService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OperateUserDetailsService.class);
   private static final String READ_ONLY_USER = "view";
-  @Autowired private UserStore userStore;
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
+  @Autowired private UserStore userStore;
   @Autowired private OperateProperties operateProperties;
 
   @Bean
@@ -59,7 +59,7 @@ public class OperateUserDetailsService implements UserDetailsService {
 
   public void initializeUsers() {
     if (needsToCreateUser()) {
-      String userId = operateProperties.getUserId();
+      final String userId = operateProperties.getUserId();
       if (!userExists(userId)) {
         addUserWith(
             userId,
@@ -89,7 +89,7 @@ public class OperateUserDetailsService implements UserDetailsService {
       final String displayName,
       final String password,
       final List<String> roles) {
-    logger.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().getCode(), userId);
+    LOGGER.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().getCode(), userId);
     final String passwordEncoded = getPasswordEncoder().encode(password);
     final UserEntity userEntity =
         new UserEntity()
@@ -105,7 +105,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   @Override
   public User loadUserByUsername(final String userId) {
     try {
-      UserEntity userEntity = userStore.getById(userId);
+      final UserEntity userEntity = userStore.getById(userId);
       return new User(
           userEntity.getUserId(),
           userEntity.getDisplayName(),

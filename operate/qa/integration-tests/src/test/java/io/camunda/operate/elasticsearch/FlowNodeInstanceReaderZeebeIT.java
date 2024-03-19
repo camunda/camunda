@@ -73,15 +73,15 @@ public class FlowNodeInstanceReaderZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testFlowNodeStatisticsForManyFlowNodes() throws Exception {
     // given
-    String startEvent = "start";
-    String endEvent = "end";
-    String jobType = "taskA";
-    ProcessBuilder processBuilder = Bpmn.createExecutableProcess("process");
+    final String startEvent = "start";
+    final String endEvent = "end";
+    final String jobType = "taskA";
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess("process");
     AbstractFlowNodeBuilder flowNodeBuilder = processBuilder.startEvent(startEvent);
     for (int i = 0; i < 20; i++) {
       flowNodeBuilder = flowNodeBuilder.serviceTask("task" + i).zeebeJobType(jobType);
     }
-    BpmnModelInstance modelInstance = flowNodeBuilder.endEvent(endEvent).done();
+    final BpmnModelInstance modelInstance = flowNodeBuilder.endEvent(endEvent).done();
     // complete all tasks and the whole instance
     tester
         .deployProcess(modelInstance, "20task.bpmn")
@@ -96,7 +96,7 @@ public class FlowNodeInstanceReaderZeebeIT extends OperateZeebeAbstractIT {
         tester.waitUntil().processInstanceIsCompleted().getProcessInstanceKey();
 
     // when
-    List<FlowNodeStatisticsDto> flowNodeStatistics =
+    final List<FlowNodeStatisticsDto> flowNodeStatistics =
         getFlowNodeStatisticsForProcessInstance(processInstanceKey);
 
     // then
@@ -206,7 +206,7 @@ public class FlowNodeInstanceReaderZeebeIT extends OperateZeebeAbstractIT {
 
   @Test // due to https://github.com/camunda/operate/issues/3362
   public void testMultiInstanceActiveCount() throws Exception {
-    var processInstanceKey =
+    final var processInstanceKey =
         tester
             .deployProcess("develop/multi-instance-service-task.bpmn")
             .waitUntil()
@@ -220,14 +220,14 @@ public class FlowNodeInstanceReaderZeebeIT extends OperateZeebeAbstractIT {
             .then()
             .getProcessInstanceKey();
 
-    var flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
+    final var flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
     assertStatisticActiveOrIncident(flowNodeStatistics, "serviceTask", 0, 3, 0);
   }
 
   @Test // due to https://github.com/camunda/operate/issues/3362
   public void testMultiInstanceCountWithIncidentInBody() throws Exception {
     // given
-    var wrongPayload = "{\"items\": \"\"}";
+    final var wrongPayload = "{\"items\": \"\"}";
     // when
     tester
         .deployProcess("develop/multi-instance-service-task.bpmn")
@@ -242,7 +242,7 @@ public class FlowNodeInstanceReaderZeebeIT extends OperateZeebeAbstractIT {
         .incidentIsActive();
 
     // then
-    var flowNodeStatistics =
+    final var flowNodeStatistics =
         getFlowNodeStatisticsForProcessInstance(tester.getProcessInstanceKey());
     assertStatistic(flowNodeStatistics, "serviceTask", 0, 0, 0, 1);
   }
@@ -268,7 +268,7 @@ public class FlowNodeInstanceReaderZeebeIT extends OperateZeebeAbstractIT {
             .getProcessInstanceKey();
 
     // when
-    List<FlowNodeStatisticsDto> flowNodeStatistics =
+    final List<FlowNodeStatisticsDto> flowNodeStatistics =
         getFlowNodeStatisticsForProcessInstance(processInstanceKey);
     // then statistics without sequential sub process
     assertThat(flowNodeStatistics.size()).as("flowNodeStatistics size should be 7").isEqualTo(7);

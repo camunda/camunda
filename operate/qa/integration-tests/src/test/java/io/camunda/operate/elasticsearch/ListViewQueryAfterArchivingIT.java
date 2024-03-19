@@ -35,7 +35,7 @@ public class ListViewQueryAfterArchivingIT extends ListViewQueryIT {
   protected void createData() {
     super.createData();
     mockPartitionHolder(partitionHolder);
-    ProcessInstancesArchiverJob archiverJob =
+    final ProcessInstancesArchiverJob archiverJob =
         beanFactory.getBean(
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     runArchiving(

@@ -32,12 +32,12 @@ public class OpenSearchDocumentOperationsIT extends AbstractOpenSearchOperationI
   @Test
   public void searchUniqueShouldDeserializeLocalRecord() {
     // given
-    String id = "id";
+    final String id = "id";
     opensearchTestDataHelper.addUser(id, "displayName", "password");
 
     // when
     record Result(String displayName) {}
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(userIndex.getFullQualifiedName())
             .query(term("userId", id))
             .source(sourceInclude("displayName"));

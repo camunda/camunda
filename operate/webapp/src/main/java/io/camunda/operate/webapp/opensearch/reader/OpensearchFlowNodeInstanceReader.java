@@ -501,7 +501,9 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   private void markHasIncident(
       final String processInstanceId, final List<FlowNodeInstanceEntity> flowNodeInstances) {
-    if (flowNodeInstances == null || flowNodeInstances.isEmpty()) return;
+    if (flowNodeInstances == null || flowNodeInstances.isEmpty()) {
+      return;
+    }
     final Map<String, Query> filters =
         flowNodeInstances.stream()
             .filter(this::flowNodeInstanceIsRunningOrIsNotMarked)

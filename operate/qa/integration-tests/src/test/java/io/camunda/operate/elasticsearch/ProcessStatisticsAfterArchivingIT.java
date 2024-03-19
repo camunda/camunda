@@ -45,8 +45,8 @@ public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
   protected void createData(Long processDefinitionKey) {
     super.createData(processDefinitionKey);
     mockPartitionHolder(partitionHolder);
-    Archiver archiver = beanFactory.getBean(Archiver.class);
-    ProcessInstancesArchiverJob archiverJob =
+    final Archiver archiver = beanFactory.getBean(Archiver.class);
+    final ProcessInstancesArchiverJob archiverJob =
         beanFactory.getBean(
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     runArchiving(

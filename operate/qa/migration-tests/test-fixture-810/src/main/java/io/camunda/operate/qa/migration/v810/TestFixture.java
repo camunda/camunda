@@ -50,7 +50,7 @@ public class TestFixture extends AbstractTestFixture {
 
   public static final String VERSION = "8.1.14";
 
-  private static final Logger logger = LoggerFactory.getLogger(TestFixture.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestFixture.class);
   @Autowired protected ListViewTemplate listViewTemplate;
   @Autowired protected IncidentTemplate incidentTemplate;
   @Autowired private RestHighLevelClient esClient;
@@ -65,25 +65,25 @@ public class TestFixture extends AbstractTestFixture {
   }
 
   private void adjustIncidentToTestPendingIncidentMigration() {
-    SearchRequest incidentRequest =
+    final SearchRequest incidentRequest =
         new SearchRequest(getIndexNameFor(incidentTemplate.getIndexName()))
             .source(
                 new SearchSourceBuilder()
                     .query(matchAllQuery())
                     .fetchSource(new String[] {}, null));
 
-    BulkRequest bulkRequest = new BulkRequest();
+    final BulkRequest bulkRequest = new BulkRequest();
     try {
       ElasticsearchUtil.scroll(
           incidentRequest,
           rethrowConsumer(
               sh -> {
                 for (SearchHit searchHit : sh.getHits()) {
-                  Long key = (Long) searchHit.getSourceAsMap().get(FLOW_NODE_INSTANCE_KEY);
-                  Map<String, Object> updateFields = new HashMap<>();
+                  final Long key = (Long) searchHit.getSourceAsMap().get(FLOW_NODE_INSTANCE_KEY);
+                  final Map<String, Object> updateFields = new HashMap<>();
                   updateFields.put("pendingIncident", true);
                   updateFields.put("incidentKeys", new Long[] {Long.valueOf(searchHit.getId())});
-                  UpdateRequest updateRequest =
+                  final UpdateRequest updateRequest =
                       new UpdateRequest()
                           .index(getListViewIndexName())
                           .id(String.valueOf(key))
@@ -94,7 +94,7 @@ public class TestFixture extends AbstractTestFixture {
                 }
               }),
           esClient);
-      logger.info(
+      LOGGER.info(
           "Post importer queue preparation completed. Number of processed incidents: {}",
           bulkRequest.requests().size());
       ElasticsearchUtil.processBulkRequest(

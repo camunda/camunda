@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ZeebeTestUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(ZeebeTestUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeTestUtil.class);
 
   private static Random random = new Random();
 
@@ -51,7 +51,7 @@ public abstract class ZeebeTestUtil {
         ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
-    logger.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
+    LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
     return String.valueOf(
         deploymentEvent
             .getProcesses()
@@ -72,18 +72,18 @@ public abstract class ZeebeTestUtil {
         ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
-    logger.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
+    LOGGER.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
   }
 
   public static String deployProcess(
       ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
-    DeployProcessCommandStep1 deployProcessCommandStep1 =
+    final DeployProcessCommandStep1 deployProcessCommandStep1 =
         client.newDeployCommand().addProcessModel(processModel, resourceName);
     final DeploymentEvent deploymentEvent =
         ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
-    logger.debug("Deployment of resource [{}] was performed", resourceName);
+    LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
@@ -106,15 +106,16 @@ public abstract class ZeebeTestUtil {
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
-    ProcessInstanceEvent processInstanceEvent = createProcessInstanceCommandStep3.send().join();
-    logger.debug("Process instance created for process [{}]", bpmnProcessId);
+    final ProcessInstanceEvent processInstanceEvent =
+        createProcessInstanceCommandStep3.send().join();
+    LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);
     return processInstanceEvent.getProcessInstanceKey();
   }
 
   public static void completeTask(
       ZeebeClient client, String jobType, String workerName, String payload, int count) {
     final int[] countCompleted = {0};
-    JobWorker jobWorker =
+    final JobWorker jobWorker =
         client
             .newWorker()
             .jobType(jobType)
@@ -128,14 +129,14 @@ public abstract class ZeebeTestUtil {
                         completeJobCommandStep1 = completeJobCommandStep1.variables(payload);
                       }
                       completeJobCommandStep1.send().join();
-                      logger.debug("Task completed jobKey [{}]", job.getKey());
+                      LOGGER.debug("Task completed jobKey [{}]", job.getKey());
                       countCompleted[0]++;
                       if (countCompleted[0] % 1000 == 0) {
-                        logger.info("{} jobs completed ", countCompleted[0]);
+                        LOGGER.info("{} jobs completed ", countCompleted[0]);
                       }
                     }
                   } catch (Exception ex) {
-                    logger.error(ex.getMessage(), ex);
+                    LOGGER.error(ex.getMessage(), ex);
                     throw ex;
                   }
                 })
@@ -161,7 +162,7 @@ public abstract class ZeebeTestUtil {
       String errorMessage,
       int incidentCount) {
     final int[] countFailed = {0};
-    JobWorker jobWorker =
+    final JobWorker jobWorker =
         client
             .newWorker()
             .jobType(jobType)
@@ -178,7 +179,7 @@ public abstract class ZeebeTestUtil {
                         .join();
                     countFailed[0]++;
                     if (countFailed[0] % 1000 == 0) {
-                      logger.info("{} jobs failed ", countFailed[0]);
+                      LOGGER.info("{} jobs failed ", countFailed[0]);
                     }
                   }
                 })

@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ImportBatch {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportBatch.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportBatch.class);
 
   private int partitionId;
 
@@ -122,7 +122,7 @@ public class ImportBatch {
         }
       }
     } catch (IOException e) {
-      logger.warn(
+      LOGGER.warn(
           String.format(
               "Unable to parse Zeebe object for getting field %s : %s", fieldName, e.getMessage()),
           e);
@@ -155,15 +155,27 @@ public class ImportBatch {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    ImportBatch that = (ImportBatch) o;
+    final ImportBatch that = (ImportBatch) o;
 
-    if (partitionId != that.partitionId) return false;
-    if (finishedWiCount != that.finishedWiCount) return false;
-    if (importValueType != that.importValueType) return false;
-    if (!Objects.equals(hits, that.hits)) return false;
+    if (partitionId != that.partitionId) {
+      return false;
+    }
+    if (finishedWiCount != that.finishedWiCount) {
+      return false;
+    }
+    if (importValueType != that.importValueType) {
+      return false;
+    }
+    if (!Objects.equals(hits, that.hits)) {
+      return false;
+    }
     return Objects.equals(lastRecordIndexName, that.lastRecordIndexName);
   }
 }

@@ -70,7 +70,7 @@ public class IdentityControllerTest {
 
   @Test
   public void testLogin() {
-    String redirectUrl = "http://redirecturl";
+    final String redirectUrl = "http://redirecturl";
     when(mockIdentityService.getRedirectUrl(mockServletRequest)).thenReturn(redirectUrl);
 
     assertThat(underTest.login(mockServletRequest)).isEqualTo("redirect:" + redirectUrl);
@@ -85,9 +85,9 @@ public class IdentityControllerTest {
 
   @Test
   public void testLoggedInCallbackWithRedirectToRoot() throws Exception {
-    AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
-    IdentityAuthentication identityAuthentication = new IdentityAuthentication();
-    String fakeContextPath = "contextPath";
+    final AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
+    final IdentityAuthentication identityAuthentication = new IdentityAuthentication();
+    final String fakeContextPath = "contextPath";
 
     when(mockServletRequest.getSession()).thenReturn(mockSession);
     when(mockIdentityService.getAuthenticationFor(eq(mockServletRequest), any(AuthCodeDto.class)))
@@ -110,10 +110,10 @@ public class IdentityControllerTest {
 
   @Test
   public void testLoggedInCallbackWithRedirectToOriginal() throws Exception {
-    AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
-    IdentityAuthentication identityAuthentication = new IdentityAuthentication();
-    String fakeContextPath = "contextPath";
-    String fakeOriginalUrl = "/fakeOriginalUrl";
+    final AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
+    final IdentityAuthentication identityAuthentication = new IdentityAuthentication();
+    final String fakeContextPath = "contextPath";
+    final String fakeOriginalUrl = "/fakeOriginalUrl";
 
     when(mockServletRequest.getSession()).thenReturn(mockSession);
     when(mockIdentityService.getAuthenticationFor(eq(mockServletRequest), any(AuthCodeDto.class)))
@@ -136,7 +136,7 @@ public class IdentityControllerTest {
 
   @Test
   public void testLoggedInCallbackWithExceptionAndNullSecurityContext() throws Exception {
-    AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
+    final AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
 
     when(mockServletRequest.getSession()).thenReturn(mockSession);
     when(mockIdentityService.getAuthenticationFor(eq(mockServletRequest), any(AuthCodeDto.class)))
@@ -158,7 +158,7 @@ public class IdentityControllerTest {
 
   @Test
   public void testLoggedInCallbackWithExceptionAndExistingSecurityContext() throws Exception {
-    AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
+    final AuthCodeDto authCodeDto = new AuthCodeDto("code", "state", "error");
 
     when(mockServletRequest.getSession()).thenReturn(mockSession);
     when(mockIdentityService.getAuthenticationFor(eq(mockServletRequest), any(AuthCodeDto.class)))

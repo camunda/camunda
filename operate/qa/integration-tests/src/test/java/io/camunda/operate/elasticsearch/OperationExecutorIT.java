@@ -86,7 +86,7 @@ public class OperationExecutorIT extends OperateAbstractIT {
     // given
     final int batchSize = operateProperties.getOperationExecutor().getBatchSize();
     given(handlers.get(any())).willReturn(null);
-    int instancesCount = (int) (batchSize * .75);
+    final int instancesCount = (int) (batchSize * .75);
     createData(instancesCount);
 
     // when execute 1st batch
@@ -107,8 +107,8 @@ public class OperationExecutorIT extends OperateAbstractIT {
 
   private void assertOperationsLocked(
       List<OperationEntity> allOperations, int operationCount, String assertionLabel) {
-    String workerId = operateProperties.getOperationExecutor().getWorkerId();
-    List<OperationEntity> lockedOperations =
+    final String workerId = operateProperties.getOperationExecutor().getWorkerId();
+    final List<OperationEntity> lockedOperations =
         CollectionUtil.filter(
             allOperations,
             op ->
@@ -125,7 +125,7 @@ public class OperationExecutorIT extends OperateAbstractIT {
   }
 
   private void createData(int processInstanceCount) {
-    List<OperateEntity> instances = new ArrayList<>();
+    final List<OperateEntity> instances = new ArrayList<>();
     for (int i = 0; i < processInstanceCount; i++) {
       instances.addAll(createProcessInstanceAndOperations());
     }
@@ -134,8 +134,8 @@ public class OperationExecutorIT extends OperateAbstractIT {
   }
 
   private List<OperateEntity> createProcessInstanceAndOperations() {
-    List<OperateEntity> entities = new ArrayList<>();
-    ProcessInstanceForListViewEntity processInstance =
+    final List<OperateEntity> entities = new ArrayList<>();
+    final ProcessInstanceForListViewEntity processInstance =
         TestUtil.createProcessInstanceEntityWithIds();
     processInstance.setBpmnProcessId("testProcess" + random.nextInt(10));
     processInstance.setStartDate(DateUtil.getRandomStartDate());

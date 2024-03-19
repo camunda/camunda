@@ -59,7 +59,7 @@ import org.springframework.test.web.servlet.MvcResult;
     })
 public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(IncidentWithFailingOperationZeebeIT.class);
 
   @Autowired private ResolveIncidentHandler updateRetriesHandler;
@@ -76,11 +76,11 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
 
   @Test
   public void testIncidentsAreReturned() throws Exception {
-    AtomicInteger count = new AtomicInteger(0);
+    final AtomicInteger count = new AtomicInteger(0);
     doAnswer(
             invocation -> {
               if (count.get() < 4) {
-                BatchRequest batchRequest = invocation.getArgument(4);
+                final BatchRequest batchRequest = invocation.getArgument(4);
                 batchRequest.update("wrong_index", "someId", Map.of());
                 count.incrementAndGet();
               } else {
@@ -93,7 +93,7 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
         .completeOperation(any(), any(), any(), any(), any());
 
     // having
-    String processId = "complexProcess";
+    final String processId = "complexProcess";
     deployProcess("complexProcess_v_3.bpmn");
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"count\":3}");
@@ -113,7 +113,7 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
     searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 3);
 
     // when
-    MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
+    final MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
     final IncidentResponseDto incidentResponse =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
@@ -122,7 +122,7 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
     assertThat(incidentResponse).isNotNull();
     assertThat(incidentResponse.getCount()).isEqualTo(3);
     assertThat(incidentResponse.getIncidents()).hasSize(3);
-    logger.info("Incidents found: " + incidentResponse.getIncidents().toString());
+    LOGGER.info("Incidents found: " + incidentResponse.getIncidents().toString());
 
     assertIncident(
         incidentResponse,

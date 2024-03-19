@@ -25,11 +25,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public abstract class AbstractUserService<T extends Authentication> implements UserService<T> {
 
   public UserDto getCurrentUser() {
-    T authentication = getCurrentAuthentication();
+    final T authentication = getCurrentAuthentication();
     try {
       return createUserDtoFrom(authentication);
     } catch (ClassCastException e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Couldn't get matching authentication for %s. Throw UserNotFound exception.",
               authentication),
@@ -44,7 +44,7 @@ public abstract class AbstractUserService<T extends Authentication> implements U
   }
 
   protected T getCurrentAuthentication() {
-    SecurityContext context = SecurityContextHolder.getContext();
+    final SecurityContext context = SecurityContextHolder.getContext();
     return (T) context.getAuthentication();
   }
 

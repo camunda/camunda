@@ -60,7 +60,7 @@ import org.springframework.stereotype.Component;
 public class VariableReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.VariableReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(VariableReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(VariableReader.class);
 
   @Autowired private VariableTemplate variableTemplate;
 
@@ -71,7 +71,7 @@ public class VariableReader extends AbstractReader
   @Override
   public List<VariableDto> getVariables(
       final String processInstanceId, VariableRequestDto request) {
-    List<VariableDto> response = queryVariables(processInstanceId, request);
+    final List<VariableDto> response = queryVariables(processInstanceId, request);
 
     // query one additional instance
     if (request.getSearchAfterOrEqual() != null || request.getSearchBeforeOrEqual() != null) {
@@ -95,7 +95,7 @@ public class VariableReader extends AbstractReader
             .source(new SearchSourceBuilder().query(idsQ));
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
-      ;
+
       if (response.getHits().getTotalHits().value != 1) {
         throw new NotFoundException(String.format("Variable with id %s not found.", id));
       }
@@ -113,7 +113,7 @@ public class VariableReader extends AbstractReader
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -135,7 +135,7 @@ public class VariableReader extends AbstractReader
 
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
-      ;
+
       if (response.getHits().getTotalHits().value > 0) {
         final VariableEntity variableEntity =
             ElasticsearchUtil.fromSearchHit(
@@ -197,7 +197,7 @@ public class VariableReader extends AbstractReader
       variableName = (String) request.getSearchBeforeOrEqual(objectMapper)[0];
     }
 
-    VariableRequestDto newRequest =
+    final VariableRequestDto newRequest =
         request
             .createCopy()
             .setSearchAfter(null)
@@ -255,13 +255,13 @@ public class VariableReader extends AbstractReader
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(variableTemplate, ALL).source(searchSourceBuilder);
     try {
-      SearchResponse response = tenantAwareClient.search(searchRequest);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
 
-      List<VariableEntity> variableEntities =
+      final List<VariableEntity> variableEntities =
           ElasticsearchUtil.mapSearchHits(
               response.getHits().getHits(),
               (sh) -> {
-                VariableEntity entity =
+                final VariableEntity entity =
                     ElasticsearchUtil.fromSearchHit(
                         sh.getSourceAsString(), objectMapper, VariableEntity.class);
                 entity.setSortValues(sh.getSortValues());

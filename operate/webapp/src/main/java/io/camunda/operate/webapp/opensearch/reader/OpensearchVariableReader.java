@@ -59,7 +59,7 @@ public class OpensearchVariableReader implements VariableReader {
 
   @Override
   public List<VariableDto> getVariables(String processInstanceId, VariableRequestDto request) {
-    List<VariableDto> response = queryVariables(processInstanceId, request);
+    final List<VariableDto> response = queryVariables(processInstanceId, request);
 
     // query one additional instance
     if (request.getSearchAfterOrEqual() != null || request.getSearchBeforeOrEqual() != null) {
@@ -76,8 +76,9 @@ public class OpensearchVariableReader implements VariableReader {
 
   @Override
   public VariableDto getVariable(String id) {
-    var searchRequest = searchRequestBuilder(variableTemplate).query(withTenantCheck(ids(id)));
-    var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
+    final var searchRequest =
+        searchRequestBuilder(variableTemplate).query(withTenantCheck(ids(id)));
+    final var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
     if (hits.total().value() != 1) {
       throw new NotFoundException(String.format("Variable with id %s not found.", id));
     }
@@ -87,7 +88,7 @@ public class OpensearchVariableReader implements VariableReader {
   @Override
   public VariableDto getVariableByName(
       String processInstanceId, String scopeId, String variableName) {
-    var searchRequest =
+    final var searchRequest =
         searchRequestBuilder(variableTemplate)
             .query(
                 constantScore(
@@ -96,7 +97,7 @@ public class OpensearchVariableReader implements VariableReader {
                             term(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, processInstanceId),
                             term(VariableTemplate.SCOPE_KEY, scopeId),
                             term(VariableTemplate.NAME, variableName)))));
-    var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
+    final var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
     if (hits.total().value() > 0) {
       return toVariableDto(hits.hits().get(0).source());
     } else {
@@ -115,7 +116,7 @@ public class OpensearchVariableReader implements VariableReader {
       variableName = (String) request.getSearchBeforeOrEqual(objectMapper)[0];
     }
 
-    VariableRequestDto newRequest =
+    final VariableRequestDto newRequest =
         request
             .createCopy()
             .setSearchAfter(null)
@@ -172,7 +173,7 @@ public class OpensearchVariableReader implements VariableReader {
     if (request.getScopeId() != null) {
       scopeKey = Long.valueOf(request.getScopeId());
     }
-    var req =
+    final var req =
         searchRequestBuilder(variableTemplate)
             .query(
                 constantScore(
@@ -183,8 +184,8 @@ public class OpensearchVariableReader implements VariableReader {
                             (varName != null ? term(NAME, varName) : null)))))
             .source(sourceExclude(FULL_VALUE));
     applySorting(req, request);
-    var response = richOpenSearchClient.doc().search(req, VariableEntity.class);
-    List<VariableEntity> variableEntities =
+    final var response = richOpenSearchClient.doc().search(req, VariableEntity.class);
+    final List<VariableEntity> variableEntities =
         response.hits().hits().stream()
             .filter(hit -> hit.source() != null)
             .map(hit -> hit.source().setSortValues(hit.sort().toArray()))

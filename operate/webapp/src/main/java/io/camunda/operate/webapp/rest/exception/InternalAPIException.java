@@ -20,6 +20,7 @@ import java.util.UUID;
 
 public abstract class InternalAPIException extends RuntimeException {
 
+  @SuppressWarnings("checkstyle:MutableException")
   private String instance = UUID.randomUUID().toString();
 
   protected InternalAPIException(final String message) {

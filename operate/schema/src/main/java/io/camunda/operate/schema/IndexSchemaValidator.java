@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class IndexSchemaValidator {
 
-  private static final Logger logger = LoggerFactory.getLogger(IndexSchemaValidator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
 
   private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
 
@@ -43,7 +43,7 @@ public class IndexSchemaValidator {
 
   private Set<String> getAllIndexNamesForIndex(String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
-    logger.debug("Getting all indices for {}", indexPattern);
+    LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = schemaManager.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
@@ -58,23 +58,25 @@ public class IndexSchemaValidator {
   }
 
   public Set<String> newerVersionsForIndex(IndexDescriptor indexDescriptor) {
-    SemanticVersion currentVersion = SemanticVersion.fromVersion(indexDescriptor.getVersion());
-    Set<String> versions = versionsForIndex(indexDescriptor);
+    final SemanticVersion currentVersion =
+        SemanticVersion.fromVersion(indexDescriptor.getVersion());
+    final Set<String> versions = versionsForIndex(indexDescriptor);
     return versions.stream()
         .filter(version -> SemanticVersion.fromVersion(version).isNewerThan(currentVersion))
         .collect(Collectors.toSet());
   }
 
   public Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor) {
-    SemanticVersion currentVersion = SemanticVersion.fromVersion(indexDescriptor.getVersion());
-    Set<String> versions = versionsForIndex(indexDescriptor);
+    final SemanticVersion currentVersion =
+        SemanticVersion.fromVersion(indexDescriptor.getVersion());
+    final Set<String> versions = versionsForIndex(indexDescriptor);
     return versions.stream()
         .filter(version -> currentVersion.isNewerThan(SemanticVersion.fromVersion(version)))
         .collect(Collectors.toSet());
   }
 
   private Set<String> versionsForIndex(IndexDescriptor indexDescriptor) {
-    Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
     return allIndexNames.stream()
         .map(this::getVersionFromIndexName)
         .filter(Optional::isPresent)
@@ -83,7 +85,7 @@ public class IndexSchemaValidator {
   }
 
   private Optional<String> getVersionFromIndexName(String indexName) {
-    Matcher matcher = VERSION_PATTERN.matcher(indexName);
+    final Matcher matcher = VERSION_PATTERN.matcher(indexName);
     if (matcher.matches() && matcher.groupCount() > 0) {
       return Optional.of(matcher.group(1));
     }
@@ -91,12 +93,14 @@ public class IndexSchemaValidator {
   }
 
   public void validate() {
-    if (!hasAnyOperateIndices()) return;
-    Set<String> errors = new HashSet<>();
+    if (!hasAnyOperateIndices()) {
+      return;
+    }
+    final Set<String> errors = new HashSet<>();
     indexDescriptors.forEach(
         indexDescriptor -> {
-          Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
-          Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
+          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
+          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
           if (oldVersions.size() > 1) {
             errors.add(
                 String.format(
@@ -123,7 +127,8 @@ public class IndexSchemaValidator {
   public boolean schemaExists() {
     try {
       final Set<String> indices = schemaManager.getIndexNames(schemaManager.getIndexPrefix() + "*");
-      List<String> allIndexNames = map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
+      final List<String> allIndexNames =
+          map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
 
       final Set<String> aliases =
           schemaManager.getAliasesNames(schemaManager.getIndexPrefix() + "*");
@@ -131,7 +136,7 @@ public class IndexSchemaValidator {
 
       return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
     } catch (Exception e) {
-      logger.error("Check for existing schema failed", e);
+      LOGGER.error("Check for existing schema failed", e);
       return false;
     }
   }

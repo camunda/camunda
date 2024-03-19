@@ -54,7 +54,7 @@ public class VariableDto {
     if (variableEntity == null) {
       return null;
     }
-    VariableDto variable = new VariableDto();
+    final VariableDto variable = new VariableDto();
     variable.setId(variableEntity.getId());
     variable.setName(variableEntity.getName());
 
@@ -71,7 +71,7 @@ public class VariableDto {
     }
 
     if (CollectionUtil.isNotEmpty(operations)) {
-      List<OperationEntity> activeOperations =
+      final List<OperationEntity> activeOperations =
           CollectionUtil.filter(
               operations,
               (o ->

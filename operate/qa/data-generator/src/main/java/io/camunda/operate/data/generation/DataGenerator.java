@@ -56,7 +56,7 @@ public class DataGenerator {
 
   public static final String PARENT_PROCESS_ID = "parentProcess";
   public static final String CHILD_PROCESS_ID = "childProcess";
-  private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
   @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
   @Autowired private ZeebeClient zeebeClient;
@@ -70,7 +70,7 @@ public class DataGenerator {
 
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
-    logger.info("Starting generating data...");
+    LOGGER.info("Starting generating data...");
 
     deployProcesses();
 
@@ -80,9 +80,9 @@ public class DataGenerator {
 
     // wait for task "endTask" of long-running process and complete it
     ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
-    logger.info("Task endTask completed.");
+    LOGGER.info("Task endTask completed.");
 
-    logger.info(
+    LOGGER.info(
         "Data generation completed in: "
             + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now())
             + " s");
@@ -91,7 +91,7 @@ public class DataGenerator {
   private void createIncidents(String jobType) {
     final int incidentCount = dataGeneratorProperties.getIncidentCount();
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", incidentCount);
-    logger.info("{} incidents created", dataGeneratorProperties.getIncidentCount());
+    LOGGER.info("{} incidents created", dataGeneratorProperties.getIncidentCount());
   }
 
   private void completeAllTasks(String jobType) {
@@ -99,7 +99,7 @@ public class DataGenerator {
         jobType,
         dataGeneratorProperties.getProcessInstanceCount()
             + dataGeneratorProperties.getCallActivityProcessInstanceCount());
-    logger.info(
+    LOGGER.info(
         "{} jobs task1 completed",
         dataGeneratorProperties.getProcessInstanceCount()
             + dataGeneratorProperties.getCallActivityProcessInstanceCount());
@@ -114,7 +114,7 @@ public class DataGenerator {
 
     final BlockingQueue<Future> requestFutures =
         new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
-    ResponseChecker responseChecker = startWaitingForResponses(requestFutures);
+    final ResponseChecker responseChecker = startWaitingForResponses(requestFutures);
 
     sendStartProcessInstanceCommands(requestFutures);
 
@@ -136,7 +136,7 @@ public class DataGenerator {
       sleepFor(2000);
     }
     responseChecker.close();
-    logger.info("{} process instances started", responseChecker.getResponseCount());
+    LOGGER.info("{} process instances started", responseChecker.getResponseCount());
   }
 
   private List<InstancesStarter> sendStartProcessInstanceCommands(
@@ -144,12 +144,12 @@ public class DataGenerator {
     // separately start one instance with multi-instance subprocess
     startBigProcessInstance();
 
-    List<InstancesStarter> instancesStarters = new ArrayList<>();
+    final List<InstancesStarter> instancesStarters = new ArrayList<>();
     final int threadCount = dataGeneratorTaskExecutor.getMaxPoolSize();
     final AtomicInteger simpleProcessCounter = new AtomicInteger(0);
     final AtomicInteger callActivityProcessCounter = new AtomicInteger(0);
     for (int i = 0; i < threadCount; i++) {
-      InstancesStarter instancesStarter =
+      final InstancesStarter instancesStarter =
           new InstancesStarter(requestFutures, simpleProcessCounter, callActivityProcessCounter);
       dataGeneratorTaskExecutor.submit(instancesStarter);
       instancesStarters.add(instancesStarter);
@@ -158,7 +158,7 @@ public class DataGenerator {
   }
 
   private void startBigProcessInstance() {
-    String payload =
+    final String payload =
         "{\"items\": ["
             + IntStream.range(1, 3000)
                 .boxed()
@@ -180,7 +180,7 @@ public class DataGenerator {
 
   private void deployProcesses() {
     for (int i = 0; i < dataGeneratorProperties.getProcessCount(); i++) {
-      String bpmnProcessId = getBpmnProcessId(i);
+      final String bpmnProcessId = getBpmnProcessId(i);
       ZeebeTestUtil.deployProcess(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
       bpmnProcessIds.add(bpmnProcessId);
     }
@@ -193,7 +193,7 @@ public class DataGenerator {
 
     // deploy process with multi-instance subprocess
     ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
-    logger.info("{} processes deployed", dataGeneratorProperties.getProcessCount() + 3);
+    LOGGER.info("{} processes deployed", dataGeneratorProperties.getProcessCount() + 3);
   }
 
   private String getBpmnProcessId(int i) {
@@ -257,14 +257,14 @@ public class DataGenerator {
         try {
           futures.take().get();
         } catch (ExecutionException e) {
-          logger.warn("Request failed", e);
+          LOGGER.warn("Request failed", e);
           // we still count this as a response
         } catch (InterruptedException ex) {
           Thread.currentThread().interrupt();
         }
         responseCount++;
         if (responseCount % 1000 == 0) {
-          logger.info("{} process instances started", responseCount);
+          LOGGER.info("{} process instances started", responseCount);
         }
       }
     }
@@ -305,7 +305,7 @@ public class DataGenerator {
               < dataGeneratorProperties.getProcessInstanceCount()
           && !shuttingDown) {
         try {
-          String vars;
+          final String vars;
           if (countSimpleProcess.get() == 1) {
             vars = createALotOfVarsPayload();
           } else if (countSimpleProcess.get() <= 100) {
@@ -321,7 +321,7 @@ public class DataGenerator {
         }
         localCount++;
         if (localCount % 1000 == 0) {
-          logger.info("{} start simple process instance requests were sent", localCount);
+          LOGGER.info("{} start simple process instance requests were sent", localCount);
         }
       }
       localCount = 0;
@@ -329,7 +329,7 @@ public class DataGenerator {
               < dataGeneratorProperties.getCallActivityProcessInstanceCount()
           && !shuttingDown) {
         try {
-          String vars = "{\"var1\": \"value1\"}";
+          final String vars = "{\"var1\": \"value1\"}";
           futures.put(
               ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, PARENT_PROCESS_ID, vars));
         } catch (InterruptedException e) {
@@ -337,7 +337,7 @@ public class DataGenerator {
         }
         localCount++;
         if (localCount % 1000 == 0) {
-          logger.info("{} start call activity process instance requests were sent", localCount);
+          LOGGER.info("{} start call activity process instance requests were sent", localCount);
         }
       }
     }

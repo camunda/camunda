@@ -113,7 +113,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   public static final FilterAggregationBuilder RUNNING_AGGREGATION =
       AggregationBuilders.filter(
           "running", termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE));
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchProcessStore.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchProcessStore.class);
   private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
   private final ProcessIndex processIndex;
 
@@ -149,7 +149,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
     final String indexAlias = processIndex.getAlias();
-    logger.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
+    LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
     final SearchRequest searchRequest =
         new SearchRequest(indexAlias)
             .source(
@@ -166,7 +166,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
           searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
     } catch (Exception e) {
-      logger.error(
+      LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.", fieldName, indexAlias),
           e);
@@ -208,7 +208,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -225,7 +225,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
 
       if (response.getHits().getTotalHits().value == 1) {
-        Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
+        final Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(BPMN_XML);
       } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(
@@ -238,7 +238,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final String message =
           String.format(
               "Exception occurred, while obtaining the process diagram: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -250,7 +250,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     final String groupsAggName = "group_by_bpmnProcessId";
     final String processesAggName = "processes";
 
-    AggregationBuilder agg =
+    final AggregationBuilder agg =
         terms(tenantsGroupsAggName)
             .field(ProcessIndex.TENANT_ID)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
@@ -272,7 +272,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                             .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
                             .sort(ProcessIndex.VERSION, SortOrder.DESC)));
 
-    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(agg).size(0);
+    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(agg).size(0);
     sourceBuilder.query(buildQuery(tenantId, allowedBPMNProcessIds));
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
@@ -280,7 +280,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
-      Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
+      final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
       groups.getBuckets().stream()
           .forEach(
@@ -292,7 +292,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                     .forEach(
                         tenantB -> {
                           final String bpmnProcessId = tenantB.getKeyAsString();
-                          ProcessKey groupKey = new ProcessKey(bpmnProcessId, groupTenantId);
+                          final ProcessKey groupKey = new ProcessKey(bpmnProcessId, groupTenantId);
                           result.put(groupKey, new ArrayList<>());
 
                           final TopHits processes = tenantB.getAggregations().get(processesAggName);
@@ -310,7 +310,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final String message =
           String.format(
               "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -320,7 +320,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       @Nullable Set<String> allowedBPMNIds, int maxSize, String... fields) {
     final Map<Long, ProcessEntity> map = new HashMap<>();
 
-    SearchSourceBuilder sourceBuilder =
+    final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder().size(maxSize).fetchSource(fields, null);
     if (allowedBPMNIds == null) {
       sourceBuilder.query(QueryBuilders.matchAllQuery());
@@ -344,7 +344,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining processes: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -358,7 +358,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
         new DeleteByQueryRequest(processIndex.getAlias())
             .setQuery(QueryBuilders.termsQuery(ProcessIndex.KEY, processDefinitionKeys));
     try {
-      BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+      final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
       return response.getDeleted();
     } catch (IOException ex) {
       throw new OperateRuntimeException("Failed to delete process definitions by keys", ex);
@@ -372,7 +372,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
               idsQuery().addIds(String.valueOf(processInstanceKey)),
               termQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
 
-      SearchRequest request =
+      final SearchRequest request =
           ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
@@ -400,7 +400,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public Map<String, Long> getCoreStatistics(@Nullable Set<String> allowedBPMNIds) {
-    SearchSourceBuilder sourceBuilder =
+    final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder()
             .size(0)
             .aggregation(INCIDENTS_AGGREGATION)
@@ -416,16 +416,18 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
-      Aggregations aggregations = response.getAggregations();
-      long runningCount = ((SingleBucketAggregation) aggregations.get("running")).getDocCount();
-      long incidentCount = ((SingleBucketAggregation) aggregations.get("incidents")).getDocCount();
+      final Aggregations aggregations = response.getAggregations();
+      final long runningCount =
+          ((SingleBucketAggregation) aggregations.get("running")).getDocCount();
+      final long incidentCount =
+          ((SingleBucketAggregation) aggregations.get("incidents")).getDocCount();
       return Map.of("running", runningCount, "incidents", incidentCount);
     } catch (IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining process instance core statistics: %s",
               e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -459,9 +461,10 @@ public class ElasticsearchProcessStore implements ProcessStore {
   @Override
   public List<Map<String, String>> createCallHierarchyFor(
       List<String> processInstanceIds, String currentProcessInstanceId) {
-    List<Map<String, String>> callHierarchy = new ArrayList<>();
+    final List<Map<String, String>> callHierarchy = new ArrayList<>();
 
-    List<String> processInstanceIdsWithoutCurrentProcess = new ArrayList<>(processInstanceIds);
+    final List<String> processInstanceIdsWithoutCurrentProcess =
+        new ArrayList<>(processInstanceIds);
     // remove id of current process instance
     processInstanceIdsWithoutCurrentProcess.remove(currentProcessInstanceId);
 
@@ -514,16 +517,16 @@ public class ElasticsearchProcessStore implements ProcessStore {
   public long deleteDocument(String indexName, String idField, String id) throws IOException {
     final DeleteByQueryRequest query =
         new DeleteByQueryRequest(indexName).setQuery(QueryBuilders.termsQuery(idField, id));
-    BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
-    logger.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
+    final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+    LOGGER.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
     return response.getDeleted();
   }
 
   @Override
   public void deleteProcessInstanceFromTreePath(String processInstanceKey) {
-    BulkRequest bulkRequest = new BulkRequest();
+    final BulkRequest bulkRequest = new BulkRequest();
     // select process instance - get tree path
-    String treePath = getProcessInstanceTreePathById(processInstanceKey);
+    final String treePath = getProcessInstanceTreePathById(processInstanceKey);
 
     // select all process instances with term treePath == tree path
     // update all this process instances to remove corresponding part of tree path
@@ -550,9 +553,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
                   Arrays.stream(hits.getHits())
                       .forEach(
                           sh -> {
-                            UpdateRequest updateRequest = new UpdateRequest();
-                            Map<String, Object> updateFields = new HashMap<>();
-                            String newTreePath =
+                            final UpdateRequest updateRequest = new UpdateRequest();
+                            final Map<String, Object> updateFields = new HashMap<>();
+                            final String newTreePath =
                                 new TreePath((String) sh.getSourceAsMap().get(TREE_PATH))
                                     .removeProcessInstance(processInstanceKey)
                                     .toString();
@@ -591,18 +594,18 @@ public class ElasticsearchProcessStore implements ProcessStore {
       throw new OperateRuntimeException("Parameter 'states' is needed to search by states.");
     }
 
-    QueryBuilder query =
+    final QueryBuilder query =
         joinWithAnd(
             QueryBuilders.termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
             QueryBuilders.termQuery(PROCESS_KEY, processDefinitionKey),
             QueryBuilders.termsQuery(
                 STATE, states.stream().map(Enum::name).collect(Collectors.toList())));
-    SearchSourceBuilder source =
+    final SearchSourceBuilder source =
         new SearchSourceBuilder().size(size).query(query).fetchSource(includeFields, null);
-    SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
+    final SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
 
     try {
-      SearchResponse response = tenantAwareClient.search(searchRequest);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       return ElasticsearchUtil.mapSearchHits(
           response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
     } catch (IOException ex) {
@@ -623,13 +626,13 @@ public class ElasticsearchProcessStore implements ProcessStore {
           "Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
     }
 
-    QueryBuilder query =
+    final QueryBuilder query =
         joinWithAnd(
             QueryBuilders.termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
             QueryBuilders.termsQuery(PARENT_PROCESS_INSTANCE_KEY, parentProcessInstanceKeys));
-    SearchSourceBuilder source =
+    final SearchSourceBuilder source =
         new SearchSourceBuilder().size(size).query(query).fetchSource(includeFields, null);
-    SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
+    final SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
 
     try {
       return tenantAwareClient.search(
@@ -650,19 +653,19 @@ public class ElasticsearchProcessStore implements ProcessStore {
     }
 
     long count = 0;
-    List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
+    final List<ProcessInstanceDependant> processInstanceDependantsWithoutOperation =
         processInstanceDependantTemplates.stream()
             .filter(template -> !(template instanceof OperationTemplate))
             .toList();
     try {
       for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
-        String indexName = ((TemplateDescriptor) template).getAlias();
+        final String indexName = ((TemplateDescriptor) template).getAlias();
         final DeleteByQueryRequest query =
             new DeleteByQueryRequest(indexName)
                 .setQuery(
                     QueryBuilders.termsQuery(
                         ProcessInstanceDependant.PROCESS_INSTANCE_KEY, processInstanceKeys));
-        BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+        final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
         count += response.getDeleted();
       }
 
@@ -671,7 +674,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
               .setQuery(
                   QueryBuilders.termsQuery(
                       ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
-      BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+      final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
       count += response.getDeleted();
     } catch (IOException ex) {
       throw new OperateRuntimeException(
@@ -682,9 +685,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   private QueryBuilder buildQuery(String tenantId, Set<String> allowedBPMNProcessIds) {
-    TermsQueryBuilder bpmnProcessIdQ =
+    final TermsQueryBuilder bpmnProcessIdQ =
         allowedBPMNProcessIds != null ? termsQuery(BPMN_PROCESS_ID, allowedBPMNProcessIds) : null;
-    TermQueryBuilder tenantIdQ =
+    final TermQueryBuilder tenantIdQ =
         tenantId != null ? termQuery(ProcessIndex.TENANT_ID, tenantId) : null;
     QueryBuilder q = joinWithAnd(bpmnProcessIdQ, tenantIdQ);
     if (q == null) {

@@ -68,7 +68,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatisticsReader {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchFlowNodeStatisticsReader.class);
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
@@ -80,23 +80,23 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
   @Override
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
 
-    SearchRequest searchRequest;
+    final SearchRequest searchRequest;
     if (!query.isFinished()) {
       searchRequest = createQuery(query, ONLY_RUNTIME);
     } else {
       searchRequest = createQuery(query, ALL);
     }
-    Map<String, FlowNodeStatisticsDto> statisticsMap = runQueryAndCollectStats(searchRequest);
+    final Map<String, FlowNodeStatisticsDto> statisticsMap = runQueryAndCollectStats(searchRequest);
     return statisticsMap.values();
   }
 
   private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest searchRequest) {
     try {
-      Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
+      final Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       if (searchResponse.getAggregations() != null) {
-        Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
+        final Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
         CollectionUtil.asMap(
                 AGG_ACTIVE_ACTIVITIES, (MapUpdater) FlowNodeStatisticsDto::addActive,
                 AGG_INCIDENT_ACTIVITIES, (MapUpdater) FlowNodeStatisticsDto::addIncidents,
@@ -112,7 +112,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
       final String message =
           String.format(
               "Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
-      logger.error(message, e);
+      LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -133,12 +133,12 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
     }
     agg = agg.subAggregation(getFinishedActivitiesAgg());
 
-    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q, agg);
+    LOGGER.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q, agg);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType);
 
-    logger.debug("Search request will search in: \n{}", searchRequest.indices());
+    LOGGER.debug("Search request will search in: \n{}", searchRequest.indices());
 
     return searchRequest.source(new SearchSourceBuilder().query(q).size(0).aggregation(agg));
   }
@@ -148,13 +148,13 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
       Children activities,
       String aggName,
       MapUpdater mapUpdater) {
-    Filter incidentActivitiesAgg = activities.getAggregations().get(aggName);
+    final Filter incidentActivitiesAgg = activities.getAggregations().get(aggName);
     if (incidentActivitiesAgg != null) {
       ((Terms) incidentActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES))
           .getBuckets().stream()
               .forEach(
                   b -> {
-                    String activityId = b.getKeyAsString();
+                    final String activityId = b.getKeyAsString();
                     final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_PROCESS);
                     final long docCount = aggregation.getDocCount(); // number of process instances
                     if (statisticsMap.get(activityId) == null) {

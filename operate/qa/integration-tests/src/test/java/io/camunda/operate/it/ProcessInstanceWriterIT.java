@@ -59,8 +59,8 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldDeleteFinishedInstanceById() throws IOException {
-    Long processInstanceKey = 4503599627370497L;
-    ProcessInstanceForListViewEntity processInstance =
+    final Long processInstanceKey = 4503599627370497L;
+    final ProcessInstanceForListViewEntity processInstance =
         new ProcessInstanceForListViewEntity()
             .setId(String.valueOf(processInstanceKey))
             .setKey(processInstanceKey)
@@ -102,8 +102,8 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldDeleteCancelledInstanceById() throws IOException {
-    Long processInstanceKey = 4503599627370497L;
-    ProcessInstanceForListViewEntity processInstance =
+    final Long processInstanceKey = 4503599627370497L;
+    final ProcessInstanceForListViewEntity processInstance =
         new ProcessInstanceForListViewEntity()
             .setId(String.valueOf(processInstanceKey))
             .setKey(processInstanceKey)
@@ -144,8 +144,8 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFailDeleteInstanceByIdWithInvalidState() throws IOException {
-    Long processInstanceKey = 4503599627370497L;
-    ProcessInstanceForListViewEntity processInstance =
+    final Long processInstanceKey = 4503599627370497L;
+    final ProcessInstanceForListViewEntity processInstance =
         new ProcessInstanceForListViewEntity()
             .setId(String.valueOf(processInstanceKey))
             .setKey(processInstanceKey)
@@ -179,11 +179,11 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
   private void assertThatDependantsAreAlsoDeleted(final long finishedProcessInstanceKey)
       throws IOException {
-    for (ProcessInstanceDependant t : processInstanceDependants) {
+    for (final ProcessInstanceDependant t : processInstanceDependants) {
       if (!(t instanceof OperationTemplate)) {
-        var index = t.getFullQualifiedName() + "*";
-        var field = ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
-        var response =
+        final var index = t.getFullQualifiedName() + "*";
+        final var field = ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
+        final var response =
             testSearchRepository.searchTerm(
                 index, field, finishedProcessInstanceKey, Object.class, 100);
         assertThat(response.size()).isZero();
@@ -192,7 +192,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
   }
 
   private String getFullIndexNameForDependant(String indexName) {
-    ProcessInstanceDependant dependant =
+    final ProcessInstanceDependant dependant =
         processInstanceDependants.stream()
             .filter(template -> template.getFullQualifiedName().contains(indexName))
             .findAny()

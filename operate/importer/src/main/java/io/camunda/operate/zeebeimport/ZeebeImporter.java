@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
 @DependsOn("schemaStartup")
 public class ZeebeImporter {
 
-  private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeImporter.class);
 
   @Autowired private OperateProperties operateProperties;
 
@@ -57,7 +57,7 @@ public class ZeebeImporter {
   }
 
   public void scheduleReaders() {
-    logger.info("INIT: Start importing data...");
+    LOGGER.info("INIT: Start importing data...");
     recordsReaderHolder.getAllRecordsReaders().stream()
         .forEach(recordsReader -> recordsReaderThreadPoolExecutor.submit(recordsReader));
   }

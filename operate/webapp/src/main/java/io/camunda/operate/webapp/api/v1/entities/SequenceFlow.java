@@ -78,9 +78,13 @@ public class SequenceFlow {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    SequenceFlow that = (SequenceFlow) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SequenceFlow that = (SequenceFlow) o;
     return Objects.equals(id, that.id)
         && Objects.equals(activityId, that.activityId)
         && Objects.equals(processInstanceKey, that.processInstanceKey)

@@ -55,7 +55,7 @@ import org.springframework.stereotype.Component;
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQueryAndScriptPlan {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchReindexWithQueryAndScriptPlan.class);
   private final MigrationProperties migrationProperties;
   private final RichOpenSearchClient richOpenSearchClient;
@@ -98,7 +98,7 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
 
   private Script buildScript(
       final String scriptContent, final Map<String, Tuple<String, String>> bpmnProcessIdsMap) {
-    Map<String, JsonData> paramsMap =
+    final Map<String, JsonData> paramsMap =
         Map.of("dstIndex", JsonData.of(dstIndex), "bpmnProcessIds", JsonData.of(bpmnProcessIdsMap));
     return new Script.Builder()
         .inline(InlineScript.of(s -> s.lang("painless").source(scriptContent).params(paramsMap)))
@@ -106,13 +106,13 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   }
 
   private Map<String, Tuple<String, String>> getBpmnProcessIds(Set<Long> processInstanceKeys) {
-    var request =
+    final var request =
         searchRequestBuilder(listViewIndexName + "*")
             .query(longTerms(KEY, processInstanceKeys))
             .source(sourceInclude(KEY, BPMN_PROCESS_ID, PROCESS_KEY))
             .size(migrationProperties.getScriptParamsCount());
     record Result(String key, String bpmnProcessId, String processKey) {}
-    Map<String, Tuple<String, String>> results = new HashMap<>();
+    final Map<String, Tuple<String, String>> results = new HashMap<>();
     richOpenSearchClient
         .doc()
         .scrollWith(
@@ -121,7 +121,7 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
             hits ->
                 hits.forEach(
                     hit -> {
-                      var source = hit.source();
+                      final var source = hit.source();
                       if (source != null) {
                         results.put(
                             source.key(), new Tuple<>(source.bpmnProcessId(), source.processKey()));
@@ -138,13 +138,13 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   @Override
   public void executeOn(final SchemaManager schemaManager) throws MigrationException {
     // iterate over process instance ids
-    String processInstanceKeyField = "processInstanceKey";
-    var searchRequest =
+    final String processInstanceKeyField = "processInstanceKey";
+    final var searchRequest =
         searchRequestBuilder(srcIndex + "_*")
             .source(sourceInclude(processInstanceKeyField))
             .sort(sortOptions(processInstanceKeyField, SortOrder.Asc))
             .size(migrationProperties.getScriptParamsCount());
-    Set<Long> processInstanceKeys = new HashSet<>();
+    final Set<Long> processInstanceKeys = new HashSet<>();
     try {
       richOpenSearchClient
           .doc()
@@ -153,13 +153,13 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
               Long.class,
               rethrowConsumer(
                   hits -> {
-                    Set<Long> currentProcessInstanceKeys =
+                    final Set<Long> currentProcessInstanceKeys =
                         hits.stream().map(Hit::source).collect(Collectors.toSet());
                     if (processInstanceKeys.size() + currentProcessInstanceKeys.size()
                         >= migrationProperties.getScriptParamsCount()) {
-                      int remainingSize =
+                      final int remainingSize =
                           migrationProperties.getScriptParamsCount() - processInstanceKeys.size();
-                      Set<Long> subSet =
+                      final Set<Long> subSet =
                           currentProcessInstanceKeys.stream()
                               .limit(remainingSize)
                               .collect(Collectors.toSet());
@@ -185,8 +185,8 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   @Override
   public void validateMigrationResults(final SchemaManager schemaManager)
       throws MigrationException {
-    long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
-    long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
+    final long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
+    final long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
     if (srcCount != dstCount) {
       throw new MigrationException(
           String.format(
@@ -196,14 +196,15 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   }
 
   private void reindexPart(Set<Long> processInstanceKeys) {
-    Map<String, Tuple<String, String>> bpmnProcessIdsMap = getBpmnProcessIds(processInstanceKeys);
-    logger.debug(
+    final Map<String, Tuple<String, String>> bpmnProcessIdsMap =
+        getBpmnProcessIds(processInstanceKeys);
+    LOGGER.debug(
         "Migrate srcIndex: {}, processInstanceKeys: {}, bpmnProcessIdsMap: {}",
         srcIndex,
         processInstanceKeys,
         bpmnProcessIdsMap);
-    String content = steps.get(0).getContent();
-    var reindexRequest =
+    final String content = steps.get(0).getContent();
+    final var reindexRequest =
         new ReindexRequest.Builder()
             .source(
                 Source.of(

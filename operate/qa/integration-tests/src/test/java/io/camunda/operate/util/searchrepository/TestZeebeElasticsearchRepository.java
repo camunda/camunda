@@ -50,19 +50,19 @@ public class TestZeebeElasticsearchRepository implements TestZeebeRepository {
 
   @Override
   public <R> List<R> scrollTerm(String index, String field, long value, Class<R> clazz) {
-    List<R> result = new ArrayList<>();
+    final List<R> result = new ArrayList<>();
 
-    SearchRequest request =
+    final SearchRequest request =
         new SearchRequest(index).source(new SearchSourceBuilder().query(termQuery(field, value)));
 
-    Function<SearchHits, List<R>> hitsToListR =
+    final Function<SearchHits, List<R>> hitsToListR =
         hits ->
             Arrays.stream(hits.getHits())
                 .map(SearchHit::getSourceAsString)
                 .map(source -> ElasticsearchUtil.fromSearchHit(source, objectMapper, clazz))
                 .toList();
 
-    Consumer<SearchHits> hitsConsumer = hits -> result.addAll(hitsToListR.apply(hits));
+    final Consumer<SearchHits> hitsConsumer = hits -> result.addAll(hitsToListR.apply(hits));
 
     try {
       scroll(request, hitsConsumer, zeebeEsClient);

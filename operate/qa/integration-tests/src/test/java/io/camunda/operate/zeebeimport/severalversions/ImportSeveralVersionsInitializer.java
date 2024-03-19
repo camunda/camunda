@@ -94,7 +94,7 @@ public class ImportSeveralVersionsInitializer
   }
 
   private File createTemporaryFolder() {
-    File createdFolder;
+    final File createdFolder;
     try {
       createdFolder = File.createTempFile("junit", "", null);
       createdFolder.delete();
@@ -107,7 +107,7 @@ public class ImportSeveralVersionsInitializer
 
   private void generateDataForAllVersions() {
     // read list of supported zeebeVersions
-    String[] zeebeVersions =
+    final String[] zeebeVersions =
         ContainerVersionsUtil.readProperty(ZEEBE_VERSIONS_PROPERTY_NAME).split(VERSIONS_DELIMITER);
 
     for (String version : zeebeVersions) {

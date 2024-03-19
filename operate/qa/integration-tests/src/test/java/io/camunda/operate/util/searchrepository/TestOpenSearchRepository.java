@@ -88,13 +88,13 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data)
       throws IOException {
-    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, docId, entityMap);
   }
 
   @Override
   public String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException {
-    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, entityMap);
   }
 
@@ -108,7 +108,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public String createOrUpdateDocument(String indexName, Map<String, ?> doc) throws IOException {
-    String docId = UUID.randomUUID().toString();
+    final String docId = UUID.randomUUID().toString();
     if (createOrUpdateDocument(indexName, UUID.randomUUID().toString(), doc)) {
       return docId;
     } else {
@@ -123,7 +123,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public Set<String> getFieldNames(String indexName) throws IOException {
-    var requestBuilder = getIndexRequestBuilder(indexName);
+    final var requestBuilder = getIndexRequestBuilder(indexName);
     return richOpenSearchClient
         .index()
         .get(requestBuilder)
@@ -136,14 +136,14 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType)
       throws IOException {
-    var osDynamicMappingType =
+    final var osDynamicMappingType =
         switch (dynamicMappingType) {
           case Strict -> DynamicMapping.Strict;
           case True -> DynamicMapping.True;
         };
 
-    var requestBuilder = getIndexRequestBuilder(indexName);
-    var dynamicMapping =
+    final var requestBuilder = getIndexRequestBuilder(indexName);
+    final var dynamicMapping =
         richOpenSearchClient.index().get(requestBuilder).get(indexName).mappings().dynamic();
 
     return dynamicMapping == osDynamicMappingType;
@@ -151,7 +151,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public List<String> getAliasNames(String indexName) throws IOException {
-    var requestBuilder = getIndexRequestBuilder(indexName);
+    final var requestBuilder = getIndexRequestBuilder(indexName);
     return richOpenSearchClient
         .index()
         .get(requestBuilder)
@@ -164,14 +164,14 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
-    var requestBuilder = searchRequestBuilder(index).query(matchAll());
+    final var requestBuilder = searchRequestBuilder(index).query(matchAll());
     return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
   }
 
   @Override
   public <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size)
       throws IOException {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(index)
             .query(constantScore(term(JOIN_RELATION, joinRelation)))
             .size(size);
@@ -199,7 +199,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
               + value.getClass().getName());
     }
 
-    var requestBuilder = searchRequestBuilder(index).query(query).size(size);
+    final var requestBuilder = searchRequestBuilder(index).query(query).size(size);
 
     return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
   }
@@ -207,7 +207,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size)
       throws IOException {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(index).query(longTerms(idFieldName, ids)).size(size);
 
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class).stream()
@@ -234,7 +234,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
             .map(key -> "ctx._source." + key + " = params." + key + ";\n")
             .collect(Collectors.joining());
 
-    var updateRequestBuilder =
+    final var updateRequestBuilder =
         RequestDSL.<Void, Void>updateRequestBuilder(index).id(id).script(script(script, fields));
 
     richOpenSearchClient.doc().update(updateRequestBuilder, errorMessageSupplier);
@@ -243,7 +243,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public List<VariableEntity> getVariablesByProcessInstanceKey(
       String index, Long processInstanceKey) {
-    var requestBuilder =
+    final var requestBuilder =
         searchRequestBuilder(index)
             .query(constantScore(term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)));
 
@@ -254,7 +254,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   public void reindex(
       String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams)
       throws IOException {
-    var request = reindexRequestBuilder(srcIndex, dstIndex, script, scriptParams).build();
+    final var request = reindexRequestBuilder(srcIndex, dstIndex, script, scriptParams).build();
     richOpenSearchClient.index().reindexWithRetries(request);
   }
 
@@ -265,13 +265,13 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public IndexSettings getIndexSettings(String indexName) throws IOException {
-    var settings = new MapPath(richOpenSearchClient.index().getIndexSettings(indexName));
-    String shards =
+    final var settings = new MapPath(richOpenSearchClient.index().getIndexSettings(indexName));
+    final String shards =
         settings
             .getByPath("settings", "index", "number_of_shards")
             .flatMap(Convertable::<String>to)
             .orElse(null);
-    String replicas =
+    final String replicas =
         settings
             .getByPath("settings", "index", "number_of_replicas")
             .flatMap(Convertable::<String>to)
@@ -284,7 +284,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids)
       throws IOException {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(indexName)
             .query(constantScore(ids(toSafeArrayOfStrings(ids))))
             .size(100);
@@ -297,7 +297,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstances(
       String indexName, List<Long> ids) throws IOException {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(indexName)
             .query(
                 constantScore(
@@ -316,12 +316,12 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex)
       throws IOException {
     try {
-      var searchRequestBuilder =
+      final var searchRequestBuilder =
           searchRequestBuilder(indexName)
               .query(stringTerms(idFieldName, Arrays.asList(toSafeArrayOfStrings(ids))))
               .size(100);
 
-      List<Long> indexIds =
+      final List<Long> indexIds =
           richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class).stream()
               .map(map -> (Long) map.get(idFieldName))
               .toList();

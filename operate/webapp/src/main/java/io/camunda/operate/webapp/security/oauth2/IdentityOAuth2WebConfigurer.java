@@ -69,7 +69,7 @@ public class IdentityOAuth2WebConfigurer {
   }
 
   private String getJwkSetUriProperty() {
-    String backendUri;
+    final String backendUri;
 
     // If the SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is present, then it has already
     // been correctly

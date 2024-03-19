@@ -47,7 +47,7 @@ public class MessageEndEventZeebeIT extends OperateZeebeAbstractIT {
         .processInstanceIsFinished();
 
     // when
-    List<FlowNodeInstanceEntity> flowNodes =
+    final List<FlowNodeInstanceEntity> flowNodes =
         tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
     // then
     assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))

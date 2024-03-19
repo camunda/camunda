@@ -29,14 +29,14 @@ public class CollectionUtilTest {
 
   @Test
   public void testAsMapOneEntry() {
-    Map<String, Object> result = CollectionUtil.asMap("key1", "value1");
+    final Map<String, Object> result = CollectionUtil.asMap("key1", "value1");
     assertThat(result).hasSize(1);
     assertThat(result).containsEntry("key1", "value1");
   }
 
   @Test
   public void testAsMapManyEntries() {
-    Map<String, Object> result =
+    final Map<String, Object> result =
         CollectionUtil.asMap("key1", "value1", "key2", "value2", "key3", "value3");
     assertThat(result).hasSize(3);
     assertThat(result).containsEntry("key2", "value2");
@@ -63,13 +63,13 @@ public class CollectionUtilTest {
 
   @Test
   public void testWithoutNulls() {
-    List<Object> ids = Arrays.asList("id-1", null, "id3", null, null, "id5");
+    final List<Object> ids = Arrays.asList("id-1", null, "id3", null, null, "id5");
     assertThat(CollectionUtil.withoutNulls(ids)).containsExactly("id-1", "id3", "id5");
   }
 
   @Test
   public void testToSafeListOfStrings() {
-    List<Object> ids = Arrays.asList("id-1", null, "id3", null, null, "id5");
+    final List<Object> ids = Arrays.asList("id-1", null, "id3", null, null, "id5");
     assertThat(CollectionUtil.withoutNulls(ids)).containsExactly("id-1", "id3", "id5");
   }
 

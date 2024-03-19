@@ -58,14 +58,20 @@ public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, Seq
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    SequenceFlowDto that = (SequenceFlowDto) o;
+    final SequenceFlowDto that = (SequenceFlowDto) o;
 
     if (processInstanceId != null
         ? !processInstanceId.equals(that.processInstanceId)
-        : that.processInstanceId != null) return false;
+        : that.processInstanceId != null) {
+      return false;
+    }
     return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
   }
 }

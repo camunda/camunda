@@ -51,9 +51,13 @@ public class ModifyProcessInstanceRequestDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ModifyProcessInstanceRequestDto that = (ModifyProcessInstanceRequestDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ModifyProcessInstanceRequestDto that = (ModifyProcessInstanceRequestDto) o;
     return Objects.equals(modifications, that.modifications)
         && Objects.equals(processInstanceKey, that.processInstanceKey);
   }
@@ -125,10 +129,12 @@ public class ModifyProcessInstanceRequestDto {
     }
 
     public Map<String, List<Map<String, Object>>> variablesForAddToken() {
-      if (variables == null || MapUtils.isEmpty(variables)) return null;
-      Map<String, List<Map<String, Object>>> result = new HashMap<>();
+      if (variables == null || MapUtils.isEmpty(variables)) {
+        return null;
+      }
+      final Map<String, List<Map<String, Object>>> result = new HashMap<>();
       for (String flowNodeId : variables.keySet()) {
-        List<Map<String, Object>> variablesList =
+        final List<Map<String, Object>> variablesList =
             (List<Map<String, Object>>) variables.get(flowNodeId);
         result.put(flowNodeId, variablesList);
       }
@@ -177,9 +183,13 @@ public class ModifyProcessInstanceRequestDto {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      Modification that = (Modification) o;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final Modification that = (Modification) o;
       return modification == that.modification
           && Objects.equals(fromFlowNodeId, that.fromFlowNodeId)
           && Objects.equals(toFlowNodeId, that.toFlowNodeId)

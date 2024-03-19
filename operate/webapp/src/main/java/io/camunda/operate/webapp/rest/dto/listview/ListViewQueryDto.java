@@ -299,9 +299,13 @@ public class ListViewQueryDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ListViewQueryDto that = (ListViewQueryDto) o;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ListViewQueryDto that = (ListViewQueryDto) o;
     return running == that.running
         && active == that.active
         && incidents == that.incidents

@@ -120,9 +120,13 @@ public class QueryHelper {
   }
 
   private QueryBuilder createReadPermissionQuery() {
-    if (permissionsService == null) return null;
-    var allowed = permissionsService.getProcessesWithPermission(IdentityPermission.READ);
-    if (allowed == null) return null;
+    if (permissionsService == null) {
+      return null;
+    }
+    final var allowed = permissionsService.getProcessesWithPermission(IdentityPermission.READ);
+    if (allowed == null) {
+      return null;
+    }
     return allowed.isAll()
         ? QueryBuilders.matchAllQuery()
         : termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
@@ -170,7 +174,7 @@ public class QueryHelper {
   }
 
   private QueryBuilder createVariablesQuery(ListViewQueryDto query) {
-    VariablesQueryDto variablesQuery = query.getVariable();
+    final VariablesQueryDto variablesQuery = query.getVariable();
     if (variablesQuery != null && StringUtils.hasLength(variablesQuery.getValue())) {
       if (variablesQuery.getName() == null) {
         throw new InvalidRequestException("Variables query must provide not-null variable name.");
@@ -186,7 +190,7 @@ public class QueryHelper {
   }
 
   private QueryBuilder createVariablesInQuery(ListViewQueryDto query) {
-    VariablesQueryDto variablesQuery = query.getVariable();
+    final VariablesQueryDto variablesQuery = query.getVariable();
     if (variablesQuery != null && !ArrayUtils.isEmpty(variablesQuery.getValues())) {
       if (variablesQuery.getName() == null) {
         throw new InvalidRequestException("Variables query must provide not-null variable name.");
@@ -252,7 +256,7 @@ public class QueryHelper {
   }
 
   private QueryBuilder createErrorMessageQuery(ListViewQueryDto query) {
-    String errorMessage = query.getErrorMessage();
+    final String errorMessage = query.getErrorMessage();
     if (!StringUtils.isEmpty(errorMessage)) {
       if (errorMessage.contains(WILD_CARD)) {
         return createErrorMessageAsWildcardQuery(errorMessage.toLowerCase());
@@ -272,13 +276,13 @@ public class QueryHelper {
 
   private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query) {
 
-    boolean active = query.isActive();
-    boolean incidents = query.isIncidents();
-    boolean running = query.isRunning();
+    final boolean active = query.isActive();
+    final boolean incidents = query.isIncidents();
+    final boolean running = query.isRunning();
 
-    boolean completed = query.isCompleted();
-    boolean canceled = query.isCanceled();
-    boolean finished = query.isFinished();
+    final boolean completed = query.isCompleted();
+    final boolean canceled = query.isCanceled();
+    final boolean finished = query.isFinished();
 
     if (!running && !finished) {
       // empty list should be returned
@@ -296,8 +300,8 @@ public class QueryHelper {
       // running query
       runningQuery = boolQuery().mustNot(existsQuery(END_DATE));
 
-      QueryBuilder activeQuery = createActiveQuery(query);
-      QueryBuilder incidentsQuery = createIncidentsQuery(query);
+      final QueryBuilder activeQuery = createActiveQuery(query);
+      final QueryBuilder incidentsQuery = createIncidentsQuery(query);
 
       if (query.getActivityId() == null && query.isActive() && query.isIncidents()) {
         // we request all running instances
@@ -314,8 +318,8 @@ public class QueryHelper {
       // add finished query
       finishedQuery = existsQuery(END_DATE);
 
-      QueryBuilder completedQuery = createCompletedQuery(query);
-      QueryBuilder canceledQuery = createCanceledQuery(query);
+      final QueryBuilder completedQuery = createCompletedQuery(query);
+      final QueryBuilder canceledQuery = createCanceledQuery(query);
 
       if (query.getActivityId() == null && query.isCompleted() && query.isCanceled()) {
         // we request all finished instances
@@ -335,7 +339,7 @@ public class QueryHelper {
 
   private QueryBuilder createRetriesLeftQuery(ListViewQueryDto query) {
     if (query.isRetriesLeft()) {
-      QueryBuilder retriesLeftQuery = termQuery(JOB_FAILED_WITH_RETRIES_LEFT, true);
+      final QueryBuilder retriesLeftQuery = termQuery(JOB_FAILED_WITH_RETRIES_LEFT, true);
       return hasChildQuery(ACTIVITIES_JOIN_RELATION, retriesLeftQuery, None);
     }
     return null;

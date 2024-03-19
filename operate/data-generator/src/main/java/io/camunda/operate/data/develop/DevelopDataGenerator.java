@@ -199,6 +199,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   @Override
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   protected JobWorker progressOrderProcessCheckPayment() {
     return client
         .newWorker()
@@ -552,6 +553,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         .open();
   }
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   private JobWorker progressTaskA() {
     return client
         .newWorker()

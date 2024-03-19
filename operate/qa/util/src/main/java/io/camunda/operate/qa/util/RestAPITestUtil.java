@@ -28,7 +28,7 @@ public class RestAPITestUtil {
 
   public static ListViewQueryDto createProcessInstanceQuery(
       Consumer<ListViewQueryDto> filtersSupplier) {
-    ListViewQueryDto query = new ListViewQueryDto();
+    final ListViewQueryDto query = new ListViewQueryDto();
     filtersSupplier.accept(query);
     return query;
   }
@@ -84,8 +84,8 @@ public class RestAPITestUtil {
 
   public static ListViewRequestDto createProcessInstanceRequest(
       Consumer<ListViewQueryDto> filtersSupplier) {
-    ListViewRequestDto request = new ListViewRequestDto();
-    ListViewQueryDto query = new ListViewQueryDto();
+    final ListViewRequestDto request = new ListViewRequestDto();
+    final ListViewQueryDto query = new ListViewQueryDto();
     filtersSupplier.accept(query);
     request.setQuery(query);
     return request;
@@ -97,15 +97,15 @@ public class RestAPITestUtil {
 
   public static DecisionInstanceListQueryDto createDecisionInstanceQuery(
       Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
-    DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
+    final DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
     filtersSupplier.accept(query);
     return query;
   }
 
   public static DecisionInstanceListRequestDto createDecisionInstanceRequest(
       Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
-    DecisionInstanceListRequestDto request = new DecisionInstanceListRequestDto();
-    DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
+    final DecisionInstanceListRequestDto request = new DecisionInstanceListRequestDto();
+    final DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
     filtersSupplier.accept(query);
     request.setQuery(query);
     return request;

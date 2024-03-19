@@ -38,7 +38,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public abstract class AbstractIncidentPostImportAction implements PostImportAction {
   public static final long BACKOFF = 2000L;
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractIncidentPostImportAction.class);
   protected int partitionId;
 
@@ -78,7 +78,7 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
           postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
         }
       } catch (final Exception ex) {
-        logger.error(
+        LOGGER.error(
             String.format(
                 "Exception occurred when performing post import for partition %d: %s. Will be retried...",
                 partitionId, ex.getMessage()),
@@ -114,8 +114,8 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
       return new ArrayList<>();
     }
 
-    if (logger.isDebugEnabled()) {
-      logger.debug("Processing pending incidents: " + batch.getIncidents());
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Processing pending incidents: " + batch.getIncidents());
     }
 
     try {
@@ -129,8 +129,8 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
         importPositionHolder.recordLatestPostImportedPosition(lastProcessedPosition);
       }
 
-      if (logger.isDebugEnabled()) {
-        logger.debug("Finished processing");
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Finished processing");
       }
 
     } catch (final IOException | PersistenceException e) {

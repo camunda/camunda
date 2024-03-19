@@ -47,12 +47,12 @@ public class ProcessIT extends OperateAbstractIT {
   @Test
   public void testProcessesGroupedWithPermissionWhenNotAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
 
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
@@ -62,10 +62,10 @@ public class ProcessIT extends OperateAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    MvcResult mvcResult = postRequest(QUERY_PROCESS_GROUPED_URL, new ProcessRequestDto());
+    final MvcResult mvcResult = postRequest(QUERY_PROCESS_GROUPED_URL, new ProcessRequestDto());
 
     // then
-    List<ProcessGroupDto> response =
+    final List<ProcessGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).isEmpty();
@@ -74,12 +74,12 @@ public class ProcessIT extends OperateAbstractIT {
   @Test
   public void testProcessesGroupedWithPermisssionWhenAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
 
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
@@ -89,10 +89,10 @@ public class ProcessIT extends OperateAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
-    MvcResult mvcResult = postRequest(QUERY_PROCESS_GROUPED_URL, new ProcessRequestDto());
+    final MvcResult mvcResult = postRequest(QUERY_PROCESS_GROUPED_URL, new ProcessRequestDto());
 
     // then
-    List<ProcessGroupDto> response =
+    final List<ProcessGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(3);
@@ -104,12 +104,12 @@ public class ProcessIT extends OperateAbstractIT {
   @Test
   public void testProcessesGroupedWithPermisssionWhenSomeAllowed() throws Exception {
     // given
-    String id1 = "111";
-    String id2 = "222";
-    String id3 = "333";
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
+    final String id1 = "111";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
 
     final ProcessEntity process1 = new ProcessEntity().setId(id1).setBpmnProcessId(bpmnProcessId1);
     final ProcessEntity process2 = new ProcessEntity().setId(id2).setBpmnProcessId(bpmnProcessId2);
@@ -119,10 +119,10 @@ public class ProcessIT extends OperateAbstractIT {
     // when
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId2)));
-    MvcResult mvcResult = postRequest(QUERY_PROCESS_GROUPED_URL, new ProcessRequestDto());
+    final MvcResult mvcResult = postRequest(QUERY_PROCESS_GROUPED_URL, new ProcessRequestDto());
 
     // then
-    List<ProcessGroupDto> response =
+    final List<ProcessGroupDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(1);
@@ -134,37 +134,37 @@ public class ProcessIT extends OperateAbstractIT {
   @Test
   public void testProcessesGroupedWithTenantId() throws Exception {
     // given
-    String id111 = "111";
-    String id121 = "121";
-    String id112 = "112";
-    String id122 = "122";
-    String id2 = "222";
-    String id3 = "333";
-    String bpmnProcessId1 = "bpmnProcessId1";
-    String bpmnProcessId2 = "bpmnProcessId2";
-    String bpmnProcessId3 = "bpmnProcessId3";
-    String tenantId1 = "tenant1";
-    String tenantId2 = "tenant2";
+    final String id111 = "111";
+    final String id121 = "121";
+    final String id112 = "112";
+    final String id122 = "122";
+    final String id2 = "222";
+    final String id3 = "333";
+    final String bpmnProcessId1 = "bpmnProcessId1";
+    final String bpmnProcessId2 = "bpmnProcessId2";
+    final String bpmnProcessId3 = "bpmnProcessId3";
+    final String tenantId1 = "tenant1";
+    final String tenantId2 = "tenant2";
 
-    final ProcessEntity process1_1_1 =
+    final ProcessEntity process111 =
         new ProcessEntity()
             .setId(id111)
             .setVersion(1)
             .setBpmnProcessId(bpmnProcessId1)
             .setTenantId(tenantId1);
-    final ProcessEntity process1_2_1 =
+    final ProcessEntity process121 =
         new ProcessEntity()
             .setId(id121)
             .setVersion(2)
             .setBpmnProcessId(bpmnProcessId1)
             .setTenantId(tenantId1);
-    final ProcessEntity process1_1_2 =
+    final ProcessEntity process112 =
         new ProcessEntity()
             .setId(id112)
             .setVersion(1)
             .setBpmnProcessId(bpmnProcessId1)
             .setTenantId(tenantId2);
-    final ProcessEntity process1_2_2 =
+    final ProcessEntity process122 =
         new ProcessEntity()
             .setId(id122)
             .setVersion(2)
@@ -182,8 +182,7 @@ public class ProcessIT extends OperateAbstractIT {
             .setVersion(1)
             .setBpmnProcessId(bpmnProcessId3)
             .setTenantId(tenantId2);
-    searchTestRule.persistNew(
-        process1_1_1, process1_2_1, process1_1_2, process1_2_2, process2, process3);
+    searchTestRule.persistNew(process111, process121, process112, process122, process2, process3);
     when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 

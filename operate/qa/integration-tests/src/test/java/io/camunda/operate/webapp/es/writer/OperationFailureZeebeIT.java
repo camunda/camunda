@@ -98,7 +98,7 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
     // import works without being stuck on empty batch operation
     searchTestRule.processAllRecordsAndWait(
         processInstanceIsCanceledCheck, processInstanceSource1.getProcessInstanceKey());
-    ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
+    final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).hasSize(2);
     assertThat(processInstances.getProcessInstances())
         .extracting(
@@ -110,7 +110,7 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private BatchOperationWriter.ProcessInstanceSource startDemoProcessInstance() {
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     tester.startProcessInstance(processId, "{\"a\": \"b\"}").waitUntil().flowNodeIsActive("taskA");
 
     return new BatchOperationWriter.ProcessInstanceSource()
@@ -120,14 +120,14 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private ListViewResponseDto getProcessInstances(ListViewQueryDto query) throws Exception {
-    ListViewRequestDto request = new ListViewRequestDto(query);
+    final ListViewRequestDto request = new ListViewRequestDto(query);
     request.setPageSize(100);
-    MockHttpServletRequestBuilder getProcessInstancesRequest =
+    final MockHttpServletRequestBuilder getProcessInstancesRequest =
         post(query())
             .content(mockMvcTestRule.json(request))
             .contentType(mockMvcTestRule.getContentType());
 
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(getProcessInstancesRequest)
             .andExpect(status().isOk())

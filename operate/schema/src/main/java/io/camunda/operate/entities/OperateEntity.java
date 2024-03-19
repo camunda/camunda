@@ -36,10 +36,14 @@ public abstract class OperateEntity<T extends OperateEntity<T>> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
-    OperateEntity<T> that = (OperateEntity<T>) o;
+    final OperateEntity<T> that = (OperateEntity<T>) o;
 
     return id != null ? id.equals(that.id) : that.id == null;
   }

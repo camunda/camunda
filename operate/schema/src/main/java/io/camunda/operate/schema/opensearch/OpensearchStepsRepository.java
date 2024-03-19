@@ -79,7 +79,7 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
 
   @Override
   public void save(final Step step) throws MigrationException, IOException {
-    var createdOrUpdated =
+    final var createdOrUpdated =
         richOpenSearchClient
             .doc()
             .indexWithRetries(indexRequestBuilder(getName()).id(idFromStep(step)).document(step));
@@ -128,10 +128,10 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
 
   @Override
   public List<Step> readStepsFromClasspath() throws IOException {
-    List<Step> steps = new ArrayList<>();
-    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    final List<Step> steps = new ArrayList<>();
+    final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
     try {
-      Resource[] resources =
+      final Resource[] resources =
           resolver.getResources(
               OpensearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
 
