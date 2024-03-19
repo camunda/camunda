@@ -44,7 +44,7 @@ public abstract class AbstractUserTaskWriter {
 
   public List<ImportRequestDto> generateUserTaskImports(
       final String importItemName, final List<FlowNodeInstanceDto> userTaskInstances) {
-    log.debug("Writing [{}] {} to ES.", userTaskInstances.size(), importItemName);
+    log.debug("Writing [{}] {} to Database.", userTaskInstances.size(), importItemName);
 
     final Set<String> keys =
         userTaskInstances.stream()
