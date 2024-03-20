@@ -17,19 +17,19 @@ import org.slf4j.LoggerFactory;
 public final class JobTimeoutCheckerScheduler implements StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckerScheduler.class);
   private final Duration pollingInterval;
-  private final DeactivateTimeOutJobs deactivateTimedOutJobs;
+  private final JobTimeoutChecker jobTimeoutChecker;
 
   public JobTimeoutCheckerScheduler(
       final JobState state, final Duration pollingInterval, final int batchLimit) {
     this.pollingInterval = pollingInterval;
-    deactivateTimedOutJobs = new DeactivateTimeOutJobs(state, pollingInterval, batchLimit);
+    jobTimeoutChecker = new JobTimeoutChecker(state, pollingInterval, batchLimit);
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    deactivateTimedOutJobs.setProcessingContext(processingContext);
-    deactivateTimedOutJobs.setShouldReschedule(true);
-    deactivateTimedOutJobs.schedule(pollingInterval);
+    jobTimeoutChecker.setProcessingContext(processingContext);
+    jobTimeoutChecker.setShouldReschedule(true);
+    jobTimeoutChecker.schedule(pollingInterval);
   }
 
   @Override
@@ -49,12 +49,12 @@ public final class JobTimeoutCheckerScheduler implements StreamProcessorLifecycl
 
   @Override
   public void onResumed() {
-    deactivateTimedOutJobs.setShouldReschedule(true);
-    deactivateTimedOutJobs.schedule(pollingInterval);
+    jobTimeoutChecker.setShouldReschedule(true);
+    jobTimeoutChecker.schedule(pollingInterval);
   }
 
   private void cancelTimer() {
-    deactivateTimedOutJobs.setShouldReschedule(false);
+    jobTimeoutChecker.setShouldReschedule(false);
     LOG.trace("Job timeout checker canceled!");
   }
 }
