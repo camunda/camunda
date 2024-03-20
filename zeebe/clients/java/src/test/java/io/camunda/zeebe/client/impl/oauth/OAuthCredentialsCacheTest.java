@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.oauth;
 
-import static io.camunda.zeebe.client.OAuthCredentialsProviderTest.EXPIRY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
@@ -25,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -38,6 +39,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class OAuthCredentialsCacheTest {
+  private static final ZonedDateTime EXPIRY =
+      ZonedDateTime.of(3020, 1, 1, 0, 0, 0, 0, ZoneId.of("Z"));
 
   private static final String WOMBAT_ENDPOINT = "wombat.cloud.camunda.io";
   private static final String AARDVARK_ENDPOINT = "aardvark.cloud.camunda.io";
