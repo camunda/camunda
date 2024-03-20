@@ -21,8 +21,8 @@ import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class DeactivateTimeOutJobs implements Task {
-  private static final Logger LOG = LoggerFactory.getLogger(DeactivateTimeOutJobs.class);
+final class JobTimeoutChecker implements Task {
+  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutChecker.class);
 
   private boolean shouldReschedule = false;
 
@@ -37,7 +37,7 @@ final class DeactivateTimeOutJobs implements Task {
   private final Duration pollingInterval;
   private final int batchLimit;
 
-  public DeactivateTimeOutJobs(
+  public JobTimeoutChecker(
       final JobState state, final Duration pollingInterval, final int batchLimit) {
     this.state = state;
     this.pollingInterval = pollingInterval;
