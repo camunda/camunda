@@ -33,6 +33,11 @@ public final class ClassInfo implements BeanInfo {
     return beanName;
   }
 
+  @Override
+  public String toString() {
+    return "ClassInfo{" + "beanName=" + beanName + '}';
+  }
+
   public MethodInfo toMethodInfo(final Method method) {
     return MethodInfo.builder().classInfo(this).method(method).build();
   }

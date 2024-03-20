@@ -31,4 +31,14 @@ public class ParameterInfo {
   public String getParameterName() {
     return parameterName;
   }
+
+  @Override
+  public String toString() {
+    return "ParameterInfo{"
+        + "parameterName="
+        + parameterName
+        + ", parameterInfo="
+        + parameterInfo
+        + '}';
+  }
 }

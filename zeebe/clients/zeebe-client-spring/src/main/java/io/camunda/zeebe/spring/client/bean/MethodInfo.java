@@ -46,6 +46,11 @@ public class MethodInfo implements BeanInfo {
     return classInfo.getBeanName();
   }
 
+  @Override
+  public String toString() {
+    return "MethodInfo{" + "classInfo=" + classInfo + ", method=" + method + '}';
+  }
+
   public String getMethodName() {
     return method.getName();
   }
