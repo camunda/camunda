@@ -55,6 +55,6 @@ public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
 
   private void cancelTimer() {
     deactivateTimedOutJobs.setShouldReschedule(false);
-    LOG.trace("Job timout checker canceled!");
+    LOG.trace("Job timeout checker canceled!");
   }
 }
