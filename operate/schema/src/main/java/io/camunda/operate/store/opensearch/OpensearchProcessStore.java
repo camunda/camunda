@@ -364,7 +364,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
     final List<Result> results = new ArrayList<>();
     final Map<String, String> idToIndex = new HashMap<>();
-    Consumer<List<Hit<Result>>> hitsConsumer =
+    final Consumer<List<Hit<Result>>> hitsConsumer =
         hits -> {
           for (Hit<Result> hit : hits) {
             results.add(hit.source());
