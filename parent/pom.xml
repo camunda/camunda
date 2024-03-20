@@ -160,8 +160,7 @@
     <version.node>v20.8.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
     <version.log4j.testjar>2.17.2</version.log4j.testjar>
-    <keycloak-client.version>22.0.1</keycloak-client.version>
-
+    <version.keycloak-core>22.0.1</version.keycloak-core>
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
@@ -238,6 +237,7 @@
     <!-- disable other non-essential goals -->
     <flatten.skip>${quickly}</flatten.skip>
     <assembly.skipAssembly>${quickly}</assembly.skipAssembly>
+    <version.android-json>0.0.20131108.vaadin1</version.android-json>
   </properties>
 
   <dependencyManagement>
@@ -1106,6 +1106,18 @@
       </dependency>
 
       <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-core</artifactId>
+        <version>${version.keycloak-core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-admin-client</artifactId>
+        <version>${version.keycloak-core}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-api</artifactId>
         <version>${version.docker-java-api}</version>
@@ -1528,6 +1540,13 @@
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
         <version>${version.nimbus-jose-jwt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.vaadin.external.google</groupId>
+        <artifactId>android-json</artifactId>
+        <version>${version.android-json}</version>
+        <scope>test</scope>
       </dependency>
 
     </dependencies>
