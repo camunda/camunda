@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -34,14 +35,14 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
 
   private final GatewayStub asyncStub;
   private final Builder builder;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
   public ResolveIncidentCommandImpl(
       final GatewayStub asyncStub,
       final long incidentKey,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
     this.requestTimeout = requestTimeout;

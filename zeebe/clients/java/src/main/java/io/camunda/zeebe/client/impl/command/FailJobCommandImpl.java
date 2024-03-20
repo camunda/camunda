@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
@@ -37,7 +38,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
 
   private final GatewayStub asyncStub;
   private final Builder builder;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
   public FailJobCommandImpl(
@@ -45,7 +46,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
       final JsonMapper jsonMapper,
       final long key,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;

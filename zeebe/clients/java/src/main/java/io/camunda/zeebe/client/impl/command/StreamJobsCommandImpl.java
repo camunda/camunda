@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -47,7 +48,7 @@ public final class StreamJobsCommandImpl
 
   private final GatewayStub asyncStub;
   private final JsonMapper jsonMapper;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private final Builder builder;
 
   private Consumer<ActivatedJob> consumer;
@@ -59,7 +60,7 @@ public final class StreamJobsCommandImpl
   public StreamJobsCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
-      final Predicate<Throwable> retryPredicate,
+      final Predicate<StatusCode> retryPredicate,
       final ZeebeClientConfiguration config) {
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;

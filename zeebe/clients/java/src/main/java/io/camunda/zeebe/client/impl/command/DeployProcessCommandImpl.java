@@ -19,6 +19,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -50,13 +51,13 @@ public final class DeployProcessCommandImpl
 
   private final DeployProcessRequest.Builder requestBuilder = DeployProcessRequest.newBuilder();
   private final GatewayStub asyncStub;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
   public DeployProcessCommandImpl(
       final GatewayStub asyncStub,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
