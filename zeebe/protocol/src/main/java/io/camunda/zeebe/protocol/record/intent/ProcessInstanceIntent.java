@@ -34,11 +34,14 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   COMPLETE_ELEMENT((short) 9),
   TERMINATE_ELEMENT((short) 10),
 
-  ELEMENT_MIGRATED((short) 11);
+  ELEMENT_MIGRATED((short) 11),
+
+  COMPLETE_EXECUTION_LISTENER((short) 12);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
-      EnumSet.of(ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT);
+      EnumSet.of(
+          ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT, COMPLETE_EXECUTION_LISTENER);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -82,6 +85,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return TERMINATE_ELEMENT;
       case 11:
         return ELEMENT_MIGRATED;
+      case 12:
+        return COMPLETE_EXECUTION_LISTENER;
       default:
         return Intent.UNKNOWN;
     }

@@ -34,10 +34,24 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   }
 
   @Override
+  public Either<Failure, ?> finalizeActivation(final T element, final BpmnElementContext context) {
+    return isJobBehavior(element, context)
+        ? delegate.finalizeActivation(element, context)
+        : onFinalizeActivationInternal(element, context);
+  }
+
+  @Override
   public Either<Failure, ?> onComplete(final T element, final BpmnElementContext context) {
     return isJobBehavior(element, context)
         ? delegate.onComplete(element, context)
         : onCompleteInternal(element, context);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(final T element, final BpmnElementContext context) {
+    return isJobBehavior(element, context)
+        ? delegate.finalizeCompletion(element, context)
+        : onFinalizeCompletionInternal(element, context);
   }
 
   @Override
@@ -54,8 +68,18 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   protected abstract Either<Failure, ?> onActivateInternal(
       final T element, final BpmnElementContext context);
 
+  protected Either<Failure, ?> onFinalizeActivationInternal(
+      final T element, final BpmnElementContext context) {
+    return SUCCESS;
+  }
+
   protected abstract Either<Failure, ?> onCompleteInternal(
       final T element, final BpmnElementContext context);
+
+  protected Either<Failure, ?> onFinalizeCompletionInternal(
+      final T element, final BpmnElementContext context) {
+    return SUCCESS;
+  }
 
   protected abstract void onTerminateInternal(final T element, final BpmnElementContext context);
 }

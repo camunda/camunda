@@ -193,7 +193,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
         final ExecutableEndEvent element, final BpmnElementContext activating) {
       return variableMappingBehavior
           .applyInputMappings(activating, element)
-          .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, activating))
+          .flatMap(
+              ok ->
+                  jobBehavior.evaluateJobExpressions(element.getJobWorkerProperties(), activating))
           .thenDo(
               jobProperties -> {
                 jobBehavior.createNewJob(activating, element, jobProperties);

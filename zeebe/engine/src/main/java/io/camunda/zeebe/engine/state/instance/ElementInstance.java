@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
@@ -40,9 +41,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
+  private final StringProperty executionListenerTypeProp =
+      new StringProperty("executionListenerType", "");
 
   public ElementInstance() {
-    super(12);
+    super(13);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -54,7 +57,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
-        .declareProperty(userTaskKeyProp);
+        .declareProperty(userTaskKeyProp)
+        .declareProperty(executionListenerTypeProp);
   }
 
   public ElementInstance(
@@ -229,5 +233,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setUserTaskKey(final long userTaskKey) {
     userTaskKeyProp.setValue(userTaskKey);
+  }
+
+  public String getExecutionListenerType() {
+    return BufferUtil.bufferAsString(executionListenerTypeProp.getValue());
+  }
+
+  public void setExecutionListenerType(final String executionListenerType) {
+    executionListenerTypeProp.setValue(executionListenerType);
   }
 }

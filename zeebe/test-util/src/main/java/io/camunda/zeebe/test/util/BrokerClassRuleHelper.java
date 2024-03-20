@@ -40,6 +40,18 @@ public final class BrokerClassRuleHelper extends TestWatcher {
     return "job-" + currentTestMethod;
   }
 
+  public String getStartExecutionListenerType() {
+    return "start-" + getExecutionListenerType();
+  }
+
+  public String getEndExecutionListenerType() {
+    return "end-" + getExecutionListenerType();
+  }
+
+  private String getExecutionListenerType() {
+    return "el-".concat(currentTestMethod);
+  }
+
   public String getBpmnProcessId() {
     return "process-" + currentTestMethod;
   }
