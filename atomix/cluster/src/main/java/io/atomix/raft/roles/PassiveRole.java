@@ -411,10 +411,6 @@ public class PassiveRole extends InactiveRole {
     nextPendingSnapshotChunkId = nextChunkId;
   }
 
-  private boolean isExpectedChunk(final ByteBuffer chunkId) {
-    return nextPendingSnapshotChunkId == null || nextPendingSnapshotChunkId.equals(chunkId);
-  }
-
   private void abortPendingSnapshots() {
     if (pendingSnapshot != null) {
       setNextExpected(null);
