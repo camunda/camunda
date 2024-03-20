@@ -11,6 +11,7 @@
         <option value="localCanBeFinal" />
         <option value="missingOverrideAnnotation" />
         <option value="unnecessaryThis" />
+        <option value="useBlocks" />
       </set>
     </option>
     <option name="configurationPath" value="" />
