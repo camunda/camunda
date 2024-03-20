@@ -14,12 +14,12 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class JobTimeoutChecker implements StreamProcessorLifecycleAware {
-  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutChecker.class);
+public final class JobTimeoutCheckerScheduler implements StreamProcessorLifecycleAware {
+  private static final Logger LOG = LoggerFactory.getLogger(JobTimeoutCheckerScheduler.class);
   private final Duration pollingInterval;
   private final DeactivateTimeOutJobs deactivateTimedOutJobs;
 
-  public JobTimeoutChecker(
+  public JobTimeoutCheckerScheduler(
       final JobState state, final Duration pollingInterval, final int batchLimit) {
     this.pollingInterval = pollingInterval;
     deactivateTimedOutJobs = new DeactivateTimeOutJobs(state, pollingInterval, batchLimit);
