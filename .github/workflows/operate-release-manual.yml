@@ -17,7 +17,7 @@
 #
 # Link to Release manual workflow: https://github.com/camunda/zeebe/actions/workflows/release-manual.yml
 
-name: Release manual
+name: Operate Release manual
 
 on:
   workflow_dispatch:
