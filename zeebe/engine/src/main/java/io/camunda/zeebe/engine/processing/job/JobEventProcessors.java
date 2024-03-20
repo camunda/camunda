@@ -95,7 +95,7 @@ public final class JobEventProcessors {
             new JobBatchActivateProcessor(
                 writers, processingState, processingState.getKeyGenerator(), jobMetrics))
         .withListener(
-            new JobTimeoutChecker(
+            new JobTimeoutCheckerScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
                 config.getJobsTimeoutCheckerPollingInterval(),
                 config.getJobsTimeoutCheckerBatchLimit()))
