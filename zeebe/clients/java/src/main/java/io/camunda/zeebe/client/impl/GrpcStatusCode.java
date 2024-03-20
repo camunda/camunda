@@ -35,9 +35,4 @@ public final class GrpcStatusCode implements StatusCode {
   public boolean isUnauthorized() {
     return code == Code.UNAUTHENTICATED;
   }
-
-  @Override
-  public boolean isForbidden() {
-    return code == Code.PERMISSION_DENIED;
-  }
 }

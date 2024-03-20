@@ -96,7 +96,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   @Override
   public boolean shouldRetryRequest(final StatusCode statusCode) {
     try {
-      return (statusCode.isUnauthorized() || statusCode.isForbidden())
+      return statusCode.isUnauthorized()
           && credentialsCache
               .withCache(
                   endpoint,

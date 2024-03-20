@@ -84,11 +84,5 @@ public interface CredentialsProvider {
 
     /** Returns true if the request was failed because the user cannot be authenticated. */
     boolean isUnauthorized();
-
-    /**
-     * Returns true if the request was failed because the authenticated user does not have
-     * permissions.
-     */
-    boolean isForbidden();
   }
 }

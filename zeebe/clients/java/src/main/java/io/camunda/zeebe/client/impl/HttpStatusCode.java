@@ -35,9 +35,4 @@ public final class HttpStatusCode implements StatusCode {
   public boolean isUnauthorized() {
     return code == HttpStatus.SC_UNAUTHORIZED;
   }
-
-  @Override
-  public boolean isForbidden() {
-    return code == HttpStatus.SC_FORBIDDEN;
-  }
 }

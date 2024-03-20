@@ -159,7 +159,7 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-    final TestStatusCode statusCode = new TestStatusCode(0, true, false);
+    final TestStatusCode statusCode = new TestStatusCode(0, true);
 
     // when
     // first, fill in cache, then change mapping, and shouldRetryRequest should also refresh the
@@ -189,7 +189,7 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-    final TestStatusCode statusCode = new TestStatusCode(0, true, false);
+    final TestStatusCode statusCode = new TestStatusCode(0, true);
 
     // when
     // first, fill in cache, then change mapping, and shouldRetryRequest should also refresh the
@@ -255,7 +255,7 @@ public final class OAuthCredentialsProviderTest {
   void shouldUpdateCacheIfRetried() throws IOException {
     // given
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-    final StatusCode unauthorizedCode = new TestStatusCode(0, true, false);
+    final StatusCode unauthorizedCode = new TestStatusCode(0, true);
     final OAuthCredentialsProvider provider =
         new OAuthCredentialsProviderBuilder()
             .clientId(CLIENT_ID)
@@ -428,13 +428,10 @@ public final class OAuthCredentialsProviderTest {
   private static final class TestStatusCode implements StatusCode {
     private final int code;
     private final boolean isUnauthorized;
-    private final boolean isForbidden;
 
-    private TestStatusCode(
-        final int code, final boolean isUnauthorized, final boolean isForbidden) {
+    private TestStatusCode(final int code, final boolean isUnauthorized) {
       this.code = code;
       this.isUnauthorized = isUnauthorized;
-      this.isForbidden = isForbidden;
     }
 
     @Override
@@ -445,11 +442,6 @@ public final class OAuthCredentialsProviderTest {
     @Override
     public boolean isUnauthorized() {
       return isUnauthorized;
-    }
-
-    @Override
-    public boolean isForbidden() {
-      return isForbidden;
     }
   }
 

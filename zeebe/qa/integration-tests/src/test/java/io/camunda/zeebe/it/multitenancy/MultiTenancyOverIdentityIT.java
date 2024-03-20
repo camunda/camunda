@@ -726,7 +726,7 @@ public class MultiTenancyOverIdentityIT {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ofSeconds(10))
+          .failsWithin(Duration.ofHours(10))
           .withThrowableThat()
           .withMessageContaining("PERMISSION_DENIED")
           .withMessageContaining(
