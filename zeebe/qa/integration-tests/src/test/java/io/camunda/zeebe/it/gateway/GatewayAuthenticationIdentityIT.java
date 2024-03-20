@@ -23,8 +23,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.grpc.Metadata;
-import io.grpc.Metadata.Key;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
@@ -228,13 +226,12 @@ public class GatewayAuthenticationIdentityIT {
   private static final class InvalidAuthTokenProvider implements CredentialsProvider {
 
     @Override
-    public void applyCredentials(final Metadata headers) {
-      headers.put(
-          Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Bearer youShallNotPass");
+    public void applyCredentials(final CredentialsApplier applier) {
+      applier.put("Authorization", "Bearer youShallNotPass");
     }
 
     @Override
-    public boolean shouldRetryRequest(final Throwable throwable) {
+    public boolean shouldRetryRequest(final StatusCode statusCode) {
       return false;
     }
   }

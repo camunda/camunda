@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
@@ -75,12 +76,12 @@ public final class CredentialsTest {
         .credentialsProvider(
             new CredentialsProvider() {
               @Override
-              public void applyCredentials(final Metadata headers) {
-                headers.put(AUTH_KEY, bearerToken);
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put("Authorization", bearerToken);
               }
 
               @Override
-              public boolean shouldRetryRequest(final Throwable throwable) {
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
                 return false;
               }
             });
@@ -110,12 +111,12 @@ public final class CredentialsTest {
               int attempt = 0;
 
               @Override
-              public void applyCredentials(final Metadata headers) {
-                headers.put(AUTH_KEY, String.format("Bearer token-%d", attempt++));
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put("Authorization", String.format("Bearer token-%d", attempt++));
               }
 
               @Override
-              public boolean shouldRetryRequest(final Throwable throwable) {
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
                 return true;
               }
             });
@@ -126,7 +127,7 @@ public final class CredentialsTest {
     client.newTopologyRequest().send().join();
 
     // then
-    Mockito.verify(provider, times(1)).shouldRetryRequest(any(Throwable.class));
+    Mockito.verify(provider, times(1)).shouldRetryRequest(any(StatusCode.class));
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY)).isEqualTo("Bearer token-1");
   }
 
@@ -144,12 +145,12 @@ public final class CredentialsTest {
               int retryCounter = retries;
 
               @Override
-              public void applyCredentials(final Metadata headers) {
-                headers.put(AUTH_KEY, String.format("Bearer token-%d", retryCounter));
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put("Authorization", String.format("Bearer token-%d", retryCounter));
               }
 
               @Override
-              public boolean shouldRetryRequest(final Throwable throwable) {
+              public boolean shouldRetryRequest(final StatusCode code) {
                 return retryCounter-- > 0;
               }
             });
@@ -160,7 +161,7 @@ public final class CredentialsTest {
     assertThatThrownBy(() -> client.newTopologyRequest().send().join())
         .isInstanceOf(ClientException.class);
 
-    Mockito.verify(provider, times(retries + 1)).shouldRetryRequest(any(Throwable.class));
+    Mockito.verify(provider, times(retries + 1)).shouldRetryRequest(any(StatusCode.class));
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY)).isEqualTo("Bearer token-0");
   }
 
@@ -189,12 +190,12 @@ public final class CredentialsTest {
         .credentialsProvider(
             new CredentialsProvider() {
               @Override
-              public void applyCredentials(final Metadata headers) {
+              public void applyCredentials(final CredentialsApplier ignored) {
                 credentialsProviderThreadReference.set(Thread.currentThread().getName());
               }
 
               @Override
-              public boolean shouldRetryRequest(final Throwable throwable) {
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
                 return false;
               }
             });
