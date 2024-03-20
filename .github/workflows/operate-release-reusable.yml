@@ -189,7 +189,7 @@ jobs:
           tag_name: ${{ env.TAG_VERSION }}
           body: "" # TODO: changelog too big with Zeebe merge
           generate_release_notes: true
-          make_latest: "false"
+          make_latest: \"false\"
 
       # Upload: Upload to GitHub Release
       - name: Upload to GitHub Release
