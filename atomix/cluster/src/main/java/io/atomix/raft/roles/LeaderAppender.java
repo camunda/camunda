@@ -400,9 +400,13 @@ final class LeaderAppender {
     final SnapshotChunkReader reader = member.getSnapshotChunkReader();
 
     try {
+      // Reader might have advanced to the next chunk already. But if we want to retry a chunk the
+      // reader should seek to the chunk. To handle retries and not-retries the same, we seek
+      // always.
       if (member.getNextSnapshotChunk() != null) {
         reader.seek(member.getNextSnapshotChunk());
       } else {
+        // member.getNextSnapshotChunk is null when it is the first chunk.
         reader.reset();
       }
 
