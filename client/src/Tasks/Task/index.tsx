@@ -100,8 +100,10 @@ const Task: React.FC = observer(() => {
 
     if (autoSelectNextTaskEnabled) {
       const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
-      if (newTasks.length > 0) {
-        autoSelectGoToTask(tasks[0].id);
+      if (newTasks.length > 1 && newTasks[0].id === id) {
+        autoSelectGoToTask(newTasks[1].id);
+      } else if (newTasks.length > 0 && newTasks[0].id !== id) {
+        autoSelectGoToTask(newTasks[0].id);
       } else {
         navigate({
           pathname: pages.initial,
