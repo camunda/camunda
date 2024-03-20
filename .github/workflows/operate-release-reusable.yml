@@ -187,7 +187,7 @@ jobs:
           draft: false
           name: ${{ env.TAG_VERSION }}
           tag_name: ${{ env.TAG_VERSION }}
-          body: ${{ toJSON(format('{0}', steps.changelog.outputs.body)) }}
+          body: "" # TODO: changelog too big with Zeebe merge
 
       # Upload: Upload to GitHub Release
       - name: Upload to GitHub Release
