@@ -25,8 +25,8 @@ public interface JobState {
    *     startAt is {@code null}
    * @param callback A callback method to be applied to each job entry. It must return a boolean
    *     that when {@code true} allows the loop to continue, or when {@code false} stops iteration.
-   * @return The next index to start iteration from if the iteration has stopped because the {@code
-   *     callback} method returned false or {@code null} if it was not the case.
+   * @return The last visited index where the iteration has stopped because the {@code callback}
+   *     method returned false or {@code null} if it was not the case.
    */
   DeadlineIndex forEachTimedOutEntry(
       long executionTimestamp, final DeadlineIndex startAt, BiPredicate<Long, JobRecord> callback);
