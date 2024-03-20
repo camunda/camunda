@@ -40,6 +40,7 @@
     <module>zeebe/gateway</module>
     <module>zeebe/gateway-rest</module>
     <module>zeebe/clients/java</module>
+    <module>zeebe/clients/zeebe-client-spring</module>
     <module>zeebe/exporter-api</module>
     <module>zeebe/exporter-test</module>
     <module>zeebe/protocol-asserts</module>
