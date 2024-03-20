@@ -99,12 +99,6 @@
         <version>${version.springdoc}</version>
       </dependency>
 
-      <dependency>
-        <groupId>org.keycloak</groupId>
-        <artifactId>keycloak-admin-client</artifactId>
-        <version>${keycloak-client.version}</version>
-      </dependency>
-
     </dependencies>
   </dependencyManagement>
 
