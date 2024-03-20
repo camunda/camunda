@@ -17,49 +17,44 @@ package io.camunda.zeebe.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_AUTHORIZATION_SERVER;
-import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID;
-import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.response.Topology;
-import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
-import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsCache;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.client.impl.util.Environment;
-import io.camunda.zeebe.client.impl.util.EnvironmentRule;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.RecordingGatewayService;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
-import io.grpc.ServerCall;
+import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.Status;
 import io.grpc.Status.Code;
-import io.grpc.testing.GrpcServerRule;
-import java.io.File;
+import io.grpc.StatusRuntimeException;
+import io.grpc.netty.NettyServerBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -68,28 +63,26 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import org.junit.Rule;
+import java.util.stream.IntStream;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.migrationsupport.EnableJUnit4MigrationSupport;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.io.TempDir;
 
-@SuppressWarnings("ResultOfMethodCallIgnored")
-@EnableJUnit4MigrationSupport
 @WireMockTest
 public final class OAuthCredentialsProviderTest {
-
-  public static final ZonedDateTime EXPIRY =
-      ZonedDateTime.of(3020, 1, 1, 0, 0, 0, 0, ZoneId.of("Z"));
+  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final Key<String> AUTH_KEY =
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+  private static final ZonedDateTime EXPIRY =
+      ZonedDateTime.of(3020, 1, 1, 0, 0, 0, 0, ZoneId.of("Z"));
   private static final String SECRET = "secret";
   private static final String AUDIENCE = "endpoint";
   private static final String SCOPE = "721aa3ee-24c9-4ab5-95bc-d921ecafdd6d/.default";
@@ -97,537 +90,260 @@ public final class OAuthCredentialsProviderTest {
   private static final String TOKEN_TYPE = "Bearer";
   private static final String CLIENT_ID = "client";
 
-  @Rule public final GrpcServerRule serverRule = new GrpcServerRule();
-  @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
-  @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
-  private WireMockRuntimeInfo wireMockInfo;
+  private final TestCredentialsApplier applier = new TestCredentialsApplier();
+  private final WireMockRuntimeInfo wireMockInfo;
 
-  private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
-  private final RecordingGatewayService gatewayService = new RecordingGatewayService();
-  private ZeebeClient client;
-  private String cachedUserHome;
+  private Path cacheFilePath;
 
-  @BeforeEach
-  void setUp(final WireMockRuntimeInfo wireMockInfo) {
+  public OAuthCredentialsProviderTest(final WireMockRuntimeInfo wireMockInfo) {
     this.wireMockInfo = wireMockInfo;
-    serverRule
-        .getServiceRegistry()
-        .addService(ServerInterceptors.intercept(gatewayService, recordingInterceptor));
-
-    // necessary when testing defaults to ensure we don't reuse the cache
-    cachedUserHome = System.getProperty("user.home");
-    System.setProperty("user.home", tempFolder.getRoot().getAbsolutePath());
   }
 
-  @AfterEach
-  void tearDown() {
-    if (client != null) {
-      client.close();
-      client = null;
-    }
-
-    recordingInterceptor.reset();
-    System.setProperty("user.home", cachedUserHome);
+  @BeforeEach
+  void beforeEach(final @TempDir Path tmpDir) throws IOException {
+    cacheFilePath = Files.createFile(tmpDir.resolve("cache"));
   }
 
   @Test
   void shouldRequestTokenAndAddToCall() throws IOException {
     // given
-    mockCredentials(ACCESS_TOKEN);
-
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(CLIENT_ID)
-                .clientSecret(SECRET)
-                .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .credentialsCachePath(tempFolder.newFile().getPath())
-                .build())
-        .build()
-        .close();
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentials(ACCESS_TOKEN, null);
 
     // when
-    client.newTopologyRequest().send().join();
+    provider.applyCredentials(applier);
 
     // then
-    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
-        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+    assertThat(applier.credentials)
+        .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
   }
 
   @Test
   void shouldRequestTokenWithScopeAndAddToCall() throws IOException {
     // given
-    mockCredentialsWithScope(ACCESS_TOKEN, SCOPE);
-
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(CLIENT_ID)
-                .clientSecret(SECRET)
-                .audience(AUDIENCE)
-                .scope(SCOPE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .credentialsCachePath(tempFolder.newFile().getPath())
-                .build())
-        .build()
-        .close();
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .scope(SCOPE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentials(ACCESS_TOKEN, SCOPE);
 
     // when
-    client.newTopologyRequest().send().join();
+    provider.applyCredentials(applier);
 
     // then
-    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
-        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+    assertThat(applier.credentials)
+        .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
   }
 
   @Test
-  void shouldRetryRequestWithNewCredentials() throws IOException {
+  void shouldRefreshCredentialsOnRetry() throws IOException {
     // given
-    final String firstToken = "firstToken";
-    mockCredentials(firstToken);
-    final BiConsumer<ServerCall, Metadata> interceptAction =
-        Mockito.spy(
-            new BiConsumer<ServerCall, Metadata>() {
-              @Override
-              public void accept(final ServerCall call, final Metadata headers) {
-                mockCredentials(ACCESS_TOKEN);
-                recordingInterceptor.reset();
-                call.close(
-                    Status.fromCode(Code.UNAUTHENTICATED).augmentDescription("Stale token"),
-                    headers);
-              }
-            });
-
-    recordingInterceptor.setInterceptAction(interceptAction);
-
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(CLIENT_ID)
-                .clientSecret(SECRET)
-                .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .credentialsCachePath(tempFolder.newFile().getPath())
-                .build())
-        .build()
-        .close();
-
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+    final TestStatusCode statusCode = new TestStatusCode(0, true, false);
 
     // when
-    client.newTopologyRequest().send().join();
+    // first, fill in cache, then change mapping, and shouldRetryRequest should also refresh the
+    // token
+    mockCredentials(ACCESS_TOKEN, null);
+    provider.applyCredentials(applier);
+
+    mockCredentials("foo", null);
+    final boolean shouldRetry = provider.shouldRetryRequest(statusCode);
 
     // then
-    final ArgumentCaptor<Metadata> captor = ArgumentCaptor.forClass(Metadata.class);
-
-    verify(interceptAction, times(1)).accept(any(ServerCall.class), captor.capture());
-    assertThat(captor.getValue().get(AUTH_KEY)).isEqualTo(TOKEN_TYPE + " " + firstToken);
-    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
-        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+    assertThat(shouldRetry).isTrue();
+    assertThat(cache.readCache().get(AUDIENCE))
+        .get()
+        .returns("foo", ZeebeClientCredentials::getAccessToken);
   }
 
   @Test
   void shouldNotRetryWithSameCredentials() throws IOException {
     // given
-    mockCredentials(ACCESS_TOKEN);
-    final BiConsumer<ServerCall, Metadata> interceptAction =
-        Mockito.spy(
-            new BiConsumer<ServerCall, Metadata>() {
-              @Override
-              public void accept(final ServerCall call, final Metadata headers) {
-                call.close(Status.UNAUTHENTICATED, headers);
-              }
-            });
-
-    recordingInterceptor.setInterceptAction(interceptAction);
-
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(CLIENT_ID)
-                .clientSecret(SECRET)
-                .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .credentialsCachePath(tempFolder.newFile().getPath())
-                .build())
-        .build()
-        .close();
-
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+    final TestStatusCode statusCode = new TestStatusCode(0, true, false);
 
     // when
-    assertThatThrownBy(() -> client.newTopologyRequest().send().join())
-        .isInstanceOf(ClientException.class);
-    verify(interceptAction, times(1)).accept(any(ServerCall.class), any(Metadata.class));
-  }
+    // first, fill in cache, then change mapping, and shouldRetryRequest should also refresh the
+    // token
+    mockCredentials(ACCESS_TOKEN, null);
+    provider.applyCredentials(applier);
+    final boolean shouldRetry = provider.shouldRetryRequest(statusCode);
 
-  @Test
-  void shouldUseClientContactPointAsDefaultAudience() {
-    // given
-    final String contactPointHost = "some.domain";
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    final String authorizationServerUrl =
-        "http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token";
-
-    Environment.system().put(OAUTH_ENV_CLIENT_ID, CLIENT_ID);
-    Environment.system().put(OAUTH_ENV_CLIENT_SECRET, SECRET);
-    Environment.system().put(OAUTH_ENV_AUTHORIZATION_SERVER, authorizationServerUrl);
-    mockCredentials(ACCESS_TOKEN, contactPointHost);
-
-    builder.usePlaintext().gatewayAddress(contactPointHost + ":26500").build().close();
-
-    // when
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
-    client.newTopologyRequest().send().join();
+    // then - ensure we did request twice (once applyCredentials, once shouldRetryRequest), but
+    // still return false since the credentials are the same
+    assertThat(shouldRetry).isFalse();
+    wireMockInfo.getWireMock().verifyThat(2, RequestPatternBuilder.allRequests());
   }
 
   @Test
   void shouldUseCachedCredentials() throws IOException {
     // given
-    mockCredentials(ACCESS_TOKEN);
-    final String cachePath = tempFolder.getRoot().getPath() + File.separator + ".credsCache";
-    final OAuthCredentialsCache cache = new OAuthCredentialsCache(new File(cachePath));
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentials(ACCESS_TOKEN, null);
     cache.put(AUDIENCE, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE)).writeCache();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(CLIENT_ID)
-                .clientSecret(SECRET)
-                .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .credentialsCachePath(cachePath)
-                .build())
-        .build()
-        .close();
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
 
-    // when
-    client.newTopologyRequest().send().join();
+    // when - should not make any request, but use the cached credentials
+    provider.applyCredentials(applier);
 
     // then
-    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
-        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(0, oauthRequestMatcher());
+    wireMockInfo.getWireMock().verifyThat(0, RequestPatternBuilder.allRequests());
   }
 
   @Test
   void shouldCacheAndReuseCredentials() throws IOException {
     // given
-    mockCredentials(ACCESS_TOKEN);
-    final String cachePath = tempFolder.getRoot().getPath() + File.separator + ".credsCache";
-
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    final OAuthCredentialsProviderBuilder credsBuilder =
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+    final OAuthCredentialsProvider provider =
         new OAuthCredentialsProviderBuilder()
             .clientId(CLIENT_ID)
             .clientSecret(SECRET)
             .audience(AUDIENCE)
-            .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-            .credentialsCachePath(cachePath);
-    builder.usePlaintext().credentialsProvider(credsBuilder.build()).build().close();
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentials(ACCESS_TOKEN, null);
 
-    // when
-    client.newTopologyRequest().send().join();
-    verify(1, oauthRequestMatcher());
-
-    builder.usePlaintext().credentialsProvider(credsBuilder.build());
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
-    client.newTopologyRequest().send().join();
+    // when - should only request once even when called multiple times
+    provider.applyCredentials(applier);
+    provider.applyCredentials(applier);
+    provider.applyCredentials(applier);
 
     // then
-    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
-        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, oauthRequestMatcher());
-    assertCacheContents(cachePath);
+    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+    assertThat(cache.readCache().get(AUDIENCE))
+        .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
 
   @Test
-  void shouldUpdateCacheIfStale() throws IOException {
+  void shouldUpdateCacheIfRetried() throws IOException {
     // given
-    mockCredentials(ACCESS_TOKEN);
-    recordingInterceptor.setInterceptAction(
-        (call, metadata) -> {
-          final String authHeader = metadata.get(AUTH_KEY);
-          if (authHeader != null && authHeader.endsWith("staleToken")) {
-            call.close(Status.UNAUTHENTICATED, metadata);
-          }
-        });
-    final String cachePath = tempFolder.getRoot().getPath() + File.separator + ".credsCache";
-    final OAuthCredentialsCache cache = new OAuthCredentialsCache(new File(cachePath));
-    cache.put(AUDIENCE, new ZeebeClientCredentials("staleToken", EXPIRY, TOKEN_TYPE)).writeCache();
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+    final StatusCode unauthorizedCode = new TestStatusCode(0, true, false);
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentials(ACCESS_TOKEN, null);
+    cache.put(AUDIENCE, new ZeebeClientCredentials("invalid", EXPIRY, TOKEN_TYPE)).writeCache();
 
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(CLIENT_ID)
-                .clientSecret(SECRET)
-                .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .credentialsCachePath(cachePath)
-                .build())
-        .build()
-        .close();
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
-
-    // when
-    client.newTopologyRequest().send().join();
+    // when - should refresh on unauthorized and write new token
+    provider.shouldRetryRequest(unauthorizedCode);
 
     // then
-    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
-        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, oauthRequestMatcher());
-    assertCacheContents(cachePath);
+    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+    assertThat(cache.readCache().get(AUDIENCE))
+        .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
 
   @Test
-  void shouldFailWithNoAudience() {
-    // when/then
-    assertThatThrownBy(
-            () ->
-                new OAuthCredentialsProviderBuilder()
-                    .clientId("a")
-                    .clientSecret("b")
-                    .authorizationServerUrl("http://some.url")
-                    .build())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageEndingWith(
-            String.format(OAuthCredentialsProviderBuilder.INVALID_ARGUMENT_MSG, "audience"));
-  }
-
-  @Test
-  void shouldFailWithNoClientId() {
-    // when/then
-    assertThatThrownBy(
-            () ->
-                new OAuthCredentialsProviderBuilder()
-                    .audience("a")
-                    .clientSecret("b")
-                    .authorizationServerUrl("http://some.url")
-                    .build())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageEndingWith(
-            String.format(OAuthCredentialsProviderBuilder.INVALID_ARGUMENT_MSG, "client id"));
-  }
-
-  @Test
-  void shouldFailWithNoClientSecret() {
-    // when/then
-    assertThatThrownBy(
-            () ->
-                new OAuthCredentialsProviderBuilder()
-                    .audience("a")
-                    .clientId("b")
-                    .authorizationServerUrl("http://some.url")
-                    .build())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageEndingWith(
-            String.format(OAuthCredentialsProviderBuilder.INVALID_ARGUMENT_MSG, "client secret"));
-  }
-
-  @Test
-  void shouldFailWithMalformedServerUrl() {
-    // when/then
-    assertThatThrownBy(
-            () ->
-                new OAuthCredentialsProviderBuilder()
-                    .audience("a")
-                    .clientId("b")
-                    .clientSecret("c")
-                    .authorizationServerUrl("someServerUrl")
-                    .build())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasCauseInstanceOf(MalformedURLException.class);
-  }
-
-  @Test
-  void shouldFailIfSpecifiedCacheIsDir() {
+  void shouldThrowExceptionOnTimeout() {
     // given
-    final String cachePath = tempFolder.getRoot().getAbsolutePath() + File.separator + "404_folder";
-    new File(cachePath).mkdir();
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .readTimeout(Duration.ofMillis(500))
+            .build();
+    wireMockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                .willReturn(WireMock.aResponse().withFixedDelay(10_000)));
 
     // when/then
-    assertThatThrownBy(
-            () ->
-                new OAuthCredentialsProviderBuilder()
-                    .audience(AUDIENCE)
-                    .clientId(CLIENT_ID)
-                    .clientSecret(SECRET)
-                    .authorizationServerUrl("http://localhost")
-                    .credentialsCachePath(cachePath)
-                    .build())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
-            "Expected specified credentials cache to be a file but found directory instead.");
+    assertThatCode(() -> provider.applyCredentials(applier))
+        .isInstanceOf(SocketTimeoutException.class);
+    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
   @Test
-  void shouldThrowExceptionIfTimeout() {
+  void shouldCallOauthServerOnlyOnceInMultithreadMode() {
     // given
-    mockCredentials(10_000);
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new OAuthCredentialsProviderBuilder()
-                .clientId(CLIENT_ID)
-                .clientSecret(SECRET)
-                .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .readTimeout(Duration.ofMillis(5))
-                .build())
-        .build()
-        .close();
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
-
-    // when
-    assertThatThrownBy(() -> client.newTopologyRequest().send().join())
-        .hasRootCauseExactlyInstanceOf(SocketTimeoutException.class)
-        .hasRootCauseMessage("Read timed out");
-  }
-
-  @Test
-  void shouldThrowExceptionIfTimeoutIsZero() {
-
-    // when/then
-    assertThatThrownBy(
-            () ->
-                new ZeebeClientBuilderImpl()
-                    .usePlaintext()
-                    .credentialsProvider(
-                        new OAuthCredentialsProviderBuilder()
-                            .clientId(CLIENT_ID)
-                            .clientSecret(SECRET)
-                            .audience(AUDIENCE)
-                            .authorizationServerUrl(
-                                "http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                            .readTimeout(Duration.ZERO)
-                            .build())
-                    .build()
-                    .close())
-        .hasMessageContaining(
-            "ReadTimeout timeout is 0 milliseconds, "
-                + "expected timeout to be a positive number of milliseconds smaller than 2147483647.")
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldThrowExceptionIfTimeoutTooLarge() {
-
-    // when/then
-    assertThatThrownBy(
-            () ->
-                new ZeebeClientBuilderImpl()
-                    .usePlaintext()
-                    .credentialsProvider(
-                        new OAuthCredentialsProviderBuilder()
-                            .clientId(CLIENT_ID)
-                            .clientSecret(SECRET)
-                            .audience(AUDIENCE)
-                            .authorizationServerUrl(
-                                "http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                            .readTimeout(Duration.ofDays(1_000_000))
-                            .build())
-                    .build()
-                    .close())
-        .hasMessageContaining(
-            "ReadTimeout timeout is 86400000000000 milliseconds, "
-                + "expected timeout to be a positive number of milliseconds smaller than 2147483647.")
-        .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void shouldCallOauthServerOnlyOnceInMultithreadMode() throws IOException {
-    // given
-    mockCredentials(ACCESS_TOKEN);
-
-    final OAuthCredentialsProvider credentialsProvider =
+    final OAuthCredentialsProvider provider =
         spy(
             new OAuthCredentialsProviderBuilder()
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
-                .authorizationServerUrl("http://localhost:" + wireMockInfo.getHttpPort() + "/oauth/token")
-                .credentialsCachePath(tempFolder.newFile().getPath())
+                .authorizationServerUrl(tokenUrlString())
+                .credentialsCachePath(cacheFilePath.toString())
                 .build());
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder.usePlaintext().credentialsProvider(credentialsProvider);
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    mockCredentials(ACCESS_TOKEN, null);
 
     // when
-    final List<ZeebeFuture<Topology>> responses = new ArrayList<>(10);
-    for (int count = 0; count < 10; count++) {
-      responses.add(client.newTopologyRequest().send());
-    }
     CompletableFuture.allOf(
-            responses.stream()
-                .map(CompletionStage::toCompletableFuture)
-                .collect(Collectors.toList())
-                .toArray(new CompletableFuture[] {}))
+            IntStream.range(0, 10)
+                .mapToObj(
+                    ignored ->
+                        CompletableFuture.runAsync(
+                            () -> {
+                              try {
+                                provider.applyCredentials(applier);
+                              } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                              }
+                            }))
+                .toArray(CompletableFuture[]::new))
         .join();
 
     // then
-    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
-        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, oauthRequestMatcher());
+    assertThat(applier.credentials)
+        .containsOnly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN))
+        .hasSize(10);
+    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
-  /**
-   * Mocks an authorization server that returns credentials with the provided access token. Returns
-   * the credentials to be return by the server.
-   */
-  private void mockCredentials(final String accessToken) {
-    mockCredentials(accessToken, AUDIENCE);
-  }
-
-  private void mockCredentials(final Integer replyDelay) {
-    mockCredentials(ACCESS_TOKEN, replyDelay);
-  }
-
-  private void mockCredentials(final String accessToken, final Integer replyDelay) {
-    mockCredentials(accessToken, AUDIENCE, replyDelay);
-  }
-
-  private void mockCredentials(final String accessToken, final String audience) {
-    mockCredentials(accessToken, audience, 0);
-  }
-
-  private void mockCredentialsWithScope(final String accessToken, final String scope) {
-    mockCredentials(accessToken, AUDIENCE, 0, scope);
-  }
-
-  private void mockCredentials(
-      final String accessToken, final String audience, final Integer replyDelay) {
-    mockCredentials(accessToken, audience, replyDelay, null);
-  }
-
-  private void mockCredentials(
-      final String accessToken,
-      final String audience,
-      final Integer replyDelay,
-      final String scope) {
+  private void mockCredentials(final String token, final String scope) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
-    map.put("audience", audience);
+    map.put("audience", AUDIENCE);
     map.put("grant_type", "client_credentials");
-    if (scope != null) {
+    if (scope != null && !scope.isEmpty()) {
       map.put("scope", scope);
     }
 
@@ -636,32 +352,29 @@ public final class OAuthCredentialsProviderTest {
             .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
             .collect(Collectors.joining("&"));
 
-
-    wireMockInfo.getWireMock().register(
-        WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
-            .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-            .withHeader("Accept", equalTo("application/json"))
-            .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
-            .withRequestBody(equalTo(encodedBody))
-            .willReturn(
-                WireMock.aResponse()
-                    .withBody(
-                        "{\"access_token\":\""
-                            + accessToken
-                            + "\",\"token_type\":\""
-                            + TOKEN_TYPE
-                            + "\",\"expires_in\":"
-                            + (EXPIRY.getLong(ChronoField.INSTANT_SECONDS)
-                                - Instant.now().getEpochSecond())
-                            + ",\"scope\": \""
-                            + audience
-                            + "\"}")
-                    .withFixedDelay(replyDelay)
-                    .withStatus(200)));
-  }
-
-  private static RequestPatternBuilder oauthRequestMatcher() {
-    return postRequestedFor(WireMock.urlPathEqualTo("/oauth/token"));
+    wireMockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
+                .withRequestBody(equalTo(encodedBody))
+                .willReturn(
+                    WireMock.aResponse()
+                        .withBody(
+                            "{\"access_token\":\""
+                                + token
+                                + "\",\"token_type\":\""
+                                + TOKEN_TYPE
+                                + "\",\"expires_in\":"
+                                + (EXPIRY.getLong(ChronoField.INSTANT_SECONDS)
+                                    - Instant.now().getEpochSecond())
+                                + ",\"scope\": \""
+                                + AUDIENCE
+                                + "\"}")
+                        .withFixedDelay(0)
+                        .withStatus(200)));
   }
 
   private static String encode(final String param) {
@@ -672,10 +385,244 @@ public final class OAuthCredentialsProviderTest {
     }
   }
 
-  private void assertCacheContents(final String cachePath) throws IOException {
-    final OAuthCredentialsCache cache = new OAuthCredentialsCache(new File(cachePath)).readCache();
-    final ZeebeClientCredentials credentials =
-        new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE);
-    assertThat(cache.get(AUDIENCE)).contains(credentials);
+  private String tokenUrlString() {
+    return wireMockInfo.getHttpBaseUrl() + "/oauth/token";
+  }
+
+  private static final class TestCredentialsApplier implements CredentialsApplier {
+    private final List<Credential> credentials = new CopyOnWriteArrayList<>();
+
+    @Override
+    public void put(final String key, final String value) {
+      credentials.add(new Credential(key, value));
+    }
+  }
+
+  private static final class Credential {
+    private final String key;
+    private final String value;
+
+    private Credential(final String key, final String value) {
+      this.key = key;
+      this.value = value;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(key, value);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final Credential that = (Credential) o;
+      return Objects.equals(key, that.key) && Objects.equals(value, that.value);
+    }
+  }
+
+  private static final class TestStatusCode implements StatusCode {
+    private final int code;
+    private final boolean isUnauthorized;
+    private final boolean isForbidden;
+
+    private TestStatusCode(
+        final int code, final boolean isUnauthorized, final boolean isForbidden) {
+      this.code = code;
+      this.isUnauthorized = isUnauthorized;
+      this.isForbidden = isForbidden;
+    }
+
+    @Override
+    public int code() {
+      return code;
+    }
+
+    @Override
+    public boolean isUnauthorized() {
+      return isUnauthorized;
+    }
+
+    @Override
+    public boolean isForbidden() {
+      return isForbidden;
+    }
+  }
+
+  @Nested
+  final class ClientTest {
+
+    private final RecordingGatewayService grpcService = new RecordingGatewayService();
+    private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
+    private final Server grpcServer =
+        NettyServerBuilder.forPort(0)
+            .addService(ServerInterceptors.intercept(grpcService, recordingInterceptor))
+            .build();
+
+    @BeforeEach
+    void beforeEach() throws IOException {
+      grpcServer.start();
+    }
+
+    @AfterEach
+    void afterEach() {
+      grpcServer.shutdownNow();
+      recordingInterceptor.reset();
+    }
+
+    @Test
+    void shouldRetryRequestWithNewCredentialsGrpc() throws URISyntaxException, IOException {
+      // given
+      final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+      final ZeebeClientBuilder builder = clientBuilder();
+      cache
+          .put(AUDIENCE, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
+          .writeCache();
+      recordingInterceptor.setInterceptAction(
+          (call, headers) -> {
+            mockCredentials(ACCESS_TOKEN, null);
+            recordingInterceptor.reset();
+            call.close(
+                Status.fromCode(Code.UNAUTHENTICATED).augmentDescription("Stale token"), headers);
+          });
+
+      // when
+      final Future<Topology> topology;
+      try (final ZeebeClient client = builder.build()) {
+        topology = client.newTopologyRequest().useGrpc().send();
+
+        // then
+        assertThat(topology).succeedsWithin(Duration.ofSeconds(5));
+        WireMock.verify(1, RequestPatternBuilder.newRequestPattern().withUrl("/oauth/token"));
+        assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
+            .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+      }
+    }
+
+    @Test
+    void shouldNotRetryRequestWithSameCredentialsGrpc() throws URISyntaxException, IOException {
+      // given
+      final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+      final ZeebeClientBuilder builder = clientBuilder();
+      cache
+          .put(AUDIENCE, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+          .writeCache();
+      recordingInterceptor.setInterceptAction(
+          (call, headers) -> call.close(Status.UNAUTHENTICATED, headers));
+      mockCredentials(ACCESS_TOKEN, null);
+
+      // when
+      final Future<Topology> topology;
+      try (final ZeebeClient client = builder.build()) {
+        topology = client.newTopologyRequest().useGrpc().send();
+
+        // then
+        assertThat(topology)
+            .failsWithin(Duration.ofSeconds(5))
+            .withThrowableThat()
+            .withRootCauseInstanceOf(StatusRuntimeException.class);
+        WireMock.verify(1, RequestPatternBuilder.newRequestPattern().withUrl("/oauth/token"));
+        assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
+            .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+      }
+    }
+
+    @Test
+    void shouldRetryRequestWithNewCredentialsRest() throws URISyntaxException, IOException {
+      // given
+      final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+      final ZeebeClientBuilder builder = clientBuilder();
+      mockUnauthorizedRestRequest();
+      mockAuthorizedRestRequest();
+      cache
+          .put(AUDIENCE, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
+          .writeCache();
+      mockCredentials(ACCESS_TOKEN, null);
+
+      // when
+      final Future<Topology> topology;
+      try (final ZeebeClient client = builder.build()) {
+        topology = client.newTopologyRequest().useRest().send();
+
+        // then
+        assertThat(topology).succeedsWithin(Duration.ofSeconds(5));
+        WireMock.verify(1, RequestPatternBuilder.newRequestPattern().withUrl("/oauth/token"));
+      }
+    }
+
+    @Test
+    void shouldNotRetryRequestWithSameCredentialsRest() throws URISyntaxException, IOException {
+      // given
+      final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
+      final ZeebeClientBuilder builder = clientBuilder();
+      mockUnauthorizedRestRequest();
+      cache
+          .put(AUDIENCE, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+          .writeCache();
+      mockCredentials(ACCESS_TOKEN, null);
+
+      // when
+      final Future<Topology> topology;
+      try (final ZeebeClient client = builder.build()) {
+        topology = client.newTopologyRequest().useRest().send();
+
+        // then
+        assertThat(topology).failsWithin(Duration.ofSeconds(5));
+        WireMock.verify(1, RequestPatternBuilder.newRequestPattern().withUrl("/oauth/token"));
+      }
+    }
+
+    private void mockAuthorizedRestRequest() throws JsonProcessingException {
+      wireMockInfo
+          .getWireMock()
+          .register(
+              WireMock.get("/v1/topology")
+                  .withHeader("Authorization", WireMock.equalTo(TOKEN_TYPE + " " + ACCESS_TOKEN))
+                  .willReturn(
+                      WireMock.aResponse()
+                          .withStatus(200)
+                          .withBody(
+                              JSON_MAPPER.writeValueAsBytes(
+                                  new TopologyResponse()
+                                      .brokers(new ArrayList<>())
+                                      .clusterSize(0)
+                                      .partitionsCount(0)
+                                      .replicationFactor(0)
+                                      .gatewayVersion("")))
+                          .withHeader(
+                              HttpHeaders.CONTENT_TYPE, "application/json; charset=utf-8")));
+    }
+
+    private void mockUnauthorizedRestRequest() throws JsonProcessingException {
+      wireMockInfo
+          .getWireMock()
+          .register(
+              WireMock.get("/v1/topology")
+                  .willReturn(
+                      WireMock.unauthorized()
+                          .withBody(JSON_MAPPER.writeValueAsBytes(new ProblemDetail()))
+                          .withHeader(
+                              HttpHeaders.CONTENT_TYPE,
+                              "application/problem+json; charset=utf-8")));
+    }
+
+    private ZeebeClientBuilder clientBuilder() throws URISyntaxException {
+      return ZeebeClient.newClientBuilder()
+          .usePlaintext()
+          .grpcAddress(new URI("http://localhost:" + grpcServer.getPort()))
+          .restAddress(new URI(wireMockInfo.getHttpBaseUrl()))
+          .credentialsProvider(
+              new OAuthCredentialsProviderBuilder()
+                  .clientId(CLIENT_ID)
+                  .clientSecret(SECRET)
+                  .audience(AUDIENCE)
+                  .authorizationServerUrl(tokenUrlString())
+                  .credentialsCachePath(cacheFilePath.toString())
+                  .build());
+    }
   }
 }
