@@ -14,6 +14,6 @@ jobs:
         uses: dasmerlon/project-issue-state-sync@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          owner: Issue State Bot
+          owner: camunda
           project_number: 101
           closed_statuses: Done
