@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
+import io.camunda.zeebe.shared.Profile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -168,4 +169,19 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @return itself for chaining
    */
   T withProperty(final String key, final Object value);
+
+  /**
+   * Configures additional active Spring profiles.
+   *
+   * @param profile the profile ID
+   * @return itself for chaining
+   */
+  T withAdditionalProfile(final String profile);
+
+  /**
+   * @see #withAdditionalProfile(String)
+   */
+  default T withAdditionalProfile(final Profile profile) {
+    return withAdditionalProfile(profile.getId());
+  }
 }
