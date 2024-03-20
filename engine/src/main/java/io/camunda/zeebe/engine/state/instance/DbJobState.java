@@ -306,7 +306,7 @@ public final class DbJobState implements JobState, MutableJobState {
       startAtKey = null;
     }
 
-    final var nextIndex = new AtomicReference<DeadlineIndex>();
+    final var lastVisitedIndex = new AtomicReference<DeadlineIndex>();
     deadlinesColumnFamily.whileTrue(
         startAtKey,
         (key, value) -> {
@@ -317,14 +317,14 @@ public final class DbJobState implements JobState, MutableJobState {
           }
           final var jobKey = key.second().inner().getValue();
           if (!visitJob(jobKey, callback)) {
-            nextIndex.set(
+            lastVisitedIndex.set(
                 new DeadlineIndex(key.first().getValue(), key.second().inner().getValue()));
             return false;
           }
           return true;
         });
 
-    return nextIndex.get();
+    return lastVisitedIndex.get();
   }
 
   @Override
