@@ -1152,6 +1152,18 @@
           # decision is evaluated. If the cache is full, the least used DRG gets evicted.
           # drgCacheCapacity: 1000
 
+        # jobs:
+          # Allows to configure the Job Timeout Checker's polling interval. This is the period during
+          # which the checker is idle in between two of its executions. Note that it can mark multiple jobs
+          # as timed-out in a single execution. See `timeoutTriggerBatchLimit` to configure the size of these batches.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBS_TIMEOUTCHECKERPOLLINGINTERVAL
+          # timeoutCheckerPollingInterval: 1s
+
+          # Allows to configure the Job Timeout Checker's batch limit. This is the number of jobs
+          # that could be marked as timed-out in a single trigger run.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBS_TIMEOUTCHECKERBATCHLIMIT
+          # timeoutCheckerBatchLimit: 0x7fffffff
+
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production
       # features:

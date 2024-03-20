@@ -105,7 +105,7 @@ public class JobMetricsTest {
 
     // when
     // We need to add 1 ms as the deadline needs to be < the current time. Without the extra 1 ms
-    // it could be that the JobTimeoutTrigger is triggered at the exact same time as the job
+    // it could be that the JobTimeoutChecker is triggered at the exact same time as the job
     // deadline resulting in the Job activation not being expired yet.
     ENGINE
         .getClock()
