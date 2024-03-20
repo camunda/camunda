@@ -103,11 +103,7 @@ public class MigrateProcessInstanceConcurrentTest {
 
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
-                .formatted(processInstanceKey));
+        .hasRejectionReason(createMigrationRejectionDueMissingMappingReason(processInstanceKey));
 
     ENGINE
         .processInstance()
@@ -268,11 +264,7 @@ public class MigrateProcessInstanceConcurrentTest {
 
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
-                .formatted(processInstanceKey));
+        .hasRejectionReason(createMigrationRejectionDueMissingMappingReason(processInstanceKey));
 
     ENGINE
         .processInstance()
@@ -456,11 +448,7 @@ public class MigrateProcessInstanceConcurrentTest {
 
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
-                .formatted(processInstanceKey));
+        .hasRejectionReason(createMigrationRejectionDueMissingMappingReason(processInstanceKey));
 
     ENGINE
         .processInstance()
@@ -667,11 +655,7 @@ public class MigrateProcessInstanceConcurrentTest {
 
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
-                .formatted(processInstanceKey));
+        .hasRejectionReason(createMigrationRejectionDueMissingMappingReason(processInstanceKey));
 
     ENGINE
         .processInstance()
@@ -766,11 +750,7 @@ public class MigrateProcessInstanceConcurrentTest {
 
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
-                .formatted(processInstanceKey));
+        .hasRejectionReason(createMigrationRejectionDueMissingMappingReason(processInstanceKey));
 
     ENGINE
         .processInstance()
@@ -859,11 +839,7 @@ public class MigrateProcessInstanceConcurrentTest {
 
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
-                .formatted(processInstanceKey));
+        .hasRejectionReason(createMigrationRejectionDueMissingMappingReason(processInstanceKey));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -894,5 +870,14 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private static String createMigrationRejectionDueMissingMappingReason(
+      final long processInstanceKey) {
+    return
+        """
+        Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
+        Elements cannot be migrated without a mapping."""
+        .formatted(processInstanceKey);
   }
 }

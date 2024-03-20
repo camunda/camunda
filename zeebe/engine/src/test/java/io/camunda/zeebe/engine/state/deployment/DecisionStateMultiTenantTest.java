@@ -124,9 +124,9 @@ public class DecisionStateMultiTenantTest {
             ZeebeDbInconsistentException.class, () -> decisionState.storeDecisionRecord(decision));
     assertThat(exception)
         .hasMessage(
-            """
-            Foreign key DbTenantAwareKey[tenantKey=%s, wrappedKey=DbLong{%d}, placementType=PREFIX]\
-             does not exist in DMN_DECISION_REQUIREMENTS"""
+                """
+                Foreign key DbTenantAwareKey[tenantKey=%s, wrappedKey=DbLong{%d}, placementType=PREFIX]\
+                 does not exist in DMN_DECISION_REQUIREMENTS"""
                 .formatted(tenant2, drgKey));
   }
 
