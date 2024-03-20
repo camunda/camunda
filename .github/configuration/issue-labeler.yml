@@ -1,9 +1,6 @@
 # Add/remove 'support' label if issue contains a Jira Support issue or Security issue id
 support:
   - '(SUPPORT|SEC)-\d+'
-# Add/remove 'public' label if issue contains a Jira Support issue or Security issue id
-public:
-  - '(SUPPORT|SEC)-\d+'
 # Add/remove 'security' label if issue contains a Jira SEC issue id
 security:
   - '(SEC)-\d+'
