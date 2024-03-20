@@ -59,7 +59,7 @@ final class JobTimeoutChecker implements Task {
 
     final var counter = new MutableInteger(0);
 
-    final DeadlineIndex nextIndex =
+    final DeadlineIndex lastVisitedIndex =
         state.forEachTimedOutEntry(
             executionTimestamp,
             startAtIndex,
@@ -71,10 +71,11 @@ final class JobTimeoutChecker implements Task {
               return taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record);
             });
 
-    if (nextIndex != null) {
+    if (lastVisitedIndex != null) {
       LOG.trace(
-          "Job timeout checker yielded early. Will reschedule immediately from {}", nextIndex);
-      startAtIndex = nextIndex;
+          "Job timeout checker yielded early. Will reschedule immediately from {}",
+          lastVisitedIndex);
+      startAtIndex = lastVisitedIndex;
       schedule(Duration.ZERO);
     } else {
       executionTimestamp = -1;
