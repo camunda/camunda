@@ -52,7 +52,7 @@ final class DeactivateTimeOutJobs implements Task {
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    LOG.trace("Job timout checker running...");
+    LOG.trace("Job timeout checker running...");
     if (executionTimestamp == -1) {
       executionTimestamp = currentTimeMillis();
     }
@@ -73,7 +73,7 @@ final class DeactivateTimeOutJobs implements Task {
 
     if (nextIndex != null) {
       LOG.trace(
-          "Job timout checker yielded early. will reschedule immediately from where it left of.");
+          "Job timeout checker yielded early. Will reschedule immediately from {}", nextIndex);
       startAtIndex = nextIndex;
       schedule(Duration.ZERO);
     } else {
@@ -82,7 +82,7 @@ final class DeactivateTimeOutJobs implements Task {
       schedule(pollingInterval);
     }
 
-    LOG.trace("{} jobs has been marked to timeout", counter.get());
+    LOG.trace("{} timeout job commands appended to task result builder", counter.get());
 
     return taskResultBuilder.build();
   }
