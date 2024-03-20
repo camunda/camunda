@@ -138,7 +138,7 @@ public class CompensationEventTest {
   }
 
   @Test
-  public void shouldDeployCompensationEventSubprocess() {
+  public void shouldNotDeployCompensationEventSubprocess() {
     final var process =
         Bpmn.createExecutableProcess("compensation-process")
             .startEvent()
@@ -169,7 +169,11 @@ public class CompensationEventTest {
                 end -> end.compensateEventDefinition().compensateEventDefinitionDone())
             .done();
 
-    ProcessValidationUtil.validateProcess(process);
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            SubProcess.class,
+            "Start events in event subprocesses must be one of: message, timer, error, signal or escalation"));
   }
 
   @Test
