@@ -184,16 +184,20 @@ jobs:
         uses: octokit/request-action@v2.1.9
         with:
           route: POST /repos/camunda/zeebe/releases
-          draft: false
+          draft: true
           name: ${{ env.TAG_VERSION }}
           tag_name: ${{ env.TAG_VERSION }}
           body: "" # TODO: changelog too big with Zeebe merge
+          generate_release_notes: true
+          make_latest: "false"
 
       # Upload: Upload to GitHub Release
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
         run: |
+          sleep 10  # TODO: hack
+
           ARTIFACT="camunda-operate"
 
           cd operate/target/checkout/distro/target
