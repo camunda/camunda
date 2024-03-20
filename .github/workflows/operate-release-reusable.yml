@@ -70,7 +70,7 @@ env:
   TAG_VERSION: operate-${{ inputs.releaseVersion }}
   GITHUB_UPLOAD_RELEASE: ${{ inputs.githubUploadRelease }}
   DRY_RUN: ${{ inputs.dryRun }}
-  CREATE_A_RELEASE: ${{ inputs.dryRun == false && inputs.branch != 'stable/opensearch-8.2' && inputs.fromCommit != '' }}
+  CREATE_A_RELEASE: ${{ inputs.dryRun == false && inputs.fromCommit != '' }}
 
 jobs:
   release:
@@ -226,17 +226,11 @@ jobs:
           sudo apt install -y jq
           sudo apt install -y bash
 
-          if [ -f operate.Dockerfile ]; then
-            export DOCKER_FILE_NAME=operate.Dockerfile
-          else
-            export DOCKER_FILE_NAME=Dockerfile
-          fi
-
           # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
           # able to perform the checks before pushing
           # First amd64
           docker buildx build \
-            -f $DOCKER_FILE_NAME \
+            -f operate.Dockerfile \
             -t $IMAGE_NAME:$IMAGE_TAG \
             --build-arg VERSION=$VERSION \
             --build-arg DATE=$date_time_stamp \
@@ -250,7 +244,7 @@ jobs:
 
           # Now arm64
           docker buildx build \
-            -f $DOCKER_FILE_NAME \
+            -f operate.Dockerfile \
             -t $IMAGE_NAME:$IMAGE_TAG \
             --build-arg VERSION=$VERSION \
             --build-arg DATE=$date_time_stamp \
@@ -263,7 +257,7 @@ jobs:
           bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
 
           if ${CREATE_A_RELEASE}; then
-            docker buildx build -f $DOCKER_FILE_NAME . \
+            docker buildx build -f operate.Dockerfile . \
             --platform linux/arm64,linux/amd64 \
             --build-arg VERSION=$VERSION \
             --build-arg REVISION=$commit_hash \
@@ -273,7 +267,7 @@ jobs:
             --push
 
             if ${IS_LATEST}; then
-              docker buildx build -f $DOCKER_FILE_NAME . \
+              docker buildx build -f operate.Dockerfile . \
               --platform linux/arm64,linux/amd64 \
               --build-arg VERSION=$VERSION \
               --build-arg REVISION=$commit_hash \
