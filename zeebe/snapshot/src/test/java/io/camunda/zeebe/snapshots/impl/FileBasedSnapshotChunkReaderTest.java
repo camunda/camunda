@@ -134,6 +134,26 @@ public final class FileBasedSnapshotChunkReaderTest {
   }
 
   @Test
+  public void shouldResetToInitialChunk() throws IOException {
+    // given
+    final var snapshotChunkIds = new ArrayList<String>();
+    try (final var snapshotChunkReader = newReader()) {
+      snapshotChunkReader.seek(asByteBuffer("file2"));
+      snapshotChunkReader.next();
+
+      // when
+      snapshotChunkReader.reset();
+
+      while (snapshotChunkReader.hasNext()) {
+        snapshotChunkIds.add(snapshotChunkReader.next().getChunkName());
+      }
+    }
+
+    // then
+    assertThat(snapshotChunkIds).containsExactly("file1", "file2", "file3");
+  }
+
+  @Test
   public void shouldThrowExceptionOnReachingLimit() throws IOException {
     // given
     final var snapshotChunkReader = newReader();
