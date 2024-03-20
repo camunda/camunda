@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DeactivateTimeOutJobsTest {
+public class JobTimeoutCheckerTest {
   public static final int NUMBER_OF_ACTIVE_JOBS = 10;
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
@@ -82,7 +82,7 @@ public class DeactivateTimeOutJobsTest {
     final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
     final int batchLimit = Integer.MAX_VALUE;
 
-    final var task = new DeactivateTimeOutJobs(jobState, pollingInterval, batchLimit);
+    final var task = new JobTimeoutChecker(jobState, pollingInterval, batchLimit);
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -108,7 +108,7 @@ public class DeactivateTimeOutJobsTest {
     final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
     final int batchLimit = 3;
 
-    final var task = new DeactivateTimeOutJobs(jobState, pollingInterval, batchLimit);
+    final var task = new JobTimeoutChecker(jobState, pollingInterval, batchLimit);
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -148,7 +148,7 @@ public class DeactivateTimeOutJobsTest {
     final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
     final int batchLimit = Integer.MAX_VALUE;
 
-    final var task = new DeactivateTimeOutJobs(jobState, pollingInterval, batchLimit);
+    final var task = new JobTimeoutChecker(jobState, pollingInterval, batchLimit);
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
