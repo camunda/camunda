@@ -44,7 +44,6 @@ public final class AzureBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
-  public static final String AUTOMATIC_AUTHENTICATION = "auto";
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -65,19 +64,21 @@ public final class AzureBackupStore implements BackupStore {
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
     // BlobServiceClientBuilder has their own validations, for building the client
-    if (AUTOMATIC_AUTHENTICATION.equals(config.auth())) {
-      return new BlobServiceClientBuilder()
-          .endpoint(config.endpoint())
-          .credential(new DefaultAzureCredentialBuilder().build())
-          .buildClient();
-    } else if (config.connectionString() != null) {
+    if (config.connectionString() != null) {
       return new BlobServiceClientBuilder()
           .connectionString(config.connectionString())
           .buildClient();
-    } else {
+    } else if (config.accountName() != null && config.accountKey() != null) {
       return new BlobServiceClientBuilder()
           .endpoint(config.endpoint())
           .credential(new StorageSharedKeyCredential(config.accountName(), config.accountKey()))
+          .buildClient();
+    } else {
+      LOG.info(
+          "No connection string or account credentials are configured, using DefaultAzureCredentialBuilder for authentication.");
+      return new BlobServiceClientBuilder()
+          .endpoint(config.endpoint())
+          .credential(new DefaultAzureCredentialBuilder().build())
           .buildClient();
     }
   }
@@ -139,9 +140,8 @@ public final class AzureBackupStore implements BackupStore {
             throw new UnexpectedManifestState(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS ->
-                throw new UnexpectedManifestState(
-                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+            case FAILED, IN_PROGRESS -> throw new UnexpectedManifestState(
+                ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -187,16 +187,13 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static void validateConfig(final AzureBackupConfig config) {
-    if (AUTOMATIC_AUTHENTICATION.equals(config.auth())) {
-      if (config.endpoint() == null) {
-        throw new IllegalArgumentException("Config is set as auto, but endpoint is not provided.");
-      }
-    } else if (config.connectionString() == null
+    if (config.connectionString() == null
         && (config.accountKey() == null
             || config.accountName() == null
-            || config.endpoint() == null)) {
+            || config.endpoint() == null)
+        && config.endpoint() == null) {
       throw new IllegalArgumentException(
-          "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+          "Connection string, or account credentials (account name, account key, endpoint), or endpoint for DefaultAzureCredentialBuilder must be provided.");
     }
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");

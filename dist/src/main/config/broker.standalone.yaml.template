@@ -417,20 +417,16 @@
 
           # The connection string to connect to the service.
           # If this is defined, it will override the account name, account key, and endpoint.
+          # If neither connection string, account name, nor account key are defined, means that the
+          # Azure client uses application default credentials which automatically discovers appropriate
+          # credentials from the runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
+          # Default credentials are appropriate for most scenarios where the application is intended to ultimately be run in Azure.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CONNECTIONSTRING
           # connectionString:
 
           # Used to define the container name where the blobs will be saved.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_BASEPATH
           # basePath:
-
-          # Configures which authentication method is used for connecting to Azure. Can be either 'auto' or be left empty.
-          # Choosing 'auto' means that the Azure client uses application default credentials which automatically
-          # discovers appropriate credentials from the runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
-          # Default credentials are appropriate for most scenarios where the application is intended to ultimately be run in Azure.
-          # Leaving it empty means that the authentication will use the broker configuration values.
-          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_AUTH.
-          # auth:
 
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
