@@ -1,0 +1,19 @@
+name: Close issues moved to Done column
+
+on:
+  schedule:
+    - cron: "0 2 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  issue-state-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sync issue states
+        uses: dasmerlon/project-issue-state-sync@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          owner: Issue State Bot
+          project_number: 101
+          closed_statuses: Done

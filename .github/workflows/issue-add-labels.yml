@@ -20,4 +20,4 @@ jobs:
           enable-versioned-regex: 0
           include-title: 1
           sync-labels: 1
-          repo-token: "${{ github.token }}"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
