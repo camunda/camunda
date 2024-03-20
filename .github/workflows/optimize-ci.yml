@@ -37,7 +37,7 @@ jobs:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: "Read Java / Version Info"
       id: pom-info
-      uses: YunaBraska/java-info-action@eee73ae36952eafc3520d2714562f3e1e7a13407 # 1.12.0
+      uses: YunaBraska/java-info-action@a39db57e7ff3656a1ad67b920444363dd1ec11e9 # 2.0.0
     - name: Login to Harbor registry
       uses: ./.github/actions/login-registry
       with:
