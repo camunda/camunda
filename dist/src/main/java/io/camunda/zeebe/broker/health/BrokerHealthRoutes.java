@@ -20,11 +20,11 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 @Profile("broker")
+@ConditionalOnManagementContext
 @ManagementContextConfiguration(value = ManagementContextType.ANY, proxyBeanMethods = false)
 public class BrokerHealthRoutes {
 
   @Bean
-  @ConditionalOnManagementContext
   public RouterFunction<ServerResponse> routes() {
     return RouterFunctions.route()
         .GET("/health", req -> movedPermanently("/actuator/health/status"))
