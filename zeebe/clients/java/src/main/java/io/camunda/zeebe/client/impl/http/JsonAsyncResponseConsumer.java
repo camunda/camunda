@@ -25,7 +25,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 
 /**
  * Consumes either a successful JSON response body of type {@link T} or a {@link
- * io.camunda.zeebe.gateway.protocol.rest.ProblemDetail} returned by the server on error (if the
+ * io.camunda.zeebe.client.protocol.rest.ProblemDetail} returned by the server on error (if the
  * error was generated explicitly by the server, e.g. not a connection error)
  *
  * <p>If there is no body at all, the result will be null (regardless of whether the call was

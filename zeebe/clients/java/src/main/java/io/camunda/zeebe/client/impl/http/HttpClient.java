@@ -16,6 +16,9 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.api.command.ClientException;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
@@ -33,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Zeebe API
- * conventions, e.g. errors are always {@link io.camunda.zeebe.gateway.protocol.rest.ProblemDetail},
+ * conventions, e.g. errors are always {@link io.camunda.zeebe.client.protocol.rest.ProblemDetail},
  * content type is always JSON, etc.
  */
 public final class HttpClient implements AutoCloseable {
@@ -45,6 +48,7 @@ public final class HttpClient implements AutoCloseable {
   private final RequestConfig defaultRequestConfig;
   private final int maxMessageSize;
   private final TimeValue shutdownTimeout;
+  private final CredentialsProvider credentialsProvider;
 
   public HttpClient(
       final CloseableHttpAsyncClient client,
@@ -52,13 +56,15 @@ public final class HttpClient implements AutoCloseable {
       final URI address,
       final RequestConfig defaultRequestConfig,
       final int maxMessageSize,
-      final TimeValue shutdownTimeout) {
+      final TimeValue shutdownTimeout,
+      final CredentialsProvider credentialsProvider) {
     this.client = client;
     this.jsonMapper = jsonMapper;
     this.address = address;
     this.defaultRequestConfig = defaultRequestConfig;
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
+    this.credentialsProvider = credentialsProvider;
   }
 
   public void start() {
@@ -98,7 +104,7 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.GET, path, null, requestConfig, responseType, transformer, result);
   }
 
-  public <HttpT, RespT> void post(
+  public <RespT> void post(
       final String path,
       final String body,
       final RequestConfig requestConfig,
@@ -106,7 +112,7 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.POST, path, body, requestConfig, Void.class, r -> null, result);
   }
 
-  public <HttpT, RespT> void patch(
+  public <RespT> void patch(
       final String path,
       final String body,
       final RequestConfig requestConfig,
@@ -114,7 +120,7 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
   }
 
-  public <HttpT, RespT> void delete(
+  public <RespT> void delete(
       final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
   }
@@ -128,12 +134,30 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
     final URI target = buildRequestURI(path);
+    final Runnable retryAction =
+        () -> {
+          if (result.isCancelled()) {
+            // skip if the request was already cancelled
+            return;
+          }
+
+          sendRequest(httpMethod, path, body, requestConfig, responseType, transformer, result);
+        };
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
     if (body != null) {
       requestBuilder.setBody(body, ContentType.APPLICATION_JSON);
     }
+
+    try {
+      credentialsProvider.applyCredentials(requestBuilder::addHeader);
+    } catch (final IOException e) {
+      result.completeExceptionally(
+          new ClientException("Failed to apply credentials to request", e));
+      return;
+    }
+
     final SimpleHttpRequest request = requestBuilder.build();
     request.setConfig(requestConfig);
 
@@ -141,7 +165,8 @@ public final class HttpClient implements AutoCloseable {
         client.execute(
             SimpleRequestProducer.create(request),
             new JsonAsyncResponseConsumer<>(jsonMapper, responseType, maxMessageSize),
-            new JsonCallback<>(result, transformer)));
+            new JsonCallback<>(
+                result, transformer, credentialsProvider::shouldRetryRequest, retryAction)));
   }
 
   private URI buildRequestURI(final String path) {

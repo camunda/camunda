@@ -31,7 +31,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements ZeebeFuture<RespT> {
 
-  private Future<?> transportFuture;
+  private volatile Future<?> transportFuture;
 
   @Override
   public RespT join(final long timeout, final TimeUnit unit) {
@@ -49,11 +49,19 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    transportFuture.cancel(mayInterruptIfRunning);
+    if (transportFuture != null) {
+      transportFuture.cancel(mayInterruptIfRunning);
+    }
+
     return super.cancel(mayInterruptIfRunning);
   }
 
   public void transportFuture(final Future<?> httpFuture) {
     this.transportFuture = httpFuture;
+
+    // possibly we were already cancelled between calls
+    if (isCancelled()) {
+      httpFuture.cancel(true);
+    }
   }
 }

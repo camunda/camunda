@@ -61,7 +61,8 @@ public class HttpClientFactory {
         gatewayAddress,
         defaultRequestConfig,
         config.getMaxMessageSize(),
-        TimeValue.ofSeconds(15));
+        TimeValue.ofSeconds(15),
+        config.getCredentialsProvider());
   }
 
   private URI buildGatewayAddress() {
