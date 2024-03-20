@@ -21,7 +21,8 @@ import org.junit.jupiter.api.Test;
 
 public class PropertyBasedZeebeWorkerValueCustomizerTest {
 
-  private static MethodInfo methodInfo(final Object bean, final String beanName, final String methodName) {
+  private static MethodInfo methodInfo(
+      final Object bean, final String beanName, final String methodName) {
     try {
       return MethodInfo.builder()
           .classInfo(ClassInfo.builder().beanName(beanName).bean(bean).build())
@@ -38,13 +39,15 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   private static ZeebeClientConfigurationProperties properties() {
-    final ZeebeClientConfigurationProperties properties = new ZeebeClientConfigurationProperties(null);
+    final ZeebeClientConfigurationProperties properties =
+        new ZeebeClientConfigurationProperties(null);
     properties.applyOverrides();
     return properties;
   }
 
   @JobWorker
-  void sampleWorker(@Variable final String var1, @VariablesAsType final ComplexProcessVariable var2) {}
+  void sampleWorker(
+      @Variable final String var1, @VariablesAsType final ComplexProcessVariable var2) {}
 
   @JobWorker
   void activatedJobWorker(@Variable final String var1, final ActivatedJob activatedJob) {}

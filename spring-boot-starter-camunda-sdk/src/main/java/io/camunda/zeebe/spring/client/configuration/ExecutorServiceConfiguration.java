@@ -26,7 +26,8 @@ public class ExecutorServiceConfiguration {
 
   private final ZeebeClientConfigurationProperties configurationProperties;
 
-  public ExecutorServiceConfiguration(final ZeebeClientConfigurationProperties configurationProperties) {
+  public ExecutorServiceConfiguration(
+      final ZeebeClientConfigurationProperties configurationProperties) {
     this.configurationProperties = configurationProperties;
   }
 

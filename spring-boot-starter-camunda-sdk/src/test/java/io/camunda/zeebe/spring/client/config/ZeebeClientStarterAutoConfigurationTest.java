@@ -57,7 +57,8 @@ public class ZeebeClientStarterAutoConfigurationTest {
     assertThat(jsonMapper).isNotNull();
     assertThat(autoConfiguration).isNotNull();
 
-    final Map<String, JsonMapper> jsonMapperBeans = applicationContext.getBeansOfType(JsonMapper.class);
+    final Map<String, JsonMapper> jsonMapperBeans =
+        applicationContext.getBeansOfType(JsonMapper.class);
     final Object objectMapper = ReflectionTestUtils.getField(jsonMapper, "objectMapper");
 
     assertThat(jsonMapperBeans.size()).isEqualTo(1);

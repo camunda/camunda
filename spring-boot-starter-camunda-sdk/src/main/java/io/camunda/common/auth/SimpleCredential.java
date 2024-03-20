@@ -12,6 +12,7 @@ public class SimpleCredential {
 
   private final String user;
   private final String password;
+
   public SimpleCredential(final String user, final String password) {
     this.user = user;
     this.password = password;

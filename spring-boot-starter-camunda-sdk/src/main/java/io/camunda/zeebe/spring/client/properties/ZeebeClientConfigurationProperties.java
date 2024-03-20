@@ -37,6 +37,7 @@ public class ZeebeClientConfigurationProperties {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final org.springframework.core.env.Environment environment;
+
   /**
    * Connection mode can be set to "CLOUD" (connect to SaaS with properties), or "ADDRESS" (to use a
    * manually set address to the broker) If not set, "CLOUD" is used if a
@@ -72,7 +73,8 @@ public class ZeebeClientConfigurationProperties {
   private Duration requestTimeout = DEFAULT.getDefaultRequestTimeout();
 
   @Autowired
-  public ZeebeClientConfigurationProperties(final org.springframework.core.env.Environment environment) {
+  public ZeebeClientConfigurationProperties(
+      final org.springframework.core.env.Environment environment) {
     this.environment = environment;
   }
 
@@ -196,7 +198,8 @@ public class ZeebeClientConfigurationProperties {
     return applyEnvironmentVariableOverrides;
   }
 
-  public void setApplyEnvironmentVariableOverrides(final boolean applyEnvironmentVariableOverrides) {
+  public void setApplyEnvironmentVariableOverrides(
+      final boolean applyEnvironmentVariableOverrides) {
     this.applyEnvironmentVariableOverrides = applyEnvironmentVariableOverrides;
   }
 

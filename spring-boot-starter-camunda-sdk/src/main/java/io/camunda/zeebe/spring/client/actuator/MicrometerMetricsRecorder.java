@@ -45,14 +45,17 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
   }
 
   @Override
-  public void increase(final String metricName, final String action, final String type, final int count) {
+  public void increase(
+      final String metricName, final String action, final String type, final int count) {
     final String key = metricName + "#" + action + '#' + type;
-    final Counter counter = counters.computeIfAbsent(key, k -> newCounter(metricName, action, type));
+    final Counter counter =
+        counters.computeIfAbsent(key, k -> newCounter(metricName, action, type));
     counter.increment(count);
   }
 
   @Override
-  public void executeWithTimer(final String metricName, final String jobType, final Runnable methodToExecute) {
+  public void executeWithTimer(
+      final String metricName, final String jobType, final Runnable methodToExecute) {
     final Timer timer = meterRegistry.timer(metricName, "type", jobType);
     timer.record(methodToExecute);
   }

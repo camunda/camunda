@@ -100,12 +100,18 @@ public class DefaultHttpClient implements HttpClient {
 
   @Override
   public <T, V, W> T get(
-      final Class<T> responseType, final Class<V> parameterType, final TypeToken<W> selector, final Long key) {
+      final Class<T> responseType,
+      final Class<V> parameterType,
+      final TypeToken<W> selector,
+      final Long key) {
     return get(responseType, parameterType, selector, String.valueOf(key));
   }
 
   private <T, V, W> T get(
-      final Class<T> responseType, final Class<V> parameterType, final TypeToken<W> selector, final String id) {
+      final Class<T> responseType,
+      final Class<V> parameterType,
+      final TypeToken<W> selector,
+      final String id) {
     String resourcePath = retrievePath(selector.getClass());
     if (resourcePath.contains("{key}")) {
       resourcePath = resourcePath.replace("{key}", String.valueOf(id));
@@ -148,7 +154,10 @@ public class DefaultHttpClient implements HttpClient {
 
   @Override
   public <T, V, W, U> T post(
-      final Class<T> responseType, final Class<V> parameterType, final TypeToken<W> selector, final U body) {
+      final Class<T> responseType,
+      final Class<V> parameterType,
+      final TypeToken<W> selector,
+      final U body) {
     final String url = host + basePath + retrievePath(selector.getClass());
     final HttpPost httpPost = new HttpPost(url);
     httpPost.addHeader("Content-Type", "application/json");
@@ -250,7 +259,8 @@ public class DefaultHttpClient implements HttpClient {
     final T resp;
     if (200 <= response.getCode() && response.getCode() <= 299) {
       final HttpEntity entity = response.getEntity();
-      final String tmp = new String(Java8Utils.readAllBytes(entity.getContent()), StandardCharsets.UTF_8);
+      final String tmp =
+          new String(Java8Utils.readAllBytes(entity.getContent()), StandardCharsets.UTF_8);
       resp = jsonMapper.fromJson(tmp, responseType);
       EntityUtils.consume(entity);
     } else {
@@ -265,11 +275,13 @@ public class DefaultHttpClient implements HttpClient {
   }
 
   private <T, V> T parseAndRetry(
-      final CloseableHttpResponse response, final Class<T> responseType, final Class<V> selector) throws IOException {
+      final CloseableHttpResponse response, final Class<T> responseType, final Class<V> selector)
+      throws IOException {
     final T resp;
     if (200 <= response.getCode() && response.getCode() <= 299) {
       final HttpEntity entity = response.getEntity();
-      final String tmp = new String(Java8Utils.readAllBytes(entity.getContent()), StandardCharsets.UTF_8);
+      final String tmp =
+          new String(Java8Utils.readAllBytes(entity.getContent()), StandardCharsets.UTF_8);
       resp = jsonMapper.fromJson(tmp, responseType);
       EntityUtils.consume(entity);
     } else {
@@ -291,7 +303,8 @@ public class DefaultHttpClient implements HttpClient {
     final T resp;
     if (200 <= response.getCode() && response.getCode() <= 299) {
       final HttpEntity entity = response.getEntity();
-      final String tmp = new String(Java8Utils.readAllBytes(entity.getContent()), StandardCharsets.UTF_8);
+      final String tmp =
+          new String(Java8Utils.readAllBytes(entity.getContent()), StandardCharsets.UTF_8);
       resp = jsonMapper.fromJson(tmp, responseType, parameterType);
       EntityUtils.consume(entity);
     } else {

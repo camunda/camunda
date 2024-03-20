@@ -14,7 +14,12 @@ public class JwtCredential {
   private final String clientSecret;
   private final String audience;
   private final String authUrl;
-  public JwtCredential(final String clientId, final String clientSecret, final String audience, final String authUrl) {
+
+  public JwtCredential(
+      final String clientId,
+      final String clientSecret,
+      final String audience,
+      final String authUrl) {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.audience = audience;

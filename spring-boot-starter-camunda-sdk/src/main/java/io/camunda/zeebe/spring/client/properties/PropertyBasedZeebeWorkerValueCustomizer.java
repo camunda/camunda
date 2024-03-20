@@ -89,7 +89,8 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   }
 
   private String extractVariableName(final ParameterInfo parameterInfo) {
-    final Variable variableAnnotation = parameterInfo.getParameterInfo().getAnnotation(Variable.class);
+    final Variable variableAnnotation =
+        parameterInfo.getParameterInfo().getAnnotation(Variable.class);
     if (variableAnnotation != null && !Variable.DEFAULT_NAME.equals(variableAnnotation.name())) {
       return variableAnnotation.name();
     }
@@ -125,7 +126,8 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   }
 
   private void applyDefaultWorkerName(final ZeebeWorkerValue zeebeWorker) {
-    final String defaultJobWorkerName = zeebeClientConfigurationProperties.getDefaultJobWorkerName();
+    final String defaultJobWorkerName =
+        zeebeClientConfigurationProperties.getDefaultJobWorkerName();
     if (isBlank(zeebeWorker.getName())) {
       if (isNotBlank(defaultJobWorkerName)) {
         LOG.debug(
@@ -146,7 +148,8 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   }
 
   private void applyDefaultJobWorkerType(final ZeebeWorkerValue zeebeWorker) {
-    final String defaultJobWorkerType = zeebeClientConfigurationProperties.getDefaultJobWorkerType();
+    final String defaultJobWorkerType =
+        zeebeClientConfigurationProperties.getDefaultJobWorkerType();
     if (isBlank(zeebeWorker.getType())) {
       if (isNotBlank(defaultJobWorkerType)) {
         LOG.debug(

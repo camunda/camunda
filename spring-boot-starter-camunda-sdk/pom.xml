@@ -67,8 +67,8 @@
     <resources>
       <!-- we need to filter the resources, so placeholders in banner.txt get replaced -->
       <resource>
-        <directory>src/main/resources</directory>
         <filtering>true</filtering>
+        <directory>src/main/resources</directory>
       </resource>
     </resources>
 
