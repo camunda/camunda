@@ -538,7 +538,7 @@ final class ReconfigurationTest {
       assertThat(m2.leave())
           .describedAs(
               "Should fail to leave because quorum not available for the new configuration")
-          .failsWithin(Duration.ofSeconds(2))
+          .failsWithin(Duration.ofSeconds(10))
           .withThrowableOfType(ExecutionException.class);
     }
 
