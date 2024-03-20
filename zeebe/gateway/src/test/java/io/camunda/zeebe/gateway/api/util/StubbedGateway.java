@@ -12,7 +12,6 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -39,6 +38,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.grpc.CallCredentials;
 import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
+import io.grpc.Metadata.Key;
 import io.grpc.Server;
 import io.grpc.ServerInterceptors;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -247,7 +247,8 @@ public final class StubbedGateway {
     public void applyRequestMetadata(
         final RequestInfo requestInfo, final Executor appExecutor, final MetadataApplier applier) {
       final Metadata headers = new Metadata();
-      headers.put(OAuthCredentialsProvider.HEADER_AUTH_KEY, "Bearer " + token);
+      final Key<String> key = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+      headers.put(key, "Bearer " + token);
       applier.apply(headers);
     }
   }
