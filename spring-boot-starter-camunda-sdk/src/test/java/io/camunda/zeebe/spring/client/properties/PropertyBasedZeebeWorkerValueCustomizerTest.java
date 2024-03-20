@@ -185,7 +185,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     assertThat(zeebeWorkerValue.getEnabled()).isFalse();
   }
 
-  private static class ComplexProcessVariable {
+  private static final class ComplexProcessVariable {
     private String var3;
     private String var4;
 

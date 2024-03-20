@@ -137,5 +137,5 @@ public class ZeebeClientStarterAutoConfigurationCustomJsonMapperTest {
     }
   }
 
-  private static class JsonMapper {}
+  private static final class JsonMapper {}
 }

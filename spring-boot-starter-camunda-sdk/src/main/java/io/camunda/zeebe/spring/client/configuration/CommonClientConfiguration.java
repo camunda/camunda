@@ -51,41 +51,43 @@ public class CommonClientConfiguration {
           || zeebeSelfManagedProperties.getGatewayAddress() != null) {
         // figure out if Self-Managed JWT or Self-Managed Basic
         // Identity props take priority
-        if (identityConfigurationFromProperties != null) {
-          if (hasText(identityConfigurationFromProperties.getClientId())) {
-            final JwtConfig jwtConfig = configureJwtConfig();
-            final IdentityConfig identityConfig = configureIdentities();
-            return SelfManagedAuthentication.builder()
-                .withJwtConfig(jwtConfig)
-                .withIdentityConfig(identityConfig)
-                .build();
-          }
+        if (identityConfigurationFromProperties != null
+            && hasText(identityConfigurationFromProperties.getClientId())) {
+          final JwtConfig jwtConfig = configureJwtConfig();
+          final IdentityConfig identityConfig = configureIdentities();
+          return SelfManagedAuthentication.builder()
+              .withJwtConfig(jwtConfig)
+              .withIdentityConfig(identityConfig)
+              .build();
         }
 
         // Fallback to common props
-        if (commonConfigurationProperties != null) {
-          if (commonConfigurationProperties.getKeycloak().getUrl() != null) {
-            final JwtConfig jwtConfig = configureJwtConfig();
-            final IdentityConfig identityConfig = configureIdentities();
-            return SelfManagedAuthentication.builder()
-                .withJwtConfig(jwtConfig)
-                .withIdentityConfig(identityConfig)
-                .build();
-          } else if (commonConfigurationProperties.getKeycloak().getTokenUrl() != null) {
-            final JwtConfig jwtConfig = configureJwtConfig();
-            final IdentityConfig identityConfig = configureIdentities();
-            return SelfManagedAuthentication.builder()
-                .withJwtConfig(jwtConfig)
-                .withIdentityConfig(identityConfig)
-                .build();
-          } else if (commonConfigurationProperties.getUsername() != null
-              && commonConfigurationProperties.getPassword() != null) {
-            final SimpleConfig simpleConfig = new SimpleConfig();
-            return SimpleAuthentication.builder()
-                .withSimpleConfig(simpleConfig)
-                .withSimpleUrl(commonConfigurationProperties.getUrl())
-                .build();
-          }
+        if (commonConfigurationProperties != null
+            && commonConfigurationProperties.getKeycloak().getUrl() != null) {
+          final JwtConfig jwtConfig = configureJwtConfig();
+          final IdentityConfig identityConfig = configureIdentities();
+          return SelfManagedAuthentication.builder()
+              .withJwtConfig(jwtConfig)
+              .withIdentityConfig(identityConfig)
+              .build();
+        }
+        if (commonConfigurationProperties != null
+            && commonConfigurationProperties.getKeycloak().getTokenUrl() != null) {
+          final JwtConfig jwtConfig = configureJwtConfig();
+          final IdentityConfig identityConfig = configureIdentities();
+          return SelfManagedAuthentication.builder()
+              .withJwtConfig(jwtConfig)
+              .withIdentityConfig(identityConfig)
+              .build();
+        }
+        if (commonConfigurationProperties != null
+            && commonConfigurationProperties.getUsername() != null
+            && commonConfigurationProperties.getPassword() != null) {
+          final SimpleConfig simpleConfig = new SimpleConfig();
+          return SimpleAuthentication.builder()
+              .withSimpleConfig(simpleConfig)
+              .withSimpleUrl(commonConfigurationProperties.getUrl())
+              .build();
         }
       }
     }

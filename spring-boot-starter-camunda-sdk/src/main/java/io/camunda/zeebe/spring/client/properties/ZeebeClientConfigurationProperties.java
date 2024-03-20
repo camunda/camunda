@@ -212,9 +212,18 @@ public class ZeebeClientConfigurationProperties {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(broker, cloud, worker, message, security, job, requestTimeout);
+  }
+
+  @Override
   public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     final ZeebeClientConfigurationProperties that = (ZeebeClientConfigurationProperties) o;
     return Objects.equals(broker, that.broker)
         && Objects.equals(cloud, that.cloud)
@@ -223,11 +232,6 @@ public class ZeebeClientConfigurationProperties {
         && Objects.equals(security, that.security)
         && Objects.equals(job, that.job)
         && Objects.equals(requestTimeout, that.requestTimeout);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(broker, cloud, worker, message, security, job, requestTimeout);
   }
 
   @Override
@@ -384,17 +388,6 @@ public class ZeebeClientConfigurationProperties {
     private String gatewayAddress;
     private Duration keepAlive = DEFAULT.getKeepAlive();
 
-    @Override
-    public String toString() {
-      return "Broker{"
-          + "gatewayAddress='"
-          + gatewayAddress
-          + '\''
-          + ", keepAlive="
-          + keepAlive
-          + '}';
-    }
-
     /**
      * Use gatewayAddress. It's deprecated since 0.25.0, and will be removed in 0.26.0
      *
@@ -436,17 +429,32 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(gatewayAddress, keepAlive);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       final Broker broker = (Broker) o;
       return Objects.equals(gatewayAddress, broker.gatewayAddress)
           && Objects.equals(keepAlive, broker.keepAlive);
     }
 
     @Override
-    public int hashCode() {
-      return Objects.hash(gatewayAddress, keepAlive);
+    public String toString() {
+      return "Broker{"
+          + "gatewayAddress='"
+          + gatewayAddress
+          + '\''
+          + ", keepAlive="
+          + keepAlive
+          + '}';
     }
   }
 
@@ -587,24 +595,6 @@ public class ZeebeClientConfigurationProperties {
     private String defaultType = null;
     private Map<String, ZeebeWorkerValue> override = new HashMap<>();
 
-    @Override
-    public String toString() {
-      return "Worker{"
-          + "maxJobsActive="
-          + maxJobsActive
-          + ", threads="
-          + threads
-          + ", defaultName='"
-          + defaultName
-          + '\''
-          + ", defaultType='"
-          + defaultType
-          + '\''
-          + ", override="
-          + override
-          + '}';
-    }
-
     public Map<String, ZeebeWorkerValue> getOverride() {
       return override;
     }
@@ -646,9 +636,18 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(maxJobsActive, threads, defaultName, defaultType, override);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       final Worker worker = (Worker) o;
       return Objects.equals(maxJobsActive, worker.maxJobsActive)
           && Objects.equals(threads, worker.threads)
@@ -658,8 +657,21 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Override
-    public int hashCode() {
-      return Objects.hash(maxJobsActive, threads, defaultName, defaultType, override);
+    public String toString() {
+      return "Worker{"
+          + "maxJobsActive="
+          + maxJobsActive
+          + ", threads="
+          + threads
+          + ", defaultName='"
+          + defaultName
+          + '\''
+          + ", defaultType='"
+          + defaultType
+          + '\''
+          + ", override="
+          + override
+          + '}';
     }
   }
 
@@ -667,11 +679,6 @@ public class ZeebeClientConfigurationProperties {
 
     private Duration timeout = DEFAULT.getDefaultJobTimeout();
     private Duration pollInterval = DEFAULT.getDefaultJobPollInterval();
-
-    @Override
-    public String toString() {
-      return "Job{" + "timeout=" + timeout + ", pollInterval=" + pollInterval + '}';
-    }
 
     public Duration getTimeout() {
       return timeout;
@@ -690,16 +697,25 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(timeout, pollInterval);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       final Job job = (Job) o;
       return Objects.equals(timeout, job.timeout) && Objects.equals(pollInterval, job.pollInterval);
     }
 
     @Override
-    public int hashCode() {
-      return Objects.hash(timeout, pollInterval);
+    public String toString() {
+      return "Job{" + "timeout=" + timeout + ", pollInterval=" + pollInterval + '}';
     }
   }
 
@@ -707,11 +723,6 @@ public class ZeebeClientConfigurationProperties {
 
     private Duration timeToLive = DEFAULT.getDefaultMessageTimeToLive();
     private int maxMessageSize = DEFAULT.getMaxMessageSize();
-
-    @Override
-    public String toString() {
-      return "Message{" + "timeToLive=" + timeToLive + ", maxMessageSize=" + maxMessageSize + '}';
-    }
 
     public Duration getTimeToLive() {
       return timeToLive;
@@ -730,16 +741,25 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(timeToLive);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       final Message message = (Message) o;
       return Objects.equals(timeToLive, message.timeToLive);
     }
 
     @Override
-    public int hashCode() {
-      return Objects.hash(timeToLive);
+    public String toString() {
+      return "Message{" + "timeToLive=" + timeToLive + ", maxMessageSize=" + maxMessageSize + '}';
     }
   }
 
@@ -748,20 +768,6 @@ public class ZeebeClientConfigurationProperties {
     private boolean plaintext = DEFAULT.isPlaintextConnectionEnabled();
     private String overrideAuthority = DEFAULT.getOverrideAuthority();
     private String certPath = DEFAULT.getCaCertificatePath();
-
-    @Override
-    public String toString() {
-      return "Security{"
-          + "plaintext="
-          + plaintext
-          + ", overrideAuthority='"
-          + overrideAuthority
-          + '\''
-          + ", certPath='"
-          + certPath
-          + '\''
-          + '}';
-    }
 
     public boolean isPlaintext() {
       return plaintext;
@@ -788,9 +794,18 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(plaintext, overrideAuthority, certPath);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       final Security security = (Security) o;
       return plaintext == security.plaintext
           && Objects.equals(overrideAuthority, security.overrideAuthority)
@@ -798,8 +813,17 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Override
-    public int hashCode() {
-      return Objects.hash(plaintext, overrideAuthority, certPath);
+    public String toString() {
+      return "Security{"
+          + "plaintext="
+          + plaintext
+          + ", overrideAuthority='"
+          + overrideAuthority
+          + '\''
+          + ", certPath='"
+          + certPath
+          + '\''
+          + '}';
     }
   }
 }

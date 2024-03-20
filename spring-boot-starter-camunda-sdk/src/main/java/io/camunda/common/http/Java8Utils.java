@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class Java8Utils {
+public final class Java8Utils {
 
   private Java8Utils() {}
 
@@ -23,22 +23,24 @@ public class Java8Utils {
 
     try {
       try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-        while ((readLen = inputStream.read(buf, 0, bufLen)) != -1)
+        while ((readLen = inputStream.read(buf, 0, bufLen)) != -1) {
           outputStream.write(buf, 0, readLen);
-
+        }
         return outputStream.toByteArray();
       }
     } catch (final IOException e) {
       exception = e;
       throw e;
     } finally {
-      if (exception == null) inputStream.close();
-      else
+      if (exception == null) {
+        inputStream.close();
+      } else {
         try {
           inputStream.close();
         } catch (final IOException e) {
           exception.addSuppressed(e);
         }
+      }
     }
   }
 }
