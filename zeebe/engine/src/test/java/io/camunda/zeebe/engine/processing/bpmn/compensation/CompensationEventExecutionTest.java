@@ -2510,7 +2510,7 @@ public class CompensationEventExecutionTest {
             .serviceTask(
                 "A",
                 task -> task.zeebeJobType("A").boundaryEvent().compensation(compensationHandler))
-            .endEvent()
+            .endEvent("compensation-throw-event")
             .compensateEventDefinition()
             .done();
 
@@ -2529,39 +2529,48 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(
+            r -> r.getValue().getElementId(),
             r -> r.getValue().getBpmnElementType(),
             r -> r.getValue().getBpmnEventType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
+                "compensation-throw-event",
                 BpmnElementType.END_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
+                "Undo-A",
                 BpmnElementType.MULTI_INSTANCE_BODY,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
+                "Undo-A",
                 BpmnElementType.SERVICE_TASK,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
+                "Undo-A",
                 BpmnElementType.SERVICE_TASK,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
+                "Undo-A",
                 BpmnElementType.SERVICE_TASK,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
+                "Undo-A",
                 BpmnElementType.MULTI_INSTANCE_BODY,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
+                "compensation-throw-event",
                 BpmnElementType.END_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
+                PROCESS_ID,
                 BpmnElementType.PROCESS,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
