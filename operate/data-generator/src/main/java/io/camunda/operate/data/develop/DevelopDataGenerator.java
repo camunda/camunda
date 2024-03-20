@@ -290,6 +290,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_A), "develop/collapsedSubProcess.bpmn");
 
+    ZeebeTestUtil.deployProcess(
+        true, client, getTenant(TENANT_A), "develop/compensationEvents.bpmn");
+
     // reverted in Zeebe https://github.com/camunda/zeebe/issues/13640
     // ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A),
     // "develop/inclusiveGateway.bpmn");
@@ -370,6 +373,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(
             ZeebeTestUtil.startProcessInstance(
                 true, client, getTenant(TENANT_A), "undefined-task-process", null));
+        processInstanceKeys.add(
+            ZeebeTestUtil.startProcessInstance(
+                true, client, getTenant(TENANT_A), "compensationEvents", null));
         // reverted in Zeebe https://github.com/camunda/zeebe/issues/13640
         //        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client,
         // getTenant(TENANT_A), "inclusiveGatewayProcess",
