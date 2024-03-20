@@ -144,7 +144,8 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
       final ExecutableProcess process,
       final ExecutableActivity innerActivity,
       final ExecutableMultiInstanceBody multiInstanceBody) {
-
+    // The compensation handler is set by other transformer before. Replace the inner activity with
+    // the multi-instance body to invoke the body when a compensation is triggered.
     process.getFlowElements().stream()
         .filter(ExecutableBoundaryEvent.class::isInstance)
         .map(ExecutableBoundaryEvent.class::cast)
