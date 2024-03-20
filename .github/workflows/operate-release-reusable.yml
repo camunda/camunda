@@ -204,7 +204,6 @@ jobs:
 
       # Upload: Upload Docker Image
       - name: Upload Docker Image
-        if: ${{ inputs.dryRun == false }}
         env:
           IMAGE_NAME: 'camunda/operate'
           IMAGE_TAG: ${{ inputs.releaseVersion }}
@@ -263,24 +262,26 @@ jobs:
           export ARCHITECTURE=arm64
           bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
 
-          docker buildx build -f $DOCKER_FILE_NAME . \
-          --platform linux/arm64,linux/amd64 \
-          --build-arg VERSION=$VERSION \
-          --build-arg REVISION=$commit_hash \
-          --build-arg DATE=$date_time_stamp \
-          --provenance false \
-          -t $IMAGE_NAME:$IMAGE_TAG \
-          --push
-
-          if ${IS_LATEST}; then
+          if ${CREATE_A_RELEASE}; then
             docker buildx build -f $DOCKER_FILE_NAME . \
             --platform linux/arm64,linux/amd64 \
             --build-arg VERSION=$VERSION \
             --build-arg REVISION=$commit_hash \
             --build-arg DATE=$date_time_stamp \
             --provenance false \
-            -t $IMAGE_NAME:latest \
+            -t $IMAGE_NAME:$IMAGE_TAG \
             --push
+
+            if ${IS_LATEST}; then
+              docker buildx build -f $DOCKER_FILE_NAME . \
+              --platform linux/arm64,linux/amd64 \
+              --build-arg VERSION=$VERSION \
+              --build-arg REVISION=$commit_hash \
+              --build-arg DATE=$date_time_stamp \
+              --provenance false \
+              -t $IMAGE_NAME:latest \
+              --push
+            fi
           fi
 
       #########################################################################
