@@ -2494,6 +2494,166 @@ public class CompensationEventExecutionTest {
   }
 
   @Test
+  public void shouldInvokeMultiInstanceActivityCompensationHandler() {
+    // given
+    final Consumer<BoundaryEventBuilder> compensationHandler =
+        compensation ->
+            compensation
+                .serviceTask("Undo-A")
+                .zeebeJobType("Undo-A")
+                .multiInstance()
+                .zeebeInputCollectionExpression("[1,2,3]");
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task -> task.zeebeJobType("A").boundaryEvent().compensation(compensationHandler))
+            .endEvent("compensation-throw-event")
+            .compensateEventDefinition()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    completeJobs(processInstanceKey, "Undo-A", 3);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getElementId(),
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                "compensation-throw-event",
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                "Undo-A",
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                "Undo-A",
+                BpmnElementType.SERVICE_TASK,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "Undo-A",
+                BpmnElementType.SERVICE_TASK,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "Undo-A",
+                BpmnElementType.SERVICE_TASK,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "Undo-A",
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "compensation-throw-event",
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                PROCESS_ID,
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldInvokeMultiInstanceSubprocessCompensationHandler() {
+    // given
+    final Consumer<BoundaryEventBuilder> compensationHandler =
+        compensation ->
+            compensation
+                .subProcess()
+                .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("Undo-A")
+                .zeebeJobType("Undo-A")
+                .endEvent();
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task -> task.zeebeJobType("A").boundaryEvent().compensation(compensationHandler))
+            .endEvent()
+            .compensateEventDefinition()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    completeJobs(processInstanceKey, "Undo-A", 3);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldDeleteSubscriptionForTerminatedSubprocess() {
     // given
     final var process =
