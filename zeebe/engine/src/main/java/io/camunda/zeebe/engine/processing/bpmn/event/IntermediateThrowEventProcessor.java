@@ -161,7 +161,10 @@ public class IntermediateThrowEventProcessor
           ? SUCCESS
           : variableMappingBehavior
               .applyInputMappings(activating, element)
-              .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, activating))
+              .flatMap(
+                  ok ->
+                      jobBehavior.evaluateJobExpressions(
+                          element.getJobWorkerProperties(), activating))
               .thenDo(
                   jobProperties -> {
                     jobBehavior.createNewJob(activating, element, jobProperties);

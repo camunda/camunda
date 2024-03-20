@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
@@ -63,6 +64,17 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     final ElementInstance serviceTask = elementInstanceState.getInstance(serviceTaskKey);
 
     if (serviceTask != null) {
+      if (value.getJobKind() == JobKind.EXECUTION_LISTENER) {
+        // to store the variable for merge, to handle concurrent commands
+        eventHandle.triggeringProcessEvent(value);
+
+        commandWriter.appendFollowUpCommand(
+            serviceTaskKey,
+            ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER,
+            serviceTask.getValue());
+        return;
+      }
+
       final long scopeKey = serviceTask.getValue().getFlowScopeKey();
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 

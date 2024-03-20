@@ -64,6 +64,11 @@ public final class ProcessInstanceStateTransitionGuard {
               ProcessInstanceIntent.ELEMENT_ACTIVATING,
               ProcessInstanceIntent.ELEMENT_ACTIVATED,
               ProcessInstanceIntent.ELEMENT_COMPLETING);
+      case COMPLETE_EXECUTION_LISTENER ->
+          hasElementInstanceWithState(
+              context,
+              ProcessInstanceIntent.ELEMENT_ACTIVATING,
+              ProcessInstanceIntent.ELEMENT_COMPLETING);
       default ->
           Either.left(
               String.format(

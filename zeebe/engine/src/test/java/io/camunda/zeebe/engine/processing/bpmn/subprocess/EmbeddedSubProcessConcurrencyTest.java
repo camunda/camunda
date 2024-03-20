@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.EmbeddedSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -113,18 +114,13 @@ public class EmbeddedSubProcessConcurrencyTest {
     assertThat(
             RecordingExporter.records()
                 .limitToProcessInstance(processInstanceKey)
-                .filter(r -> r.getValueType() == ValueType.PROCESS_EVENT)
-                .withIntent(ProcessEventIntent.TRIGGERING))
-        .extracting(r -> ((ProcessEventRecordValue) r.getValue()).getTargetElementId())
-        .containsExactly("errorBoundary", "eventSubProcessStartEvent");
-
-    // No event should be TRIGGERED. We don't want to trigger the boundary event.
-    // The event sub process does not write a TRIGGERED event.
-    assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .withIntent(ProcessEventIntent.TRIGGERED))
-        .isEmpty();
+                .filter(r -> r.getValueType() == ValueType.PROCESS_EVENT))
+        .extracting(
+            Record::getIntent, r -> ((ProcessEventRecordValue) r.getValue()).getTargetElementId())
+        .containsExactly(
+            tuple(ProcessEventIntent.TRIGGERING, "errorBoundary"),
+            tuple(ProcessEventIntent.TRIGGERING, "eventSubProcessStartEvent"),
+            tuple(ProcessEventIntent.TRIGGERED, "eventSubProcessStartEvent"));
 
     assertThat(
             RecordingExporter.processInstanceRecords()

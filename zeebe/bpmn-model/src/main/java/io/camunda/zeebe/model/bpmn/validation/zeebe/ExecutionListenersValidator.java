@@ -15,17 +15,23 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class ExecutionListenersValidator implements ModelElementValidator<ZeebeExecutionListeners> {
+
+  private static final Set<String> ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS =
+      Collections.singleton(BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK);
 
   @Override
   public Class<ZeebeExecutionListeners> getElementType() {
@@ -38,6 +44,29 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
       final ValidationResultCollector validationResultCollector) {
     final Collection<ZeebeExecutionListener> executionListeners = element.getExecutionListeners();
     if (executionListeners == null || executionListeners.isEmpty()) {
+      return;
+    }
+
+    /*
+     * Temporary validation check to ensure execution listeners are only associated with supported
+     * BPMN elements.
+     *
+     * <p>Note: This validation is currently limited to specific BPMN elements that support
+     * execution listeners. As we extend the support for execution listeners across more BPMN
+     * elements, this check will be updated accordingly to reflect those changes. This is a
+     * transitional safeguard to ensure consistency and correctness in the model until full support
+     * is implemented.
+     *
+     * TODO: Review and update this validation as execution listener support is expanded to additional BPMN elements.
+     */
+    final String parentElementTypeName =
+        element.getParentElement().getParentElement().getElementType().getTypeName();
+    if (!ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS.contains(parentElementTypeName)) {
+      final String errorMessage =
+          String.format(
+              "Execution listeners are not supported for the '%s' element. Currently, only %s elements can have execution listeners.",
+              parentElementTypeName, ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS);
+      validationResultCollector.addError(0, errorMessage);
       return;
     }
 

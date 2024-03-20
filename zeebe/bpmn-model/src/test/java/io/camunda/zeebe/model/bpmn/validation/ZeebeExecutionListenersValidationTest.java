@@ -62,6 +62,23 @@ public class ZeebeExecutionListenersValidationTest {
   }
 
   @Test
+  @DisplayName("validate execution listeners are supported only for specified BPMN elements")
+  void validateExecutionListenersSupportedOnlyForSpecifiedElements() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/ZeebeExecutionListenersValidationTest.testElementThatNotSupportExecutionListeners.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "Execution listeners are not supported for the 'scriptTask' element. Currently, only [serviceTask] elements can have execution listeners."));
+  }
+
+  @Test
   @DisplayName(
       "element with ExecutionListeners defined with the same `type` but different `eventType`")
   void testExecutionListenersTheSameJobTypeButDifferentEventType() {

@@ -65,6 +65,21 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   }
 
   /**
+   * Finalizes the activation of the BPMN element. This method is invoked after the element has been
+   * initialized and activated, ensuring that any additional steps required to fully establish the
+   * element's active state are completed.
+   *
+   * <p>This method is typically invoked after the processing of START Execution Listeners.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context process instance-related data of the element that is executed
+   * @return Either<Failure, ?> indicating the outcome of the finalize activation attempt
+   */
+  default Either<Failure, ?> finalizeActivation(final T element, final BpmnElementContext context) {
+    return SUCCESS;
+  }
+
+  /**
    * The element is going to be left. Perform every action to leave the element and continue with
    * the next element.
    *
@@ -89,6 +104,20 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @return Either<Failure, ?> indicating the outcome of the completion attempt
    */
   default Either<Failure, ?> onComplete(final T element, final BpmnElementContext context) {
+    return SUCCESS;
+  }
+
+  /**
+   * Finalizes the completion of the BPMN element. This method is called when the element has
+   * finished executing its main behavior and is ready to transition to a completed state.
+   *
+   * <p>This method is typically invoked after the processing of END Execution Listeners.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context process instance-related data of the element that is executed
+   * @return Either<Failure, ?> indicating the outcome of the finalize completion attempt
+   */
+  default Either<Failure, ?> finalizeCompletion(final T element, final BpmnElementContext context) {
     return SUCCESS;
   }
 
