@@ -29,10 +29,10 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@8a470fddafa5cbb6266ee11b37ef4d8aae19c571 # v3
+        uses: github/codeql-action/init@05963f47d870e2cb19a537396c1f668a348c7d8f # v3
         with:
           languages: javascript-typescript
           queries: security-and-quality
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@8a470fddafa5cbb6266ee11b37ef4d8aae19c571 # v3
+        uses: github/codeql-action/analyze@05963f47d870e2cb19a537396c1f668a348c7d8f # v3
