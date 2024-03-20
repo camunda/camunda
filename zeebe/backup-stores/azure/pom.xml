@@ -20,6 +20,21 @@
 
   <name>Zeebe Backup Store for Azure</name>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- Resolve conflicting dependencies from azure-identity -->
+      <dependency>
+        <groupId>com.microsoft.azure</groupId>
+        <artifactId>msal4j</artifactId>
+        <version>1.14.0</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna-platform</artifactId>
+        <version>5.13.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -123,27 +138,5 @@
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- Need to specify to avoid conflicts of dependencies of azure-identity-->
-    <dependency>
-      <groupId>com.microsoft.azure</groupId>
-      <artifactId>msal4j</artifactId>
-      <version>1.14.0</version>
-    </dependency>
   </dependencies>
-
-  <!-- Dependency analyzer fails to detect use of msal4j-->
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>com.microsoft.azure:msal4j</dep>
-          </ignoredUnusedDeclaredDependencies>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

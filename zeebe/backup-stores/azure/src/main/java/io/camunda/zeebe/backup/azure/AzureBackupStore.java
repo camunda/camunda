@@ -44,6 +44,7 @@ public final class AzureBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  public static final String AUTOMATIC_AUTHENTICATION = "auto";
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -64,7 +65,7 @@ public final class AzureBackupStore implements BackupStore {
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
     // BlobServiceClientBuilder has their own validations, for building the client
-    if (config.auth() != null && config.auth().equals("auto")) {
+    if (AUTOMATIC_AUTHENTICATION.equals(config.auth())) {
       return new BlobServiceClientBuilder()
           .endpoint(config.endpoint())
           .credential(new DefaultAzureCredentialBuilder().build())
@@ -186,7 +187,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static void validateConfig(final AzureBackupConfig config) {
-    if (config.auth() != null && config.auth().equals("auto")) {
+    if (AUTOMATIC_AUTHENTICATION.equals(config.auth())) {
       if (config.endpoint() == null) {
         throw new IllegalArgumentException("Config is set as auto, but endpoint is not provided.");
       }

@@ -17,6 +17,7 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
   private String accountKey;
   private String connectionString;
   private String basePath;
+  private String auth;
 
   public String getEndpoint() {
     return endpoint;
@@ -62,6 +63,14 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
     this.basePath = basePath;
   }
 
+  public String getAuth() {
+    return auth;
+  }
+
+  public void setAuth(final String auth) {
+    this.auth = auth;
+  }
+
   public static AzureBackupConfig toStoreConfig(final AzureBackupStoreConfig config) {
     return new AzureBackupConfig.Builder()
         .withEndpoint(config.getEndpoint())
@@ -69,12 +78,13 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         .withAccountKey(config.getAccountKey())
         .withConnectionString(config.getConnectionString())
         .withContainerName(config.getBasePath())
+        .withAuth(config.getAuth())
         .build();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(endpoint, accountName, accountKey, connectionString, basePath);
+    return Objects.hash(endpoint, accountName, accountKey, connectionString, basePath, auth);
   }
 
   @Override
@@ -90,7 +100,8 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(accountName, that.accountName)
         && Objects.equals(accountKey, that.accountKey)
         && Objects.equals(connectionString, that.connectionString)
-        && Objects.equals(basePath, that.basePath);
+        && Objects.equals(basePath, that.basePath)
+        && Objects.equals(auth, that.auth);
   }
 
   @Override
@@ -110,6 +121,9 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         + '\''
         + ", basePath='"
         + basePath
+        + '\''
+        + ", auth='"
+        + auth
         + '\''
         + '}';
   }
