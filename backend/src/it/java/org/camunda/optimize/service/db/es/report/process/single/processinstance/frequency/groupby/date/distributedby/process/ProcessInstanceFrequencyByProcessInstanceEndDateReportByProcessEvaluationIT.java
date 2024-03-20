@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.frequency.groupby.date.distributedby.process;
 
+import java.time.OffsetDateTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import java.time.OffsetDateTime;
-
 public class ProcessInstanceFrequencyByProcessInstanceEndDateReportByProcessEvaluationIT
-  extends AbstractProcessInstanceFrequencyByProcessInstanceDateByProcessReportEvaluationIT {
+    extends AbstractProcessInstanceFrequencyByProcessInstanceDateByProcessReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getReportDataType() {
@@ -25,9 +24,8 @@ public class ProcessInstanceFrequencyByProcessInstanceEndDateReportByProcessEval
   }
 
   @Override
-  protected void changeProcessInstanceDate(final ProcessInstanceEngineDto instanceEngineDto,
-                                           final OffsetDateTime newDate) {
+  protected void changeProcessInstanceDate(
+      final ProcessInstanceEngineDto instanceEngineDto, final OffsetDateTime newDate) {
     engineDatabaseExtension.changeProcessInstanceEndDate(instanceEngineDto.getId(), newDate);
   }
-
 }

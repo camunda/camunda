@@ -517,6 +517,9 @@
           <version>2.43.0</version>
           <configuration>
             <java>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
               <googleJavaFormat>
                 <version>${google-java-format.plugin.version}</version>
                 <style>GOOGLE</style>

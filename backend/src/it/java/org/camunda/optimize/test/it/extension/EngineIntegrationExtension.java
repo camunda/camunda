@@ -5,6 +5,20 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -28,26 +42,11 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
-import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
-
 /**
- * Extension that performs clean up of engine on integration test startup and one more clean up after integration test.
- * Includes configuration of retrievable Engine MockServer
- * <p>
- * Relies on it-plugin being deployed on Camunda Platform Tomcat.
+ * Extension that performs clean up of engine on integration test startup and one more clean up
+ * after integration test. Includes configuration of retrievable Engine MockServer
+ *
+ * <p>Relies on it-plugin being deployed on Camunda Platform Tomcat.
  */
 @Slf4j
 public class EngineIntegrationExtension implements BeforeEachCallback, AfterEachCallback {
@@ -57,12 +56,12 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   public static final String DEFAULT_FULLNAME = DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME;
   public static final String KERMIT_GROUP_NAME = "anyGroupName";
 
-  private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
+  private static final Set<String> DEPLOYED_ENGINES =
+      new HashSet<>(Collections.singleton("default"));
   private static final ClientAndServer mockServerClient = initMockServer();
 
   private final boolean shouldCleanEngine;
-  @Getter
-  private final String engineName;
+  @Getter private final String engineName;
 
   private final SimpleEngineClient engineClient;
 
@@ -80,10 +79,12 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     this(null, shouldCleanEngine);
   }
 
-  public EngineIntegrationExtension(final String customEngineName, final boolean shouldCleanEngine) {
-    this.engineName = Optional.ofNullable(customEngineName)
-      .map(IntegrationTestConfigurationUtil::resolveFullEngineName)
-      .orElseGet(IntegrationTestConfigurationUtil::resolveFullDefaultEngineName);
+  public EngineIntegrationExtension(
+      final String customEngineName, final boolean shouldCleanEngine) {
+    this.engineName =
+        Optional.ofNullable(customEngineName)
+            .map(IntegrationTestConfigurationUtil::resolveFullEngineName)
+            .orElseGet(IntegrationTestConfigurationUtil::resolveFullDefaultEngineName);
     this.engineClient = new SimpleEngineClient(getEngineUrl());
     this.shouldCleanEngine = shouldCleanEngine;
     initEngine();
@@ -120,12 +121,13 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   private static ClientAndServer initMockServer() {
-    log.debug("Setting up Engine MockServer on port {}", IntegrationTestConfigurationUtil.getEngineMockServerPort());
+    log.debug(
+        "Setting up Engine MockServer on port {}",
+        IntegrationTestConfigurationUtil.getEngineMockServerPort());
     return MockServerUtil.createProxyMockServer(
-      IntegrationTestConfigurationUtil.getEngineHost(),
-      Integer.parseInt(IntegrationTestConfigurationUtil.getEnginePort()),
-      IntegrationTestConfigurationUtil.getEngineMockServerPort()
-    );
+        IntegrationTestConfigurationUtil.getEngineHost(),
+        Integer.parseInt(IntegrationTestConfigurationUtil.getEnginePort()),
+        IntegrationTestConfigurationUtil.getEngineMockServerPort());
   }
 
   public ClientAndServer useEngineMockServer() {
@@ -146,8 +148,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     engineClient.addCandidateGroupForAllRunningUserTasks(null, groupId);
   }
 
-  public void addCandidateGroupForAllRunningUserTasks(final String processInstanceId,
-                                                      final String groupId) {
+  public void addCandidateGroupForAllRunningUserTasks(
+      final String processInstanceId, final String groupId) {
     engineClient.addCandidateGroupForAllRunningUserTasks(processInstanceId, groupId);
   }
 
@@ -167,7 +169,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     engineClient.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
-  public void finishAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
+  public void finishAllRunningUserTasks(
+      final String user, final String password, final String processInstanceId) {
     engineClient.finishAllRunningUserTasks(user, password, processInstanceId);
   }
 
@@ -179,16 +182,14 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     engineClient.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
-  public void claimAllRunningUserTasksWithAssignee(final String assigneeId, final String processInstanceId) {
+  public void claimAllRunningUserTasksWithAssignee(
+      final String assigneeId, final String processInstanceId) {
     engineClient.claimAllRunningUserTasksWithAssignee(
-      assigneeId,
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstanceId
-    );
+        assigneeId, DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
-  public void claimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
+  public void claimAllRunningUserTasks(
+      final String user, final String password, final String processInstanceId) {
     engineClient.claimAllRunningUserTasks(user, password, processInstanceId);
   }
 
@@ -197,7 +198,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public void completeUserTaskWithoutClaim(final String processInstanceId) {
-    engineClient.completeUserTaskWithoutClaim(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+    engineClient.completeUserTaskWithoutClaim(
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
   }
 
   public String getProcessDefinitionId() {
@@ -205,34 +207,35 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
-    return engineClient.deployAndStartProcessWithVariables(bpmnModelInstance, new HashMap<>(), "aBusinessKey", null);
-  }
-
-  public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance, String tenantId) {
     return engineClient.deployAndStartProcessWithVariables(
-      bpmnModelInstance,
-      new HashMap<>(),
-      "aBusinessKey",
-      tenantId
-    );
+        bpmnModelInstance, new HashMap<>(), "aBusinessKey", null);
   }
 
-  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
-                                                                     Map<String, Object> variables) {
-    return engineClient.deployAndStartProcessWithVariables(bpmnModelInstance, variables, "aBusinessKey", null);
+  public ProcessInstanceEngineDto deployAndStartProcess(
+      BpmnModelInstance bpmnModelInstance, String tenantId) {
+    return engineClient.deployAndStartProcessWithVariables(
+        bpmnModelInstance, new HashMap<>(), "aBusinessKey", tenantId);
   }
 
-  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
-                                                                     Map<String, Object> variables,
-                                                                     String tenantId) {
-    return engineClient.deployAndStartProcessWithVariables(bpmnModelInstance, variables, "aBusinessKey", tenantId);
+  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(
+      BpmnModelInstance bpmnModelInstance, Map<String, Object> variables) {
+    return engineClient.deployAndStartProcessWithVariables(
+        bpmnModelInstance, variables, "aBusinessKey", null);
   }
 
-  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
-                                                                     Map<String, Object> variables,
-                                                                     String businessKey,
-                                                                     String tenantId) {
-    return engineClient.deployAndStartProcessWithVariables(bpmnModelInstance, variables, businessKey, tenantId);
+  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(
+      BpmnModelInstance bpmnModelInstance, Map<String, Object> variables, String tenantId) {
+    return engineClient.deployAndStartProcessWithVariables(
+        bpmnModelInstance, variables, "aBusinessKey", tenantId);
+  }
+
+  public ProcessInstanceEngineDto deployAndStartProcessWithVariables(
+      BpmnModelInstance bpmnModelInstance,
+      Map<String, Object> variables,
+      String businessKey,
+      String tenantId) {
+    return engineClient.deployAndStartProcessWithVariables(
+        bpmnModelInstance, variables, businessKey, tenantId);
   }
 
   public HistoricProcessInstanceDto getHistoricProcessInstance(String processInstanceId) {
@@ -256,8 +259,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return engineClient.getHistoricTaskInstances(processInstanceId, null);
   }
 
-  public List<HistoricUserTaskInstanceDto> getHistoricTaskInstances(String processInstanceId,
-                                                                    String taskDefinitionKey) {
+  public List<HistoricUserTaskInstanceDto> getHistoricTaskInstances(
+      String processInstanceId, String taskDefinitionKey) {
     return engineClient.getHistoricTaskInstances(processInstanceId, taskDefinitionKey);
   }
 
@@ -302,7 +305,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   @SneakyThrows
   public void unsuspendProcessInstanceByDefinitionKey(final String processDefinitionKey) {
-    engineClient.performProcessInstanceByDefinitionKeySuspensionRequest(processDefinitionKey, false);
+    engineClient.performProcessInstanceByDefinitionKeySuspensionRequest(
+        processDefinitionKey, false);
   }
 
   @SneakyThrows
@@ -317,54 +321,67 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   @SneakyThrows
   public void suspendProcessInstanceViaBatch(final String processInstanceId) {
-    engineClient.performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(processInstanceId, true);
+    engineClient.performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(
+        processInstanceId, true);
   }
 
   @SneakyThrows
   public void unsuspendProcessInstanceViaBatch(final String processInstanceId) {
-    engineClient.performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(processInstanceId, false);
+    engineClient.performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(
+        processInstanceId, false);
   }
 
-  public void deleteVariableInstanceForProcessInstance(final String variableName, final String processInstanceId) {
+  public void deleteVariableInstanceForProcessInstance(
+      final String variableName, final String processInstanceId) {
     engineClient.deleteVariableInstanceForProcessInstance(variableName, processInstanceId);
   }
 
-  public void updateVariableInstanceForProcessInstance(final String processInstanceId, final String variableName,
-                                                       final String varValue) {
-    engineClient.updateVariableInstanceForProcessInstance(processInstanceId, variableName, varValue);
+  public void updateVariableInstanceForProcessInstance(
+      final String processInstanceId, final String variableName, final String varValue) {
+    engineClient.updateVariableInstanceForProcessInstance(
+        processInstanceId, variableName, varValue);
   }
 
   public String deployProcessAndGetId(BpmnModelInstance modelInstance) {
-    ProcessDefinitionEngineDto processDefinitionId = deployProcessAndGetProcessDefinition(modelInstance, null);
+    ProcessDefinitionEngineDto processDefinitionId =
+        deployProcessAndGetProcessDefinition(modelInstance, null);
     return processDefinitionId.getId();
   }
 
-  public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(BpmnModelInstance modelInstance) {
+  public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(
+      BpmnModelInstance modelInstance) {
     return deployProcessAndGetProcessDefinition(modelInstance, null);
   }
 
-  public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(BpmnModelInstance modelInstance,
-                                                                         String tenantId) {
+  public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(
+      BpmnModelInstance modelInstance, String tenantId) {
     DeploymentDto deploymentDto = engineClient.deployProcess(modelInstance, tenantId);
     return engineClient.getProcessDefinitionEngineDto(deploymentDto);
   }
 
   public void startDecisionInstance(String decisionDefinitionId) {
-    engineClient.startDecisionInstance(decisionDefinitionId, new HashMap<>() {{
-      put("amount", 200);
-      put("invoiceCategory", "Misc");
-    }});
+    engineClient.startDecisionInstance(
+        decisionDefinitionId,
+        new HashMap<>() {
+          {
+            put("amount", 200);
+            put("invoiceCategory", "Misc");
+          }
+        });
   }
 
-  public void startDecisionInstance(String decisionDefinitionId,
-                                    Map<String, Object> variables) {
+  public void startDecisionInstance(String decisionDefinitionId, Map<String, Object> variables) {
     engineClient.startDecisionInstance(decisionDefinitionId, variables);
   }
 
   private String getEngineUrl() {
     if (usingMockServer) {
-      return "http://" + MOCKSERVER_HOST + ":" + IntegrationTestConfigurationUtil.getEngineMockServerPort()
-        + IntegrationTestConfigurationUtil.getEngineRestPath() + engineName;
+      return "http://"
+          + MOCKSERVER_HOST
+          + ":"
+          + IntegrationTestConfigurationUtil.getEngineMockServerPort()
+          + IntegrationTestConfigurationUtil.getEngineRestPath()
+          + engineName;
     }
     return IntegrationTestConfigurationUtil.getEngineRestEndpoint() + engineName;
   }
@@ -414,17 +431,18 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return startProcessInstance(processDefinitionId, new HashMap<>());
   }
 
-  public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) {
+  public ProcessInstanceEngineDto startProcessInstance(
+      String processDefinitionId, Map<String, Object> variables) {
     return engineClient.startProcessInstance(processDefinitionId, variables, "aBusinessKey");
   }
 
-  public ProcessInstanceEngineDto startProcessInstance(final String processDefinitionId, final String businessKey) {
+  public ProcessInstanceEngineDto startProcessInstance(
+      final String processDefinitionId, final String businessKey) {
     return engineClient.startProcessInstance(processDefinitionId, new HashMap<>(), businessKey);
   }
 
-  public ProcessInstanceEngineDto startProcessInstance(String procDefId,
-                                                       Map<String, Object> variables,
-                                                       String businessKey) {
+  public ProcessInstanceEngineDto startProcessInstance(
+      String procDefId, Map<String, Object> variables, String businessKey) {
     return engineClient.startProcessInstance(procDefId, variables, businessKey);
   }
 
@@ -496,33 +514,36 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(
-      createDefaultDmnModel()
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        deployDecisionDefinition(createDefaultDmnModel());
     engineClient.startDecisionInstance(
-      decisionDefinitionEngineDto.getId(),
-      new HashMap<>() {{
-        put("amount", 200);
-        put("invoiceCategory", "Misc");
-      }}
-    );
+        decisionDefinitionEngineDto.getId(),
+        new HashMap<>() {
+          {
+            put("amount", 200);
+            put("invoiceCategory", "Misc");
+          }
+        });
     return decisionDefinitionEngineDto;
   }
 
-  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance) {
+  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(
+      DmnModelInstance dmnModelInstance) {
     return deployAndStartDecisionDefinition(dmnModelInstance, null);
   }
 
-  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance,
-                                                                      String tenantId) {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(
-      dmnModelInstance,
-      tenantId
-    );
-    engineClient.startDecisionInstance(decisionDefinitionEngineDto.getId(), new HashMap<String, Object>() {{
-      put("amount", 200);
-      put("invoiceCategory", "Misc");
-    }});
+  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(
+      DmnModelInstance dmnModelInstance, String tenantId) {
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        deployDecisionDefinition(dmnModelInstance, tenantId);
+    engineClient.startDecisionInstance(
+        decisionDefinitionEngineDto.getId(),
+        new HashMap<String, Object>() {
+          {
+            put("amount", 200);
+            put("invoiceCategory", "Misc");
+          }
+        });
     return decisionDefinitionEngineDto;
   }
 
@@ -539,9 +560,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition(String dmnPath, String tenantId) {
-    final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream(dmnPath)
-    );
+    final DmnModelInstance dmnModelInstance =
+        Dmn.readModelFromStream(getClass().getClassLoader().getResourceAsStream(dmnPath));
     return deployDecisionDefinition(dmnModelInstance, tenantId);
   }
 
@@ -549,7 +569,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return deployDecisionDefinition(dmnModelInstance, null);
   }
 
-  public DecisionDefinitionEngineDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, String tenantId) {
+  public DecisionDefinitionEngineDto deployDecisionDefinition(
+      DmnModelInstance dmnModelInstance, String tenantId) {
     DeploymentDto deploymentDto = engineClient.deployDecision(dmnModelInstance, tenantId);
     return engineClient.getDecisionDefinitionByDeployment(deploymentDto);
   }

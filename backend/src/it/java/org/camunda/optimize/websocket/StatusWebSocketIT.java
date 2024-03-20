@@ -5,6 +5,19 @@
  */
 package org.camunda.optimize.websocket;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.mockserver.model.HttpRequest.request;
+
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.TimeUnit;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.JettyConfig;
@@ -15,38 +28,28 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.DeploymentException;
-import jakarta.websocket.Session;
-import jakarta.websocket.WebSocketContainer;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.mockserver.model.HttpRequest.request;
-
 @Tag(OPENSEARCH_PASSING)
 public class StatusWebSocketIT extends AbstractPlatformIT {
-  // use single web socket container instance, as every get call is by default creating new instances otherwise
-  private static final WebSocketContainer WEB_SOCKET_CONTAINER = ContainerProvider.getWebSocketContainer();
+  // use single web socket container instance, as every get call is by default creating new
+  // instances otherwise
+  private static final WebSocketContainer WEB_SOCKET_CONTAINER =
+      ContainerProvider.getWebSocketContainer();
 
   @Test
   public void getImportStatus() throws Exception {
     // given
     final StatusClientSocket socket = new StatusClientSocket();
     try (final Session ignored = connectStatusClientSocket(socket)) {
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived =
+          socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
 
       // when
       deployProcessAndTriggerImport();
 
       // then
-      boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      boolean statusCorrectlyReceived =
+          socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(statusCorrectlyReceived).isTrue();
     }
   }
@@ -57,14 +60,16 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().setMaxStatusConnections(0);
     final StatusClientSocket socket = new StatusClientSocket();
     try (final Session ignored = connectStatusClientSocket(socket)) {
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived =
+          socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isFalse();
 
       // when
       deployProcessAndTriggerImport();
 
       // then
-      boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      boolean statusCorrectlyReceived =
+          socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(statusCorrectlyReceived).isFalse();
     }
   }
@@ -75,7 +80,8 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
 
     try (final Session ignored = connectStatusClientSocket(socket)) {
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived =
+          socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
 
       // when
@@ -96,7 +102,8 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
     // when status socket connects
     try (final Session ignored = connectStatusClientSocket(socket)) {
       // then the initial status is received
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived =
+          socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
       assertThat(socket.getImportStatus()).isFalse();
 
@@ -116,7 +123,8 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
     // when status socket connects
     try (final Session ignored = connectStatusClientSocket(socket)) {
       // then the initial status is received
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived =
+          socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
       assertThat(socket.getImportStatus()).isTrue();
 
@@ -132,14 +140,17 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
   @Test
   public void importStatusStaysFalseIfImportIsDeactivated() throws Exception {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
-      .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getConfiguredEngines()
+        .values()
+        .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
     embeddedOptimizeExtension.reloadConfiguration();
 
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
     try (final Session ignored = connectStatusClientSocket(socket)) {
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch()
-        .await(1, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived =
+          socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
 
       // when
@@ -147,16 +158,23 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
       engineIntegrationExtension.deployAndStartProcess(processModel);
 
       // then
-      embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()
-        .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
+      embeddedOptimizeExtension
+          .getImportSchedulerManager()
+          .getEngineImportSchedulers()
+          .forEach(
+              engineImportScheduler ->
+                  assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
       assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
       assertThat(socket.getReceivedTwoUpdatesLatch().getCount()).isEqualTo(1L);
       assertThat(socket.getImportStatus()).isFalse();
       assertThat(socket.isImportStatusChanged()).isFalse();
     } finally {
       // cleanup
-      embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
-        .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(true));
+      embeddedOptimizeExtension
+          .getConfigurationService()
+          .getConfiguredEngines()
+          .values()
+          .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(true));
       embeddedOptimizeExtension.reloadConfiguration();
     }
   }
@@ -164,19 +182,21 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
   @Test
   public void engineConnectionStatusValuesReadFromCacheWhenAvailable() throws Exception {
     // given
-    final HttpRequest engineVersionRequestMatcher = request()
-      .withPath(engineIntegrationExtension.getEnginePath() + "/version");
+    final HttpRequest engineVersionRequestMatcher =
+        request().withPath(engineIntegrationExtension.getEnginePath() + "/version");
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final StatusClientSocket socket = new StatusClientSocket();
     try (final Session ignored = connectStatusClientSocket(socket)) {
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(2, TimeUnit.SECONDS);
+      final boolean initialStatusCorrectlyReceived =
+          socket.getInitialStatusReceivedLatch().await(2, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
 
       // when
       deployProcessAndTriggerImport();
 
       // then
-      boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      boolean statusCorrectlyReceived =
+          socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(statusCorrectlyReceived).isTrue();
       // only one request to the engine was made
       engineMockServer.verify(engineVersionRequestMatcher, VerificationTimes.exactly(1));
@@ -184,11 +204,13 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
   }
 
   private Session connectStatusClientSocket(Object statusClientSocket)
-    throws DeploymentException, IOException, URISyntaxException {
-    final String dest = String.format(
-      "ws://localhost:%d/ws/status",
-      embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)
-    );
+      throws DeploymentException, IOException, URISyntaxException {
+    final String dest =
+        String.format(
+            "ws://localhost:%d/ws/status",
+            embeddedOptimizeExtension
+                .getBean(JettyConfig.class)
+                .getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
     return WEB_SOCKET_CONTAINER.connectToServer(statusClientSocket, new URI(dest));
   }
 
@@ -197,5 +219,4 @@ public class StatusWebSocketIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(processModel);
     importAllEngineEntitiesFromScratch();
   }
-
 }

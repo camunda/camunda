@@ -5,18 +5,18 @@
  */
 package org.camunda.optimize.rest.eventprocess;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class EventDeleteRestServiceRolloverEventNotExistsIT extends AbstractEventRestServiceRolloverIT {
+public class EventDeleteRestServiceRolloverEventNotExistsIT
+    extends AbstractEventRestServiceRolloverIT {
 
   @Test
   public void deleteRolledOverEvents_deleteSingleEventDoesNotExist() {
@@ -24,18 +24,20 @@ public class EventDeleteRestServiceRolloverEventNotExistsIT extends AbstractEven
     ingestEventAndRolloverIndex(impostorSabotageNav);
     ingestEventAndRolloverIndex(impostorMurderedMedBay);
     ingestEventAndRolloverIndex(normieTaskNav);
-    final List<CloudEventRequestDto> instanceEvents = Arrays.asList(impostorSabotageNav, impostorMurderedMedBay);
+    final List<CloudEventRequestDto> instanceEvents =
+        Arrays.asList(impostorSabotageNav, impostorMurderedMedBay);
     createAndSaveEventInstanceContainingEvents(instanceEvents, "indexId");
     final List<EventDto> savedEventsBeforeDelete = getAllStoredEvents();
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteEventsRequest(Collections.singletonList("eventDoesNotExist"))
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteEventsRequest(Collections.singletonList("eventDoesNotExist"))
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertThat(getAllStoredEvents()).containsExactlyInAnyOrderElementsOf(savedEventsBeforeDelete);
   }
-
 }

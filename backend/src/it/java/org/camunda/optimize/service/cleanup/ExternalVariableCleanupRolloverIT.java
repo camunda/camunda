@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
@@ -13,34 +21,27 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-
 public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
 
   @BeforeEach
   @AfterEach
   public void cleanUpExternalVariableIndices() {
     databaseIntegrationTestExtension.deleteAllExternalVariableIndices();
-    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
-      new ExternalProcessVariableIndexES()
-    );
+    embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .createOrUpdateOptimizeIndex(
+            embeddedOptimizeExtension.getOptimizeDatabaseClient(),
+            new ExternalProcessVariableIndexES());
   }
 
   @Test
   public void cleanupWorksAfterRollover() {
     // given
     getExternalVariableCleanupConfiguration().setEnabled(true);
-    final List<ExternalProcessVariableRequestDto> varsToCleanIndex1 = IntStream.range(0, 10)
-      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .toList();
+    final List<ExternalProcessVariableRequestDto> varsToCleanIndex1 =
+        IntStream.range(0, 10)
+            .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
+            .toList();
 
     // freeze time to manipulate ingestion timestamp
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
@@ -49,15 +50,20 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
 
     // trigger rollover
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    embeddedOptimizeExtension.getConfigurationService().getVariableIndexRolloverConfiguration().setMaxIndexSizeGB(0);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getVariableIndexRolloverConfiguration()
+        .setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getExternalProcessVariableIndexRolloverService().triggerRollover();
 
-    final List<ExternalProcessVariableRequestDto> varsToCleanIndex2 = IntStream.range(20, 30)
-      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .toList();
-    final List<ExternalProcessVariableRequestDto> varsToKeepIndex2 = IntStream.range(40, 50)
-      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .toList();
+    final List<ExternalProcessVariableRequestDto> varsToCleanIndex2 =
+        IntStream.range(20, 30)
+            .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
+            .toList();
+    final List<ExternalProcessVariableRequestDto> varsToKeepIndex2 =
+        IntStream.range(40, 50)
+            .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
+            .toList();
 
     // freeze time to manipulate ingestion timestamp
     ingestionClient.ingestVariables(varsToCleanIndex2);
@@ -71,22 +77,22 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
 
     // then
     assertThat(getAllStoredExternalVariables())
-      .extracting(ExternalProcessVariableDto::getVariableId)
-      .containsExactlyInAnyOrderElementsOf(varsToKeepIndex2.stream()
-                                             .map(ExternalProcessVariableRequestDto::getId)
-                                             .collect(toList()));
+        .extracting(ExternalProcessVariableDto::getVariableId)
+        .containsExactlyInAnyOrderElementsOf(
+            varsToKeepIndex2.stream()
+                .map(ExternalProcessVariableRequestDto::getId)
+                .collect(toList()));
   }
 
   private ExternalVariableCleanupConfiguration getExternalVariableCleanupConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getExternalVariableCleanupConfiguration();
+    return embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCleanupServiceConfiguration()
+        .getExternalVariableCleanupConfiguration();
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalVariables() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
-    );
+        EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class);
   }
-
 }

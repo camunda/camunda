@@ -70,15 +70,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
+public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT
+    extends AbstractProcessDefinitionIT {
 
-  protected static final Double[] SET_DURATIONS = new Double[]{10., 20.};
+  protected static final Double[] SET_DURATIONS = new Double[] {10., 20.};
   private static final String PROCESS_DEFINITION_KEY = "123";
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";
   private static final Double UNASSIGNED_TASK_DURATION = 500.;
 
-  private static Map<String, Double> getExpectedResultsMap(final Double userTask1Results, final Double userTask2Results) {
+  private static Map<String, Double> getExpectedResultsMap(
+      final Double userTask1Results, final Double userTask2Results) {
     final Map<String, Double> result = new HashMap<>();
     if (nonNull(userTask1Results)) {
       result.put(DEFAULT_USERNAME, userTask1Results);
@@ -90,114 +92,122 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   }
 
   protected static Stream<FlowNodeStateTestValues> getFlowNodeStatusFilterValues() {
-    final FlowNodeStateTestValues runningStateValues =
-        new FlowNodeStateTestValues();
-    runningStateValues.processFilter = ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList();
+    final FlowNodeStateTestValues runningStateValues = new FlowNodeStateTestValues();
+    runningStateValues.processFilter =
+        ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList();
     runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200., 200.);
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., 500.);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
-    final FlowNodeStateTestValues completedStateValues =
-        new FlowNodeStateTestValues();
-    completedStateValues.processFilter = ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList();
+    final FlowNodeStateTestValues completedStateValues = new FlowNodeStateTestValues();
+    completedStateValues.processFilter =
+        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList();
     completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
     completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
     completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
     final FlowNodeStateTestValues completedOrCanceledStateValues = new FlowNodeStateTestValues();
-    completedOrCanceledStateValues.processFilter = ProcessFilterBuilder.filter()
-        .completedOrCanceledFlowNodesOnly().add().buildList();
+    completedOrCanceledStateValues.processFilter =
+        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList();
     completedOrCanceledStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
     completedOrCanceledStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
     completedOrCanceledStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
     final FlowNodeStateTestValues canceledStateValues = new FlowNodeStateTestValues();
-    canceledStateValues.processFilter = ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList();
+    canceledStateValues.processFilter =
+        ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList();
     canceledStateValues.expectedIdleDurationValues = getExpectedResultsMap(700., 700.);
     canceledStateValues.expectedWorkDurationValues = getExpectedResultsMap(700., 700.);
     canceledStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
 
-    return Stream.of(runningStateValues, completedStateValues, completedOrCanceledStateValues, canceledStateValues);
+    return Stream.of(
+        runningStateValues,
+        completedStateValues,
+        completedOrCanceledStateValues,
+        canceledStateValues);
   }
 
   public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
         Arguments.of(
             IN,
-            new String[]{SECOND_USER},
-            Collections.singletonList(Tuple.tuple(SECOND_USER, 10.))
-        ),
+            new String[] {SECOND_USER},
+            Collections.singletonList(Tuple.tuple(SECOND_USER, 10.))),
         Arguments.of(
             IN,
-            new String[]{DEFAULT_USERNAME, SECOND_USER},
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
-        ),
-        Arguments.of(NOT_IN, new String[]{SECOND_USER}, Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 10.))),
-        Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Collections.emptyList())
-    );
+            new String[] {DEFAULT_USERNAME, SECOND_USER},
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))),
+        Arguments.of(
+            NOT_IN,
+            new String[] {SECOND_USER},
+            Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 10.))),
+        Arguments.of(
+            NOT_IN, new String[] {DEFAULT_USERNAME, SECOND_USER}, Collections.emptyList()));
   }
 
   public static Stream<Arguments> instanceLevelAssigneeFilterScenarios() {
     return Stream.of(
         Arguments.of(
             IN,
-            new String[]{SECOND_USER}, 1L,
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
-        ),
+            new String[] {SECOND_USER},
+            1L,
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))),
         Arguments.of(
-            IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
-        ),
+            IN,
+            new String[] {DEFAULT_USERNAME, SECOND_USER},
+            2L,
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))),
         Arguments.of(
-            NOT_IN, new String[]{SECOND_USER}, 2L,
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
-        ),
-        Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
-    );
+            NOT_IN,
+            new String[] {SECOND_USER},
+            2L,
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))),
+        Arguments.of(
+            NOT_IN, new String[] {DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList()));
   }
 
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
         Arguments.of(
             IN,
-            new String[]{SECOND_CANDIDATE_GROUP_ID},
-            Collections.singletonList(Tuple.tuple(SECOND_USER, 20.))
-        ),
+            new String[] {SECOND_CANDIDATE_GROUP_ID},
+            Collections.singletonList(Tuple.tuple(SECOND_USER, 20.))),
         Arguments.of(
             IN,
-            new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 20.))
-        ),
+            new String[] {FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 20.))),
         Arguments.of(
             NOT_IN,
-            new String[]{SECOND_CANDIDATE_GROUP_ID},
-            Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 10.))
-        ),
-        Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, Collections.emptyList())
-    );
+            new String[] {SECOND_CANDIDATE_GROUP_ID},
+            Collections.singletonList(Tuple.tuple(DEFAULT_USERNAME, 10.))),
+        Arguments.of(
+            NOT_IN,
+            new String[] {FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+            Collections.emptyList()));
   }
 
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
         Arguments.of(
-            IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
-        ),
+            IN,
+            new String[] {SECOND_CANDIDATE_GROUP_ID},
+            1L,
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))),
         Arguments.of(
-            IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
-        ),
-        Arguments.of(
-            NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
-            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
-        ),
+            IN,
+            new String[] {FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+            2L,
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))),
         Arguments.of(
             NOT_IN,
-            new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+            new String[] {SECOND_CANDIDATE_GROUP_ID},
+            2L,
+            Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))),
+        Arguments.of(
+            NOT_IN,
+            new String[] {FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
             0L,
-            Collections.emptyList()
-        )
-    );
+            Collections.emptyList()));
   }
 
   @BeforeEach
@@ -227,9 +237,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
         reportClient.evaluateMapReport(reportData);
 
     // then
-    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportDataDto resultReportDataDto =
+        evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
-    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getDefinitionVersions())
+        .contains(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
@@ -239,12 +251,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
-        .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(setDuration), DEFAULT_FULLNAME);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER)).isPresent().get()
+        .containsExactly(
+            calculateExpectedValueGivenDurationsDefaultAggr(setDuration), DEFAULT_FULLNAME);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
-        .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(setDuration), SECOND_USER_FULL_NAME);
+        .containsExactly(
+            calculateExpectedValueGivenDurationsDefaultAggr(setDuration), SECOND_USER_FULL_NAME);
 
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
@@ -273,7 +291,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getFirstMeasureData()).hasSize(1);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
         .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(1.), DEFAULT_USERNAME);
   }
@@ -301,9 +321,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
         reportClient.evaluateMapReport(reportData);
 
     // then
-    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportDataDto resultReportDataDto =
+        evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
-    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getDefinitionVersions())
+        .contains(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
@@ -314,18 +336,21 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertMap_ForOneProcessInstanceWithUnassignedTasks(setDuration, result);
   }
 
-  protected void assertMap_ForOneProcessInstanceWithUnassignedTasks(final double setDuration,
-      final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_ForOneProcessInstanceWithUnassignedTasks(
+      final double setDuration, final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue)
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(setDuration));
-    assertThat(MapResultUtil.getEntryForKey(
-        result.getFirstMeasureData(),
-        DISTRIBUTE_BY_IDENTITY_MISSING_KEY
-    )).isPresent().get()
+    assertThat(
+            MapResultUtil.getEntryForKey(
+                result.getFirstMeasureData(), DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue)
         .withFailMessage(getIncorrectValueForKeyAssertionMsg(DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
         .isEqualTo(UNASSIGNED_TASK_DURATION);
@@ -338,21 +363,21 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final String key1 = "key1";
     final String key2 = "key2";
 
-    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
-        .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessDefinitionEngineDto processDefinition1 =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
     final ProcessInstanceEngineDto processInstanceDto1 =
         engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
-        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId()
-    );
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     changeDuration(processInstanceDto1, SET_DURATIONS[0]);
-    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
-        .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessDefinitionEngineDto processDefinition2 =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
     final ProcessInstanceEngineDto processInstanceDto2 =
         engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
-        SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId()
-    );
+        SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
     changeDuration(processInstanceDto2, SET_DURATIONS[1]);
 
     importAllEngineEntitiesFromScratch();
@@ -364,18 +389,21 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
         reportClient.evaluateMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<MapResultEntryDto>> actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> actualResult =
+        evaluationResponse.getResult();
     // @formatter:off
     MapResultAsserter.asserter()
         .processInstanceCount(2L)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, new AggregationDto(AVERAGE), getUserTaskDurationTime())
         .groupedByContains(
-            DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]), DEFAULT_FULLNAME
-        )
+            DEFAULT_USERNAME,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]),
+            DEFAULT_FULLNAME)
         .groupedByContains(
-            SECOND_USER, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), SECOND_USER_FULL_NAME
-        )
+            SECOND_USER,
+            calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]),
+            SECOND_USER_FULL_NAME)
         .doAssert(actualResult);
     // @formatter:on
   }
@@ -387,13 +415,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, SET_DURATIONS[0]);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTaskOneWithDefaultAndLeaveOneUnassigned(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
@@ -402,30 +430,43 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertMap_forSeveralProcessInstances(result);
   }
 
-  protected void assertMap_forSeveralProcessInstances(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_forSeveralProcessInstances(
+      final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).hasSize(3);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
-            .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS)));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER)).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
-            .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
-    assertThat(MapResultUtil.getEntryForKey(
-        result.getFirstMeasureData(),
-        DISTRIBUTE_BY_IDENTITY_MISSING_KEY
-    )).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .withFailMessage(getIncorrectValueForKeyAssertionMsg(DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
-            .isEqualTo(UNASSIGNED_TASK_DURATION));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME))
+                    .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS)));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .withFailMessage(getIncorrectValueForKeyAssertionMsg(SECOND_USER))
+                    .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+    assertThat(
+            MapResultUtil.getEntryForKey(
+                result.getFirstMeasureData(), DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .withFailMessage(
+                        getIncorrectValueForKeyAssertionMsg(DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
+                    .isEqualTo(UNASSIGNED_TASK_DURATION));
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
@@ -436,13 +477,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, SET_DURATIONS[0]);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTaskOneWithDefaultAndLeaveOneUnassigned(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[1]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
@@ -453,8 +494,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertMap_ForSeveralProcessesWithAllAggregationTypes(result);
@@ -467,10 +508,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
         result,
         ImmutableMap.of(
             DEFAULT_USERNAME, SET_DURATIONS,
-            SECOND_USER, new Double[]{SET_DURATIONS[0]},
-            DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[]{UNASSIGNED_TASK_DURATION}
-        )
-    );
+            SECOND_USER, new Double[] {SET_DURATIONS[0]},
+            DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[] {UNASSIGNED_TASK_DURATION}));
   }
 
   @Test
@@ -481,14 +520,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     LocalDateUtil.setCurrentTime(now);
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK_1, SET_DURATIONS[0]);
     changeDuration(processInstanceDto1, USER_TASK_2, SET_DURATIONS[1]);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTaskOneWithDefaultAndLeaveOneUnassigned(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[0]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
@@ -497,27 +536,38 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertMap_ForMultipleEvents(result);
   }
 
-  protected void assertMap_ForMultipleEvents(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_ForMultipleEvents(
+      final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).hasSize(3);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER)).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
-    assertThat(MapResultUtil.getEntryForKey(
-        result.getFirstMeasureData(),
-        DISTRIBUTE_BY_IDENTITY_MISSING_KEY
-    )).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .isEqualTo(UNASSIGNED_TASK_DURATION));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
+    assertThat(
+            MapResultUtil.getEntryForKey(
+                result.getFirstMeasureData(), DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue()).isEqualTo(UNASSIGNED_TASK_DURATION));
   }
 
   @Test
@@ -528,14 +578,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     LocalDateUtil.setCurrentTime(now);
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK_1, SET_DURATIONS[0]);
     changeDuration(processInstanceDto1, USER_TASK_2, SET_DURATIONS[1]);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTaskOneWithDefaultAndLeaveOneUnassigned(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK_1, SET_DURATIONS[0]);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
@@ -558,11 +608,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertDurationMapReportResultsForAllAggregationTypes(
         result,
         ImmutableMap.of(
-            DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0], SET_DURATIONS[0]},
-            SECOND_USER, new Double[]{SET_DURATIONS[1]},
-            DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[]{UNASSIGNED_TASK_DURATION}
-        )
-    );
+            DEFAULT_USERNAME, new Double[] {SET_DURATIONS[0], SET_DURATIONS[0]},
+            SECOND_USER, new Double[] {SET_DURATIONS[1]},
+            DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[] {UNASSIGNED_TASK_DURATION}));
   }
 
   @Test
@@ -570,14 +618,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK_1, 10L);
     changeDuration(processInstanceDto1, USER_TASK_2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK_1, 10L);
     changeDuration(processInstanceDto2, USER_TASK_2, 20L);
@@ -589,20 +637,23 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getMeasures())
         .extracting(MeasureResponseDto::getAggregationType)
         .containsExactly(getSupportedAggregationTypes());
-    result.getMeasures().forEach(measureResult -> {
-      final List<MapResultEntryDto> measureData = measureResult.getData();
-      assertThat(measureData)
-          .hasSize(2)
-          .extracting(MapResultEntryDto::getKey)
-          .isSortedAccordingTo(Comparator.reverseOrder());
-    });
+    result
+        .getMeasures()
+        .forEach(
+            measureResult -> {
+              final List<MapResultEntryDto> measureData = measureResult.getData();
+              assertThat(measureData)
+                  .hasSize(2)
+                  .extracting(MapResultEntryDto::getKey)
+                  .isSortedAccordingTo(Comparator.reverseOrder());
+            });
   }
 
   @Test
@@ -610,14 +661,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK_1, 10L);
     changeDuration(processInstanceDto1, USER_TASK_2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK_1, 10L);
     changeDuration(processInstanceDto2, USER_TASK_2, 20L);
@@ -627,15 +678,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(2);
-    final List<String> resultLabels = resultData.stream()
-        .map(MapResultEntryDto::getLabel)
-        .collect(Collectors.toList());
+    final List<String> resultLabels =
+        resultData.stream().map(MapResultEntryDto::getLabel).collect(Collectors.toList());
     // expect ascending order
     assertThat(resultLabels).isSortedAccordingTo(Comparator.reverseOrder());
   }
@@ -648,14 +698,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     LocalDateUtil.setCurrentTime(now);
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK_1, 10L);
     changeDuration(processInstanceDto1, USER_TASK_2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTaskOneWithDefaultAndLeaveOneUnassigned(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK_1, 100L);
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_2, UNASSIGNED_TASK_DURATION);
@@ -666,18 +716,21 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
     reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getMeasures())
         .extracting(MeasureResponseDto::getAggregationType)
         .containsExactlyInAnyOrderElementsOf(Arrays.asList(getSupportedAggregationTypes()));
-    result.getMeasures().forEach(measureResult -> {
-      assertThat(measureResult.getData())
-          .extracting(MapResultEntryDto::getValue)
-          .isSortedAccordingTo(Comparator.naturalOrder());
-    });
+    result
+        .getMeasures()
+        .forEach(
+            measureResult -> {
+              assertThat(measureResult.getData())
+                  .extracting(MapResultEntryDto::getValue)
+                  .isSortedAccordingTo(Comparator.naturalOrder());
+            });
   }
 
   @Test
@@ -688,59 +741,74 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
-        processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+        engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, SET_DURATIONS[0]);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-        processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, SET_DURATIONS[0]);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(
-        processDefinition2.getId());
+    final ProcessInstanceEngineDto processInstanceDto3 =
+        engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto3);
     changeDuration(processInstanceDto3, SET_DURATIONS[1]);
-    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(
-        processDefinition2.getId());
+    final ProcessInstanceEngineDto processInstanceDto4 =
+        engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     changeUserTaskStartDate(processInstanceDto4, now, USER_TASK_1, UNASSIGNED_TASK_DURATION);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result1 = reportClient.evaluateMapReport(reportData1)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result1 =
+        reportClient.evaluateMapReport(reportData1).getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result2 = reportClient.evaluateMapReport(reportData2)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result2 =
+        reportClient.evaluateMapReport(reportData2).getResult();
 
     // then
     assertMap_otherProcessDefinitionsDoNotInfluenceResult(result1, result2);
   }
 
-  protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(final ReportResultResponseDto<List<MapResultEntryDto>> result1,
+  protected void assertMap_otherProcessDefinitionsDoNotInfluenceResult(
+      final ReportResultResponseDto<List<MapResultEntryDto>> result1,
       final ReportResultResponseDto<List<MapResultEntryDto>> result2) {
     assertThat(result1.getFirstMeasureData()).hasSize(1);
-    assertThat(MapResultUtil.getEntryForKey(result1.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1")
-            .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
+    assertThat(MapResultUtil.getEntryForKey(result1.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .withFailMessage(
+                        getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 1")
+                    .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0])));
 
     assertThat(result2.getFirstMeasureData()).hasSize(2);
-    assertThat(MapResultUtil.getEntryForKey(result2.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .withFailMessage(getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 2")
-            .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
-    assertThat(MapResultUtil.getEntryForKey(
-        result2.getFirstMeasureData(),
-        DISTRIBUTE_BY_IDENTITY_MISSING_KEY
-    )).isPresent().get()
-        .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
-            .withFailMessage(
-                getIncorrectValueForKeyAssertionMsg(DISTRIBUTE_BY_IDENTITY_MISSING_KEY) + " in result 2")
-            .isEqualTo(UNASSIGNED_TASK_DURATION));
+    assertThat(MapResultUtil.getEntryForKey(result2.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .withFailMessage(
+                        getIncorrectValueForKeyAssertionMsg(DEFAULT_USERNAME) + " in result 2")
+                    .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1])));
+    assertThat(
+            MapResultUtil.getEntryForKey(
+                result2.getFirstMeasureData(), DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
+        .isPresent()
+        .get()
+        .satisfies(
+            mapResultEntryDto ->
+                assertThat(mapResultEntryDto.getValue())
+                    .withFailMessage(
+                        getIncorrectValueForKeyAssertionMsg(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)
+                            + " in result 2")
+                    .isEqualTo(UNASSIGNED_TASK_DURATION));
   }
 
   @Test
@@ -749,16 +817,16 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = newArrayList(tenantId1);
-    final String processKey = deployAndStartMultiTenantUserTaskProcess(
-        newArrayList(null, tenantId1, tenantId2)
-    );
+    final String processKey =
+        deployAndStartMultiTenantUserTaskProcess(newArrayList(null, tenantId1, tenantId2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -785,23 +853,20 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertDurationMapReportResultsForAllAggregationTypes(
-        result, ImmutableMap.of(DEFAULT_USERNAME, expectedDurations)
-    );
+        result, ImmutableMap.of(DEFAULT_USERNAME, expectedDurations));
   }
 
   @Test
   public void noUserTaskMatchesReturnsEmptyResult() {
     // when
-    final ProcessReportDataDto reportData = createReport(
-        "nonExistingProcessDefinitionId", "1"
-    );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ProcessReportDataDto reportData = createReport("nonExistingProcessDefinitionId", "1");
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEmpty();
@@ -809,37 +874,38 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("getFlowNodeStatusFilterValues")
-  public void evaluateReportWithFlowNodeStatus(final FlowNodeStateTestValues flowNodeStatusFilterValues) {
+  public void evaluateReportWithFlowNodeStatus(
+      final FlowNodeStateTestValues flowNodeStatusFilterValues) {
     // given
     final OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto firstInstance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
     engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
     changeDuration(firstInstance, USER_TASK_1, 100L);
-    engineIntegrationExtension.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.claimAllRunningUserTasks(
+        SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
     changeUserTaskStartDate(firstInstance, now, USER_TASK_2, 700.);
     changeUserTaskClaimDate(firstInstance, now, USER_TASK_2, 500.);
-    if (isSingleFilterOfType(flowNodeStatusFilterValues.processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
+    if (isSingleFilterOfType(
+        flowNodeStatusFilterValues.processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(firstInstance.getId(), USER_TASK_2);
       changeDuration(firstInstance, USER_TASK_2, 700L);
     }
 
-    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto secondInstance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // claim first running task
     engineIntegrationExtension.claimAllRunningUserTasks(
-        DEFAULT_USERNAME,
-        DEFAULT_PASSWORD,
-        secondInstance.getId()
-    );
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
 
     changeUserTaskStartDate(secondInstance, now, USER_TASK_1, 700.);
     changeUserTaskClaimDate(secondInstance, now, USER_TASK_1, 500.);
-    if (isSingleFilterOfType(flowNodeStatusFilterValues.processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
+    if (isSingleFilterOfType(
+        flowNodeStatusFilterValues.processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
       changeDuration(secondInstance, USER_TASK_1, 700L);
     }
@@ -849,34 +915,38 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(flowNodeStatusFilterValues.processFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertEvaluateReportWithFlowNodeStatusFilter(result, flowNodeStatusFilterValues);
   }
 
-  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(ReportResultResponseDto<List<MapResultEntryDto>> result,
+  protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(
+      ReportResultResponseDto<List<MapResultEntryDto>> result,
       FlowNodeStateTestValues expectedValues);
 
   @Test
   public void processDefinitionContainsMultiInstanceBody() {
     // given
-    final BpmnModelInstance processWithMultiInstanceUserTask = Bpmn
-        // @formatter:off
-        .createExecutableProcess("processWithMultiInstanceUserTask")
-        .startEvent()
-        .userTask(DEFAULT_USERNAME).multiInstance().cardinality("2").multiInstanceDone()
-        .endEvent()
-        .done();
+    final BpmnModelInstance processWithMultiInstanceUserTask =
+        Bpmn
+            // @formatter:off
+            .createExecutableProcess("processWithMultiInstanceUserTask")
+            .startEvent()
+            .userTask(DEFAULT_USERNAME)
+            .multiInstance()
+            .cardinality("2")
+            .multiInstanceDone()
+            .endEvent()
+            .done();
     // @formatter:on
 
     final ProcessDefinitionEngineDto processDefinition =
         engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-            processWithMultiInstanceUserTask
-        );
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+            processWithMultiInstanceUserTask);
+    final ProcessInstanceEngineDto processInstanceDto =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
@@ -884,12 +954,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).hasSize(1);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue)
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
@@ -900,8 +972,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
 
     for (int i = 0; i < 11; i++) {
-      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
-          processDefinition.getId());
+      final ProcessInstanceEngineDto processInstanceDto =
+          engineIntegrationExtension.startProcessInstance(processDefinition.getId());
       engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
       changeDuration(processInstanceDto, 10L);
     }
@@ -910,12 +982,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).hasSize(1);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue)
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
@@ -924,13 +998,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public void filterInReport() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
     final OffsetDateTime processStartTime =
-        engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstanceDto.getId())
             .getStartTime();
 
     importAllEngineEntitiesFromScratch();
@@ -938,7 +1013,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
@@ -952,28 +1028,29 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(1);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME))
+        .isPresent()
+        .get()
         .extracting(MapResultEntryDto::getValue)
         .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final MembershipFilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyIncludesUserTaskWithThatAssignee(
+      final MembershipFilterOperator filterOperator,
       final String[] filterValues,
       final List<Tuple> expectedResult) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
-        .startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
-        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
-    );
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
-        SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
-    );
+        SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 10L);
 
@@ -981,13 +1058,17 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
-        .filter().assignee().ids(filterValues).operator(filterOperator)
-        .filterLevel(FilterApplicationLevel.VIEW)
-        .add().buildList();
+    final List<ProcessFilterDto<?>> assigneeFilter =
+        ProcessFilterBuilder.filter()
+            .assignee()
+            .ids(filterValues)
+            .operator(filterOperator)
+            .filterLevel(FilterApplicationLevel.VIEW)
+            .add()
+            .buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData())
@@ -997,24 +1078,29 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
-  public void instanceLevelFilterByAssigneeOnlyConsidersInstancesWithThatAssignee(final MembershipFilterOperator filterOperator,
+  public void instanceLevelFilterByAssigneeOnlyConsidersInstancesWithThatAssignee(
+      final MembershipFilterOperator filterOperator,
       final String[] filterValues,
       final Long expectedInstanceCount,
       final List<Tuple> expectedResultData) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
-        .startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto firstInstance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
-    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
-        .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    final ProcessInstanceEngineDto secondInstance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
 
     changeDuration(firstInstance, USER_TASK_1, 10L);
     changeDuration(firstInstance, USER_TASK_2, 10L);
@@ -1025,13 +1111,17 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
-        .filter().assignee().ids(filterValues).operator(filterOperator)
-        .filterLevel(FilterApplicationLevel.INSTANCE)
-        .add().buildList();
+    final List<ProcessFilterDto<?>> assigneeFilter =
+        ProcessFilterBuilder.filter()
+            .assignee()
+            .ids(filterValues)
+            .operator(filterOperator)
+            .filterLevel(FilterApplicationLevel.INSTANCE)
+            .add()
+            .buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -1042,7 +1132,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(
+      final MembershipFilterOperator filterOperator,
       final String[] filterValues,
       final List<Tuple> expectedResult) {
     // given
@@ -1050,16 +1141,14 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
-        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
-    );
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(
-        SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
-    );
+        SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
     changeDuration(processInstanceDto, USER_TASK_1, 10L);
     changeDuration(processInstanceDto, USER_TASK_2, 20L);
 
@@ -1067,12 +1156,17 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
-        .filter().candidateGroups().ids(filterValues).operator(filterOperator)
-        .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
+        ProcessFilterBuilder.filter()
+            .candidateGroups()
+            .ids(filterValues)
+            .operator(filterOperator)
+            .filterLevel(FilterApplicationLevel.VIEW)
+            .add()
+            .buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData())
@@ -1082,28 +1176,34 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
-  public void instanceLevelFilterByCandidateGroupIncludesAllTasksForInstancesWithMatchingCandidateGroup(final MembershipFilterOperator filterOperator,
-      final String[] filterValues,
-      final Long expectedInstanceCount,
-      final List<Tuple> expectedResultData) {
+  public void
+      instanceLevelFilterByCandidateGroupIncludesAllTasksForInstancesWithMatchingCandidateGroup(
+          final MembershipFilterOperator filterOperator,
+          final String[] filterValues,
+          final Long expectedInstanceCount,
+          final List<Tuple> expectedResultData) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto firstInstance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
 
-    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
-        processDefinition.getId());
+    final ProcessInstanceEngineDto secondInstance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
 
     changeDuration(firstInstance, USER_TASK_1, 10L);
     changeDuration(firstInstance, USER_TASK_2, 10L);
@@ -1114,12 +1214,17 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
-        .filter().candidateGroups().ids(filterValues).operator(filterOperator)
-        .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
+        ProcessFilterBuilder.filter()
+            .candidateGroups()
+            .ids(filterValues)
+            .operator(filterOperator)
+            .filterLevel(FilterApplicationLevel.INSTANCE)
+            .add()
+            .buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-        .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -1169,15 +1274,19 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 
-  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
+  protected abstract void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto,
       final String userTaskKey,
       final Number durationInMs);
 
-  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs);
+  protected abstract void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs);
 
-  protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
+  protected abstract ProcessReportDataDto createReport(
+      final String processDefinitionKey, final List<String> versions);
 
-  private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
+  private ProcessReportDataDto createReport(
+      final String processDefinitionKey, final String version) {
     return createReport(processDefinitionKey, newArrayList(version));
   }
 
@@ -1185,28 +1294,21 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     return createReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
-  private void finishTwoUserTasksOneWithDefaultAndSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
+  private void finishTwoUserTasksOneWithDefaultAndSecondUser(
+      final ProcessInstanceEngineDto processInstanceDto1) {
     // finish first task
     engineIntegrationExtension.finishAllRunningUserTasks(
-        DEFAULT_USERNAME,
-        DEFAULT_PASSWORD,
-        processInstanceDto1.getId()
-    );
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     // finish second task with
     engineIntegrationExtension.finishAllRunningUserTasks(
-        SECOND_USER,
-        SECOND_USERS_PASSWORD,
-        processInstanceDto1.getId()
-    );
+        SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
   }
 
-  private void finishUserTaskOneWithDefaultAndLeaveOneUnassigned(final ProcessInstanceEngineDto processInstanceDto) {
+  private void finishUserTaskOneWithDefaultAndLeaveOneUnassigned(
+      final ProcessInstanceEngineDto processInstanceDto) {
     // finish first task
     engineIntegrationExtension.finishAllRunningUserTasks(
-        DEFAULT_USERNAME,
-        DEFAULT_PASSWORD,
-        processInstanceDto.getId()
-    );
+        DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
@@ -1214,9 +1316,10 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     deployedTenants.stream()
         .filter(Objects::nonNull)
         .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
-    deployedTenants
-        .forEach(tenant -> {
-          final ProcessDefinitionEngineDto processDefinitionEngineDto = deployOneUserTasksDefinition(processKey, tenant);
+    deployedTenants.forEach(
+        tenant -> {
+          final ProcessDefinitionEngineDto processDefinitionEngineDto =
+              deployOneUserTasksDefinition(processKey, tenant);
           engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
         });
 
@@ -1227,12 +1330,15 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     return deployOneUserTasksDefinition("aProcess", null);
   }
 
-  private ProcessDefinitionEngineDto deployOneUserTasksDefinition(final String key, final String tenantId) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
+  private ProcessDefinitionEngineDto deployOneUserTasksDefinition(
+      final String key, final String tenantId) {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getSingleUserTaskDiagram(key), tenantId);
   }
 
   private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getDoubleUserTaskDiagram());
   }
 
   protected void assertDurationMapReportResultsForAllAggregationTypes(
@@ -1241,23 +1347,37 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(result.getMeasures())
         .extracting(MeasureResponseDto::getAggregationType)
         .containsExactly(getSupportedAggregationTypes());
-    result.getMeasures().forEach(measureResult -> {
-      final List<MapResultEntryDto> measureData = measureResult.getData();
-      expectedUserTaskValues.keySet().forEach(userTaskKey -> {
-        assertThat(MapResultUtil.getEntryForKey(measureData, userTaskKey))
-            .isPresent().get()
-            .extracting(MapResultEntryDto::getValue)
-            .withFailMessage(getIncorrectValueForKeyAssertionMsg(userTaskKey))
-            .isEqualTo(
-                databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey))
-                    .get(measureResult.getAggregationType())
-            );
-      });
-    });
+    result
+        .getMeasures()
+        .forEach(
+            measureResult -> {
+              final List<MapResultEntryDto> measureData = measureResult.getData();
+              expectedUserTaskValues
+                  .keySet()
+                  .forEach(
+                      userTaskKey -> {
+                        assertThat(MapResultUtil.getEntryForKey(measureData, userTaskKey))
+                            .isPresent()
+                            .get()
+                            .extracting(MapResultEntryDto::getValue)
+                            .withFailMessage(getIncorrectValueForKeyAssertionMsg(userTaskKey))
+                            .isEqualTo(
+                                databaseIntegrationTestExtension
+                                    .calculateExpectedValueGivenDurations(
+                                        expectedUserTaskValues.get(userTaskKey))
+                                    .get(measureResult.getAggregationType()));
+                      });
+            });
   }
 
-  private List<ProcessFilterDto<?>> createStartDateFilter(final OffsetDateTime startDate, final OffsetDateTime endDate) {
-    return ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(endDate).add().buildList();
+  private List<ProcessFilterDto<?>> createStartDateFilter(
+      final OffsetDateTime startDate, final OffsetDateTime endDate) {
+    return ProcessFilterBuilder.filter()
+        .fixedInstanceStartDate()
+        .start(startDate)
+        .end(endDate)
+        .add()
+        .buildList();
   }
 
   protected String getIncorrectValueForKeyAssertionMsg(final String key) {

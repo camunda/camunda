@@ -5,8 +5,16 @@
  */
 package org.camunda.optimize.service.entities.report;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+
 import com.google.common.collect.Lists;
 import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Collections;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -27,15 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
-import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-
 @Tag(OPENSEARCH_PASSING)
 public class DecisionReportDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
@@ -47,11 +46,12 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     dateFreezer().freezeDateAndReturn();
 
     // when
-    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
+    final EntityIdResponseDto importedId =
+        importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
 
     // then
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+        (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertImportedReport(importedReport, reportDefToImport, null);
   }
@@ -59,7 +59,8 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
   @Test
   public void importReportWithInvalidDescription() {
     // given
-    final SingleDecisionReportDefinitionExportDto simpleDecisionExportDto = createSimpleDecisionExportDto();
+    final SingleDecisionReportDefinitionExportDto simpleDecisionExportDto =
+        createSimpleDecisionExportDto();
     simpleDecisionExportDto.setDescription("");
 
     // when
@@ -67,14 +68,16 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    final ErrorResponseDto invalidDescriptionResponseDto = response.readEntity(ErrorResponseDto.class);
+    final ErrorResponseDto invalidDescriptionResponseDto =
+        response.readEntity(ErrorResponseDto.class);
     assertThat(invalidDescriptionResponseDto.getErrorCode()).isEqualTo("importDescriptionInvalid");
   }
 
   @Test
   public void importReport_incorrectIndexVersion() {
     // given a report with report index version different from the current version
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createSimpleDecisionExportDto();
     exportedReportDto.setSourceIndexVersion(SingleDecisionReportIndex.VERSION + 1);
 
     // when
@@ -83,22 +86,25 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.readEntity(ImportedIndexMismatchResponseDto.class).getErrorCode())
-      .isEqualTo("importIndexVersionMismatch");
+        .isEqualTo("importIndexVersionMismatch");
     assertThat(response.readEntity(ImportedIndexMismatchResponseDto.class).getMismatchingIndices())
-      .hasSize(1)
-      .containsExactly(
-        ImportIndexMismatchDto.builder()
-          .indexName(embeddedOptimizeExtension.getIndexNameService()
-                       .getOptimizeIndexNameWithVersion(new SingleDecisionReportIndexES()))
-          .sourceIndexVersion(SingleDecisionReportIndex.VERSION + 1)
-          .targetIndexVersion(SingleDecisionReportIndex.VERSION)
-          .build());
+        .hasSize(1)
+        .containsExactly(
+            ImportIndexMismatchDto.builder()
+                .indexName(
+                    embeddedOptimizeExtension
+                        .getIndexNameService()
+                        .getOptimizeIndexNameWithVersion(new SingleDecisionReportIndexES()))
+                .sourceIndexVersion(SingleDecisionReportIndex.VERSION + 1)
+                .targetIndexVersion(SingleDecisionReportIndex.VERSION)
+                .build());
   }
 
   @Test
   public void importReport_missingDefinition() {
     // given a report for a definition that doesn't exist
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createSimpleDecisionExportDto();
 
     // when
     final Response response = importClient.importEntity(exportedReportDto);
@@ -106,23 +112,25 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
-      .isEqualTo("importDefinitionDoesNotExist");
+        .isEqualTo("importDefinitionDoesNotExist");
     assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
-      .hasSize(1)
-      .containsExactly(
-        DefinitionExceptionItemDto.builder()
-          .type(DefinitionType.DECISION)
-          .key(DEFINITION_KEY)
-          .versions(Collections.singletonList(DEFINITION_VERSION))
-          .tenantIds(Collections.singletonList(null))
-          .build());
+        .hasSize(1)
+        .containsExactly(
+            DefinitionExceptionItemDto.builder()
+                .type(DefinitionType.DECISION)
+                .key(DEFINITION_KEY)
+                .versions(Collections.singletonList(DEFINITION_VERSION))
+                .tenantIds(Collections.singletonList(null))
+                .build());
   }
 
   @Test
   public void importReport_missingVersion() {
-    // given a definition that only exists with version 1 and a report that requires version 5 of this definition
+    // given a definition that only exists with version 1 and a report that requires version 5 of
+    // this definition
     createAndSaveDefinition(DefinitionType.DECISION, null);
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createSimpleDecisionExportDto();
     exportedReportDto.getData().setDecisionDefinitionVersion("5");
 
     // when
@@ -131,16 +139,16 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
-      .isEqualTo("importDefinitionDoesNotExist");
+        .isEqualTo("importDefinitionDoesNotExist");
     assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
-      .hasSize(1)
-      .containsExactly(
-        DefinitionExceptionItemDto.builder()
-          .type(DefinitionType.DECISION)
-          .key(DEFINITION_KEY)
-          .versions(Collections.singletonList("5"))
-          .tenantIds(Collections.singletonList(null))
-          .build());
+        .hasSize(1)
+        .containsExactly(
+            DefinitionExceptionItemDto.builder()
+                .type(DefinitionType.DECISION)
+                .key(DEFINITION_KEY)
+                .versions(Collections.singletonList("5"))
+                .tenantIds(Collections.singletonList(null))
+                .build());
   }
 
   @Test
@@ -150,9 +158,13 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     createAndSaveDefinition(DefinitionType.DECISION, null, "1");
     createAndSaveDefinition(DefinitionType.DECISION, null, "3");
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
-    final SingleDecisionReportDefinitionRequestDto reportDefinitionToImport = createSimpleDecisionReportDefinition();
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
-    exportedReportDto.getData().setDecisionDefinitionVersions(Lists.newArrayList("1", "2", "3", "5"));
+    final SingleDecisionReportDefinitionRequestDto reportDefinitionToImport =
+        createSimpleDecisionReportDefinition();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createSimpleDecisionExportDto();
+    exportedReportDto
+        .getData()
+        .setDecisionDefinitionVersions(Lists.newArrayList("1", "2", "3", "5"));
     exportedReportDto.getData().getConfiguration().setXml("oldXml");
 
     // when
@@ -160,30 +172,32 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
 
     // then all non version related data is accurate
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+        (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(importedReport.getLastModifier())
+        .isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(importedReport.getCreated()).isEqualTo(now);
     assertThat(importedReport.getLastModified()).isEqualTo(now);
     assertThat(importedReport.getCollectionId()).isNull();
     assertThat(importedReport.getName()).isEqualTo(reportDefinitionToImport.getName());
     assertThat(importedReport.getData())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportDataDto.Fields.definitions + "." + ReportDataDefinitionDto.Fields.versions)
-      .ignoringFields(SingleReportDataDto.Fields.configuration)
-      .isEqualTo(reportDefinitionToImport.getData());
+        .usingRecursiveComparison()
+        .ignoringFields(
+            SingleReportDataDto.Fields.definitions + "." + ReportDataDefinitionDto.Fields.versions)
+        .ignoringFields(SingleReportDataDto.Fields.configuration)
+        .isEqualTo(reportDefinitionToImport.getData());
     assertThat(importedReport.getData().getConfiguration())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(reportDefinitionToImport.getData().getConfiguration());
+        .usingRecursiveComparison()
+        .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+        .isEqualTo(reportDefinitionToImport.getData().getConfiguration());
 
     // nonexistent versions have been removed from the version list
     assertThat(importedReport.getData().getDefinitionVersions()).containsExactly("1", "3");
 
     // and the XML has been updated to reflect the latest existing version's XML
     assertThat(importedReport.getData().getConfiguration().getXml())
-      .isEqualTo(DEFINITION_XML_STRING + "3");
+        .isEqualTo(DEFINITION_XML_STRING + "3");
   }
 
   @Test
@@ -194,7 +208,8 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     importAllEngineEntitiesFromScratch();
 
     createAndSaveDefinition(DefinitionType.DECISION, "tenant1");
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createSimpleDecisionExportDto();
     exportedReportDto.getData().setTenantIds(Collections.singletonList("tenant2"));
 
     // when
@@ -203,16 +218,16 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getErrorCode())
-      .isEqualTo("importDefinitionDoesNotExist");
+        .isEqualTo("importDefinitionDoesNotExist");
     assertThat(response.readEntity(DefinitionExceptionResponseDto.class).getDefinitions())
-      .hasSize(1)
-      .containsExactly(
-        DefinitionExceptionItemDto.builder()
-          .type(DefinitionType.DECISION)
-          .key(DEFINITION_KEY)
-          .versions(Collections.singletonList(DEFINITION_VERSION))
-          .tenantIds(Collections.singletonList("tenant2"))
-          .build());
+        .hasSize(1)
+        .containsExactly(
+            DefinitionExceptionItemDto.builder()
+                .type(DefinitionType.DECISION)
+                .key(DEFINITION_KEY)
+                .versions(Collections.singletonList(DEFINITION_VERSION))
+                .tenantIds(Collections.singletonList("tenant2"))
+                .build());
   }
 
   @Test
@@ -225,9 +240,10 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
 
     createAndSaveDefinition(DefinitionType.DECISION, "tenant1");
     dateFreezer().freezeDateAndReturn();
-    final SingleDecisionReportDefinitionRequestDto reportDefToImport = createSimpleDecisionReportDefinition();
+    final SingleDecisionReportDefinitionRequestDto reportDefToImport =
+        createSimpleDecisionReportDefinition();
     final SingleDecisionReportDefinitionExportDto exportedReportDto =
-      new SingleDecisionReportDefinitionExportDto(reportDefToImport);
+        new SingleDecisionReportDefinitionExportDto(reportDefToImport);
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1", "tenant2"));
 
     // when
@@ -235,7 +251,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
 
     // then
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+        (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertImportedReport(importedReport, reportDefToImport, null);
   }
@@ -249,9 +265,10 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
 
     createAndSaveDefinition(DefinitionType.DECISION, null);
     dateFreezer().freezeDateAndReturn();
-    final SingleDecisionReportDefinitionRequestDto reportDefToImport = createSimpleDecisionReportDefinition();
+    final SingleDecisionReportDefinitionRequestDto reportDefToImport =
+        createSimpleDecisionReportDefinition();
     final SingleDecisionReportDefinitionExportDto exportedReportDto =
-      new SingleDecisionReportDefinitionExportDto(reportDefToImport);
+        new SingleDecisionReportDefinitionExportDto(reportDefToImport);
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
 
     // when
@@ -259,35 +276,35 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
 
     // then
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+        (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertImportedReport(importedReport, reportDefToImport, null);
   }
 
   @ParameterizedTest
   @MethodSource("getTestDecisionReports")
-  public void importReportIntoCollection(final SingleDecisionReportDefinitionRequestDto reportDefToImport) {
+  public void importReportIntoCollection(
+      final SingleDecisionReportDefinitionRequestDto reportDefToImport) {
     // given
     createAndSaveDefinition(DefinitionType.DECISION, null);
     dateFreezer().freezeDateAndReturn();
-    final String collectionId = collectionClient.createNewCollectionWithScope(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      DefinitionType.DECISION,
-      DEFINITION_KEY,
-      Collections.singletonList(null)
-    );
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createExportDto(reportDefToImport);
+    final String collectionId =
+        collectionClient.createNewCollectionWithScope(
+            DEFAULT_USERNAME,
+            DEFAULT_PASSWORD,
+            DefinitionType.DECISION,
+            DEFINITION_KEY,
+            Collections.singletonList(null));
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createExportDto(reportDefToImport);
 
     // when
-    final EntityIdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
-      collectionId,
-      exportedReportDto
-    );
+    final EntityIdResponseDto importedId =
+        importClient.importEntityIntoCollectionAndReturnId(collectionId, exportedReportDto);
 
     // then
     final SingleDecisionReportDefinitionRequestDto importedReport =
-      (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
+        (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
     assertImportedReport(importedReport, reportDefToImport, collectionId);
   }
@@ -296,11 +313,12 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
   public void importReportIntoCollection_collectionDoesNotExist() {
     // given
     createAndSaveDefinition(DefinitionType.DECISION, null);
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createSimpleDecisionExportDto();
 
     // when
     final Response response =
-      importClient.importEntityIntoCollection("fakeCollection", exportedReportDto);
+        importClient.importEntityIntoCollection("fakeCollection", exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -311,13 +329,12 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     // given
     createAndSaveDefinition(DefinitionType.DECISION, null);
     final String collectionId = collectionClient.createNewCollection();
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+        createSimpleDecisionExportDto();
 
     // when
-    final Response response = importClient.importEntityIntoCollection(
-      collectionId,
-      exportedReportDto
-    );
+    final Response response =
+        importClient.importEntityIntoCollection(collectionId, exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());

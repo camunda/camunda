@@ -5,7 +5,17 @@
  */
 package org.camunda.optimize.test.engine;
 
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.READ_HISTORY_PERMISSION;
+
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
@@ -13,17 +23,6 @@ import org.camunda.optimize.rest.engine.dto.EngineUserDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
-import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
-import static org.camunda.optimize.service.util.importing.EngineConstants.READ_HISTORY_PERMISSION;
 
 @AllArgsConstructor
 @Builder
@@ -46,12 +45,14 @@ public class AuthorizationClient {
   }
 
   public void addSpidermanUserAndGrantAccessToOptimize() {
-    final UserProfileDto userProfileDto = UserProfileDto.builder()
-      .id(SPIDERMAN_USER)
-      .firstName(SPIDERMAN_FIRSTNAME)
-      .lastName(SPIDERMAN_LASTNAME)
-      .build();
-    final EngineUserDto userDto = new EngineUserDto(userProfileDto, new UserCredentialsDto(userProfileDto.getId()));
+    final UserProfileDto userProfileDto =
+        UserProfileDto.builder()
+            .id(SPIDERMAN_USER)
+            .firstName(SPIDERMAN_FIRSTNAME)
+            .lastName(SPIDERMAN_LASTNAME)
+            .build();
+    final EngineUserDto userDto =
+        new EngineUserDto(userProfileDto, new UserCredentialsDto(userProfileDto.getId()));
     addUserAndGrantOptimizeAccess(userDto);
   }
 
@@ -106,7 +107,8 @@ public class AuthorizationClient {
     grantSingleResourceAuthorizationsForGroup(GROUP_ID, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
-  public void grantSingleResourceAuthorizationForKermitGroup(final String resourceId, final int resourceType) {
+  public void grantSingleResourceAuthorizationForKermitGroup(
+      final String resourceId, final int resourceType) {
     grantSingleResourceAuthorizationsForGroup(GROUP_ID, resourceId, resourceType);
   }
 
@@ -114,13 +116,13 @@ public class AuthorizationClient {
     revokeSingleResourceAuthorizationsForGroup(GROUP_ID, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
-  public void revokeSingleResourceAuthorizationsForKermitGroup(final String resourceId, final int resourceType) {
+  public void revokeSingleResourceAuthorizationsForKermitGroup(
+      final String resourceId, final int resourceType) {
     revokeSingleResourceAuthorizationsForGroup(GROUP_ID, resourceId, resourceType);
   }
 
-  public void grantSingleResourceAuthorizationsForGroup(final String groupId,
-                                                        final String resourceId,
-                                                        final int resourceType) {
+  public void grantSingleResourceAuthorizationsForGroup(
+      final String groupId, final String resourceId, final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
@@ -130,9 +132,8 @@ public class AuthorizationClient {
     engineExtension.createAuthorization(authorizationDto);
   }
 
-  public void revokeSingleResourceAuthorizationsForGroup(final String groupId,
-                                                         final String resourceId,
-                                                         final int resourceType) {
+  public void revokeSingleResourceAuthorizationsForGroup(
+      final String groupId, final String resourceId, final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
@@ -146,29 +147,31 @@ public class AuthorizationClient {
     grantSingleResourceAuthorizationsForUser(KERMIT_USER, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
-  public void grantSingleResourceAuthorizationForKermit(final String resourceId, final int resourceType) {
+  public void grantSingleResourceAuthorizationForKermit(
+      final String resourceId, final int resourceType) {
     grantSingleResourceAuthorizationsForUser(KERMIT_USER, resourceId, resourceType);
   }
 
-  public void grantSingleResourceAuthorizationsForUser(final String userId,
-                                                       final String resourceId,
-                                                       final int resourceType) {
+  public void grantSingleResourceAuthorizationsForUser(
+      final String userId, final String resourceId, final int resourceType) {
     grantSingleResourceAuthorizationsForUser(
-      userId, Collections.singletonList(ALL_PERMISSION), resourceId, resourceType
-    );
+        userId, Collections.singletonList(ALL_PERMISSION), resourceId, resourceType);
   }
 
-  public void grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(final String userId,
-                                                                               final int definitionResourceType) {
+  public void grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(
+      final String userId, final int definitionResourceType) {
     grantSingleResourceAuthorizationsForUser(
-      userId, ImmutableList.of(READ_HISTORY_PERMISSION), ALL_RESOURCES_RESOURCE_ID, definitionResourceType
-    );
+        userId,
+        ImmutableList.of(READ_HISTORY_PERMISSION),
+        ALL_RESOURCES_RESOURCE_ID,
+        definitionResourceType);
   }
 
-  public void grantSingleResourceAuthorizationsForUser(final String userId,
-                                                       final List<String> permissions,
-                                                       final String resourceId,
-                                                       final int resourceType) {
+  public void grantSingleResourceAuthorizationsForUser(
+      final String userId,
+      final List<String> permissions,
+      final String resourceId,
+      final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(permissions);
@@ -182,7 +185,8 @@ public class AuthorizationClient {
     revokeAllResourceAuthorizationsForUser(KERMIT_USER, resourceType);
   }
 
-  public void revokeSingleResourceAuthorizationsForKermit(final String resourceId, final int resourceType) {
+  public void revokeSingleResourceAuthorizationsForKermit(
+      final String resourceId, final int resourceType) {
     revokeSingleResourceAuthorizationsForUser(KERMIT_USER, resourceId, resourceType);
   }
 
@@ -190,9 +194,8 @@ public class AuthorizationClient {
     revokeSingleResourceAuthorizationsForUser(userId, ALL_RESOURCES_RESOURCE_ID, resourceType);
   }
 
-  public void revokeSingleResourceAuthorizationsForUser(final String userId,
-                                                        final String definitionKey,
-                                                        final int resourceType) {
+  public void revokeSingleResourceAuthorizationsForUser(
+      final String userId, final String definitionKey, final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
@@ -201,5 +204,4 @@ public class AuthorizationClient {
     authorizationDto.setUserId(userId);
     engineExtension.createAuthorization(authorizationDto);
   }
-
 }

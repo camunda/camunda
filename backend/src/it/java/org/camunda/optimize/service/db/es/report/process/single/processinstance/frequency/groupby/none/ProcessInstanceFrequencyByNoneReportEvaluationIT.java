@@ -5,6 +5,17 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.frequency.groupby.none;
 
+import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -24,18 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
-
 public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   public static final String PROCESS_DEFINITION_KEY = "123";
@@ -47,20 +46,22 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
     AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getProcessDefinitionKey())
+        .isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions())
-      .containsExactly(processInstanceDto.getProcessDefinitionVersion());
+        .containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getEntity())
+        .isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
@@ -80,8 +81,9 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
 
     // when
     ProcessReportDataDto reportData =
-      createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+        createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEqualTo(3.);
@@ -96,11 +98,10 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      engineDto.getProcessDefinitionKey(),
-      engineDto.getProcessDefinitionVersion()
-    );
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEqualTo(2.);
@@ -112,16 +113,16 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = newArrayList(tenantId1);
-    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
-      newArrayList(null, tenantId1, tenantId2)
-    );
+    final String processKey =
+        deployAndStartMultiTenantSimpleServiceTaskProcess(newArrayList(null, tenantId1, tenantId2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEqualTo((double) selectedTenants.size());
@@ -131,34 +132,43 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
   public void dateFilterInReport() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
-    OffsetDateTime past = engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    OffsetDateTime past =
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstance.getId())
+            .getStartTime();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
-                           .start(null)
-                           .end(past.minusSeconds(1L))
-                           .add()
-                           .buildList());
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
+    reportData.setFilter(
+        ProcessFilterBuilder.filter()
+            .fixedInstanceStartDate()
+            .start(null)
+            .end(past.minusSeconds(1L))
+            .add()
+            .buildList());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).isEqualTo(0.);
 
     // when
-    reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
-                           .start(past)
-                           .end(null)
-                           .add()
-                           .buildList());
+    reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
+    reportData.setFilter(
+        ProcessFilterBuilder.filter()
+            .fixedInstanceStartDate()
+            .start(past)
+            .end(null)
+            .add()
+            .buildList());
     result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -179,15 +189,12 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
-    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
-      .filter()
-      .executedFlowNodes()
-      .id(SERVICE_TASK_ID_1)
-      .add()
-      .buildList();
+        createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
+    List<ProcessFilterDto<?>> flowNodeFilter =
+        ProcessFilterBuilder.filter().executedFlowNodes().id(SERVICE_TASK_ID_1).add().buildList();
     reportData.getFilter().addAll(flowNodeFilter);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -195,7 +202,8 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
 
   @ParameterizedTest
   @MethodSource("viewLevelFilters")
-  public void viewLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  public void viewLevelFiltersOnlyAppliedToInstances(
+      final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -204,21 +212,20 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
+        createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
     reportData.getFilter().addAll(filtersToApply);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
-
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ProcessReportDataDto dataDto =
-      createReport(PROCESS_DEFINITION_KEY, "1");
+    ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperties((ViewProperty) null);
 
     // when
@@ -231,8 +238,7 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto =
-      createReport(PROCESS_DEFINITION_KEY, "1");
+    ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     // when
@@ -243,21 +249,22 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
   }
 
   @Test
-  public void frequencyReportCanAlsoBeEvaluatedIfAggregationTypeAndUserTaskDurationTimeIsDifferentFromDefault() {
+  public void
+      frequencyReportCanAlsoBeEvaluatedIfAggregationTypeAndUserTaskDurationTimeIsDifferentFromDefault() {
 
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
     reportData.getConfiguration().setAggregationTypes(new AggregationDto(MAX));
     reportData.getConfiguration().setUserTaskDurationTimes(UserTaskDurationTime.IDLE);
     AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
 
     // then
     final ReportResultResponseDto<Double> resultDto = evaluationResponse.getResult();
@@ -266,13 +273,12 @@ public class ProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractPr
     assertThat(resultDto.getFirstMeasureData()).isEqualTo(1.);
   }
 
-  private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
+  private ProcessReportDataDto createReport(
+      String processDefinitionKey, String processDefinitionVersion) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
+        .build();
   }
-
 }

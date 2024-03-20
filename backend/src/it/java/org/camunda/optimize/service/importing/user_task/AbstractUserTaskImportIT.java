@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.service.importing.user_task;
 
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
-
-import java.sql.SQLException;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-
-import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public abstract class AbstractUserTaskImportIT extends AbstractPlatformIT {
 
@@ -31,95 +30,103 @@ public abstract class AbstractUserTaskImportIT extends AbstractPlatformIT {
     }
   }
 
-  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final long idleDuration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(historicUserTaskInstanceDto -> {
-        try {
-          engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
-            historicUserTaskInstanceDto.getId(),
-            historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
-          );
-        } catch (SQLException e) {
-          throw new OptimizeIntegrationTestException(e);
-        }
-      });
+  protected void changeUserTaskIdleDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final long idleDuration) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              try {
+                engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
+                    historicUserTaskInstanceDto.getId(),
+                    historicUserTaskInstanceDto
+                        .getStartTime()
+                        .plus(idleDuration, ChronoUnit.MILLIS));
+              } catch (SQLException e) {
+                throw new OptimizeIntegrationTestException(e);
+              }
+            });
   }
 
-  protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final long workDuration) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(historicUserTaskInstanceDto -> {
-        if (historicUserTaskInstanceDto.getEndTime() != null) {
-          try {
-            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
-              historicUserTaskInstanceDto.getId(),
-              historicUserTaskInstanceDto.getEndTime().minus(workDuration, ChronoUnit.MILLIS)
-            );
-          } catch (SQLException e) {
-            throw new OptimizeIntegrationTestException(e);
-          }
-        }
-      });
+  protected void changeUserTaskWorkDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final long workDuration) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              if (historicUserTaskInstanceDto.getEndTime() != null) {
+                try {
+                  engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
+                      historicUserTaskInstanceDto.getId(),
+                      historicUserTaskInstanceDto
+                          .getEndTime()
+                          .minus(workDuration, ChronoUnit.MILLIS));
+                } catch (SQLException e) {
+                  throw new OptimizeIntegrationTestException(e);
+                }
+              }
+            });
   }
 
-
-  protected void changeUnclaimTimestampForAssigneeId(final ProcessInstanceEngineDto processInstanceDto,
-                                                     final OffsetDateTime timestamp,
-                                                     final String assigneeId) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(historicUserTaskInstanceDto -> {
-        try {
-          engineDatabaseExtension.changeUserTaskAssigneeDeleteOperationWithAssigneeIdTimestamp(
-            historicUserTaskInstanceDto.getId(),
-            timestamp,
-            assigneeId
-          );
-        } catch (SQLException e) {
-          throw new OptimizeIntegrationTestException(e);
-        }
-      });
+  protected void changeUnclaimTimestampForAssigneeId(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final OffsetDateTime timestamp,
+      final String assigneeId) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              try {
+                engineDatabaseExtension
+                    .changeUserTaskAssigneeDeleteOperationWithAssigneeIdTimestamp(
+                        historicUserTaskInstanceDto.getId(), timestamp, assigneeId);
+              } catch (SQLException e) {
+                throw new OptimizeIntegrationTestException(e);
+              }
+            });
   }
 
-  protected void changeClaimTimestampForAssigneeId(final ProcessInstanceEngineDto processInstanceDto,
-                                                   final OffsetDateTime timestamp,
-                                                   final String assigneeId) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(historicUserTaskInstanceDto -> {
-        try {
-          engineDatabaseExtension.changeUserTaskAssigneeAddOperationWithAssigneeIdTimestamp(
-            historicUserTaskInstanceDto.getId(),
-            timestamp,
-            assigneeId
-          );
-        } catch (SQLException e) {
-          throw new OptimizeIntegrationTestException(e);
-        }
-      });
+  protected void changeClaimTimestampForAssigneeId(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final OffsetDateTime timestamp,
+      final String assigneeId) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              try {
+                engineDatabaseExtension.changeUserTaskAssigneeAddOperationWithAssigneeIdTimestamp(
+                    historicUserTaskInstanceDto.getId(), timestamp, assigneeId);
+              } catch (SQLException e) {
+                throw new OptimizeIntegrationTestException(e);
+              }
+            });
   }
 
-  protected void changeUserTaskEndTime(final ProcessInstanceEngineDto processInstanceDto,
-                                       final OffsetDateTime endTime) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(historicUserTaskInstanceDto -> {
-        engineDatabaseExtension.changeFlowNodeEndDate(
-          processInstanceDto.getId(),
-          historicUserTaskInstanceDto.getTaskDefinitionKey(),
-          endTime
-        );
-      });
+  protected void changeUserTaskEndTime(
+      final ProcessInstanceEngineDto processInstanceDto, final OffsetDateTime endTime) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              engineDatabaseExtension.changeFlowNodeEndDate(
+                  processInstanceDto.getId(),
+                  historicUserTaskInstanceDto.getTaskDefinitionKey(),
+                  endTime);
+            });
   }
 
-  protected void changeUserTaskStartTime(final ProcessInstanceEngineDto processInstanceDto,
-                                         final OffsetDateTime startTime) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(historicUserTaskInstanceDto -> {
-        engineDatabaseExtension.changeFlowNodeStartDate(
-          processInstanceDto.getId(),
-          historicUserTaskInstanceDto.getTaskDefinitionKey(),
-          startTime
-        );
-      });
+  protected void changeUserTaskStartTime(
+      final ProcessInstanceEngineDto processInstanceDto, final OffsetDateTime startTime) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              engineDatabaseExtension.changeFlowNodeStartDate(
+                  processInstanceDto.getId(),
+                  historicUserTaskInstanceDto.getTaskDefinitionKey(),
+                  startTime);
+            });
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {
@@ -127,7 +134,7 @@ public abstract class AbstractUserTaskImportIT extends AbstractPlatformIT {
   }
 
   protected ProcessDefinitionEngineDto deployOneUserTaskDefinition() {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram());
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getSingleUserTaskDiagram());
   }
-
 }

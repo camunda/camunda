@@ -5,16 +5,16 @@
  */
 package org.camunda.optimize.rest.eventprocess;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class EventDeleteRestServiceRolloverNotUsedInProcessInstanceIT extends AbstractEventRestServiceRolloverIT {
+public class EventDeleteRestServiceRolloverNotUsedInProcessInstanceIT
+    extends AbstractEventRestServiceRolloverIT {
 
   @Test
   public void deleteRolledOverEvents_deleteSingleEventNotUsedInEventInstance() {
@@ -23,12 +23,15 @@ public class EventDeleteRestServiceRolloverNotUsedInProcessInstanceIT extends Ab
     ingestEventAndRolloverIndex(impostorMurderedMedBay);
     ingestEventAndRolloverIndex(normieTaskNav);
     final List<EventDto> savedEventsBeforeDelete = getAllStoredEvents();
-    final List<String> eventIdsToDelete = Collections.singletonList(savedEventsBeforeDelete.get(0).getId());
+    final List<String> eventIdsToDelete =
+        Collections.singletonList(savedEventsBeforeDelete.get(0).getId());
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteEventsRequest(eventIdsToDelete)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteEventsRequest(eventIdsToDelete)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());

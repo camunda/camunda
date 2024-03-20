@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+
+import java.util.Properties;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.JettyConfig;
@@ -14,10 +17,6 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.springframework.context.ApplicationContext;
-
-import java.util.Properties;
-
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationTestConfigurationUtil {
@@ -29,7 +28,8 @@ public class IntegrationTestConfigurationUtil {
   }
 
   public static String resolveFullDefaultEngineName() {
-    return System.getProperty("prefixedDefaultEngineName", resolveFullEngineName(getDefaultEngineName()));
+    return System.getProperty(
+        "prefixedDefaultEngineName", resolveFullEngineName(getDefaultEngineName()));
   }
 
   public static String resolveFullEngineName(final String engineName) {
@@ -49,7 +49,8 @@ public class IntegrationTestConfigurationUtil {
   }
 
   public static String getEngineItPluginEndpoint() {
-    return getEngineSchemeAndAuthority() + PROPERTIES.getProperty("camunda.engine.it.plugin.endpoint");
+    return getEngineSchemeAndAuthority()
+        + PROPERTIES.getProperty("camunda.engine.it.plugin.endpoint");
   }
 
   public static String getEngineRestEndpoint() {
@@ -73,15 +74,19 @@ public class IntegrationTestConfigurationUtil {
   }
 
   public static String getEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
-    return "http://localhost:" + applicationContext.getBean(JettyConfig.class)
-      .getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)
-      + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
+    return "http://localhost:"
+        + applicationContext
+            .getBean(JettyConfig.class)
+            .getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)
+        + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
   }
 
   public static String getSecuredEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
-    return "https://localhost:" + applicationContext.getBean(JettyConfig.class)
-      .getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)
-      + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
+    return "https://localhost:"
+        + applicationContext
+            .getBean(JettyConfig.class)
+            .getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)
+        + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
   }
 
   public static String getEmbeddedOptimizeRestApiEndpoint(ApplicationContext applicationContext) {
@@ -90,8 +95,8 @@ public class IntegrationTestConfigurationUtil {
 
   public static ConfigurationService createItConfigurationService() {
     return ConfigurationServiceBuilder.createConfiguration()
-      .loadConfigurationFrom("service-config.yaml", "it/it-config.yaml")
-      .build();
+        .loadConfigurationFrom("service-config.yaml", "it/it-config.yaml")
+        .build();
   }
 
   public static int getSmtpPort() {
@@ -109,5 +114,4 @@ public class IntegrationTestConfigurationUtil {
   public static int getEngineMockServerPort() {
     return Integer.parseInt(System.getProperty("engineMockServerPort", "1090"));
   }
-
 }

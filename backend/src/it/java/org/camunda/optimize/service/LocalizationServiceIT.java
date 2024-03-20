@@ -37,12 +37,13 @@ public class LocalizationServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add("invalid");
 
     // then
-    final OptimizeConfigurationException exception = assertThrows(
-        OptimizeConfigurationException.class,
-        () -> embeddedOptimizeExtension.reloadConfiguration()
-    );
+    final OptimizeConfigurationException exception =
+        assertThrows(
+            OptimizeConfigurationException.class,
+            () -> embeddedOptimizeExtension.reloadConfiguration());
     assertThat(exception).isNotNull();
-    assertThat(exception.getMessage()).contains(" not a valid JSON file [localization/invalid.json]");
+    assertThat(exception.getMessage())
+        .contains(" not a valid JSON file [localization/invalid.json]");
   }
 
   @Test
@@ -51,10 +52,10 @@ public class LocalizationServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().setFallbackLocale("xyz");
 
     // then
-    final OptimizeConfigurationException exception = assertThrows(
-        OptimizeConfigurationException.class,
-        () -> embeddedOptimizeExtension.reloadConfiguration()
-    );
+    final OptimizeConfigurationException exception =
+        assertThrows(
+            OptimizeConfigurationException.class,
+            () -> embeddedOptimizeExtension.reloadConfiguration());
     assertThat(exception).isNotNull();
     assertThat(exception.getMessage()).contains("[xyz]");
     assertThat(exception.getMessage()).contains("[en, de]");

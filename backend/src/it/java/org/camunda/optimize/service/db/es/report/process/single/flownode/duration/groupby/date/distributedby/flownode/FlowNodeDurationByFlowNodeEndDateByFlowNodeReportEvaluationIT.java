@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.flownode.duration.groupby.date.distributedby.flownode;
 
+import java.time.OffsetDateTime;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import java.time.OffsetDateTime;
-import java.util.Map;
-
 public class FlowNodeDurationByFlowNodeEndDateByFlowNodeReportEvaluationIT
-  extends FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT {
+    extends FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT {
 
   @Override
   protected ProcessGroupByType getGroupByType() {
@@ -31,10 +30,13 @@ public class FlowNodeDurationByFlowNodeEndDateByFlowNodeReportEvaluationIT
   }
 
   @Override
-  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance, final String flowNodeId,
-                                        final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), flowNodeId, dateToChangeTo);
-    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), flowNodeId, dateToChangeTo);
+  protected void changeModelElementDate(
+      final ProcessInstanceEngineDto processInstance,
+      final String flowNodeId,
+      final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeFlowNodeEndDate(
+        processInstance.getId(), flowNodeId, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(
+        processInstance.getId(), flowNodeId, dateToChangeTo);
   }
-
 }

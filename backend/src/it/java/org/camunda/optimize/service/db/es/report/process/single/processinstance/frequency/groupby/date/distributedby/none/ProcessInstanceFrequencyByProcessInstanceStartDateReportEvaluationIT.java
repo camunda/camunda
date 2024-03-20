@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.frequency.groupby.date.distributedby.none;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -21,17 +29,8 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-
 public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationIT
-  extends AbstractProcessInstanceFrequencyByProcessInstanceDateReportEvaluationIT {
+    extends AbstractProcessInstanceFrequencyByProcessInstanceDateReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getTestReportDataType() {
@@ -44,7 +43,8 @@ public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationI
   }
 
   @Override
-  protected void changeProcessInstanceDate(final String processInstanceId, final OffsetDateTime newDate) {
+  protected void changeProcessInstanceDate(
+      final String processInstanceId, final OffsetDateTime newDate) {
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, newDate);
   }
 
@@ -59,51 +59,60 @@ public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationI
     final OffsetDateTime startDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     final String definitionId = processInstanceDto.getDefinitionId();
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 =
+        engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), startDate.minusDays(2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportDataSortedDesc(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
-      getTestReportDataType(),
-      AggregateByDateUnit.DAY
-    );
-    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
-      new RollingDateFilterStartDto(4L, DateUnit.DAYS)
-    );
+    final ProcessReportDataDto reportData =
+        createReportDataSortedDesc(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion(),
+            getTestReportDataType(),
+            AggregateByDateUnit.DAY);
+    final RollingDateFilterDataDto dateFilterDataDto =
+        new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateUnit.DAYS));
     final InstanceStartDateFilterDto startDateFilterDto = new InstanceStartDateFilterDto();
     startDateFilterDto.setData(dateFilterDataDto);
     startDateFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
     reportData.setFilter(Collections.singletonList(startDateFilterDto));
 
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
-      .getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).hasSize(5);
 
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);
 
     assertThat(resultData.get(1).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(1), ChronoUnit.DAYS));
     assertThat(resultData.get(1).getValue()).isEqualTo(0.);
 
     assertThat(resultData.get(2).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(2), ChronoUnit.DAYS));
     assertThat(resultData.get(2).getValue()).isEqualTo(1.);
 
     assertThat(resultData.get(3).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(3), ChronoUnit.DAYS));
     assertThat(resultData.get(3).getValue()).isEqualTo(0.);
 
     assertThat(resultData.get(4).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(4), ChronoUnit.DAYS));
     assertThat(resultData.get(4).getValue()).isEqualTo(0.);
   }
 
@@ -112,21 +121,21 @@ public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationI
     // given 1 completed + 2 running process instances
     final OffsetDateTime now = OffsetDateTime.now();
 
-    final ProcessDefinitionEngineDto processDefinition = deployTwoRunningAndOneCompletedUserTaskProcesses(now);
+    final ProcessDefinitionEngineDto processDefinition =
+        deployTwoRunningAndOneCompletedUserTaskProcesses(now);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReportDataSortedDesc(
-      processDefinition.getKey(),
-      processDefinition.getVersionAsString(),
-      getTestReportDataType(),
-      AggregateByDateUnit.DAY
-    );
+    ProcessReportDataDto reportData =
+        createReportDataSortedDesc(
+            processDefinition.getKey(),
+            processDefinition.getVersionAsString(),
+            getTestReportDataType(),
+            AggregateByDateUnit.DAY);
 
     AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
-      reportClient.evaluateMapReport(
-      reportData);
+        reportClient.evaluateMapReport(reportData);
 
     // then
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
@@ -136,15 +145,15 @@ public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationI
 
     assertThat(resultData).isNotNull().hasSize(3);
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.DAYS)));
+        .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.DAYS)));
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);
 
     assertThat(resultData.get(1).getKey())
-      .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now.minusDays(1), ChronoUnit.DAYS)));
+        .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now.minusDays(1), ChronoUnit.DAYS)));
     assertThat(resultData.get(1).getValue()).isEqualTo(1.);
 
     assertThat(resultData.get(2).getKey())
-      .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now.minusDays(2), ChronoUnit.DAYS)));
+        .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now.minusDays(2), ChronoUnit.DAYS)));
     assertThat(resultData.get(2).getValue()).isEqualTo(1.);
   }
 }

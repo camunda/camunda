@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
@@ -12,13 +18,6 @@ import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 @Tag(OPENSEARCH_PASSING)
 public class MultiEnginePlatformUserIdentityCacheServiceIT extends AbstractMultiEngineIT {
@@ -72,16 +71,20 @@ public class MultiEnginePlatformUserIdentityCacheServiceIT extends AbstractMulti
     getSyncedIdentityCacheService().synchronizeIdentities();
 
     // then
-    final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
-    // as engines are iterated in order configured, the user from the first engine is supposed to win
+    final Optional<UserDto> userIdentityById =
+        getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    // as engines are iterated in order configured, the user from the first engine is supposed to
+    // win
     assertThat(userIdentityById)
-      .isPresent().get()
-      .extracting(UserDto::getEmail)
-      .isEqualTo(winningUserProfile.getProfile().getEmail());
+        .isPresent()
+        .get()
+        .extracting(UserDto::getEmail)
+        .isEqualTo(winningUserProfile.getProfile().getEmail());
   }
 
   @Test
-  public void duplicateUserFromSecondEngineDoesNotOverrideUserImportedFromFirstEngine_onGlobalAuth() {
+  public void
+      duplicateUserFromSecondEngineDoesNotOverrideUserImportedFromFirstEngine_onGlobalAuth() {
     // given
     addSecondEngineToConfiguration();
 
@@ -97,24 +100,24 @@ public class MultiEnginePlatformUserIdentityCacheServiceIT extends AbstractMulti
     getSyncedIdentityCacheService().synchronizeIdentities();
 
     // then
-    final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
-    // as engines are iterated in order configured, the user from the first engine is supposed to win
+    final Optional<UserDto> userIdentityById =
+        getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    // as engines are iterated in order configured, the user from the first engine is supposed to
+    // win
     assertThat(userIdentityById)
-      .isPresent().get()
-      .extracting(UserDto::getEmail)
-      .isEqualTo(winningUserProfile.getProfile().getEmail());
+        .isPresent()
+        .get()
+        .extracting(UserDto::getEmail)
+        .isEqualTo(winningUserProfile.getProfile().getEmail());
   }
 
   public EngineUserDto createKermitUserDtoWithEmail(final String email) {
-    final UserProfileDto duplicateProfile2 = UserProfileDto.builder()
-      .id(KERMIT_USER)
-      .email(email)
-      .build();
+    final UserProfileDto duplicateProfile2 =
+        UserProfileDto.builder().id(KERMIT_USER).email(email).build();
     return new EngineUserDto(duplicateProfile2, new UserCredentialsDto(KERMIT_USER));
   }
 
   private PlatformUserIdentityCache getSyncedIdentityCacheService() {
     return embeddedOptimizeExtension.getUserIdentityCache();
   }
-
 }

@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.plugin;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
+import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
@@ -17,24 +26,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
-import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
-
 @Tag(OPENSEARCH_PASSING)
 public class PluginLoadingIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;
   private VariableImportAdapterProvider pluginProvider;
 
-  @TempDir
-  File tempDirectory;
+  @TempDir File tempDirectory;
 
   @BeforeEach
   public void setup() {
@@ -47,7 +45,8 @@ public class PluginLoadingIT extends AbstractPlatformIT {
     // given
     configurationService.setPluginDirectory("target/testPluginsValid");
     String basePackage = "org.camunda.optimize.testplugin.pluginloading.independent.testoptimize";
-    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
+    configurationService.setVariableImportPluginBasePackages(
+        Collections.singletonList(basePackage));
 
     final SharedTestPluginVariableDto optimizeLoadedTest = new SharedTestPluginVariableDto();
     assertThat(optimizeLoadedTest.getId()).isEqualTo("optimize-class");
@@ -59,33 +58,39 @@ public class PluginLoadingIT extends AbstractPlatformIT {
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
     assertThat(plugins).hasSize(1);
 
-    plugins.stream().findFirst().ifPresent(
-      plugin -> {
-        final List<PluginVariableDto> pluginVariableDtos = plugin.adaptVariables(Collections.emptyList());
+    plugins.stream()
+        .findFirst()
+        .ifPresent(
+            plugin -> {
+              final List<PluginVariableDto> pluginVariableDtos =
+                  plugin.adaptVariables(Collections.emptyList());
 
-        /* the plugin has and uses a class in its classpath called:
-         * 'org.camunda.optimize.testplugin.pluginloading.SharedTestPluginVariableDto'
-         * and Optimize as well.
-         * assert that the class of the plugin is loaded and not the one of Optimize.
-         */
-        final PluginVariableDto pluginLoadedTest = pluginVariableDtos.get(0);
-        assertThat(pluginLoadedTest.getClass().getName()).isEqualTo(optimizeLoadedTest.getClass().getName());
-        assertThat(pluginLoadedTest.getClass().getClassLoader().getClass().getName())
-          .isNotEqualTo(optimizeLoadedTest.getClass().getClassLoader().getClass().getName());
-        assertThat(pluginLoadedTest.getId()).isEqualTo("plugin-class");
+              /* the plugin has and uses a class in its classpath called:
+               * 'org.camunda.optimize.testplugin.pluginloading.SharedTestPluginVariableDto'
+               * and Optimize as well.
+               * assert that the class of the plugin is loaded and not the one of Optimize.
+               */
+              final PluginVariableDto pluginLoadedTest = pluginVariableDtos.get(0);
+              assertThat(pluginLoadedTest.getClass().getName())
+                  .isEqualTo(optimizeLoadedTest.getClass().getName());
+              assertThat(pluginLoadedTest.getClass().getClassLoader().getClass().getName())
+                  .isNotEqualTo(
+                      optimizeLoadedTest.getClass().getClassLoader().getClass().getName());
+              assertThat(pluginLoadedTest.getId()).isEqualTo("plugin-class");
 
-        // plugin classes that do not exist in Optimize are also loaded from the plugin
-        assertThat(pluginVariableDtos.get(1).getId()).isEqualTo("also-plugin-class");
-      }
-    );
+              // plugin classes that do not exist in Optimize are also loaded from the plugin
+              assertThat(pluginVariableDtos.get(1).getId()).isEqualTo("also-plugin-class");
+            });
   }
 
   @Test
   public void loadedPluginsAreIndependentToEachOther() {
     // given
     configurationService.setPluginDirectory("target/testPluginsValid");
-    String basePackage = "org.camunda.optimize.testplugin.pluginloading.independent.testotherplugins";
-    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
+    String basePackage =
+        "org.camunda.optimize.testplugin.pluginloading.independent.testotherplugins";
+    configurationService.setVariableImportPluginBasePackages(
+        Collections.singletonList(basePackage));
 
     // when
     embeddedOptimizeExtension.reloadConfiguration();
@@ -94,12 +99,13 @@ public class PluginLoadingIT extends AbstractPlatformIT {
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
     assertThat(plugins).hasSize(2);
 
-    plugins.forEach(plugin -> {
-      // each plugin uses their own classes with the same names but different methods
-      // tests if exceptions are thrown
-      plugin.adaptVariables(Collections.emptyList());
-      assertThat(plugin.getClass().getName()).isEqualTo(basePackage + ".IndependentTestPlugin");
-    });
+    plugins.forEach(
+        plugin -> {
+          // each plugin uses their own classes with the same names but different methods
+          // tests if exceptions are thrown
+          plugin.adaptVariables(Collections.emptyList());
+          assertThat(plugin.getClass().getName()).isEqualTo(basePackage + ".IndependentTestPlugin");
+        });
   }
 
   @Test
@@ -107,11 +113,12 @@ public class PluginLoadingIT extends AbstractPlatformIT {
     // given
     configurationService.setPluginDirectory("target/testPluginsValid");
     String basePackage = "org.camunda.optimize.testplugin.adapter.variable.error1";
-    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
+    configurationService.setVariableImportPluginBasePackages(
+        Collections.singletonList(basePackage));
 
     // then
     assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
-      .isInstanceOf(OptimizeRuntimeException.class);
+        .isInstanceOf(OptimizeRuntimeException.class);
   }
 
   @Test
@@ -119,11 +126,12 @@ public class PluginLoadingIT extends AbstractPlatformIT {
     // given
     configurationService.setPluginDirectory("target/testPluginsValid");
     String basePackage = "org.camunda.optimize.testplugin.adapter.variable.error2";
-    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
+    configurationService.setVariableImportPluginBasePackages(
+        Collections.singletonList(basePackage));
 
     // then
     assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
-      .isInstanceOf(RuntimeException.class);
+        .isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -157,7 +165,8 @@ public class PluginLoadingIT extends AbstractPlatformIT {
     // given
     configurationService.setPluginDirectory("nonexistingDirectory");
     String basePackage = "org.camunda.optimize.testplugin.pluginloading.independent.testoptimize";
-    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
+    configurationService.setVariableImportPluginBasePackages(
+        Collections.singletonList(basePackage));
 
     // when
     embeddedOptimizeExtension.reloadConfiguration();
@@ -173,7 +182,6 @@ public class PluginLoadingIT extends AbstractPlatformIT {
     assertThat(pluginProvider.getPlugins()).hasSize(1);
   }
 
-
   @Test
   public void loadingPluginWithInvalidVersion() {
     // given
@@ -181,8 +189,8 @@ public class PluginLoadingIT extends AbstractPlatformIT {
 
     // then
     assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
-      .isInstanceOf(OptimizeRuntimeException.class)
-      .hasMessage(buildUnsupportedPluginVersionMessage("invalid_version", Version.VERSION));
+        .isInstanceOf(OptimizeRuntimeException.class)
+        .hasMessage(buildUnsupportedPluginVersionMessage("invalid_version", Version.VERSION));
   }
 
   @Test
@@ -192,8 +200,7 @@ public class PluginLoadingIT extends AbstractPlatformIT {
 
     // then
     assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
-      .isInstanceOf(OptimizeRuntimeException.class)
-      .hasMessage(buildMissingPluginVersionMessage(Version.VERSION));
+        .isInstanceOf(OptimizeRuntimeException.class)
+        .hasMessage(buildMissingPluginVersionMessage(Version.VERSION));
   }
-
 }

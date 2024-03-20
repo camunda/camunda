@@ -8,8 +8,8 @@ package org.camunda.optimize.testplugin.pluginloading;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 
 /**
- * This class is used to test if this class inside Optimize wins in the class loading over the class from the plugin
- * with the same name and package
+ * This class is used to test if this class inside Optimize wins in the class loading over the class
+ * from the plugin with the same name and package
  */
 public class SharedTestPluginVariableDto extends PluginVariableDto {
 

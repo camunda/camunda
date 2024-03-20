@@ -5,8 +5,17 @@
  */
 package org.camunda.optimize.service.importing.eventprocess;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.query.event.process.EventCorrelationStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
@@ -18,41 +27,33 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends AbstractEventProcessIT {
+public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT
+    extends AbstractEventProcessIT {
 
   private static Stream<Arguments> getImportScenarios() {
     return Stream.of(
-      Arguments.of(
-        "singleImportCycle",
-        (Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT>) AbstractEventProcessIT::executeImportCycle
-      ),
-      Arguments.of(
-        "importIdempotenceScenario",
-        (Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT>) testInstance -> {
-          // this simulates the same event getting imported more than once
-          // this could happen in a real world scenario if the progress does not get updated before Optimize is shutdown
-          testInstance.executeImportCycle();
-          testInstance.resetEventProcessInstanceImportProgress();
-          testInstance.executeImportCycle();
-        }
-      )
-    );
+        Arguments.of(
+            "singleImportCycle",
+            (Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT>)
+                AbstractEventProcessIT::executeImportCycle),
+        Arguments.of(
+            "importIdempotenceScenario",
+            (Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT>)
+                testInstance -> {
+                  // this simulates the same event getting imported more than once
+                  // this could happen in a real world scenario if the progress does not get updated
+                  // before Optimize is shutdown
+                  testInstance.executeImportCycle();
+                  testInstance.resetEventProcessInstanceImportProgress();
+                  testInstance.executeImportCycle();
+                }));
   }
 
   @ParameterizedTest(name = "import scenario: {0}")
   @MethodSource("getImportScenarios")
-  public void taskWithoutEndMappingGetsAssignedEndDateByNextAdjacentEvent(final String scenarioName,
-                                                                          final Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT> importScenario) {
+  public void taskWithoutEndMappingGetsAssignedEndDateByNextAdjacentEvent(
+      final String scenarioName,
+      final Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT> importScenario) {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -63,7 +64,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(USER_TASK_ID_ONE, startMapping(SECOND_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
+    createAndPublishEventProcessMapping(
+        eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
 
     // when
     importScenario.accept(this);
@@ -71,54 +73,70 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          )
-          .satisfies(
-            eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
-                .satisfies(flowNodeInstances -> assertThat(flowNodeInstances)
-                  .allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance)
-                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-                  .extracting(
-                    FlowNodeInstanceDto::getFlowNodeInstanceId,
-                    FlowNodeInstanceDto::getFlowNodeId,
-                    FlowNodeInstanceDto::getStartDate,
-                    FlowNodeInstanceDto::getEndDate
-                  )
-                  .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
-                    Tuple.tuple(secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
-                    Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-                  )
-                );
-              // all correlations have been recorded as expected
-              assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
-                .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-                .containsValues(
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(firstEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(secondEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(thirdEventId),
-                    MappedEventType.END, ImmutableSet.of(secondEventId, thirdEventId)
-                  ))
-                );
-            }
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList())
+                  .satisfies(
+                      eventProcessInstanceDto -> {
+                        assertThat(eventProcessInstanceDto.getFlowNodeInstances())
+                            .satisfies(
+                                flowNodeInstances ->
+                                    assertThat(flowNodeInstances)
+                                        .allSatisfy(
+                                            flowNodeInstance ->
+                                                assertThat(flowNodeInstance)
+                                                    .hasNoNullFieldsOrPropertiesExcept(
+                                                        NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                                        .extracting(
+                                            FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                            FlowNodeInstanceDto::getFlowNodeId,
+                                            FlowNodeInstanceDto::getStartDate,
+                                            FlowNodeInstanceDto::getEndDate)
+                                        .containsExactlyInAnyOrder(
+                                            Tuple.tuple(
+                                                firstEventId,
+                                                BPMN_START_EVENT_ID,
+                                                FIRST_EVENT_DATETIME,
+                                                FIRST_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                secondEventId,
+                                                USER_TASK_ID_ONE,
+                                                SECOND_EVENT_DATETIME,
+                                                THIRD_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                thirdEventId,
+                                                BPMN_END_EVENT_ID,
+                                                THIRD_EVENT_DATETIME,
+                                                THIRD_EVENT_DATETIME)));
+                        // all correlations have been recorded as expected
+                        assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
+                            .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                            .containsValues(
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(firstEventId),
+                                        MappedEventType.END, ImmutableSet.of(firstEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(secondEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(thirdEventId),
+                                        MappedEventType.END,
+                                            ImmutableSet.of(secondEventId, thirdEventId))));
+                      });
+            });
   }
 
   @Test
-  public void taskWithoutEndMappingGetsAssignedEndDateByNextAdjacentEvent_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate() {
+  public void
+      taskWithoutEndMappingGetsAssignedEndDateByNextAdjacentEvent_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -129,7 +147,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(USER_TASK_ID_ONE, startMapping(SECOND_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
+    createAndPublishEventProcessMapping(
+        eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
 
     // when
     executeImportCycle();
@@ -140,54 +159,70 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          )
-          .satisfies(
-            eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
-                .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-                  .extracting(
-                    FlowNodeInstanceDto::getFlowNodeInstanceId,
-                    FlowNodeInstanceDto::getFlowNodeId,
-                    FlowNodeInstanceDto::getStartDate,
-                    FlowNodeInstanceDto::getEndDate
-                  )
-                  .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
-                    Tuple.tuple(secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTime),
-                    Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, updatedThirdEventTime, updatedThirdEventTime)
-                  )
-                );
-              // all correlations have been recorded as expected
-              assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
-                .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-                .containsValues(
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(firstEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(secondEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(thirdEventId),
-                    MappedEventType.END, ImmutableSet.of(secondEventId, thirdEventId)
-                  ))
-                );
-            }
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList())
+                  .satisfies(
+                      eventProcessInstanceDto -> {
+                        assertThat(eventProcessInstanceDto.getFlowNodeInstances())
+                            .satisfies(
+                                events ->
+                                    assertThat(events)
+                                        .allSatisfy(
+                                            simpleEventDto ->
+                                                assertThat(simpleEventDto)
+                                                    .hasNoNullFieldsOrPropertiesExcept(
+                                                        NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                                        .extracting(
+                                            FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                            FlowNodeInstanceDto::getFlowNodeId,
+                                            FlowNodeInstanceDto::getStartDate,
+                                            FlowNodeInstanceDto::getEndDate)
+                                        .containsExactlyInAnyOrder(
+                                            Tuple.tuple(
+                                                firstEventId,
+                                                BPMN_START_EVENT_ID,
+                                                FIRST_EVENT_DATETIME,
+                                                FIRST_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                secondEventId,
+                                                USER_TASK_ID_ONE,
+                                                SECOND_EVENT_DATETIME,
+                                                updatedThirdEventTime),
+                                            Tuple.tuple(
+                                                thirdEventId,
+                                                BPMN_END_EVENT_ID,
+                                                updatedThirdEventTime,
+                                                updatedThirdEventTime)));
+                        // all correlations have been recorded as expected
+                        assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
+                            .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                            .containsValues(
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(firstEventId),
+                                        MappedEventType.END, ImmutableSet.of(firstEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(secondEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(thirdEventId),
+                                        MappedEventType.END,
+                                            ImmutableSet.of(secondEventId, thirdEventId))));
+                      });
+            });
   }
 
   @Test
-  public void taskWithoutEndMappingGetsAssignedEndDateByNextAdjacentEvent_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate_evenIfItResultsInNegativeDuration() {
+  public void
+      taskWithoutEndMappingGetsAssignedEndDateByNextAdjacentEvent_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate_evenIfItResultsInNegativeDuration() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -198,7 +233,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(USER_TASK_ID_ONE, startMapping(SECOND_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
+    createAndPublishEventProcessMapping(
+        eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
 
     // when
     executeImportCycle();
@@ -209,58 +245,72 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          )
-          .satisfies(
-            eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
-                .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-                  .extracting(
-                    FlowNodeInstanceDto::getFlowNodeInstanceId,
-                    FlowNodeInstanceDto::getFlowNodeId,
-                    FlowNodeInstanceDto::getStartDate,
-                    FlowNodeInstanceDto::getEndDate
-                  )
-                  .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
-                    Tuple.tuple(secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTime),
-                    Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, updatedThirdEventTime, updatedThirdEventTime)
-                  )
-                );
-              // all correlations have been recorded as expected
-              assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
-                .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-                .containsValues(
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(firstEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(secondEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(thirdEventId),
-                    MappedEventType.END, ImmutableSet.of(secondEventId, thirdEventId)
-                  ))
-                );
-            }
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList())
+                  .satisfies(
+                      eventProcessInstanceDto -> {
+                        assertThat(eventProcessInstanceDto.getFlowNodeInstances())
+                            .satisfies(
+                                events ->
+                                    assertThat(events)
+                                        .allSatisfy(
+                                            simpleEventDto ->
+                                                assertThat(simpleEventDto)
+                                                    .hasNoNullFieldsOrPropertiesExcept(
+                                                        NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                                        .extracting(
+                                            FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                            FlowNodeInstanceDto::getFlowNodeId,
+                                            FlowNodeInstanceDto::getStartDate,
+                                            FlowNodeInstanceDto::getEndDate)
+                                        .containsExactlyInAnyOrder(
+                                            Tuple.tuple(
+                                                firstEventId,
+                                                BPMN_START_EVENT_ID,
+                                                FIRST_EVENT_DATETIME,
+                                                FIRST_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                secondEventId,
+                                                USER_TASK_ID_ONE,
+                                                SECOND_EVENT_DATETIME,
+                                                updatedThirdEventTime),
+                                            Tuple.tuple(
+                                                thirdEventId,
+                                                BPMN_END_EVENT_ID,
+                                                updatedThirdEventTime,
+                                                updatedThirdEventTime)));
+                        // all correlations have been recorded as expected
+                        assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
+                            .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                            .containsValues(
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(firstEventId),
+                                        MappedEventType.END, ImmutableSet.of(firstEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(secondEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(thirdEventId),
+                                        MappedEventType.END,
+                                            ImmutableSet.of(secondEventId, thirdEventId))));
+                      });
+            });
   }
 
   @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type: {1}")
   @MethodSource("exclusiveAndEventBasedGatewayXmlVariations")
-  public void taskWithoutEndMappingBeforeClosingExclusiveGateway_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate(
-    final String openingGatewayType,
-    final String closingGatewayType,
-    final String bpmnXml) {
+  public void
+      taskWithoutEndMappingBeforeClosingExclusiveGateway_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate(
+          final String openingGatewayType, final String closingGatewayType, final String bpmnXml) {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -282,67 +332,78 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          );
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-            .extracting(
-              FlowNodeInstanceDto::getFlowNodeInstanceId,
-              FlowNodeInstanceDto::getFlowNodeId,
-              FlowNodeInstanceDto::getStartDate,
-              FlowNodeInstanceDto::getEndDate
-            )
-            .containsExactlyInAnyOrder(
-              Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1",
-                SPLITTING_GATEWAY_ID,
-                FIRST_EVENT_DATETIME,
-                openingGatewayType.equalsIgnoreCase(EVENT_BASED_GATEWAY_TYPE) ? SECOND_EVENT_DATETIME :
-                  FIRST_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTimestamp
-              ),
-              Tuple.tuple(
-                MERGING_GATEWAY_ID + "_1", MERGING_GATEWAY_ID, updatedThirdEventTimestamp, updatedThirdEventTimestamp
-              ),
-              Tuple.tuple(
-                thirdEventId, BPMN_END_EVENT_ID, updatedThirdEventTimestamp, updatedThirdEventTimestamp
-              )
-            )
-          );
-        // all correlations have been recorded as expected
-        assertThat(processInstanceDto.getCorrelatedEventsById())
-          .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-          .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(firstEventId),
-              MappedEventType.END, ImmutableSet.of(firstEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(secondEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(thirdEventId),
-              MappedEventType.END, ImmutableSet.of(secondEventId, thirdEventId)
-            ))
-          );
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList());
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .satisfies(
+                      events ->
+                          assertThat(events)
+                              .allSatisfy(
+                                  simpleEventDto ->
+                                      assertThat(simpleEventDto)
+                                          .hasNoNullFieldsOrPropertiesExcept(
+                                              NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                              .extracting(
+                                  FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                  FlowNodeInstanceDto::getFlowNodeId,
+                                  FlowNodeInstanceDto::getStartDate,
+                                  FlowNodeInstanceDto::getEndDate)
+                              .containsExactlyInAnyOrder(
+                                  Tuple.tuple(
+                                      firstEventId,
+                                      BPMN_START_EVENT_ID,
+                                      FIRST_EVENT_DATETIME,
+                                      FIRST_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      SPLITTING_GATEWAY_ID + "_1",
+                                      SPLITTING_GATEWAY_ID,
+                                      FIRST_EVENT_DATETIME,
+                                      openingGatewayType.equalsIgnoreCase(EVENT_BASED_GATEWAY_TYPE)
+                                          ? SECOND_EVENT_DATETIME
+                                          : FIRST_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      secondEventId,
+                                      USER_TASK_ID_ONE,
+                                      SECOND_EVENT_DATETIME,
+                                      updatedThirdEventTimestamp),
+                                  Tuple.tuple(
+                                      MERGING_GATEWAY_ID + "_1",
+                                      MERGING_GATEWAY_ID,
+                                      updatedThirdEventTimestamp,
+                                      updatedThirdEventTimestamp),
+                                  Tuple.tuple(
+                                      thirdEventId,
+                                      BPMN_END_EVENT_ID,
+                                      updatedThirdEventTimestamp,
+                                      updatedThirdEventTimestamp)));
+              // all correlations have been recorded as expected
+              assertThat(processInstanceDto.getCorrelatedEventsById())
+                  .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                  .containsValues(
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(firstEventId),
+                              MappedEventType.END, ImmutableSet.of(firstEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.START, ImmutableSet.of(secondEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(thirdEventId),
+                              MappedEventType.END, ImmutableSet.of(secondEventId, thirdEventId))));
+            });
   }
 
   @Test
-  public void tasksWithoutEndMappingBeforeClosingParallelGateway_nextAdjacentEventUpdateAlsoUpdatesTasksEndDate() {
+  public void
+      tasksWithoutEndMappingBeforeClosingParallelGateway_nextAdjacentEventUpdateAlsoUpdatesTasksEndDate() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -366,66 +427,82 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .isEmpty();
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-            .extracting(
-              FlowNodeInstanceDto::getFlowNodeInstanceId,
-              FlowNodeInstanceDto::getFlowNodeId,
-              FlowNodeInstanceDto::getStartDate,
-              FlowNodeInstanceDto::getEndDate
-            )
-            .containsExactlyInAnyOrder(
-              Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
-              Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, newFourthEventTimestamp
-              ),
-              Tuple.tuple(
-                thirdEventId, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, newFourthEventTimestamp
-              ),
-              Tuple.tuple(
-                MERGING_GATEWAY_ID + "_1", MERGING_GATEWAY_ID, newFourthEventTimestamp, newFourthEventTimestamp
-              ),
-              Tuple.tuple(
-                fourthEventId, BPMN_END_EVENT_ID, newFourthEventTimestamp, newFourthEventTimestamp
-              )
-            )
-          );
-        // all correlations have been recorded as expected
-        assertThat(processInstanceDto.getCorrelatedEventsById())
-          .containsOnlyKeys(firstEventId, secondEventId, thirdEventId, fourthEventId)
-          .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(firstEventId),
-              MappedEventType.END, ImmutableSet.of(firstEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(secondEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(thirdEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(fourthEventId),
-              MappedEventType.END, ImmutableSet.of(fourthEventId, secondEventId, thirdEventId)
-            ))
-          );
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .isEmpty();
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .satisfies(
+                      events ->
+                          assertThat(events)
+                              .allSatisfy(
+                                  simpleEventDto ->
+                                      assertThat(simpleEventDto)
+                                          .hasNoNullFieldsOrPropertiesExcept(
+                                              NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                              .extracting(
+                                  FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                  FlowNodeInstanceDto::getFlowNodeId,
+                                  FlowNodeInstanceDto::getStartDate,
+                                  FlowNodeInstanceDto::getEndDate)
+                              .containsExactlyInAnyOrder(
+                                  Tuple.tuple(
+                                      firstEventId,
+                                      BPMN_START_EVENT_ID,
+                                      FIRST_EVENT_DATETIME,
+                                      FIRST_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      SPLITTING_GATEWAY_ID + "_1",
+                                      SPLITTING_GATEWAY_ID,
+                                      FIRST_EVENT_DATETIME,
+                                      FIRST_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      secondEventId,
+                                      USER_TASK_ID_ONE,
+                                      SECOND_EVENT_DATETIME,
+                                      newFourthEventTimestamp),
+                                  Tuple.tuple(
+                                      thirdEventId,
+                                      USER_TASK_ID_TWO,
+                                      THIRD_EVENT_DATETIME,
+                                      newFourthEventTimestamp),
+                                  Tuple.tuple(
+                                      MERGING_GATEWAY_ID + "_1",
+                                      MERGING_GATEWAY_ID,
+                                      newFourthEventTimestamp,
+                                      newFourthEventTimestamp),
+                                  Tuple.tuple(
+                                      fourthEventId,
+                                      BPMN_END_EVENT_ID,
+                                      newFourthEventTimestamp,
+                                      newFourthEventTimestamp)));
+              // all correlations have been recorded as expected
+              assertThat(processInstanceDto.getCorrelatedEventsById())
+                  .containsOnlyKeys(firstEventId, secondEventId, thirdEventId, fourthEventId)
+                  .containsValues(
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(firstEventId),
+                              MappedEventType.END, ImmutableSet.of(firstEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.START, ImmutableSet.of(secondEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.START, ImmutableSet.of(thirdEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(fourthEventId),
+                              MappedEventType.END,
+                                  ImmutableSet.of(fourthEventId, secondEventId, thirdEventId))));
+            });
   }
 
   @Test
-  public void taskWithoutEndMappingBeforeClosingExclusiveGateway_consecutiveGateways_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate() {
+  public void
+      taskWithoutEndMappingBeforeClosingExclusiveGateway_consecutiveGateways_nextAdjacentEventUpdateAlsoUpdatesTaskEndDate() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -437,9 +514,7 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
     createAndPublishEventProcessMapping(
-      eventMappings,
-      createExclusiveGatewayProcessDefinitionWithConsecutiveGatewaysXml()
-    );
+        eventMappings, createExclusiveGatewayProcessDefinitionWithConsecutiveGatewaysXml());
 
     // when
     executeImportCycle();
@@ -450,67 +525,78 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates()).isEmpty();
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-            .extracting(
-              FlowNodeInstanceDto::getFlowNodeInstanceId,
-              FlowNodeInstanceDto::getFlowNodeId,
-              FlowNodeInstanceDto::getStartDate,
-              FlowNodeInstanceDto::getEndDate
-            )
-            .containsExactlyInAnyOrder(
-              Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTimestamp
-              ),
-              Tuple.tuple(
-                MERGING_GATEWAY_ID + "_1", MERGING_GATEWAY_ID, updatedThirdEventTimestamp, updatedThirdEventTimestamp
-              ),
-              Tuple.tuple(
-                MERGING_GATEWAY_ID_TWO + "_1",
-                MERGING_GATEWAY_ID_TWO,
-                updatedThirdEventTimestamp,
-                updatedThirdEventTimestamp
-              ),
-              Tuple.tuple(
-                thirdEventId, BPMN_END_EVENT_ID, updatedThirdEventTimestamp, updatedThirdEventTimestamp
-              )
-            )
-          );
-        // all correlations have been recorded as expected
-        assertThat(processInstanceDto.getCorrelatedEventsById())
-          .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-          .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(firstEventId),
-              MappedEventType.END, ImmutableSet.of(firstEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(secondEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(thirdEventId),
-              MappedEventType.END, ImmutableSet.of(secondEventId, thirdEventId)
-            ))
-          );
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates()).isEmpty();
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .satisfies(
+                      events ->
+                          assertThat(events)
+                              .allSatisfy(
+                                  simpleEventDto ->
+                                      assertThat(simpleEventDto)
+                                          .hasNoNullFieldsOrPropertiesExcept(
+                                              NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                              .extracting(
+                                  FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                  FlowNodeInstanceDto::getFlowNodeId,
+                                  FlowNodeInstanceDto::getStartDate,
+                                  FlowNodeInstanceDto::getEndDate)
+                              .containsExactlyInAnyOrder(
+                                  Tuple.tuple(
+                                      firstEventId,
+                                      BPMN_START_EVENT_ID,
+                                      FIRST_EVENT_DATETIME,
+                                      FIRST_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      SPLITTING_GATEWAY_ID + "_1",
+                                      SPLITTING_GATEWAY_ID,
+                                      FIRST_EVENT_DATETIME,
+                                      FIRST_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      secondEventId,
+                                      USER_TASK_ID_ONE,
+                                      SECOND_EVENT_DATETIME,
+                                      updatedThirdEventTimestamp),
+                                  Tuple.tuple(
+                                      MERGING_GATEWAY_ID + "_1",
+                                      MERGING_GATEWAY_ID,
+                                      updatedThirdEventTimestamp,
+                                      updatedThirdEventTimestamp),
+                                  Tuple.tuple(
+                                      MERGING_GATEWAY_ID_TWO + "_1",
+                                      MERGING_GATEWAY_ID_TWO,
+                                      updatedThirdEventTimestamp,
+                                      updatedThirdEventTimestamp),
+                                  Tuple.tuple(
+                                      thirdEventId,
+                                      BPMN_END_EVENT_ID,
+                                      updatedThirdEventTimestamp,
+                                      updatedThirdEventTimestamp)));
+              // all correlations have been recorded as expected
+              assertThat(processInstanceDto.getCorrelatedEventsById())
+                  .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                  .containsValues(
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(firstEventId),
+                              MappedEventType.END, ImmutableSet.of(firstEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.START, ImmutableSet.of(secondEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(thirdEventId),
+                              MappedEventType.END, ImmutableSet.of(secondEventId, thirdEventId))));
+            });
   }
 
   @ParameterizedTest(name = "import scenario: {0}")
   @MethodSource("getImportScenarios")
-  public void taskWithoutStartMappingGetsAssignedStartDateByPreviousAdjacentEvent(final String scenarioName,
-                                                                                  final Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT> importScenario) {
+  public void taskWithoutStartMappingGetsAssignedStartDateByPreviousAdjacentEvent(
+      final String scenarioName,
+      final Consumer<EventProcessInstanceImportAdjacentEventUpdateCorrelationIT> importScenario) {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -521,7 +607,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(USER_TASK_ID_ONE, endMapping(SECOND_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
+    createAndPublishEventProcessMapping(
+        eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
 
     // when
     importScenario.accept(this);
@@ -529,54 +616,70 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          )
-          .satisfies(
-            eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
-                .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-                  .extracting(
-                    FlowNodeInstanceDto::getFlowNodeInstanceId,
-                    FlowNodeInstanceDto::getFlowNodeId,
-                    FlowNodeInstanceDto::getStartDate,
-                    FlowNodeInstanceDto::getEndDate
-                  )
-                  .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
-                    Tuple.tuple(secondEventId, USER_TASK_ID_ONE, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-                    Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-                  )
-                );
-              // all correlations have been recorded as expected
-              assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
-                .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-                .containsValues(
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(firstEventId, secondEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.END, ImmutableSet.of(secondEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(thirdEventId),
-                    MappedEventType.END, ImmutableSet.of(thirdEventId)
-                  ))
-                );
-            }
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList())
+                  .satisfies(
+                      eventProcessInstanceDto -> {
+                        assertThat(eventProcessInstanceDto.getFlowNodeInstances())
+                            .satisfies(
+                                events ->
+                                    assertThat(events)
+                                        .allSatisfy(
+                                            simpleEventDto ->
+                                                assertThat(simpleEventDto)
+                                                    .hasNoNullFieldsOrPropertiesExcept(
+                                                        NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                                        .extracting(
+                                            FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                            FlowNodeInstanceDto::getFlowNodeId,
+                                            FlowNodeInstanceDto::getStartDate,
+                                            FlowNodeInstanceDto::getEndDate)
+                                        .containsExactlyInAnyOrder(
+                                            Tuple.tuple(
+                                                firstEventId,
+                                                BPMN_START_EVENT_ID,
+                                                FIRST_EVENT_DATETIME,
+                                                FIRST_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                secondEventId,
+                                                USER_TASK_ID_ONE,
+                                                FIRST_EVENT_DATETIME,
+                                                SECOND_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                thirdEventId,
+                                                BPMN_END_EVENT_ID,
+                                                THIRD_EVENT_DATETIME,
+                                                THIRD_EVENT_DATETIME)));
+                        // all correlations have been recorded as expected
+                        assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
+                            .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                            .containsValues(
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START,
+                                            ImmutableSet.of(firstEventId, secondEventId),
+                                        MappedEventType.END, ImmutableSet.of(firstEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.END, ImmutableSet.of(secondEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(thirdEventId),
+                                        MappedEventType.END, ImmutableSet.of(thirdEventId))));
+                      });
+            });
   }
 
   @Test
-  public void taskWithoutStartMappingGetsAssignedStartDateByPreviousAdjacentEvent_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate() {
+  public void
+      taskWithoutStartMappingGetsAssignedStartDateByPreviousAdjacentEvent_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -587,7 +690,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(USER_TASK_ID_ONE, endMapping(SECOND_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
+    createAndPublishEventProcessMapping(
+        eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
 
     // when
     executeImportCycle();
@@ -598,54 +702,70 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          )
-          .satisfies(
-            eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
-                .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-                  .extracting(
-                    FlowNodeInstanceDto::getFlowNodeInstanceId,
-                    FlowNodeInstanceDto::getFlowNodeId,
-                    FlowNodeInstanceDto::getStartDate,
-                    FlowNodeInstanceDto::getEndDate
-                  )
-                  .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, updatedFirstEventTime, updatedFirstEventTime),
-                    Tuple.tuple(secondEventId, USER_TASK_ID_ONE, updatedFirstEventTime, SECOND_EVENT_DATETIME),
-                    Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-                  )
-                );
-              // all correlations have been recorded as expected
-              assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
-                .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-                .containsValues(
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(firstEventId, secondEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.END, ImmutableSet.of(secondEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(thirdEventId),
-                    MappedEventType.END, ImmutableSet.of(thirdEventId)
-                  ))
-                );
-            }
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList())
+                  .satisfies(
+                      eventProcessInstanceDto -> {
+                        assertThat(eventProcessInstanceDto.getFlowNodeInstances())
+                            .satisfies(
+                                events ->
+                                    assertThat(events)
+                                        .allSatisfy(
+                                            simpleEventDto ->
+                                                assertThat(simpleEventDto)
+                                                    .hasNoNullFieldsOrPropertiesExcept(
+                                                        NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                                        .extracting(
+                                            FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                            FlowNodeInstanceDto::getFlowNodeId,
+                                            FlowNodeInstanceDto::getStartDate,
+                                            FlowNodeInstanceDto::getEndDate)
+                                        .containsExactlyInAnyOrder(
+                                            Tuple.tuple(
+                                                firstEventId,
+                                                BPMN_START_EVENT_ID,
+                                                updatedFirstEventTime,
+                                                updatedFirstEventTime),
+                                            Tuple.tuple(
+                                                secondEventId,
+                                                USER_TASK_ID_ONE,
+                                                updatedFirstEventTime,
+                                                SECOND_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                thirdEventId,
+                                                BPMN_END_EVENT_ID,
+                                                THIRD_EVENT_DATETIME,
+                                                THIRD_EVENT_DATETIME)));
+                        // all correlations have been recorded as expected
+                        assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
+                            .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                            .containsValues(
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START,
+                                            ImmutableSet.of(firstEventId, secondEventId),
+                                        MappedEventType.END, ImmutableSet.of(firstEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.END, ImmutableSet.of(secondEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(thirdEventId),
+                                        MappedEventType.END, ImmutableSet.of(thirdEventId))));
+                      });
+            });
   }
 
   @Test
-  public void taskWithoutStartMappingGetsAssignedStartDateByPreviousAdjacentEvent_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate_evenIfItResultsInNegativeDuration() {
+  public void
+      taskWithoutStartMappingGetsAssignedStartDateByPreviousAdjacentEvent_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate_evenIfItResultsInNegativeDuration() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -656,7 +776,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(USER_TASK_ID_ONE, endMapping(SECOND_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
+    createAndPublishEventProcessMapping(
+        eventMappings, createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
 
     // when
     executeImportCycle();
@@ -667,58 +788,72 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          )
-          .satisfies(
-            eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
-                .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-                  .extracting(
-                    FlowNodeInstanceDto::getFlowNodeInstanceId,
-                    FlowNodeInstanceDto::getFlowNodeId,
-                    FlowNodeInstanceDto::getStartDate,
-                    FlowNodeInstanceDto::getEndDate
-                  )
-                  .containsExactlyInAnyOrder(
-                    Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, updatedFirstEventTime, updatedFirstEventTime),
-                    Tuple.tuple(secondEventId, USER_TASK_ID_ONE, updatedFirstEventTime, SECOND_EVENT_DATETIME),
-                    Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-                  )
-                );
-              // all correlations have been recorded as expected
-              assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
-                .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-                .containsValues(
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(firstEventId, secondEventId),
-                    MappedEventType.END, ImmutableSet.of(firstEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.END, ImmutableSet.of(secondEventId)
-                  )),
-                  new EventCorrelationStateDto(ImmutableMap.of(
-                    MappedEventType.START, ImmutableSet.of(thirdEventId),
-                    MappedEventType.END, ImmutableSet.of(thirdEventId)
-                  ))
-                );
-            }
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList())
+                  .satisfies(
+                      eventProcessInstanceDto -> {
+                        assertThat(eventProcessInstanceDto.getFlowNodeInstances())
+                            .satisfies(
+                                events ->
+                                    assertThat(events)
+                                        .allSatisfy(
+                                            simpleEventDto ->
+                                                assertThat(simpleEventDto)
+                                                    .hasNoNullFieldsOrPropertiesExcept(
+                                                        NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                                        .extracting(
+                                            FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                            FlowNodeInstanceDto::getFlowNodeId,
+                                            FlowNodeInstanceDto::getStartDate,
+                                            FlowNodeInstanceDto::getEndDate)
+                                        .containsExactlyInAnyOrder(
+                                            Tuple.tuple(
+                                                firstEventId,
+                                                BPMN_START_EVENT_ID,
+                                                updatedFirstEventTime,
+                                                updatedFirstEventTime),
+                                            Tuple.tuple(
+                                                secondEventId,
+                                                USER_TASK_ID_ONE,
+                                                updatedFirstEventTime,
+                                                SECOND_EVENT_DATETIME),
+                                            Tuple.tuple(
+                                                thirdEventId,
+                                                BPMN_END_EVENT_ID,
+                                                THIRD_EVENT_DATETIME,
+                                                THIRD_EVENT_DATETIME)));
+                        // all correlations have been recorded as expected
+                        assertThat(eventProcessInstanceDto.getCorrelatedEventsById())
+                            .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                            .containsValues(
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START,
+                                            ImmutableSet.of(firstEventId, secondEventId),
+                                        MappedEventType.END, ImmutableSet.of(firstEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.END, ImmutableSet.of(secondEventId))),
+                                new EventCorrelationStateDto(
+                                    ImmutableMap.of(
+                                        MappedEventType.START, ImmutableSet.of(thirdEventId),
+                                        MappedEventType.END, ImmutableSet.of(thirdEventId))));
+                      });
+            });
   }
 
   @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type: {1}")
   @MethodSource("exclusiveAndEventBasedGatewayXmlVariations")
-  public void taskWithoutStartMappingAfterOpeningExclusiveGateway_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate(
-    final String openingGatewayType,
-    final String closingGatewayType,
-    final String bpmnXml) {
+  public void
+      taskWithoutStartMappingAfterOpeningExclusiveGateway_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate(
+          final String openingGatewayType, final String closingGatewayType, final String bpmnXml) {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -740,62 +875,76 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto)
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .hasFieldOrPropertyWithValue(
-            EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
-          );
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-            .extracting(
-              FlowNodeInstanceDto::getFlowNodeInstanceId,
-              FlowNodeInstanceDto::getFlowNodeId,
-              FlowNodeInstanceDto::getStartDate,
-              FlowNodeInstanceDto::getEndDate
-            )
-            .containsExactlyInAnyOrder(
-              Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, newFirstEventTimestamp, newFirstEventTimestamp),
-              Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, newFirstEventTimestamp, newFirstEventTimestamp
-              ),
-              Tuple.tuple(
-                secondEventId, USER_TASK_ID_ONE, newFirstEventTimestamp, SECOND_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                MERGING_GATEWAY_ID + "_1", MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME
-              )
-            )
-          );
-        // all correlations have been recorded as expected
-        assertThat(processInstanceDto.getCorrelatedEventsById())
-          .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
-          .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(firstEventId, secondEventId),
-              MappedEventType.END, ImmutableSet.of(firstEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.END, ImmutableSet.of(secondEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(thirdEventId),
-              MappedEventType.END, ImmutableSet.of(thirdEventId)
-            ))
-          );
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .hasFieldOrPropertyWithValue(
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      Collections.emptyList());
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .satisfies(
+                      events ->
+                          assertThat(events)
+                              .allSatisfy(
+                                  simpleEventDto ->
+                                      assertThat(simpleEventDto)
+                                          .hasNoNullFieldsOrPropertiesExcept(
+                                              NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                              .extracting(
+                                  FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                  FlowNodeInstanceDto::getFlowNodeId,
+                                  FlowNodeInstanceDto::getStartDate,
+                                  FlowNodeInstanceDto::getEndDate)
+                              .containsExactlyInAnyOrder(
+                                  Tuple.tuple(
+                                      firstEventId,
+                                      BPMN_START_EVENT_ID,
+                                      newFirstEventTimestamp,
+                                      newFirstEventTimestamp),
+                                  Tuple.tuple(
+                                      SPLITTING_GATEWAY_ID + "_1",
+                                      SPLITTING_GATEWAY_ID,
+                                      newFirstEventTimestamp,
+                                      newFirstEventTimestamp),
+                                  Tuple.tuple(
+                                      secondEventId,
+                                      USER_TASK_ID_ONE,
+                                      newFirstEventTimestamp,
+                                      SECOND_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      MERGING_GATEWAY_ID + "_1",
+                                      MERGING_GATEWAY_ID,
+                                      THIRD_EVENT_DATETIME,
+                                      THIRD_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      thirdEventId,
+                                      BPMN_END_EVENT_ID,
+                                      THIRD_EVENT_DATETIME,
+                                      THIRD_EVENT_DATETIME)));
+              // all correlations have been recorded as expected
+              assertThat(processInstanceDto.getCorrelatedEventsById())
+                  .containsOnlyKeys(firstEventId, secondEventId, thirdEventId)
+                  .containsValues(
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(firstEventId, secondEventId),
+                              MappedEventType.END, ImmutableSet.of(firstEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.END, ImmutableSet.of(secondEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(thirdEventId),
+                              MappedEventType.END, ImmutableSet.of(thirdEventId))));
+            });
   }
 
   @Test
-  public void tasksWithoutStartMappingAfterOpeningParallelGateway_previousAdjacentEventUpdateAlsoUpdatesTasksStartDates() {
+  public void
+      tasksWithoutStartMappingAfterOpeningParallelGateway_previousAdjacentEventUpdateAlsoUpdatesTasksStartDates() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -819,66 +968,82 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .isEmpty();
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-            .extracting(
-              FlowNodeInstanceDto::getFlowNodeInstanceId,
-              FlowNodeInstanceDto::getFlowNodeId,
-              FlowNodeInstanceDto::getStartDate,
-              FlowNodeInstanceDto::getEndDate
-            )
-            .containsExactlyInAnyOrder(
-              Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, newFirstEventTimestamp, newFirstEventTimestamp),
-              Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, newFirstEventTimestamp, newFirstEventTimestamp
-              ),
-              Tuple.tuple(
-                secondEventId, USER_TASK_ID_ONE, newFirstEventTimestamp, SECOND_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                thirdEventId, USER_TASK_ID_TWO, newFirstEventTimestamp, THIRD_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                MERGING_GATEWAY_ID + "_1", MERGING_GATEWAY_ID, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME
-              ),
-              Tuple.tuple(
-                fourthEventId, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME
-              )
-            )
-          );
-        // all correlations have been recorded as expected
-        assertThat(processInstanceDto.getCorrelatedEventsById())
-          .containsOnlyKeys(firstEventId, secondEventId, thirdEventId, fourthEventId)
-          .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(firstEventId, secondEventId, thirdEventId),
-              MappedEventType.END, ImmutableSet.of(firstEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.END, ImmutableSet.of(secondEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.END, ImmutableSet.of(thirdEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(fourthEventId),
-              MappedEventType.END, ImmutableSet.of(fourthEventId)
-            ))
-          );
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .isEmpty();
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .satisfies(
+                      events ->
+                          assertThat(events)
+                              .allSatisfy(
+                                  simpleEventDto ->
+                                      assertThat(simpleEventDto)
+                                          .hasNoNullFieldsOrPropertiesExcept(
+                                              NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                              .extracting(
+                                  FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                  FlowNodeInstanceDto::getFlowNodeId,
+                                  FlowNodeInstanceDto::getStartDate,
+                                  FlowNodeInstanceDto::getEndDate)
+                              .containsExactlyInAnyOrder(
+                                  Tuple.tuple(
+                                      firstEventId,
+                                      BPMN_START_EVENT_ID,
+                                      newFirstEventTimestamp,
+                                      newFirstEventTimestamp),
+                                  Tuple.tuple(
+                                      SPLITTING_GATEWAY_ID + "_1",
+                                      SPLITTING_GATEWAY_ID,
+                                      newFirstEventTimestamp,
+                                      newFirstEventTimestamp),
+                                  Tuple.tuple(
+                                      secondEventId,
+                                      USER_TASK_ID_ONE,
+                                      newFirstEventTimestamp,
+                                      SECOND_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      thirdEventId,
+                                      USER_TASK_ID_TWO,
+                                      newFirstEventTimestamp,
+                                      THIRD_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      MERGING_GATEWAY_ID + "_1",
+                                      MERGING_GATEWAY_ID,
+                                      SECOND_EVENT_DATETIME,
+                                      THIRD_EVENT_DATETIME),
+                                  Tuple.tuple(
+                                      fourthEventId,
+                                      BPMN_END_EVENT_ID,
+                                      FOURTH_EVENT_DATETIME,
+                                      FOURTH_EVENT_DATETIME)));
+              // all correlations have been recorded as expected
+              assertThat(processInstanceDto.getCorrelatedEventsById())
+                  .containsOnlyKeys(firstEventId, secondEventId, thirdEventId, fourthEventId)
+                  .containsValues(
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START,
+                                  ImmutableSet.of(firstEventId, secondEventId, thirdEventId),
+                              MappedEventType.END, ImmutableSet.of(firstEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.END, ImmutableSet.of(secondEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.END, ImmutableSet.of(thirdEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(fourthEventId),
+                              MappedEventType.END, ImmutableSet.of(fourthEventId))));
+            });
   }
 
   @Test
-  public void tasksWithoutStartMappingAfterOpeningParallelGateway_consecutiveGateways_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate() {
+  public void
+      tasksWithoutStartMappingAfterOpeningParallelGateway_consecutiveGateways_previousAdjacentEventUpdateAlsoUpdatesTaskStartDate() {
     // given
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String thirdEventId = ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
@@ -898,45 +1063,54 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
-          // no pending updates should be present as all adjacent updates could get merged with an activity Instance
-          .isEmpty();
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
-            .extracting(
-              FlowNodeInstanceDto::getFlowNodeInstanceId,
-              FlowNodeInstanceDto::getFlowNodeId,
-              FlowNodeInstanceDto::getStartDate,
-              FlowNodeInstanceDto::getEndDate
-            )
-            .containsExactlyInAnyOrder(
-              Tuple.tuple(
-                firstEventId, BPMN_START_EVENT_ID, newFirstEventTimestamp, newFirstEventTimestamp),
-              Tuple.tuple(
-                SPLITTING_GATEWAY_ID + "_1", SPLITTING_GATEWAY_ID, newFirstEventTimestamp, newFirstEventTimestamp
-              ),
-              Tuple.tuple(
-                thirdEventId, USER_TASK_ID_TWO, newFirstEventTimestamp, THIRD_EVENT_DATETIME
-              )
-            )
-          );
-        // all correlations have been recorded as expected
-        assertThat(processInstanceDto.getCorrelatedEventsById())
-          .containsOnlyKeys(firstEventId, thirdEventId)
-          .containsValues(
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.START, ImmutableSet.of(firstEventId, thirdEventId),
-              MappedEventType.END, ImmutableSet.of(firstEventId)
-            )),
-            new EventCorrelationStateDto(ImmutableMap.of(
-              MappedEventType.END, ImmutableSet.of(thirdEventId)
-            ))
-          );
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
+                  // no pending updates should be present as all adjacent updates could get merged
+                  // with an activity Instance
+                  .isEmpty();
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .satisfies(
+                      events ->
+                          assertThat(events)
+                              .allSatisfy(
+                                  simpleEventDto ->
+                                      assertThat(simpleEventDto)
+                                          .hasNoNullFieldsOrPropertiesExcept(
+                                              NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
+                              .extracting(
+                                  FlowNodeInstanceDto::getFlowNodeInstanceId,
+                                  FlowNodeInstanceDto::getFlowNodeId,
+                                  FlowNodeInstanceDto::getStartDate,
+                                  FlowNodeInstanceDto::getEndDate)
+                              .containsExactlyInAnyOrder(
+                                  Tuple.tuple(
+                                      firstEventId,
+                                      BPMN_START_EVENT_ID,
+                                      newFirstEventTimestamp,
+                                      newFirstEventTimestamp),
+                                  Tuple.tuple(
+                                      SPLITTING_GATEWAY_ID + "_1",
+                                      SPLITTING_GATEWAY_ID,
+                                      newFirstEventTimestamp,
+                                      newFirstEventTimestamp),
+                                  Tuple.tuple(
+                                      thirdEventId,
+                                      USER_TASK_ID_TWO,
+                                      newFirstEventTimestamp,
+                                      THIRD_EVENT_DATETIME)));
+              // all correlations have been recorded as expected
+              assertThat(processInstanceDto.getCorrelatedEventsById())
+                  .containsOnlyKeys(firstEventId, thirdEventId)
+                  .containsValues(
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(
+                              MappedEventType.START, ImmutableSet.of(firstEventId, thirdEventId),
+                              MappedEventType.END, ImmutableSet.of(firstEventId))),
+                      new EventCorrelationStateDto(
+                          ImmutableMap.of(MappedEventType.END, ImmutableSet.of(thirdEventId))));
+            });
   }
 }

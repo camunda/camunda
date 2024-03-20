@@ -5,10 +5,17 @@
  */
 package org.camunda.optimize.service.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -16,14 +23,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 @Tag(OPENSEARCH_PASSING)
 public class AuthenticationIT extends AbstractPlatformIT {
@@ -48,10 +47,9 @@ public class AuthenticationIT extends AbstractPlatformIT {
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
     // when
-    Response response = embeddedOptimizeExtension.authenticateUserRequest(
-      StringUtils.swapCase(KERMIT_USER),
-      KERMIT_USER
-    );
+    Response response =
+        embeddedOptimizeExtension.authenticateUserRequest(
+            StringUtils.swapCase(KERMIT_USER), KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -68,19 +66,25 @@ public class AuthenticationIT extends AbstractPlatformIT {
 
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    final List<HttpRequest> mockedRequests = CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
-      embeddedOptimizeExtension, engineIntegrationExtension, engineMockServer,
-      allUpperCaseUserId, actualUserId
-    );
+    final List<HttpRequest> mockedRequests =
+        CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
+            embeddedOptimizeExtension,
+            engineIntegrationExtension,
+            engineMockServer,
+            allUpperCaseUserId,
+            actualUserId);
 
     // when
-    Response response = embeddedOptimizeExtension.authenticateUserRequest(allUpperCaseUserId, actualUserId);
+    Response response =
+        embeddedOptimizeExtension.authenticateUserRequest(allUpperCaseUserId, actualUserId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     final String authenticationToken = response.readEntity(String.class);
     // here the actualUserId should be present, regardless of how the user logged in
-    assertThat(AuthCookieService.getTokenSubject(authenticationToken)).get().isEqualTo(actualUserId);
+    assertThat(AuthCookieService.getTokenSubject(authenticationToken))
+        .get()
+        .isEqualTo(actualUserId);
 
     mockedRequests.forEach(engineMockServer::verify);
   }
@@ -139,13 +143,13 @@ public class AuthenticationIT extends AbstractPlatformIT {
 
     // when
     Response testResponse =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildAuthTestRequest()
-        .withoutAuthentication()
-        .addSingleCookie(OPTIMIZE_AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token)
-        .addSingleHeader(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildAuthTestRequest()
+            .withoutAuthentication()
+            .addSingleCookie(OPTIMIZE_AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token)
+            .addSingleHeader(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
+            .execute();
 
     // then
     assertThat(testResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -159,17 +163,15 @@ public class AuthenticationIT extends AbstractPlatformIT {
     addAdminUserAndGrantAccessPermission();
     authenticateAdminUser();
     Algorithm algorithm = Algorithm.HMAC256("secret");
-    String selfGeneratedEvilToken = JWT.create()
-      .withIssuer("admin")
-      .sign(algorithm);
+    String selfGeneratedEvilToken = JWT.create().withIssuer("admin").sign(algorithm);
 
     // when
     Response logoutResponse =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildLogOutRequest()
-        .withGivenAuthToken(selfGeneratedEvilToken)
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withGivenAuthToken(selfGeneratedEvilToken)
+            .execute();
 
     // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -180,29 +182,34 @@ public class AuthenticationIT extends AbstractPlatformIT {
     addAdminUserAndGrantAccessPermission();
     authenticateAdminUser();
     Algorithm algorithm = Algorithm.HMAC256("secret");
-    String selfGeneratedEvilToken = JWT.create()
-      .withIssuer("admin")
-      .sign(algorithm);
+    String selfGeneratedEvilToken = JWT.create().withIssuer("admin").sign(algorithm);
 
     // when
     Response logoutResponse =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildLogOutRequest()
-        .withGivenAuthToken(selfGeneratedEvilToken)
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withGivenAuthToken(selfGeneratedEvilToken)
+            .execute();
 
-    assertThat(logoutResponse.getHeaders().get("Set-Cookie").get(0).toString().contains("delete cookie")).isTrue();
+    assertThat(
+            logoutResponse
+                .getHeaders()
+                .get("Set-Cookie")
+                .get(0)
+                .toString()
+                .contains("delete cookie"))
+        .isTrue();
   }
 
   @Test
   public void dontDeleteCookiesIfNoToken() {
     Response logoutResponse =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildLogOutRequest()
-        .withoutAuthentication()
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withoutAuthentication()
+            .execute();
 
     assertThat(logoutResponse.getHeaders().get("Set-Cookie")).isNull();
   }

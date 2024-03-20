@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.usertask.duration.groupby.date.distributedby.candidategroup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,16 +36,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
-
 public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportEvaluationIT
-  extends UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT {
+    extends UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT {
 
   @Test
   public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
@@ -52,32 +51,34 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
-      .getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
-    final List<String> collect = result.getFirstMeasureData().stream()
-      .flatMap(entry -> entry.getValue().stream())
-      .map(MapResultEntryDto::getKey)
-      .collect(Collectors.toList());
+    final List<String> collect =
+        result.getFirstMeasureData().stream()
+            .flatMap(entry -> entry.getValue().stream())
+            .map(MapResultEntryDto::getKey)
+            .collect(Collectors.toList());
     assertThat(collect).contains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     // @formatter:on
   }
 
   @ParameterizedTest
   @MethodSource("getFlowNodeStatusExpectedValues")
-  public void evaluateReportWithFlowNodeStatusFilters(final List<ProcessFilterDto<?>> processFilters,
-                                                      final long expectedInstanceCount,
-                                                      final FlowNodeStatusTestValues candidateGroup1Count,
-                                                      final FlowNodeStatusTestValues candidateGroup2Count) {
+  public void evaluateReportWithFlowNodeStatusFilters(
+      final List<ProcessFilterDto<?>> processFilters,
+      final long expectedInstanceCount,
+      final FlowNodeStatusTestValues candidateGroup1Count,
+      final FlowNodeStatusTestValues candidateGroup2Count) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
@@ -93,12 +94,10 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     }
 
     final ProcessInstanceEngineDto processInstance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // claim first running task
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(
-      processInstance2.getId(),
-      FIRST_CANDIDATE_GROUP_ID
-    );
+        processInstance2.getId(), FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance2.getId());
     if (isSingleFilterOfType(processFilters, CanceledFlowNodesOnlyFilterDto.class)) {
       engineIntegrationExtension.cancelActivityInstance(processInstance2.getId(), USER_TASK_1);
@@ -111,26 +110,30 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
+    final ProcessReportDataDto reportData =
+        createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(processFilters);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
-      .getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
-      .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
+    final HyperMapAsserter.GroupByAdder groupByAsserter =
+        HyperMapAsserter.asserter()
+            .processInstanceCount(expectedInstanceCount)
+            .processInstanceCountWithoutFilters(2L)
+            .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+            .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (candidateGroup1Count != null) {
       groupByAsserter.distributedByContains(
-        FIRST_CANDIDATE_GROUP_ID, getCorrectTestExecutionValue(candidateGroup1Count), FIRST_CANDIDATE_GROUP_NAME
-      );
+          FIRST_CANDIDATE_GROUP_ID,
+          getCorrectTestExecutionValue(candidateGroup1Count),
+          FIRST_CANDIDATE_GROUP_NAME);
     }
     if (candidateGroup2Count != null) {
       groupByAsserter.distributedByContains(
-        SECOND_CANDIDATE_GROUP_ID, getCorrectTestExecutionValue(candidateGroup2Count), SECOND_CANDIDATE_GROUP_NAME
-      );
+          SECOND_CANDIDATE_GROUP_ID,
+          getCorrectTestExecutionValue(candidateGroup2Count),
+          SECOND_CANDIDATE_GROUP_NAME);
     }
     groupByAsserter.doAssert(result);
   }
@@ -146,34 +149,30 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
 
   protected static Stream<Arguments> getFlowNodeStatusExpectedValues() {
     return Stream.of(
-      Arguments.of(
-        ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
-        2L,
-        new FlowNodeStatusTestValues(200., 500., 700.),
-        new FlowNodeStatusTestValues(200., 500., 700.)
-      ),
-      Arguments.of(
-        ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
-        1L,
-        new FlowNodeStatusTestValues(100., 100., 100.),
-        null
-      ),
-      Arguments.of(
-        ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
-        1L,
-        new FlowNodeStatusTestValues(100., 100., 100.),
-        null
-      ),
-      Arguments.of(
-        ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(),
-        2L,
-        new FlowNodeStatusTestValues(100., 100., 100.),
-        new FlowNodeStatusTestValues(100., 100., 100.)
-      )
-    );
+        Arguments.of(
+            ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
+            2L,
+            new FlowNodeStatusTestValues(200., 500., 700.),
+            new FlowNodeStatusTestValues(200., 500., 700.)),
+        Arguments.of(
+            ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+            1L,
+            new FlowNodeStatusTestValues(100., 100., 100.),
+            null),
+        Arguments.of(
+            ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
+            1L,
+            new FlowNodeStatusTestValues(100., 100., 100.),
+            null),
+        Arguments.of(
+            ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(),
+            2L,
+            new FlowNodeStatusTestValues(100., 100., 100.),
+            new FlowNodeStatusTestValues(100., 100., 100.)));
   }
 
-  protected abstract Double getCorrectTestExecutionValue(final FlowNodeStatusTestValues flowNodeStatusTestValues);
+  protected abstract Double getCorrectTestExecutionValue(
+      final FlowNodeStatusTestValues flowNodeStatusTestValues);
 
   @Override
   protected ProcessGroupByType getGroupByType() {

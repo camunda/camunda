@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.test.optimize;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+
+import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -15,16 +24,6 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-
-import jakarta.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Supplier;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
 @AllArgsConstructor
 public class AlertClient {
@@ -37,37 +36,41 @@ public class AlertClient {
     return createAlert(createSimpleAlert(reportId));
   }
 
-  public String createAlertForReport(final String reportId, final int intervalValue, final AlertIntervalUnit unit) {
+  public String createAlertForReport(
+      final String reportId, final int intervalValue, final AlertIntervalUnit unit) {
     return createAlert(createSimpleAlert(reportId, intervalValue, unit));
   }
 
   public String createAlert(final AlertCreationRequestDto creationDto) {
     return getRequestExecutor()
-      .buildCreateAlertRequest(creationDto)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+        .buildCreateAlertRequest(creationDto)
+        .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+        .getId();
   }
 
-  public Response editAlertAsUser(final String alertId, final AlertCreationRequestDto updatedAlertDto,
-                                  final String username, final String password) {
+  public Response editAlertAsUser(
+      final String alertId,
+      final AlertCreationRequestDto updatedAlertDto,
+      final String username,
+      final String password) {
     return getRequestExecutor()
-      .withUserAuthentication(username, password)
-      .buildUpdateAlertRequest(alertId, updatedAlertDto)
-      .execute();
+        .withUserAuthentication(username, password)
+        .buildUpdateAlertRequest(alertId, updatedAlertDto)
+        .execute();
   }
 
-  public Response createAlertAsUser(final AlertCreationRequestDto alertCreationRequestDto,
-                                    final String username, final String password) {
+  public Response createAlertAsUser(
+      final AlertCreationRequestDto alertCreationRequestDto,
+      final String username,
+      final String password) {
     return getRequestExecutor()
-      .withUserAuthentication(username, password)
-      .buildCreateAlertRequest(alertCreationRequestDto)
-      .execute();
+        .withUserAuthentication(username, password)
+        .buildCreateAlertRequest(alertCreationRequestDto)
+        .execute();
   }
 
   public Response bulkDeleteAlerts(List<String> alertIds) {
-    return getRequestExecutor()
-      .buildBulkDeleteAlertsRequest(alertIds)
-      .execute();
+    return getRequestExecutor().buildBulkDeleteAlertsRequest(alertIds).execute();
   }
 
   public void deleteAlert(String alertId) {
@@ -81,49 +84,55 @@ public class AlertClient {
 
   public List<AlertDefinitionDto> getAllAlerts(String username, String password) {
     List<AlertDefinitionDto> result = new ArrayList<>();
-    List<EntityResponseDto> entities = getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .withUserAuthentication(username, password)
-      .executeAndReturnList(EntityResponseDto.class, 200);
+    List<EntityResponseDto> entities =
+        getRequestExecutor()
+            .buildGetAllEntitiesRequest()
+            .withUserAuthentication(username, password)
+            .executeAndReturnList(EntityResponseDto.class, 200);
 
     entities.stream()
-      .filter(e -> e.getEntityType().equals(EntityType.COLLECTION))
-      .forEach(e -> {
-        List<AlertDefinitionDto> alertsOfCollection = getRequestExecutor()
-          .buildGetAlertsForCollectionRequest(e.getId())
-          .withUserAuthentication(username, password)
-          .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
-        result.addAll(alertsOfCollection);
-      });
+        .filter(e -> e.getEntityType().equals(EntityType.COLLECTION))
+        .forEach(
+            e -> {
+              List<AlertDefinitionDto> alertsOfCollection =
+                  getRequestExecutor()
+                      .buildGetAlertsForCollectionRequest(e.getId())
+                      .withUserAuthentication(username, password)
+                      .executeAndReturnList(
+                          AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+              result.addAll(alertsOfCollection);
+            });
 
     return result;
   }
 
   public void updateAlert(String id, AlertCreationRequestDto simpleAlert) {
     getRequestExecutor()
-      .buildUpdateAlertRequest(id, simpleAlert)
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+        .buildUpdateAlertRequest(id, simpleAlert)
+        .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public Response deleteAlertAsUser(final String alertId, final String username, final String password) {
+  public Response deleteAlertAsUser(
+      final String alertId, final String username, final String password) {
     return getRequestExecutor()
-      .withUserAuthentication(username, password)
-      .buildDeleteAlertRequest(alertId)
-      .execute();
+        .withUserAuthentication(username, password)
+        .buildDeleteAlertRequest(alertId)
+        .execute();
   }
 
   public List<AlertDefinitionDto> getAlertsForCollectionAsDefaultUser(final String collectionId) {
     return getRequestExecutor()
-      .buildGetAlertsForCollectionRequest(collectionId)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+        .buildGetAlertsForCollectionRequest(collectionId)
+        .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   public AlertCreationRequestDto createSimpleAlert(String reportId) {
     return createSimpleAlert(reportId, 1, AlertIntervalUnit.SECONDS);
   }
 
-  public AlertCreationRequestDto createSimpleAlert(String reportId, int intervalValue, AlertIntervalUnit unit) {
+  public AlertCreationRequestDto createSimpleAlert(
+      String reportId, int intervalValue, AlertIntervalUnit unit) {
     AlertCreationRequestDto alertCreationRequestDto = new AlertCreationRequestDto();
 
     AlertInterval interval = new AlertInterval();

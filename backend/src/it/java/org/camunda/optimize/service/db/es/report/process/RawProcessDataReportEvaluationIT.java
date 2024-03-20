@@ -323,12 +323,18 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
             ImmutableMap
                 .of( // service tesk 1 loops in the process and that's why its total duration
                     // equates to 20
-                    SERVICE_TASK_ID_1, new FlowNodeTotalDurationDataDto(SERVICE_TASK_ID_1, 20),
-                    SERVICE_TASK_ID_2, new FlowNodeTotalDurationDataDto(SERVICE_TASK_ID_2, 0),
-                    START_EVENT, new FlowNodeTotalDurationDataDto(START_EVENT, 0),
-                    END_EVENT, new FlowNodeTotalDurationDataDto(END_EVENT, 0),
-                    SCRIPT_TASK, new FlowNodeTotalDurationDataDto(SCRIPT_TASK, 0),
-                    MERGE_GATEWAY_ID, new FlowNodeTotalDurationDataDto(MERGE_GATEWAY_ID, 0),
+                    SERVICE_TASK_ID_1,
+                    new FlowNodeTotalDurationDataDto(SERVICE_TASK_ID_1, 20),
+                    SERVICE_TASK_ID_2,
+                    new FlowNodeTotalDurationDataDto(SERVICE_TASK_ID_2, 0),
+                    START_EVENT,
+                    new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+                    END_EVENT,
+                    new FlowNodeTotalDurationDataDto(END_EVENT, 0),
+                    SCRIPT_TASK,
+                    new FlowNodeTotalDurationDataDto(SCRIPT_TASK, 0),
+                    MERGE_GATEWAY_ID,
+                    new FlowNodeTotalDurationDataDto(MERGE_GATEWAY_ID, 0),
                     // splitting gateway loops in the process and that's why its total duration
                     // equates to 2
                     SPLITTING_GATEWAY_ID,
@@ -394,7 +400,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
             processInstance1.getProcessDefinitionKey(), processInstance2.getProcessDefinitionKey());
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
         evaluationResultWithUserTask =
-        evaluateRawReportWithDefaultPagination(rawDataReportWithTwoDefinitions);
+            evaluateRawReportWithDefaultPagination(rawDataReportWithTwoDefinitions);
 
     // then
     assertBasicResultDataForMultiDefinitionReport(
@@ -429,12 +435,12 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     final ProcessReportDataDto reportDataWithUserTask = createReport(processInstanceWithUserTask);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
         evaluationResultWithUserTask =
-        evaluateRawReportWithDefaultPagination(reportDataWithUserTask);
+            evaluateRawReportWithDefaultPagination(reportDataWithUserTask);
     final ProcessReportDataDto reportDataWithoutUserTask =
         createReport(processInstanceWithoutUserTask);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
         evaluationResultWithoutUserTask =
-        evaluateRawReportWithDefaultPagination(reportDataWithoutUserTask);
+            evaluateRawReportWithDefaultPagination(reportDataWithoutUserTask);
 
     // then
     assertThat(evaluationResultWithUserTask.getResult().getData())
@@ -780,7 +786,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void
-  variablesOfOneProcessInstanceAreAddedToOtherIncludingVariablesFromInstancesNotOnPage() {
+      variablesOfOneProcessInstanceAreAddedToOtherIncludingVariablesFromInstancesNotOnPage() {
     // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("varName1", "value1");
@@ -1416,20 +1422,20 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // then the new vars are added in alphabetical order to the included columns
     assertThat(
-        evaluationResult
-            .getReportDefinition()
-            .getData()
-            .getConfiguration()
-            .getTableColumns()
-            .getExcludedColumns())
+            evaluationResult
+                .getReportDefinition()
+                .getData()
+                .getConfiguration()
+                .getTableColumns()
+                .getExcludedColumns())
         .contains(VARIABLE_PREFIX + "existingExcludedVar");
     assertThat(
-        evaluationResult
-            .getReportDefinition()
-            .getData()
-            .getConfiguration()
-            .getTableColumns()
-            .getIncludedColumns())
+            evaluationResult
+                .getReportDefinition()
+                .getData()
+                .getConfiguration()
+                .getTableColumns()
+                .getIncludedColumns())
         .contains(
             VARIABLE_PREFIX + "aNewVar",
             VARIABLE_PREFIX + "anotherNewVar",
@@ -1466,20 +1472,20 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // then the new vars are added in alphabetical order to the excluded columns
     assertThat(
-        evaluationResult
-            .getReportDefinition()
-            .getData()
-            .getConfiguration()
-            .getTableColumns()
-            .getIncludedColumns())
+            evaluationResult
+                .getReportDefinition()
+                .getData()
+                .getConfiguration()
+                .getTableColumns()
+                .getIncludedColumns())
         .contains(VARIABLE_PREFIX + "existingIncludedVar");
     assertThat(
-        evaluationResult
-            .getReportDefinition()
-            .getData()
-            .getConfiguration()
-            .getTableColumns()
-            .getExcludedColumns())
+            evaluationResult
+                .getReportDefinition()
+                .getData()
+                .getConfiguration()
+                .getTableColumns()
+                .getExcludedColumns())
         .contains(
             VARIABLE_PREFIX + "aNewVar",
             VARIABLE_PREFIX + "anotherNewVar",
@@ -1812,17 +1818,16 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
-  evaluateSavedRawDataProcessReport(
-      final String reportId, final PaginationRequestDto paginationDto) {
+      evaluateSavedRawDataProcessReport(
+          final String reportId, final PaginationRequestDto paginationDto) {
     return embeddedOptimizeExtension
         .getRequestExecutor()
         .buildEvaluateSavedReportRequest(reportId, paginationDto)
-        .execute(new TypeReference<>() {
-        });
+        .execute(new TypeReference<>() {});
   }
 
   private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
-  evaluateRawReportWithDefaultPagination(final ProcessReportDataDto reportData) {
+      evaluateRawReportWithDefaultPagination(final ProcessReportDataDto reportData) {
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
     paginationDto.setOffset(0);
     paginationDto.setLimit(20);
@@ -1926,8 +1931,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
-  createReportAndReturnEvaluationResult(
-      final ProcessInstanceEngineDto processInstanceEngineDto) {
+      createReportAndReturnEvaluationResult(
+          final ProcessInstanceEngineDto processInstanceEngineDto) {
     final ProcessReportDataDto reportData = createReport(processInstanceEngineDto);
     return evaluateRawReportWithDefaultPagination(reportData);
   }

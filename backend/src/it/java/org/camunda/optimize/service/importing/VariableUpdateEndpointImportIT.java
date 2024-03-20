@@ -17,10 +17,7 @@ public class VariableUpdateEndpointImportIT extends AbstractImportEndpointFailur
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {
-    return Stream.of(
-      VARIABLE_UPDATE_ENDPOINT
-    ).flatMap(endpoint -> engineErrors()
-      .map(mockResp -> Arguments.of(endpoint, mockResp)));
+    return Stream.of(VARIABLE_UPDATE_ENDPOINT)
+        .flatMap(endpoint -> engineErrors().map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
-
 }

@@ -5,11 +5,8 @@
  */
 package org.camunda.optimize.service.metadata;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
+import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 public final class PreviousVersion {
   public static final String RAW_PREVIOUS_VERSION = "${project.previousVersion}";

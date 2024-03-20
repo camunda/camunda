@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import jakarta.ws.rs.core.Response;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.mockserver.configuration.ConfigurationProperties;
@@ -12,43 +14,56 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpResponse;
 
-import jakarta.ws.rs.core.Response;
-import java.util.stream.Stream;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MockServerUtil {
 
   public static final String MOCKSERVER_HOST = "localhost";
 
-  public static ClientAndServer createProxyMockServer(String targetHost, int targetPort, int mockServerPort) {
+  public static ClientAndServer createProxyMockServer(
+      String targetHost, int targetPort, int mockServerPort) {
     ConfigurationProperties.logLevel("INFO");
     ConfigurationProperties.maxExpectations(10);
     ConfigurationProperties.maxLogEntries(250);
 
-    final ClientAndServer mockServer = ClientAndServer.startClientAndServer(
-      targetHost,
-      targetPort,
-      mockServerPort
-    );
+    final ClientAndServer mockServer =
+        ClientAndServer.startClientAndServer(targetHost, targetPort, mockServerPort);
     Runtime.getRuntime().addShutdownHook(new Thread(mockServer::stop));
     return mockServer;
   }
 
   public static Stream<ErrorResponseMock> engineMockedErrorResponses() {
     return Stream.of(
-      (request, times, mockServer) -> mockServer.when(request, times)
-        .respond(HttpResponse.response().withStatusCode(Response.Status.NOT_FOUND.getStatusCode())),
-      (request, times, mockServer) -> mockServer.when(request, times)
-        .respond(HttpResponse.response().withStatusCode(Response.Status.FORBIDDEN.getStatusCode())),
-      (request, times, mockServer) -> mockServer.when(request, times)
-        .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode())),
-      (request, times, mockServer) -> mockServer.when(request, times)
-        .respond(HttpResponse.response().withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())),
-      (request, times, mockServer) -> mockServer.when(request, times)
-        .error(HttpError.error().withResponseBytes(new byte[10])),
-      (request, times, mockServer) -> mockServer.when(request, times)
-        .error(HttpError.error().withDropConnection(true).withResponseBytes(new byte[10]))
-    );
+        (request, times, mockServer) ->
+            mockServer
+                .when(request, times)
+                .respond(
+                    HttpResponse.response()
+                        .withStatusCode(Response.Status.NOT_FOUND.getStatusCode())),
+        (request, times, mockServer) ->
+            mockServer
+                .when(request, times)
+                .respond(
+                    HttpResponse.response()
+                        .withStatusCode(Response.Status.FORBIDDEN.getStatusCode())),
+        (request, times, mockServer) ->
+            mockServer
+                .when(request, times)
+                .respond(
+                    HttpResponse.response()
+                        .withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode())),
+        (request, times, mockServer) ->
+            mockServer
+                .when(request, times)
+                .respond(
+                    HttpResponse.response()
+                        .withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())),
+        (request, times, mockServer) ->
+            mockServer
+                .when(request, times)
+                .error(HttpError.error().withResponseBytes(new byte[10])),
+        (request, times, mockServer) ->
+            mockServer
+                .when(request, times)
+                .error(HttpError.error().withDropConnection(true).withResponseBytes(new byte[10])));
   }
-
 }

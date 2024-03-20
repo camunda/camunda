@@ -5,8 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.LocalizationService;
@@ -15,11 +19,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import jakarta.ws.rs.core.Response;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class LocalizationRestServiceIT extends AbstractPlatformIT {
@@ -43,9 +42,9 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
   public void getFallbackLocalizationForInvalidCode() {
     // given
     final String localeCode = "xyz";
-    final JsonNode expectedLocaleJson = getExpectedLocalizationFile(
-      embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
-    );
+    final JsonNode expectedLocaleJson =
+        getExpectedLocalizationFile(
+            embeddedOptimizeExtension.getConfigurationService().getFallbackLocale());
 
     // when
     final JsonNode localeJson = localizationClient.getLocalizationJson(localeCode);
@@ -57,9 +56,9 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getFallbackLocalizationForMissingCode() {
     // given
-    final JsonNode expectedLocaleJson = getExpectedLocalizationFile(
-      embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
-    );
+    final JsonNode expectedLocaleJson =
+        getExpectedLocalizationFile(
+            embeddedOptimizeExtension.getConfigurationService().getFallbackLocale());
 
     // when
     final JsonNode localeJson = localizationClient.getLocalizationJson(null);
@@ -75,20 +74,23 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add(localeCode);
 
     // when
-    final Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizationRequest(localeCode)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetLocalizationRequest(localeCode)
+            .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @ParameterizedTest
   @MethodSource("defaultLocales")
   public void getLocalizedWhatsNewMarkdown(final String localeCode) {
     // given
-    final String expectedLocalizedMarkdown = getExpectedWhatsNewMarkdownContentForLocale(localeCode);
+    final String expectedLocalizedMarkdown =
+        getExpectedWhatsNewMarkdownContentForLocale(localeCode);
 
     // when
     final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
@@ -101,9 +103,9 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
   public void getFallbackWhatsNewMarkdownForInvalidCode() {
     // given
     final String localeCode = "xyz";
-    final String expectedLocalizedMarkdown = getExpectedWhatsNewMarkdownContentForLocale(
-      embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
-    );
+    final String expectedLocalizedMarkdown =
+        getExpectedWhatsNewMarkdownContentForLocale(
+            embeddedOptimizeExtension.getConfigurationService().getFallbackLocale());
 
     // when
     final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
@@ -114,9 +116,9 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
 
   @Test
   public void getFallbackWhatsNewMarkdownForMissingCode() {
-    final String expectedLocalizedMarkdown = getExpectedWhatsNewMarkdownContentForLocale(
-      embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
-    );
+    final String expectedLocalizedMarkdown =
+        getExpectedWhatsNewMarkdownContentForLocale(
+            embeddedOptimizeExtension.getConfigurationService().getFallbackLocale());
 
     // when
     final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(null);
@@ -125,7 +127,6 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
     assertThat(localeMarkdown).isEqualTo(expectedLocalizedMarkdown);
   }
 
-
   @Test
   public void getErrorOnMarkdownFileGone() {
     // given
@@ -133,29 +134,31 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add(localeCode);
 
     // when
-    final Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
+            .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @SneakyThrows
   private JsonNode getExpectedLocalizationFile(final String locale) {
     return OBJECT_MAPPER.readValue(
-      FileReaderUtil.readFile("/" + LocalizationService.LOCALIZATION_PATH + locale + ".json"),
-      JsonNode.class
-    );
+        FileReaderUtil.readFile("/" + LocalizationService.LOCALIZATION_PATH + locale + ".json"),
+        JsonNode.class);
   }
 
   @SneakyThrows
   private String getExpectedWhatsNewMarkdownContentForLocale(final String localeCode) {
-    return FileReaderUtil.readFile("/" + LocalizationService.LOCALIZATION_PATH + "whatsnew_" + localeCode + ".md");
+    return FileReaderUtil.readFile(
+        "/" + LocalizationService.LOCALIZATION_PATH + "whatsnew_" + localeCode + ".md");
   }
 
   private static String[] defaultLocales() {
-    return new String[]{"en", "de"};
+    return new String[] {"en", "de"};
   }
 }

@@ -82,8 +82,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     this(customIndexPrefix, true);
   }
 
-  private DatabaseIntegrationTestExtension(final String customIndexPrefix,
-      final boolean haveToClean) {
+  private DatabaseIntegrationTestExtension(
+      final String customIndexPrefix, final boolean haveToClean) {
     if (IntegrationTestConfigurationUtil.getDatabaseType().equals(DatabaseType.ELASTICSEARCH)) {
       databaseTestService = new ElasticsearchDatabaseTestService(customIndexPrefix, haveToClean);
     } else {
@@ -116,14 +116,14 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   /**
    * This class adds a document entry to the database. Thereby, the entry is added to the optimize
    * index and the given type under the given id.
-   * <p>
-   * The object needs to be a POJO, which is then converted to json. Thus, the entry results in
+   *
+   * <p>The object needs to be a POJO, which is then converted to json. Thus, the entry results in
    * every object member variable name is going to be mapped to the field name in ES and every
    * content of that variable is going to be the content of the field.
    *
    * @param indexName where the entry is added.
-   * @param id        under which the entry is added.
-   * @param entry     a POJO specifying field names and their contents.
+   * @param id under which the entry is added.
+   * @param entry a POJO specifying field names and their contents.
    */
   public void addEntryToDatabase(final String indexName, final String id, final Object entry) {
     databaseTestService.addEntryToDatabase(indexName, id, entry);
@@ -220,17 +220,19 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   }
 
   public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {
-    return getAllDocumentsOfIndexAs(DECISION_DEFINITION_INDEX_NAME,
-        DecisionDefinitionOptimizeDto.class);
+    return getAllDocumentsOfIndexAs(
+        DECISION_DEFINITION_INDEX_NAME, DecisionDefinitionOptimizeDto.class);
   }
 
   public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
     return Stream.concat(
-        getAllDocumentsOfIndexAs(PROCESS_DEFINITION_INDEX_NAME,
-            ProcessDefinitionOptimizeDto.class).stream(),
-        getAllDocumentsOfIndexAs(EVENT_PROCESS_DEFINITION_INDEX_NAME,
-            ProcessDefinitionOptimizeDto.class).stream()
-    ).toList();
+            getAllDocumentsOfIndexAs(
+                PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class)
+                .stream(),
+            getAllDocumentsOfIndexAs(
+                EVENT_PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class)
+                .stream())
+        .toList();
   }
 
   public List<TenantDto> getAllTenants() {
@@ -254,80 +256,74 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
       final String processDefinitionKey) {
     return getAllDocumentsOfIndexAs(
         CamundaActivityEventIndex.constructIndexName(processDefinitionKey),
-        CamundaActivityEventDto.class
-    );
+        CamundaActivityEventDto.class);
   }
 
   public EventProcessDefinitionDto addEventProcessDefinitionDtoToDatabase(final String key) {
     return addEventProcessDefinitionDtoToDatabase(key, "eventProcess-" + key);
   }
 
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToDatabase(final String key,
-      final String name) {
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToDatabase(
+      final String key, final String name) {
     return addEventProcessDefinitionDtoToDatabase(
         key,
         name,
         null,
-        Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
-    );
+        Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER)));
   }
 
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToDatabase(final String key,
-      final IdentityDto identityDto) {
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToDatabase(
+      final String key, final IdentityDto identityDto) {
     return addEventProcessDefinitionDtoToDatabase(
-        key,
-        "eventProcess-" + key,
-        null,
-        Collections.singletonList(identityDto)
-    );
+        key, "eventProcess-" + key, null, Collections.singletonList(identityDto));
   }
 
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToDatabase(final String key,
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToDatabase(
+      final String key,
       final String name,
       final String version,
       final List<IdentityDto> identityDtos) {
-    final List<EventProcessRoleRequestDto<IdentityDto>> roles = identityDtos.stream()
-        .filter(Objects::nonNull)
-        .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
-        .map(EventProcessRoleRequestDto::new)
-        .collect(Collectors.toList());
-    final EsEventProcessMappingDto eventProcessMappingDto = EsEventProcessMappingDto.builder()
-        .id(key)
-        .roles(roles)
-        .build();
-    addEntryToDatabase(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(),
-        eventProcessMappingDto);
+    final List<EventProcessRoleRequestDto<IdentityDto>> roles =
+        identityDtos.stream()
+            .filter(Objects::nonNull)
+            .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
+            .map(EventProcessRoleRequestDto::new)
+            .collect(Collectors.toList());
+    final EsEventProcessMappingDto eventProcessMappingDto =
+        EsEventProcessMappingDto.builder().id(key).roles(roles).build();
+    addEntryToDatabase(
+        EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(), eventProcessMappingDto);
 
     final String versionValue = Optional.ofNullable(version).orElse("1");
-    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
-        .id(key + "-" + version)
-        .key(key)
-        .name(name)
-        .version(versionValue)
-        .bpmn20Xml(key + versionValue)
-        .deleted(false)
-        .onboarded(true)
-        .flowNodeData(new ArrayList<>())
-        .userTaskNames(Collections.emptyMap())
-        .build();
+    final EventProcessDefinitionDto eventProcessDefinitionDto =
+        EventProcessDefinitionDto.eventProcessBuilder()
+            .id(key + "-" + version)
+            .key(key)
+            .name(name)
+            .version(versionValue)
+            .bpmn20Xml(key + versionValue)
+            .deleted(false)
+            .onboarded(true)
+            .flowNodeData(new ArrayList<>())
+            .userTaskNames(Collections.emptyMap())
+            .build();
     addEntryToDatabase(
-        EVENT_PROCESS_DEFINITION_INDEX_NAME, eventProcessDefinitionDto.getId(),
-        eventProcessDefinitionDto
-    );
+        EVENT_PROCESS_DEFINITION_INDEX_NAME,
+        eventProcessDefinitionDto.getId(),
+        eventProcessDefinitionDto);
     return eventProcessDefinitionDto;
   }
 
   @SneakyThrows
-  public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String dbType,
-      final String engine) {
+  public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(
+      final String dbType, final String engine) {
     return databaseTestService.getLastImportTimestampOfTimestampBasedImportIndex(dbType, engine);
   }
 
   @SneakyThrows
   public List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
     return getAllDocumentsOfIndexAs(
-        VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*", VariableUpdateInstanceDto.class
-    );
+        VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*", VariableUpdateInstanceDto.class);
   }
 
   public void deleteAllExternalEventIndices() {
@@ -340,37 +336,39 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   }
 
   @SneakyThrows
-  public void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix,
-      final String recordsToKeep) {
+  public void deleteAllOtherZeebeRecordsWithPrefix(
+      final String zeebeRecordPrefix, final String recordsToKeep) {
     databaseTestService.deleteAllOtherZeebeRecordsWithPrefix(zeebeRecordPrefix, recordsToKeep);
   }
 
   @SneakyThrows
-  public void updateZeebeRecordsWithPositionForPrefix(final String zeebeRecordPrefix,
+  public void updateZeebeRecordsWithPositionForPrefix(
+      final String zeebeRecordPrefix,
       final String indexName,
-      final long position, final String updateScript) {
-    databaseTestService.updateZeebeRecordsWithPositionForPrefix(zeebeRecordPrefix, indexName,
-        position, updateScript);
+      final long position,
+      final String updateScript) {
+    databaseTestService.updateZeebeRecordsWithPositionForPrefix(
+        zeebeRecordPrefix, indexName, position, updateScript);
   }
 
   @SneakyThrows
-  public void updateZeebeProcessRecordsOfBpmnElementTypeForPrefix(final String zeebeRecordPrefix,
+  public void updateZeebeProcessRecordsOfBpmnElementTypeForPrefix(
+      final String zeebeRecordPrefix,
       final BpmnElementType bpmnElementType,
       final String updateScript) {
-    databaseTestService.updateZeebeRecordsOfBpmnElementTypeForPrefix(zeebeRecordPrefix,
-        bpmnElementType, updateScript);
+    databaseTestService.updateZeebeRecordsOfBpmnElementTypeForPrefix(
+        zeebeRecordPrefix, bpmnElementType, updateScript);
   }
 
   @SneakyThrows
-  public void updateZeebeRecordsForPrefix(final String zeebeRecordPrefix, final String indexName,
-      final String updateScript) {
+  public void updateZeebeRecordsForPrefix(
+      final String zeebeRecordPrefix, final String indexName, final String updateScript) {
     databaseTestService.updateZeebeRecordsForPrefix(zeebeRecordPrefix, indexName, updateScript);
   }
 
   @SneakyThrows
-  public void updateUserTaskDurations(final String processInstanceId,
-      final String processDefinitionKey,
-      final long duration) {
+  public void updateUserTaskDurations(
+      final String processInstanceId, final String processDefinitionKey, final long duration) {
     databaseTestService.updateUserTaskDurations(processInstanceId, processDefinitionKey, duration);
   }
 
@@ -387,9 +385,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.countRecordsByQuery(queryContainer, index);
   }
 
-  public <T> List<T> getZeebeExportedRecordsByQuery(final String exportIndex,
-      final TermsQueryContainer query,
-      final Class<T> zeebeRecordClass) {
+  public <T> List<T> getZeebeExportedRecordsByQuery(
+      final String exportIndex, final TermsQueryContainer query, final Class<T> zeebeRecordClass) {
     return databaseTestService.getZeebeExportedRecordsByQuery(exportIndex, query, zeebeRecordClass);
   }
 
@@ -397,8 +394,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.zeebeIndexExists(expectedIndex);
   }
 
-  public void updateEventProcessRoles(final String eventProcessId,
-      final List<IdentityDto> identityDtos) {
+  public void updateEventProcessRoles(
+      final String eventProcessId, final List<IdentityDto> identityDtos) {
     databaseTestService.updateEventProcessRoles(eventProcessId, identityDtos);
   }
 
@@ -430,9 +427,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getDecisionInstancesById(instanceIds);
   }
 
-  public <T> Optional<T> getDatabaseEntryById(final String indexName,
-      final String entryId,
-      final Class<T> type) {
+  public <T> Optional<T> getDatabaseEntryById(
+      final String indexName, final String entryId, final Class<T> type) {
     return databaseTestService.getDatabaseEntryById(indexName, entryId, type);
   }
 
@@ -452,10 +448,12 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getDatabaseVendor();
   }
 
-  public void updateProcessInstanceNestedDocLimit(final String processDefinitionKey,
-      final int nestedDocLimit, final ConfigurationService configurationService) {
-    databaseTestService.updateProcessInstanceNestedDocLimit(processDefinitionKey, nestedDocLimit,
-        configurationService);
+  public void updateProcessInstanceNestedDocLimit(
+      final String processDefinitionKey,
+      final int nestedDocLimit,
+      final ConfigurationService configurationService) {
+    databaseTestService.updateProcessInstanceNestedDocLimit(
+        processDefinitionKey, nestedDocLimit, configurationService);
   }
 
   public int getNestedDocumentLimit(final ConfigurationService configurationService) {

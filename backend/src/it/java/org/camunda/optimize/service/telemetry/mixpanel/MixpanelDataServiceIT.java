@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.telemetry.mixpanel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
 import lombok.NonNull;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
@@ -14,9 +17,6 @@ import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatP
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class MixpanelDataServiceIT extends AbstractPlatformIT {
@@ -35,7 +35,8 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
 
     reportClient.createEmptySingleProcessReport();
     final String collectionId = collectionClient.createNewCollection();
-    final String reportInCollectionId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String reportInCollectionId =
+        reportClient.createEmptySingleProcessReportInCollection(collectionId);
     reportClient.createEmptySingleDecisionReport();
     final String dashboardId = dashboardClient.createEmptyDashboard();
     alertClient.createAlertForReport(reportInCollectionId);
@@ -50,10 +51,11 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
 
     // when
     final MixpanelHeartbeatProperties mixpanelHeartbeatProperties =
-      getMixpanelDataService().getMixpanelHeartbeatProperties();
+        getMixpanelDataService().getMixpanelHeartbeatProperties();
 
     // then
-    assertThat(mixpanelHeartbeatProperties.getTime()).isLessThanOrEqualTo(System.currentTimeMillis());
+    assertThat(mixpanelHeartbeatProperties.getTime())
+        .isLessThanOrEqualTo(System.currentTimeMillis());
     assertThat(mixpanelHeartbeatProperties.getDistinctId()).isEmpty();
     assertThat(mixpanelHeartbeatProperties.getInsertId()).isNotEmpty();
     assertThat(mixpanelHeartbeatProperties.getProduct()).isEqualTo("optimize");
@@ -81,10 +83,11 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
     // when
     final String entityId = "id";
     final MixpanelEntityEventProperties mixpanelEntityEventProperties =
-      getMixpanelDataService().getMixpanelEntityEventProperties(entityId);
+        getMixpanelDataService().getMixpanelEntityEventProperties(entityId);
 
     // then
-    assertThat(mixpanelEntityEventProperties.getTime()).isLessThanOrEqualTo(System.currentTimeMillis());
+    assertThat(mixpanelEntityEventProperties.getTime())
+        .isLessThanOrEqualTo(System.currentTimeMillis());
     assertThat(mixpanelEntityEventProperties.getDistinctId()).isEmpty();
     assertThat(mixpanelEntityEventProperties.getInsertId()).isNotEmpty();
     assertThat(mixpanelEntityEventProperties.getProduct()).isEqualTo("optimize");
@@ -102,5 +105,4 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
   private MixpanelDataService getMixpanelDataService() {
     return embeddedOptimizeExtension.getBean(MixpanelDataService.class);
   }
-
 }

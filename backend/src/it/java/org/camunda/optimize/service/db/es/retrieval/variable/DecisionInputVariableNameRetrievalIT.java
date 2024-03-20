@@ -5,22 +5,21 @@
  */
 package org.camunda.optimize.service.db.es.retrieval.variable;
 
+import static java.util.Collections.nCopies;
+import static org.camunda.optimize.test.util.decision.DecisionTypeRef.STRING;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static java.util.Collections.nCopies;
-import static org.camunda.optimize.test.util.decision.DecisionTypeRef.STRING;
-
 public class DecisionInputVariableNameRetrievalIT extends DecisionVariableNameRetrievalIT {
   @Override
-  protected DecisionDefinitionEngineDto deployDecisionsWithVarNames(final List<String> varNames,
-                                                                    List<DecisionTypeRef> types) {
+  protected DecisionDefinitionEngineDto deployDecisionsWithVarNames(
+      final List<String> varNames, List<DecisionTypeRef> types) {
     if (varNames.size() > types.size()) {
       types = nCopies(varNames.size(), STRING);
     }
@@ -31,28 +30,34 @@ public class DecisionInputVariableNameRetrievalIT extends DecisionVariableNameRe
       decisionGenerator = decisionGenerator.addInput(varNames.get(i), varId, varId, types.get(i));
     }
     decisionGenerator = decisionGenerator.addOutput("output", STRING);
-    return engineIntegrationExtension.deployDecisionDefinition(decisionGenerator.buildDecision().build());
+    return engineIntegrationExtension.deployDecisionDefinition(
+        decisionGenerator.buildDecision().build());
   }
 
   @Override
-  protected List<DecisionVariableNameResponseDto> getVariableNames(final DecisionVariableNameRequestDto variableRequestDto) {
+  protected List<DecisionVariableNameResponseDto> getVariableNames(
+      final DecisionVariableNameRequestDto variableRequestDto) {
     return variablesClient.getDecisionInputVariableNames(variableRequestDto);
   }
 
   @Override
-  protected List<DecisionVariableNameResponseDto> getVariableNames(final List<DecisionDefinitionEngineDto> decisionDefinitions) {
+  protected List<DecisionVariableNameResponseDto> getVariableNames(
+      final List<DecisionDefinitionEngineDto> decisionDefinitions) {
     return variablesClient.getDecisionInputVariableNames(
-      decisionDefinitions.stream()
-        .map(definition -> new DecisionVariableNameRequestDto(
-          definition.getKey(), definition.getVersionAsString(), definition.getTenantId().orElse(null)
-        ))
-        .collect(Collectors.toList())
-    );
+        decisionDefinitions.stream()
+            .map(
+                definition ->
+                    new DecisionVariableNameRequestDto(
+                        definition.getKey(),
+                        definition.getVersionAsString(),
+                        definition.getTenantId().orElse(null)))
+            .collect(Collectors.toList()));
   }
 
   @Override
-  protected List<DecisionVariableNameResponseDto> getVariableNames(final String key, final List<String> versions) {
-    return variablesClient.getDecisionInputVariableNames(new DecisionVariableNameRequestDto(key, versions));
+  protected List<DecisionVariableNameResponseDto> getVariableNames(
+      final String key, final List<String> versions) {
+    return variablesClient.getDecisionInputVariableNames(
+        new DecisionVariableNameRequestDto(key, versions));
   }
-
 }

@@ -5,10 +5,21 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+
 import com.google.common.collect.ImmutableList;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -24,18 +35,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-
-import java.time.OffsetDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 
 @Tag(OPENSEARCH_PASSING)
 public class CacheRequestIT extends AbstractPlatformIT {
@@ -64,7 +63,8 @@ public class CacheRequestIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
-  public void getDefinitionXmlRequest_cacheControlHeadersAreNotSetOnNon2xxStatusResponse(DefinitionType type) {
+  public void getDefinitionXmlRequest_cacheControlHeadersAreNotSetOnNon2xxStatusResponse(
+      DefinitionType type) {
     // given
     String key = "test", version = "1";
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -79,7 +79,8 @@ public class CacheRequestIT extends AbstractPlatformIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     assertThat(headers).isNotNull();
-    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL))
+        .contains(CACHE_CONTROL_NO_STORE);
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
@@ -98,13 +99,15 @@ public class CacheRequestIT extends AbstractPlatformIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(headers).isNotNull();
-    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL))
+        .contains(CACHE_CONTROL_NO_STORE);
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
-  public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForLatestVersion(DefinitionType type) {
+  public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForLatestVersion(
+      DefinitionType type) {
     // given
     String key = "test", version = "1";
     createAndSaveDefinitionToElasticsearch(key, version, type, false);
@@ -117,13 +120,15 @@ public class CacheRequestIT extends AbstractPlatformIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(headers).isNotNull();
-    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL))
+        .contains(CACHE_CONTROL_NO_STORE);
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
-  public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForAllVersion(DefinitionType type) {
+  public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForAllVersion(
+      DefinitionType type) {
     // given
     String key = "test", version = "1";
     createAndSaveDefinitionToElasticsearch(key, version, type, false);
@@ -136,14 +141,16 @@ public class CacheRequestIT extends AbstractPlatformIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(headers).isNotNull();
-    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL))
+        .contains(CACHE_CONTROL_NO_STORE);
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
-  private void createAndSaveDefinitionToElasticsearch(final String key,
-                                                      final String version,
-                                                      final DefinitionType type,
-                                                      final boolean isEventBased) {
+  private void createAndSaveDefinitionToElasticsearch(
+      final String key,
+      final String version,
+      final DefinitionType type,
+      final boolean isEventBased) {
     switch (type) {
       case DECISION:
         DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto();
@@ -153,51 +160,51 @@ public class CacheRequestIT extends AbstractPlatformIT {
         decisionDefinitionDto.setVersion(version);
         decisionDefinitionDto.setId("id-" + key + "-version-" + version);
         databaseIntegrationTestExtension.addEntryToDatabase(
-          DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
-        );
+            DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto);
       case PROCESS:
         if (isEventBased) {
           databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
-            key, key, version, ImmutableList.of(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
-          );
+              key,
+              key,
+              version,
+              ImmutableList.of(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER)));
         } else {
-          ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = new ProcessDefinitionOptimizeDto();
+          ProcessDefinitionOptimizeDto processDefinitionOptimizeDto =
+              new ProcessDefinitionOptimizeDto();
           processDefinitionOptimizeDto.setBpmn20Xml("ProcessModelXml");
           processDefinitionOptimizeDto.setKey(key);
           processDefinitionOptimizeDto.setVersion(version);
           processDefinitionOptimizeDto.setDataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
           processDefinitionOptimizeDto.setId("id-" + key + "-version-" + version);
           databaseIntegrationTestExtension.addEntryToDatabase(
-            PROCESS_DEFINITION_INDEX_NAME, processDefinitionOptimizeDto.getId(), processDefinitionOptimizeDto
-          );
+              PROCESS_DEFINITION_INDEX_NAME,
+              processDefinitionOptimizeDto.getId(),
+              processDefinitionOptimizeDto);
         }
     }
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private Response executeDefinitionRequest(final String key, final String version, final DefinitionType type) {
+  private Response executeDefinitionRequest(
+      final String key, final String version, final DefinitionType type) {
     return executeDefinitionRequest(key, version, type, null, null);
   }
 
-  private Response executeDefinitionRequest(final String key,
-                                            final String version,
-                                            final DefinitionType type,
-                                            final String user,
-                                            final String password) {
-    final OptimizeRequestExecutor requestExecutor = embeddedOptimizeExtension
-      .getRequestExecutor();
+  private Response executeDefinitionRequest(
+      final String key,
+      final String version,
+      final DefinitionType type,
+      final String user,
+      final String password) {
+    final OptimizeRequestExecutor requestExecutor = embeddedOptimizeExtension.getRequestExecutor();
     if (user != null) {
       requestExecutor.withUserAuthentication(user, password);
     }
     switch (type) {
       case DECISION:
-        return requestExecutor
-          .buildGetDecisionDefinitionXmlRequest(key, version)
-          .execute();
+        return requestExecutor.buildGetDecisionDefinitionXmlRequest(key, version).execute();
       case PROCESS:
-        return requestExecutor
-          .buildGetProcessDefinitionXmlRequest(key, version)
-          .execute();
+        return requestExecutor.buildGetProcessDefinitionXmlRequest(key, version).execute();
     }
     throw new OptimizeRuntimeException("Can only request valid definition types");
   }

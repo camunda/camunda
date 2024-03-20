@@ -5,8 +5,15 @@
  */
 package org.camunda.optimize.service.identity;
 
+import static jakarta.ws.rs.HttpMethod.GET;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
+import static org.mockserver.model.HttpRequest.request;
+
 import com.google.common.collect.ImmutableList;
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -30,14 +37,6 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.util.List;
-
-import static jakarta.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
-import static org.mockserver.model.HttpRequest.request;
-
 public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
   private static final String ASSIGNEE_ID_JOHN = "john";
   private static final String JOHN_FIRST_NAME = "The";
@@ -55,18 +54,20 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
   @RegisterExtension
   protected final LogCapturer assigneeCandidateCacheServiceLogger =
-    LogCapturer.create().captureForType(PlatformUserTaskIdentityCache.class);
+      LogCapturer.create().captureForType(PlatformUserTaskIdentityCache.class);
 
   @RegisterExtension
   protected final LogCapturer identityLinkLogImportJobLog =
-    LogCapturer.create().captureForType(IdentityLinkLogImportJob.class);
+      LogCapturer.create().captureForType(IdentityLinkLogImportJob.class);
 
   @BeforeEach
   public void beforeEach() {
     engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
     engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
-    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
-    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    engineIntegrationExtension.createGroup(
+        CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
+    engineIntegrationExtension.createGroup(
+        CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
     getUserTaskIdentityCacheService().stopScheduledSync();
     getUserTaskIdentityCacheService().resetCache();
   }
@@ -101,10 +102,11 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserTaskIdentityCacheConfiguration().setMaxEntryLimit(1L);
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN);
 
-    final PlatformUserTaskIdentityCache assigneeIdentityCacheService = getUserTaskIdentityCacheService();
+    final PlatformUserTaskIdentityCache assigneeIdentityCacheService =
+        getUserTaskIdentityCacheService();
     assertThatThrownBy(assigneeIdentityCacheService::synchronizeIdentities)
-      // then
-      .isInstanceOf(MaxEntryLimitHitException.class);
+        // then
+        .isInstanceOf(MaxEntryLimitHitException.class);
     assertThat(assigneeIdentityCacheService.getUserIdentityById(ASSIGNEE_ID_JOHN)).isPresent();
     assertThat(assigneeIdentityCacheService.getUserIdentityById(ASSIGNEE_ID_JEAN)).isNotPresent();
   }
@@ -122,17 +124,18 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     identityLinkLogImportJobLog.assertContains(
-      "Failed forwarding identities to assignee & candidate group service"
-    );
+        "Failed forwarding identities to assignee & candidate group service");
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isPresent();
-    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JEAN)).isNotPresent();
+    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JEAN))
+        .isNotPresent();
 
-    final List<ProcessInstanceDto> processInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> processInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(processInstances)
-      .hasSize(2)
-      .flatExtracting(ProcessInstanceDto::getUserTasks)
-      .extracting(FlowNodeInstanceDto::getAssignee)
-      .containsExactlyInAnyOrder(ASSIGNEE_ID_JOHN, ASSIGNEE_ID_JEAN);
+        .hasSize(2)
+        .flatExtracting(ProcessInstanceDto::getUserTasks)
+        .extracting(FlowNodeInstanceDto::getAssignee)
+        .containsExactlyInAnyOrder(ASSIGNEE_ID_JOHN, ASSIGNEE_ID_JEAN);
   }
 
   @Test
@@ -147,10 +150,10 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
-      .isPresent()
-      .get()
-      .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
-      .containsExactly(JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN);
+        .isPresent()
+        .get()
+        .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
+        .containsExactly(JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN);
   }
 
   @Test
@@ -166,18 +169,18 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
-      .isPresent()
-      .get()
-      .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
-      .containsExactly(null, null, null);
+        .isPresent()
+        .get()
+        .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
+        .containsExactly(null, null, null);
   }
 
   @Test
   public void twoAssigneesFromSameProcessInstanceArePresentAfterSync() {
     // given
-    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
-      BpmnModels.getDoubleUserTaskDiagramWithAssignees(ASSIGNEE_ID_JOHN, ASSIGNEE_ID_JEAN)
-    );
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+        engineIntegrationExtension.deployAndStartProcess(
+            BpmnModels.getDoubleUserTaskDiagramWithAssignees(ASSIGNEE_ID_JOHN, ASSIGNEE_ID_JEAN));
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceEngineDto.getId());
     importAllEngineEntitiesFromScratch();
 
@@ -185,11 +188,12 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserTaskIdentityCacheService().synchronizeIdentities();
 
     // then
-    final IdentitySearchResultResponseDto allEntries = getUserTaskIdentityCacheService().searchIdentities("", 10);
+    final IdentitySearchResultResponseDto allEntries =
+        getUserTaskIdentityCacheService().searchIdentities("", 10);
     assertThat(allEntries.getResult())
-      .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
-      .extracting(IdentityDto::getId)
-      .containsExactlyInAnyOrder(ASSIGNEE_ID_JOHN, ASSIGNEE_ID_JEAN);
+        .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
+        .extracting(IdentityDto::getId)
+        .containsExactlyInAnyOrder(ASSIGNEE_ID_JOHN, ASSIGNEE_ID_JEAN);
   }
 
   @Test
@@ -201,7 +205,8 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserTaskIdentityCacheService().synchronizeIdentities();
 
     // then
-    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isNotPresent();
+    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
+        .isNotPresent();
   }
 
   @Test
@@ -215,10 +220,10 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(userId))
-      .isPresent()
-      .get()
-      .extracting(UserDto::getId, UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
-      .containsExactly(userId, null, null, null);
+        .isPresent()
+        .get()
+        .extracting(UserDto::getId, UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
+        .containsExactly(userId, null, null, null);
   }
 
   @Test
@@ -232,10 +237,10 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
-      .isPresent()
-      .get()
-      .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
-      .containsExactly(JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN);
+        .isPresent()
+        .get()
+        .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
+        .containsExactly(JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN);
   }
 
   @Test
@@ -250,10 +255,10 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
-      .isPresent()
-      .get()
-      .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
-      .containsExactly(null, null, null);
+        .isPresent()
+        .get()
+        .extracting(UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
+        .containsExactly(null, null, null);
   }
 
   @Test
@@ -263,7 +268,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // when
     final ClientAndServer firstEngineMockServer =
-      useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
+        useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
     final HttpRequest getUserRequest = request().withPath(".*/user/.*").withMethod(GET);
 
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
@@ -278,7 +283,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     // given
     getUserTaskIdentityCacheService().resetCache();
     final ClientAndServer firstEngineMockServer =
-      useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
+        useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
 
     final HttpRequest getUserRequest = request().withPath(".*/user/.*").withMethod(GET);
     firstEngineMockServer.when(getUserRequest).error(HttpError.error().withDropConnection(true));
@@ -287,11 +292,11 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
 
     // then
-    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isNotPresent();
+    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
+        .isNotPresent();
     firstEngineMockServer.verify(getUserRequest);
     assigneeCandidateCacheServiceLogger.assertContains(
-      "Failed to resolve and add platform assignee/candidateGroup identities from engine camunda-bpm"
-    );
+        "Failed to resolve and add platform assignee/candidateGroup identities from engine camunda-bpm");
   }
 
   @Test
@@ -303,11 +308,12 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserTaskIdentityCacheService().synchronizeIdentities();
 
     // then
-    assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
-      .isPresent()
-      .get()
-      .extracting(GroupDto::getName)
-      .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    assertThat(
+            getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isPresent()
+        .get()
+        .extracting(GroupDto::getName)
+        .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
   }
 
   @Test
@@ -321,29 +327,30 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(groupId))
-      .isPresent()
-      .get()
-      .extracting(GroupDto::getId, GroupDto::getName)
-      .containsExactly(groupId, groupId);
+        .isPresent()
+        .get()
+        .extracting(GroupDto::getId, GroupDto::getName)
+        .containsExactly(groupId, groupId);
   }
 
   @Test
   public void twoCandidateGroupsFromSameProcessInstanceArePresentAfterSync() {
     // given
-    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithMultipleCandidateGroups(
-      ImmutableList.of(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_ID_CREW_MEMBERS)
-    ));
+    engineIntegrationExtension.deployAndStartProcess(
+        BpmnModels.getUserTaskDiagramWithMultipleCandidateGroups(
+            ImmutableList.of(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_ID_CREW_MEMBERS)));
     importAllEngineEntitiesFromScratch();
 
     // when
     getUserTaskIdentityCacheService().synchronizeIdentities();
 
     // then
-    final IdentitySearchResultResponseDto allEntries = getUserTaskIdentityCacheService().searchIdentities("", 10);
+    final IdentitySearchResultResponseDto allEntries =
+        getUserTaskIdentityCacheService().searchIdentities("", 10);
     assertThat(allEntries.getResult())
-      .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
-      .extracting(IdentityDto::getId)
-      .containsExactlyInAnyOrder(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_ID_CREW_MEMBERS);
+        .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
+        .extracting(IdentityDto::getId)
+        .containsExactlyInAnyOrder(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_ID_CREW_MEMBERS);
   }
 
   @Test
@@ -355,7 +362,9 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserTaskIdentityCacheService().synchronizeIdentities();
 
     // then
-    assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS)).isNotPresent();
+    assertThat(
+            getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isNotPresent();
   }
 
   @Test
@@ -367,11 +376,12 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_CREW_MEMBERS);
 
     // then
-    assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
-      .isPresent()
-      .get()
-      .extracting(GroupDto::getName)
-      .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    assertThat(
+            getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isPresent()
+        .get()
+        .extracting(GroupDto::getName)
+        .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
   }
 
   @Test
@@ -381,14 +391,16 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // when
     final ClientAndServer firstEngineMockServer =
-      useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
+        useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
     final HttpRequest getGroupRequest = request().withPath(".*/group/.*").withMethod(GET);
 
     startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_CREW_MEMBERS);
 
     // then
     firstEngineMockServer.verify(getGroupRequest, VerificationTimes.exactly(0));
-    assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS)).isPresent();
+    assertThat(
+            getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isPresent();
   }
 
   @Test
@@ -396,7 +408,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     // given
     getUserTaskIdentityCacheService().resetCache();
     final ClientAndServer firstEngineMockServer =
-      useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
+        useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
 
     final HttpRequest getGroupRequest = request().withPath(".*/group/.*").withMethod(GET);
     firstEngineMockServer.when(getGroupRequest).error(HttpError.error().withDropConnection(true));
@@ -405,11 +417,11 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_CREW_MEMBERS);
 
     // then
-    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isNotPresent();
+    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
+        .isNotPresent();
     firstEngineMockServer.verify(getGroupRequest);
     assigneeCandidateCacheServiceLogger.assertContains(
-      "Failed to resolve and add platform assignee/candidateGroup identities from engine camunda-bpm"
-    );
+        "Failed to resolve and add platform assignee/candidateGroup identities from engine camunda-bpm");
   }
 
   @Test
@@ -424,15 +436,16 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
-      .isPresent()
-      .get()
-      .extracting(UserDto::getFirstName)
-      .isEqualTo(JOHN_FIRST_NAME);
-    assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
-      .isPresent()
-      .get()
-      .extracting(GroupDto::getName)
-      .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+        .isPresent()
+        .get()
+        .extracting(UserDto::getFirstName)
+        .isEqualTo(JOHN_FIRST_NAME);
+    assertThat(
+            getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isPresent()
+        .get()
+        .extracting(GroupDto::getName)
+        .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
   }
 
   @Test
@@ -444,15 +457,16 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN))
-      .isPresent()
-      .get()
-      .extracting(UserDto::getFirstName)
-      .isEqualTo(JOHN_FIRST_NAME);
-    assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
-      .isPresent()
-      .get()
-      .extracting(GroupDto::getName)
-      .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+        .isPresent()
+        .get()
+        .extracting(UserDto::getFirstName)
+        .isEqualTo(JOHN_FIRST_NAME);
+    assertThat(
+            getUserTaskIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isPresent()
+        .get()
+        .extracting(GroupDto::getName)
+        .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
   }
 
   private PlatformUserTaskIdentityCache getUserTaskIdentityCacheService() {
@@ -460,16 +474,20 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
   }
 
   private UserTaskIdentityCacheConfiguration getUserTaskIdentityCacheConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService().getUserTaskIdentityCacheConfiguration();
+    return embeddedOptimizeExtension
+        .getConfigurationService()
+        .getUserTaskIdentityCacheConfiguration();
   }
 
   private void startSimpleUserTaskProcessWithAssigneeAndImport(final String assignee) {
-    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithAssignee(assignee));
+    engineIntegrationExtension.deployAndStartProcess(
+        BpmnModels.getUserTaskDiagramWithAssignee(assignee));
     importAllEngineEntitiesFromScratch();
   }
 
   private void startSimpleUserTaskProcessWithCandidateGroupAndImport(final String candidateGroup) {
-    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithCandidateGroup(candidateGroup));
+    engineIntegrationExtension.deployAndStartProcess(
+        BpmnModels.getUserTaskDiagramWithCandidateGroup(candidateGroup));
     importAllEngineEntitiesFromScratch();
   }
 }

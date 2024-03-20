@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
@@ -15,21 +19,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
 
   @BeforeEach
   @AfterEach
   public void beforeAndAfter() {
     cleanUpEventIndices();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getProcessDataCleanupConfiguration()
-      .setEnabled(true);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCleanupServiceConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setEnabled(true);
   }
 
   @Test
@@ -40,18 +40,21 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     importAllEngineEntitiesFromScratch();
 
-    embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEventIndexRolloverConfiguration()
+        .setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
 
     final ProcessInstanceEngineDto instanceToGetCleanedUpImportedAfterRollover =
-      startNewInstanceWithEndTimeLessThanTtl(instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTimeLessThanTtl(instancesToGetCleanedUp.get(0));
     instancesToGetCleanedUp.add(instanceToGetCleanedUpImportedAfterRollover);
 
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromLastIndex();
 
@@ -63,15 +66,15 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getCamundaActivityEvents())
-      .extracting(CamundaActivityEventDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .extracting(CamundaActivityEventDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getAllCamundaEventBusinessKeys())
-      .extracting(BusinessKeyDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .extracting(BusinessKeyDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
-      .isNotEmpty()
-      .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .isNotEmpty()
+        .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
   }
 
   @Test
@@ -82,18 +85,21 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     importAllEngineEntitiesFromScratch();
 
-    embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEventIndexRolloverConfiguration()
+        .setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
 
     final ProcessInstanceEngineDto instanceToGetCleanedUpImportedAfterRollover =
-      startNewInstanceWithEndTimeLessThanTtl(instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTimeLessThanTtl(instancesToGetCleanedUp.get(0));
     instancesToGetCleanedUp.add(instanceToGetCleanedUpImportedAfterRollover);
 
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromLastIndex();
 
@@ -105,9 +111,8 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
-      .isNotEmpty()
-      .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .isNotEmpty()
+        .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
   }
-
 }

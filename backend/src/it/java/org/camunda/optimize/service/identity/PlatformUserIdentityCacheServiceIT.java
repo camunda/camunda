@@ -5,6 +5,26 @@
  */
 package org.camunda.optimize.service.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
+import static org.mockserver.model.HttpRequest.request;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -22,27 +42,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
-
-import java.time.OffsetDateTime;
-import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
-import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
-import static org.mockserver.model.HttpRequest.request;
 
 @Tag(OPENSEARCH_PASSING)
 public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
@@ -99,7 +98,7 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
       // then
       final PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();
       assertThatThrownBy(userIdentityCacheService::synchronizeIdentities)
-        .isInstanceOf(MaxEntryLimitHitException.class);
+          .isInstanceOf(MaxEntryLimitHitException.class);
       assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
       assertThat(getUserIdentityCacheService().getUserIdentityById(userIdJohn)).isNotPresent();
     } finally {
@@ -116,9 +115,11 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserIdentityCacheService().synchronizeIdentities();
 
     // then
-    final Optional<UserDto> userIdentityById = getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    final Optional<UserDto> userIdentityById =
+        getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById).isPresent();
-    assertThat(userIdentityById.get().getName()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(userIdentityById.get().getName())
+        .isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
     assertThat(userIdentityById.get().getFirstName()).isEqualTo(DEFAULT_FIRSTNAME);
     assertThat(userIdentityById.get().getLastName()).isEqualTo(DEFAULT_LASTNAME);
     assertThat(userIdentityById.get().getEmail()).contains(DEFAULT_EMAIL_DOMAIN);
@@ -134,7 +135,8 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserIdentityCacheService().synchronizeIdentities();
 
     // then
-    final Optional<UserDto> userIdentityById = getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    final Optional<UserDto> userIdentityById =
+        getUserIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById).isPresent();
     assertThat(userIdentityById.get().getName()).isEqualTo(KERMIT_USER);
     assertThat(userIdentityById.get().getFirstName()).isNull();
@@ -165,7 +167,8 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     getUserIdentityCacheService().synchronizeIdentities();
 
     // then
-    final Optional<GroupDto> groupIdentityById = getUserIdentityCacheService().getGroupIdentityById(GROUP_ID);
+    final Optional<GroupDto> groupIdentityById =
+        getUserIdentityCacheService().getGroupIdentityById(GROUP_ID);
     assertThat(groupIdentityById).isPresent();
     assertThat(groupIdentityById.get().getName()).isEqualTo(KERMIT_GROUP_NAME);
     assertThat(groupIdentityById.get().getMemberCount()).isEqualTo(1L);
@@ -221,8 +224,7 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     final String revokedGroupId = "revokedGroup";
     authorizationClient.createGroupAndAddUser(revokedGroupId, KERMIT_USER);
     authorizationClient.revokeSingleResourceAuthorizationsForGroup(
-      revokedGroupId, OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
-    );
+        revokedGroupId, OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION);
 
     // when
     getUserIdentityCacheService().synchronizeIdentities();
@@ -238,8 +240,7 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.revokeSingleResourceAuthorizationsForKermit(
-      OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
-    );
+        OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION);
 
     // when
     getUserIdentityCacheService().synchronizeIdentities();
@@ -267,8 +268,7 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.revokeSingleResourceAuthorizationsForKermit(
-      OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
-    );
+        OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION);
 
     // when
     getUserIdentityCacheService().synchronizeIdentities();
@@ -298,8 +298,7 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
-      OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
-    );
+        OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION);
 
     // when
     getUserIdentityCacheService().synchronizeIdentities();
@@ -315,8 +314,7 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
-      OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
-    );
+        OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION);
 
     // when
     getUserIdentityCacheService().synchronizeIdentities();
@@ -336,14 +334,15 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
     configurationService.getUserIdentityCacheConfiguration().setCronTrigger("* 0 * * 0");
     embeddedOptimizeExtension.reloadConfiguration();
 
-    final HttpRequest engineAuthorizationsRequest = request()
-      .withPath(engineIntegrationExtension.getEnginePath() + AUTHORIZATION_ENDPOINT);
+    final HttpRequest engineAuthorizationsRequest =
+        request().withPath(engineIntegrationExtension.getEnginePath() + AUTHORIZATION_ENDPOINT);
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
     mockedResp.mock(engineAuthorizationsRequest, Times.unlimited(), engineMockServer);
 
-    final ScheduledExecutorService identitySyncThread = Executors.newSingleThreadScheduledExecutor();
+    final ScheduledExecutorService identitySyncThread =
+        Executors.newSingleThreadScheduledExecutor();
 
     // when
     try {
@@ -374,5 +373,4 @@ public class PlatformUserIdentityCacheServiceIT extends AbstractPlatformIT {
   private static Stream<ErrorResponseMock> engineErrors() {
     return MockServerUtil.engineMockedErrorResponses();
   }
-
 }

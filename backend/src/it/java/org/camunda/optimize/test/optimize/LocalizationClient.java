@@ -6,11 +6,10 @@
 package org.camunda.optimize.test.optimize;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.OptimizeRequestExecutor;
-
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.OptimizeRequestExecutor;
 
 @AllArgsConstructor
 public class LocalizationClient {
@@ -18,14 +17,14 @@ public class LocalizationClient {
 
   public JsonNode getLocalizationJson(String localeCode) {
     return getRequestExecutor()
-      .buildGetLocalizationRequest(localeCode)
-      .execute(JsonNode.class, Response.Status.OK.getStatusCode());
+        .buildGetLocalizationRequest(localeCode)
+        .execute(JsonNode.class, Response.Status.OK.getStatusCode());
   }
 
   public String getLocalizedWhatsNewMarkdown(String localeCode) {
     return getRequestExecutor()
-      .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+        .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
+        .execute(String.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

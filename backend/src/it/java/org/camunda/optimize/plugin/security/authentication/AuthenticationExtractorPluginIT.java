@@ -5,8 +5,22 @@
  */
 package org.camunda.optimize.plugin.security.authentication;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
@@ -16,21 +30,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 @Tag(OPENSEARCH_PASSING)
 public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
@@ -55,11 +54,13 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .addSingleCookie(newCookie.getName(), newCookie.getValue())
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetAllEntitiesRequest()
+            .addSingleCookie(newCookie.getName(), newCookie.getValue())
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -73,17 +74,22 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .addSingleHeader("user", KERMIT_USER)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetAllEntitiesRequest()
+            .addSingleHeader("user", KERMIT_USER)
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(response.getCookies()).hasEntrySatisfying(OPTIMIZE_AUTHORIZATION, authCookie -> {
-      assertThat(authCookie).isNotNull();
-    });
+    assertThat(response.getCookies())
+        .hasEntrySatisfying(
+            OPTIMIZE_AUTHORIZATION,
+            authCookie -> {
+              assertThat(authCookie).isNotNull();
+            });
   }
 
   @Test
@@ -93,27 +99,32 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .addSingleHeader("user", "demo")
-      .addSingleCookie(OPTIMIZE_AUTHORIZATION, "invalid")
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetAllEntitiesRequest()
+            .addSingleHeader("user", "demo")
+            .addSingleCookie(OPTIMIZE_AUTHORIZATION, "invalid")
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(response.getCookies()).hasEntrySatisfying(OPTIMIZE_AUTHORIZATION, authCookie -> {
-      assertThat(authCookie).isNotNull();
-    });
+    assertThat(response.getCookies())
+        .hasEntrySatisfying(
+            OPTIMIZE_AUTHORIZATION,
+            authCookie -> {
+              assertThat(authCookie).isNotNull();
+            });
   }
 
   @Test
   public void withoutBasePackageThereIsNotCookieProvided() {
     // when simulate first user request with wrong header
-    Response initialOptimizeResponse = embeddedOptimizeExtension
-      .rootTarget("/").request().header("user", KERMIT_USER).get();
+    Response initialOptimizeResponse =
+        embeddedOptimizeExtension.rootTarget("/").request().header("user", KERMIT_USER).get();
     NewCookie cookieThatWillBeSetInTheBrowser =
-      initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+        initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
 
     // then
     assertThat(cookieThatWillBeSetInTheBrowser).isNull();
@@ -126,10 +137,10 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     // when simulate first user request with wrong header
-    Response initialOptimizeResponse = embeddedOptimizeExtension
-      .rootTarget("/").request().header("foo", "bar").get();
+    Response initialOptimizeResponse =
+        embeddedOptimizeExtension.rootTarget("/").request().header("foo", "bar").get();
     NewCookie cookieThatWillBeSetInTheBrowser =
-      initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+        initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
 
     // then
     assertThat(cookieThatWillBeSetInTheBrowser).isNull();
@@ -143,11 +154,13 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildLogOutRequest()
-      .addSingleCookie(newCookie.getName(), newCookie.getValue())
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .addSingleCookie(newCookie.getName(), newCookie.getValue())
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -163,10 +176,12 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .withGivenAuthToken("wrong token")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetAllEntitiesRequest()
+            .withGivenAuthToken("wrong token")
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -182,11 +197,14 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when I fetch the process definitions
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessDefinitionsRequest()
-      .addSingleCookie(newCookie.getName(), newCookie.getValue())
-      .withoutAuthentication()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessDefinitionOptimizeDto> definitions =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .addSingleCookie(newCookie.getName(), newCookie.getValue())
+            .withoutAuthentication()
+            .executeAndReturnList(
+                ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then there are not definitions since kermit is not authorized to see definitions
     assertThat(definitions.isEmpty()).isTrue();
@@ -197,11 +215,14 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // then kermit should have access to the authorized definition
-    definitions = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessDefinitionsRequest()
-      .addSingleCookie(newCookie.getName(), newCookie.getValue())
-      .withoutAuthentication()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    definitions =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .addSingleCookie(newCookie.getName(), newCookie.getValue())
+            .withoutAuthentication()
+            .executeAndReturnList(
+                ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions).hasSize(1);
   }
@@ -211,18 +232,19 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     // given
     final String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
-    final int expiryTime = embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .getTokenLifeTimeMinutes();
+    final int expiryTime =
+        embeddedOptimizeExtension
+            .getConfigurationService()
+            .getAuthConfiguration()
+            .getTokenLifeTimeMinutes();
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
-    final Duration durationUntilExpiry = Duration.between(
-      now.toInstant().truncatedTo(ChronoUnit.SECONDS),
-      newCookie.getExpiry().toInstant()
-    );
+    final Duration durationUntilExpiry =
+        Duration.between(
+            now.toInstant().truncatedTo(ChronoUnit.SECONDS), newCookie.getExpiry().toInstant());
 
     // then
     assertThat(durationUntilExpiry.toMinutes()).isEqualTo(expiryTime);
@@ -253,7 +275,8 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
   }
 
   private void deploySimpleProcessDefinition() {
-    BpmnModelInstance modelInstance = getSimpleBpmnDiagram(AuthenticationExtractorPluginIT.TEST_DEFINITION);
+    BpmnModelInstance modelInstance =
+        getSimpleBpmnDiagram(AuthenticationExtractorPluginIT.TEST_DEFINITION);
     engineIntegrationExtension.deployProcessAndGetId(modelInstance);
   }
 
@@ -265,11 +288,11 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
   }
 
   private NewCookie simulateSingleSignOnAuthHeaderRequestAndReturnCookies(String headerValue) {
-    Response initialOptimizeResponse = embeddedOptimizeExtension
-      .rootTarget("/").request().header("user", headerValue).get();
+    Response initialOptimizeResponse =
+        embeddedOptimizeExtension.rootTarget("/").request().header("user", headerValue).get();
 
     NewCookie cookieThatWillBeSetInTheBrowser =
-      initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+        initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
     assertThat(cookieThatWillBeSetInTheBrowser).isNotNull();
     return cookieThatWillBeSetInTheBrowser;
   }
@@ -279,5 +302,4 @@ public class AuthenticationExtractorPluginIT extends AbstractPlatformIT {
     configurationService.setAuthenticationExtractorPluginBasePackages(basePackagesList);
     embeddedOptimizeExtension.reloadConfiguration();
   }
-
 }

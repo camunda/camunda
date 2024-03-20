@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.test.engine;
 
+import jakarta.ws.rs.core.Response;
+import java.io.IOException;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +18,11 @@ import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 
-import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-
 @AllArgsConstructor
 @Slf4j
 public class EnginePluginClient {
-  private static final String ENGINE_IT_PLUGIN_ENDPOINT = IntegrationTestConfigurationUtil.getEngineItPluginEndpoint();
+  private static final String ENGINE_IT_PLUGIN_ENDPOINT =
+      IntegrationTestConfigurationUtil.getEngineItPluginEndpoint();
   private static final String DEPLOY_PATH = "/deploy";
   private static final String PURGE_PATH = "/purge";
 
@@ -31,15 +31,14 @@ public class EnginePluginClient {
   @SneakyThrows
   public void deployEngine(final String engineName) {
     log.info("Deploying engine with name {}", engineName);
-    final HttpPost deployRequest = new HttpPost(
-      new URIBuilder(ENGINE_IT_PLUGIN_ENDPOINT + DEPLOY_PATH)
-        .addParameter("name", engineName)
-        .build()
-    );
+    final HttpPost deployRequest =
+        new HttpPost(
+            new URIBuilder(ENGINE_IT_PLUGIN_ENDPOINT + DEPLOY_PATH)
+                .addParameter("name", engineName)
+                .build());
     try (CloseableHttpResponse response = httpClient.execute(deployRequest)) {
-      final Response.Status statusCode = Response.Status.fromStatusCode(
-        response.getStatusLine().getStatusCode()
-      );
+      final Response.Status statusCode =
+          Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
       switch (statusCode) {
         case OK:
           log.info("Finished deploying engine {}.", engineName);
@@ -49,8 +48,13 @@ public class EnginePluginClient {
           break;
         default:
           String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-          log.error("Error deploying engine {}, got status code {}. Error message was: {}", engineName, statusCode, responseString);
-          throw new RuntimeException("Something really bad happened during engine deployment, please check the logs.");
+          log.error(
+              "Error deploying engine {}, got status code {}. Error message was: {}",
+              engineName,
+              statusCode,
+              responseString);
+          throw new RuntimeException(
+              "Something really bad happened during engine deployment, please check the logs.");
       }
     } catch (IOException e) {
       final String message = String.format("Error deploying engine %s.", engineName);
@@ -62,14 +66,15 @@ public class EnginePluginClient {
   @SneakyThrows
   public void cleanEngine(final String engineName) {
     log.info("Start cleaning engine");
-    final HttpPost purgeRequest = new HttpPost(
-      new URIBuilder(ENGINE_IT_PLUGIN_ENDPOINT + PURGE_PATH)
-        .addParameter("name", engineName)
-        .build()
-    );
+    final HttpPost purgeRequest =
+        new HttpPost(
+            new URIBuilder(ENGINE_IT_PLUGIN_ENDPOINT + PURGE_PATH)
+                .addParameter("name", engineName)
+                .build());
     try (CloseableHttpResponse response = httpClient.execute(purgeRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
-        throw new RuntimeException("Something really bad happened during purge, please check the logs.");
+        throw new RuntimeException(
+            "Something really bad happened during purge, please check the logs.");
       }
       log.info("Finished cleaning engine");
     } catch (IOException e) {
@@ -78,5 +83,4 @@ public class EnginePluginClient {
       throw new OptimizeIntegrationTestException(message, e);
     }
   }
-
 }

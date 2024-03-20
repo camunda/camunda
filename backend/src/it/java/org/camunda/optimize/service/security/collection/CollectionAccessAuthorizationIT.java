@@ -5,7 +5,14 @@
  */
 package org.camunda.optimize.service.security.collection;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
@@ -19,14 +26,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-
 @Tag(OPENSEARCH_PASSING)
 public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
@@ -36,7 +35,8 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(collectionId);
+    AuthorizedCollectionDefinitionRestDto collection =
+        collectionClient.getAuthorizedCollectionById(collectionId);
 
     // then
     assertThat(collection.getDefinitionDto().getId()).isEqualTo(collectionId);
@@ -44,23 +44,27 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   @Test
-  public void collectionAccessDoesNotDependOnUsernameCaseAtLoginWithCaseInsensitiveAuthenticationBackend() {
+  public void
+      collectionAccessDoesNotDependOnUsernameCaseAtLoginWithCaseInsensitiveAuthenticationBackend() {
     // given
     final String allUpperCaseUserId = DEFAULT_USERNAME.toUpperCase();
     final String actualUserId = DEFAULT_USERNAME;
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    final List<HttpRequest> mockedRequests = CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
-      embeddedOptimizeExtension, engineIntegrationExtension, engineMockServer,
-      allUpperCaseUserId, actualUserId
-    );
+    final List<HttpRequest> mockedRequests =
+        CaseInsensitiveAuthenticationMockUtil.setupCaseInsensitiveAuthentication(
+            embeddedOptimizeExtension,
+            engineIntegrationExtension,
+            engineMockServer,
+            allUpperCaseUserId,
+            actualUserId);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(
-      collectionId, allUpperCaseUserId, actualUserId
-    );
+    AuthorizedCollectionDefinitionRestDto collection =
+        collectionClient.getAuthorizedCollectionById(
+            collectionId, allUpperCaseUserId, actualUserId);
 
     // then
     assertThat(collection.getDefinitionDto().getId()).isEqualTo(collectionId);
@@ -71,7 +75,8 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
   @ParameterizedTest
   @MethodSource(ACCESS_IDENTITY_ROLES)
-  public void identityIsGrantedAccessByCollectionRole(final IdentityAndRole accessIdentityRolePairs) {
+  public void identityIsGrantedAccessByCollectionRole(
+      final IdentityAndRole accessIdentityRolePairs) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -81,30 +86,23 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     createSimpleProcessReportInCollectionAsDefaultUser(collectionId);
     createDashboardInCollectionAsDefaultUser(collectionId);
     addRoleToCollectionAsDefaultUser(
-      accessIdentityRolePairs.roleType, accessIdentityRolePairs.identityDto, collectionId
-    );
+        accessIdentityRolePairs.roleType, accessIdentityRolePairs.identityDto, collectionId);
 
     // when
-    AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(
-      collectionId,
-      KERMIT_USER,
-      KERMIT_USER
-    );
+    AuthorizedCollectionDefinitionRestDto collection =
+        collectionClient.getAuthorizedCollectionById(collectionId, KERMIT_USER, KERMIT_USER);
 
-    final List<EntityResponseDto> entities = collectionClient.getEntitiesForCollection(
-      collectionId,
-      KERMIT_USER,
-      KERMIT_USER
-    );
+    final List<EntityResponseDto> entities =
+        collectionClient.getEntitiesForCollection(collectionId, KERMIT_USER, KERMIT_USER);
     // then
     assertThat(collection.getDefinitionDto().getId()).isEqualTo(collectionId);
     assertThat(collection.getCurrentUserRole()).isEqualTo(accessIdentityRolePairs.roleType);
 
     assertThat(entities).hasSize(2);
     assertThat(entities.get(0).getCurrentUserRole())
-      .isEqualTo(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs));
+        .isEqualTo(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs));
     assertThat(entities.get(1).getCurrentUserRole())
-      .isEqualTo(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs));
+        .isEqualTo(getExpectedResourceRoleForCollectionRole(accessIdentityRolePairs));
   }
 
   @Test
@@ -112,7 +110,11 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
@@ -129,18 +131,20 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetCollectionRequest(collectionId)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .buildGetCollectionRequest(collectionId)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private void createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
-    CombinedReportDefinitionRequestDto combinedReportDefinitionDto = new CombinedReportDefinitionRequestDto();
+    CombinedReportDefinitionRequestDto combinedReportDefinitionDto =
+        new CombinedReportDefinitionRequestDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
     reportClient.createCombinedReport(collectionId, new ArrayList<>());
   }
@@ -150,5 +154,4 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     dashboardDefinitionDto.setCollectionId(collectionId);
     dashboardClient.createDashboard(collectionId, new ArrayList<>());
   }
-
 }

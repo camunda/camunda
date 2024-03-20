@@ -5,16 +5,6 @@
  */
 package org.camunda.optimize.service;
 
-import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
@@ -25,6 +15,15 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 @Tag(OPENSEARCH_PASSING)
 public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
@@ -38,7 +37,8 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     addTenantToElasticsearch(new TenantDto(tenantId, tenantName, DEFAULT_ENGINE_ALIAS));
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(2);
@@ -56,7 +56,8 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(2);
@@ -73,7 +74,8 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(2);
@@ -95,7 +97,8 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getAvailableTenants();
 
     // then
     assertThat(tenants).hasSize(3);
@@ -117,8 +120,10 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     createOptimizeUser(tenantUser);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
-      .isAuthorizedToSeeTenant(tenantUser, tenantId);
+    final boolean isAuthorized =
+        embeddedOptimizeExtension
+            .getPlatformTenantService()
+            .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
     assertThat(isAuthorized).isFalse();
@@ -132,11 +137,14 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     addTenantToElasticsearch(new TenantDto(tenantId, tenantName, DEFAULT_ENGINE_ALIAS));
     final String tenantUser = "tenantUser";
 
-    createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID);
+    createUserWithTenantAuthorization(
+        tenantUser, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
-      .isAuthorizedToSeeTenant(tenantUser, tenantId);
+    final boolean isAuthorized =
+        embeddedOptimizeExtension
+            .getPlatformTenantService()
+            .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
     assertThat(isAuthorized).isTrue();
@@ -153,8 +161,10 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), tenantId);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
-      .isAuthorizedToSeeTenant(tenantUser, tenantId);
+    final boolean isAuthorized =
+        embeddedOptimizeExtension
+            .getPlatformTenantService()
+            .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
     assertThat(isAuthorized).isTrue();
@@ -168,26 +178,32 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
     addTenantToElasticsearch(new TenantDto(tenantId, tenantName, DEFAULT_ENGINE_ALIAS));
     final String tenantUser = "tenantUser";
 
-    createUserWithTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID);
-    createTenantAuthorization(tenantUser, ImmutableList.of(ALL_PERMISSION), tenantId, AUTHORIZATION_TYPE_REVOKE);
+    createUserWithTenantAuthorization(
+        tenantUser, ImmutableList.of(ALL_PERMISSION), ALL_RESOURCES_RESOURCE_ID);
+    createTenantAuthorization(
+        tenantUser, ImmutableList.of(ALL_PERMISSION), tenantId, AUTHORIZATION_TYPE_REVOKE);
 
     // when
-    final boolean isAuthorized = embeddedOptimizeExtension.getPlatformTenantService()
-      .isAuthorizedToSeeTenant(tenantUser, tenantId);
+    final boolean isAuthorized =
+        embeddedOptimizeExtension
+            .getPlatformTenantService()
+            .isAuthorizedToSeeTenant(tenantUser, tenantId);
 
     // then
     assertThat(isAuthorized).isFalse();
   }
 
-  private void createUserWithTenantAuthorization(final String tenantUser,
-                                                 final ImmutableList<String> permissions,
-                                                 final String resourceId) {
+  private void createUserWithTenantAuthorization(
+      final String tenantUser, final ImmutableList<String> permissions, final String resourceId) {
     createOptimizeUser(tenantUser);
     createTenantAuthorization(tenantUser, permissions, resourceId, AUTHORIZATION_TYPE_GRANT);
   }
 
-  private void createTenantAuthorization(final String tenantUser, final ImmutableList<String> permissions,
-                                         final String resourceId, int type) {
+  private void createTenantAuthorization(
+      final String tenantUser,
+      final ImmutableList<String> permissions,
+      final String resourceId,
+      int type) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
     authorizationDto.setPermissions(permissions);
@@ -203,16 +219,16 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
   }
 
   private void setDefaultTenant(final DefaultTenant defaultTenant) {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getConfiguredEngines()
-      .values()
-      .iterator()
-      .next()
-      .setDefaultTenant(defaultTenant);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getConfiguredEngines()
+        .values()
+        .iterator()
+        .next()
+        .setDefaultTenant(defaultTenant);
   }
 
   private void addTenantToElasticsearch(final TenantDto engine) {
     databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, engine.getId(), engine);
   }
-
 }

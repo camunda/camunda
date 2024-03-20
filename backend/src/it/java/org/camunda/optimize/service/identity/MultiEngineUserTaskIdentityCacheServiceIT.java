@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.service.identity;
 
+import static jakarta.ws.rs.HttpMethod.GET;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockserver.model.HttpRequest.request;
+
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
-
-import static jakarta.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockserver.model.HttpRequest.request;
 
 public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngineIT {
   public static final String ASSIGNEE_ID_JOHN = "john";
@@ -52,7 +51,8 @@ public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngi
     engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
     secondaryEngineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN, engineIntegrationExtension);
-    startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN, secondaryEngineIntegrationExtension);
+    startSimpleUserTaskProcessWithAssigneeAndImport(
+        ASSIGNEE_ID_JEAN, secondaryEngineIntegrationExtension);
 
     // when
     getIdentityCacheService().synchronizeIdentities();
@@ -69,10 +69,11 @@ public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngi
     engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
     secondaryEngineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN, engineIntegrationExtension);
-    startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN, secondaryEngineIntegrationExtension);
+    startSimpleUserTaskProcessWithAssigneeAndImport(
+        ASSIGNEE_ID_JEAN, secondaryEngineIntegrationExtension);
 
     final ClientAndServer firstEngineMockServer =
-      useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
+        useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
 
     final HttpRequest getUserRequest = request().withPath(".*/user/.*").withMethod(GET);
     firstEngineMockServer.when(getUserRequest).error(HttpError.error().withDropConnection(true));
@@ -90,38 +91,40 @@ public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngi
   public void testCandidateGroupsFromAllEnginesAreImported() {
     // given
     addSecondEngineToConfiguration();
-    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
-    secondaryEngineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    engineIntegrationExtension.createGroup(
+        CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
+    secondaryEngineIntegrationExtension.createGroup(
+        CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
     startSimpleUserTaskProcessWithCandidateGroupAndImport(
-      CANDIDATE_GROUP_ID_IMPOSTERS, engineIntegrationExtension
-    );
+        CANDIDATE_GROUP_ID_IMPOSTERS, engineIntegrationExtension);
     startSimpleUserTaskProcessWithCandidateGroupAndImport(
-      CANDIDATE_GROUP_ID_CREW_MEMBERS, secondaryEngineIntegrationExtension
-    );
+        CANDIDATE_GROUP_ID_CREW_MEMBERS, secondaryEngineIntegrationExtension);
 
     // when
     getIdentityCacheService().synchronizeIdentities();
 
     // then
-    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_IMPOSTERS)).isPresent();
-    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS)).isPresent();
+    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_IMPOSTERS))
+        .isPresent();
+    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isPresent();
   }
 
   @Test
   public void testCandidateGroupsFromAllEnginesAreImportedBrokenEngineIsSkipped() {
     // given
     addSecondEngineToConfiguration();
-    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
-    secondaryEngineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    engineIntegrationExtension.createGroup(
+        CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
+    secondaryEngineIntegrationExtension.createGroup(
+        CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
     startSimpleUserTaskProcessWithCandidateGroupAndImport(
-      CANDIDATE_GROUP_ID_IMPOSTERS, engineIntegrationExtension
-    );
+        CANDIDATE_GROUP_ID_IMPOSTERS, engineIntegrationExtension);
     startSimpleUserTaskProcessWithCandidateGroupAndImport(
-      CANDIDATE_GROUP_ID_CREW_MEMBERS, secondaryEngineIntegrationExtension
-    );
+        CANDIDATE_GROUP_ID_CREW_MEMBERS, secondaryEngineIntegrationExtension);
 
     final ClientAndServer firstEngineMockServer =
-      useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
+        useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
 
     final HttpRequest getUserRequest = request().withPath(".*/group/.*").withMethod(GET);
     firstEngineMockServer.when(getUserRequest).error(HttpError.error().withDropConnection(true));
@@ -130,19 +133,21 @@ public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngi
     getIdentityCacheService().synchronizeIdentities();
 
     // then
-    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_IMPOSTERS)).isNotPresent();
-    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS)).isPresent();
+    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_IMPOSTERS))
+        .isNotPresent();
+    assertThat(getIdentityCacheService().getGroupIdentityById(CANDIDATE_GROUP_ID_CREW_MEMBERS))
+        .isPresent();
     firstEngineMockServer.verify(getUserRequest);
   }
 
-  private void startSimpleUserTaskProcessWithAssigneeAndImport(final String assignee,
-                                                                                  final EngineIntegrationExtension engine) {
+  private void startSimpleUserTaskProcessWithAssigneeAndImport(
+      final String assignee, final EngineIntegrationExtension engine) {
     engine.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithAssignee(assignee));
     importAllEngineEntitiesFromScratch();
   }
 
-  private void startSimpleUserTaskProcessWithCandidateGroupAndImport(final String candidateGroup,
-                                                                                        final EngineIntegrationExtension engine) {
+  private void startSimpleUserTaskProcessWithCandidateGroupAndImport(
+      final String candidateGroup, final EngineIntegrationExtension engine) {
     engine.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithCandidateGroup(candidateGroup));
     importAllEngineEntitiesFromScratch();
   }
@@ -150,5 +155,4 @@ public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngi
   private PlatformUserTaskIdentityCache getIdentityCacheService() {
     return embeddedOptimizeExtension.getUserTaskIdentityCache();
   }
-
 }

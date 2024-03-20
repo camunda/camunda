@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
@@ -14,15 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-
 @Tag(OPENSEARCH_PASSING)
 public class SettingsRestServiceIT extends AbstractPlatformIT {
   public final String GROUP_ID = "someGroup";
@@ -31,11 +30,12 @@ public class SettingsRestServiceIT extends AbstractPlatformIT {
   public void testGetSettings_defaultSettings() {
     // given
     final TelemetryConfiguration defaultTelemetryConfig =
-      embeddedOptimizeExtension.getConfigurationService().getTelemetryConfiguration();
-    final SettingsResponseDto expectedSettings = SettingsResponseDto.builder()
-      .metadataTelemetryEnabled(defaultTelemetryConfig.isInitializeTelemetry())
-      .sharingEnabled(true)
-      .build();
+        embeddedOptimizeExtension.getConfigurationService().getTelemetryConfiguration();
+    final SettingsResponseDto expectedSettings =
+        SettingsResponseDto.builder()
+            .metadataTelemetryEnabled(defaultTelemetryConfig.isInitializeTelemetry())
+            .sharingEnabled(true)
+            .build();
 
     // when
     final SettingsResponseDto settings = getSettings();
@@ -49,7 +49,8 @@ public class SettingsRestServiceIT extends AbstractPlatformIT {
   public void testCreateSettings(SuperUserType superUserType) {
     // given
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
-    final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
+    final SettingsResponseDto newSettings =
+        SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
 
     // when
     addSuperUserAndPermissions(superUserType);
@@ -57,7 +58,8 @@ public class SettingsRestServiceIT extends AbstractPlatformIT {
     final SettingsResponseDto settings = getSettings();
 
     // then
-    assertThat(settings.getMetadataTelemetryEnabled()).isEqualTo(newSettings.getMetadataTelemetryEnabled());
+    assertThat(settings.getMetadataTelemetryEnabled())
+        .isEqualTo(newSettings.getMetadataTelemetryEnabled());
     assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
     assertThat(settings.getLastModified()).isEqualTo(now);
     assertThat(settings.isTelemetryManuallyConfirmed()).isTrue();
@@ -68,15 +70,18 @@ public class SettingsRestServiceIT extends AbstractPlatformIT {
   public void testUpdateExistingSettings(SuperUserType superUserType) {
     // given
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
-    final SettingsResponseDto existingSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
+    final SettingsResponseDto existingSettings =
+        SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
     addSuperUserAndPermissions(superUserType);
     setSettings(existingSettings);
-    final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(false).build();
+    final SettingsResponseDto newSettings =
+        SettingsResponseDto.builder().metadataTelemetryEnabled(false).build();
     setSettings(newSettings);
     final SettingsResponseDto settings = getSettings();
 
     // then
-    assertThat(settings.getMetadataTelemetryEnabled()).isEqualTo(newSettings.getMetadataTelemetryEnabled());
+    assertThat(settings.getMetadataTelemetryEnabled())
+        .isEqualTo(newSettings.getMetadataTelemetryEnabled());
     assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
     assertThat(settings.getLastModified()).isEqualTo(now);
     assertThat(settings.isTelemetryManuallyConfirmed()).isTrue();
@@ -84,29 +89,35 @@ public class SettingsRestServiceIT extends AbstractPlatformIT {
 
   private void addSuperUserAndPermissions(final SuperUserType superUserType) {
     if (superUserType == SuperUserType.USER) {
-      embeddedOptimizeExtension.getConfigurationService()
-        .getAuthConfiguration().getSuperUserIds().add(DEFAULT_USERNAME);
+      embeddedOptimizeExtension
+          .getConfigurationService()
+          .getAuthConfiguration()
+          .getSuperUserIds()
+          .add(DEFAULT_USERNAME);
     } else {
       authorizationClient.addUserAndGrantOptimizeAccess(DEFAULT_USERNAME);
       authorizationClient.createGroupAndAddUser(GROUP_ID, DEFAULT_USERNAME);
       authorizationClient.grantGroupOptimizeAccess(GROUP_ID);
-      embeddedOptimizeExtension.getConfigurationService()
-        .getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
+      embeddedOptimizeExtension
+          .getConfigurationService()
+          .getAuthConfiguration()
+          .getSuperGroupIds()
+          .add(GROUP_ID);
     }
   }
 
   private void setSettings(final SettingsResponseDto newSettings) {
     embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildSetSettingsRequest(newSettings)
-      .execute(SettingsResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+        .getRequestExecutor()
+        .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        .buildSetSettingsRequest(newSettings)
+        .execute(SettingsResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private SettingsResponseDto getSettings() {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetSettingsRequest()
-      .execute(SettingsResponseDto.class, Response.Status.OK.getStatusCode());
+        .getRequestExecutor()
+        .buildGetSettingsRequest()
+        .execute(SettingsResponseDto.class, Response.Status.OK.getStatusCode());
   }
 }

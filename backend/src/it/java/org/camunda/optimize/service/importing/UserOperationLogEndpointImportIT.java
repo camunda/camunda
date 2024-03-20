@@ -17,10 +17,7 @@ public class UserOperationLogEndpointImportIT extends AbstractImportEndpointFail
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {
-    return Stream.of(
-      USER_OPERATION_LOG_ENDPOINT
-    ).flatMap(endpoint -> engineErrors()
-      .map(mockResp -> Arguments.of(endpoint, mockResp)));
+    return Stream.of(USER_OPERATION_LOG_ENDPOINT)
+        .flatMap(endpoint -> engineErrors().map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
-
 }

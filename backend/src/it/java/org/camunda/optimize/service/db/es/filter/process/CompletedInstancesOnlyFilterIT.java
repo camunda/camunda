@@ -27,27 +27,27 @@ public class CompletedInstancesOnlyFilterIT extends AbstractFilterIT {
   public void filterByCompletedInstancesOnly() {
     // given
     final ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    final ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
-    final ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
-    final ProcessInstanceEngineDto thirdProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
+    final ProcessInstanceEngineDto firstProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    final ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    final ProcessInstanceEngineDto thirdProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(firstProcInst.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(secondProcInst.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(userTaskProcess.getKey())
-        .setProcessDefinitionVersion(userTaskProcess.getVersionAsString())
-        .setReportDataType(ProcessReportDataType.RAW_DATA)
-        .setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
-        .build();
-    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(
-        reportData).getResult();
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(userTaskProcess.getKey())
+            .setProcessDefinitionVersion(userTaskProcess.getVersionAsString())
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+            .build();
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -55,5 +55,4 @@ public class CompletedInstancesOnlyFilterIT extends AbstractFilterIT {
         .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
         .doesNotContain(thirdProcInst.getId());
   }
-
 }

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.filter.process.date.instance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
@@ -20,11 +24,6 @@ import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
@@ -35,7 +34,9 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     OffsetDateTime processInstanceStartTime =
-      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstance.getId())
+            .getStartTime();
 
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
 
@@ -44,34 +45,34 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
-      createAndEvaluateReportWithStartDateFilter(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        dateUnit,
-        0L,
-        false,
-        DateFilterType.RELATIVE
-      );
+        createAndEvaluateReportWithStartDateFilter(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion(),
+            dateUnit,
+            0L,
+            false,
+            DateFilterType.RELATIVE);
 
     assertResults(processInstance, result, 1);
 
     // when
     if (dateUnit.equals(DateUnit.QUARTERS)) {
-      LocalDateUtil.setCurrentTime(OffsetDateTime.now()
-                                     .plus(3 * 2L, DateFilterUtil.unitOf(DateUnit.MONTHS.getId())));
+      LocalDateUtil.setCurrentTime(
+          OffsetDateTime.now().plus(3 * 2L, DateFilterUtil.unitOf(DateUnit.MONTHS.getId())));
     } else {
-      LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(2L, DateFilterUtil.unitOf(dateUnit.getId())));
+      LocalDateUtil.setCurrentTime(
+          OffsetDateTime.now().plus(2L, DateFilterUtil.unitOf(dateUnit.getId())));
     }
 
-    //token has to be refreshed, as the old one expired already after moving the date
-    result = createAndEvaluateReportWithStartDateFilter(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion(),
-      dateUnit,
-      0L,
-      true,
-      DateFilterType.RELATIVE
-    );
+    // token has to be refreshed, as the old one expired already after moving the date
+    result =
+        createAndEvaluateReportWithStartDateFilter(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion(),
+            dateUnit,
+            0L,
+            true,
+            DateFilterType.RELATIVE);
 
     assertResults(processInstance, result, 0);
   }
@@ -84,20 +85,17 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = getAutomaticGroupByDateReportData(
-      type,
-      engineDto.getKey(),
-      engineDto.getVersionAsString()
-    );
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .relativeInstanceStartDate()
-                           .start(1L, DateUnit.DAYS)
-                           .add()
-                           .buildList());
+    ProcessReportDataDto reportData =
+        getAutomaticGroupByDateReportData(type, engineDto.getKey(), engineDto.getVersionAsString());
+    reportData.setFilter(
+        ProcessFilterBuilder.filter()
+            .relativeInstanceStartDate()
+            .start(1L, DateUnit.DAYS)
+            .add()
+            .buildList());
     List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
     assertThat(resultData).isEmpty();
   }
-
 }

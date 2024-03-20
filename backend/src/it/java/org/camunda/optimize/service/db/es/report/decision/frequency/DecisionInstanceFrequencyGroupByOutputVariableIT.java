@@ -5,8 +5,26 @@
  */
 package org.camunda.optimize.service.db.es.report.decision.frequency;
 
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
+import static org.camunda.optimize.util.DmnModels.OUTPUT_CLASSIFICATION_ID;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -31,50 +49,33 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
-import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
-import static org.camunda.optimize.util.DmnModels.OUTPUT_CLASSIFICATION_ID;
-
 public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDecisionDefinitionIT {
 
   @Test
   public void reportEvaluationSingleBucketSpecificVersion_GroupByStringOutputVariable() {
     // given
     final String expectedClassificationOutputValue = "day-to-day expense";
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_CLASSIFICATION_ID, VariableType.STRING
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto1,
+                decisionDefinitionVersion1,
+                OUTPUT_CLASSIFICATION_ID,
+                VariableType.STRING)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -88,33 +89,32 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
   @Test
   public void reportEvaluationMultiBucketsSpecificVersion_GroupByBooleanOutputVariable() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // audit = false
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(200.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(200.0, "Misc"));
     // audit = true
     startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc")
-    );
+        decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc"));
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto1,
+                decisionDefinitionVersion1,
+                OUTPUT_AUDIT_ID,
+                VariableType.BOOLEAN)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
@@ -133,44 +133,35 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      "-",
-      DecisionTypeRef.DOUBLE
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        deploySimpleOutputDecisionDefinition(
+            outputVarName, inputVarName, "-", DecisionTypeRef.DOUBLE);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto1.getId(),
-      Collections.singletonMap(inputVarName, 100.0)
-    );
+        decisionDefinitionDto1.getId(), Collections.singletonMap(inputVarName, 100.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto1.getId(),
-      Collections.singletonMap(inputVarName, 200.0)
-    );
+        decisionDefinitionDto1.getId(), Collections.singletonMap(inputVarName, 200.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto1.getId(),
-      Collections.singletonMap(inputVarName, 200.0)
-    );
+        decisionDefinitionDto1.getId(), Collections.singletonMap(inputVarName, 200.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto1.getId(),
-      Collections.singletonMap(inputVarName, 300.0)
-    );
+        decisionDefinitionDto1.getId(), Collections.singletonMap(inputVarName, 300.0));
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1,
-      decisionDefinitionDto1.getVersionAsString(),
-      outputVarName,
-      null,
-      VariableType.DOUBLE
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto1,
+                decisionDefinitionDto1.getVersionAsString(),
+                outputVarName,
+                null,
+                VariableType.DOUBLE)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
@@ -185,42 +176,32 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      "-",
-      DecisionTypeRef.DOUBLE
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        deploySimpleOutputDecisionDefinition(
+            outputVarName, inputVarName, "-", DecisionTypeRef.DOUBLE);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 100.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 100.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 200.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 200.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 200.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 200.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 300.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 300.0));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionDto.getVersionAsString(),
-      outputVarName,
-      null,
-      VariableType.DOUBLE,
-      10.0,
-      100.0
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto,
+                decisionDefinitionDto.getVersionAsString(),
+                outputVarName,
+                null,
+                VariableType.DOUBLE,
+                10.0,
+                100.0)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
@@ -228,46 +209,42 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(3);
     assertThat(resultData.stream().map(MapResultEntryDto::getKey).collect(toList()))
-      .containsExactly("10.00", "110.00", "210.00");
+        .containsExactly("10.00", "110.00", "210.00");
     assertThat(resultData.get(0).getValue()).isEqualTo(1L);
     assertThat(resultData.get(1).getValue()).isEqualTo(2L);
     assertThat(resultData.get(2).getValue()).isEqualTo(1L);
   }
 
   @Test
-  public void reportEvaluationMultiBuckets_GroupByNumberOutputVariable_invalidBaseline_returnsEmptyResult() {
+  public void
+      reportEvaluationMultiBuckets_GroupByNumberOutputVariable_invalidBaseline_returnsEmptyResult() {
     // given
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      "-",
-      DecisionTypeRef.DOUBLE
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        deploySimpleOutputDecisionDefinition(
+            outputVarName, inputVarName, "-", DecisionTypeRef.DOUBLE);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 10.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 10.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 20.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 20.0));
 
     importAllEngineEntitiesFromScratch();
 
     // when an offset larger than the max. variable value (20) is used
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionDto.getVersionAsString(),
-      outputVarName,
-      null,
-      VariableType.DOUBLE,
-      30.0,
-      5.0
-    ).getResult().getFirstMeasureData();
+    final List<MapResultEntryDto> resultData =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto,
+                decisionDefinitionDto.getVersionAsString(),
+                outputVarName,
+                null,
+                VariableType.DOUBLE,
+                30.0,
+                5.0)
+            .getResult()
+            .getFirstMeasureData();
 
     // then the result is empty
     assertThat(resultData).isNotNull();
@@ -280,32 +257,27 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      "-",
-      DecisionTypeRef.INTEGER
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        deploySimpleOutputDecisionDefinition(
+            outputVarName, inputVarName, "-", DecisionTypeRef.INTEGER);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, -1)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, -1));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, -5)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, -5));
 
     importAllEngineEntitiesFromScratch();
 
     // when there is no baseline set
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionDto.getVersionAsString(),
-      outputVarName,
-      null,
-      VariableType.INTEGER
-    ).getResult().getFirstMeasureData();
+    final List<MapResultEntryDto> resultData =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto,
+                decisionDefinitionDto.getVersionAsString(),
+                outputVarName,
+                null,
+                VariableType.INTEGER)
+            .getResult()
+            .getFirstMeasureData();
 
     // then the result includes all instances
     assertThat(resultData).isNotNull();
@@ -318,38 +290,36 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      "-",
-      DecisionTypeRef.DOUBLE
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        deploySimpleOutputDecisionDefinition(
+            outputVarName, inputVarName, "-", DecisionTypeRef.DOUBLE);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 1.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 1.0));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 5.0)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, 5.0));
 
     importAllEngineEntitiesFromScratch();
 
     // when there is no baseline set
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionDto.getVersionAsString(),
-      outputVarName,
-      null,
-      VariableType.DOUBLE
-    ).getResult().getFirstMeasureData();
+    final List<MapResultEntryDto> resultData =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto,
+                decisionDefinitionDto.getVersionAsString(),
+                outputVarName,
+                null,
+                VariableType.DOUBLE)
+            .getResult()
+            .getFirstMeasureData();
 
     // then the result includes all instances
     assertThat(resultData).isNotNull();
     assertThat(resultData)
-      .extracting(MapResultEntryDto::getKey)
-      .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
+        .extracting(MapResultEntryDto::getKey)
+        .allMatch(
+            key ->
+                key.length() - key.indexOf(".") - 1
+                    == 2); // key should have two chars after the decimal
   }
 
   @Test
@@ -359,79 +329,75 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      "-",
-      DecisionTypeRef.DOUBLE
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        deploySimpleOutputDecisionDefinition(
+            outputVarName, inputVarName, "-", DecisionTypeRef.DOUBLE);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, 9100000000000000000.)
-    );
+        decisionDefinitionDto.getId(),
+        Collections.singletonMap(inputVarName, 9100000000000000000.));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, -9200000000000000000.)
-    );
+        decisionDefinitionDto.getId(),
+        Collections.singletonMap(inputVarName, -9200000000000000000.));
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionDto.getVersionAsString(),
-      outputVarName,
-      null,
-      VariableType.DOUBLE
-    ).getResult().getFirstMeasureData();
+    final List<MapResultEntryDto> resultData =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto,
+                decisionDefinitionDto.getVersionAsString(),
+                outputVarName,
+                null,
+                VariableType.DOUBLE)
+            .getResult()
+            .getFirstMeasureData();
 
-    // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
+    // then the amount of buckets does not exceed
+    // NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
     // (a precaution to avoid too many buckets for distributed reports)
     assertThat(resultData)
-      .isNotNull()
-      .isNotEmpty()
-      .hasSizeLessThanOrEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+        .isNotNull()
+        .isNotEmpty()
+        .hasSizeLessThanOrEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
   }
 
   @Test
-  public void reportEvaluationMultiBucketsSpecificVersion_GroupByBooleanOutputVariable_FilterByVariable() {
+  public void
+      reportEvaluationMultiBucketsSpecificVersion_GroupByBooleanOutputVariable_FilterByVariable() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // audit = false
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(200.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(200.0, "Misc"));
     // audit = true
     startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc")
-    );
-
+        decisionDefinitionDto1.getId(), createInputs(2000.0, "Misc"));
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .setVariableId(OUTPUT_AUDIT_ID)
-      .setVariableType(VariableType.BOOLEAN)
-      .setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
-        OUTPUT_AUDIT_ID, Collections.singletonList(true)
-      )))
-      .build();
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+            .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+            .setVariableId(OUTPUT_AUDIT_ID)
+            .setVariableType(VariableType.BOOLEAN)
+            .setFilter(
+                Lists.newArrayList(
+                    createBooleanOutputVariableFilter(
+                        OUTPUT_AUDIT_ID, Collections.singletonList(true))))
+            .build();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -446,29 +412,26 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
   public void reportEvaluationSingleBucketAllVersions_GroupByStringOutputVariable() {
     // given
     final String expectedClassificationOutputValue = "day-to-day expense";
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
 
     // different version
     engineIntegrationExtension.deployDecisionDefinition();
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_CLASSIFICATION_ID, VariableType.STRING
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto1,
+                ReportConstants.ALL_VERSIONS,
+                OUTPUT_CLASSIFICATION_ID,
+                VariableType.STRING)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
@@ -483,29 +446,26 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
   public void reportEvaluationSingleBucketAllVersions_GroupByBooleanOutputVariable() {
     // given
     final String auditValue = "false";
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
 
     // different version
     engineIntegrationExtension.deployDecisionDefinition();
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto1,
+                ReportConstants.ALL_VERSIONS,
+                OUTPUT_AUDIT_ID,
+                VariableType.BOOLEAN)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(4L);
@@ -517,32 +477,33 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
   }
 
   @Test
-  public void reportEvaluationSingleBucketAllVersions_GroupByBooleanInputVariable_OtherDefinitionsHaveNoSideEffect() {
+  public void
+      reportEvaluationSingleBucketAllVersions_GroupByBooleanInputVariable_OtherDefinitionsHaveNoSideEffect() {
     // given
     final String auditValue = "false";
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
 
     // different decision definition
-    final DecisionDefinitionEngineDto otherDecisionDefinition = deployDecisionDefinitionWithDifferentKey("otherKey");
+    final DecisionDefinitionEngineDto otherDecisionDefinition =
+        deployDecisionDefinitionWithDifferentKey("otherKey");
     startDecisionInstanceWithInputVars(
-      otherDecisionDefinition.getId(), createInputs(100.0, "Misc")
-    );
+        otherDecisionDefinition.getId(), createInputs(100.0, "Misc"));
     startDecisionInstanceWithInputVars(
-      otherDecisionDefinition.getId(), createInputs(100.0, "Misc")
-    );
+        otherDecisionDefinition.getId(), createInputs(100.0, "Misc"));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto1,
+                ReportConstants.ALL_VERSIONS,
+                OUTPUT_AUDIT_ID,
+                VariableType.BOOLEAN)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -559,22 +520,23 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = Lists.newArrayList(tenantId1);
-    final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
-      Lists.newArrayList(null, tenantId1, tenantId2)
-    );
+    final String decisionDefinitionKey =
+        deployAndStartMultiTenantDefinition(Lists.newArrayList(null, tenantId1, tenantId2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionKey)
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setTenantIds(selectedTenants)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .setVariableId(OUTPUT_CLASSIFICATION_ID)
-      .setVariableType(VariableType.STRING)
-      .build();
-    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionKey)
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setTenantIds(selectedTenants)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+            .setVariableId(OUTPUT_CLASSIFICATION_ID)
+            .setVariableType(VariableType.STRING)
+            .build();
+    ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
@@ -583,42 +545,34 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
   @Test
   public void testCustomOrderOnStringOutputResultKeyIsApplied() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // classification: day-to-day expense
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
     // classification: budget
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(250.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(900.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(250.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(300.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(900.0, "Misc"));
     // classification: exceptional
     startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc")
-    );
+        decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc"));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .setVariableId(OUTPUT_CLASSIFICATION_ID)
-      .setVariableType(VariableType.STRING)
-      .build();
+    final DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+            .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+            .setVariableId(OUTPUT_CLASSIFICATION_ID)
+            .setVariableType(VariableType.STRING)
+            .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -630,42 +584,34 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
   @Test
   public void testCustomOrderOnStringResultValueIsApplied() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // classification: day-to-day expense
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(100.0, "Misc"));
     // classification: budget
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(250.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(900.0, "Misc")
-    );
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(250.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(300.0, "Misc"));
+    startDecisionInstanceWithInputVars(decisionDefinitionDto1.getId(), createInputs(900.0, "Misc"));
     // classification: exceptional
     startDecisionInstanceWithInputVars(
-      decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc")
-    );
+        decisionDefinitionDto1.getId(), createInputs(25000.0, "Misc"));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .setVariableId(OUTPUT_CLASSIFICATION_ID)
-      .setVariableType(VariableType.STRING)
-      .build();
+    final DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+            .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+            .setVariableId(OUTPUT_CLASSIFICATION_ID)
+            .setVariableType(VariableType.STRING)
+            .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -677,25 +623,30 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
   @Test
   public void testVariableNameIsAvailable() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
 
-
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
     final AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> result =
-      evaluateDecisionInstanceFrequencyByOutputVariable(
-        decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit", VariableType.BOOLEAN
-      );
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+            decisionDefinitionDto1,
+            decisionDefinitionVersion1,
+            OUTPUT_AUDIT_ID,
+            "audit",
+            VariableType.BOOLEAN);
 
     // then
-    final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
-      result.getReportDefinition().getData().getGroupBy().getValue();
+    final DecisionGroupByVariableValueDto value =
+        (DecisionGroupByVariableValueDto)
+            result.getReportDefinition().getData().getGroupBy().getValue();
     assertThat(value.getName()).isPresent();
     assertThat(value.getName().get()).isEqualTo("audit");
   }
@@ -705,21 +656,24 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     // given
     final String outputClauseId = "outputClauseId";
     final String camInputVariable = "input";
-    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      DecisionTypeRef.DATE
-    );
+    final DecisionDefinitionEngineDto definition =
+        deploySimpleDecisionDefinition(outputClauseId, camInputVariable, DecisionTypeRef.DATE);
 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
+    engineIntegrationExtension.startDecisionInstance(
+        definition.getId(), ImmutableMap.of(camInputVariable, now));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                definition,
+                definition.getVersionAsString(),
+                outputClauseId,
+                null,
+                VariableType.DATE)
+            .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
@@ -732,30 +686,29 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     // given
     final String outputClauseId = "outputClauseId";
     final String camInputVariable = "input";
-    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      DecisionTypeRef.DATE
-    );
+    final DecisionDefinitionEngineDto definition =
+        deploySimpleDecisionDefinition(outputClauseId, camInputVariable, DecisionTypeRef.DATE);
 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
 
-    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
     engineIntegrationExtension.startDecisionInstance(
-      definition.getId(),
-      ImmutableMap.of(camInputVariable, now.minusDays(1L))
-    );
+        definition.getId(), ImmutableMap.of(camInputVariable, now));
     engineIntegrationExtension.startDecisionInstance(
-      definition.getId(),
-      ImmutableMap.of(camInputVariable, now.minusDays(1L))
-    );
+        definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
+    engineIntegrationExtension.startDecisionInstance(
+        definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                definition,
+                definition.getVersionAsString(),
+                outputClauseId,
+                null,
+                VariableType.DATE)
+            .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -770,30 +723,28 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     // given
     final String outputClauseId = "outputClauseId";
     final String camInputVariable = "input";
-    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      DecisionTypeRef.DATE
-    );
+    final DecisionDefinitionEngineDto definition =
+        deploySimpleDecisionDefinition(outputClauseId, camInputVariable, DecisionTypeRef.DATE);
 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
     engineIntegrationExtension.startDecisionInstance(
-      definition.getId(),
-      ImmutableMap.of(camInputVariable, now.minusSeconds(1L))
-    );
+        definition.getId(), ImmutableMap.of(camInputVariable, now));
     engineIntegrationExtension.startDecisionInstance(
-      definition.getId(),
-      ImmutableMap.of(camInputVariable, now.minusSeconds(6L))
-    );
+        definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(1L)));
+    engineIntegrationExtension.startDecisionInstance(
+        definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(6L)));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
-    ).getResult();
-
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                definition,
+                definition.getVersionAsString(),
+                outputClauseId,
+                null,
+                VariableType.DATE)
+            .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -808,11 +759,8 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final int numberOfInstances = 3;
     final String outputClauseId = "outputClauseId";
     final String camInputVariable = "input";
-    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      DecisionTypeRef.DATE
-    );
+    final DecisionDefinitionEngineDto definition =
+        deploySimpleDecisionDefinition(outputClauseId, camInputVariable, DecisionTypeRef.DATE);
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
     OffsetDateTime dateVariableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
 
@@ -825,9 +773,16 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, unit
-    ).getResult().getFirstMeasureData();
+    final List<MapResultEntryDto> resultData =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                definition,
+                definition.getVersionAsString(),
+                outputClauseId,
+                null,
+                VariableType.DATE,
+                unit)
+            .getResult()
+            .getFirstMeasureData();
 
     // then
     assertThat(resultData).isNotNull();
@@ -835,10 +790,9 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     // start at variable value of first instance due to default ascending order
     dateVariableValue = dateVariableValue.minus(numberOfInstances - 1, chronoUnit);
     for (int i = 0; i < numberOfInstances; i++) {
-      final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(
-        dateVariableValue.plus(chronoUnit.getDuration().multipliedBy(i)),
-        chronoUnit
-      );
+      final String expectedBucketKey =
+          embeddedOptimizeExtension.formatToHistogramBucketKey(
+              dateVariableValue.plus(chronoUnit.getDuration().multipliedBy(i)), chronoUnit);
       assertThat(resultData.get(i).getValue()).isEqualTo(1);
       assertThat(resultData.get(i).getKey()).isEqualTo(expectedBucketKey);
     }
@@ -851,26 +805,28 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final int numberOfInstances = 3;
     final String outputClauseId = "outputClauseId";
     final String camInputVariable = "input";
-    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      DecisionTypeRef.DATE
-    );
+    final DecisionDefinitionEngineDto definition =
+        deploySimpleDecisionDefinition(outputClauseId, camInputVariable, DecisionTypeRef.DATE);
     OffsetDateTime dateVariableValue = OffsetDateTime.now();
 
     for (int i = 0; i < numberOfInstances; i++) {
       dateVariableValue = dateVariableValue.plusMinutes(1);
-      Map<String, Object> variables =
-        ImmutableMap.of(camInputVariable, dateVariableValue);
+      Map<String, Object> variables = ImmutableMap.of(camInputVariable, dateVariableValue);
       engineIntegrationExtension.startDecisionInstance(definition.getId(), variables);
     }
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                definition,
+                definition.getVersionAsString(),
+                outputClauseId,
+                null,
+                VariableType.DATE,
+                AggregateByDateUnit.AUTOMATIC)
+            .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -879,12 +835,18 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
 
     // the bucket span covers the earliest and the latest date variable values
     DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(resultData.get(0).getKey()));
-    final OffsetDateTime startOfLastBucket = OffsetDateTime
-      .from(formatter.parse(resultData.get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
-    final OffsetDateTime firstTruncatedDateVariableValue = dateVariableValue.truncatedTo(ChronoUnit.MILLIS);
+    final OffsetDateTime startOfFirstBucket =
+        OffsetDateTime.from(formatter.parse(resultData.get(0).getKey()));
+    final OffsetDateTime startOfLastBucket =
+        OffsetDateTime.from(
+            formatter.parse(
+                resultData
+                    .get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1)
+                    .getKey()));
+    final OffsetDateTime firstTruncatedDateVariableValue =
+        dateVariableValue.truncatedTo(ChronoUnit.MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue =
-      dateVariableValue.minusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
+        dateVariableValue.minusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
@@ -896,16 +858,19 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     // given
     final String outputClauseId = "outputClauseId";
     final String camInputVariable = "input";
-    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      DecisionTypeRef.DATE
-    );
+    final DecisionDefinitionEngineDto definition =
+        deploySimpleDecisionDefinition(outputClauseId, camInputVariable, DecisionTypeRef.DATE);
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                definition,
+                definition.getVersionAsString(),
+                outputClauseId,
+                null,
+                VariableType.DATE,
+                AggregateByDateUnit.AUTOMATIC)
+            .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -919,106 +884,113 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     final String outputClauseId = "Donald";
     final String camInputVariable = "input";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputClauseId,
-      camInputVariable,
-      "testValidMatch",
-      DecisionTypeRef.STRING
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        deploySimpleOutputDecisionDefinition(
+            outputClauseId, camInputVariable, "testValidMatch", DecisionTypeRef.STRING);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "testValidMatch")
-    );
-    engineDatabaseExtension.setDecisionOutputStringVariableValueToNull(outputClauseId, "testValidMatch");
+        decisionDefinitionDto.getId(), ImmutableMap.of(camInputVariable, "testValidMatch"));
+    engineDatabaseExtension.setDecisionOutputStringVariableValueToNull(
+        outputClauseId, "testValidMatch");
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "testValidMatch")
-    );
+        decisionDefinitionDto.getId(), ImmutableMap.of(camInputVariable, "testValidMatch"));
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(camInputVariable, null)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(camInputVariable, null));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), outputClauseId, null, VariableType.STRING
-    ).getResult();
-
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto,
+                decisionDefinitionDto.getVersionAsString(),
+                outputClauseId,
+                null,
+                VariableType.STRING)
+            .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "testValidMatch").get().getValue()).isEqualTo(1.);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue()).isEqualTo(2.);
+    assertThat(
+            MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "testValidMatch")
+                .get()
+                .getValue())
+        .isEqualTo(1.);
+    assertThat(
+            MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue())
+        .isEqualTo(2.);
   }
 
   @Test
   public void missingVariablesAggregationForNullVariableOfTypeDouble_sortingByKeyDoesNotFail() {
-    // given a decision instance with non null variable value and one instance with null variable value
+    // given a decision instance with non null variable value and one instance with null variable
+    // value
     final String outputVarName = "outputVarName";
     final String inputVarName = "inputVarName";
     final Double doubleVarValue = 1.0;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
-      outputVarName,
-      inputVarName,
-      String.valueOf(doubleVarValue),
-      DecisionTypeRef.DOUBLE
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        deploySimpleOutputDecisionDefinition(
+            outputVarName, inputVarName, String.valueOf(doubleVarValue), DecisionTypeRef.DOUBLE);
 
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, null)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, null));
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionDto.getId(),
-      Collections.singletonMap(inputVarName, doubleVarValue)
-    );
+        decisionDefinitionDto.getId(), Collections.singletonMap(inputVarName, doubleVarValue));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), outputVarName, null, VariableType.DOUBLE
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto,
+                decisionDefinitionDto.getVersionAsString(),
+                outputVarName,
+                null,
+                VariableType.DOUBLE)
+            .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00").get().getValue()).isEqualTo(1.);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue()).isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00").get().getValue())
+        .isEqualTo(1.);
+    assertThat(
+            MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "missing").get().getValue())
+        .isEqualTo(1.);
   }
 
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("key")
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .build();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey("key")
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+            .build();
     reportData.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("key")
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .build();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey("key")
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+            .build();
     reportData.getGroupBy().setType(null);
 
     // when
@@ -1028,87 +1000,89 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByOutputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String decisionDefinitionVersion,
-    final String variableId,
-    final VariableType variableType) {
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>
+      evaluateDecisionInstanceFrequencyByOutputVariable(
+          final DecisionDefinitionEngineDto decisionDefinitionDto,
+          final String decisionDefinitionVersion,
+          final String variableId,
+          final VariableType variableType) {
     return evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto, decisionDefinitionVersion, variableId, null, variableType
-    );
+        decisionDefinitionDto, decisionDefinitionVersion, variableId, null, variableType);
   }
 
-  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByOutputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String decisionDefinitionVersion,
-    final String variableId,
-    final String variableName,
-    final VariableType variableType) {
-    DecisionReportDataDto reportData = createReportDataDto(
-      decisionDefinitionDto,
-      decisionDefinitionVersion,
-      variableId,
-      variableName,
-      variableType
-    );
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>
+      evaluateDecisionInstanceFrequencyByOutputVariable(
+          final DecisionDefinitionEngineDto decisionDefinitionDto,
+          final String decisionDefinitionVersion,
+          final String variableId,
+          final String variableName,
+          final VariableType variableType) {
+    DecisionReportDataDto reportData =
+        createReportDataDto(
+            decisionDefinitionDto,
+            decisionDefinitionVersion,
+            variableId,
+            variableName,
+            variableType);
     return reportClient.evaluateMapReport(reportData);
   }
 
-  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByOutputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String decisionDefinitionVersion,
-    final String variableId,
-    final String variableName,
-    final VariableType variableType,
-    final AggregateByDateUnit unit) {
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>
+      evaluateDecisionInstanceFrequencyByOutputVariable(
+          final DecisionDefinitionEngineDto decisionDefinitionDto,
+          final String decisionDefinitionVersion,
+          final String variableId,
+          final String variableName,
+          final VariableType variableType,
+          final AggregateByDateUnit unit) {
     return evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionVersion,
-      variableId,
-      variableName,
-      variableType,
-      unit,
-      null,
-      null
-    );
+        decisionDefinitionDto,
+        decisionDefinitionVersion,
+        variableId,
+        variableName,
+        variableType,
+        unit,
+        null,
+        null);
   }
 
-  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByOutputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String decisionDefinitionVersion,
-    final String variableId,
-    final String variableName,
-    final VariableType variableType,
-    final Double baseline,
-    final Double numberVariableBucketSize) {
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>
+      evaluateDecisionInstanceFrequencyByOutputVariable(
+          final DecisionDefinitionEngineDto decisionDefinitionDto,
+          final String decisionDefinitionVersion,
+          final String variableId,
+          final String variableName,
+          final VariableType variableType,
+          final Double baseline,
+          final Double numberVariableBucketSize) {
     return evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto,
-      decisionDefinitionVersion,
-      variableId,
-      variableName,
-      variableType,
-      AggregateByDateUnit.AUTOMATIC,
-      baseline,
-      numberVariableBucketSize
-    );
+        decisionDefinitionDto,
+        decisionDefinitionVersion,
+        variableId,
+        variableName,
+        variableType,
+        AggregateByDateUnit.AUTOMATIC,
+        baseline,
+        numberVariableBucketSize);
   }
 
-  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByOutputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String decisionDefinitionVersion,
-    final String variableId,
-    final String variableName,
-    final VariableType variableType,
-    final AggregateByDateUnit unit,
-    final Double baseline,
-    final Double numberVariableBucketSize) {
-    DecisionReportDataDto reportData = createReportDataDto(
-      decisionDefinitionDto,
-      decisionDefinitionVersion,
-      variableId,
-      variableName,
-      variableType
-    );
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>
+      evaluateDecisionInstanceFrequencyByOutputVariable(
+          final DecisionDefinitionEngineDto decisionDefinitionDto,
+          final String decisionDefinitionVersion,
+          final String variableId,
+          final String variableName,
+          final VariableType variableType,
+          final AggregateByDateUnit unit,
+          final Double baseline,
+          final Double numberVariableBucketSize) {
+    DecisionReportDataDto reportData =
+        createReportDataDto(
+            decisionDefinitionDto,
+            decisionDefinitionVersion,
+            variableId,
+            variableName,
+            variableType);
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBucketSize(numberVariableBucketSize);
@@ -1116,33 +1090,34 @@ public class DecisionInstanceFrequencyGroupByOutputVariableIT extends AbstractDe
     return reportClient.evaluateMapReport(reportData);
   }
 
-  private DecisionReportDataDto createReportDataDto(final DecisionDefinitionEngineDto decisionDefinitionDto,
-                                                    final String decisionDefinitionVersion,
-                                                    final String variableId,
-                                                    final String variableName,
-                                                    final VariableType variableType) {
+  private DecisionReportDataDto createReportDataDto(
+      final DecisionDefinitionEngineDto decisionDefinitionDto,
+      final String decisionDefinitionVersion,
+      final String variableId,
+      final String variableName,
+      final VariableType variableType) {
     return DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionVersion)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .setVariableId(variableId)
-      .setVariableName(variableName)
-      .setVariableType(variableType)
-      .build();
+        .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+        .setDecisionDefinitionVersion(decisionDefinitionVersion)
+        .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+        .setVariableId(variableId)
+        .setVariableName(variableName)
+        .setVariableType(variableType)
+        .build();
   }
 
-  private DecisionDefinitionEngineDto deploySimpleDecisionDefinition(final String outputClauseId,
-                                                                     final String camInputVariable,
-                                                                     final DecisionTypeRef type) {
-    final DmnModelGenerator dmnModelGenerator = DmnModelGenerator.create()
-      .decision()
-      .addInput("input", camInputVariable, type)
-      .addOutput("output", outputClauseId, camInputVariable, type)
-      .rule()
-      .addStringInputEntry(camInputVariable)
-      .addStringOutputEntry(camInputVariable)
-      .buildRule()
-      .buildDecision();
+  private DecisionDefinitionEngineDto deploySimpleDecisionDefinition(
+      final String outputClauseId, final String camInputVariable, final DecisionTypeRef type) {
+    final DmnModelGenerator dmnModelGenerator =
+        DmnModelGenerator.create()
+            .decision()
+            .addInput("input", camInputVariable, type)
+            .addOutput("output", outputClauseId, camInputVariable, type)
+            .rule()
+            .addStringInputEntry(camInputVariable)
+            .addStringOutputEntry(camInputVariable)
+            .buildRule()
+            .buildDecision();
     return engineIntegrationExtension.deployDecisionDefinition(dmnModelGenerator.build());
   }
 }

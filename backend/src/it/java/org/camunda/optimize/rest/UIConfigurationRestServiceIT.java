@@ -86,8 +86,8 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     final WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint).isNotNull();
     assertThat(defaultEndpoint.getEndpoint()).isEqualTo("http://localhost:8080/camunda");
-    assertThat(defaultEndpoint.getEngineName()).isEqualTo(
-        engineIntegrationExtension.getEngineName());
+    assertThat(defaultEndpoint.getEngineName())
+        .isEqualTo(engineIntegrationExtension.getEngineName());
   }
 
   @Test
@@ -104,8 +104,8 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     final WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint).isNotNull();
     assertThat(defaultEndpoint.getEndpoint()).isEqualTo("foo");
-    assertThat(defaultEndpoint.getEngineName()).isEqualTo(
-        engineIntegrationExtension.getEngineName());
+    assertThat(defaultEndpoint.getEngineName())
+        .isEqualTo(engineIntegrationExtension.getEngineName());
   }
 
   @Test
@@ -123,7 +123,6 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     assertThat(defaultEndpoint).isNotNull();
     assertThat(defaultEndpoint.getEndpoint()).isEmpty();
   }
-
 
   @Test
   public void emailNotificationIsEnabled() {
@@ -164,11 +163,9 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     // given
     final String webhook1Name = "webhook1";
     final String webhook2Name = "webhook2";
-    final Map<String, WebhookConfiguration> webhookMap = uiConfigurationClient.createSimpleWebhookConfigurationMap(
-        Sets.newHashSet(
-            webhook2Name,
-            webhook1Name
-        ));
+    final Map<String, WebhookConfiguration> webhookMap =
+        uiConfigurationClient.createSimpleWebhookConfigurationMap(
+            Sets.newHashSet(webhook2Name, webhook1Name));
     embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookMap);
 
     // when
@@ -206,11 +203,18 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
     // then
     assertThat(response.isMetadataTelemetryEnabled())
-        .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings()
-            .getMetadataTelemetryEnabled().get());
+        .isEqualTo(
+            embeddedOptimizeExtension
+                .getSettingsService()
+                .getSettings()
+                .getMetadataTelemetryEnabled()
+                .get());
     assertThat(response.isSettingsManuallyConfirmed())
-        .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings()
-            .isTelemetryManuallyConfirmed());
+        .isEqualTo(
+            embeddedOptimizeExtension
+                .getSettingsService()
+                .getSettings()
+                .isTelemetryManuallyConfirmed());
   }
 
   @Test
@@ -241,17 +245,38 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     final String scriptUrl = "test";
     final String stage = "IT";
     final String clusterId = "IT-cluster";
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel()
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAnalytics()
+        .getMixpanel()
         .setApiHost(apiHost);
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel()
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAnalytics()
+        .getMixpanel()
         .setToken(testToken);
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAnalytics()
+        .getMixpanel()
+        .getProperties()
         .setOrganizationId(organizationId);
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAnalytics()
+        .getMixpanel()
+        .getProperties()
         .setStage(stage);
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAnalytics()
+        .getMixpanel()
+        .getProperties()
         .setClusterId(clusterId);
-    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getOsano()
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAnalytics()
+        .getOsano()
         .setScriptUrl(scriptUrl);
 
     // when
@@ -272,13 +297,16 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnabled(true);
     final String scriptUrl = "test";
-    embeddedOptimizeExtension.getConfigurationService().getOnboarding()
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOnboarding()
         .setAppCuesScriptUrl(scriptUrl);
     final String clusterId = "clusterId1";
     final String orgId = "orgId1";
-    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setProperties(
-        new OnboardingConfiguration.Properties(orgId, clusterId)
-    );
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOnboarding()
+        .setProperties(new OnboardingConfiguration.Properties(orgId, clusterId));
 
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
@@ -296,8 +324,8 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.getOptimizeDatabase()).isEqualTo(
-        databaseIntegrationTestExtension.getDatabaseVendor());
+    assertThat(response.getOptimizeDatabase())
+        .isEqualTo(databaseIntegrationTestExtension.getDatabaseVendor());
   }
 
   protected void createTenant(final String tenantId) {

@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import jakarta.ws.rs.core.Response;
+import java.util.Comparator;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
@@ -13,27 +19,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.util.Comparator;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-
 @Tag(OPENSEARCH_PASSING)
 public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   public static final Comparator<EntityResponseDto> DEFAULT_ENTITIES_COMPARATOR =
-    Comparator.comparing(EntityResponseDto::getName)
-    .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
+      Comparator.comparing(EntityResponseDto::getName)
+          .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
 
   @Test
   public void getCollectionEntitiesWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetCollectionEntitiesRequest("collectionId")
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetCollectionEntitiesRequest("collectionId")
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -45,29 +46,29 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     final String collectionId = createCollectionWithMixedEntities();
 
     // when
-    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities =
+        collectionClient.getEntitiesForCollection(collectionId);
 
     // then
-    assertThat(collectionEntities)
-      .hasSize(4)
-      .isSortedAccordingTo(DEFAULT_ENTITIES_COMPARATOR);
+    assertThat(collectionEntities).hasSize(4).isSortedAccordingTo(DEFAULT_ENTITIES_COMPARATOR);
   }
 
   @ParameterizedTest(name = "sortBy={0}, sortOrder={1}")
   @MethodSource("sortParamsAndExpectedComparator")
-  public void getCollectionEntities_resultsAreSortedAccordingToExpectedComparator(String sortBy, SortOrder sortOrder,
-                                                                                  Comparator<EntityResponseDto> expectedComparator) {
+  public void getCollectionEntities_resultsAreSortedAccordingToExpectedComparator(
+      String sortBy, SortOrder sortOrder, Comparator<EntityResponseDto> expectedComparator) {
     // given
     final String collectionId = createCollectionWithMixedEntities();
     EntitySorter sorter = new EntitySorter(sortBy, sortOrder);
 
     // when
-    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
+    final List<EntityResponseDto> collectionEntities =
+        collectionClient.getEntitiesForCollection(collectionId, sorter);
 
     // then
     assertThat(collectionEntities)
-      .hasSize(4)
-      .isSortedAccordingTo(expectedComparator.thenComparing(DEFAULT_ENTITIES_COMPARATOR));
+        .hasSize(4)
+        .isSortedAccordingTo(expectedComparator.thenComparing(DEFAULT_ENTITIES_COMPARATOR));
   }
 
   @Test
@@ -77,12 +78,13 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     EntitySorter sorter = new EntitySorter("name", null);
 
     // when
-    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId, sorter);
+    final List<EntityResponseDto> collectionEntities =
+        collectionClient.getEntitiesForCollection(collectionId, sorter);
 
     // then
     assertThat(collectionEntities)
-      .hasSize(4)
-      .isSortedAccordingTo(Comparator.comparing(EntityResponseDto::getName));
+        .hasSize(4)
+        .isSortedAccordingTo(Comparator.comparing(EntityResponseDto::getName));
   }
 
   @Test
@@ -92,9 +94,11 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     EntitySorter sorter = new EntitySorter(EntityResponseDto.Fields.currentUserRole, SortOrder.ASC);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetCollectionEntitiesRequest(collectionId, sorter)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetCollectionEntitiesRequest(collectionId, sorter)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -107,9 +111,11 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     EntitySorter sorter = new EntitySorter(null, SortOrder.ASC);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetCollectionEntitiesRequest(collectionId, sorter)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetCollectionEntitiesRequest(collectionId, sorter)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -125,5 +131,4 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return collectionId;
   }
-
 }

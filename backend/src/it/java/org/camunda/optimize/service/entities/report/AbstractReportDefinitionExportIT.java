@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.entities.report;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -15,21 +21,15 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+public abstract class AbstractReportDefinitionExportIT
+    extends AbstractExportImportEntityDefinitionIT {
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public abstract class AbstractReportDefinitionExportIT extends AbstractExportImportEntityDefinitionIT {
-
-  protected abstract List<ReportDefinitionExportDto> exportReportDefinitionAndReturnAsList(final String reportId);
+  protected abstract List<ReportDefinitionExportDto> exportReportDefinitionAndReturnAsList(
+      final String reportId);
 
   protected abstract Response exportReportDefinitionAndReturnResponse(final String reportId);
 
@@ -45,75 +45,88 @@ public abstract class AbstractReportDefinitionExportIT extends AbstractExportImp
 
   @ParameterizedTest
   @MethodSource("getTestProcessReports")
-  public void exportProcessReportDefinitionAsJson(final SingleProcessReportDefinitionRequestDto reportDefToExport) {
+  public void exportProcessReportDefinitionAsJson(
+      final SingleProcessReportDefinitionRequestDto reportDefToExport) {
     // given
     final String reportId = reportClient.createSingleProcessReport(reportDefToExport);
-    final SingleProcessReportDefinitionExportDto expectedReportExportDto = createExportDto(reportDefToExport);
+    final SingleProcessReportDefinitionExportDto expectedReportExportDto =
+        createExportDto(reportDefToExport);
     expectedReportExportDto.setId(reportId);
 
     // when
-    final List<ReportDefinitionExportDto> actualExportDtos = exportReportDefinitionAndReturnAsList(reportId);
+    final List<ReportDefinitionExportDto> actualExportDtos =
+        exportReportDefinitionAndReturnAsList(reportId);
 
     // then
     assertThat(actualExportDtos)
-      .singleElement()
-      .usingRecursiveComparison()
-      .isEqualTo(expectedReportExportDto);
+        .singleElement()
+        .usingRecursiveComparison()
+        .isEqualTo(expectedReportExportDto);
   }
 
   @ParameterizedTest
   @MethodSource("getTestDecisionReports")
-  public void exportDecisionReportDefinitionAsJson(final SingleDecisionReportDefinitionRequestDto reportDefToExport) {
+  public void exportDecisionReportDefinitionAsJson(
+      final SingleDecisionReportDefinitionRequestDto reportDefToExport) {
     // given
     final String reportId = reportClient.createSingleDecisionReport(reportDefToExport);
     final SingleDecisionReportDefinitionExportDto expectedReportExportDto =
-      new SingleDecisionReportDefinitionExportDto(reportDefToExport);
+        new SingleDecisionReportDefinitionExportDto(reportDefToExport);
     expectedReportExportDto.setId(reportId);
 
     // when
-    final List<ReportDefinitionExportDto> actualExportDtos = exportReportDefinitionAndReturnAsList(reportId);
+    final List<ReportDefinitionExportDto> actualExportDtos =
+        exportReportDefinitionAndReturnAsList(reportId);
 
     // then
     assertThat(actualExportDtos)
-      .singleElement()
-      .usingRecursiveComparison()
-      .isEqualTo(expectedReportExportDto);
+        .singleElement()
+        .usingRecursiveComparison()
+        .isEqualTo(expectedReportExportDto);
   }
 
   @ParameterizedTest
   @MethodSource("getTestCombinableReports")
-  public void exportCombinedReportAsJsonFile(final List<SingleProcessReportDefinitionRequestDto> combinableReports) {
+  public void exportCombinedReportAsJsonFile(
+      final List<SingleProcessReportDefinitionRequestDto> combinableReports) {
     // given
     final List<String> combinableReportIds = new ArrayList<>();
-    final List<SingleProcessReportDefinitionExportDto> expectedSingleReportExportDtos = new ArrayList<>();
+    final List<SingleProcessReportDefinitionExportDto> expectedSingleReportExportDtos =
+        new ArrayList<>();
     combinableReports.forEach(
-      reportDef -> {
-        final String reportId = reportClient.createSingleProcessReport(reportDef);
-        final SingleProcessReportDefinitionExportDto singleReportExportDto = createExportDto(reportDef);
-        singleReportExportDto.setId(reportId);
-        combinableReportIds.add(reportId);
-        expectedSingleReportExportDtos.add(singleReportExportDto);
-      });
+        reportDef -> {
+          final String reportId = reportClient.createSingleProcessReport(reportDef);
+          final SingleProcessReportDefinitionExportDto singleReportExportDto =
+              createExportDto(reportDef);
+          singleReportExportDto.setId(reportId);
+          combinableReportIds.add(reportId);
+          expectedSingleReportExportDtos.add(singleReportExportDto);
+        });
     final String reportId = reportClient.createCombinedReport(null, combinableReportIds);
-    final CombinedReportDefinitionRequestDto combinedReport = reportClient.getCombinedProcessReportById(
-      reportId);
-    final CombinedProcessReportDefinitionExportDto expectedCombinedReportDto = createExportDto(combinedReport);
+    final CombinedReportDefinitionRequestDto combinedReport =
+        reportClient.getCombinedProcessReportById(reportId);
+    final CombinedProcessReportDefinitionExportDto expectedCombinedReportDto =
+        createExportDto(combinedReport);
     expectedCombinedReportDto.setId(reportId);
 
     // when
-    final List<ReportDefinitionExportDto> actualExportDtos = exportReportDefinitionAndReturnAsList(reportId);
+    final List<ReportDefinitionExportDto> actualExportDtos =
+        exportReportDefinitionAndReturnAsList(reportId);
 
     // then
     assertThat(actualExportDtos)
-      .hasSize(3)
-      .filteredOn(exportDto -> ExportEntityType.COMBINED_REPORT.equals(exportDto.getExportEntityType()))
-      .singleElement()
-      .usingRecursiveComparison()
-      .isEqualTo(expectedCombinedReportDto);
+        .hasSize(3)
+        .filteredOn(
+            exportDto -> ExportEntityType.COMBINED_REPORT.equals(exportDto.getExportEntityType()))
+        .singleElement()
+        .usingRecursiveComparison()
+        .isEqualTo(expectedCombinedReportDto);
     assertThat(actualExportDtos)
-      .filteredOn(exportDto -> ExportEntityType.SINGLE_PROCESS_REPORT.equals(exportDto.getExportEntityType()))
-      .hasSize(2)
-      .containsExactlyElementsOf(expectedSingleReportExportDtos);
+        .filteredOn(
+            exportDto ->
+                ExportEntityType.SINGLE_PROCESS_REPORT.equals(exportDto.getExportEntityType()))
+        .hasSize(2)
+        .containsExactlyElementsOf(expectedSingleReportExportDtos);
   }
 
   @Test
@@ -121,13 +134,14 @@ public abstract class AbstractReportDefinitionExportIT extends AbstractExportImp
     // given
     final String singleReportId = createSimpleReport(ReportType.PROCESS);
     final String combinedReportId =
-      reportClient.createCombinedReport(null, Collections.singletonList(singleReportId));
+        reportClient.createCombinedReport(null, Collections.singletonList(singleReportId));
     databaseIntegrationTestExtension.deleteAllSingleProcessReports();
 
     // when
     Response response = exportReportDefinitionAndReturnResponse(combinedReportId);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 }

@@ -5,14 +5,12 @@
  */
 package org.camunda.optimize.service.alert;
 
+import java.util.concurrent.CountDownLatch;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobListener;
 
-import java.util.concurrent.CountDownLatch;
-
-
-public class SyncListener implements JobListener{
+public class SyncListener implements JobListener {
 
   private CountDownLatch done;
 
@@ -26,14 +24,10 @@ public class SyncListener implements JobListener{
   }
 
   @Override
-  public void jobToBeExecuted(JobExecutionContext context) {
-
-  }
+  public void jobToBeExecuted(JobExecutionContext context) {}
 
   @Override
-  public void jobExecutionVetoed(JobExecutionContext context) {
-
-  }
+  public void jobExecutionVetoed(JobExecutionContext context) {}
 
   @Override
   public void jobWasExecuted(JobExecutionContext context, JobExecutionException jobException) {

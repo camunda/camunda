@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.test.optimize;
 
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
@@ -12,10 +15,6 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequ
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
-
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.function.Supplier;
 
 @AllArgsConstructor
 public class ProcessOverviewClient {
@@ -26,23 +25,26 @@ public class ProcessOverviewClient {
     return getProcessOverviews(null);
   }
 
-  public List<ProcessOverviewResponseDto> getProcessOverviews(final ProcessOverviewSorter processOverviewSorter) {
+  public List<ProcessOverviewResponseDto> getProcessOverviews(
+      final ProcessOverviewSorter processOverviewSorter) {
     return getRequestExecutor()
-      .buildGetProcessOverviewRequest(processOverviewSorter)
-      .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
+        .buildGetProcessOverviewRequest(processOverviewSorter)
+        .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public void updateProcess(final String definitionKey, final String ownerId, final ProcessDigestRequestDto digestConfig) {
+  public void updateProcess(
+      final String definitionKey,
+      final String ownerId,
+      final ProcessDigestRequestDto digestConfig) {
     getRequestExecutor()
-      .buildUpdateProcessRequest(definitionKey, new ProcessUpdateDto(ownerId, digestConfig))
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+        .buildUpdateProcessRequest(definitionKey, new ProcessUpdateDto(ownerId, digestConfig))
+        .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public Response setInitialProcessOwner(final String definitionKey,
-                                         final String ownerId) {
+  public Response setInitialProcessOwner(final String definitionKey, final String ownerId) {
     return getRequestExecutor()
-      .buildSetInitialProcessOwnerRequest(new InitialProcessOwnerDto(definitionKey, ownerId))
-      .execute();
+        .buildSetInitialProcessOwnerRequest(new InitialProcessOwnerDto(definitionKey, ownerId))
+        .execute();
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.usertask.frequency.groupby.date.distributedby.candidategroup;
 
+import java.time.OffsetDateTime;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import java.time.OffsetDateTime;
-import java.util.Map;
-
 public class UserTaskFrequencyByUserTaskEndDateByCandidateGroupReportEvaluationIT
-  extends UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvaluationIT {
+    extends UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getReportDataType() {
@@ -31,10 +30,13 @@ public class UserTaskFrequencyByUserTaskEndDateByCandidateGroupReportEvaluationI
   }
 
   @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                    final String userTaskKey,
-                                    final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
-    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  protected void changeUserTaskDate(
+      final ProcessInstanceEngineDto processInstance,
+      final String userTaskKey,
+      final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeFlowNodeEndDate(
+        processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(
+        processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

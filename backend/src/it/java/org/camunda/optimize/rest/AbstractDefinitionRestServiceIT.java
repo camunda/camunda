@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+
+import java.util.Collections;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-
-import java.util.Collections;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 
 public abstract class AbstractDefinitionRestServiceIT extends AbstractPlatformIT {
 
@@ -22,7 +21,8 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractPlatformIT
 
   protected abstract int getDefinitionResourceType();
 
-  protected void grantSingleDefinitionAuthorizationsForUser(final String userId, final String definitionKey) {
+  protected void grantSingleDefinitionAuthorizationsForUser(
+      final String userId, final String definitionKey) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(getDefinitionResourceType());
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
@@ -33,6 +33,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractPlatformIT
   }
 
   protected void createTenant(final TenantDto tenantDto) {
-    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantDto.getId(), tenantDto);
+    databaseIntegrationTestExtension.addEntryToDatabase(
+        TENANT_INDEX_NAME, tenantDto.getId(), tenantDto);
   }
 }

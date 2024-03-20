@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.usertask.frequency.groupby.date.distributedby.process;
 
+import java.time.OffsetDateTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import java.time.OffsetDateTime;
-
 public class UserTaskFrequencyByUserTaskStartDateByProcessReportEvaluationIT
-  extends UserTaskFrequencyByUserTaskDateByProcessReportEvaluationIT {
-
+    extends UserTaskFrequencyByUserTaskDateByProcessReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getReportDataType() {
@@ -26,8 +24,10 @@ public class UserTaskFrequencyByUserTaskStartDateByProcessReportEvaluationIT
   }
 
   @Override
-  protected void changeUserTaskInstanceDate(final ProcessInstanceEngineDto processInstanceDto, final String flowNodeId,
-                                            final OffsetDateTime date) {
+  protected void changeUserTaskInstanceDate(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final String flowNodeId,
+      final OffsetDateTime date) {
     engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto.getId(), flowNodeId, date);
   }
 }

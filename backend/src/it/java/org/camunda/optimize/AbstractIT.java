@@ -5,6 +5,17 @@
  */
 package org.camunda.optimize;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTPS_PORT_KEY;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.camunda.optimize.jetty.OptimizeResourceConstants;
 import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
@@ -37,44 +48,34 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTPS_PORT_KEY;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
-
 @SpringBootTest(
-  webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-  properties = {INTEGRATION_TESTS + "=true"}
-)
+    webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+    properties = {INTEGRATION_TESTS + "=true"})
 @Configuration
 public abstract class AbstractIT {
 
   // All tests marked with this tag are passing with OpenSearch
   public static final String OPENSEARCH_PASSING = "openSearchPassing";
-  // Tests marked with this tag are known to not be working with OpenSearch and are not expected to be working yet
+  // Tests marked with this tag are known to not be working with OpenSearch and are not expected to
+  // be working yet
   public static final String OPENSEARCH_SINGLE_TEST_FAIL_OK = "openSearchSingleTestFailOK";
-  // Tests marked with this tag are tests that should be working with OpenSearch, but are failing due to a bug. They
+  // Tests marked with this tag are tests that should be working with OpenSearch, but are failing
+  // due to a bug. They
   // are ignored by the 'OpenSearch passing' CI pipeline, but need to be addressed soon
   public static final String OPENSEARCH_SHOULD_BE_PASSING = "openSearchShouldBePassing";
 
   @RegisterExtension
   @Order(1)
   public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
-    new DatabaseIntegrationTestExtension();
+      new DatabaseIntegrationTestExtension();
 
   @RegisterExtension
   @Order(3)
-  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
+      new EmbeddedOptimizeExtension();
 
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
-    () -> embeddedOptimizeExtension.getRequestExecutor();
+      () -> embeddedOptimizeExtension.getRequestExecutor();
 
   protected abstract void startAndUseNewOptimizeInstance();
 
@@ -88,10 +89,8 @@ public abstract class AbstractIT {
       ((ConfigurableApplicationContext) embeddedOptimizeExtension.getApplicationContext()).close();
     }
 
-    final ConfigurableApplicationContext context = new SpringApplicationBuilder(Main.class)
-      .profiles(activeProfile)
-      .build()
-      .run(arguments);
+    final ConfigurableApplicationContext context =
+        new SpringApplicationBuilder(Main.class).profiles(activeProfile).build().run(arguments);
 
     embeddedOptimizeExtension.setApplicationContext(context);
     embeddedOptimizeExtension.setCloseContextAfterTest(true);
@@ -102,14 +101,21 @@ public abstract class AbstractIT {
   private String[] prepareArgs(final Map<String, String> argMap) {
     final String httpsPort = getPortArg(HTTPS_PORT_KEY);
     final String httpPort = getPortArg(HTTP_PORT_KEY);
-    final String actuatorPort = getArg(ACTUATOR_PORT_PROPERTY_KEY, String.valueOf(OptimizeResourceConstants.ACTUATOR_PORT + 100));
-    final String contextPath = embeddedOptimizeExtension.getConfigurationService().getContextPath()
-      .map(contextPathFromConfig -> getArg(CONTEXT_PATH, contextPathFromConfig)).orElse("");
+    final String actuatorPort =
+        getArg(
+            ACTUATOR_PORT_PROPERTY_KEY,
+            String.valueOf(OptimizeResourceConstants.ACTUATOR_PORT + 100));
+    final String contextPath =
+        embeddedOptimizeExtension
+            .getConfigurationService()
+            .getContextPath()
+            .map(contextPathFromConfig -> getArg(CONTEXT_PATH, contextPathFromConfig))
+            .orElse("");
 
-    final List<String> argList = argMap.entrySet()
-      .stream()
-      .map(e -> getArg(e.getKey(), e.getValue()))
-      .collect(Collectors.toList());
+    final List<String> argList =
+        argMap.entrySet().stream()
+            .map(e -> getArg(e.getKey(), e.getValue()))
+            .collect(Collectors.toList());
 
     Collections.addAll(argList, httpsPort, httpPort, actuatorPort, contextPath);
 
@@ -117,7 +123,10 @@ public abstract class AbstractIT {
   }
 
   private String getPortArg(String portKey) {
-    return getArg(portKey, String.valueOf(embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(portKey) + 100));
+    return getArg(
+        portKey,
+        String.valueOf(
+            embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(portKey) + 100));
   }
 
   private String getArg(String key, String value) {
@@ -125,29 +134,41 @@ public abstract class AbstractIT {
   }
 
   // optimize test helpers
-  protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);
+  protected CollectionClient collectionClient =
+      new CollectionClient(optimizeRequestExecutorSupplier);
   protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
   protected AlertClient alertClient = new AlertClient(optimizeRequestExecutorSupplier);
   protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
-  protected EventProcessClient eventProcessClient = new EventProcessClient(optimizeRequestExecutorSupplier);
+  protected EventProcessClient eventProcessClient =
+      new EventProcessClient(optimizeRequestExecutorSupplier);
   protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
   protected AnalysisClient analysisClient = new AnalysisClient(optimizeRequestExecutorSupplier);
-  protected UiConfigurationClient uiConfigurationClient = new UiConfigurationClient(optimizeRequestExecutorSupplier);
+  protected UiConfigurationClient uiConfigurationClient =
+      new UiConfigurationClient(optimizeRequestExecutorSupplier);
   protected EntitiesClient entitiesClient = new EntitiesClient(optimizeRequestExecutorSupplier);
   protected ExportClient exportClient = new ExportClient(optimizeRequestExecutorSupplier);
   protected ImportClient importClient = new ImportClient(optimizeRequestExecutorSupplier);
   protected PublicApiClient publicApiClient = new PublicApiClient(optimizeRequestExecutorSupplier);
-  protected DefinitionClient definitionClient = new DefinitionClient(optimizeRequestExecutorSupplier);
+  protected DefinitionClient definitionClient =
+      new DefinitionClient(optimizeRequestExecutorSupplier);
   protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
   protected AssigneesClient assigneesClient = new AssigneesClient(optimizeRequestExecutorSupplier);
-  protected CandidateGroupClient candidateGroupClient = new CandidateGroupClient(optimizeRequestExecutorSupplier);
-  protected FlowNodeNamesClient flowNodeNamesClient = new FlowNodeNamesClient(optimizeRequestExecutorSupplier);
+  protected CandidateGroupClient candidateGroupClient =
+      new CandidateGroupClient(optimizeRequestExecutorSupplier);
+  protected FlowNodeNamesClient flowNodeNamesClient =
+      new FlowNodeNamesClient(optimizeRequestExecutorSupplier);
   protected StatusClient statusClient = new StatusClient(optimizeRequestExecutorSupplier);
-  protected LocalizationClient localizationClient = new LocalizationClient(optimizeRequestExecutorSupplier);
+  protected LocalizationClient localizationClient =
+      new LocalizationClient(optimizeRequestExecutorSupplier);
   protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
-  protected IngestionClient ingestionClient = new IngestionClient(
-    optimizeRequestExecutorSupplier,
-    () -> embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken()
-  );
-  protected ProcessOverviewClient processOverviewClient = new ProcessOverviewClient(optimizeRequestExecutorSupplier);
+  protected IngestionClient ingestionClient =
+      new IngestionClient(
+          optimizeRequestExecutorSupplier,
+          () ->
+              embeddedOptimizeExtension
+                  .getConfigurationService()
+                  .getOptimizeApiConfiguration()
+                  .getAccessToken());
+  protected ProcessOverviewClient processOverviewClient =
+      new ProcessOverviewClient(optimizeRequestExecutorSupplier);
 }

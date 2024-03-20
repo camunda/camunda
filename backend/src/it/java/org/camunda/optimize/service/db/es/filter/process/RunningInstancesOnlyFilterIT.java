@@ -27,31 +27,30 @@ public class RunningInstancesOnlyFilterIT extends AbstractFilterIT {
   public void filterByRunningInstancesOnly() {
     // given
     final ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    final ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
-    final ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
-    final ProcessInstanceEngineDto thirdProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
+    final ProcessInstanceEngineDto firstProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    final ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    final ProcessInstanceEngineDto thirdProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(firstProcInst.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(secondProcInst.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(userTaskProcess.getKey())
-        .setProcessDefinitionVersion(userTaskProcess.getVersionAsString())
-        .setReportDataType(ProcessReportDataType.RAW_DATA)
-        .build();
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(userTaskProcess.getKey())
+            .setProcessDefinitionVersion(userTaskProcess.getVersionAsString())
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .build();
     reportData.setFilter(ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList());
-    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(
-        reportData).getResult();
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        reportClient.evaluateRawReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).hasSize(1);
     assertThat(result.getData().get(0).getProcessInstanceId()).isEqualTo(thirdProcInst.getId());
   }
-
 }

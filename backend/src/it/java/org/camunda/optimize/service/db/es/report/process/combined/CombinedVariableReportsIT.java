@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.report.process.combined;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
+import static org.camunda.optimize.service.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
+
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -19,13 +25,6 @@ import org.camunda.optimize.service.db.es.report.process.AbstractProcessDefiniti
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.camunda.optimize.service.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 
 public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
 
@@ -41,12 +40,12 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    CombinedProcessReportResultDataDto<Double> result = reportClient.evaluateUnsavedCombined(
-      createCombinedReportData(singleReportId1, singleReportId2));
+    CombinedProcessReportResultDataDto<Double> result =
+        reportClient.evaluateUnsavedCombined(
+            createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResponseDto<Double>> resultMap =
-      result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResponseDto<Double>> resultMap = result.getData();
     assertThat(resultMap).hasSize(2);
     assertThat(resultMap.keySet()).contains(singleReportId1, singleReportId2);
   }
@@ -61,15 +60,17 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final CombinedReportDataDto combinedReportData = createCombinedReportData(variableReport, frequencyReport);
+    final CombinedReportDataDto combinedReportData =
+        createCombinedReportData(variableReport, frequencyReport);
     CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReport)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateCombinedReportRequest(combinedReport)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -85,8 +86,9 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    CombinedProcessReportResultDataDto<Double> result = reportClient.evaluateUnsavedCombined(
-      createCombinedReportData(singleReportId1, singleReportId2));
+    CombinedProcessReportResultDataDto<Double> result =
+        reportClient.evaluateUnsavedCombined(
+            createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
     assertThat(result.getData()).containsOnlyKeys(singleReportId1, singleReportId2);
@@ -97,30 +99,30 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
   }
 
   private String createVariableReport(final AggregationDto aggregationType) {
-    ProcessReportDataDto data = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(TEST_PROCESS)
-      .setProcessDefinitionVersion("1")
-      .setVariableName(TEST_VARIABLE)
-      .setVariableType(VariableType.INTEGER)
-      .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto data =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(TEST_PROCESS)
+            .setProcessDefinitionVersion("1")
+            .setVariableName(TEST_VARIABLE)
+            .setVariableType(VariableType.INTEGER)
+            .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
+            .build();
     data.getConfiguration().setAggregationTypes(aggregationType);
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(data);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createProcessInstanceFrequencyReport() {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(TEST_PROCESS)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(TEST_PROCESS)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .build();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }

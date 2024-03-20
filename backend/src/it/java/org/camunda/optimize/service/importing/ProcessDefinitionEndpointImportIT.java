@@ -17,10 +17,7 @@ public class ProcessDefinitionEndpointImportIT extends AbstractImportEndpointFai
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {
-    return Stream.of(
-      PROCESS_DEFINITION_ENDPOINT
-    ).flatMap(endpoint -> engineErrors()
-      .map(mockResp -> Arguments.of(endpoint, mockResp)));
+    return Stream.of(PROCESS_DEFINITION_ENDPOINT)
+        .flatMap(endpoint -> engineErrors().map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
-
 }

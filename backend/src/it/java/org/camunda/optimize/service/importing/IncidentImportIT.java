@@ -5,6 +5,25 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static jakarta.ws.rs.HttpMethod.POST;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.StringBody.subString;
+
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
@@ -27,26 +46,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static jakarta.ws.rs.HttpMethod.POST;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
-import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
-import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
-import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.StringBody.subString;
-
 @Tag(OPENSEARCH_PASSING)
 public class IncidentImportIT extends AbstractImportIT {
 
@@ -60,26 +59,31 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .first()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(1);
-        processInstanceDto.getIncidents().forEach(incident -> {
-          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
-          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
-          assertThat(incident.getTenantId()).isNull();
-          assertThat(incident.getId()).isNotNull();
-          assertThat(incident.getCreateTime()).isNotNull();
-          assertThat(incident.getEndTime()).isNull();
-          assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
-          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
-          assertThat(incident.getFailedActivityId()).isNull();
-          assertThat(incident.getIncidentMessage()).isNotNull();
-          assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.OPEN);
-        });
-      });
+        .hasSize(1)
+        .first()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(1);
+              processInstanceDto
+                  .getIncidents()
+                  .forEach(
+                      incident -> {
+                        assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+                        assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+                        assertThat(incident.getTenantId()).isNull();
+                        assertThat(incident.getId()).isNotNull();
+                        assertThat(incident.getCreateTime()).isNotNull();
+                        assertThat(incident.getEndTime()).isNull();
+                        assertThat(incident.getIncidentType())
+                            .isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
+                        assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
+                        assertThat(incident.getFailedActivityId()).isNull();
+                        assertThat(incident.getIncidentMessage()).isNotNull();
+                        assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.OPEN);
+                      });
+            });
   }
 
   @Test
@@ -92,26 +96,31 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .first()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(1);
-        processInstanceDto.getIncidents().forEach(incident -> {
-          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
-          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
-          assertThat(incident.getTenantId()).isNull();
-          assertThat(incident.getId()).isNotNull();
-          assertThat(incident.getCreateTime()).isNotNull();
-          assertThat(incident.getEndTime()).isNotNull();
-          assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
-          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
-          assertThat(incident.getFailedActivityId()).isNull();
-          assertThat(incident.getIncidentMessage()).isNotNull();
-          assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.RESOLVED);
-        });
-      });
+        .hasSize(1)
+        .first()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(1);
+              processInstanceDto
+                  .getIncidents()
+                  .forEach(
+                      incident -> {
+                        assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+                        assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+                        assertThat(incident.getTenantId()).isNull();
+                        assertThat(incident.getId()).isNotNull();
+                        assertThat(incident.getCreateTime()).isNotNull();
+                        assertThat(incident.getEndTime()).isNotNull();
+                        assertThat(incident.getIncidentType())
+                            .isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
+                        assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
+                        assertThat(incident.getFailedActivityId()).isNull();
+                        assertThat(incident.getIncidentMessage()).isNotNull();
+                        assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.RESOLVED);
+                      });
+            });
   }
 
   @Test
@@ -124,34 +133,40 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .first()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(1);
-        processInstanceDto.getIncidents().forEach(incident -> {
-          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
-          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
-          assertThat(incident.getTenantId()).isNull();
-          assertThat(incident.getId()).isNotNull();
-          assertThat(incident.getCreateTime()).isNotNull();
-          assertThat(incident.getEndTime()).isNotNull();
-          assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
-          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
-          assertThat(incident.getFailedActivityId()).isNull();
-          assertThat(incident.getIncidentMessage()).isNotNull();
-          assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.DELETED);
-        });
-      });
+        .hasSize(1)
+        .first()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(1);
+              processInstanceDto
+                  .getIncidents()
+                  .forEach(
+                      incident -> {
+                        assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+                        assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+                        assertThat(incident.getTenantId()).isNull();
+                        assertThat(incident.getId()).isNotNull();
+                        assertThat(incident.getCreateTime()).isNotNull();
+                        assertThat(incident.getEndTime()).isNotNull();
+                        assertThat(incident.getIncidentType())
+                            .isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
+                        assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
+                        assertThat(incident.getFailedActivityId()).isNull();
+                        assertThat(incident.getIncidentMessage()).isNotNull();
+                        assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.DELETED);
+                      });
+            });
   }
 
   @Test
   public void incidentsWithDefaultTenantAreImported() {
     // given
     final String defaultTenantName = "jellyfish";
-    embeddedOptimizeExtension.getDefaultEngineConfiguration()
-      .setDefaultTenant(new DefaultTenant(defaultTenantName, defaultTenantName));
+    embeddedOptimizeExtension
+        .getDefaultEngineConfiguration()
+        .setDefaultTenant(new DefaultTenant(defaultTenantName, defaultTenantName));
     incidentClient.deployAndStartProcessInstanceWithOpenIncident();
 
     // when
@@ -159,11 +174,15 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .extracting(ProcessInstanceDto::getIncidents)
-      .satisfies(incidents -> assertThat(incidents)
         .singleElement()
-        .satisfies(incident -> assertThat(incident.getTenantId()).isEqualTo(defaultTenantName)));
+        .extracting(ProcessInstanceDto::getIncidents)
+        .satisfies(
+            incidents ->
+                assertThat(incidents)
+                    .singleElement()
+                    .satisfies(
+                        incident ->
+                            assertThat(incident.getTenantId()).isEqualTo(defaultTenantName)));
   }
 
   @Test
@@ -171,10 +190,10 @@ public class IncidentImportIT extends AbstractImportIT {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(ONE_TASK)
-      .startProcessInstance()
+        .deployProcess(ONE_TASK)
+        .startProcessInstance()
         .withOpenIncidentOfCustomType("myCustomIncidentType")
-      .executeDeployment();
+        .executeDeployment();
     // @formatter:on
 
     // when
@@ -182,26 +201,31 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(1);
-        processInstanceDto.getIncidents().forEach(incident -> {
-          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
-          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
-          assertThat(incident.getTenantId()).isNull();
-          assertThat(incident.getId()).isNotNull();
-          assertThat(incident.getCreateTime()).isNotNull();
-          assertThat(incident.getEndTime()).isNull();
-          assertThat(incident.getIncidentType().getId()).isEqualTo("myCustomIncidentType");
-          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
-          assertThat(incident.getFailedActivityId()).isNull();
-          assertThat(incident.getIncidentMessage()).isNotNull();
-          assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.OPEN);
-        });
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(1);
+              processInstanceDto
+                  .getIncidents()
+                  .forEach(
+                      incident -> {
+                        assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+                        assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+                        assertThat(incident.getTenantId()).isNull();
+                        assertThat(incident.getId()).isNotNull();
+                        assertThat(incident.getCreateTime()).isNotNull();
+                        assertThat(incident.getEndTime()).isNull();
+                        assertThat(incident.getIncidentType().getId())
+                            .isEqualTo("myCustomIncidentType");
+                        assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
+                        assertThat(incident.getFailedActivityId()).isNull();
+                        assertThat(incident.getIncidentMessage()).isNotNull();
+                        assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.OPEN);
+                      });
+            });
   }
 
   @Test
@@ -216,18 +240,22 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .first()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(1);
-        processInstanceDto.getIncidents().forEach(incident -> {
-          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
-          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
-          assertThat(incident.getTenantId()).isEqualTo(tenantId1);
-        });
-      });
+        .hasSize(1)
+        .first()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(1);
+              processInstanceDto
+                  .getIncidents()
+                  .forEach(
+                      incident -> {
+                        assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+                        assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+                        assertThat(incident.getTenantId()).isEqualTo(tenantId1);
+                      });
+            });
   }
 
   @Test
@@ -235,29 +263,32 @@ public class IncidentImportIT extends AbstractImportIT {
     // given  one open incident is created
     BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+        engineIntegrationExtension.deployAndStartProcess(incidentProcess);
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
 
     importAllEngineEntitiesFromScratch();
 
     // when we resolve the open incident and create another incident
     incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
 
     importAllEngineEntitiesFromLastIndex();
 
     // then there should be one complete one open incident
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .first()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(2);
-        assertThat(processInstanceDto.getIncidents())
-          .flatExtracting(IncidentDto::getIncidentStatus)
-          .containsExactlyInAnyOrder(IncidentStatus.OPEN, IncidentStatus.RESOLVED);
-      });
+        .hasSize(1)
+        .first()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(2);
+              assertThat(processInstanceDto.getIncidents())
+                  .flatExtracting(IncidentDto::getIncidentStatus)
+                  .containsExactlyInAnyOrder(IncidentStatus.OPEN, IncidentStatus.RESOLVED);
+            });
   }
 
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
@@ -266,7 +297,7 @@ public class IncidentImportIT extends AbstractImportIT {
   public void openIncidentsDontOverwriteResolvedOnes() {
     // given
     final ProcessInstanceEngineDto processInstanceWithIncident =
-      incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+        incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     manuallyAddAResolvedIncidentToElasticsearch(processInstanceWithIncident);
 
     // when we import the open incident
@@ -274,41 +305,48 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then the open incident should not overwrite the existing resolved one
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .first()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(1);
-        processInstanceDto.getIncidents().forEach(incident -> {
-          assertThat(incident.getEndTime()).isNotNull();
-          assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
-          assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.RESOLVED);
-        });
-      });
+        .hasSize(1)
+        .first()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(1);
+              processInstanceDto
+                  .getIncidents()
+                  .forEach(
+                      incident -> {
+                        assertThat(incident.getEndTime()).isNotNull();
+                        assertThat(incident.getIncidentType())
+                            .isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
+                        assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.RESOLVED);
+                      });
+            });
   }
 
   @Test
   public void multipleProcessInstancesWithIncidents_incidentsAreImportedToCorrectInstance() {
     // given
     final ProcessInstanceEngineDto processInstanceWithIncident =
-      incidentClient.deployAndStartProcessInstanceWithOpenIncident();
-    incidentClient.startProcessInstanceAndCreateOpenIncident(processInstanceWithIncident.getDefinitionId());
+        incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    incidentClient.startProcessInstanceAndCreateOpenIncident(
+        processInstanceWithIncident.getDefinitionId());
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(2)
-      .allSatisfy(processInstanceDto -> {
-        assertThat(processInstanceDto.getIncidents()).hasSize(1);
-        assertThat(processInstanceDto.getIncidents())
-          .flatExtracting(IncidentDto::getIncidentStatus)
-          .containsExactlyInAnyOrder(IncidentStatus.OPEN);
-      });
+        .hasSize(2)
+        .allSatisfy(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getIncidents()).hasSize(1);
+              assertThat(processInstanceDto.getIncidents())
+                  .flatExtracting(IncidentDto::getIncidentStatus)
+                  .containsExactlyInAnyOrder(IncidentStatus.OPEN);
+            });
   }
 
   @Test
@@ -346,15 +384,22 @@ public class IncidentImportIT extends AbstractImportIT {
     // when updates to ES fails the first and succeeds the second time
     incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest processInstanceIndexMatcher = request()
-      .withPath("/_bulk")
-      .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
-        .getIndexNameService()
-        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
+    final HttpRequest processInstanceIndexMatcher =
+        request()
+            .withPath("/_bulk")
+            .withMethod(POST)
+            .withBody(
+                subString(
+                    "\"_index\":\""
+                        + embeddedOptimizeExtension
+                            .getOptimizeDatabaseClient()
+                            .getIndexNameService()
+                            .getIndexPrefix()
+                        + "-"
+                        + PROCESS_INSTANCE_INDEX_PREFIX));
     dbMockServer
-      .when(processInstanceIndexMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(processInstanceIndexMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
     importOpenIncidents();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     dbMockServer.verify(processInstanceIndexMatcher);
@@ -374,15 +419,22 @@ public class IncidentImportIT extends AbstractImportIT {
     // when updates to ES fails the first and succeeds the second time
     incidentClient.deployAndStartProcessInstanceWithResolvedIncident();
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest processInstanceIndexMatcher = request()
-      .withPath("/_bulk")
-      .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
-        .getIndexNameService()
-        .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
+    final HttpRequest processInstanceIndexMatcher =
+        request()
+            .withPath("/_bulk")
+            .withMethod(POST)
+            .withBody(
+                subString(
+                    "\"_index\":\""
+                        + embeddedOptimizeExtension
+                            .getOptimizeDatabaseClient()
+                            .getIndexNameService()
+                            .getIndexPrefix()
+                        + "-"
+                        + PROCESS_INSTANCE_INDEX_PREFIX));
     dbMockServer
-      .when(processInstanceIndexMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(processInstanceIndexMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
     importResolvedIncidents();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     dbMockServer.verify(processInstanceIndexMatcher);
@@ -404,28 +456,31 @@ public class IncidentImportIT extends AbstractImportIT {
     engineDatabaseExtension.removeProcessInstanceIdFromAllHistoricIncidents();
     // and given an incident with a process instance id
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+        incidentClient.deployAndStartProcessInstanceWithOpenIncident();
 
-    final List<HistoricIncidentEngineDto> historicIncidents = engineIntegrationExtension.getHistoricIncidents();
+    final List<HistoricIncidentEngineDto> historicIncidents =
+        engineIntegrationExtension.getHistoricIncidents();
     assertThat(historicIncidents)
-      .hasSize(2)
-      .extracting(HistoricIncidentEngineDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(null, processInstanceEngineDto.getId());
+        .hasSize(2)
+        .extracting(HistoricIncidentEngineDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(null, processInstanceEngineDto.getId());
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(2)
-      .flatExtracting(ProcessInstanceDto::getIncidents)
-      .hasSize(1)
-      .satisfies(incident -> assertThat(incident)
-        .extracting(IncidentDto::getId)
-        .containsExactly(getIncidentIdForIncidentWithProcessInstanceId(historicIncidents))
-      );
+        .hasSize(2)
+        .flatExtracting(ProcessInstanceDto::getIncidents)
+        .hasSize(1)
+        .satisfies(
+            incident ->
+                assertThat(incident)
+                    .extracting(IncidentDto::getId)
+                    .containsExactly(
+                        getIncidentIdForIncidentWithProcessInstanceId(historicIncidents)));
   }
 
   @Test
@@ -438,38 +493,46 @@ public class IncidentImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<IncidentDto> incidents = databaseIntegrationTestExtension.getAllProcessInstances()
-      .stream()
-      .flatMap(inst -> inst.getIncidents().stream())
-      .toList();
+    final List<IncidentDto> incidents =
+        databaseIntegrationTestExtension.getAllProcessInstances().stream()
+            .flatMap(inst -> inst.getIncidents().stream())
+            .toList();
     assertThat(incidents).hasSize(1);
   }
 
-  private String getIncidentIdForIncidentWithProcessInstanceId(final List<HistoricIncidentEngineDto> historicIncidents) {
+  private String getIncidentIdForIncidentWithProcessInstanceId(
+      final List<HistoricIncidentEngineDto> historicIncidents) {
     return historicIncidents.stream()
-      .filter(i -> i.getProcessInstanceId() != null)
-      .findFirst()
-      .map(HistoricIncidentEngineDto::getId)
-      .orElseThrow(() ->
-                     new OptimizeIntegrationTestException("There should be one incident with a process instance id"));
+        .filter(i -> i.getProcessInstanceId() != null)
+        .findFirst()
+        .map(HistoricIncidentEngineDto::getId)
+        .orElseThrow(
+            () ->
+                new OptimizeIntegrationTestException(
+                    "There should be one incident with a process instance id"));
   }
 
   private long getIncidentCount() {
     final List<ProcessInstanceDto> storedProcessInstances =
-      databaseIntegrationTestExtension.getAllProcessInstances();
+        databaseIntegrationTestExtension.getAllProcessInstances();
     return storedProcessInstances.stream().mapToLong(p -> p.getIncidents().size()).sum();
   }
 
   @SneakyThrows
   private void importOpenIncidents() {
-    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
-      .getEngineImportSchedulers()) {
-      final ImportMediator mediator = scheduler
-        .getImportMediators()
-        .stream()
-        .filter(engineImportMediator -> OpenIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))
-        .findFirst()
-        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find OpenIncidentEngineImportMediator!"));
+    for (EngineImportScheduler scheduler :
+        embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()) {
+      final ImportMediator mediator =
+          scheduler.getImportMediators().stream()
+              .filter(
+                  engineImportMediator ->
+                      OpenIncidentEngineImportMediator.class.equals(
+                          engineImportMediator.getClass()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new OptimizeIntegrationTestException(
+                          "Could not find OpenIncidentEngineImportMediator!"));
 
       mediator.runImport().get(10, TimeUnit.SECONDS);
     }
@@ -477,57 +540,68 @@ public class IncidentImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private void importResolvedIncidents() {
-    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
-      .getEngineImportSchedulers()) {
-      final ImportMediator mediator = scheduler
-        .getImportMediators()
-        .stream()
-        .filter(engineImportMediator -> CompletedIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))
-        .findFirst()
-        .orElseThrow(() ->
-                       new OptimizeIntegrationTestException("Could not find CompletedIncidentEngineImportMediator!"));
+    for (EngineImportScheduler scheduler :
+        embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()) {
+      final ImportMediator mediator =
+          scheduler.getImportMediators().stream()
+              .filter(
+                  engineImportMediator ->
+                      CompletedIncidentEngineImportMediator.class.equals(
+                          engineImportMediator.getClass()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new OptimizeIntegrationTestException(
+                          "Could not find CompletedIncidentEngineImportMediator!"));
 
       mediator.runImport().get(10, TimeUnit.SECONDS);
     }
   }
 
-  private void manuallyAddAResolvedIncidentToElasticsearch(final ProcessInstanceEngineDto processInstanceWithIncident) {
-    final HistoricIncidentEngineDto incidentEngineDto = engineIntegrationExtension.getHistoricIncidents()
-      .stream()
-      .findFirst()
-      .orElseThrow(() -> new OptimizeIntegrationTestException("There should be at least one incident!"));
+  private void manuallyAddAResolvedIncidentToElasticsearch(
+      final ProcessInstanceEngineDto processInstanceWithIncident) {
+    final HistoricIncidentEngineDto incidentEngineDto =
+        engineIntegrationExtension.getHistoricIncidents().stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new OptimizeIntegrationTestException("There should be at least one incident!"));
 
-    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
-      .processDefinitionId(processInstanceWithIncident.getDefinitionId())
-      .processDefinitionKey(processInstanceWithIncident.getProcessDefinitionKey())
-      .processDefinitionVersion(processInstanceWithIncident.getProcessDefinitionVersion())
-      .processInstanceId(processInstanceWithIncident.getId())
-      .startDate(OffsetDateTime.now())
-      .endDate(OffsetDateTime.now())
-      .incidents(Collections.singletonList(new IncidentDto(
-        processInstanceWithIncident.getId(),
-        processInstanceWithIncident.getProcessDefinitionKey(),
-        processInstanceWithIncident.getProcessDefinitionVersion(),
-        processInstanceWithIncident.getTenantId(),
-        DEFAULT_ENGINE_ALIAS,
-        incidentEngineDto.getId(),
-        OffsetDateTime.now(),
-        OffsetDateTime.now(),
-        10L,
-        IncidentType.FAILED_EXTERNAL_TASK, SERVICE_TASK, SERVICE_TASK, "Foo bar", IncidentStatus.RESOLVED
-      )))
-      .build();
-    embeddedOptimizeExtension.getDatabaseSchemaManager()
-      .createIndexIfMissing(
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
-        new ProcessInstanceIndexES(processInstanceWithIncident.getProcessDefinitionKey()),
-        Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
-      );
+    final ProcessInstanceDto procInst =
+        ProcessInstanceDto.builder()
+            .processDefinitionId(processInstanceWithIncident.getDefinitionId())
+            .processDefinitionKey(processInstanceWithIncident.getProcessDefinitionKey())
+            .processDefinitionVersion(processInstanceWithIncident.getProcessDefinitionVersion())
+            .processInstanceId(processInstanceWithIncident.getId())
+            .startDate(OffsetDateTime.now())
+            .endDate(OffsetDateTime.now())
+            .incidents(
+                Collections.singletonList(
+                    new IncidentDto(
+                        processInstanceWithIncident.getId(),
+                        processInstanceWithIncident.getProcessDefinitionKey(),
+                        processInstanceWithIncident.getProcessDefinitionVersion(),
+                        processInstanceWithIncident.getTenantId(),
+                        DEFAULT_ENGINE_ALIAS,
+                        incidentEngineDto.getId(),
+                        OffsetDateTime.now(),
+                        OffsetDateTime.now(),
+                        10L,
+                        IncidentType.FAILED_EXTERNAL_TASK,
+                        SERVICE_TASK,
+                        SERVICE_TASK,
+                        "Foo bar",
+                        IncidentStatus.RESOLVED)))
+            .build();
+    embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .createIndexIfMissing(
+            databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
+            new ProcessInstanceIndexES(processInstanceWithIncident.getProcessDefinitionKey()),
+            Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS));
     databaseIntegrationTestExtension.addEntryToDatabase(
-      getProcessInstanceIndexAliasName(processInstanceWithIncident.getProcessDefinitionKey()),
-      processInstanceWithIncident.getId(),
-      procInst
-    );
+        getProcessInstanceIndexAliasName(processInstanceWithIncident.getProcessDefinitionKey()),
+        processInstanceWithIncident.getId(),
+        procInst);
   }
-
 }

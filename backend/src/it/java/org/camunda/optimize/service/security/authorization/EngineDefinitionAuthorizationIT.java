@@ -514,7 +514,8 @@ public class EngineDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void authorizationForOneGroupIsNotTransferredToOtherGroups(final int definitionResourceType) {
+  public void authorizationForOneGroupIsNotTransferredToOtherGroups(
+      final int definitionResourceType) {
     // given
     final String genzoUser = "genzo";
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserT
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 public class UserTaskIdleDurationByUserTaskStartDateByAssigneeReportEvaluationIT
-  extends UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluationIT {
+    extends UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -17,19 +17,22 @@ public class UserTaskIdleDurationByUserTaskStartDateByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
+  protected void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
     changeUserTaskIdleDuration(processInstanceDto, durationInMs);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                final String userTaskKey,
-                                final Double durationInMs) {
+  protected void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final String userTaskKey,
+      final Double durationInMs) {
     changeUserTaskIdleDuration(processInstanceDto, userTaskKey, durationInMs);
   }
 
   @Override
-  protected Double getCorrectTestExecutionValue(final FlowNodeStatusTestValues flowNodeStatusTestValues) {
+  protected Double getCorrectTestExecutionValue(
+      final FlowNodeStatusTestValues flowNodeStatusTestValues) {
     return flowNodeStatusTestValues.expectedIdleDurationValue;
   }
 }

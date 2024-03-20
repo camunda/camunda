@@ -5,7 +5,16 @@
  */
 package org.camunda.optimize.service.db.es.report.decision;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_AMOUNT;
+
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -16,16 +25,6 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
-import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_AMOUNT;
 
 public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefinitionIT {
 
@@ -38,14 +37,13 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
-      decisionDefinitionDto1.getKey(),
-      ImmutableList.of(ALL_VERSIONS)
-    );
+    List<DecisionReportDataDto> allPossibleReports =
+        createAllPossibleDecisionReports(
+            decisionDefinitionDto1.getKey(), ImmutableList.of(ALL_VERSIONS));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto>
+          result = reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(3L);
@@ -61,14 +59,16 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
-      decisionDefinitionDto1.getKey(),
-      ImmutableList.of(decisionDefinitionDto1.getVersionAsString(), decisionDefinitionDto3.getVersionAsString())
-    );
+    List<DecisionReportDataDto> allPossibleReports =
+        createAllPossibleDecisionReports(
+            decisionDefinitionDto1.getKey(),
+            ImmutableList.of(
+                decisionDefinitionDto1.getVersionAsString(),
+                decisionDefinitionDto3.getVersionAsString()));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto>
+          result = reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(5L);
@@ -84,11 +84,12 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     importAllEngineEntitiesFromScratch();
 
     List<DecisionReportDataDto> allPossibleReports =
-      createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
+        createAllPossibleDecisionReports(
+            decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto>
+          result = reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(1L);
@@ -100,8 +101,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto> result =
-        reportClient.evaluateReport(report);
+      AuthorizedSingleReportEvaluationResponseDto<?, SingleDecisionReportDefinitionRequestDto>
+          result = reportClient.evaluateReport(report);
 
       // then
       assertThat(result.getResult().getInstanceCount()).isEqualTo(4L);
@@ -115,10 +116,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     importAllEngineEntitiesFromScratch();
 
-    List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
-      decisionDefinitionDto1.getKey(),
-      ImmutableList.of()
-    );
+    List<DecisionReportDataDto> allPossibleReports =
+        createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of());
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
       ReportResultResponseDto<Object> result = reportClient.evaluateReport(report).getResult();
@@ -130,25 +129,25 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
   private DecisionDefinitionEngineDto deployDecisionAndStartInstances(int nInstancesToStart) {
     DecisionDefinitionEngineDto definition = engineIntegrationExtension.deployDecisionDefinition();
-    IntStream.range(0, nInstancesToStart).forEach(
-      i -> engineIntegrationExtension.startDecisionInstance(definition.getId())
-    );
+    IntStream.range(0, nInstancesToStart)
+        .forEach(i -> engineIntegrationExtension.startDecisionInstance(definition.getId()));
     return definition;
   }
 
-  private List<DecisionReportDataDto> createAllPossibleDecisionReports(String definitionKey,
-                                                                       List<String> definitionVersions) {
+  private List<DecisionReportDataDto> createAllPossibleDecisionReports(
+      String definitionKey, List<String> definitionVersions) {
     List<DecisionReportDataDto> reports = new ArrayList<>();
     for (DecisionReportDataType reportDataType : DecisionReportDataType.values()) {
-      DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-        .setDecisionDefinitionKey(definitionKey)
-        .setDecisionDefinitionVersions(definitionVersions)
-        .setVariableId(INPUT_AMOUNT_ID)
-        .setVariableName(INPUT_VARIABLE_AMOUNT)
-        .setVariableType(VariableType.DOUBLE)
-        .setDateInterval(AggregateByDateUnit.DAY)
-        .setReportDataType(reportDataType)
-        .build();
+      DecisionReportDataDto reportData =
+          DecisionReportDataBuilder.create()
+              .setDecisionDefinitionKey(definitionKey)
+              .setDecisionDefinitionVersions(definitionVersions)
+              .setVariableId(INPUT_AMOUNT_ID)
+              .setVariableName(INPUT_VARIABLE_AMOUNT)
+              .setVariableType(VariableType.DOUBLE)
+              .setDateInterval(AggregateByDateUnit.DAY)
+              .setReportDataType(reportDataType)
+              .build();
       reports.add(reportData);
     }
     return reports;

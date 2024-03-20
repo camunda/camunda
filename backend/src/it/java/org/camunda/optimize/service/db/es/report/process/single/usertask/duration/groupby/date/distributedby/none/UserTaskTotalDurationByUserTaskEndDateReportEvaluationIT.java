@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserT
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 public class UserTaskTotalDurationByUserTaskEndDateReportEvaluationIT
-  extends UserTaskDurationByUserTaskEndDateReportEvaluationIT {
+    extends UserTaskDurationByUserTaskEndDateReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -17,14 +17,16 @@ public class UserTaskTotalDurationByUserTaskEndDateReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                final String modelElementId,
-                                final Double durationInMs) {
+  protected void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final String modelElementId,
+      final Double durationInMs) {
     changeUserTaskTotalDuration(processInstanceDto, modelElementId, durationInMs);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
+  protected void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
     changeUserTaskTotalDuration(processInstanceDto, durationInMs);
   }
 }

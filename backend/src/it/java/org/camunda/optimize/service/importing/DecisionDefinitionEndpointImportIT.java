@@ -17,10 +17,7 @@ public class DecisionDefinitionEndpointImportIT extends AbstractImportEndpointFa
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {
-    return Stream.of(
-      DECISION_DEFINITION_ENDPOINT
-    ).flatMap(endpoint -> engineErrors()
-      .map(mockResp -> Arguments.of(endpoint, mockResp)));
+    return Stream.of(DECISION_DEFINITION_ENDPOINT)
+        .flatMap(endpoint -> engineErrors().map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
-
 }

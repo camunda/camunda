@@ -361,8 +361,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public void deleteAllSingleProcessReports() {
     final DeleteByQueryRequest request =
         new DeleteByQueryRequest(
-            getIndexNameService()
-                .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
+                getIndexNameService()
+                    .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
             .setQuery(matchAllQuery())
             .setRefresh(true);
 
@@ -374,7 +374,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       throw new OptimizeIntegrationTestException(
           "Could not delete data in index "
               + getIndexNameService()
-              .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
+                  .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
           e);
     }
   }
@@ -695,7 +695,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             .get(
                 new GetIndexRequest(
                     indexNameService.getOptimizeIndexAliasForIndex(
-                        EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+                            EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
                         + "*"),
                 esClient.requestOptions());
     return getIndexResponse.getAliases();
@@ -853,29 +853,33 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void setNestedDocumentsLimit(final ConfigurationService configurationService,
-      final int nestedDocumentsLimit) {
-    configurationService.getElasticSearchConfiguration()
+  public void setNestedDocumentsLimit(
+      final ConfigurationService configurationService, final int nestedDocumentsLimit) {
+    configurationService
+        .getElasticSearchConfiguration()
         .setNestedDocumentsLimit(nestedDocumentsLimit);
   }
 
   @Override
   @SneakyThrows
-  public void updateProcessInstanceNestedDocLimit(final String processDefinitionKey,
-      final int nestedDocLimit, final ConfigurationService configurationService) {
+  public void updateProcessInstanceNestedDocLimit(
+      final String processDefinitionKey,
+      final int nestedDocLimit,
+      final ConfigurationService configurationService) {
     setNestedDocumentsLimit(configurationService, nestedDocLimit);
     final OptimizeElasticsearchClient esClient = getOptimizeElasticsearchClient();
-    final String indexName = esClient.getIndexNameService()
-        .getOptimizeIndexNameWithVersionForAllIndicesOf(
-            new ProcessInstanceIndexES(processDefinitionKey));
+    final String indexName =
+        esClient
+            .getIndexNameService()
+            .getOptimizeIndexNameWithVersionForAllIndicesOf(
+                new ProcessInstanceIndexES(processDefinitionKey));
 
-    esClient.getHighLevelClient().indices().putSettings(
-        new UpdateSettingsRequest(
-            buildDynamicSettings(configurationService),
-            indexName
-        ),
-        esClient.requestOptions()
-    );
+    esClient
+        .getHighLevelClient()
+        .indices()
+        .putSettings(
+            new UpdateSettingsRequest(buildDynamicSettings(configurationService), indexName),
+            esClient.requestOptions());
   }
 
   @SneakyThrows
@@ -968,7 +972,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private <T> List<T> getAllDocumentsOfIndexAs(
       final String indexName, final Class<T> type, final QueryBuilder query) {
     try {
-      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
+      return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
     } catch (final ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot get all documents for index " + indexName, e);

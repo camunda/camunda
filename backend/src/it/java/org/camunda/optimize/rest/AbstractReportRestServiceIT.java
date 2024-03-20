@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -17,13 +23,6 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
-
 public abstract class AbstractReportRestServiceIT extends AbstractPlatformIT {
 
   protected static final String PROCESS_DEFINITION_KEY = "simple";
@@ -35,50 +34,54 @@ public abstract class AbstractReportRestServiceIT extends AbstractPlatformIT {
   protected String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType) {
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
+        ProcessReportDataDto processReportDataDto =
+            TemplatedProcessReportDataBuilder.createReportData()
+                .setProcessDefinitionKey(RANDOM_KEY)
+                .setProcessDefinitionVersion(RANDOM_VERSION)
+                .setReportDataType(ProcessReportDataType.RAW_DATA)
+                .build();
         processReportDataDto.getConfiguration().setXml(RANDOM_STRING);
         return addSingleProcessReportWithDefinition(processReportDataDto, null);
       case DECISION:
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
+        DecisionReportDataDto decisionReportDataDto =
+            DecisionReportDataBuilder.create()
+                .setDecisionDefinitionKey(RANDOM_KEY)
+                .setDecisionDefinitionVersion(RANDOM_VERSION)
+                .setReportDataType(DecisionReportDataType.RAW_DATA)
+                .build();
         decisionReportDataDto.getConfiguration().setXml(RANDOM_STRING);
         return addSingleDecisionReportWithDefinition(decisionReportDataDto, null);
     }
     return null;
   }
 
-  protected String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto) {
+  protected String addSingleProcessReportWithDefinition(
+      final ProcessReportDataDto processReportDataDto) {
     return addSingleProcessReportWithDefinition(processReportDataDto, null);
   }
 
-  protected String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto,
-                                                        final String collectionId) {
+  protected String addSingleProcessReportWithDefinition(
+      final ProcessReportDataDto processReportDataDto, final String collectionId) {
     return addSingleProcessReportWithDefinition(processReportDataDto, null, collectionId);
   }
 
-  protected String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto,
-                                                        final String description,
-                                                        final String collectionId) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionRequestDto(
-      processReportDataDto,
-      description,
-      collectionId
-    );
+  protected String addSingleProcessReportWithDefinition(
+      final ProcessReportDataDto processReportDataDto,
+      final String description,
+      final String collectionId) {
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+        createSingleProcessReportDefinitionRequestDto(
+            processReportDataDto, description, collectionId);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
-  protected static SingleProcessReportDefinitionRequestDto createSingleProcessReportDefinitionRequestDto(
-    final ProcessReportDataDto processReportDataDto, final String description, final String collectionId) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+  protected static SingleProcessReportDefinitionRequestDto
+      createSingleProcessReportDefinitionRequestDto(
+          final ProcessReportDataDto processReportDataDto,
+          final String description,
+          final String collectionId) {
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(processReportDataDto);
     singleProcessReportDefinitionDto.setId(RANDOM_STRING);
     singleProcessReportDefinitionDto.setLastModifier(RANDOM_STRING);
@@ -92,29 +95,33 @@ public abstract class AbstractReportRestServiceIT extends AbstractPlatformIT {
     return singleProcessReportDefinitionDto;
   }
 
-  protected String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto) {
+  protected String addSingleDecisionReportWithDefinition(
+      final DecisionReportDataDto decisionReportDataDto) {
     return addSingleDecisionReportWithDefinition(decisionReportDataDto, null);
   }
 
-  protected String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto,
-                                                         final String collectionId) {
+  protected String addSingleDecisionReportWithDefinition(
+      final DecisionReportDataDto decisionReportDataDto, final String collectionId) {
     return addSingleDecisionReportWithDefinition(decisionReportDataDto, null, collectionId);
   }
 
-  protected String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto,
-                                                         final String description,
-                                                         final String collectionId) {
-    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = createSingleDecisionReportDefinitionRequestDto(
-      decisionReportDataDto,
-      description,
-      collectionId
-    );
+  protected String addSingleDecisionReportWithDefinition(
+      final DecisionReportDataDto decisionReportDataDto,
+      final String description,
+      final String collectionId) {
+    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+        createSingleDecisionReportDefinitionRequestDto(
+            decisionReportDataDto, description, collectionId);
     return reportClient.createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
-  protected static SingleDecisionReportDefinitionRequestDto createSingleDecisionReportDefinitionRequestDto(
-    final DecisionReportDataDto decisionReportDataDto, final String description, final String collectionId) {
-    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+  protected static SingleDecisionReportDefinitionRequestDto
+      createSingleDecisionReportDefinitionRequestDto(
+          final DecisionReportDataDto decisionReportDataDto,
+          final String description,
+          final String collectionId) {
+    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+        new SingleDecisionReportDefinitionRequestDto();
     singleDecisionReportDefinitionDto.setData(decisionReportDataDto);
     singleDecisionReportDefinitionDto.setId(RANDOM_STRING);
     singleDecisionReportDefinitionDto.setLastModifier(RANDOM_STRING);
@@ -128,15 +135,15 @@ public abstract class AbstractReportRestServiceIT extends AbstractPlatformIT {
     return singleDecisionReportDefinitionDto;
   }
 
-  protected List<ReportDataDefinitionDto> createSingleDefinitionListWithIdentifier(final String definitionIdentifier) {
-    return List.of(new ReportDataDefinitionDto(
-      definitionIdentifier,
-      RANDOM_KEY,
-      RANDOM_STRING,
-      RANDOM_STRING,
-      Collections.singletonList(ALL_VERSIONS),
-      DEFAULT_TENANT_IDS
-    ));
+  protected List<ReportDataDefinitionDto> createSingleDefinitionListWithIdentifier(
+      final String definitionIdentifier) {
+    return List.of(
+        new ReportDataDefinitionDto(
+            definitionIdentifier,
+            RANDOM_KEY,
+            RANDOM_STRING,
+            RANDOM_STRING,
+            Collections.singletonList(ALL_VERSIONS),
+            DEFAULT_TENANT_IDS));
   }
-
 }

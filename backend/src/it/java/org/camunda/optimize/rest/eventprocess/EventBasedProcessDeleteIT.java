@@ -5,7 +5,25 @@
  */
 package org.camunda.optimize.rest.eventprocess;
 
+import static jakarta.ws.rs.HttpMethod.POST;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.rest.eventprocess.EventBasedProcessRestServiceIT.createProcessDefinitionXml;
+import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
+import static org.mockserver.model.HttpRequest.request;
+
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
@@ -32,25 +50,6 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
-import jakarta.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static jakarta.ws.rs.HttpMethod.POST;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.rest.eventprocess.EventBasedProcessRestServiceIT.createProcessDefinitionXml;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
-import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
-import static org.mockserver.model.HttpRequest.request;
-
 public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
   private static String simpleDiagramXml;
@@ -60,8 +59,8 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
   @RegisterExtension
   @Order(5)
-  protected final LogCapturer logCapturer = LogCapturer.create().forLevel(Level.DEBUG)
-    .captureForType(EventProcessService.class);
+  protected final LogCapturer logCapturer =
+      LogCapturer.create().forLevel(Level.DEBUG).captureForType(EventProcessService.class);
 
   @BeforeAll
   public static void setup() {
@@ -71,24 +70,27 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   @Test
   public void deleteEventProcessMapping() {
     // given
-    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
-      eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml)
-    );
+    String storedEventProcessMappingId =
+        eventProcessClient.createEventProcessMapping(
+            eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml));
 
     // when
-    Response response = eventProcessClient
-      .createDeleteEventProcessMappingRequest(storedEventProcessMappingId).execute();
+    Response response =
+        eventProcessClient
+            .createDeleteEventProcessMappingRequest(storedEventProcessMappingId)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertGetMappingRequestStatusCode(storedEventProcessMappingId, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        storedEventProcessMappingId, Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
   public void deletePublishedEventProcessMapping() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
     String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     publishMappingAndExecuteImport(eventProcessId);
@@ -109,15 +111,17 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     // given a published event process with various dependent resources created using its definition
     ingestTestEvent(STARTED_EVENT);
     ingestTestEvent(FINISHED_EVENT);
-    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
-      STARTED_EVENT, FINISHED_EVENT
-    );
-    String eventProcessDefinitionKeyToDelete = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
-    String nonDeletedEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    final EventProcessMappingDto simpleEventProcessMappingDto =
+        buildSimpleEventProcessMappingDto(STARTED_EVENT, FINISHED_EVENT);
+    String eventProcessDefinitionKeyToDelete =
+        eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String nonDeletedEventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
 
     publishMappingAndExecuteImport(eventProcessDefinitionKeyToDelete);
     publishMappingAndExecuteImport(nonDeletedEventProcessDefinitionKey);
-    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessDefinitionKeyToDelete);
+    EventProcessPublishStateDto publishState =
+        getEventProcessPublishStateDto(eventProcessDefinitionKeyToDelete);
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
     executeImportCycle();
 
@@ -125,64 +129,67 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKeyToDelete)
-    );
+        collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKeyToDelete));
 
     addLabelForEventProcessDefinition(eventProcessDefinitionKeyToDelete, FIRST_LABEL);
-    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto = addLabelForEventProcessDefinition(
-      nonDeletedEventProcessDefinitionKey,
-      SECOND_LABEL
-    );
+    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto =
+        addLabelForEventProcessDefinition(nonDeletedEventProcessDefinitionKey, SECOND_LABEL);
 
-    String reportWithEventProcessDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        eventProcessDefinitionKeyToDelete,
-        Collections.emptyList()
-      ));
-    String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        DEFAULT_DEFINITION_KEY,
-        Collections.emptyList()
-      ));
-    String reportIdWithNoDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, Collections.emptyList()));
+    String reportWithEventProcessDefKey =
+        reportClient.createSingleProcessReport(
+            reportClient.createSingleProcessReportDefinitionDto(
+                collectionId, eventProcessDefinitionKeyToDelete, Collections.emptyList()));
+    String reportIdWithDefaultDefKey =
+        reportClient.createSingleProcessReport(
+            reportClient.createSingleProcessReportDefinitionDto(
+                collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
+    String reportIdWithNoDefKey =
+        reportClient.createSingleProcessReport(
+            reportClient.createSingleProcessReportDefinitionDto(
+                collectionId, Collections.emptyList()));
     reportClient.createCombinedReport(
-      collectionId,
-      Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)
-    );
+        collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey));
 
     alertClient.createAlertForReport(reportWithEventProcessDefKey);
     String alertIdToRemain = alertClient.createAlertForReport(reportIdWithDefaultDefKey);
 
-    String dashboardId = dashboardClient.createDashboard(
-      collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey)
-    );
+    String dashboardId =
+        dashboardClient.createDashboard(
+            collectionId,
+            Arrays.asList(
+                reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey));
 
     // when the event process is deleted
     eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKeyToDelete);
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then the event process is deleted and the associated resources are cleaned up
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKeyToDelete, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKeyToDelete, Response.Status.NOT_FOUND.getStatusCode());
     assertThat(collectionClient.getReportsForCollection(collectionId))
-      .extracting(AuthorizedReportDefinitionResponseDto.Fields.definitionDto + "." + ReportDefinitionDto.Fields.id)
-      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
+        .extracting(
+            AuthorizedReportDefinitionResponseDto.Fields.definitionDto
+                + "."
+                + ReportDefinitionDto.Fields.id)
+        .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(alertClient.getAlertsForCollectionAsDefaultUser(collectionId))
-      .extracting(AlertDefinitionDto.Fields.id)
-      .containsExactly(alertIdToRemain);
+        .extracting(AlertDefinitionDto.Fields.id)
+        .containsExactly(alertIdToRemain);
     assertThat(getAllCollectionDefinitions())
-      .hasSize(1)
-      .extracting(CollectionDefinitionDto.Fields.data + "." + CollectionDataDto.Fields.scope)
-      .contains(Collections.singletonList(new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
+        .hasSize(1)
+        .extracting(CollectionDefinitionDto.Fields.data + "." + CollectionDataDto.Fields.scope)
+        .contains(
+            Collections.singletonList(
+                new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
     assertThat(dashboardClient.getDashboard(dashboardId).getTiles())
-      .extracting(DashboardReportTileDto.Fields.id)
-      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKeyToDelete)).isEmpty();
+        .extracting(DashboardReportTileDto.Fields.id)
+        .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKeyToDelete))
+        .isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
-    assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1).containsExactly(nonDeletedDefinitionVariableLabelsDto);
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .hasSize(1)
+        .containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
 
   @Test
@@ -190,144 +197,160 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     // given
     ingestTestEvent(STARTED_EVENT);
     ingestTestEvent(FINISHED_EVENT);
-    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
-      STARTED_EVENT, FINISHED_EVENT
-    );
+    final EventProcessMappingDto simpleEventProcessMappingDto =
+        buildSimpleEventProcessMappingDto(STARTED_EVENT, FINISHED_EVENT);
     String eventProcessDefinitionKeyToDelete =
-      eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
-    String nonDeletedEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+        eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String nonDeletedEventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
 
     publishMappingAndExecuteImport(nonDeletedEventProcessDefinitionKey);
     publishMappingAndExecuteImport(eventProcessDefinitionKeyToDelete);
-    EventProcessPublishStateDto eventProcessDefinitionKeyToDeletePublishState = getEventProcessPublishStateDto(eventProcessDefinitionKeyToDelete);
-    assertThat(eventInstanceIndexForPublishStateExists(eventProcessDefinitionKeyToDeletePublishState)).isTrue();
-    EventProcessPublishStateDto nonDeletedEventProcessDefinitionPublishState = getEventProcessPublishStateDto(nonDeletedEventProcessDefinitionKey);
-    assertThat(eventInstanceIndexForPublishStateExists(nonDeletedEventProcessDefinitionPublishState)).isTrue();
+    EventProcessPublishStateDto eventProcessDefinitionKeyToDeletePublishState =
+        getEventProcessPublishStateDto(eventProcessDefinitionKeyToDelete);
+    assertThat(
+            eventInstanceIndexForPublishStateExists(eventProcessDefinitionKeyToDeletePublishState))
+        .isTrue();
+    EventProcessPublishStateDto nonDeletedEventProcessDefinitionPublishState =
+        getEventProcessPublishStateDto(nonDeletedEventProcessDefinitionKey);
+    assertThat(
+            eventInstanceIndexForPublishStateExists(nonDeletedEventProcessDefinitionPublishState))
+        .isTrue();
     executeImportCycle();
 
     addLabelForEventProcessDefinition(nonDeletedEventProcessDefinitionKey, FIRST_LABEL);
-    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto = addLabelForEventProcessDefinition(
-      nonDeletedEventProcessDefinitionKey,
-      SECOND_LABEL
-    );
+    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto =
+        addLabelForEventProcessDefinition(nonDeletedEventProcessDefinitionKey, SECOND_LABEL);
 
     // when
     eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKeyToDelete);
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKeyToDelete, Response.Status.NOT_FOUND.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKeyToDelete)).isEmpty();
-    assertThat(eventInstanceIndexForPublishStateExists(eventProcessDefinitionKeyToDeletePublishState)).isFalse();
-    assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1).containsExactly(nonDeletedDefinitionVariableLabelsDto);
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKeyToDelete, Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKeyToDelete))
+        .isEmpty();
+    assertThat(
+            eventInstanceIndexForPublishStateExists(eventProcessDefinitionKeyToDeletePublishState))
+        .isFalse();
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .hasSize(1)
+        .containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
 
   @Test
   public void eventProcessMappingNotDeleted_ifEsFailsToDeleteReportsUsingMapping() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
-    );
-    String reportUsingMapping = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        eventProcessDefinitionKey,
-        Collections.emptyList()
-      ));
+        collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey));
+    String reportUsingMapping =
+        reportClient.createSingleProcessReport(
+            reportClient.createSingleProcessReportDefinitionDto(
+                collectionId, eventProcessDefinitionKey, Collections.emptyList()));
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+            .withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // when
-    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    eventProcessClient
+        .createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
+        .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
     assertThat(collectionClient.getReportsForCollection(collectionId))
-      .extracting(AuthorizedReportDefinitionResponseDto.Fields.definitionDto + "." + ReportDefinitionDto.Fields.id)
-      .containsExactlyInAnyOrder(reportUsingMapping);
+        .extracting(
+            AuthorizedReportDefinitionResponseDto.Fields.definitionDto
+                + "."
+                + ReportDefinitionDto.Fields.id)
+        .containsExactlyInAnyOrder(reportUsingMapping);
   }
 
   @Test
   public void eventProcessMappingNotDeleted_ifEsFailsToDeleteMappingAsScopeEntry() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
-    );
+        collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey));
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request().withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query").withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // when
-    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    eventProcessClient
+        .createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
+        .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
-      .extracting(CollectionScopeEntryDto::getDefinitionKey)
-      .contains(eventProcessDefinitionKey);
+        .extracting(CollectionScopeEntryDto::getDefinitionKey)
+        .contains(eventProcessDefinitionKey);
   }
 
   @Test
   public void eventProcessMappingNotDeleted_ifEsFailsToDeletePublishState() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
+            .withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // when
-    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    eventProcessClient
+        .createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
+        .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey)).isNotEmpty();
   }
 
   @Test
   public void deleteEventProcessMapping_notExists() {
     // when
-    Response response = eventProcessClient
-      .createDeleteEventProcessMappingRequest("doesNotExist")
-      .execute();
+    Response response =
+        eventProcessClient.createDeleteEventProcessMappingRequest("doesNotExist").execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -336,10 +359,12 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   @Test
   public void bulkDeleteEventProcessMappings_notPossibleForUnauthenticatedUser() {
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .bulkDeleteEventProcessMappingsRequest(Arrays.asList("someId", "someOtherId"))
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .bulkDeleteEventProcessMappingsRequest(Arrays.asList("someId", "someOtherId"))
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -349,10 +374,12 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   public void bulkDeleteEventProcessMappings_forbiddenForUnauthorizedUser() {
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .bulkDeleteEventProcessMappingsRequest(Arrays.asList("someId", "someOtherId"))
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .bulkDeleteEventProcessMappingsRequest(Arrays.asList("someId", "someOtherId"))
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -361,9 +388,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   @Test
   public void bulkDeleteEventProcessMappings_emptyEventBasedProcessIdList() {
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .bulkDeleteEventProcessMappingsRequest(Collections.emptyList())
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .bulkDeleteEventProcessMappingsRequest(Collections.emptyList())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -372,9 +401,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   @Test
   public void bulkDeleteEventProcessMappings_nullEventBasedProcessIdList() {
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .bulkDeleteEventProcessMappingsRequest(null)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .bulkDeleteEventProcessMappingsRequest(null)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -384,34 +415,43 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   public void bulkDeleteEventProcessMappings() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
-    List<String> eventProcessMapings = Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
+    List<String> eventProcessMapings =
+        Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
 
     // when
-    Response response = eventProcessClient
-      .createBulkDeleteEventProcessMappingsRequest(eventProcessMapings).execute();
+    Response response =
+        eventProcessClient
+            .createBulkDeleteEventProcessMappingsRequest(eventProcessMapings)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.NOT_FOUND.getStatusCode());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey1, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
   public void bulkDeletePublishedEventProcessMappings() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
     String eventProcessId1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     publishMappingAndExecuteImport(eventProcessId1);
-    final EventProcessPublishStateDto publishState1 = getEventProcessPublishStateDto(eventProcessId1);
+    final EventProcessPublishStateDto publishState1 =
+        getEventProcessPublishStateDto(eventProcessId1);
     assertThat(eventInstanceIndexForPublishStateExists(publishState1)).isTrue();
     String eventProcessId2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     publishMappingAndExecuteImport(eventProcessId2);
-    final EventProcessPublishStateDto publishState2 = getEventProcessPublishStateDto(eventProcessId2);
+    final EventProcessPublishStateDto publishState2 =
+        getEventProcessPublishStateDto(eventProcessId2);
     assertThat(eventInstanceIndexForPublishStateExists(publishState2)).isTrue();
 
     List<String> eventBasedProcesses = Arrays.asList(eventProcessId1, eventProcessId2);
@@ -432,141 +472,155 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   @Test
   public void eventProcessMappingsSkippedOnBulkDelete_ifEsFailsToDeleteReportsUsingMapping() {
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey2);
-    String reportUsingMapping = reportClient.createAndStoreProcessReport(eventProcessDefinitionKey1);
+    String reportUsingMapping =
+        reportClient.createAndStoreProcessReport(eventProcessDefinitionKey1);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+            .withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
-    List<String> eventProcessIds = Arrays.asList(
-      eventProcessDefinitionKey1,
-      eventProcessDefinitionKey2
-    );
+    List<String> eventProcessIds =
+        Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
 
     // when
-    Response response = eventProcessClient
-      .createBulkDeleteEventProcessMappingsRequest(eventProcessIds)
-      .execute();
+    Response response =
+        eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
     assertThat(reportClient.getReportById(reportUsingMapping)).isNotNull();
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey1)).isNotEmpty();
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey2)).isEmpty();
     logCapturer.assertContains(
-      "There was an error while deleting resources associated to the event process mapping with id " + eventProcessDefinitionKey1);
+        "There was an error while deleting resources associated to the event process mapping with id "
+            + eventProcessDefinitionKey1);
   }
 
   @Test
   public void bulkDeleteEventProcessMappings_skipsDeletionWhenEventProcessMappingDoesNotExist() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    List<String> eventProcessIds = Arrays.asList(
-      eventProcessDefinitionKey1,
-      "doesNotExist1",
-      eventProcessDefinitionKey2
-    );
-    Response response = eventProcessClient
-      .createBulkDeleteEventProcessMappingsRequest(eventProcessIds)
-      .execute();
+    List<String> eventProcessIds =
+        Arrays.asList(eventProcessDefinitionKey1, "doesNotExist1", eventProcessDefinitionKey2);
+    Response response =
+        eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.NOT_FOUND.getStatusCode());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey1, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
   public void bulkDeleteEventProcessMappings_skipsDeletionIfEsFailsToDeletePublishState() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
+            .withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
-    List<String> eventProcessIds = Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
+    List<String> eventProcessIds =
+        Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
 
     // when
-    Response response = eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
+    Response response =
+        eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey1)).isNotEmpty();
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey2)).isEmpty();
     logCapturer.assertContains(
-      "There was an error while deleting resources associated to the event process mapping with id " + eventProcessDefinitionKey1);
+        "There was an error while deleting resources associated to the event process mapping with id "
+            + eventProcessDefinitionKey1);
   }
 
   @Test
   public void bulkDeleteEventProcessMapping_skipsDeletionIfEsFailsToDeleteMappingAsScopeEntry() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 =
+        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey1)
-    );
+        collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey1));
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request().withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query").withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
-    List<String> eventProcessIds = Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
+    List<String> eventProcessIds =
+        Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2);
 
     // when
     eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
-      .extracting(CollectionScopeEntryDto::getDefinitionKey)
-      .contains(eventProcessDefinitionKey1);
+        .extracting(CollectionScopeEntryDto::getDefinitionKey)
+        .contains(eventProcessDefinitionKey1);
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey1)).isNotEmpty();
-    assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
+    assertGetMappingRequestStatusCode(
+        eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey2)).isEmpty();
     logCapturer.assertContains(
-      "There was an error while deleting resources associated to the event process mapping with id " + eventProcessDefinitionKey1);
-
+        "There was an error while deleting resources associated to the event process mapping with id "
+            + eventProcessDefinitionKey1);
   }
 
   @Test
@@ -574,17 +628,20 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     // given
     ingestTestEvent(STARTED_EVENT);
     ingestTestEvent(FINISHED_EVENT);
-    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
-      STARTED_EVENT, FINISHED_EVENT
-    );
-    String firstDeletingEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
-    String secondDeletingEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
-    String nonDeletedEventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    final EventProcessMappingDto simpleEventProcessMappingDto =
+        buildSimpleEventProcessMappingDto(STARTED_EVENT, FINISHED_EVENT);
+    String firstDeletingEventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String secondDeletingEventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
+    String nonDeletedEventProcessDefinitionKey =
+        eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
 
     publishMappingAndExecuteImport(firstDeletingEventProcessDefinitionKey);
     publishMappingAndExecuteImport(secondDeletingEventProcessDefinitionKey);
     publishMappingAndExecuteImport(nonDeletedEventProcessDefinitionKey);
-    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(firstDeletingEventProcessDefinitionKey);
+    EventProcessPublishStateDto publishState =
+        getEventProcessPublishStateDto(firstDeletingEventProcessDefinitionKey);
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
     executeImportCycle();
 
@@ -592,46 +649,39 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     addLabelForEventProcessDefinition(firstDeletingEventProcessDefinitionKey, FIRST_LABEL);
-    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto = addLabelForEventProcessDefinition(
-      nonDeletedEventProcessDefinitionKey,
-      SECOND_LABEL
-    );
+    DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto =
+        addLabelForEventProcessDefinition(nonDeletedEventProcessDefinitionKey, SECOND_LABEL);
 
     collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, firstDeletingEventProcessDefinitionKey)
-    );
+        collectionId, new CollectionScopeEntryDto(PROCESS, firstDeletingEventProcessDefinitionKey));
 
-    String reportWithEventProcessDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        firstDeletingEventProcessDefinitionKey,
-        Collections.emptyList()
-      ));
-    String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        DEFAULT_DEFINITION_KEY,
-        Collections.emptyList()
-      ));
-    String reportIdWithNoDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, Collections.emptyList()));
+    String reportWithEventProcessDefKey =
+        reportClient.createSingleProcessReport(
+            reportClient.createSingleProcessReportDefinitionDto(
+                collectionId, firstDeletingEventProcessDefinitionKey, Collections.emptyList()));
+    String reportIdWithDefaultDefKey =
+        reportClient.createSingleProcessReport(
+            reportClient.createSingleProcessReportDefinitionDto(
+                collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
+    String reportIdWithNoDefKey =
+        reportClient.createSingleProcessReport(
+            reportClient.createSingleProcessReportDefinitionDto(
+                collectionId, Collections.emptyList()));
     reportClient.createCombinedReport(
-      collectionId,
-      Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)
-    );
+        collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey));
 
     alertClient.createAlertForReport(reportWithEventProcessDefKey);
     String alertIdToRemain = alertClient.createAlertForReport(reportIdWithDefaultDefKey);
 
-    String dashboardId = dashboardClient.createDashboard(
-      collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey)
-    );
+    String dashboardId =
+        dashboardClient.createDashboard(
+            collectionId,
+            Arrays.asList(
+                reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey));
 
-    List<String> eventProcessIds = Arrays.asList(
-      firstDeletingEventProcessDefinitionKey,
-      secondDeletingEventProcessDefinitionKey
-    );
+    List<String> eventProcessIds =
+        Arrays.asList(
+            firstDeletingEventProcessDefinitionKey, secondDeletingEventProcessDefinitionKey);
 
     // when
     eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
@@ -639,79 +689,74 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
     // then
     assertGetMappingRequestStatusCode(
-      firstDeletingEventProcessDefinitionKey,
-      Response.Status.NOT_FOUND.getStatusCode()
-    );
+        firstDeletingEventProcessDefinitionKey, Response.Status.NOT_FOUND.getStatusCode());
     assertThat(collectionClient.getReportsForCollection(collectionId))
-      .extracting(AuthorizedReportDefinitionResponseDto.Fields.definitionDto + "." + ReportDefinitionDto.Fields.id)
-      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
+        .extracting(
+            AuthorizedReportDefinitionResponseDto.Fields.definitionDto
+                + "."
+                + ReportDefinitionDto.Fields.id)
+        .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(alertClient.getAlertsForCollectionAsDefaultUser(collectionId))
-      .extracting(AlertDefinitionDto.Fields.id)
-      .containsExactly(alertIdToRemain);
+        .extracting(AlertDefinitionDto.Fields.id)
+        .containsExactly(alertIdToRemain);
     assertThat(getAllCollectionDefinitions())
-      .hasSize(1)
-      .extracting(CollectionDefinitionDto.Fields.data + "." + CollectionDataDto.Fields.scope)
-      .contains(Collections.singletonList(new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
+        .hasSize(1)
+        .extracting(CollectionDefinitionDto.Fields.data + "." + CollectionDataDto.Fields.scope)
+        .contains(
+            Collections.singletonList(
+                new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
     assertThat(dashboardClient.getDashboard(dashboardId).getTiles())
-      .extracting(DashboardReportTileDto.Fields.id)
-      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(getEventProcessPublishStateDtoFromDatabase(firstDeletingEventProcessDefinitionKey)).isEmpty();
+        .extracting(DashboardReportTileDto.Fields.id)
+        .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
+    assertThat(getEventProcessPublishStateDtoFromDatabase(firstDeletingEventProcessDefinitionKey))
+        .isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
     assertGetMappingRequestStatusCode(
-      firstDeletingEventProcessDefinitionKey,
-      Response.Status.NOT_FOUND.getStatusCode()
-    );
-    assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1)
-      .containsExactly(nonDeletedDefinitionVariableLabelsDto);
+        firstDeletingEventProcessDefinitionKey, Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .hasSize(1)
+        .containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
 
-  private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource() {
+  private EventProcessMappingDto
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource() {
     return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
-      Collections.singletonMap(
-        USER_TASK_ID_THREE,
-        createEventMappingsDto(
-          createMappedEventDto(),
-          createMappedEventDto()
-        )
-      ),
-      "process name",
-      simpleDiagramXml
-    );
+        Collections.singletonMap(
+            USER_TASK_ID_THREE,
+            createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+        "process name",
+        simpleDiagramXml);
   }
 
   @SneakyThrows
   private List<CollectionDefinitionDto> getAllCollectionDefinitions() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      COLLECTION_INDEX_NAME,
-      CollectionDefinitionDto.class
-    );
+        COLLECTION_INDEX_NAME, CollectionDefinitionDto.class);
   }
 
   private void assertGetMappingRequestStatusCode(String eventProcessMappingKey, int statusCode) {
-    eventProcessClient.createGetEventProcessMappingRequest(eventProcessMappingKey)
-      .execute(statusCode);
+    eventProcessClient
+        .createGetEventProcessMappingRequest(eventProcessMappingKey)
+        .execute(statusCode);
   }
 
-  private void executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto) {
+  private void executeUpdateProcessVariableLabelRequest(
+      DefinitionVariableLabelsDto labelOptimizeDto) {
     embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableLabelRequest(labelOptimizeDto)
-      .execute();
+        .getRequestExecutor()
+        .buildProcessVariableLabelRequest(labelOptimizeDto)
+        .execute();
   }
 
   private List<DefinitionVariableLabelsDto> getAllDocumentsOfVariableLabelIndex() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      VARIABLE_LABEL_INDEX_NAME,
-      DefinitionVariableLabelsDto.class
-    );
+        VARIABLE_LABEL_INDEX_NAME, DefinitionVariableLabelsDto.class);
   }
 
-  private DefinitionVariableLabelsDto addLabelForEventProcessDefinition(final String eventProcessDefinitionKey,
-                                                                        final LabelDto labelDto) {
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
-      eventProcessDefinitionKey,
-      List.of(labelDto)
-    );
+  private DefinitionVariableLabelsDto addLabelForEventProcessDefinition(
+      final String eventProcessDefinitionKey, final LabelDto labelDto) {
+    DefinitionVariableLabelsDto definitionVariableLabelsDto =
+        new DefinitionVariableLabelsDto(eventProcessDefinitionKey, List.of(labelDto));
     executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto);
     return definitionVariableLabelsDto;
   }

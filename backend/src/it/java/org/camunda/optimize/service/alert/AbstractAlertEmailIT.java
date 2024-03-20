@@ -33,14 +33,14 @@ public class AbstractAlertEmailIT extends AbstractAlertIT {
   }
 
   private static void initGreenMail() {
-    greenMail = new GreenMail(
-      new ServerSetup(IntegrationTestConfigurationUtil.getSmtpPort(), null, ServerSetup.PROTOCOL_SMTP)
-    );
+    greenMail =
+        new GreenMail(
+            new ServerSetup(
+                IntegrationTestConfigurationUtil.getSmtpPort(), null, ServerSetup.PROTOCOL_SMTP));
   }
 
   private static void setupGreenMailUsers() {
     greenMail.setUser("from@localhost.com", "demo", "demo");
     greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
   }
-
 }

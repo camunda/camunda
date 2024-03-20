@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
+import java.util.List;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
@@ -12,20 +19,13 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-
 @Tag(OPENSEARCH_PASSING)
 public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
-  private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient defaultAuthorizationClient =
+      new AuthorizationClient(engineIntegrationExtension);
   private final AuthorizationClient secondAuthorizationClient =
-    new AuthorizationClient(secondaryEngineIntegrationExtension);
+      new AuthorizationClient(secondaryEngineIntegrationExtension);
 
   @Test
   public void getAllStoredTenantsGrantedAccessToByAllEngines() {
@@ -35,23 +35,26 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     final String tenantId1 = "tenant1";
     engineIntegrationExtension.createTenant(tenantId1);
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
 
     final String tenantId2 = "tenant2";
     secondaryEngineIntegrationExtension.createTenant(tenantId2);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
+    secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
     assertThat(tenants).hasSize(3);
     assertThat(tenants)
-      .extracting(TenantDto::getId)
-      .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2);
+        .extracting(TenantDto::getId)
+        .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2);
   }
 
   @Test
@@ -66,17 +69,20 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     final String tenantId2 = "tenant2";
     secondaryEngineIntegrationExtension.createTenant(tenantId2);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
+    secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
-    assertThat(tenants).hasSize(2)
-      .extracting(TenantDto::getId)
-      .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId2);
+    assertThat(tenants)
+        .hasSize(2)
+        .extracting(TenantDto::getId)
+        .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId2);
   }
 
   @Test
@@ -96,12 +102,14 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
-    assertThat(tenants).hasSize(3)
-      .extracting(TenantDto::getId)
-      .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2);
+    assertThat(tenants)
+        .hasSize(3)
+        .extracting(TenantDto::getId)
+        .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2);
   }
 
   @Test
@@ -121,12 +129,13 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants =
+        embeddedOptimizeExtension.getPlatformTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
-    assertThat(tenants).hasSize(2)
-      .extracting(TenantDto::getId)
-      .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId1);
+    assertThat(tenants)
+        .hasSize(2)
+        .extracting(TenantDto::getId)
+        .containsExactlyInAnyOrder(TENANT_NOT_DEFINED.getId(), tenantId1);
   }
-
 }

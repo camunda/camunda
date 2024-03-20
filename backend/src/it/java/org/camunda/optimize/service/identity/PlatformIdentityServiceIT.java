@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.service.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import java.util.Optional;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class PlatformIdentityServiceIT extends AbstractPlatformIT {
@@ -29,9 +28,11 @@ public class PlatformIdentityServiceIT extends AbstractPlatformIT {
 
   @Test
   public void getUserByIdFromCache() {
-    final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
+    final UserDto userIdentity =
+        new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
     identityService.addIdentity(userIdentity);
-    identityService.addIdentity(new UserDto("otherId", "Frodo", "Baggins", "frodo.baggins@camunda.com"));
+    identityService.addIdentity(
+        new UserDto("otherId", "Frodo", "Baggins", "frodo.baggins@camunda.com"));
 
     final Optional<UserDto> retrievedUserDto = identityService.getUserById("testUser");
     assertThat(retrievedUserDto).isPresent().get().isEqualTo(userIdentity);

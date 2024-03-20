@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class IngestedEventCleanupIT extends AbstractPlatformIT {
 
@@ -31,9 +30,9 @@ public class IngestedEventCleanupIT extends AbstractPlatformIT {
     // given
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
     final List<CloudEventRequestDto> eventsToCleanup =
-      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+        ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeep =
-      ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
+        ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
@@ -42,8 +41,9 @@ public class IngestedEventCleanupIT extends AbstractPlatformIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventDto::getId)
-      .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
+        .extracting(EventDto::getId)
+        .containsExactlyInAnyOrderElementsOf(
+            eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }
 
   @Test
@@ -52,7 +52,7 @@ public class IngestedEventCleanupIT extends AbstractPlatformIT {
     getIngestedEventCleanupConfiguration().setEnabled(false);
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
     final List<CloudEventRequestDto> eventsToKeep =
-      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+        ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
@@ -61,20 +61,26 @@ public class IngestedEventCleanupIT extends AbstractPlatformIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventDto::getId)
-      .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
+        .extracting(EventDto::getId)
+        .containsExactlyInAnyOrderElementsOf(
+            eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }
 
   private IngestedEventCleanupConfiguration getIngestedEventCleanupConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getIngestedEventCleanupConfiguration();
+    return embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCleanupServiceConfiguration()
+        .getIngestedEventCleanupConfiguration();
   }
 
   private Instant getTimestampLessThanIngestedEventsTtl() {
     return OffsetDateTime.now()
-      .minus(embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration().getTtl())
-      .minusSeconds(1)
-      .toInstant();
+        .minus(
+            embeddedOptimizeExtension
+                .getConfigurationService()
+                .getCleanupServiceConfiguration()
+                .getTtl())
+        .minusSeconds(1)
+        .toInstant();
   }
 }

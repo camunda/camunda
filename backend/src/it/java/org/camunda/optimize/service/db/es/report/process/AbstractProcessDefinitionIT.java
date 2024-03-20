@@ -5,7 +5,34 @@
  */
 package org.camunda.optimize.service.db.es.report.process;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
+import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Triple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -35,34 +62,6 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Tag;
 
-import jakarta.ws.rs.core.Response;
-import java.sql.SQLException;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.time.Duration;
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
-
 @Tag("reportEvaluation")
 public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
 
@@ -87,11 +86,13 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
   protected static final String SECOND_USERS_PASSWORD = SECOND_USER;
   protected static final String SECOND_USER_FIRST_NAME = "the";
   protected static final String SECOND_USER_LAST_NAME = "other";
-  protected static final String SECOND_USER_FULL_NAME = SECOND_USER_FIRST_NAME + " " + SECOND_USER_LAST_NAME;
+  protected static final String SECOND_USER_FULL_NAME =
+      SECOND_USER_FIRST_NAME + " " + SECOND_USER_LAST_NAME;
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
   protected static final String TEST_PROCESS = "aProcess";
 
-  protected static final Map<String, VariableType> varNameToTypeMap = new HashMap<>(VariableType.values().length);
+  protected static final Map<String, VariableType> varNameToTypeMap =
+      new HashMap<>(VariableType.values().length);
 
   static {
     varNameToTypeMap.put("dateVar", VariableType.DATE);
@@ -111,33 +112,29 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>(), tenantId);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(
+      Map<String, Object> variables) {
     return deployAndStartSimpleProcessWithVariables(variables, null);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables,
-                                                                            String tenantId) {
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(
+      Map<String, Object> variables, String tenantId) {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
-      getSimpleBpmnDiagram(),
-      variables,
-      BUSINESS_KEY,
-      tenantId
-    );
+        getSimpleBpmnDiagram(), variables, BUSINESS_KEY, tenantId);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
     return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess(final Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess(
+      final Map<String, Object> variables) {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
-      BpmnModels.getSingleUserTaskDiagram(),
-      variables
-    );
+        BpmnModels.getSingleUserTaskDiagram(), variables);
   }
 
-  private void deployAndStartSimpleUserTaskProcessOnTenant(final String key,
-                                                           final String tenantId) {
+  private void deployAndStartSimpleUserTaskProcessOnTenant(
+      final String key, final String tenantId) {
     final BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram(key);
     engineIntegrationExtension.deployAndStartProcess(processModel, tenantId);
   }
@@ -150,12 +147,16 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
     return deploySimpleOneUserTasksDefinition(key, null);
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
+  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(
+      String key, String tenantId) {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getSingleUserTaskDiagram(key), tenantId);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartThreeUserTasksDefinition(final Map<String, Object> variables) {
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(getTripleUserTaskDiagram(), variables);
+  protected ProcessInstanceEngineDto deployAndStartThreeUserTasksDefinition(
+      final Map<String, Object> variables) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+        getTripleUserTaskDiagram(), variables);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
@@ -166,36 +167,37 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
     return deployAndStartSimpleServiceTaskProcess(TEST_PROCESS, activityId, null);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
-                                                                            String activityId) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(
+      String key, String activityId) {
     return deployAndStartSimpleServiceTaskProcess(key, activityId, null);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(final Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(
+      final Map<String, Object> variables) {
     BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(TEST_PROCESS);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
-                                                                            String activityId,
-                                                                            String tenantId) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(
+      String key, String activityId, String tenantId) {
     BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, activityId);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
-      processModel, ImmutableMap.of(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE), tenantId
-    );
+        processModel, ImmutableMap.of(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE), tenantId);
   }
 
   protected List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int numberOfProcesses) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
     return IntStream.range(0, numberOfProcesses)
-      .mapToObj(i -> {
-        ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.startProcessInstance(
-          processDefinition.getId());
-        processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
-        processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-        return processInstanceEngineDto;
-      })
-      .collect(Collectors.toList());
+        .mapToObj(
+            i -> {
+              ProcessInstanceEngineDto processInstanceEngineDto =
+                  engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+              processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
+              processInstanceEngineDto.setProcessDefinitionVersion(
+                  String.valueOf(processDefinition.getVersion()));
+              return processInstanceEngineDto;
+            })
+        .collect(Collectors.toList());
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition() {
@@ -207,43 +209,47 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(
+      final Map<String, Object> variables) {
     BpmnModelInstance processModel = BpmnModels.getTwoServiceTasksProcess(TEST_PROCESS);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final String key,
-                                                                                      final Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(
+      final String key, final Map<String, Object> variables) {
     BpmnModelInstance processModel = BpmnModels.getTwoServiceTasksProcess(key);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      BpmnModels.getSimpleGatewayProcess(TEST_PROCESS)
-    );
+        BpmnModels.getSimpleGatewayProcess(TEST_PROCESS));
   }
 
-  protected String deployAndStartMultiTenantSimpleServiceTaskProcess(final List<String> deployedTenants) {
+  protected String deployAndStartMultiTenantSimpleServiceTaskProcess(
+      final List<String> deployedTenants) {
     final String processKey = "multiTenantProcess";
-    deployedTenants.forEach(tenant -> {
-      if (tenant != null) {
-        engineIntegrationExtension.createTenant(tenant);
-      }
-      deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant);
-    });
+    deployedTenants.forEach(
+        tenant -> {
+          if (tenant != null) {
+            engineIntegrationExtension.createTenant(tenant);
+          }
+          deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant);
+        });
 
     return processKey;
   }
 
-  protected String deployAndStartMultiTenantSimpleUserTaskTaskProcess(final List<String> deployedTenants) {
+  protected String deployAndStartMultiTenantSimpleUserTaskTaskProcess(
+      final List<String> deployedTenants) {
     final String processKey = "multiTenantProcess";
-    deployedTenants.forEach(tenant -> {
-      if (tenant != null) {
-        engineIntegrationExtension.createTenant(tenant);
-      }
-      deployAndStartSimpleUserTaskProcessOnTenant(processKey, tenant);
-    });
+    deployedTenants.forEach(
+        tenant -> {
+          if (tenant != null) {
+            engineIntegrationExtension.createTenant(tenant);
+          }
+          deployAndStartSimpleUserTaskProcessOnTenant(processKey, tenant);
+        });
 
     return processKey;
   }
@@ -259,74 +265,77 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
   }
 
   protected List<ProcessInstanceEngineDto> startAndEndProcessInstancesWithGivenRuntime(
-    final int numberOfInstances,
-    final Duration instanceRuntime,
-    final OffsetDateTime startTimeOfFirstInstance) {
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(numberOfInstances);
+      final int numberOfInstances,
+      final Duration instanceRuntime,
+      final OffsetDateTime startTimeOfFirstInstance) {
+    List<ProcessInstanceEngineDto> processInstanceDtos =
+        deployAndStartSimpleProcesses(numberOfInstances);
 
     for (int i = 0; i < numberOfInstances; i++) {
-      final OffsetDateTime startTime = startTimeOfFirstInstance.plus(instanceRuntime.multipliedBy(i));
+      final OffsetDateTime startTime =
+          startTimeOfFirstInstance.plus(instanceRuntime.multipliedBy(i));
       final OffsetDateTime endTime = startTime.plus(instanceRuntime);
       engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
-        processInstanceDtos.get(i).getId(),
-        startTime,
-        endTime
-      );
+          processInstanceDtos.get(i).getId(), startTime, endTime);
     }
     return processInstanceDtos;
   }
 
-  protected ProcessInstanceEngineDto startInstanceAndModifyDuration(final String definitionId,
-                                                                    final long durationInMilliseconds) {
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension
-      .startProcessInstance(definitionId);
+  protected ProcessInstanceEngineDto startInstanceAndModifyDuration(
+      final String definitionId, final long durationInMilliseconds) {
+    final ProcessInstanceEngineDto processInstance =
+        engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDuration(processInstance, durationInMilliseconds);
     return processInstance;
   }
 
-  protected void changeProcessInstanceDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                               final long durationInMilliseconds) {
+  protected void changeProcessInstanceDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final long durationInMilliseconds) {
     final OffsetDateTime startDate = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime endDate = startDate.plus(durationInMilliseconds, ChronoUnit.MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+        processInstanceDto.getId(), startDate, endDate);
   }
 
-  protected void changeActivityDuration(final ProcessInstanceEngineDto processInstance,
-                                        final Double durationInMs) {
-    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), durationInMs.longValue());
+  protected void changeActivityDuration(
+      final ProcessInstanceEngineDto processInstance, final Double durationInMs) {
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(
+        processInstance.getId(), durationInMs.longValue());
   }
 
-  protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
-                                                            final String definitionVersion,
-                                                            final ProcessReportDataType reportType,
-                                                            final AggregateByDateUnit unit) {
+  protected ProcessReportDataDto createReportDataSortedDesc(
+      final String definitionKey,
+      final String definitionVersion,
+      final ProcessReportDataType reportType,
+      final AggregateByDateUnit unit) {
     return createReportData(
-      definitionKey,
-      definitionVersion,
-      reportType,
-      unit,
-      new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC)
-    );
+        definitionKey,
+        definitionVersion,
+        reportType,
+        unit,
+        new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC));
   }
 
-  protected ProcessReportDataDto createReportData(final String definitionKey,
-                                                  final String definitionVersion,
-                                                  final ProcessReportDataType reportType,
-                                                  final AggregateByDateUnit unit,
-                                                  final ReportSortingDto sorting) {
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setProcessDefinitionKey(definitionKey)
-      .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(reportType)
-      .setGroupByDateInterval(unit)
-      .build();
+  protected ProcessReportDataDto createReportData(
+      final String definitionKey,
+      final String definitionVersion,
+      final ProcessReportDataType reportType,
+      final AggregateByDateUnit unit,
+      final ReportSortingDto sorting) {
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(definitionKey)
+            .setProcessDefinitionVersion(definitionVersion)
+            .setReportDataType(reportType)
+            .setGroupByDateInterval(unit)
+            .build();
     reportData.getConfiguration().setSorting(sorting);
     return reportData;
   }
 
   protected String createNewReport(ProcessReportDataDto processReportDataDto) {
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(processReportDataDto);
     singleProcessReportDefinitionDto.setLastModifier("something");
     singleProcessReportDefinitionDto.setName("something");
@@ -336,147 +345,158 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
     return createNewReport(singleProcessReportDefinitionDto);
   }
 
-  protected String createNewReport(SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
+  protected String createNewReport(
+      SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+        .getRequestExecutor()
+        .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
+        .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+        .getId();
   }
 
   protected ReportDataDefinitionDto createReportDataDefinitionDto(final String key) {
-    return new ReportDataDefinitionDto(key, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS);
+    return new ReportDataDefinitionDto(
+        key, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS);
   }
 
-  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final String userTaskKey,
-                                            final Number durationInMs) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto -> changeUserClaimStartTimestamp(durationInMs, historicUserTaskInstanceDto)
-      );
+  protected void changeUserTaskIdleDuration(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final String userTaskKey,
+      final Number durationInMs) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+        .forEach(
+            historicUserTaskInstanceDto ->
+                changeUserClaimStartTimestamp(durationInMs, historicUserTaskInstanceDto));
   }
 
-  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final Number durationInMs) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(
-        historicUserTaskInstanceDto -> changeUserClaimStartTimestamp(durationInMs, historicUserTaskInstanceDto)
-      );
+  protected void changeUserTaskIdleDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto ->
+                changeUserClaimStartTimestamp(durationInMs, historicUserTaskInstanceDto));
   }
 
-  private void changeUserClaimStartTimestamp(final Number durationInMs,
-                                             final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+  private void changeUserClaimStartTimestamp(
+      final Number durationInMs, final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
       engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
-        historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getStartTime().plus(durationInMs.longValue(), ChronoUnit.MILLIS)
-      );
+          historicUserTaskInstanceDto.getId(),
+          historicUserTaskInstanceDto
+              .getStartTime()
+              .plus(durationInMs.longValue(), ChronoUnit.MILLIS));
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
 
-  protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                             final String userTaskKey,
-                                             final Number durationInMs) {
+  protected void changeUserTaskTotalDuration(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final String userTaskKey,
+      final Number durationInMs) {
     engineDatabaseExtension.changeFlowNodeTotalDuration(
-      processInstanceDto.getId(),
-      userTaskKey,
-      durationInMs.longValue()
-    );
+        processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
   }
 
-  protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                             final Number durationInMs) {
-    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstanceDto.getId(), durationInMs.longValue());
+  protected void changeUserTaskTotalDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs) {
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(
+        processInstanceDto.getId(), durationInMs.longValue());
   }
 
-  protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final Number durationInMs) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
-      .forEach(
-        historicUserTaskInstanceDto -> changeUserClaimEndTimestamp(
-          historicUserTaskInstanceDto, durationInMs.longValue()
-        )
-      );
+  protected void changeUserTaskWorkDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId())
+        .forEach(
+            historicUserTaskInstanceDto ->
+                changeUserClaimEndTimestamp(historicUserTaskInstanceDto, durationInMs.longValue()));
   }
 
-  protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final String userTaskKey,
-                                            final Number durationInMs) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimEndTimestamp(historicUserTaskInstanceDto, durationInMs.longValue());
-          }
-        }
-      );
+  protected void changeUserTaskWorkDuration(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final String userTaskKey,
+      final Number durationInMs) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              if (historicUserTaskInstanceDto.getEndTime() != null) {
+                changeUserClaimEndTimestamp(historicUserTaskInstanceDto, durationInMs.longValue());
+              }
+            });
   }
 
-  private void changeUserClaimEndTimestamp(final HistoricUserTaskInstanceDto userTaskInstance,
-                                           final Number durationInMs) {
+  private void changeUserClaimEndTimestamp(
+      final HistoricUserTaskInstanceDto userTaskInstance, final Number durationInMs) {
     try {
       if (userTaskInstance.getEndTime() != null) {
         engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
-          userTaskInstance.getId(),
-          userTaskInstance.getEndTime().minus(durationInMs.longValue(), ChronoUnit.MILLIS)
-        );
+            userTaskInstance.getId(),
+            userTaskInstance.getEndTime().minus(durationInMs.longValue(), ChronoUnit.MILLIS));
       }
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
 
-  protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
-                                         final OffsetDateTime now,
-                                         final String userTaskId,
-                                         final Number offsetDurationInMs) {
+  protected void changeUserTaskStartDate(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final OffsetDateTime now,
+      final String userTaskId,
+      final Number offsetDurationInMs) {
     engineDatabaseExtension.changeFlowNodeStartDate(
-      processInstanceDto.getId(), userTaskId, now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS)
-    );
+        processInstanceDto.getId(),
+        userTaskId,
+        now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS));
   }
 
   // this method is used for the parameterized tests
   @SuppressWarnings(UNUSED)
   protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
-    return Arrays.stream(AggregateByDateUnit.values()).filter(g -> !g.equals(AggregateByDateUnit.AUTOMATIC));
+    return Arrays.stream(AggregateByDateUnit.values())
+        .filter(g -> !g.equals(AggregateByDateUnit.AUTOMATIC));
   }
 
-  protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
-                                         final OffsetDateTime now,
-                                         final String userTaskKey,
-                                         final Number offsetDurationInMs) {
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto -> {
-          try {
-            engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
-              historicUserTaskInstanceDto.getId(), now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS)
-            );
-          } catch (SQLException e) {
-            throw new OptimizeIntegrationTestException(e);
-          }
-        }
-      );
+  protected void changeUserTaskClaimDate(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final OffsetDateTime now,
+      final String userTaskKey,
+      final Number offsetDurationInMs) {
+    engineIntegrationExtension
+        .getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+        .forEach(
+            historicUserTaskInstanceDto -> {
+              try {
+                engineDatabaseExtension.changeUserTaskAssigneeClaimOperationTimestamp(
+                    historicUserTaskInstanceDto.getId(),
+                    now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS));
+              } catch (SQLException e) {
+                throw new OptimizeIntegrationTestException(e);
+              }
+            });
   }
 
   protected void assertCombinedDoubleVariableResultsAreInCorrectRanges(
-    Double startRange,
-    Double endRange,
-    int expectedNumberOfBuckets,
-    int resultSize,
-    Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>> resultMap) {
+      Double startRange,
+      Double endRange,
+      int expectedNumberOfBuckets,
+      int resultSize,
+      Map<String, AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>
+          resultMap) {
     DecimalFormatSymbols decimalSymbols = new DecimalFormatSymbols(Locale.US);
     final DecimalFormat decimalFormat = new DecimalFormat("0.00", decimalSymbols);
 
     assertThat(resultMap).hasSize(resultSize);
-    for (AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> result : resultMap.values()) {
+    for (AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> result :
+        resultMap.values()) {
       final List<MapResultEntryDto> resultData = result.getResult().getFirstMeasureData();
       assertThat(resultData.size()).isEqualTo(expectedNumberOfBuckets);
       assertThat(resultData.get(0).getKey()).isEqualTo(decimalFormat.format(startRange));
-      assertThat(resultData.get(resultData.size() - 1).getKey()).isEqualTo(decimalFormat.format(endRange));
+      assertThat(resultData.get(resultData.size() - 1).getKey())
+          .isEqualTo(decimalFormat.format(endRange));
     }
   }
 
@@ -484,46 +504,47 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
-  protected DurationFilterDataDto durationFilterData(final DurationUnit unit, final Long value,
-                                                     final ComparisonOperator operator) {
+  protected DurationFilterDataDto durationFilterData(
+      final DurationUnit unit, final Long value, final ComparisonOperator operator) {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }
 
   protected static Stream<List<ProcessFilterDto<?>>> viewLevelFilters() {
     return Stream.of(
-      ProcessFilterBuilder
-        .filter()
-        .assignee()
-        .id(DEFAULT_USERNAME)
-        .filterLevel(FilterApplicationLevel.VIEW)
-        .add()
-        .buildList(),
-      ProcessFilterBuilder
-        .filter()
-        .candidateGroups()
-        .id(FIRST_CANDIDATE_GROUP_ID)
-        .filterLevel(FilterApplicationLevel.VIEW)
-        .add()
-        .buildList(),
-      ProcessFilterBuilder
-        .filter()
-        .flowNodeDuration()
-        .flowNode(
-          START_EVENT,
-          DurationFilterDataDto.builder()
-            .operator(ComparisonOperator.GREATER_THAN)
-            .unit(DurationUnit.HOURS)
-            .value(1L)
-            .build()
-        )
-        .filterLevel(FilterApplicationLevel.VIEW)
-        .add()
-        .buildList(),
-      ProcessFilterBuilder
-        .filter().withOpenIncident().filterLevel(FilterApplicationLevel.VIEW).add().buildList(),
-      ProcessFilterBuilder
-        .filter().withResolvedIncident().filterLevel(FilterApplicationLevel.VIEW).add().buildList()
-    );
+        ProcessFilterBuilder.filter()
+            .assignee()
+            .id(DEFAULT_USERNAME)
+            .filterLevel(FilterApplicationLevel.VIEW)
+            .add()
+            .buildList(),
+        ProcessFilterBuilder.filter()
+            .candidateGroups()
+            .id(FIRST_CANDIDATE_GROUP_ID)
+            .filterLevel(FilterApplicationLevel.VIEW)
+            .add()
+            .buildList(),
+        ProcessFilterBuilder.filter()
+            .flowNodeDuration()
+            .flowNode(
+                START_EVENT,
+                DurationFilterDataDto.builder()
+                    .operator(ComparisonOperator.GREATER_THAN)
+                    .unit(DurationUnit.HOURS)
+                    .value(1L)
+                    .build())
+            .filterLevel(FilterApplicationLevel.VIEW)
+            .add()
+            .buildList(),
+        ProcessFilterBuilder.filter()
+            .withOpenIncident()
+            .filterLevel(FilterApplicationLevel.VIEW)
+            .add()
+            .buildList(),
+        ProcessFilterBuilder.filter()
+            .withResolvedIncident()
+            .filterLevel(FilterApplicationLevel.VIEW)
+            .add()
+            .buildList());
   }
 
   protected static Triple<String, Double, String> createDefaultUserTriple(final Double value) {
@@ -542,8 +563,8 @@ public class AbstractProcessDefinitionIT extends AbstractPlatformIT {
     return Triple.of(SECOND_CANDIDATE_GROUP_ID, value, SECOND_CANDIDATE_GROUP_NAME);
   }
 
-  protected static boolean isSingleFilterOfType(List<ProcessFilterDto<?>> processFilters, Class<?> filterType) {
+  protected static boolean isSingleFilterOfType(
+      List<ProcessFilterDto<?>> processFilters, Class<?> filterType) {
     return processFilters.size() == 1 && processFilters.get(0).getClass().equals(filterType);
   }
-
 }

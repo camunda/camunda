@@ -5,9 +5,17 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
@@ -19,33 +27,26 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-
 public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
   private static final String PROCESS_DEFINITION_KEY = "outlierTest";
   private static final String ENDPOINT_FLOW_NODE_OUTLIERS = "flowNodeOutliers";
   private static final String ENDPOINT_DURATION_CHART = "durationChart";
-  private static final String ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS = "significantOutlierVariableTerms";
-  private static final String ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT =
-    "significantOutlierVariableTerms/processInstanceIdsExport";
+  private static final String ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS =
+      "significantOutlierVariableTerms";
+  private static final String
+      ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT =
+          "significantOutlierVariableTerms/processInstanceIdsExport";
   private static final String FLOW_NODE_ID_START = "start";
 
-  private final AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient authorizationClient =
+      new AuthorizationClient(engineIntegrationExtension);
 
   private static Stream<String> endpoints() {
     return Stream.of(
-      ENDPOINT_FLOW_NODE_OUTLIERS,
-      ENDPOINT_DURATION_CHART,
-      ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS,
-      ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT
-    );
+        ENDPOINT_FLOW_NODE_OUTLIERS,
+        ENDPOINT_DURATION_CHART,
+        ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS,
+        ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT);
   }
 
   @ParameterizedTest
@@ -54,7 +55,8 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId));
 
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
@@ -62,12 +64,12 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Response response = executeRequest(
-      processDefinition,
-      embeddedOptimizeExtension.getRequestExecutor().withoutAuthentication(),
-      Collections.emptyList(),
-      endpoint
-    );
+    final Response response =
+        executeRequest(
+            processDefinition,
+            embeddedOptimizeExtension.getRequestExecutor().withoutAuthentication(),
+            Collections.emptyList(),
+            endpoint);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -79,7 +81,8 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId));
 
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
@@ -87,12 +90,12 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Response response = executeRequest(
-      processDefinition,
-      embeddedOptimizeExtension.getRequestExecutor(),
-      Collections.emptyList(),
-      endpoint
-    );
+    final Response response =
+        executeRequest(
+            processDefinition,
+            embeddedOptimizeExtension.getRequestExecutor(),
+            Collections.emptyList(),
+            endpoint);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -104,7 +107,8 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId));
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
@@ -114,12 +118,14 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Response response = executeRequest(
-      processDefinition,
-      embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      Collections.emptyList(),
-      endpoint
-    );
+    final Response response =
+        executeRequest(
+            processDefinition,
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .withUserAuthentication(KERMIT_USER, KERMIT_USER),
+            Collections.emptyList(),
+            endpoint);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -131,7 +137,8 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId));
 
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
@@ -139,12 +146,12 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Response response = executeRequest(
-      processDefinition,
-      embeddedOptimizeExtension.getRequestExecutor(),
-      Collections.singletonList(null),
-      endpoint
-    );
+    final Response response =
+        executeRequest(
+            processDefinition,
+            embeddedOptimizeExtension.getRequestExecutor(),
+            Collections.singletonList(null),
+            endpoint);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -158,23 +165,27 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     final String activityId = "chartTestActivity";
     engineIntegrationExtension.createTenant(tenantId);
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId), tenantId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
-    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
 
     startInstanceWithSampleVariables(processDefinition);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Response response = executeRequest(
-      processDefinition,
-      embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      Collections.singletonList(tenantId),
-      endpoint
-    );
+    final Response response =
+        executeRequest(
+            processDefinition,
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .withUserAuthentication(KERMIT_USER, KERMIT_USER),
+            Collections.singletonList(tenantId),
+            endpoint);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -188,7 +199,8 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     final String activityId = "chartTestActivity";
     engineIntegrationExtension.createTenant(tenantId);
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId), tenantId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -198,12 +210,14 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Response response = executeRequest(
-      processDefinition,
-      embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      Collections.singletonList(tenantId),
-      endpoint
-    );
+    final Response response =
+        executeRequest(
+            processDefinition,
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .withUserAuthentication(KERMIT_USER, KERMIT_USER),
+            Collections.singletonList(tenantId),
+            endpoint);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -219,12 +233,15 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     engineIntegrationExtension.createTenant(tenantId2);
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition1 =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId1);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId), tenantId1);
     ProcessDefinitionEngineDto processDefinition2 =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId2);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityId), tenantId2);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
-    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
 
     startInstanceWithSampleVariables(processDefinition1);
     startInstanceWithSampleVariables(processDefinition2);
@@ -232,83 +249,81 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Response response = executeRequest(
-      processDefinition1,
-      embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      ImmutableList.of(tenantId1, tenantId2),
-      endpoint
-    );
+    final Response response =
+        executeRequest(
+            processDefinition1,
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .withUserAuthentication(KERMIT_USER, KERMIT_USER),
+            ImmutableList.of(tenantId1, tenantId2),
+            endpoint);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  private Response executeRequest(final ProcessDefinitionEngineDto processDefinition,
-                                  final OptimizeRequestExecutor optimizeRequestExecutor,
-                                  final List<String> tenants,
-                                  final String endpoint) {
+  private Response executeRequest(
+      final ProcessDefinitionEngineDto processDefinition,
+      final OptimizeRequestExecutor optimizeRequestExecutor,
+      final List<String> tenants,
+      final String endpoint) {
     switch (endpoint) {
       case ENDPOINT_FLOW_NODE_OUTLIERS:
         return optimizeRequestExecutor
-          .buildFlowNodeOutliersRequest(
-            processDefinition.getKey(),
-            Collections.singletonList("1"),
-            tenants
-          )
-          .execute();
+            .buildFlowNodeOutliersRequest(
+                processDefinition.getKey(), Collections.singletonList("1"), tenants)
+            .execute();
       case ENDPOINT_DURATION_CHART:
         return optimizeRequestExecutor
-          .buildFlowNodeDurationChartRequest(
-            processDefinition.getKey(),
-            Collections.singletonList("1"),
-            tenants,
-            FLOW_NODE_ID_START
-          )
-          .execute();
+            .buildFlowNodeDurationChartRequest(
+                processDefinition.getKey(),
+                Collections.singletonList("1"),
+                tenants,
+                FLOW_NODE_ID_START)
+            .execute();
       case ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS:
         return optimizeRequestExecutor
-          .buildSignificantOutlierVariableTermsRequest(
-            processDefinition.getKey(),
-            Collections.singletonList("1"),
-            tenants,
-            FLOW_NODE_ID_START,
-            null,
-            // -1 ensures we get results as
-            -1L,
-            Collections.emptyList()
-          )
-          .execute();
+            .buildSignificantOutlierVariableTermsRequest(
+                processDefinition.getKey(),
+                Collections.singletonList("1"),
+                tenants,
+                FLOW_NODE_ID_START,
+                null,
+                // -1 ensures we get results as
+                -1L,
+                Collections.emptyList())
+            .execute();
       case ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT:
         return optimizeRequestExecutor
-          .buildSignificantOutlierVariableTermsInstanceIdsRequest(
-            processDefinition.getKey(),
-            Collections.singletonList("1"),
-            tenants,
-            FLOW_NODE_ID_START,
-            0L,
-            100L,
-            "fake",
-            "fake"
-          )
-          .execute();
+            .buildSignificantOutlierVariableTermsInstanceIdsRequest(
+                processDefinition.getKey(),
+                Collections.singletonList("1"),
+                tenants,
+                FLOW_NODE_ID_START,
+                0L,
+                100L,
+                "fake",
+                "fake")
+            .execute();
       default:
         throw new OptimizeIntegrationTestException("Unsupported endpoint: " + endpoint);
     }
   }
 
-  private void startInstanceWithSampleVariables(final ProcessDefinitionEngineDto processDefinition) {
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), ImmutableMap.of("var", "value"));
+  private void startInstanceWithSampleVariables(
+      final ProcessDefinitionEngineDto processDefinition) {
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), ImmutableMap.of("var", "value"));
   }
 
   private BpmnModelInstance getBpmnModelInstance(String... activityId) {
-    StartEventBuilder builder = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .name("aProcessName")
-      .startEvent(FLOW_NODE_ID_START);
+    StartEventBuilder builder =
+        Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+            .name("aProcessName")
+            .startEvent(FLOW_NODE_ID_START);
     for (String activity : activityId) {
-      builder.serviceTask(activity)
-        .camundaExpression("${true}");
+      builder.serviceTask(activity).camundaExpression("${true}");
     }
     return builder.endEvent("end").done();
   }
-
 }

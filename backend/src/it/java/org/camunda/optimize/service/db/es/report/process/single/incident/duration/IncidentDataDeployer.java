@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.incident.duration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
+import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getTwoParallelExternalTaskProcess;
+
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -12,16 +21,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.engine.IncidentClient;
 import org.camunda.optimize.test.util.DateCreationFreezer;
-
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
-import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getTwoParallelExternalTaskProcess;
 
 public class IncidentDataDeployer {
 
@@ -45,7 +44,6 @@ public class IncidentDataDeployer {
     TWO_PARALLEL_TASKS
   }
 
-
   @RequiredArgsConstructor
   public static class AddProcessBuilder {
 
@@ -63,7 +61,8 @@ public class IncidentDataDeployer {
       return new InstanceStarterBuilder(incidentDataDeployer);
     }
 
-    private BpmnModelInstance processTypeToModelInstance(final IncidentProcessType incidentProcessType) {
+    private BpmnModelInstance processTypeToModelInstance(
+        final IncidentProcessType incidentProcessType) {
       BpmnModelInstance process;
       switch (incidentProcessType) {
         case ONE_TASK:
@@ -97,47 +96,53 @@ public class IncidentDataDeployer {
 
     public IncidentDurationDeploymentBuilder withOpenIncident() {
       OpenIncidentCreationHandler openIncidentCreationHandler =
-        new OpenIncidentCreationHandler(incidentDataDeployer.incidentClient);
-      return new IncidentDurationDeploymentBuilder(incidentDataDeployer, openIncidentCreationHandler);
+          new OpenIncidentCreationHandler(incidentDataDeployer.incidentClient);
+      return new IncidentDurationDeploymentBuilder(
+          incidentDataDeployer, openIncidentCreationHandler);
     }
 
     public IncidentDurationDeploymentBuilder withResolvedIncident() {
       ResolvedIncidentCreationHandler incidentCreationHandler =
-        new ResolvedIncidentCreationHandler(incidentDataDeployer.incidentClient);
+          new ResolvedIncidentCreationHandler(incidentDataDeployer.incidentClient);
       return new IncidentDurationDeploymentBuilder(incidentDataDeployer, incidentCreationHandler);
     }
 
     public IncidentDurationDeploymentBuilder withDeletedIncident() {
       DeletedIncidentCreationHandler incidentCreationHandler =
-        new DeletedIncidentCreationHandler(incidentDataDeployer.incidentClient);
+          new DeletedIncidentCreationHandler(incidentDataDeployer.incidentClient);
       return new IncidentDurationDeploymentBuilder(incidentDataDeployer, incidentCreationHandler);
     }
 
     public IncidentDurationDeploymentBuilder withResolvedAndOpenIncident() {
       ResolvedAndOpenIncidentCreationHandler resolvedAndOpenIncidentCreationHandler =
-        new ResolvedAndOpenIncidentCreationHandler(incidentDataDeployer.incidentClient);
-      return new IncidentDurationDeploymentBuilder(incidentDataDeployer, resolvedAndOpenIncidentCreationHandler);
+          new ResolvedAndOpenIncidentCreationHandler(incidentDataDeployer.incidentClient);
+      return new IncidentDurationDeploymentBuilder(
+          incidentDataDeployer, resolvedAndOpenIncidentCreationHandler);
     }
 
     public IncidentDataDeploymentExecutor withoutIncident() {
       NoIncidentCreationHandler incidentCreationHandler =
-        new NoIncidentCreationHandler(incidentDataDeployer.incidentClient);
+          new NoIncidentCreationHandler(incidentDataDeployer.incidentClient);
       incidentDataDeployer.incidentCreationHandlers.add(incidentCreationHandler);
       return new IncidentDataDeploymentExecutor(incidentDataDeployer);
     }
 
-    public IncidentDurationDeploymentBuilder withOpenIncidentOfCustomType(final String incidentType) {
+    public IncidentDurationDeploymentBuilder withOpenIncidentOfCustomType(
+        final String incidentType) {
       CustomOpenIncidentTypeCreationHandler openIncidentCreationHandler =
-        new CustomOpenIncidentTypeCreationHandler(incidentDataDeployer.incidentClient, incidentType);
-      return new IncidentDurationDeploymentBuilder(incidentDataDeployer, openIncidentCreationHandler);
+          new CustomOpenIncidentTypeCreationHandler(
+              incidentDataDeployer.incidentClient, incidentType);
+      return new IncidentDurationDeploymentBuilder(
+          incidentDataDeployer, openIncidentCreationHandler);
     }
   }
 
   public static class IncidentDurationDeploymentBuilder extends IncidentDataDeploymentExecutor {
     final IncidentCreationHandler incidentCreationHandler;
 
-    public IncidentDurationDeploymentBuilder(final IncidentDataDeployer incidentDataDeployer,
-                                             final IncidentCreationHandler incidentCreationHandler) {
+    public IncidentDurationDeploymentBuilder(
+        final IncidentDataDeployer incidentDataDeployer,
+        final IncidentCreationHandler incidentCreationHandler) {
       super(incidentDataDeployer);
       incidentDataDeployer.incidentCreationHandlers.add(incidentCreationHandler);
       this.incidentCreationHandler = incidentCreationHandler;
@@ -159,14 +164,16 @@ public class IncidentDataDeployer {
 
     public List<ProcessInstanceEngineDto> executeDeployment() {
       final IncidentClient incidentClient = incidentDataDeployer.incidentClient;
-      final String processId = incidentClient.deployProcessAndReturnId(incidentDataDeployer.process);
+      final String processId =
+          incidentClient.deployProcessAndReturnId(incidentDataDeployer.process);
 
       assertThat(incidentDataDeployer.incidentCreationHandlers).hasSizeGreaterThanOrEqualTo(1);
       OffsetDateTime creationDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
       List<ProcessInstanceEngineDto> deployedInstances = new ArrayList<>();
-      for (IncidentCreationHandler incidentCreationHandler : incidentDataDeployer.incidentCreationHandlers) {
+      for (IncidentCreationHandler incidentCreationHandler :
+          incidentDataDeployer.incidentCreationHandlers) {
         final ProcessInstanceEngineDto processInstanceEngineDto =
-          incidentCreationHandler.startProcessInstanceAndCreateIncident(processId);
+            incidentCreationHandler.startProcessInstanceAndCreateIncident(processId);
         incidentCreationHandler.adjustIncidentDate(processInstanceEngineDto.getId(), creationDate);
         deployedInstances.add(processInstanceEngineDto);
       }
@@ -175,12 +182,13 @@ public class IncidentDataDeployer {
   }
 
   @RequiredArgsConstructor
-  private static abstract class IncidentCreationHandler {
+  private abstract static class IncidentCreationHandler {
 
     final IncidentClient incidentClient;
     Long durationInSec;
 
-    abstract ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId);
+    abstract ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(
+        final String processDefinitionId);
 
     abstract void adjustIncidentDate(final String processInstanceId, final OffsetDateTime date);
   }
@@ -192,7 +200,8 @@ public class IncidentDataDeployer {
     }
 
     @Override
-    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
+    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(
+        final String processDefinitionId) {
       return incidentClient.startProcessInstanceAndCreateOpenIncident(processDefinitionId);
     }
 
@@ -200,7 +209,8 @@ public class IncidentDataDeployer {
     void adjustIncidentDate(final String processInstanceId, final OffsetDateTime creationDate) {
       if (durationInSec != null) {
         incidentClient.changeIncidentCreationDate(processInstanceId, creationDate);
-        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec)).freezeDateAndReturn();
+        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec))
+            .freezeDateAndReturn();
       }
     }
   }
@@ -212,7 +222,8 @@ public class IncidentDataDeployer {
     }
 
     @Override
-    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
+    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(
+        final String processDefinitionId) {
       return incidentClient.startProcessInstanceAndCreateResolvedIncident(processDefinitionId);
     }
 
@@ -220,7 +231,8 @@ public class IncidentDataDeployer {
     void adjustIncidentDate(final String processInstanceId, final OffsetDateTime creationDate) {
       if (durationInSec != null) {
         final OffsetDateTime endDate = creationDate.plusSeconds(durationInSec);
-        incidentClient.changeIncidentCreationAndEndDateIfPresent(processInstanceId, creationDate, endDate);
+        incidentClient.changeIncidentCreationAndEndDateIfPresent(
+            processInstanceId, creationDate, endDate);
       }
     }
   }
@@ -232,7 +244,8 @@ public class IncidentDataDeployer {
     }
 
     @Override
-    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
+    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(
+        final String processDefinitionId) {
       return incidentClient.startProcessInstanceAndCreateDeletedIncident(processDefinitionId);
     }
 
@@ -240,7 +253,8 @@ public class IncidentDataDeployer {
     void adjustIncidentDate(final String processInstanceId, final OffsetDateTime creationDate) {
       if (durationInSec != null) {
         final OffsetDateTime endDate = creationDate.plusSeconds(durationInSec);
-        incidentClient.changeIncidentCreationAndEndDateIfPresent(processInstanceId, creationDate, endDate);
+        incidentClient.changeIncidentCreationAndEndDateIfPresent(
+            processInstanceId, creationDate, endDate);
       }
     }
   }
@@ -252,10 +266,12 @@ public class IncidentDataDeployer {
     }
 
     @Override
-    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
+    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(
+        final String processDefinitionId) {
       final ProcessInstanceEngineDto processInstanceEngineDto =
-        incidentClient.startProcessInstanceAndCreateResolvedIncident(processDefinitionId);
-      incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+          incidentClient.startProcessInstanceAndCreateResolvedIncident(processDefinitionId);
+      incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+          processInstanceEngineDto.getBusinessKey());
       return processInstanceEngineDto;
     }
 
@@ -263,8 +279,10 @@ public class IncidentDataDeployer {
     void adjustIncidentDate(final String processInstanceId, final OffsetDateTime creationDate) {
       if (durationInSec != null) {
         final OffsetDateTime endDate = creationDate.plusSeconds(durationInSec);
-        incidentClient.changeIncidentCreationAndEndDateIfPresent(processInstanceId, creationDate, endDate);
-        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec)).freezeDateAndReturn();
+        incidentClient.changeIncidentCreationAndEndDateIfPresent(
+            processInstanceId, creationDate, endDate);
+        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec))
+            .freezeDateAndReturn();
       }
     }
   }
@@ -276,7 +294,8 @@ public class IncidentDataDeployer {
     }
 
     @Override
-    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
+    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(
+        final String processDefinitionId) {
       return incidentClient.startProcessInstanceWithoutIncident(processDefinitionId);
     }
 
@@ -290,22 +309,25 @@ public class IncidentDataDeployer {
 
     private final String customIncidentType;
 
-    public CustomOpenIncidentTypeCreationHandler(final IncidentClient incidentClient,
-                                                 final String customIncidentType) {
+    public CustomOpenIncidentTypeCreationHandler(
+        final IncidentClient incidentClient, final String customIncidentType) {
       super(incidentClient);
       this.customIncidentType = customIncidentType;
     }
 
     @Override
-    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
-      return incidentClient.startProcessInstanceWithCustomIncident(processDefinitionId, this.customIncidentType);
+    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(
+        final String processDefinitionId) {
+      return incidentClient.startProcessInstanceWithCustomIncident(
+          processDefinitionId, this.customIncidentType);
     }
 
     @Override
     void adjustIncidentDate(final String processInstanceId, final OffsetDateTime creationDate) {
       if (durationInSec != null) {
         incidentClient.changeIncidentCreationDate(processInstanceId, creationDate);
-        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec)).freezeDateAndReturn();
+        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec))
+            .freezeDateAndReturn();
       }
     }
   }

@@ -5,28 +5,26 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.frequency.groupby.date.distributedby.none;
 
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
-import java.util.Map;
-
 public class AutomaticIntervalSelectionGroupByEndProcessInstanceDateReportEvaluationIT
-  extends AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT {
+    extends AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT {
 
   @Override
   protected ProcessReportDataDto getGroupByDateReportData(String key, String version) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(key)
-      .setProcessDefinitionVersion(version)
-      .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE)
-      .build();
+    return TemplatedProcessReportDataBuilder.createReportData()
+        .setProcessDefinitionKey(key)
+        .setProcessDefinitionVersion(version)
+        .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
+        .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE)
+        .build();
   }
 
   @Override
@@ -35,8 +33,9 @@ public class AutomaticIntervalSelectionGroupByEndProcessInstanceDateReportEvalua
   }
 
   @Override
-  protected void updateProcessInstanceDate(final ZonedDateTime min,
-                                           final ProcessInstanceEngineDto procInstMin) {
-    engineDatabaseExtension.changeProcessInstanceEndDate(procInstMin.getId(), min.toOffsetDateTime());
+  protected void updateProcessInstanceDate(
+      final ZonedDateTime min, final ProcessInstanceEngineDto procInstMin) {
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        procInstMin.getId(), min.toOffsetDateTime());
   }
 }

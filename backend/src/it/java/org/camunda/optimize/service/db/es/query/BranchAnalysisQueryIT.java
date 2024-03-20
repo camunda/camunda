@@ -5,7 +5,19 @@
  */
 package org.camunda.optimize.service.db.es.query;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+
 import com.google.common.collect.ImmutableList;
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -19,19 +31,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 
 @Slf4j
 public class BranchAnalysisQueryIT extends AbstractPlatformIT {
@@ -69,7 +68,7 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
 
     // when
     BranchAnalysisResponseDto result =
-      performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
+        performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
 
     // then
     assertThat(result).isNotNull();
@@ -96,10 +95,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = performBranchAnalysis(
-      processDefinition.getKey(),
-      processDefinition.getVersionAsString()
-    );
+    BranchAnalysisResponseDto result =
+        performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
 
     // then
     assertThat(result).isNotNull();
@@ -126,13 +123,13 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
-      processDefinition.getKey(),
-      Collections.singletonList(processDefinition.getVersionAsString()),
-      Collections.singletonList(null),
-      GATEWAY_C,
-      SUBPROCESS_END_EVENT_ID
-    );
+    BranchAnalysisResponseDto result =
+        analysisClient.performBranchAnalysis(
+            processDefinition.getKey(),
+            Collections.singletonList(processDefinition.getVersionAsString()),
+            Collections.singletonList(null),
+            GATEWAY_C,
+            SUBPROCESS_END_EVENT_ID);
 
     // then analysis shows it is not possible to reach the chosen end from the chosen gateway
     assertThat(result).isNotNull();
@@ -161,7 +158,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
+    BranchAnalysisResponseDto result =
+        performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
 
     // then
     assertThat(result).isNotNull();
@@ -194,14 +192,10 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> versions = Arrays.asList(
-      processDefinition1.getVersionAsString(),
-      processDefinition3.getVersionAsString()
-    );
-    BranchAnalysisResponseDto result = performBranchAnalysis(
-      processDefinition1.getKey(),
-      versions
-    );
+    List<String> versions =
+        Arrays.asList(
+            processDefinition1.getVersionAsString(), processDefinition3.getVersionAsString());
+    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition1.getKey(), versions);
 
     // then
     assertThat(result).isNotNull();
@@ -232,7 +226,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
+    BranchAnalysisResponseDto result =
+        performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
     // then
     assertThat(result).isNotNull();
@@ -275,10 +270,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = performBranchAnalysis(
-      processDefinition.getKey(),
-      processDefinition.getVersionAsString()
-    );
+    BranchAnalysisResponseDto result =
+        performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
 
     // then
     assertThat(result).isNotNull();
@@ -312,13 +305,13 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
-      processDefinition1.getKey(),
-      ImmutableList.of(processDefinition1.getVersionAsString()),
-      Arrays.asList(tenantId2, tenantId1),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+    BranchAnalysisResponseDto result =
+        analysisClient.performBranchAnalysis(
+            processDefinition1.getKey(),
+            ImmutableList.of(processDefinition1.getVersionAsString()),
+            Arrays.asList(tenantId2, tenantId1),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
 
     // then
     assertThat(result).isNotNull();
@@ -352,13 +345,13 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = analysisClient.performBranchAnalysis(
-      processDefinition1.getKey(),
-      ImmutableList.of(processDefinition1.getVersionAsString()),
-      Collections.singletonList(tenantId2),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+    BranchAnalysisResponseDto result =
+        analysisClient.performBranchAnalysis(
+            processDefinition1.getKey(),
+            ImmutableList.of(processDefinition1.getVersionAsString()),
+            Collections.singletonList(tenantId2),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
 
     // then
     assertThat(result).isNotNull();
@@ -387,10 +380,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = performBranchAnalysis(
-      processDefinition.getKey(),
-      processDefinition.getVersion()
-    );
+    BranchAnalysisResponseDto result =
+        performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     // then
     assertThat(result).isNotNull();
@@ -418,10 +409,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = performBranchAnalysis(
-      processDefinition.getKey(),
-      processDefinition.getVersion()
-    );
+    BranchAnalysisResponseDto result =
+        performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     // then
     assertThat(result).isNotNull();
@@ -451,10 +440,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisResponseDto result = performBranchAnalysis(
-      processDefinition.getKey(),
-      processDefinition.getVersion()
-    );
+    BranchAnalysisResponseDto result =
+        performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     // then
     assertThat(result).isNotNull();
@@ -477,28 +464,30 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   public void branchAnalysisWithDtoFilteredByDateBefore() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    ProcessInstanceEngineDto processInstance =
+        startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
-      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstance.getId())
+            .getStartTime();
     importAllEngineEntitiesFromScratch();
 
     // when
-    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
-      processDefinition.getKey(),
-      Collections.singletonList(String.valueOf(processDefinition.getVersion())),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+    BranchAnalysisRequestDto dto =
+        analysisClient.createAnalysisDto(
+            processDefinition.getKey(),
+            Collections.singletonList(String.valueOf(processDefinition.getVersion())),
+            Collections.singletonList(null),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
 
     addStartDateFilter(null, now, dto);
     log.debug(
-      "Preparing query on [{}] with operator [{}], type [{}], date [{}]",
-      processDefinition,
-      "<=",
-      "start_date",
-      now
-    );
+        "Preparing query on [{}] with operator [{}], type [{}], date [{}]",
+        processDefinition,
+        "<=",
+        "start_date",
+        now);
 
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
     // then
@@ -522,18 +511,21 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   public void branchAnalysisWithDtoFilteredByDateAfter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    ProcessInstanceEngineDto processInstance =
+        startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
-      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstance.getId())
+            .getStartTime();
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
-      processDefinition.getKey(),
-      Collections.singletonList(String.valueOf(processDefinition.getVersion())),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+    BranchAnalysisRequestDto dto =
+        analysisClient.createAnalysisDto(
+            processDefinition.getKey(),
+            Collections.singletonList(String.valueOf(processDefinition.getVersion())),
+            Collections.singletonList(null),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
     addStartDateFilter(now.plusSeconds(1L), null, dto);
 
     // when
@@ -563,13 +555,13 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
-      processDefinition.getKey(),
-      Collections.singletonList(String.valueOf(processDefinition.getVersion())),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+    BranchAnalysisRequestDto dto =
+        analysisClient.createAnalysisDto(
+            processDefinition.getKey(),
+            Collections.singletonList(String.valueOf(processDefinition.getVersion())),
+            Collections.singletonList(null),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
     addStartDateFilter(nowPlusTimeInSec(-20), null, dto);
 
     // when
@@ -596,39 +588,40 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   public void bypassOfGatewayDoesNotDistortResult() {
     // given
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent(START_EVENT_ID)
-      .exclusiveGateway(GATEWAY_B)
-        .condition("Take long way", "${!takeShortcut}")
-      .exclusiveGateway(GATEWAY_C)
-        .condition("Take direct way", "${!goToTask}")
-      .exclusiveGateway(GATEWAY_D)
-      .exclusiveGateway(GATEWAY_F)
-      .endEvent(END_EVENT_ID)
-      .moveToNode(GATEWAY_B)
-        .condition("Take shortcut", "${takeShortcut}")
-        .connectTo(GATEWAY_D)
-      .moveToNode(GATEWAY_C)
-        .condition("Go to task", "${goToTask}")
-        .serviceTask(TASK_ID_1)
-          .camundaExpression("${true}")
-        .connectTo(GATEWAY_F)
-      .done();
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent(START_EVENT_ID)
+            .exclusiveGateway(GATEWAY_B)
+            .condition("Take long way", "${!takeShortcut}")
+            .exclusiveGateway(GATEWAY_C)
+            .condition("Take direct way", "${!goToTask}")
+            .exclusiveGateway(GATEWAY_D)
+            .exclusiveGateway(GATEWAY_F)
+            .endEvent(END_EVENT_ID)
+            .moveToNode(GATEWAY_B)
+            .condition("Take shortcut", "${takeShortcut}")
+            .connectTo(GATEWAY_D)
+            .moveToNode(GATEWAY_C)
+            .condition("Go to task", "${goToTask}")
+            .serviceTask(TASK_ID_1)
+            .camundaExpression("${true}")
+            .connectTo(GATEWAY_F)
+            .done();
     // @formatter:on
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      modelInstance);
+    ProcessDefinitionEngineDto processDefinition =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
     startBypassProcessAndTakeLongWayWithoutTask(processDefinition);
     startBypassProcessAndTakeShortcut(processDefinition);
     startBypassProcessAndTakeLongWayWithTask(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
-      processDefinition.getKey(),
-      Collections.singletonList(String.valueOf(processDefinition.getVersion())),
-      Collections.singletonList(null),
-      GATEWAY_C,
-      END_EVENT_ID
-    );
+    BranchAnalysisRequestDto dto =
+        analysisClient.createAnalysisDto(
+            processDefinition.getKey(),
+            Collections.singletonList(String.valueOf(processDefinition.getVersion())),
+            Collections.singletonList(null),
+            GATEWAY_C,
+            END_EVENT_ID);
 
     // when
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
@@ -657,20 +650,16 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
-      processDefinition.getKey(),
-      Collections.singletonList(processDefinition.getVersionAsString()),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+    BranchAnalysisRequestDto dto =
+        analysisClient.createAnalysisDto(
+            processDefinition.getKey(),
+            Collections.singletonList(processDefinition.getVersionAsString()),
+            Collections.singletonList(null),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
 
-    dto.setFilter(ProcessFilterBuilder.filter()
-                    .variable()
-                    .booleanTrue()
-                    .name("goToTask1")
-                    .add()
-                    .buildList());
+    dto.setFilter(
+        ProcessFilterBuilder.filter().variable().booleanTrue().name("goToTask1").add().buildList());
 
     // when
     BranchAnalysisResponseDto result = analysisClient.getProcessDefinitionCorrelation(dto);
@@ -699,20 +688,16 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     importAllEngineEntitiesFromScratch();
 
-    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
-      processDefinition.getKey(),
-      Collections.singletonList(processDefinition.getVersionAsString()),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+    BranchAnalysisRequestDto dto =
+        analysisClient.createAnalysisDto(
+            processDefinition.getKey(),
+            Collections.singletonList(processDefinition.getVersionAsString()),
+            Collections.singletonList(null),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
 
-    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
-      .filter()
-      .executedFlowNodes()
-      .id("task1")
-      .add()
-      .buildList();
+    List<ProcessFilterDto<?>> flowNodeFilter =
+        ProcessFilterBuilder.filter().executedFlowNodes().id("task1").add().buildList();
     dto.getFilter().addAll(flowNodeFilter);
 
     // when
@@ -738,26 +723,25 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   @Test
   public void shortcutInExclusiveGatewayDoesNotDistortBranchAnalysis() {
     // given
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("splittingGateway")
-      .condition("Take long way", "${!takeShortcut}")
-      .serviceTask("serviceTask")
-      .camundaExpression("${true}")
-      .exclusiveGateway("mergeExclusiveGateway")
-      .endEvent("endEvent")
-      .moveToLastGateway()
-      .moveToLastGateway()
-      .condition("Take shortcut", "${takeShortcut}")
-      .connectTo("mergeExclusiveGateway")
-      .done();
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent("startEvent")
+            .exclusiveGateway("splittingGateway")
+            .condition("Take long way", "${!takeShortcut}")
+            .serviceTask("serviceTask")
+            .camundaExpression("${true}")
+            .exclusiveGateway("mergeExclusiveGateway")
+            .endEvent("endEvent")
+            .moveToLastGateway()
+            .moveToLastGateway()
+            .condition("Take shortcut", "${takeShortcut}")
+            .connectTo("mergeExclusiveGateway")
+            .done();
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
-      modelInstance,
-      variables
-    );
+    ProcessInstanceEngineDto instanceEngineDto =
+        engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
     variables.put("takeShortcut", false);
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
@@ -786,27 +770,26 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   public void shortcutInMergingFlowNodeDoesNotDistortBranchAnalysis() {
     // given
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("splittingGateway")
-        .condition("Take long way", "${!takeShortcut}")
-        .serviceTask("serviceTask")
-          .camundaExpression("${true}")
-        .serviceTask("mergingServiceTask")
-          .camundaExpression("${true}")
-        .endEvent("endEvent")
-      .moveToLastGateway()
-        .condition("Take shortcut", "${takeShortcut}")
-        .connectTo("mergingServiceTask")
-      .done();
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent("startEvent")
+            .exclusiveGateway("splittingGateway")
+            .condition("Take long way", "${!takeShortcut}")
+            .serviceTask("serviceTask")
+            .camundaExpression("${true}")
+            .serviceTask("mergingServiceTask")
+            .camundaExpression("${true}")
+            .endEvent("endEvent")
+            .moveToLastGateway()
+            .condition("Take shortcut", "${takeShortcut}")
+            .connectTo("mergingServiceTask")
+            .done();
     // @formatter:on
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
-      modelInstance,
-      variables
-    );
+    ProcessInstanceEngineDto instanceEngineDto =
+        engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
     variables.put("takeShortcut", false);
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
@@ -831,14 +814,16 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     assertThat(task2.getActivityCount()).isEqualTo(1L);
   }
 
-  private BranchAnalysisResponseDto getBasicBranchAnalysisDto(ProcessInstanceEngineDto instanceEngineDto) {
-    BranchAnalysisRequestDto dto = analysisClient.createAnalysisDto(
-      instanceEngineDto.getProcessDefinitionKey(),
-      Collections.singletonList(String.valueOf(instanceEngineDto.getProcessDefinitionVersion())),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+  private BranchAnalysisResponseDto getBasicBranchAnalysisDto(
+      ProcessInstanceEngineDto instanceEngineDto) {
+    BranchAnalysisRequestDto dto =
+        analysisClient.createAnalysisDto(
+            instanceEngineDto.getProcessDefinitionKey(),
+            Collections.singletonList(
+                String.valueOf(instanceEngineDto.getProcessDefinitionVersion())),
+            Collections.singletonList(null),
+            SPLITTING_GATEWAY_ID,
+            END_EVENT_ID);
     return analysisClient.getProcessDefinitionCorrelation(dto);
   }
 
@@ -846,29 +831,28 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   public void endEventDirectlyAfterGateway() {
     // given
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("mergeExclusiveGateway")
-        .serviceTask()
-          .camundaExpression("${true}")
-        .exclusiveGateway("splittingGateway")
-          .condition("Take another round", "${!anotherRound}")
-        .endEvent("endEvent")
-      .moveToLastGateway()
-        .condition("End process", "${anotherRound}")
-        .serviceTask("serviceTask")
-          .camundaExpression("${true}")
-          .camundaInputParameter("anotherRound", "${anotherRound}")
-          .camundaOutputParameter("anotherRound", "${!anotherRound}")
-        .connectTo("mergeExclusiveGateway")
-      .done();
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent("startEvent")
+            .exclusiveGateway("mergeExclusiveGateway")
+            .serviceTask()
+            .camundaExpression("${true}")
+            .exclusiveGateway("splittingGateway")
+            .condition("Take another round", "${!anotherRound}")
+            .endEvent("endEvent")
+            .moveToLastGateway()
+            .condition("End process", "${anotherRound}")
+            .serviceTask("serviceTask")
+            .camundaExpression("${true}")
+            .camundaInputParameter("anotherRound", "${anotherRound}")
+            .camundaOutputParameter("anotherRound", "${!anotherRound}")
+            .connectTo("mergeExclusiveGateway")
+            .done();
     // @formatter:on
     Map<String, Object> variables = new HashMap<>();
     variables.put("anotherRound", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
-      modelInstance,
-      variables
-    );
+    ProcessInstanceEngineDto instanceEngineDto =
+        engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
     variables.put("anotherRound", false);
     engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
@@ -897,26 +881,23 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   public void testValidationExceptionOnNullDto() {
     // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(null);
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinition() {
     // when
-    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(new BranchAnalysisRequestDto());
+    Response response =
+        analysisClient.getProcessDefinitionCorrelationRawResponse(new BranchAnalysisRequestDto());
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinitionVersion() {
     // given
-    BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
-      PROCESS_DEFINITION_KEY,
-      null,
-      null,
-      null,
-      null
-    );
+    BranchAnalysisRequestDto request =
+        analysisClient.createAnalysisDto(PROCESS_DEFINITION_KEY, null, null, null, null);
 
     // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
@@ -926,13 +907,13 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   @Test
   public void testValidationExceptionOnNullGateway() {
     // given
-    BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList(PROCESS_DEFINITION_VERSION),
-      null,
-      null,
-      null
-    );
+    BranchAnalysisRequestDto request =
+        analysisClient.createAnalysisDto(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList(PROCESS_DEFINITION_VERSION),
+            null,
+            null,
+            null);
 
     // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
@@ -942,13 +923,13 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
 
   @Test
   public void testValidationExceptionOnNullEndActivity() {
-    BranchAnalysisRequestDto request = analysisClient.createAnalysisDto(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList(PROCESS_DEFINITION_VERSION),
-      Collections.singletonList(null),
-      GATEWAY_ACTIVITY,
-      null
-    );
+    BranchAnalysisRequestDto request =
+        analysisClient.createAnalysisDto(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList(PROCESS_DEFINITION_VERSION),
+            Collections.singletonList(null),
+            GATEWAY_ACTIVITY,
+            null);
 
     // when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
@@ -956,7 +937,8 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private void startBypassProcessAndTakeLongWayWithoutTask(ProcessDefinitionEngineDto processDefinition) {
+  private void startBypassProcessAndTakeLongWayWithoutTask(
+      ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask", false);
     variables.put("takeShortcut", false);
@@ -969,44 +951,42 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
-  private void startBypassProcessAndTakeLongWayWithTask(ProcessDefinitionEngineDto processDefinition) {
+  private void startBypassProcessAndTakeLongWayWithTask(
+      ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", false);
     variables.put("goToTask", true);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
-  private BranchAnalysisResponseDto performBranchAnalysis(final String processDefinitionKey,
-                                                          final Integer processDefinitionVersion) {
+  private BranchAnalysisResponseDto performBranchAnalysis(
+      final String processDefinitionKey, final Integer processDefinitionVersion) {
     return analysisClient.performBranchAnalysis(
-      processDefinitionKey,
-      ImmutableList.of(processDefinitionVersion.toString()),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+        processDefinitionKey,
+        ImmutableList.of(processDefinitionVersion.toString()),
+        Collections.singletonList(null),
+        SPLITTING_GATEWAY_ID,
+        END_EVENT_ID);
   }
 
-  private BranchAnalysisResponseDto performBranchAnalysis(final String processDefinitionKey,
-                                                          final String processDefinitionVersion) {
+  private BranchAnalysisResponseDto performBranchAnalysis(
+      final String processDefinitionKey, final String processDefinitionVersion) {
     return analysisClient.performBranchAnalysis(
-      processDefinitionKey,
-      ImmutableList.of(processDefinitionVersion),
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+        processDefinitionKey,
+        ImmutableList.of(processDefinitionVersion),
+        Collections.singletonList(null),
+        SPLITTING_GATEWAY_ID,
+        END_EVENT_ID);
   }
 
-  private BranchAnalysisResponseDto performBranchAnalysis(final String processDefinitionKey,
-                                                          final List<String> processDefinitionVersions) {
+  private BranchAnalysisResponseDto performBranchAnalysis(
+      final String processDefinitionKey, final List<String> processDefinitionVersions) {
     return analysisClient.performBranchAnalysis(
-      processDefinitionKey,
-      processDefinitionVersions,
-      Collections.singletonList(null),
-      SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
-    );
+        processDefinitionKey,
+        processDefinitionVersions,
+        Collections.singletonList(null),
+        SPLITTING_GATEWAY_ID,
+        END_EVENT_ID);
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
@@ -1020,94 +1000,98 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinitionWithLoop() {
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent()
-      .serviceTask(TASK_ID_1)
-      .camundaExpression("${true}")
-      .exclusiveGateway(SPLITTING_GATEWAY_ID)
-        .name("Go to task 2?")
-        .condition("yes", "#{goToTask1}")
-        .serviceTask(TASK_ID_2)
-        .camundaExpression("${true}")
-        .endEvent(END_EVENT_ID)
-      .moveToLastGateway()
-        .condition("no", "#{!goToTask1}")
-        .serviceTask(TASK_ID_3)
-        .camundaExpression("${true}")
-        .connectTo(TASK_ID_1)
-        .done();
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+            .startEvent()
+            .serviceTask(TASK_ID_1)
+            .camundaExpression("${true}")
+            .exclusiveGateway(SPLITTING_GATEWAY_ID)
+            .name("Go to task 2?")
+            .condition("yes", "#{goToTask1}")
+            .serviceTask(TASK_ID_2)
+            .camundaExpression("${true}")
+            .endEvent(END_EVENT_ID)
+            .moveToLastGateway()
+            .condition("no", "#{!goToTask1}")
+            .serviceTask(TASK_ID_3)
+            .camundaExpression("${true}")
+            .connectTo(TASK_ID_1)
+            .done();
     // @formatter:on
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, null);
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessWithUserTask() {
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent(START_EVENT_ID)
-      .exclusiveGateway(SPLITTING_GATEWAY_ID)
-        .name("Should we go to task 1?")
-        .condition("yes", "${goToTask1}")
-        .serviceTask(TASK_ID_1)
-        .camundaExpression("${true}")
-      .exclusiveGateway(MERGE_GATEWAY_ID)
-        .endEvent(END_EVENT_ID)
-      .moveToNode(SPLITTING_GATEWAY_ID)
-        .condition("no", "${!goToTask1}")
-        .serviceTask(TASK_ID_2)
-        .camundaExpression("${true}")
-        .userTask(USER_TASK_ID)
-        .connectTo(MERGE_GATEWAY_ID)
-      .done();
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+            .startEvent(START_EVENT_ID)
+            .exclusiveGateway(SPLITTING_GATEWAY_ID)
+            .name("Should we go to task 1?")
+            .condition("yes", "${goToTask1}")
+            .serviceTask(TASK_ID_1)
+            .camundaExpression("${true}")
+            .exclusiveGateway(MERGE_GATEWAY_ID)
+            .endEvent(END_EVENT_ID)
+            .moveToNode(SPLITTING_GATEWAY_ID)
+            .condition("no", "${!goToTask1}")
+            .serviceTask(TASK_ID_2)
+            .camundaExpression("${true}")
+            .userTask(USER_TASK_ID)
+            .connectTo(MERGE_GATEWAY_ID)
+            .done();
     // @formatter:on
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private ProcessDefinitionEngineDto deployGatewayProcessWithSubprocess() {
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent(START_EVENT_ID)
-      .exclusiveGateway(GATEWAY_B)
-      .name("Should we go to task 1?")
-      .condition("no", "${!goToTask1}")
-      .serviceTask(TASK_ID_2)
-      .camundaExpression("${true}")
-      .endEvent("endEvent3")
-      .moveToNode(GATEWAY_B)
-      .condition("yes", "${goToTask1}")
-      .serviceTask(TASK_ID_1)
-      .camundaExpression("${true}")
-      .subProcess()
-        .embeddedSubProcess()
-          .startEvent()
-          .exclusiveGateway(SUBPROCESS_GATEWAY_ID)
-          .condition("yes", "${goToTask1}")
-          .serviceTask(SUBPROCESS_TASK_ID_1)
-          .camundaExpression("${true}")
-          .endEvent(SUBPROCESS_END_EVENT_ID)
-          .moveToNode(SUBPROCESS_GATEWAY_ID)
-          .condition("no", "${goToTask1}")
-          .serviceTask(SUBPROCESS_TASK_ID_2)
-          .camundaExpression("${true}")
-          .endEvent("subprocessEnd2")
-          .subProcessDone()
-      .exclusiveGateway(GATEWAY_C)
-      .name("Should we go to task 3?")
-      .condition("yes", "${goToTask1}")
-      .serviceTask(TASK_ID_3)
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT_ID)
-      .moveToNode(GATEWAY_C)
-      .condition("no", "${!goToTask1}")
-      .serviceTask(TASK_ID_4)
-      .camundaExpression("${true}")
-      .endEvent("endEvent2")
-      .done();
+    BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+            .startEvent(START_EVENT_ID)
+            .exclusiveGateway(GATEWAY_B)
+            .name("Should we go to task 1?")
+            .condition("no", "${!goToTask1}")
+            .serviceTask(TASK_ID_2)
+            .camundaExpression("${true}")
+            .endEvent("endEvent3")
+            .moveToNode(GATEWAY_B)
+            .condition("yes", "${goToTask1}")
+            .serviceTask(TASK_ID_1)
+            .camundaExpression("${true}")
+            .subProcess()
+            .embeddedSubProcess()
+            .startEvent()
+            .exclusiveGateway(SUBPROCESS_GATEWAY_ID)
+            .condition("yes", "${goToTask1}")
+            .serviceTask(SUBPROCESS_TASK_ID_1)
+            .camundaExpression("${true}")
+            .endEvent(SUBPROCESS_END_EVENT_ID)
+            .moveToNode(SUBPROCESS_GATEWAY_ID)
+            .condition("no", "${goToTask1}")
+            .serviceTask(SUBPROCESS_TASK_ID_2)
+            .camundaExpression("${true}")
+            .endEvent("subprocessEnd2")
+            .subProcessDone()
+            .exclusiveGateway(GATEWAY_C)
+            .name("Should we go to task 3?")
+            .condition("yes", "${goToTask1}")
+            .serviceTask(TASK_ID_3)
+            .camundaExpression("${true}")
+            .endEvent(END_EVENT_ID)
+            .moveToNode(GATEWAY_C)
+            .condition("no", "${!goToTask1}")
+            .serviceTask(TASK_ID_4)
+            .camundaExpression("${true}")
+            .endEvent("endEvent2")
+            .done();
     // @formatter:on
 
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private ProcessInstanceEngineDto startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) {
+  private ProcessInstanceEngineDto startSimpleGatewayProcessAndTakeTask1(
+      ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
     return engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
@@ -1119,14 +1103,15 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
-  private void addStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisRequestDto dto) {
-    List<ProcessFilterDto<?>> dateFilter = ProcessFilterBuilder
-      .filter()
-      .fixedInstanceStartDate()
-      .start(startDate)
-      .end(endDate)
-      .add()
-      .buildList();
+  private void addStartDateFilter(
+      OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisRequestDto dto) {
+    List<ProcessFilterDto<?>> dateFilter =
+        ProcessFilterBuilder.filter()
+            .fixedInstanceStartDate()
+            .start(startDate)
+            .end(endDate)
+            .add()
+            .buildList();
 
     dto.getFilter().addAll(dateFilter);
   }
@@ -1134,5 +1119,4 @@ public class BranchAnalysisQueryIT extends AbstractPlatformIT {
   private OffsetDateTime nowPlusTimeInSec(int timeInMs) {
     return OffsetDateTime.now().plus(timeInMs, ChronoUnit.SECONDS);
   }
-
 }

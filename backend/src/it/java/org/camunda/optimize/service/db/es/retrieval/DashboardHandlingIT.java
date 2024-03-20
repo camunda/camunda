@@ -5,7 +5,23 @@
  */
 package org.camunda.optimize.service.db.es.retrieval;
 
+import static jakarta.ws.rs.HttpMethod.PUT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.mockserver.model.HttpRequest.request;
+
 import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -23,23 +39,6 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static jakarta.ws.rs.HttpMethod.PUT;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.mockserver.model.HttpRequest.request;
-
 @Tag(OPENSEARCH_PASSING)
 public class DashboardHandlingIT extends AbstractPlatformIT {
 
@@ -54,9 +53,10 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     String id = addEmptyPrivateDashboard();
 
     // when
-    final DashboardDefinitionRestDto dashboardDto = databaseIntegrationTestExtension
-      .getDatabaseEntryById(DASHBOARD_INDEX_NAME, id, DashboardDefinitionRestDto.class
-    ).orElse(null);
+    final DashboardDefinitionRestDto dashboardDto =
+        databaseIntegrationTestExtension
+            .getDatabaseEntryById(DASHBOARD_INDEX_NAME, id, DashboardDefinitionRestDto.class)
+            .orElse(null);
 
     // then
     assertThat(dashboardDto).isNotNull();
@@ -111,16 +111,17 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getTiles()
-      .stream()
-      .map(DashboardReportTileDto::getId)
-      .collect(Collectors.toList());
+    final List<String> newReportIds =
+        dashboard.getTiles().stream()
+            .map(DashboardReportTileDto::getId)
+            .collect(Collectors.toList());
 
     assertThat(newReportIds.isEmpty()).isFalse();
     assertThat(newReportIds)
-      .doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
-                                     .map(DashboardReportTileDto::getId)
-                                     .collect(Collectors.toList()));
+        .doesNotContainAnyElementsOf(
+            oldDashboard.getTiles().stream()
+                .map(DashboardReportTileDto::getId)
+                .collect(Collectors.toList()));
   }
 
   @Test
@@ -129,7 +130,8 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     String dashboardId = addEmptyPrivateDashboard();
     final String reportId = createNewSingleProcessReport();
     final String externalResource = "http://www.camunda.com";
-    dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, externalResource));
+    dashboardClient.updateDashboardWithReports(
+        dashboardId, Arrays.asList(reportId, externalResource));
 
     final String collectionId = collectionClient.createNewCollection();
 
@@ -143,10 +145,10 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getTiles()
-      .stream()
-      .map(DashboardReportTileDto::getId)
-      .collect(Collectors.toList());
+    final List<String> newReportIds =
+        dashboard.getTiles().stream()
+            .map(DashboardReportTileDto::getId)
+            .collect(Collectors.toList());
 
     assertThat(newReportIds.isEmpty()).isFalse();
     assertThat(newReportIds).doesNotContain(reportId);
@@ -172,23 +174,27 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getTiles()
-      .stream()
-      .map(DashboardReportTileDto::getId)
-      .collect(Collectors.toList());
+    final List<String> newReportIds =
+        dashboard.getTiles().stream()
+            .map(DashboardReportTileDto::getId)
+            .collect(Collectors.toList());
 
     assertThat(newReportIds).hasSize(2);
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
-                                                           .map(DashboardReportTileDto::getId)
-                                                           .collect(Collectors.toList()));
+    assertThat(newReportIds)
+        .doesNotContainAnyElementsOf(
+            oldDashboard.getTiles().stream()
+                .map(DashboardReportTileDto::getId)
+                .collect(Collectors.toList()));
     assertThat(newReportIds).allSatisfy(str -> assertThat(str).isEqualTo(newReportIds.get(0)));
 
-    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities =
+        collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities).hasSize(2);
   }
 
   @Test
-  public void copyPrivateDashboardAndMoveToCollection_reportsAreCopiedDespiteDashboardCreationFailureWithEsDown() {
+  public void
+      copyPrivateDashboardAndMoveToCollection_reportsAreCopiedDespiteDashboardCreationFailureWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
     String reportId = createNewSingleProcessReport();
@@ -196,33 +202,36 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     final String collectionId = collectionClient.createNewCollection();
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/.*")
-      .withMethod(PUT);
+    final HttpRequest requestMatcher =
+        request().withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/.*").withMethod(PUT);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // when
-    final Response copyResponse = dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
-      dashboardId, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final Response copyResponse =
+        dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
+            dashboardId, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(copyResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(copyResponse.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     assertThat(oldDashboard.getCollectionId()).isNull();
     assertThat(dashboardWithNameExists(oldDashboard.getName() + " – Copy")).isFalse();
 
-    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities =
+        collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities)
-      .hasSize(1)
-      .extracting(EntityResponseDto::getName)
-      .containsExactly("New Report – Copy");
+        .hasSize(1)
+        .extracting(EntityResponseDto::getName)
+        .containsExactly("New Report – Copy");
   }
 
   @Test
-  public void copyPrivateDashboardAndMoveToCollection_dashboardNotCreatedIfReportCopyFailsWithEsDown() {
+  public void
+      copyPrivateDashboardAndMoveToCollection_dashboardNotCreatedIfReportCopyFailsWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
     String reportId = createNewSingleProcessReport();
@@ -230,35 +239,39 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     final String collectionId = collectionClient.createNewCollection();
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + SINGLE_PROCESS_REPORT_INDEX_NAME + "/_doc/.*")
-      .withMethod(PUT);
+    final HttpRequest requestMatcher =
+        request().withPath("/.*-" + SINGLE_PROCESS_REPORT_INDEX_NAME + "/_doc/.*").withMethod(PUT);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // when
-    final Response copyResponse = dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
-      dashboardId, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final Response copyResponse =
+        dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
+            dashboardId, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(copyResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(copyResponse.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     assertThat(oldDashboard.getCollectionId()).isNull();
     assertThat(dashboardWithNameExists(oldDashboard.getName() + " – Copy")).isFalse();
 
-    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities =
+        collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities).isEmpty();
   }
 
   @Test
-  public void copyPrivateDashboardAndMoveToCollection_duplicateReportIsOnlyCopiedOnceIfReferencedFromCombinedReport() {
+  public void
+      copyPrivateDashboardAndMoveToCollection_duplicateReportIsOnlyCopiedOnceIfReferencedFromCombinedReport() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
     String reportId = createNewSingleProcessReport();
     String combinedReportId = reportClient.createNewCombinedReport(reportId);
-    dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, combinedReportId));
+    dashboardClient.updateDashboardWithReports(
+        dashboardId, Arrays.asList(reportId, combinedReportId));
 
     final String collectionId = collectionClient.createNewCollection();
 
@@ -272,17 +285,20 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getTiles()
-      .stream()
-      .map(DashboardReportTileDto::getId)
-      .collect(Collectors.toList());
+    final List<String> newReportIds =
+        dashboard.getTiles().stream()
+            .map(DashboardReportTileDto::getId)
+            .collect(Collectors.toList());
 
     assertThat(newReportIds).hasSize(2);
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
-                                                           .map(DashboardReportTileDto::getId)
-                                                           .collect(Collectors.toList()));
+    assertThat(newReportIds)
+        .doesNotContainAnyElementsOf(
+            oldDashboard.getTiles().stream()
+                .map(DashboardReportTileDto::getId)
+                .collect(Collectors.toList()));
 
-    final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityResponseDto> collectionEntities =
+        collectionClient.getEntitiesForCollection(collectionId);
     assertThat(collectionEntities).hasSize(3);
   }
 
@@ -294,10 +310,12 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     addEmptyReportToDashboardInCollection(dashboardId, collectionId);
 
     // when
-    IdResponseDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .addSingleQueryParam("collectionId", "null")
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+    IdResponseDto copyId =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCopyDashboardRequest(dashboardId)
+            .addSingleQueryParam("collectionId", "null")
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
@@ -306,15 +324,17 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     assertThat(dashboard.getCollectionId()).isNull();
     assertThat(oldDashboard.getCollectionId()).isEqualTo(collectionId);
 
-    final List<String> newReportIds = dashboard.getTiles()
-      .stream()
-      .map(DashboardReportTileDto::getId)
-      .collect(Collectors.toList());
+    final List<String> newReportIds =
+        dashboard.getTiles().stream()
+            .map(DashboardReportTileDto::getId)
+            .collect(Collectors.toList());
 
     assertThat(newReportIds).isNotEmpty();
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
-                                                           .map(DashboardReportTileDto::getId)
-                                                           .collect(Collectors.toList()));
+    assertThat(newReportIds)
+        .doesNotContainAnyElementsOf(
+            oldDashboard.getTiles().stream()
+                .map(DashboardReportTileDto::getId)
+                .collect(Collectors.toList()));
   }
 
   @Test
@@ -327,10 +347,12 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     final String newCollectionId = collectionClient.createNewCollection();
 
     // when
-    IdResponseDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .addSingleQueryParam("collectionId", newCollectionId)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+    IdResponseDto copyId =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCopyDashboardRequest(dashboardId)
+            .addSingleQueryParam("collectionId", newCollectionId)
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
@@ -339,15 +361,17 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     assertThat(newDashboard.getCollectionId()).isEqualTo(newCollectionId);
     assertThat(oldDashboard.getCollectionId()).isEqualTo(oldCollectionId);
 
-    final List<String> newReportIds = newDashboard.getTiles()
-      .stream()
-      .map(DashboardReportTileDto::getId)
-      .collect(Collectors.toList());
+    final List<String> newReportIds =
+        newDashboard.getTiles().stream()
+            .map(DashboardReportTileDto::getId)
+            .collect(Collectors.toList());
 
     assertThat(newReportIds).isNotEmpty();
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
-                                                           .map(DashboardReportTileDto::getId)
-                                                           .collect(Collectors.toList()));
+    assertThat(newReportIds)
+        .doesNotContainAnyElementsOf(
+            oldDashboard.getTiles().stream()
+                .map(DashboardReportTileDto::getId)
+                .collect(Collectors.toList()));
   }
 
   @Test
@@ -393,7 +417,8 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     // given
     String collectionId = collectionClient.createNewCollection();
     String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-    final String privateReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String privateReportId =
+        reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
@@ -408,7 +433,8 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     String collectionId1 = collectionClient.createNewCollection();
     String collectionId2 = collectionClient.createNewCollection();
     String dashboardId = dashboardClient.createEmptyDashboard(collectionId1);
-    final String privateReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId2);
+    final String privateReportId =
+        reportClient.createEmptySingleProcessReportInCollection(collectionId2);
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
@@ -422,7 +448,8 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     // given
     String collectionId = collectionClient.createNewCollection();
     String dashboardId = addEmptyPrivateDashboard();
-    final String privateReportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String privateReportId =
+        reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
@@ -451,12 +478,13 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     String dashboardId = addEmptyPrivateDashboard();
-    final String reportId = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    final String reportId =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .buildCreateSingleProcessReportRequest()
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+            .getId();
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, reportId);
@@ -503,8 +531,11 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
 
     // then
     DashboardDefinitionRestDto updatedDashboard = dashboardClient.getDashboard(dashboardId);
-    updatedDashboard.getTiles().forEach(
-      reportLocationDto -> assertThat(reportLocationDto.getId()).isNotEqualTo(reportIdToDelete));
+    updatedDashboard
+        .getTiles()
+        .forEach(
+            reportLocationDto ->
+                assertThat(reportLocationDto.getId()).isNotEqualTo(reportIdToDelete));
   }
 
   private void deleteReport(String reportId) {
@@ -522,7 +553,8 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     addEmptyReportToDashboardInCollection(dashboardId, null);
   }
 
-  private void addEmptyReportToDashboardInCollection(final String dashboardId, final String collectionId) {
+  private void addEmptyReportToDashboardInCollection(
+      final String dashboardId, final String collectionId) {
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
   }
@@ -531,25 +563,25 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     return reportClient.createEmptySingleProcessReportInCollection(null);
   }
 
-  private Response addSingleReportToDashboard(final String dashboardId, final String privateReportId) {
+  private Response addSingleReportToDashboard(
+      final String dashboardId, final String privateReportId) {
     final DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
     dashboardTileDto.setId(privateReportId);
     dashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
 
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(
-        dashboardId,
-        new DashboardDefinitionRestDto(Collections.singletonList(dashboardTileDto))
-      )
-      .execute();
+        .getRequestExecutor()
+        .buildUpdateDashboardRequest(
+            dashboardId,
+            new DashboardDefinitionRestDto(Collections.singletonList(dashboardTileDto)))
+        .execute();
   }
 
   @SneakyThrows
   private boolean dashboardWithNameExists(final String dashboardName) {
-    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class)
-      .stream()
-      .anyMatch(dashboard -> dashboard.getName().equals(dashboardName));
+    return databaseIntegrationTestExtension
+        .getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class)
+        .stream()
+        .anyMatch(dashboard -> dashboard.getName().equals(dashboardName));
   }
-
 }

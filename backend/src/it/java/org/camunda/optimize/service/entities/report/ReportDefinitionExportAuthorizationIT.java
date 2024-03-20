@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.entities.report;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
 import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
@@ -13,20 +17,17 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-
 /**
- * These are authIT for the export via UI with user authorization. For the public API, please refer to
- * PublicJsonExportRestServiceIT.
+ * These are authIT for the export via UI with user authorization. For the public API, please refer
+ * to PublicJsonExportRestServiceIT.
  */
 @Tag(OPENSEARCH_PASSING)
 public class ReportDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest
   @MethodSource("reportAndAuthType")
-  public void exportReportAsJson_asSuperuser(final ReportType reportType, final SuperUserType superUserType) {
+  public void exportReportAsJson_asSuperuser(
+      final ReportType reportType, final SuperUserType superUserType) {
     // given
     final String reportId = createSimpleReport(reportType);
 
@@ -36,12 +37,8 @@ public class ReportDefinitionExportAuthorizationIT extends AbstractExportImportE
       response = exportClient.exportReportAsJsonAsDemo(reportId, "my_file.json");
     } else {
       setAuthorizedSuperGroup();
-      response = exportClient.exportReportAsJsonAsUser(
-        KERMIT_USER,
-        KERMIT_USER,
-        reportId,
-        "my_file.json"
-      );
+      response =
+          exportClient.exportReportAsJsonAsUser(KERMIT_USER, KERMIT_USER, reportId, "my_file.json");
     }
 
     // then
@@ -56,12 +53,8 @@ public class ReportDefinitionExportAuthorizationIT extends AbstractExportImportE
     final String reportId = createSimpleReport(reportType);
 
     // when
-    final Response response = exportClient.exportReportAsJsonAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      reportId,
-      "my_file.json"
-    );
+    final Response response =
+        exportClient.exportReportAsJsonAsUser(KERMIT_USER, KERMIT_USER, reportId, "my_file.json");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -72,19 +65,18 @@ public class ReportDefinitionExportAuthorizationIT extends AbstractExportImportE
   public void exportReportAsJson_asSuperuser_withoutDefinitionAuth(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
     final String reportId = createSimpleReport(reportType);
 
     // when
-    final Response response = exportClient.exportReportAsJsonAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      reportId,
-      "my_file.json"
-    );
+    final Response response =
+        exportClient.exportReportAsJsonAsUser(KERMIT_USER, KERMIT_USER, reportId, "my_file.json");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
-
 }

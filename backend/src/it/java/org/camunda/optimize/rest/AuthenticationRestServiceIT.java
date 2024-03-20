@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class AuthenticationRestServiceIT extends AbstractPlatformIT {
@@ -38,11 +37,12 @@ public class AuthenticationRestServiceIT extends AbstractPlatformIT {
     String token = authenticateAdminUser();
 
     // when
-    Response logoutResponse = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildLogOutRequest()
-      .withGivenAuthToken(token)
-      .execute();
+    Response logoutResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withGivenAuthToken(token)
+            .execute();
 
     // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -54,11 +54,12 @@ public class AuthenticationRestServiceIT extends AbstractPlatformIT {
   public void logoutSecure() {
 
     // when
-    Response logoutResponse = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildLogOutRequest()
-      .withGivenAuthToken("randomToken")
-      .execute();
+    Response logoutResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withGivenAuthToken("randomToken")
+            .execute();
 
     // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -67,11 +68,12 @@ public class AuthenticationRestServiceIT extends AbstractPlatformIT {
   @Test
   public void testAuthenticationIfNotAuthenticated() {
     // when
-    Response logoutResponse = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildAuthTestRequest()
-      .withoutAuthentication()
-      .execute();
+    Response logoutResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildAuthTestRequest()
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -80,10 +82,8 @@ public class AuthenticationRestServiceIT extends AbstractPlatformIT {
   @Test
   public void testIfAuthenticated() {
     // when
-    Response logoutResponse = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildAuthTestRequest()
-      .execute();
+    Response logoutResponse =
+        embeddedOptimizeExtension.getRequestExecutor().buildAuthTestRequest().execute();
 
     // then
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -97,5 +97,4 @@ public class AuthenticationRestServiceIT extends AbstractPlatformIT {
     engineIntegrationExtension.addUser("admin", "admin");
     engineIntegrationExtension.grantUserOptimizeAccess("admin");
   }
-
 }

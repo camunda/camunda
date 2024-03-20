@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.alert;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
+import jakarta.mail.internet.MimeMessage;
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
@@ -19,16 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.junit.jupiter.MockServerExtension;
 import org.mockserver.junit.jupiter.MockServerSettings;
-
-import jakarta.mail.internet.MimeMessage;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
-import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
-import static org.camunda.optimize.service.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings
@@ -51,7 +50,7 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteReminderJob(id);
 
-    //reminder received once
+    // reminder received once
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
 
@@ -60,7 +59,7 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     triggerAndCompleteReminderJob(id);
 
     // then
-    //reminder received twice
+    // reminder received twice
     emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
 
@@ -69,7 +68,7 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     triggerAndCompleteCheckJob(id);
 
     // then
-    //reminder is not received
+    // reminder is not received
     emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(0);
   }
@@ -116,12 +115,13 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     long daysToShift = 0L;
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processInstance);
-    final String reportId = createAndStoreDurationNumberReport(
-      collectionId,
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
+    final String collectionId =
+        collectionClient.createNewCollectionWithProcessScope(processInstance);
+    final String reportId =
+        createAndStoreDurationNumberReport(
+            collectionId,
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     simpleAlert.setFixNotification(true);
@@ -142,21 +142,20 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     assertWebhookRequestReceived(client, 1);
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
-    assertThat(emails[0].getSubject()).isEqualTo(
-      "[" + branding + "-Optimize] - Report status");
+    String branding =
+        embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
+    assertThat(emails[0].getSubject()).isEqualTo("[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
     assertThat(content).contains(branding);
     assertThat(content).containsSequence(simpleAlert.getName());
     assertThat(content).containsSequence("is not exceeded anymore.");
-    assertThat(content).containsSequence(
-      String.format(
-        "http://localhost:%d/#/collection/%s/report/%s?utm_source=alert_resolved&utm_medium=email",
-        embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(HTTP_PORT_KEY),
-        collectionId,
-        reportId
-      )
-    );
+    assertThat(content)
+        .containsSequence(
+            String.format(
+                "http://localhost:%d/#/collection/%s/report/%s?utm_source=alert_resolved&utm_medium=email",
+                embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(HTTP_PORT_KEY),
+                collectionId,
+                reportId));
   }
 
   @Test
@@ -219,7 +218,8 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     // given
     setEmailConfiguration();
 
-    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
+    ProcessInstanceEngineDto processInstance =
+        engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
     processInstance.setProcessDefinitionKey("definitionKeyThatDoesNotExistAndWillLeadToNoResults");
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationRequestDto simpleAlert = createAlertWithReminder(reportId);
@@ -245,7 +245,8 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     engineIntegrationExtension.startProcessInstance(definition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
-    String reportId = createAndStoreVariableAggregationReport(definition, "var", VariableType.DOUBLE);
+    String reportId =
+        createAndStoreVariableAggregationReport(definition, "var", VariableType.DOUBLE);
     AlertCreationRequestDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setThreshold(10.0);
     simpleAlert.setThresholdOperator(AlertThresholdOperator.LESS);
@@ -260,24 +261,27 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     assertThat(emails).hasSize(1);
   }
 
-  private String createAndStoreVariableAggregationReport(final ProcessDefinitionEngineDto definition,
-                                                         final String variableName,
-                                                         final VariableType variableType) {
+  private String createAndStoreVariableAggregationReport(
+      final ProcessDefinitionEngineDto definition,
+      final String variableName,
+      final VariableType variableType) {
     String collectionId = collectionClient.createNewCollectionWithProcessScope(definition);
     return createVariableReport(definition, collectionId, variableName, variableType);
   }
 
-  private String createVariableReport(final ProcessDefinitionEngineDto definition,
-                                      final String collectionId,
-                                      final String variableName, final VariableType variableType) {
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(definition.getKey())
-      .setProcessDefinitionVersion(definition.getVersionAsString())
-      .setVariableName(variableName)
-      .setVariableType(variableType)
-      .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
-      .build();
+  private String createVariableReport(
+      final ProcessDefinitionEngineDto definition,
+      final String collectionId,
+      final String variableName,
+      final VariableType variableType) {
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(definition.getKey())
+            .setProcessDefinitionVersion(definition.getVersionAsString())
+            .setVariableName(variableName)
+            .setVariableType(variableType)
+            .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
+            .build();
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportDataDto);
     report.setName("something");
@@ -289,5 +293,4 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     return addReminderToAlert(simpleAlert);
   }
-
 }

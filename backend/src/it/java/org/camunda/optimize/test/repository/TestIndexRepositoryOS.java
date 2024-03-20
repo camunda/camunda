@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.test.repository;
 
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -12,13 +13,12 @@ import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-
 @Component
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class TestIndexRepositoryOS implements TestIndexRepository {
   private final OptimizeOpenSearchClient osClient;
+
   @Override
   public Set<String> getAllIndexNames() {
     GetIndexRequest.Builder requestBuilder = new GetIndexRequest.Builder().index("*");

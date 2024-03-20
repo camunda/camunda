@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
 public class ProcessInstanceDurationByInstanceStartDateByVarWithPartReportEvaluationIT
-  extends AbstractProcessInstanceDurationByInstanceDateByVarWithPartReportEvaluationIT {
+    extends AbstractProcessInstanceDurationByInstanceDateByVarWithPartReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getTestReportDataType() {

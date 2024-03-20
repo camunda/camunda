@@ -5,11 +5,6 @@
  */
 package org.camunda.optimize.rest.eventprocess;
 
-import org.camunda.bpm.engine.ActivityTypes;
-import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,6 +12,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import org.camunda.bpm.engine.ActivityTypes;
+import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
+import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT {
 
@@ -32,56 +31,48 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
   protected static final String FOURTH_TASK_ID = "taskID_4";
   protected static final String END_EVENT_ID = "endEventID";
 
-  protected CloudEventRequestDto backendKetchupEvent = createEventDtoWithProperties(
-    "backend",
-    "ketchup",
-    "signup-event"
-  );
-  protected CloudEventRequestDto frontendMayoEvent = createEventDtoWithProperties(
-    "frontend",
-    "mayonnaise",
-    "registered_event"
-  );
-  protected CloudEventRequestDto managementBbqEvent = createEventDtoWithProperties(
-    "management",
-    "BBQ_sauce",
-    "onboarded_event"
-  );
-  protected CloudEventRequestDto ketchupMayoEvent = createEventDtoWithProperties(
-    "ketchup",
-    "mayonnaise",
-    "blacklisted_event"
-  );
-  protected CloudEventRequestDto backendMayoEvent = createEventDtoWithProperties(
-    "BACKEND",
-    "mayonnaise",
-    "ketchupevent"
-  );
-  protected CloudEventRequestDto nullGroupEvent = createEventDtoWithProperties(null, "another", "ketchupevent");
+  protected CloudEventRequestDto backendKetchupEvent =
+      createEventDtoWithProperties("backend", "ketchup", "signup-event");
+  protected CloudEventRequestDto frontendMayoEvent =
+      createEventDtoWithProperties("frontend", "mayonnaise", "registered_event");
+  protected CloudEventRequestDto managementBbqEvent =
+      createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
+  protected CloudEventRequestDto ketchupMayoEvent =
+      createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
+  protected CloudEventRequestDto backendMayoEvent =
+      createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
+  protected CloudEventRequestDto nullGroupEvent =
+      createEventDtoWithProperties(null, "another", "ketchupevent");
 
-  protected final List<CloudEventRequestDto> eventTraceOne = createTraceFromEventList(
-    "traceIdOne",
-    Arrays.asList(
-      backendKetchupEvent, frontendMayoEvent, managementBbqEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
-    )
-  );
-  protected final List<CloudEventRequestDto> eventTraceTwo = createTraceFromEventList(
-    "traceIdTwo",
-    Arrays.asList(
-      backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
-    )
-  );
-  protected final List<CloudEventRequestDto> eventTraceThree = createTraceFromEventList(
-    "traceIdThree", Arrays.asList(backendKetchupEvent, backendMayoEvent)
-  );
-  protected final List<CloudEventRequestDto> eventTraceFour = createTraceFromEventList(
-    "traceIdFour", Collections.singletonList(backendKetchupEvent)
-  );
+  protected final List<CloudEventRequestDto> eventTraceOne =
+      createTraceFromEventList(
+          "traceIdOne",
+          Arrays.asList(
+              backendKetchupEvent,
+              frontendMayoEvent,
+              managementBbqEvent,
+              ketchupMayoEvent,
+              backendMayoEvent,
+              nullGroupEvent));
+  protected final List<CloudEventRequestDto> eventTraceTwo =
+      createTraceFromEventList(
+          "traceIdTwo",
+          Arrays.asList(
+              backendKetchupEvent,
+              frontendMayoEvent,
+              ketchupMayoEvent,
+              backendMayoEvent,
+              nullGroupEvent));
+  protected final List<CloudEventRequestDto> eventTraceThree =
+      createTraceFromEventList(
+          "traceIdThree", Arrays.asList(backendKetchupEvent, backendMayoEvent));
+  protected final List<CloudEventRequestDto> eventTraceFour =
+      createTraceFromEventList("traceIdFour", Collections.singletonList(backendKetchupEvent));
 
   protected final List<CloudEventRequestDto> allEventDtos =
-    Stream.of(eventTraceOne, eventTraceTwo, eventTraceThree, eventTraceFour)
-      .flatMap(Collection::stream)
-      .toList();
+      Stream.of(eventTraceOne, eventTraceTwo, eventTraceThree, eventTraceFour)
+          .flatMap(Collection::stream)
+          .toList();
 
   protected static String simpleDiagramXml;
 
@@ -95,28 +86,32 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  protected List<CloudEventRequestDto> createTraceFromEventList(String traceId, List<CloudEventRequestDto> events) {
+  protected List<CloudEventRequestDto> createTraceFromEventList(
+      String traceId, List<CloudEventRequestDto> events) {
     AtomicInteger incrementCounter = new AtomicInteger(0);
     Instant currentTimestamp = Instant.now();
     return events.stream()
-      .map(event -> createEventDtoWithProperties(
-        event.getGroup().orElse(null),
-        event.getSource(),
-        event.getType()
-      ).toBuilder().id(event.getId() + traceId).build())
-      .peek(eventDto -> eventDto.setTraceid(traceId))
-      .peek(eventDto -> eventDto.setTime(currentTimestamp.plusSeconds(incrementCounter.getAndIncrement())))
-      .toList();
+        .map(
+            event ->
+                createEventDtoWithProperties(
+                        event.getGroup().orElse(null), event.getSource(), event.getType())
+                    .toBuilder()
+                    .id(event.getId() + traceId)
+                    .build())
+        .peek(eventDto -> eventDto.setTraceid(traceId))
+        .peek(
+            eventDto ->
+                eventDto.setTime(currentTimestamp.plusSeconds(incrementCounter.getAndIncrement())))
+        .toList();
   }
 
-  private CloudEventRequestDto createEventDtoWithProperties(final String group, final String source,
-                                                            final String type) {
-    return ingestionClient.createCloudEventDto()
-      .toBuilder()
-      .group(group)
-      .source(source)
-      .type(type)
-      .build();
+  private CloudEventRequestDto createEventDtoWithProperties(
+      final String group, final String source, final String type) {
+    return ingestionClient.createCloudEventDto().toBuilder()
+        .group(group)
+        .source(source)
+        .type(type)
+        .build();
   }
 
   protected void processEventTracesAndSequences() {
@@ -125,10 +120,10 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
   }
 
   protected void removeAllUserEventProcessAuthorizations() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEventBasedProcessConfiguration()
-      .getAuthorizedUserIds()
-      .clear();
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEventBasedProcessConfiguration()
+        .getAuthorizedUserIds()
+        .clear();
   }
-
 }

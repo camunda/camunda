@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.service.alert;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
+
 import jakarta.mail.internet.MimeMessage;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.UUID;
 import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
@@ -19,15 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
 
 @Tag(OPENSEARCH_PASSING)
 public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
@@ -45,16 +44,18 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     alertClient.createAlert(simpleAlert);
 
     // when
-    SingleProcessReportDefinitionRequestDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
+    SingleProcessReportDefinitionRequestDto report =
+        getProcessNumberReportDefinitionDto(collectionId, processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     reportClient.updateSingleProcessReport(simpleAlert.getReportId(), report, true);
 
     // then
     // scheduler does not contain any triggers
-    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).isEmpty();
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames())
+        .isEmpty();
 
-    //alert is deleted from ES
+    // alert is deleted from ES
     List<AlertDefinitionDto> alertDefinitionDtos = alertClient.getAllAlerts();
 
     assertThat(alertDefinitionDtos).isEmpty();
@@ -71,7 +72,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     reportClient.deleteReport(simpleAlert.getReportId(), true);
 
     // then
-    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).isEmpty();
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames())
+        .isEmpty();
 
     List<AlertDefinitionDto> alertDefinitionDtos = alertClient.getAllAlerts();
     assertThat(alertDefinitionDtos).isEmpty();
@@ -87,7 +89,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
 
     // then
     assertThat(id).isNotNull();
-    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(1);
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames())
+        .hasSize(1);
   }
 
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
@@ -115,7 +118,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     alertClient.deleteAlert(alertId);
 
     // then
-    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).isEmpty();
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames())
+        .isEmpty();
   }
 
   @Test
@@ -125,9 +129,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
 
     String alertId = alertClient.createAlert(simpleAlert);
 
-    Trigger trigger = embeddedOptimizeExtension.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
+    Trigger trigger =
+        embeddedOptimizeExtension
+            .getAlertService()
+            .getScheduler()
+            .getTrigger(getTriggerKey(alertId));
     assertThat(getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS))
-      .isEqualTo(Instant.now().plus(1, ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS));
+        .isEqualTo(Instant.now().plus(1, ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS));
 
     // when
     simpleAlert.getCheckInterval().setValue(30);
@@ -138,7 +146,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts();
     assertThat(allAlerts.get(0).isTriggered()).isFalse();
 
-    trigger = embeddedOptimizeExtension.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
+    trigger =
+        embeddedOptimizeExtension
+            .getAlertService()
+            .getScheduler()
+            .getTrigger(getTriggerKey(alertId));
     int secondsUntilItShouldFireNext = 30;
     assertThatTriggerIsInRange(trigger, secondsUntilItShouldFireNext);
   }
@@ -150,7 +162,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
-    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+    final String collectionId =
+        collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     setEmailConfiguration();
 
@@ -163,19 +176,19 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
-    assertThat(emails[0].getSubject()).isEqualTo(
-      "[" + branding + "-Optimize] - Report status");
+    String branding =
+        embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
+    assertThat(emails[0].getSubject()).isEqualTo("[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
     assertThat(content)
-      .contains(branding)
-      .contains(simpleAlert.getName())
-      .contains(String.format(
-        "http://localhost:%d/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
-        embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(HTTP_PORT_KEY),
-        collectionId,
-        reportId
-      ));
+        .contains(branding)
+        .contains(simpleAlert.getName())
+        .contains(
+            String.format(
+                "http://localhost:%d/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
+                embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(HTTP_PORT_KEY),
+                collectionId,
+                reportId));
   }
 
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
@@ -186,9 +199,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
     String testBrandingName = "Your name here";
-    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailCompanyBranding(testBrandingName);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setNotificationEmailCompanyBranding(testBrandingName);
 
-    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+    final String collectionId =
+        collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     setEmailConfiguration();
 
@@ -201,8 +217,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    assertThat(emails[0].getSubject()).isEqualTo(
-      "[" + testBrandingName + "-Optimize] - Report status");
+    assertThat(emails[0].getSubject())
+        .isEqualTo("[" + testBrandingName + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
     assertThat(content).contains(testBrandingName);
   }
@@ -214,10 +230,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
-    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+    final String collectionId =
+        collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     setEmailConfiguration();
-    embeddedOptimizeExtension.getConfigurationService().setContainerAccessUrlValue("http://test.de:8090");
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setContainerAccessUrlValue("http://test.de:8090");
 
     // when
     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
@@ -228,17 +247,16 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
-    assertThat(emails[0].getSubject()).isEqualTo(
-      "[" + branding + "-Optimize] - Report status");
+    String branding =
+        embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
+    assertThat(emails[0].getSubject()).isEqualTo("[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
     assertThat(content)
-      .contains(branding)
-      .contains(String.format(
-        "http://test.de:8090/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
-        collectionId,
-        reportId
-      ));
+        .contains(branding)
+        .contains(
+            String.format(
+                "http://test.de:8090/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
+                collectionId, reportId));
   }
 
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
@@ -249,7 +267,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
       final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
       importAllEngineEntitiesFromScratch();
 
-      final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+      final String collectionId =
+          collectionClient.createNewCollectionWithProcessScope(processDefinition);
       final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
       setEmailConfiguration();
       embeddedOptimizeExtension.getConfigurationService().setContextPath("/customContextPath");
@@ -263,17 +282,16 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
       // then
       MimeMessage[] emails = greenMail.getReceivedMessages();
       assertThat(emails).hasSize(1);
-      String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
-      assertThat(emails[0].getSubject()).isEqualTo(
-        "[" + branding + "-Optimize] - Report status");
+      String branding =
+          embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
+      assertThat(emails[0].getSubject()).isEqualTo("[" + branding + "-Optimize] - Report status");
       String content = emails[0].getContent().toString();
       assertThat(content)
-        .contains(branding)
-        .contains(String.format(
-          "/customContextPath/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
-          collectionId,
-          reportId
-        ));
+          .contains(branding)
+          .contains(
+              String.format(
+                  "/customContextPath/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
+                  collectionId, reportId));
     } finally {
       embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
     }
@@ -284,7 +302,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.MINUTES);
+    AlertDefinitionDto fakeReportAlert =
+        getAlertDefinitionDto(intervalValue, AlertIntervalUnit.MINUTES);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -292,10 +311,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
     Instant nextFireTime = getNextFireTime(trigger).truncatedTo(ChronoUnit.MINUTES);
 
-    assertThat(nextFireTime).isEqualTo(
-      now.truncatedTo(ChronoUnit.MINUTES)
-        .plus(intervalValue, ChronoUnit.MINUTES)
-        .truncatedTo(ChronoUnit.MINUTES));
+    assertThat(nextFireTime)
+        .isEqualTo(
+            now.truncatedTo(ChronoUnit.MINUTES)
+                .plus(intervalValue, ChronoUnit.MINUTES)
+                .truncatedTo(ChronoUnit.MINUTES));
   }
 
   @Test
@@ -303,7 +323,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.HOURS);
+    AlertDefinitionDto fakeReportAlert =
+        getAlertDefinitionDto(intervalValue, AlertIntervalUnit.HOURS);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -321,7 +342,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.DAYS);
+    AlertDefinitionDto fakeReportAlert =
+        getAlertDefinitionDto(intervalValue, AlertIntervalUnit.DAYS);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -339,7 +361,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.WEEKS);
+    AlertDefinitionDto fakeReportAlert =
+        getAlertDefinitionDto(intervalValue, AlertIntervalUnit.WEEKS);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -347,7 +370,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     Instant nextFireTime = getNextFireTime(trigger);
 
     assertThat(nextFireTime.truncatedTo(ChronoUnit.SECONDS))
-      .isEqualTo(Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS));
+        .isEqualTo(
+            Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS));
   }
 
   private void assertThatTriggerIsInRange(Trigger trigger, int secondsUntilItShouldFireNext) {
@@ -356,12 +380,14 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // and then the check might be by one second off. Thus we check if the
     // the next trigger is within +/- 1 second bound.
     Instant nextTimeToFire = getNextFireTime(trigger);
-    Instant lowerBound = Instant.now()
-      .plus(secondsUntilItShouldFireNext - 1, ChronoUnit.SECONDS)
-      .truncatedTo(ChronoUnit.SECONDS);
-    Instant upperBound = Instant.now()
-      .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
-      .truncatedTo(ChronoUnit.SECONDS);
+    Instant lowerBound =
+        Instant.now()
+            .plus(secondsUntilItShouldFireNext - 1, ChronoUnit.SECONDS)
+            .truncatedTo(ChronoUnit.SECONDS);
+    Instant upperBound =
+        Instant.now()
+            .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
+            .truncatedTo(ChronoUnit.SECONDS);
     assertThat(lowerBound.isBefore(nextTimeToFire)).isTrue();
     assertThat(upperBound.isAfter(nextTimeToFire)).isTrue();
   }
@@ -374,8 +400,10 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     return cronTrigger.getNextFireTime().toInstant();
   }
 
-  private AlertDefinitionDto getAlertDefinitionDto(int intervalValue, AlertIntervalUnit intervalUnit) {
-    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert("fakeReport", intervalValue, intervalUnit);
+  private AlertDefinitionDto getAlertDefinitionDto(
+      int intervalValue, AlertIntervalUnit intervalUnit) {
+    AlertCreationRequestDto simpleAlert =
+        alertClient.createSimpleAlert("fakeReport", intervalValue, intervalUnit);
 
     AlertDefinitionDto alert = createFakeReport(simpleAlert);
     alert.setId(UUID.randomUUID().toString());

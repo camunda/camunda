@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableMap;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -22,10 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
@@ -36,12 +35,16 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
     final String key2 = "key2";
     final String variableName = "var1";
     final String candidateGroupName = "firstGroup";
-    final String processInstanceId1 = engineIntegrationExtension.deployAndStartProcessWithVariables(
-      BpmnModels.getSingleUserTaskDiagram(key1), ImmutableMap.of(variableName, 1)
-    ).getId();
-    final String processInstanceId2 = engineIntegrationExtension.deployAndStartProcessWithVariables(
-      BpmnModels.getSingleUserTaskDiagram(key2), ImmutableMap.of(variableName, 1)
-    ).getId();
+    final String processInstanceId1 =
+        engineIntegrationExtension
+            .deployAndStartProcessWithVariables(
+                BpmnModels.getSingleUserTaskDiagram(key1), ImmutableMap.of(variableName, 1))
+            .getId();
+    final String processInstanceId2 =
+        engineIntegrationExtension
+            .deployAndStartProcessWithVariables(
+                BpmnModels.getSingleUserTaskDiagram(key2), ImmutableMap.of(variableName, 1))
+            .getId();
     engineIntegrationExtension.createGroup(candidateGroupName);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(candidateGroupName);
     engineIntegrationExtension.claimAllRunningUserTasks();
@@ -50,20 +53,19 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
 
     importAllEngineEntitiesFromScratch();
 
-    final List<ReportDataDefinitionDto> definitions = List.of(
-      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
-    );
+    final List<ReportDataDefinitionDto> definitions =
+        List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2));
 
     // when
-    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> processReportResponse =
-      reportClient.evaluateReport(
-        TemplatedProcessReportDataBuilder.createReportData()
-          .setReportDataType(reportType)
-          .setVariableName(variableName)
-          .setVariableType(VariableType.SHORT)
-          .definitions(definitions)
-          .build()
-      );
+    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto>
+        processReportResponse =
+            reportClient.evaluateReport(
+                TemplatedProcessReportDataBuilder.createReportData()
+                    .setReportDataType(reportType)
+                    .setVariableName(variableName)
+                    .setVariableType(VariableType.SHORT)
+                    .definitions(definitions)
+                    .build());
 
     // then
     assertThat(processReportResponse.getResult().getInstanceCount()).isEqualTo(2);
@@ -77,10 +79,13 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
     final String key2 = "key2";
     final String variableName = "var1";
     final String candidateGroupName = "firstGroup";
-    final String processInstanceId1 = engineIntegrationExtension.deployAndStartProcessWithVariables(
-      BpmnModels.getSingleUserTaskDiagram(key1), ImmutableMap.of(variableName, 1)
-    ).getId();
-    final String processDefinition2 = engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSingleUserTaskDiagram(key2));
+    final String processInstanceId1 =
+        engineIntegrationExtension
+            .deployAndStartProcessWithVariables(
+                BpmnModels.getSingleUserTaskDiagram(key1), ImmutableMap.of(variableName, 1))
+            .getId();
+    final String processDefinition2 =
+        engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSingleUserTaskDiagram(key2));
     engineIntegrationExtension.createGroup(candidateGroupName);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(candidateGroupName);
     engineIntegrationExtension.claimAllRunningUserTasks();
@@ -88,20 +93,19 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
 
     importAllEngineEntitiesFromScratch();
 
-    final List<ReportDataDefinitionDto> definitions = List.of(
-      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
-    );
+    final List<ReportDataDefinitionDto> definitions =
+        List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2));
 
     // when
-    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> processReportResponse =
-      reportClient.evaluateReport(
-        TemplatedProcessReportDataBuilder.createReportData()
-          .setReportDataType(reportType)
-          .setVariableName(variableName)
-          .setVariableType(VariableType.SHORT)
-          .definitions(definitions)
-          .build()
-      );
+    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto>
+        processReportResponse =
+            reportClient.evaluateReport(
+                TemplatedProcessReportDataBuilder.createReportData()
+                    .setReportDataType(reportType)
+                    .setVariableName(variableName)
+                    .setVariableType(VariableType.SHORT)
+                    .definitions(definitions)
+                    .build());
 
     // then
     assertThat(processReportResponse.getResult().getInstanceCount()).isEqualTo(1);
@@ -109,7 +113,8 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
 
   @ParameterizedTest
   @EnumSource(ProcessReportDataType.class)
-  public void evaluateProcessReportNeitherDefinitionHasData(final ProcessReportDataType reportType) {
+  public void evaluateProcessReportNeitherDefinitionHasData(
+      final ProcessReportDataType reportType) {
     // given
     final String key1 = "key1";
     final String key2 = "key2";
@@ -119,20 +124,19 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
 
     importAllEngineEntitiesFromScratch();
 
-    final List<ReportDataDefinitionDto> definitions = List.of(
-      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
-    );
+    final List<ReportDataDefinitionDto> definitions =
+        List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2));
 
     // when
-    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> processReportResponse =
-      reportClient.evaluateReport(
-        TemplatedProcessReportDataBuilder.createReportData()
-          .setReportDataType(reportType)
-          .setVariableName(variableName)
-          .setVariableType(VariableType.SHORT)
-          .definitions(definitions)
-          .build()
-      );
+    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto>
+        processReportResponse =
+            reportClient.evaluateReport(
+                TemplatedProcessReportDataBuilder.createReportData()
+                    .setReportDataType(reportType)
+                    .setVariableName(variableName)
+                    .setVariableType(VariableType.SHORT)
+                    .definitions(definitions)
+                    .build());
 
     // then
     assertThat(processReportResponse.getResult().getInstanceCount()).isEqualTo(0);
@@ -143,30 +147,30 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
     // given
     final String key1 = "key1";
     final String key2 = "key2";
-    final String firstDefinitionId = engineIntegrationExtension
-      .deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key1))
-      .getId();
-    engineIntegrationExtension.deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key2));
+    final String firstDefinitionId =
+        engineIntegrationExtension
+            .deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key1))
+            .getId();
+    engineIntegrationExtension.deployAndStartDecisionDefinition(
+        DmnModels.createDefaultDmnModel(key2));
 
     importAllEngineEntitiesFromScratch();
 
-    final List<ReportDataDefinitionDto> definitions = List.of(
-      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
-    );
+    final List<ReportDataDefinitionDto> definitions =
+        List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2));
 
     // when
-    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> decisionReportResponse =
-      reportClient.evaluateDecisionRawReport(
-        DecisionReportDataBuilder.create()
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .definitions(definitions)
-          .build()
-      );
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>
+        decisionReportResponse =
+            reportClient.evaluateDecisionRawReport(
+                DecisionReportDataBuilder.create()
+                    .setReportDataType(DecisionReportDataType.RAW_DATA)
+                    .definitions(definitions)
+                    .build());
 
     // then
     assertThat(decisionReportResponse.getResult().getData())
-      .extracting(RawDataDecisionInstanceDto::getDecisionDefinitionId)
-      .containsExactly(firstDefinitionId);
+        .extracting(RawDataDecisionInstanceDto::getDecisionDefinitionId)
+        .containsExactly(firstDefinitionId);
   }
-
 }

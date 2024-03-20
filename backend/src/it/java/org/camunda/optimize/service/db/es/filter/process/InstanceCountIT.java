@@ -48,39 +48,29 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
   public void instanceCountWithoutFilters_processReport() {
     // given
     final ProcessDefinitionEngineDto userTaskProcess = deploySimpleOneUserTasksDefinition();
-    final ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
-    final ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
-        userTaskProcess.getId());
+    final ProcessInstanceEngineDto firstProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    final ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
-    engineDatabaseExtension.changeProcessInstanceState(
-        firstProcInst.getId(),
-        SUSPENDED_STATE
-    );
-    engineDatabaseExtension.changeProcessInstanceState(
-        secondProcInst.getId(),
-        SUSPENDED_STATE
-    );
+    engineDatabaseExtension.changeProcessInstanceState(firstProcInst.getId(), SUSPENDED_STATE);
+    engineDatabaseExtension.changeProcessInstanceState(secondProcInst.getId(), SUSPENDED_STATE);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportWithFilter = createReport(
-        userTaskProcess.getKey(),
-        userTaskProcess.getVersionAsString()
-    );
-    final ProcessReportDataDto reportWithoutFilter = createReport(
-        userTaskProcess.getKey(),
-        userTaskProcess.getVersionAsString()
-    );
+    final ProcessReportDataDto reportWithFilter =
+        createReport(userTaskProcess.getKey(), userTaskProcess.getVersionAsString());
+    final ProcessReportDataDto reportWithoutFilter =
+        createReport(userTaskProcess.getKey(), userTaskProcess.getVersionAsString());
     reportWithFilter.setFilter(
         ProcessFilterBuilder.filter().suspendedInstancesOnly().add().buildList());
 
-    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> resultWithFilter = reportClient.evaluateRawReport(
-        reportWithFilter).getResult();
-    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> resultWithoutFilter = reportClient.evaluateRawReport(
-        reportWithoutFilter).getResult();
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> resultWithFilter =
+        reportClient.evaluateRawReport(reportWithFilter).getResult();
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> resultWithoutFilter =
+        reportClient.evaluateRawReport(reportWithoutFilter).getResult();
 
     // then
     assertThat(resultWithFilter.getInstanceCount()).isEqualTo(2L);
@@ -92,7 +82,8 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void instanceCountWithoutFilters_decisionReport() {
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
@@ -100,24 +91,25 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportWithFilter = DecisionReportDataBuilder.create()
-        .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-        .setDecisionDefinitionVersion(ALL_VERSIONS)
-        .setReportDataType(DecisionReportDataType.RAW_DATA)
-        .build();
-    final DecisionReportDataDto reportWithoutFilter = DecisionReportDataBuilder.create()
-        .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-        .setDecisionDefinitionVersion(ALL_VERSIONS)
-        .setReportDataType(DecisionReportDataType.RAW_DATA)
-        .build();
+    final DecisionReportDataDto reportWithFilter =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+            .setDecisionDefinitionVersion(ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.RAW_DATA)
+            .build();
+    final DecisionReportDataDto reportWithoutFilter =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+            .setDecisionDefinitionVersion(ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.RAW_DATA)
+            .build();
 
-    reportWithFilter.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(
-        OffsetDateTime.now().plusDays(1),
-        null
-    )));
+    reportWithFilter.setFilter(
+        Lists.newArrayList(
+            createFixedEvaluationDateFilter(OffsetDateTime.now().plusDays(1), null)));
 
-    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> resultWithFilter = reportClient.evaluateDecisionRawReport(
-        reportWithFilter).getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> resultWithFilter =
+        reportClient.evaluateDecisionRawReport(reportWithFilter).getResult();
     final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> resultWithoutFilter =
         reportClient.evaluateDecisionRawReport(reportWithoutFilter).getResult();
 
@@ -134,26 +126,25 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void instanceCount_combinedReport_endDateReportsExcludeRunningInstances() {
     // given
-    final ProcessDefinitionEngineDto runningInstanceDef = deploySimpleOneUserTasksDefinition(
-        "runningInstanceDef", null);
+    final ProcessDefinitionEngineDto runningInstanceDef =
+        deploySimpleOneUserTasksDefinition("runningInstanceDef", null);
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
 
-    final SingleProcessReportDefinitionRequestDto singleReport1 = createDateReport(
-        PROC_INST_FREQ_GROUP_BY_END_DATE
-    );
+    final SingleProcessReportDefinitionRequestDto singleReport1 =
+        createDateReport(PROC_INST_FREQ_GROUP_BY_END_DATE);
     singleReport1.getData().setProcessDefinitionKey("runningInstanceDef");
-    final SingleProcessReportDefinitionRequestDto singleReport2 = createDateReport(
-        PROC_INST_FREQ_GROUP_BY_START_DATE
-    );
+    final SingleProcessReportDefinitionRequestDto singleReport2 =
+        createDateReport(PROC_INST_FREQ_GROUP_BY_START_DATE);
     singleReport2.getData().setProcessDefinitionKey("runningInstanceDef");
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<String> reportIds = Stream.of(singleReport1, singleReport2)
-        .map(reportClient::createSingleProcessReport)
-        .toList();
+    final List<String> reportIds =
+        Stream.of(singleReport1, singleReport2)
+            .map(reportClient::createSingleProcessReport)
+            .toList();
     final CombinedProcessReportResultDataDto<?> combinedResult =
         reportClient.saveAndEvaluateCombinedReport(reportIds);
 
@@ -165,8 +156,8 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
   @Test
   public void instanceCount_emptyCombinedReport() {
     // given
-    final ProcessDefinitionEngineDto runningInstanceDef = deploySimpleOneUserTasksDefinition(
-        "runningInstanceDef", null);
+    final ProcessDefinitionEngineDto runningInstanceDef =
+        deploySimpleOneUserTasksDefinition("runningInstanceDef", null);
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
     engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
 
@@ -180,10 +171,9 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     assertThat(combinedResult.getInstanceCount()).isEqualTo(0);
   }
 
-  private ProcessReportDataDto createReport(final String definitionKey,
-      final String definitionVersion) {
-    return TemplatedProcessReportDataBuilder
-        .createReportData()
+  private ProcessReportDataDto createReport(
+      final String definitionKey, final String definitionVersion) {
+    return TemplatedProcessReportDataBuilder.createReportData()
         .setProcessDefinitionKey(definitionKey)
         .setProcessDefinitionVersion(definitionVersion)
         .setReportDataType(RAW_DATA)
@@ -192,14 +182,15 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
 
   private SingleProcessReportDefinitionRequestDto createDateReport(
       final ProcessReportDataType reportDataType) {
-    final SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
-    final ProcessReportDataDto runningReportData = TemplatedProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(TEST_PROCESS)
-        .setProcessDefinitionVersion("1")
-        .setGroupByDateInterval(AggregateByDateUnit.DAY)
-        .setReportDataType(reportDataType)
-        .build();
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
+        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDataDto runningReportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(TEST_PROCESS)
+            .setProcessDefinitionVersion("1")
+            .setGroupByDateInterval(AggregateByDateUnit.DAY)
+            .setReportDataType(reportDataType)
+            .build();
     reportDefinitionDto.setData(runningReportData);
     return reportDefinitionDto;
   }

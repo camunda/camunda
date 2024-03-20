@@ -17,10 +17,7 @@ public class CompletedUserTaskInstanceEndpointImportIT extends AbstractImportEnd
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {
-    return Stream.of(
-      COMPLETED_USER_TASK_INSTANCE_ENDPOINT
-    ).flatMap(endpoint -> engineErrors()
-      .map(mockResp -> Arguments.of(endpoint, mockResp)));
+    return Stream.of(COMPLETED_USER_TASK_INSTANCE_ENDPOINT)
+        .flatMap(endpoint -> engineErrors().map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
-
 }

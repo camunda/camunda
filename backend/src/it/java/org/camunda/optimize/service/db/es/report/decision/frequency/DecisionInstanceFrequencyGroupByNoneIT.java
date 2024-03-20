@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.report.decision.frequency;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
+import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
+
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
+import java.util.List;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -17,36 +23,33 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
-import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
-
 public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefinitionIT {
 
   @Test
   public void reportEvaluationMultiInstancesSpecificVersion() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+            .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+            .build();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
@@ -56,23 +59,27 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
   @Test
   public void reportEvaluationMultiInstancesAllVersions() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+            .build();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
@@ -82,12 +89,14 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
   @Test
   public void reportEvaluationMultiInstancesAllVersionsOtherDefinitionsHaveNoSideEffect() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    DecisionDefinitionEngineDto decisionDefinitionDto1 =
+        deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
+    DecisionDefinitionEngineDto decisionDefinitionDto2 =
+        deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     // other decision definition
@@ -96,12 +105,14 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     importAllEngineEntitiesFromScratch();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+            .build();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
@@ -114,20 +125,21 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = Lists.newArrayList(tenantId1);
-    final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(
-      Lists.newArrayList(null, tenantId1, tenantId2)
-    );
+    final String decisionDefinitionKey =
+        deployAndStartMultiTenantDefinition(Lists.newArrayList(null, tenantId1, tenantId2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionKey)
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setTenantIds(selectedTenants)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionKey)
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setTenantIds(selectedTenants)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+            .build();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEqualTo(selectedTenants.size());
@@ -137,32 +149,30 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
   public void reportEvaluationMultiInstancesFilter() {
     // given
     final double inputVariableValueToFilterFor = 200.0;
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto =
+        engineIntegrationExtension.deployDecisionDefinition();
+    startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(100.0, "Misc"));
     startDecisionInstanceWithInputVars(
-      decisionDefinitionDto.getId(),
-      createInputs(100.0, "Misc")
-    );
+        decisionDefinitionDto.getId(), createInputs(inputVariableValueToFilterFor, "Misc"));
     startDecisionInstanceWithInputVars(
-      decisionDefinitionDto.getId(),
-      createInputs(inputVariableValueToFilterFor, "Misc")
-    );
-    startDecisionInstanceWithInputVars(
-      decisionDefinitionDto.getId(),
-      createInputs(inputVariableValueToFilterFor + 100.0, "Misc")
-    );
+        decisionDefinitionDto.getId(), createInputs(inputVariableValueToFilterFor + 100.0, "Misc"));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-      .setDecisionDefinitionVersion(String.valueOf(decisionDefinitionDto.getVersion()))
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .setFilter(createNumericInputVariableFilter(
-        INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
-      ))
-      .build();
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+            .setDecisionDefinitionVersion(String.valueOf(decisionDefinitionDto.getVersion()))
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+            .setFilter(
+                createNumericInputVariableFilter(
+                    INPUT_AMOUNT_ID,
+                    FilterOperator.GREATER_THAN_EQUALS,
+                    String.valueOf(inputVariableValueToFilterFor)))
+            .build();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -172,28 +182,31 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("key")
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey("key")
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+            .build();
     reportData.getView().setProperties((ViewProperty) null);
 
     // when
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("key")
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey("key")
+            .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+            .build();
     reportData.getGroupBy().setType(null);
 
     // when
@@ -202,5 +215,4 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
-
 }

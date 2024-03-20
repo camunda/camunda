@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.filter.process.date.instance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -18,13 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-
 @Tag(OPENSEARCH_PASSING)
 public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
 
@@ -34,7 +33,9 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
-      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstance.getId())
+            .getStartTime();
     importAllEngineEntitiesFromScratch();
 
     // the clock of the engine and the clock of the computer running
@@ -44,14 +45,13 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
 
     // when
     AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
-      createAndEvaluateReportWithStartDateFilter(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        dateUnit,
-        1L,
-        true,
-        DateFilterType.ROLLING
-      );
+        createAndEvaluateReportWithStartDateFilter(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion(),
+            dateUnit,
+            1L,
+            true,
+            DateFilterType.ROLLING);
 
     // then
     assertResults(processInstance, result, 1);
@@ -64,9 +64,12 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
-                                                   processInstance.getProcessDefinitionVersion());
-    List<ProcessFilterDto<?>> rollingStartDateFilter = createRollingStartDateFilter(DateUnit.QUARTERS, 1L);
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
+    List<ProcessFilterDto<?>> rollingStartDateFilter =
+        createRollingStartDateFilter(DateUnit.QUARTERS, 1L);
     reportData.setFilter(rollingStartDateFilter);
 
     // then
@@ -80,20 +83,21 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
-      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstance.getId())
+            .getStartTime();
     importAllEngineEntitiesFromScratch();
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
     AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
-      createAndEvaluateReportWithStartDateFilter(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        dateUnit,
-        1L,
-        true,
-        DateFilterType.RELATIVE
-      );
+        createAndEvaluateReportWithStartDateFilter(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion(),
+            dateUnit,
+            1L,
+            true,
+            DateFilterType.RELATIVE);
 
     // then
     assertResults(processInstance, result, 0);
@@ -105,23 +109,23 @@ public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
-      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+        engineIntegrationExtension
+            .getHistoricProcessInstance(processInstance.getId())
+            .getStartTime();
     importAllEngineEntitiesFromScratch();
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
     AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
-      createAndEvaluateReportWithStartDateFilter(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        dateUnit,
-        0L,
-        true,
-        DateFilterType.RELATIVE
-      );
+        createAndEvaluateReportWithStartDateFilter(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion(),
+            dateUnit,
+            0L,
+            true,
+            DateFilterType.RELATIVE);
 
     // then
     assertResults(processInstance, result, 1);
   }
-
 }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.test.optimize;
 
+import jakarta.ws.rs.core.Response;
+import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
-
-import jakarta.ws.rs.core.Response;
-import java.util.function.Supplier;
 
 @AllArgsConstructor
 public class FlowNodeNamesClient {
@@ -19,8 +18,8 @@ public class FlowNodeNamesClient {
 
   public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto requestDto) {
     return getRequestExecutor()
-      .buildGetFlowNodeNames(requestDto)
-      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
+        .buildGetFlowNodeNames(requestDto)
+        .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

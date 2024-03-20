@@ -125,7 +125,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>
         evaluationResult = evaluateRawReportWithDefaultPagination(reportData);
 
@@ -201,8 +202,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     final HashMap<String, OutputVariableEntry> expectedOutputs =
         new HashMap<>() {
-          @Serial
-          private static final long serialVersionUID = -2227381846838924307L;
+          @Serial private static final long serialVersionUID = -2227381846838924307L;
 
           {
             put(
@@ -219,7 +219,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>
         evaluationResult = evaluateRawReportWithDefaultPagination(reportData);
 
@@ -250,7 +251,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>
         evaluationResult = evaluateRawReportWithDefaultPagination(reportData);
 
@@ -280,7 +282,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData
         .getConfiguration()
         .setSorting(
@@ -314,7 +317,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData
         .getConfiguration()
         .setSorting(
@@ -349,7 +353,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData
         .getConfiguration()
         .setSorting(
@@ -392,7 +397,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData
         .getConfiguration()
         .setSorting(
@@ -493,7 +499,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when we have a report with included and excluded columns
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData
         .getConfiguration()
         .getTableColumns()
@@ -540,7 +547,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when we have a report with some included and excluded columns and includeNewVars set false
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData
         .getConfiguration()
         .getTableColumns()
@@ -589,7 +597,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     importAllEngineEntitiesFromScratch();
 
     // when we have a report with variables columns that no longer exist in the instance data
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData
         .getConfiguration()
         .getTableColumns()
@@ -634,7 +643,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     importAllEngineEntitiesFromScratch();
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
 
     // These are the expected instances using their default sort
     final List<String> expectedInstanceIds =
@@ -744,7 +754,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     importAllEngineEntitiesFromScratch();
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
 
     // when
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
@@ -755,7 +766,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
         evaluationResult = reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+        evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination())
@@ -771,7 +783,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     importAllEngineEntitiesFromScratch();
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
 
     // when
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
@@ -782,7 +795,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
         evaluationResult = reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+        evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination())
@@ -804,7 +818,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
             .findFirst()
             .orElseThrow(OptimizeIntegrationTestException::new);
 
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
 
     // when
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
@@ -814,7 +829,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
         evaluationResult = reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+        evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getData())
         .hasSize(1)
@@ -834,7 +850,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
             i -> engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId()));
 
     importAllEngineEntitiesFromScratch();
-    final DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    final DecisionReportDataDto reportData =
+        createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
 
     // when
     final PaginationRequestDto paginationDto = new PaginationRequestDto();
@@ -844,7 +861,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
         evaluationResult = reportClient.evaluateDecisionRawReport(reportData, paginationDto);
 
     // then
-    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+        evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(30L);
     assertThat(result.getData()).hasSize(20);
     assertThat(result.getPagination().getLimit()).isEqualTo(PAGINATION_DEFAULT_LIMIT);
@@ -931,8 +949,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     return embeddedOptimizeExtension
         .getRequestExecutor()
         .buildEvaluateSavedReportRequest(reportId, paginationDto)
-        .execute(
-            new TypeReference<>() {});
+        .execute(new TypeReference<>() {});
   }
 
   private AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>
@@ -985,8 +1002,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(
         decisionDefinitionEngineDto.getId(),
         new HashMap<>() {
-          @Serial
-          private static final long serialVersionUID = 7667354197607416294L;
+          @Serial private static final long serialVersionUID = 7667354197607416294L;
 
           {
             put("season", "Fall");
@@ -999,8 +1015,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   private HashMap<String, OutputVariableEntry> createOutputs(
       final boolean auditValue, final String classificationValue) {
     return new HashMap<>() {
-      @Serial
-      private static final long serialVersionUID = -2244662311853382683L;
+      @Serial private static final long serialVersionUID = -2244662311853382683L;
 
       {
         put(

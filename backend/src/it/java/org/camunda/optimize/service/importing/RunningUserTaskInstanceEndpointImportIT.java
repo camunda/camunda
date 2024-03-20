@@ -17,10 +17,7 @@ public class RunningUserTaskInstanceEndpointImportIT extends AbstractImportEndpo
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {
-    return Stream.of(
-      RUNNING_USER_TASK_INSTANCE_ENDPOINT
-    ).flatMap(endpoint -> engineErrors()
-      .map(mockResp -> Arguments.of(endpoint, mockResp)));
+    return Stream.of(RUNNING_USER_TASK_INSTANCE_ENDPOINT)
+        .flatMap(endpoint -> engineErrors().map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
-
 }

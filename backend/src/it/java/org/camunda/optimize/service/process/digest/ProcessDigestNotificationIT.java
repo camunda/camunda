@@ -50,18 +50,23 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
   @BeforeEach
   public void beforeEach() {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
-    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailAddress("from@localhost.com");
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setNotificationEmailAddress("from@localhost.com");
     embeddedOptimizeExtension.getConfigurationService().setNotificationEmailHostname("127.0.0.1");
-    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setNotificationEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
     final EmailAuthenticationConfiguration emailAuthenticationConfiguration =
-      embeddedOptimizeExtension.getConfigurationService().getEmailAuthenticationConfiguration();
+        embeddedOptimizeExtension.getConfigurationService().getEmailAuthenticationConfiguration();
     emailAuthenticationConfiguration.setEnabled(false);
     // adjust digest schedule to shorten wait for emails in IT
     embeddedOptimizeExtension.getConfigurationService().setDigestCronTrigger("*/1 * * * * *");
     embeddedOptimizeExtension.reloadConfiguration();
-    greenMail = new GreenMail(
-      new ServerSetup(IntegrationTestConfigurationUtil.getSmtpPort(), null, ServerSetup.PROTOCOL_SMTP)
-    );
+    greenMail =
+        new GreenMail(
+            new ServerSetup(
+                IntegrationTestConfigurationUtil.getSmtpPort(), null, ServerSetup.PROTOCOL_SMTP));
     greenMail.start();
     greenMail.setUser("from@localhost.com", "demo", "demo");
   }
@@ -77,7 +82,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then we receive one email straight away from the update
@@ -94,9 +99,9 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY + "2"));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     processOverviewClient.updateProcess(
-      DEF_KEY + "2", DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
+        DEF_KEY + "2", DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then wait a bit to ensure no emails for process 2 are being sent
@@ -111,7 +116,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then digest is sent
@@ -121,7 +126,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
 
     // when digest is disabled
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     greenMail.reset();
 
@@ -136,14 +141,15 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
-    assertThat(greenMail.getReceivedMessages()[0].getAllRecipients()).extracting(Address::toString)
-      .singleElement()
-      .isEqualTo("demo@camunda.org");
+    assertThat(greenMail.getReceivedMessages()[0].getAllRecipients())
+        .extracting(Address::toString)
+        .singleElement()
+        .isEqualTo("demo@camunda.org");
   }
 
   @Test
@@ -153,13 +159,13 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then email content for process without kpi reports is correct
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
     assertThat(greenMail.getReceivedMessages()[0].getSubject())
-      .isEqualTo("[Camunda - Optimize] Process Digest for Process \"aProcessDefKey\"");
+        .isEqualTo("[Camunda - Optimize] Process Digest for Process \"aProcessDefKey\"");
   }
 
   @Test
@@ -168,18 +174,21 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
     assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
-      .containsIgnoringWhitespaces("Hi firstName lastName,")
-      .containsIgnoringWhitespaces(
-        "Here's your digest for the " + DEF_KEY + " process, showing you the current state of your KPIs compared to their " +
-          "targets.")
-      .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
-      .containsIgnoringWhitespaces("There are currently no quality KPIs defined for this process.");
+        .containsIgnoringWhitespaces("Hi firstName lastName,")
+        .containsIgnoringWhitespaces(
+            "Here's your digest for the "
+                + DEF_KEY
+                + " process, showing you the current state of your KPIs compared to their "
+                + "targets.")
+        .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
+        .containsIgnoringWhitespaces(
+            "There are currently no quality KPIs defined for this process.");
   }
 
   @Test
@@ -191,23 +200,25 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
 
     // then
     assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
     assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
-      .containsIgnoringWhitespaces("Hi firstName lastName,")
-      .containsIgnoringWhitespaces(
-        "Here's your digest for the " + DEF_KEY + " process, showing you the current state of your KPIs compared to their " +
-          "targets.")
-      .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
-      .containsIgnoringWhitespaces("50%</span> of your quality KPIs met their targets")
-      .containsIgnoringWhitespaces("Quality")
-      .containsIgnoringWhitespaces("KPI Report 1")
-      .containsIgnoringWhitespaces("KPI Report 2")
-      .containsIgnoringWhitespaces("< 1") // target
-      .containsIgnoringWhitespaces("--") // change
-      .containsIgnoringWhitespaces("1.0"); // current
+        .containsIgnoringWhitespaces("Hi firstName lastName,")
+        .containsIgnoringWhitespaces(
+            "Here's your digest for the "
+                + DEF_KEY
+                + " process, showing you the current state of your KPIs compared to their "
+                + "targets.")
+        .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
+        .containsIgnoringWhitespaces("50%</span> of your quality KPIs met their targets")
+        .containsIgnoringWhitespaces("Quality")
+        .containsIgnoringWhitespaces("KPI Report 1")
+        .containsIgnoringWhitespaces("KPI Report 2")
+        .containsIgnoringWhitespaces("< 1") // target
+        .containsIgnoringWhitespaces("--") // change
+        .containsIgnoringWhitespaces("1.0"); // current
   }
 
   @Test
@@ -218,22 +229,24 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
 
     // then
     assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
     assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
-      .containsIgnoringWhitespaces("Hi firstName lastName,")
-      .containsIgnoringWhitespaces(
-        "Here's your digest for the " + DEF_KEY + " process, showing you the current state of your KPIs compared to their " +
-          "targets.")
-      .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
-      .containsIgnoringWhitespaces("0%</span> of your quality KPIs met their targets")
-      .containsIgnoringWhitespaces("Quality")
-      .containsIgnoringWhitespaces("KPI Report 1")
-      .containsIgnoringWhitespaces("< 0") // target
-      .containsIgnoringWhitespaces("--") // change
-      .containsIgnoringWhitespaces("1.0"); // current
+        .containsIgnoringWhitespaces("Hi firstName lastName,")
+        .containsIgnoringWhitespaces(
+            "Here's your digest for the "
+                + DEF_KEY
+                + " process, showing you the current state of your KPIs compared to their "
+                + "targets.")
+        .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
+        .containsIgnoringWhitespaces("0%</span> of your quality KPIs met their targets")
+        .containsIgnoringWhitespaces("Quality")
+        .containsIgnoringWhitespaces("KPI Report 1")
+        .containsIgnoringWhitespaces("< 0") // target
+        .containsIgnoringWhitespaces("--") // change
+        .containsIgnoringWhitespaces("1.0"); // current
   }
 
   @Test
@@ -244,14 +257,13 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
 
     // then email contains report and process page links
     assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
     assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
-      .containsIgnoringWhitespaces(
-        "#/report/" + reportId + "?utm_medium=email&utm_source=digest")
-      .containsIgnoringWhitespaces("#/");
+        .containsIgnoringWhitespaces("#/report/" + reportId + "?utm_medium=email&utm_source=digest")
+        .containsIgnoringWhitespaces("#/");
   }
 
   @Test
@@ -265,14 +277,14 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
       importAllEngineEntitiesFromScratch();
       runKpiSchedulerAndRefreshIndices();
       processOverviewClient.updateProcess(
-        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+          DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
 
       // then email contains report and process page links
       assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
       assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
-        .containsIgnoringWhitespaces(
-          customContextPath + "/#/report/" + reportId + "?utm_medium=email&utm_source=digest")
-        .containsIgnoringWhitespaces(customContextPath + "/#/");
+          .containsIgnoringWhitespaces(
+              customContextPath + "/#/report/" + reportId + "?utm_medium=email&utm_source=digest")
+          .containsIgnoringWhitespaces(customContextPath + "/#/");
     } finally {
       embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
     }
@@ -288,32 +300,30 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     runKpiSchedulerAndRefreshIndices();
 
     // then
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      PROCESS_OVERVIEW_INDEX_NAME,
-      ProcessOverviewDto.class
-    ))
-      .extracting(ProcessOverviewDto::getDigest)
-      .extracting(ProcessDigestDto::getKpiReportResults)
-      .singleElement()
-      .isEqualTo(Collections.emptyMap());
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
+        .extracting(ProcessOverviewDto::getDigest)
+        .extracting(ProcessDigestDto::getKpiReportResults)
+        .singleElement()
+        .isEqualTo(Collections.emptyMap());
 
     // given
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
 
     // then
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      PROCESS_OVERVIEW_INDEX_NAME,
-      ProcessOverviewDto.class
-    ))
-      .extracting(ProcessOverviewDto::getDigest)
-      .extracting(ProcessDigestDto::getKpiReportResults)
-      .singleElement()
-      .isEqualTo(Map.of(reportId, "1.0"));
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
+        .extracting(ProcessOverviewDto::getDigest)
+        .extracting(ProcessDigestDto::getKpiReportResults)
+        .singleElement()
+        .isEqualTo(Map.of(reportId, "1.0"));
   }
 
   @Test
@@ -329,45 +339,49 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
 
     // when the digest is run
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
 
     // then the null valued report is correctly saved in the most recent KPI report results
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
-      .singleElement()
-      .satisfies(overview -> {
-        assertThat(overview)
-          .extracting(ProcessOverviewDto::getLastKpiEvaluationResults)
-          .isEqualTo(expectedResultMap);
-        // and the null valued report is correctly saved in the digest baseline results
-        assertThat(overview)
-          .extracting(ProcessOverviewDto::getDigest)
-          .extracting(ProcessDigestDto::getKpiReportResults)
-          .isEqualTo(expectedResultMap);
-      });
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
+        .singleElement()
+        .satisfies(
+            overview -> {
+              assertThat(overview)
+                  .extracting(ProcessOverviewDto::getLastKpiEvaluationResults)
+                  .isEqualTo(expectedResultMap);
+              // and the null valued report is correctly saved in the digest baseline results
+              assertThat(overview)
+                  .extracting(ProcessOverviewDto::getDigest)
+                  .extracting(ProcessDigestDto::getKpiReportResults)
+                  .isEqualTo(expectedResultMap);
+            });
 
     // when the digest is run again
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
 
     // then the digest and most recent results still reflect the state correctly
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
-      .singleElement()
-      .satisfies(overview -> {
-        assertThat(overview)
-          .extracting(ProcessOverviewDto::getLastKpiEvaluationResults)
-          .isEqualTo(expectedResultMap);
-        // and the null valued report is correctly saved in the digest baseline results
-        assertThat(overview)
-          .extracting(ProcessOverviewDto::getDigest)
-          .extracting(ProcessDigestDto::getKpiReportResults)
-          .isEqualTo(expectedResultMap);
-      });
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
+        .singleElement()
+        .satisfies(
+            overview -> {
+              assertThat(overview)
+                  .extracting(ProcessOverviewDto::getLastKpiEvaluationResults)
+                  .isEqualTo(expectedResultMap);
+              // and the null valued report is correctly saved in the digest baseline results
+              assertThat(overview)
+                  .extracting(ProcessOverviewDto::getDigest)
+                  .extracting(ProcessDigestDto::getKpiReportResults)
+                  .isEqualTo(expectedResultMap);
+            });
   }
 
   @Test
@@ -376,13 +390,13 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     databaseIntegrationTestExtension.addEntryToDatabase(
-      PROCESS_OVERVIEW_INDEX_NAME,
-      DEF_KEY,
-      new ProcessOverviewDto(DEFAULT_USERNAME, DEF_KEY, new ProcessDigestDto(false, null), Collections.emptyMap())
-    );
+        PROCESS_OVERVIEW_INDEX_NAME,
+        DEF_KEY,
+        new ProcessOverviewDto(
+            DEFAULT_USERNAME, DEF_KEY, new ProcessDigestDto(false, null), Collections.emptyMap()));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then email sending does not fail
@@ -394,25 +408,27 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
   }
 
   private String createKpiCountReport(final String reportName, final String target) {
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(target);
     final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(reportName);
     singleProcessReportDefinitionDto.setData(reportDataDto);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createKpiDurationReport(final String reportName) {
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     final TargetDto targetDto = new TargetDto();
     targetDto.setValue("999");
@@ -420,7 +436,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     targetDto.setUnit(TargetValueUnit.HOURS);
     reportDataDto.getConfiguration().getTargetValue().getDurationProgress().setTarget(targetDto);
     final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(reportName);
     singleProcessReportDefinitionDto.setData(reportDataDto);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -443,7 +459,8 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     throw new OptimizeIntegrationTestException("Unsupported email content type.");
   }
 
-  private String extractHtmlContentFromMultipart(final Multipart multipart) throws IOException, MessagingException {
+  private String extractHtmlContentFromMultipart(final Multipart multipart)
+      throws IOException, MessagingException {
     for (int i = 0; i < multipart.getCount(); i++) {
       final Part part = multipart.getBodyPart(i);
       final String contentType = part.getContentType();

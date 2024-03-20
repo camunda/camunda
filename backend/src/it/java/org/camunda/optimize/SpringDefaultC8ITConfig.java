@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
+
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Bean;
@@ -12,8 +14,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
 
 @Import(org.camunda.optimize.Main.class)
 @Configuration
@@ -23,9 +23,6 @@ public class SpringDefaultC8ITConfig {
   @Bean
   @Primary
   public static ConfigurationService configurationService() {
-    return createConfigurationFromLocations(
-      "service-config.yaml",
-      "it/it-config-ccsm.yaml"
-    );
+    return createConfigurationFromLocations("service-config.yaml", "it/it-config-ccsm.yaml");
   }
 }

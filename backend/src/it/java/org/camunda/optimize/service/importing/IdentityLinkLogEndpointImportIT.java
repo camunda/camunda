@@ -17,10 +17,7 @@ public class IdentityLinkLogEndpointImportIT extends AbstractImportEndpointFailu
 
   @Override
   protected Stream<Arguments> getEndpointAndErrorResponses() {
-    return Stream.of(
-      IDENTITY_LINK_LOG_ENDPOINT
-    ).flatMap(endpoint -> engineErrors()
-      .map(mockResp -> Arguments.of(endpoint, mockResp)));
+    return Stream.of(IDENTITY_LINK_LOG_ENDPOINT)
+        .flatMap(endpoint -> engineErrors().map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
-
 }

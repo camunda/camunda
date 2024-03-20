@@ -61,26 +61,30 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> allProcessInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances)
         .hasSize(2)
-        .allSatisfy(processInstanceDto -> assertThat(processInstanceDto.getFlowNodeInstances())
-            .allSatisfy(flowNodeInstanceDto -> {
-              assertThat(flowNodeInstanceDto.getDefinitionKey()).isEqualTo(
-                  processInstanceDto.getProcessDefinitionKey());
-              assertThat(flowNodeInstanceDto.getDefinitionVersion()).isEqualTo(
-                  processInstanceDto.getProcessDefinitionVersion());
-              assertThat(flowNodeInstanceDto.getTenantId()).isEqualTo(
-                  processInstanceDto.getTenantId());
-            })
-        );
+        .allSatisfy(
+            processInstanceDto ->
+                assertThat(processInstanceDto.getFlowNodeInstances())
+                    .allSatisfy(
+                        flowNodeInstanceDto -> {
+                          assertThat(flowNodeInstanceDto.getDefinitionKey())
+                              .isEqualTo(processInstanceDto.getProcessDefinitionKey());
+                          assertThat(flowNodeInstanceDto.getDefinitionVersion())
+                              .isEqualTo(processInstanceDto.getProcessDefinitionVersion());
+                          assertThat(flowNodeInstanceDto.getTenantId())
+                              .isEqualTo(processInstanceDto.getTenantId());
+                        }));
   }
 
   @Test
   public void defaultTenantIsUsedOnActivityImport() {
     // given
     final String defaultTenant = "lobster";
-    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+    embeddedOptimizeExtension
+        .getDefaultEngineConfiguration()
         .setDefaultTenant(new DefaultTenant(defaultTenant, defaultTenant));
     deployAndStartUserTaskProcess();
 
@@ -88,38 +92,37 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> allProcessInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances)
         .singleElement()
         .extracting(ProcessInstanceDto::getFlowNodeInstances)
-        .satisfies(flowNodes -> assertThat(flowNodes)
-            .allSatisfy(flowNode -> assertThat(flowNode.getTenantId()).isEqualTo(defaultTenant)));
+        .satisfies(
+            flowNodes ->
+                assertThat(flowNodes)
+                    .allSatisfy(
+                        flowNode -> assertThat(flowNode.getTenantId()).isEqualTo(defaultTenant)));
   }
 
   @Test
   public void canceledFlowNodesAreImportedWithCorrectValue() {
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
-    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(),
-        USER_TASK_1);
+    engineIntegrationExtension.cancelActivityInstance(
+        processInstanceEngineDto.getId(), USER_TASK_1);
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     assertAllEntriesInElasticsearchHaveAllData(
-        PROCESS_INSTANCE_MULTI_ALIAS,
-        ProcessInstanceDto.class,
-        PROCESS_INSTANCE_NULLABLE_FIELDS
-    );
-    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+        PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    final List<ProcessInstanceDto> allProcessInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-        .containsExactlyInAnyOrder(
-            tuple(START_EVENT, false),
-            tuple(USER_TASK_1, true)
-        );
+        .containsExactlyInAnyOrder(tuple(START_EVENT, false), tuple(USER_TASK_1, true));
   }
 
   @Test
@@ -129,34 +132,26 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-        .containsExactlyInAnyOrder(
-            tuple(START_EVENT, false),
-            tuple(USER_TASK_1, false)
-        );
+        .containsExactlyInAnyOrder(tuple(START_EVENT, false), tuple(USER_TASK_1, false));
 
     // when
-    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(),
-        USER_TASK_1);
+    engineIntegrationExtension.cancelActivityInstance(
+        processInstanceEngineDto.getId(), USER_TASK_1);
     importAllEngineEntitiesFromLastIndex();
 
     // then
     assertAllEntriesInElasticsearchHaveAllData(
-        PROCESS_INSTANCE_MULTI_ALIAS,
-        ProcessInstanceDto.class,
-        PROCESS_INSTANCE_NULLABLE_FIELDS
-    );
+        PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class, PROCESS_INSTANCE_NULLABLE_FIELDS);
     allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-        .containsExactlyInAnyOrder(
-            tuple(START_EVENT, false),
-            tuple(USER_TASK_1, true)
-        );
+        .containsExactlyInAnyOrder(tuple(START_EVENT, false), tuple(USER_TASK_1, true));
   }
 
   @Test
@@ -166,14 +161,12 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-        .containsExactlyInAnyOrder(
-            tuple(START_EVENT, false),
-            tuple(USER_TASK_1, false)
-        );
+        .containsExactlyInAnyOrder(tuple(START_EVENT, false), tuple(USER_TASK_1, false));
 
     // when the process instance is canceled
     engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
@@ -181,18 +174,12 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllData(
-        PROCESS_INSTANCE_MULTI_ALIAS,
-        ProcessInstanceDto.class,
-        PROCESS_INSTANCE_NULLABLE_FIELDS
-    );
+        PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class, PROCESS_INSTANCE_NULLABLE_FIELDS);
     allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-        .containsExactlyInAnyOrder(
-            tuple(START_EVENT, false),
-            tuple(USER_TASK_1, true)
-        );
+        .containsExactlyInAnyOrder(tuple(START_EVENT, false), tuple(USER_TASK_1, true));
   }
 
   @Test
@@ -205,7 +192,8 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> allProcessInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId)
@@ -224,8 +212,8 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS,
-            ProcessInstanceDto.class))
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
         .allSatisfy(
             processInstance -> assertThat(processInstance.getFlowNodeInstances()).hasSize(3));
   }
@@ -236,8 +224,8 @@ public class EngineActivityImportIT extends AbstractImportIT {
     // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariable");
-    final ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstancesWithVariables(
-        variables);
+    final ProcessInstanceEngineDto firstProcInst =
+        createImportAndDeleteTwoProcessInstancesWithVariables(variables);
 
     // when
     variables.put("secondVar", "foo");
@@ -250,8 +238,8 @@ public class EngineActivityImportIT extends AbstractImportIT {
     final ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
-    final List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient
-        .getProcessVariableNames(variableRequestDto);
+    final List<ProcessVariableNameResponseDto> variablesResponseDtos =
+        variablesClient.getProcessVariableNames(variableRequestDto);
 
     assertThat(variablesResponseDtos).hasSize(3);
   }
@@ -266,8 +254,8 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS,
-            ProcessInstanceDto.class))
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
         .singleElement()
         .satisfies(
             processInstance -> assertThat(processInstance.getFlowNodeInstances()).hasSize(2));
@@ -285,11 +273,14 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS,
-            ProcessInstanceDto.class))
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
         .singleElement()
-        .satisfies(processInstance -> assertThat(processInstance.getFlowNodeInstances()).
-            allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
+        .satisfies(
+            processInstance ->
+                assertThat(processInstance.getFlowNodeInstances())
+                    .allSatisfy(
+                        flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
   }
 
   @Test
@@ -300,8 +291,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
     // when
     final HistoricActivityInstanceEngineDto startEvent =
-        engineIntegrationExtension.getHistoricActivityInstances()
-            .stream()
+        engineIntegrationExtension.getHistoricActivityInstances().stream()
             .filter(a -> START_EVENT.equals(a.getActivityName()))
             .findFirst()
             .get();
@@ -312,11 +302,14 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS,
-            ProcessInstanceDto.class))
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
         .singleElement()
-        .satisfies(processInstance -> assertThat(processInstance.getFlowNodeInstances()).
-            allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
+        .satisfies(
+            processInstance ->
+                assertThat(processInstance.getFlowNodeInstances())
+                    .allSatisfy(
+                        flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
   }
 
   @Test
@@ -337,12 +330,10 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(
       final Map<String, Object> variables) {
-    final ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceProcessTaskWithVariables(
-        variables);
-    final ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
-        firstProcInst.getDefinitionId(),
-        variables
-    );
+    final ProcessInstanceEngineDto firstProcInst =
+        deployAndStartSimpleServiceProcessTaskWithVariables(variables);
+    final ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
     engineIntegrationExtension.deleteHistoricProcessInstance(firstProcInst.getId());
     engineIntegrationExtension.deleteHistoricProcessInstance(secondProcInst.getId());
@@ -351,32 +342,29 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private Long getImportedActivityCount() {
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        .query(QueryBuilders.matchAllQuery())
-        .size(0)
-        .fetchSource(false)
-        .aggregation(
-            nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
-                .subAggregation(
-                    count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
-                        .field(
-                            FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
-                )
-        );
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(QueryBuilders.matchAllQuery())
+            .size(0)
+            .fetchSource(false)
+            .aggregation(
+                nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
+                    .subAggregation(
+                        count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
+                            .field(
+                                FLOW_NODE_INSTANCES
+                                    + "."
+                                    + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)));
 
-    final SearchRequest searchRequest = new SearchRequest()
-        .indices(PROCESS_INSTANCE_MULTI_ALIAS)
-        .source(searchSourceBuilder);
+    final SearchRequest searchRequest =
+        new SearchRequest().indices(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
 
-    final SearchResponse response = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-        .search(searchRequest);
+    final SearchResponse response =
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
 
-    final Nested nested = response.getAggregations()
-        .get(FLOW_NODE_INSTANCES);
+    final Nested nested = response.getAggregations().get(FLOW_NODE_INSTANCES);
     final ValueCount countAggregator =
-        nested.getAggregations()
-            .get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
+        nested.getAggregations().get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
     return countAggregator.getValue();
   }
-
 }

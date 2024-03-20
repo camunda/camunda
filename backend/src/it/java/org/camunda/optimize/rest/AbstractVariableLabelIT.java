@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
+import jakarta.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
@@ -13,19 +21,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
 public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
 
   private final LabelDto FIRST_LABEL = new LabelDto("a label 1", "a name", VariableType.STRING);
-  private final LabelDto SECOND_LABEL = new LabelDto("a label 2", "an other name", VariableType.STRING);
+  private final LabelDto SECOND_LABEL =
+      new LabelDto("a label 2", "an other name", VariableType.STRING);
   protected final String PROCESS_DEFINITION_KEY = "someProcessDefinition";
 
   @Test
@@ -33,17 +33,16 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      Collections.emptyList()
-    );
+    DefinitionVariableLabelsDto definitionVariableLabelsDto =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
 
     // when
     executeUpdateProcessVariableLabelRequest(definitionVariableLabelsDto);
 
     // then
     assertThat(getAllDocumentsOfVariableLabelIndex())
-      .singleElement().satisfies(labelsDtos -> assertThat(labelsDtos.getLabels()).isEmpty());
+        .singleElement()
+        .satisfies(labelsDtos -> assertThat(labelsDtos.getLabels()).isEmpty());
   }
 
   @Test
@@ -53,18 +52,18 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     final LabelDto emptyLabelName = new LabelDto("", "a variable name", VariableType.STRING);
     final LabelDto whiteSpaceLabel = new LabelDto(" ", "a second name", VariableType.STRING);
-    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(emptyLabelName, whiteSpaceLabel)
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto =
+        new DefinitionVariableLabelsDto(
+            PROCESS_DEFINITION_KEY, List.of(emptyLabelName, whiteSpaceLabel));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getAllDocumentsOfVariableLabelIndex()).singleElement()
-      .satisfies(labelDtos -> assertThat(labelDtos.getLabels()).isEmpty());
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .singleElement()
+        .satisfies(labelDtos -> assertThat(labelDtos.getLabels()).isEmpty());
   }
 
   @Test
@@ -72,40 +71,46 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL, SECOND_LABEL)
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL, SECOND_LABEL));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getAllDocumentsOfVariableLabelIndex()).singleElement().satisfies(labelsDtos -> {
-      assertThat(labelsDtos.getLabels()).containsExactlyInAnyOrder(FIRST_LABEL, SECOND_LABEL);
-    });
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .singleElement()
+        .satisfies(
+            labelsDtos -> {
+              assertThat(labelsDtos.getLabels())
+                  .containsExactlyInAnyOrder(FIRST_LABEL, SECOND_LABEL);
+            });
   }
 
   @Test
   public void storeVariableLabelsWithSameLabelValues() {
     // given
-    final LabelDto otherLabelSameValue = new LabelDto("a label 1", "a different name", VariableType.STRING);
+    final LabelDto otherLabelSameValue =
+        new LabelDto("a label 1", "a different name", VariableType.STRING);
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL, otherLabelSameValue)
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto =
+        new DefinitionVariableLabelsDto(
+            PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL, otherLabelSameValue));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getAllDocumentsOfVariableLabelIndex()).singleElement().satisfies(labelsDtos -> {
-      assertThat(labelsDtos.getLabels()).containsExactlyInAnyOrder(FIRST_LABEL, otherLabelSameValue);
-    });
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .singleElement()
+        .satisfies(
+            labelsDtos -> {
+              assertThat(labelsDtos.getLabels())
+                  .containsExactlyInAnyOrder(FIRST_LABEL, otherLabelSameValue);
+            });
   }
 
   @Test
@@ -114,14 +119,10 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     LabelDto deletedFirstLabel = new LabelDto("", "a name", VariableType.STRING);
-    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL, SECOND_LABEL)
-    );
-    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(deletedFirstLabel)
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto1 =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL, SECOND_LABEL));
+    DefinitionVariableLabelsDto labelOptimizeDto2 =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(deletedFirstLabel));
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
@@ -130,9 +131,12 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getAllDocumentsOfVariableLabelIndex()).singleElement().satisfies(labelsDtos -> {
-      assertThat(labelsDtos.getLabels()).containsExactlyInAnyOrder(SECOND_LABEL);
-    });
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .singleElement()
+        .satisfies(
+            labelsDtos -> {
+              assertThat(labelsDtos.getLabels()).containsExactlyInAnyOrder(SECOND_LABEL);
+            });
   }
 
   @Test
@@ -140,19 +144,12 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    LabelDto updatedFirstLabel = new LabelDto(
-      "updated label",
-      FIRST_LABEL.getVariableName(),
-      FIRST_LABEL.getVariableType()
-    );
-    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL, SECOND_LABEL)
-    );
-    DefinitionVariableLabelsDto labelOptimizeDto2 = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(updatedFirstLabel)
-    );
+    LabelDto updatedFirstLabel =
+        new LabelDto("updated label", FIRST_LABEL.getVariableName(), FIRST_LABEL.getVariableType());
+    DefinitionVariableLabelsDto labelOptimizeDto1 =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL, SECOND_LABEL));
+    DefinitionVariableLabelsDto labelOptimizeDto2 =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(updatedFirstLabel));
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
@@ -161,9 +158,13 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getAllDocumentsOfVariableLabelIndex()).singleElement().satisfies(labelsDtos -> {
-      assertThat(labelsDtos.getLabels()).containsExactlyInAnyOrder(SECOND_LABEL, updatedFirstLabel);
-    });
+    assertThat(getAllDocumentsOfVariableLabelIndex())
+        .singleElement()
+        .satisfies(
+            labelsDtos -> {
+              assertThat(labelsDtos.getLabels())
+                  .containsExactlyInAnyOrder(SECOND_LABEL, updatedFirstLabel);
+            });
   }
 
   @Test
@@ -171,15 +172,12 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    LabelDto updatedFirstLabel = new LabelDto(
-      "a second label",
-      FIRST_LABEL.getVariableName(),
-      FIRST_LABEL.getVariableType()
-    );
-    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL, updatedFirstLabel)
-    );
+    LabelDto updatedFirstLabel =
+        new LabelDto(
+            "a second label", FIRST_LABEL.getVariableName(), FIRST_LABEL.getVariableType());
+    DefinitionVariableLabelsDto labelOptimizeDto1 =
+        new DefinitionVariableLabelsDto(
+            PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL, updatedFirstLabel));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
@@ -194,15 +192,11 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    LabelDto updatedFirstLabel = new LabelDto(
-      "doesntMatter",
-      FIRST_LABEL.getVariableName(),
-      FIRST_LABEL.getVariableType()
-    );
-    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
-      processDefinitionKey,
-      List.of(FIRST_LABEL, updatedFirstLabel)
-    );
+    LabelDto updatedFirstLabel =
+        new LabelDto("doesntMatter", FIRST_LABEL.getVariableName(), FIRST_LABEL.getVariableType());
+    DefinitionVariableLabelsDto labelOptimizeDto1 =
+        new DefinitionVariableLabelsDto(
+            processDefinitionKey, List.of(FIRST_LABEL, updatedFirstLabel));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
@@ -217,10 +211,9 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     LabelDto updatedFirstLabel = new LabelDto("doesntMatter", "doesntMatter", null);
-    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL, updatedFirstLabel)
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto1 =
+        new DefinitionVariableLabelsDto(
+            PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL, updatedFirstLabel));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
@@ -236,10 +229,9 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     LabelDto updatedFirstLabel = new LabelDto("doesntMatter", variableName, VariableType.DATE);
-    DefinitionVariableLabelsDto labelOptimizeDto1 = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL, updatedFirstLabel)
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto1 =
+        new DefinitionVariableLabelsDto(
+            PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL, updatedFirstLabel));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto1);
@@ -251,10 +243,8 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
   @Test
   public void storeVariableLabelForNonExistentDefinition() {
     // given
-    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(FIRST_LABEL)
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, List.of(FIRST_LABEL));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
@@ -266,10 +256,9 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
   @Test
   public void deleteNonExistentLabel() {
     // given
-    DefinitionVariableLabelsDto labelOptimizeDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      List.of(new LabelDto("", "a name", VariableType.STRING))
-    );
+    DefinitionVariableLabelsDto labelOptimizeDto =
+        new DefinitionVariableLabelsDto(
+            PROCESS_DEFINITION_KEY, List.of(new LabelDto("", "a name", VariableType.STRING)));
 
     // when
     Response response = executeUpdateProcessVariableLabelRequest(labelOptimizeDto);
@@ -278,13 +267,12 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
-  protected abstract Response executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto);
+  protected abstract Response executeUpdateProcessVariableLabelRequest(
+      DefinitionVariableLabelsDto labelOptimizeDto);
 
   private List<DefinitionVariableLabelsDto> getAllDocumentsOfVariableLabelIndex() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      VARIABLE_LABEL_INDEX_NAME,
-      DefinitionVariableLabelsDto.class
-    );
+        VARIABLE_LABEL_INDEX_NAME, DefinitionVariableLabelsDto.class);
   }
 
   private static Stream<String> blankStrings() {

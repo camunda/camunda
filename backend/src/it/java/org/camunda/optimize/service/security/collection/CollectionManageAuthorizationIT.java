@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.service.security.collection;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
 import jakarta.ws.rs.core.Response;
+import java.util.Collections;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -19,15 +27,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
-import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 @Tag(OPENSEARCH_PASSING)
 public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
@@ -44,13 +43,11 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.grantKermitGroupOptimizeAccess();
 
     addRoleToCollectionAsDefaultUser(
-      identityAndRole.roleType,
-      identityAndRole.identityDto,
-      collectionId
-    );
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto =
+        new PartialCollectionDefinitionRequestDto("Test");
 
     // then
     collectionClient.updateCollection(collectionId, collectionRenameDto);
@@ -58,20 +55,24 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
-  public void nonManagerIdentityIsRejectedToUpdateNameByCollectionRole(final IdentityAndRole identityAndRole) {
+  public void nonManagerIdentityIsRejectedToUpdateNameByCollectionRole(
+      final IdentityAndRole identityAndRole) {
     // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
-      .execute();
+    final PartialCollectionDefinitionRequestDto collectionRenameDto =
+        new PartialCollectionDefinitionRequestDto("Test");
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -83,10 +84,15 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     // when
-    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto =
+        new PartialCollectionDefinitionRequestDto("Test");
 
     // then
     collectionClient.updateCollection(collectionId, collectionRenameDto);
@@ -98,10 +104,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     // when
-    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
+    final PartialCollectionDefinitionRequestDto collectionRenameDto =
+        new PartialCollectionDefinitionRequestDto("Test");
 
     // then
     collectionClient.updateCollection(collectionId, collectionRenameDto);
@@ -115,10 +125,12 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
-      .execute();
+    final PartialCollectionDefinitionRequestDto collectionRenameDto =
+        new PartialCollectionDefinitionRequestDto("Test");
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -134,33 +146,38 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
 
     // when
-    collectionClient.addRoleToCollectionAsUser(collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
+    collectionClient.addRoleToCollectionAsUser(
+        collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
   }
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
-  public void nonManagerIdentityRejectedToCreateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
+  public void nonManagerIdentityRejectedToCreateRoleByCollectionRole(
+      final IdentityAndRole identityAndRole) {
     // given
     final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildAddRolesToCollectionRequest(collectionId, collectionRoleDto)
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildAddRolesToCollectionRequest(collectionId, collectionRoleDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -174,13 +191,18 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
 
     // when
-    collectionClient.addRoleToCollectionAsUser(collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
+    collectionClient.addRoleToCollectionAsUser(
+        collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
   }
 
   @Test
@@ -190,13 +212,17 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_USER);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
 
     // when
-    collectionClient.addRoleToCollectionAsUser(collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
+    collectionClient.addRoleToCollectionAsUser(
+        collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
   }
 
   @ParameterizedTest
@@ -211,21 +237,22 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when + then
     collectionClient.updateCollectionRoleAsUser(
-      collectionId,
-      getJohnRoleId(),
-      new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+        collectionId,
+        getJohnRoleId(),
+        new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
+        KERMIT_USER,
+        KERMIT_USER);
   }
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
-  public void nonManagerIdentityRejectedToUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
+  public void nonManagerIdentityRejectedToUpdateRoleByCollectionRole(
+      final IdentityAndRole identityAndRole) {
     // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
@@ -236,12 +263,15 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdateRoleToCollectionRequest(collectionId, getJohnRoleId(), new CollectionRoleUpdateRequestDto(RoleType.MANAGER))
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildUpdateRoleToCollectionRequest(
+                collectionId, getJohnRoleId(), new CollectionRoleUpdateRequestDto(RoleType.MANAGER))
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -257,16 +287,19 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     // when
     collectionClient.updateCollectionRoleAsUser(
-      collectionId,
-      getJohnRoleId(),
-      new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+        collectionId,
+        getJohnRoleId(),
+        new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
+        KERMIT_USER,
+        KERMIT_USER);
   }
 
   @Test
@@ -279,16 +312,18 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_USER);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     // when
     collectionClient.updateCollectionRoleAsUser(
-      collectionId,
-      getJohnRoleId(),
-      new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+        collectionId,
+        getJohnRoleId(),
+        new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
+        KERMIT_USER,
+        KERMIT_USER);
   }
 
   @ParameterizedTest
@@ -303,15 +338,18 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    collectionClient.deleteCollectionRoleAsUser(collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
+    collectionClient.deleteCollectionRoleAsUser(
+        collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
   }
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
-  public void nonManagerIdentityRejectedToDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
+  public void nonManagerIdentityRejectedToDeleteRoleByCollectionRole(
+      final IdentityAndRole identityAndRole) {
     // given
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
@@ -320,12 +358,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildDeleteRoleToCollectionRequest(collectionId, getJohnRoleId())
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildDeleteRoleToCollectionRequest(collectionId, getJohnRoleId())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -341,10 +381,15 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     // when
-    collectionClient.deleteCollectionRoleAsUser(collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
+    collectionClient.deleteCollectionRoleAsUser(
+        collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
   }
 
   @Test
@@ -357,10 +402,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_USER);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     // when
-    collectionClient.deleteCollectionRoleAsUser(collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
+    collectionClient.deleteCollectionRoleAsUser(
+        collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
   }
 
   @ParameterizedTest
@@ -373,15 +422,18 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    collectionClient.addScopeEntryToCollectionAsUser(collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
+    collectionClient.addScopeEntryToCollectionAsUser(
+        collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
   }
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
-  public void nonManagerIdentityRejectedToCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
+  public void nonManagerIdentityRejectedToCreateScopeByCollectionRole(
+      final IdentityAndRole identityAndRole) {
     // given
     final String collectionId = collectionClient.createNewCollection();
 
@@ -389,12 +441,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildAddScopeEntryToCollectionRequest(collectionId, createProcessScope())
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildAddScopeEntryToCollectionRequest(collectionId, createProcessScope())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -407,10 +461,15 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     // when
-    collectionClient.addScopeEntryToCollectionAsUser(collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
+    collectionClient.addScopeEntryToCollectionAsUser(
+        collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
   }
 
   @Test
@@ -420,11 +479,16 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_PROCESS_DEFINITION);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    authorizationClient.grantAllResourceAuthorizationsForKermitGroup(
+        RESOURCE_TYPE_PROCESS_DEFINITION);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     // when
-    collectionClient.addScopeEntryToCollectionAsUser(collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
+    collectionClient.addScopeEntryToCollectionAsUser(
+        collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
   }
 
   @ParameterizedTest
@@ -438,15 +502,18 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry.getId(), Collections.singletonList("tenant1"));
+    collectionClient.updateCollectionScopeAsKermit(
+        collectionId, scopeEntry.getId(), Collections.singletonList("tenant1"));
   }
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
-  public void nonManagerIdentityRejectedToUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
+  public void nonManagerIdentityRejectedToUpdateScopeByCollectionRole(
+      final IdentityAndRole identityAndRole) {
     // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
@@ -455,12 +522,15 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntry.getId(), createScopeUpdate())
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildUpdateCollectionScopeEntryRequest(
+                collectionId, scopeEntry.getId(), createScopeUpdate())
+            .execute();
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
@@ -474,14 +544,15 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     // when
     collectionClient.updateCollectionScopeAsKermit(
-      collectionId,
-      scopeEntry.getId(),
-      Collections.singletonList("tenant1")
-    );
+        collectionId, scopeEntry.getId(), Collections.singletonList("tenant1"));
   }
 
   @Test
@@ -493,14 +564,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     // when
     collectionClient.updateCollectionScopeAsKermit(
-      collectionId,
-      scopeEntry.getId(),
-      Collections.singletonList("tenant1")
-    );
+        collectionId, scopeEntry.getId(), Collections.singletonList("tenant1"));
   }
 
   @ParameterizedTest
@@ -514,12 +585,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -527,7 +600,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @ParameterizedTest
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
-  public void nonManagerIdentityRejectedToDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
+  public void nonManagerIdentityRejectedToDeleteScopeByCollectionRole(
+      final IdentityAndRole identityAndRole) {
     // given
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry = createProcessScope();
@@ -536,12 +610,14 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+        identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -556,12 +632,17 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -576,12 +657,16 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     // when
-    Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
-      .execute();
+    Response response =
+        getOptimizeRequestExecutorWithKermitAuthentication()
+            .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -591,28 +676,28 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void onlyManagerCanCopyACollection() {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
-        new IdentityDto("kermit", IdentityType.USER),
-        RoleType.VIEWER
-      ));
+    collectionClient.addRolesToCollection(
+        collectionId,
+        new CollectionRoleRequestDto(
+            new IdentityDto("kermit", IdentityType.USER), RoleType.VIEWER));
 
     authorizationClient.addUserAndGrantOptimizeAccess("gonzo");
-    collectionClient.addRolesToCollection(collectionId, new CollectionRoleRequestDto(
-        new IdentityDto("gonzo", IdentityType.USER),
-        RoleType.MANAGER
-      ));
+    collectionClient.addRolesToCollection(
+        collectionId,
+        new CollectionRoleRequestDto(
+            new IdentityDto("gonzo", IdentityType.USER), RoleType.MANAGER));
 
     embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCopyCollectionRequest(collectionId)
-      .withUserAuthentication("gonzo", "gonzo")
-      .execute(Response.Status.OK.getStatusCode());
+        .getRequestExecutor()
+        .buildCopyCollectionRequest(collectionId)
+        .withUserAuthentication("gonzo", "gonzo")
+        .execute(Response.Status.OK.getStatusCode());
 
     embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCopyCollectionRequest(collectionId)
-      .withUserAuthentication("kermit", "kermit")
-      .execute(Response.Status.FORBIDDEN.getStatusCode());
+        .getRequestExecutor()
+        .buildCopyCollectionRequest(collectionId)
+        .withUserAuthentication("kermit", "kermit")
+        .execute(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private CollectionScopeEntryUpdateDto createScopeUpdate() {
@@ -624,11 +709,11 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private CollectionRoleRequestDto createJohnEditorRoleDto() {
-    return new CollectionRoleRequestDto(new IdentityDto(USER_ID_JOHN, IdentityType.USER), RoleType.EDITOR);
+    return new CollectionRoleRequestDto(
+        new IdentityDto(USER_ID_JOHN, IdentityType.USER), RoleType.EDITOR);
   }
 
   private String getJohnRoleId() {
     return createJohnEditorRoleDto().getId();
   }
-
 }

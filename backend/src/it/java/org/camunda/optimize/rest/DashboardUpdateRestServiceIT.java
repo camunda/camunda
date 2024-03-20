@@ -5,8 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
 import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -21,24 +27,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-
 @Tag(OPENSEARCH_PASSING)
 public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT {
 
   @Test
   public void updateDashboardWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildUpdateDashboardRequest("1", null)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildUpdateDashboardRequest("1", null)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -47,10 +47,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
   @Test
   public void updateNonExistingDashboard() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest("nonExistingId", new DashboardDefinitionRestDto())
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest("nonExistingId", new DashboardDefinitionRestDto())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -62,10 +63,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     String id = dashboardClient.createEmptyDashboard(null);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, new DashboardDefinitionRestDto())
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(id, new DashboardDefinitionRestDto())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -80,10 +82,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     dashboardUpdate.setDescription(description);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, dashboardUpdate)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(id, dashboardUpdate)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -99,10 +102,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     dashboardUpdate.setDescription(description);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, dashboardUpdate)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(id, dashboardUpdate)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -114,10 +118,13 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, new DashboardDefinitionRestDto())
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(
+                ManagementDashboardService.MANAGEMENT_DASHBOARD_ID,
+                new DashboardDefinitionRestDto())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -134,10 +141,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     dashboard.setName("NEW NAME");
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboard)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(dashboardId, dashboard)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -159,13 +167,14 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
 
     // when
     final DashboardDefinitionRestDto dashboardUpdate =
-      createDashboardForReportContainingAllVariables(dashboardFilterDtos);
+        createDashboardForReportContainingAllVariables(dashboardFilterDtos);
     dashboardUpdate.setId(dashboardId);
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
-    final Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardUpdate)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(dashboardId, dashboardUpdate)
+            .execute();
     final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
 
     // then
@@ -174,7 +183,8 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     if (dashboardFilterDtos == null) {
       assertThat(updatedDefinition.getAvailableFilters()).isEmpty();
     } else {
-      assertThat(updatedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
+      assertThat(updatedDefinition.getAvailableFilters())
+          .containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
     }
   }
 
@@ -184,7 +194,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     // given a dashboard with a variable filter
     final List<DashboardFilterDto<?>> dashboardFilters = variableFilter();
     final DashboardDefinitionRestDto dashboardDefinitionDto =
-      createDashboardForReportContainingAllVariables(dashboardFilters);
+        createDashboardForReportContainingAllVariables(dashboardFilters);
     final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
@@ -200,23 +210,24 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
     dashboardDefinitionDto.setTiles(Arrays.asList(externalReport, variableReport));
 
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+        .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(dashboardId).isNotNull();
     final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
     assertThat(updatedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
     assertThat(updatedDefinition.getTiles())
-      .containsExactlyInAnyOrder(externalReport, variableReport);
+        .containsExactlyInAnyOrder(externalReport, variableReport);
   }
 
   @Test
   public void updateDashboard_addTextReportToDashboard() {
     // given
     final DashboardDefinitionRestDto dashboardDefinitionDto =
-      createDashboardForReportContainingAllVariables(Collections.emptyList());
+        createDashboardForReportContainingAllVariables(Collections.emptyList());
     final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
@@ -235,22 +246,23 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     emptyTextReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport(""));
     dashboardDefinitionDto.setTiles(Arrays.asList(textReport, variableReport, emptyTextReport));
 
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+        .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(dashboardId).isNotNull();
     final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
     assertThat(updatedDefinition.getTiles())
-      .containsExactlyInAnyOrder(textReport, variableReport, emptyTextReport);
+        .containsExactlyInAnyOrder(textReport, variableReport, emptyTextReport);
   }
 
   @Test
   public void updateDashboard_updateExistingTextReport() {
     // given
     final DashboardDefinitionRestDto dashboardDefinitionDto =
-      createDashboardForReportContainingAllVariables(Collections.emptyList());
+        createDashboardForReportContainingAllVariables(Collections.emptyList());
     final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
@@ -264,15 +276,15 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     textReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport("I _love_ *markdown*."));
     dashboardDefinitionDto.setTiles(Arrays.asList(textReport, variableReport));
 
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+        .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(dashboardId).isNotNull();
     final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
-    assertThat(updatedDefinition.getTiles())
-      .containsExactlyInAnyOrder(textReport, variableReport);
+    assertThat(updatedDefinition.getTiles()).containsExactlyInAnyOrder(textReport, variableReport);
 
     // when the text report is updated
     DashboardReportTileDto updatedTextReport = new DashboardReportTileDto();
@@ -281,22 +293,25 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     updatedTextReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport("Updated text"));
     dashboardDefinitionDto.setTiles(Arrays.asList(updatedTextReport, variableReport));
 
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+        .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
 
     // then
-    final DashboardDefinitionRestDto newlyUpdatedDefinition = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto newlyUpdatedDefinition =
+        dashboardClient.getDashboard(dashboardId);
     assertThat(newlyUpdatedDefinition.getTiles())
-      .containsExactlyInAnyOrder(updatedTextReport, variableReport);
+        .containsExactlyInAnyOrder(updatedTextReport, variableReport);
   }
 
   @ParameterizedTest
   @MethodSource("getInvalidReportIdAndTypes")
-  public void updateDashboard_invalidIdAndTypeCombinations(final DashboardReportTileDto dashboardReportTileDto) {
+  public void updateDashboard_invalidIdAndTypeCombinations(
+      final DashboardReportTileDto dashboardReportTileDto) {
     // given
     final DashboardDefinitionRestDto dashboardDefinitionDto =
-      createDashboardForReportContainingAllVariables(Collections.emptyList());
+        createDashboardForReportContainingAllVariables(Collections.emptyList());
     final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
@@ -305,9 +320,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
 
     // when an invalid tile is added to dashboard
     dashboardDefinitionDto.setTiles(Arrays.asList(dashboardReportTileDto, variableReport));
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -317,7 +334,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
   public void updateDashboard_dashboardTileDoesNotSpecifyType() {
     // given
     final DashboardDefinitionRestDto dashboardDefinitionDto =
-      createDashboardForReportContainingAllVariables(Collections.emptyList());
+        createDashboardForReportContainingAllVariables(Collections.emptyList());
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // then
@@ -329,34 +346,40 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
     dashboardDefinitionDto.setTiles(List.of(externalReport));
 
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {
-    // This string was reported as a vulnerability in https://jira.camunda.com/browse/OPT-6583
-    "javascript:alert(\"SySS Stored XSS Proof of Concept within domain:\\n\\n\"+document.domain)",
-    "invalidExternalUrl.com"
-  })
+  @ValueSource(
+      strings = {
+        // This string was reported as a vulnerability in https://jira.camunda.com/browse/OPT-6583
+        "javascript:alert(\"SySS Stored XSS Proof of Concept within domain:\\n\\n\"+document.domain)",
+        "invalidExternalUrl.com"
+      })
   public void updateDashboard_dashboardContainsExternalReportWithInvalidURL(final String url) {
     // given
     String dashboardId = dashboardClient.createEmptyDashboard();
 
     // when an external report is added to the dashboard
-    final DashboardDefinitionRestDto dashboardDefinitionDto = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+        dashboardClient.getDashboard(dashboardId);
     DashboardReportTileDto externalReport = new DashboardReportTileDto();
     externalReport.setId("");
     externalReport.setConfiguration(ImmutableMap.of("external", url));
     dashboardDefinitionDto.setTiles(List.of(externalReport));
 
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -375,10 +398,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
 
     // when
     dashboardDefinitionDto.setAvailableFilters(variableFilter());
-    final ErrorResponseDto errorResponse = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+    final ErrorResponseDto errorResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+            .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then the response has the expected error code
     assertThat(errorResponse.getErrorCode()).isEqualTo("invalidDashboardVariableFilter");
@@ -386,13 +410,15 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
 
   @ParameterizedTest
   @MethodSource("invalidFilterCombinations")
-  public void updateDashboardFilterSpecification_invalidFilters(List<DashboardFilterDto<?>> dashboardFilterDtos) {
+  public void updateDashboardFilterSpecification_invalidFilters(
+      List<DashboardFilterDto<?>> dashboardFilterDtos) {
     // when
     final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
-    IdResponseDto idDto = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+    IdResponseDto idDto =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateDashboardRequest(dashboardDefinitionDto)
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(idDto.getId()).isNotNull();
@@ -401,10 +427,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
 
     // when
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
-    final Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(idDto.getId(), dashboardDefinitionDto)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(idDto.getId(), dashboardDefinitionDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -432,5 +459,4 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     dashboardDefinitionDto.setDescription(description);
     return dashboardClient.createDashboard(dashboardDefinitionDto);
   }
-
 }

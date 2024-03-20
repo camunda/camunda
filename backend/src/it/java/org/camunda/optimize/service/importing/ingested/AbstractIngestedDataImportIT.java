@@ -11,10 +11,11 @@ import org.junit.jupiter.api.BeforeEach;
 public class AbstractIngestedDataImportIT extends AbstractImportIT {
   @BeforeEach
   public void enableExternalVariableImport() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getExternalVariableConfiguration()
-      .getImportConfiguration()
-      .setEnabled(true);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getExternalVariableConfiguration()
+        .getImportConfiguration()
+        .setEnabled(true);
   }
 
   protected void importIngestedDataFromScratchRefreshIndicesBeforeAndAfter() {

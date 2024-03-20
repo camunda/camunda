@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
+import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithAssignee;
+
+import java.util.Arrays;
+import java.util.Collections;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -14,16 +23,6 @@ import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroup
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
-import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithAssignee;
 
 @Tag(OPENSEARCH_PASSING)
 public class AssigneeAuthorizationIT extends AbstractPlatformIT {
@@ -36,25 +35,25 @@ public class AssigneeAuthorizationIT extends AbstractPlatformIT {
 
     engineIntegrationExtension.addUser("userId", "userFirstName", "userLastName");
     final ProcessInstanceEngineDto instance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithAssignee("userId"));
+        engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithAssignee("userId"));
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
-      collectionId,
-      instance.getProcessDefinitionKey(),
-      DefinitionType.PROCESS,
-      Collections.singletonList(null)
-    );
-    final String reportId = reportClient.createAndStoreProcessReport(collectionId, instance.getProcessDefinitionKey());
+        collectionId,
+        instance.getProcessDefinitionKey(),
+        DefinitionType.PROCESS,
+        Collections.singletonList(null));
+    final String reportId =
+        reportClient.createAndStoreProcessReport(collectionId, instance.getProcessDefinitionKey());
     importAllEngineEntitiesFromScratch();
 
     // when
-    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssigneesAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      AssigneeCandidateGroupReportSearchRequestDto.builder()
-        .reportIds(Collections.singletonList(reportId))
-        .build()
-    );
+    final IdentitySearchResultResponseDto searchResponse =
+        assigneesClient.searchForAssigneesAsUser(
+            KERMIT_USER,
+            KERMIT_USER,
+            AssigneeCandidateGroupReportSearchRequestDto.builder()
+                .reportIds(Collections.singletonList(reportId))
+                .build());
 
     // then
     assertThat(searchResponse.getResult()).isEmpty();
@@ -66,22 +65,20 @@ public class AssigneeAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     engineIntegrationExtension.addUser("userId", "userFirstName", "userLastName");
     final ProcessInstanceEngineDto instance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithAssignee("userId"));
-    final String reportId = reportClient.createSingleProcessReportAsUser(
-      instance.getProcessDefinitionKey(),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+        engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithAssignee("userId"));
+    final String reportId =
+        reportClient.createSingleProcessReportAsUser(
+            instance.getProcessDefinitionKey(), KERMIT_USER, KERMIT_USER);
     importAllEngineEntitiesFromScratch();
 
     // when
-    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssigneesAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      AssigneeCandidateGroupReportSearchRequestDto.builder()
-        .reportIds(Collections.singletonList(reportId))
-        .build()
-    );
+    final IdentitySearchResultResponseDto searchResponse =
+        assigneesClient.searchForAssigneesAsUser(
+            KERMIT_USER,
+            KERMIT_USER,
+            AssigneeCandidateGroupReportSearchRequestDto.builder()
+                .reportIds(Collections.singletonList(reportId))
+                .build());
 
     // then
     assertThat(searchResponse.getResult()).isEmpty();
@@ -93,52 +90,49 @@ public class AssigneeAuthorizationIT extends AbstractPlatformIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationForKermit(
-      "authorizedDef",
-      RESOURCE_TYPE_PROCESS_DEFINITION
-    );
+        "authorizedDef", RESOURCE_TYPE_PROCESS_DEFINITION);
     engineIntegrationExtension.addUser("userId", "userFirstName", "userLastName");
     engineIntegrationExtension.addUser("otherUserId", "otherUserFirstName", "otherUserLastName");
     final ProcessInstanceEngineDto authDefInstance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithAssignee("authorizedDef", "userId"));
+        engineIntegrationExtension.deployAndStartProcess(
+            getUserTaskDiagramWithAssignee("authorizedDef", "userId"));
     final ProcessInstanceEngineDto noAuthDefInstance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithAssignee("unauthorizedDef", "userId"));
-    final String authorizedReportId = reportClient.createSingleProcessReportAsUser(
-      authDefInstance.getProcessDefinitionKey(),
-      KERMIT_USER,
-      KERMIT_USER
-    );
-    final String unauthorizedReportId = reportClient.createSingleProcessReportAsUser(
-      noAuthDefInstance.getProcessDefinitionKey(),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+        engineIntegrationExtension.deployAndStartProcess(
+            getUserTaskDiagramWithAssignee("unauthorizedDef", "userId"));
+    final String authorizedReportId =
+        reportClient.createSingleProcessReportAsUser(
+            authDefInstance.getProcessDefinitionKey(), KERMIT_USER, KERMIT_USER);
+    final String unauthorizedReportId =
+        reportClient.createSingleProcessReportAsUser(
+            noAuthDefInstance.getProcessDefinitionKey(), KERMIT_USER, KERMIT_USER);
     importAllEngineEntitiesFromScratch();
 
     // when
-    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssigneesAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      AssigneeCandidateGroupReportSearchRequestDto.builder()
-        .reportIds(Arrays.asList(authorizedReportId, unauthorizedReportId))
-        .build()
-    );
+    final IdentitySearchResultResponseDto searchResponse =
+        assigneesClient.searchForAssigneesAsUser(
+            KERMIT_USER,
+            KERMIT_USER,
+            AssigneeCandidateGroupReportSearchRequestDto.builder()
+                .reportIds(Arrays.asList(authorizedReportId, unauthorizedReportId))
+                .build());
 
     // then
     assertThat(searchResponse.getResult())
-      .singleElement()
-      .isEqualTo(
-        new UserDto("userId", "userFirstName", "userLastName", "userId" + DEFAULT_EMAIL_DOMAIN)
-      );
+        .singleElement()
+        .isEqualTo(
+            new UserDto(
+                "userId", "userFirstName", "userLastName", "userId" + DEFAULT_EMAIL_DOMAIN));
   }
 
   private void startSimpleUserTaskProcessWithAssignee() {
     engineIntegrationExtension.deployAndStartProcess(
-      Bpmn.createExecutableProcess("aProcess")
-        .startEvent()
-        .userTask().camundaAssignee("demo")
-        .userTask().camundaAssignee("john")
-        .endEvent()
-        .done()
-    );
+        Bpmn.createExecutableProcess("aProcess")
+            .startEvent()
+            .userTask()
+            .camundaAssignee("demo")
+            .userTask()
+            .camundaAssignee("john")
+            .endEvent()
+            .done());
   }
 }

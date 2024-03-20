@@ -5,9 +5,29 @@
  */
 package org.camunda.optimize.service.db.es.retrieval.variable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DATE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.INTEGER;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.SHORT;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -20,27 +40,6 @@ import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DATE;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.INTEGER;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.SHORT;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 
 public class ProcessVariableValueIT extends AbstractVariableIT {
 
@@ -58,7 +57,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
+    List<String> variableResponse =
+        variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(3);
@@ -73,20 +73,15 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     final Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value1");
-    final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId(),
-      variables
-    );
+    final ProcessInstanceEngineDto instance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value2");
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<String> variableResponse = variablesClient.getProcessVariableValues(
-      instance.getId(),
-      processDefinition,
-      "var"
-    );
+    final List<String> variableResponse =
+        variablesClient.getProcessVariableValues(instance.getId(), processDefinition, "var");
 
     // then
     assertThat(variableResponse).singleElement().isEqualTo("value1");
@@ -96,15 +91,18 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
   public void getVariableValuesForReport_reportWithNoDefinitionKey() {
     // given
     final String reportId = reportClient.createEmptySingleProcessReport();
-    final ProcessVariableReportValuesRequestDto requestDto = new ProcessVariableReportValuesRequestDto();
+    final ProcessVariableReportValuesRequestDto requestDto =
+        new ProcessVariableReportValuesRequestDto();
     requestDto.setReportIds(Collections.singletonList(reportId));
     requestDto.setType(BOOLEAN);
     requestDto.setName("varName");
 
     // when
-    final List<String> values = embeddedOptimizeExtension.getRequestExecutor()
-      .buildProcessVariableValuesForReportsRequest(requestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    final List<String> values =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessVariableValuesForReportsRequest(requestDto)
+            .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(values).isEmpty();
@@ -117,10 +115,9 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = Lists.newArrayList(tenantId1);
     String variableName = "aVariableName";
-    String processDefinition = deployAndStartMultiTenantUserTaskProcess(
-      variableName,
-      Lists.newArrayList(null, tenantId1, tenantId2)
-    );
+    String processDefinition =
+        deployAndStartMultiTenantUserTaskProcess(
+            variableName, Lists.newArrayList(null, tenantId1, tenantId2));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -156,10 +153,9 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     // when
     ProcessVariableValueRequestDto valueRequestDto = new ProcessVariableValueRequestDto();
     valueRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    valueRequestDto.setProcessDefinitionVersions(ImmutableList.of(
-      processDefinition.getVersionAsString(),
-      processDefinition3.getVersionAsString()
-    ));
+    valueRequestDto.setProcessDefinitionVersions(
+        ImmutableList.of(
+            processDefinition.getVersionAsString(), processDefinition3.getVersionAsString()));
     valueRequestDto.setName("var");
     valueRequestDto.setType(STRING);
     List<String> variableResponse = variablesClient.getProcessVariableValues(valueRequestDto);
@@ -227,16 +223,17 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
-    IntStream.range(0, 15).forEach(
-      i -> {
-        variables.put("var", "value" + i);
-        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-      }
-    );
+    IntStream.range(0, 15)
+        .forEach(
+            i -> {
+              variables.put("var", "value" + i);
+              engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+            });
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
+    List<String> variableResponse =
+        variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(15);
@@ -254,7 +251,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var1");
+    List<String> variableResponse =
+        variablesClient.getProcessVariableValues(processDefinition, "var1");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -274,7 +272,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
+    List<String> variableResponse =
+        variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -293,7 +292,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
+    List<String> variableResponse =
+        variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -312,7 +312,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> variableResponse = variablesClient.getProcessVariableValues(processDefinition, "var");
+    List<String> variableResponse =
+        variablesClient.getProcessVariableValues(processDefinition, "var");
 
     // then
     assertThat(variableResponse.size()).isEqualTo(1);
@@ -356,7 +357,6 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
       assertThat(variableResponse.size()).isEqualTo(1);
       assertThat(variableResponse.contains(expectedValue)).isTrue();
     }
-
   }
 
   @Test
@@ -370,7 +370,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectVar", kermitObjectDto);
     final ProcessInstanceEngineDto instance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     final Map<String, Object> missPiggyVar = new HashMap<>();
     missPiggyVar.put("name", "Miss Piggy");
     missPiggyVar.put("likes", List.of("Kermit"));
@@ -381,12 +381,11 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
 
     // when
     final List<String> variableResponse =
-      variablesClient.getProcessVariableValues(instance.getId(), processDefinition, "objectVar", OBJECT);
+        variablesClient.getProcessVariableValues(
+            instance.getId(), processDefinition, "objectVar", OBJECT);
 
     // then
-    assertThat(variableResponse)
-      .singleElement()
-      .isEqualTo(kermitObjectDto.getValue());
+    assertThat(variableResponse).singleElement().isEqualTo(kermitObjectDto.getValue());
   }
 
   private Map<String, VariableType> createVarNameToTypeMap() {
@@ -785,12 +784,10 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final String reportId = createSingleReport(processDefinition);
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(
-        Collections.singletonList(reportId),
-        "var1",
-        STRING
-      ));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(
+                Collections.singletonList(reportId), "var1", STRING));
 
     // then
     assertThat(variableValues).containsExactly("value1");
@@ -808,12 +805,10 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final String reportId = createSingleReport(processDefinition);
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(
-        Collections.singletonList(reportId),
-        "var4",
-        STRING
-      ));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(
+                Collections.singletonList(reportId), "var4", STRING));
 
     // then
     assertThat(variableValues).isEmpty();
@@ -831,8 +826,10 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final String reportId = createSingleReport(processDefinition);
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(Collections.singletonList(reportId), "var1", BOOLEAN));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(
+                Collections.singletonList(reportId), "var1", BOOLEAN));
 
     // then
     assertThat(variableValues).isEmpty();
@@ -850,15 +847,17 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final String reportId2 = createSingleReport(processDefinition2);
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(List.of(reportId1, reportId2), "var1", STRING));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(List.of(reportId1, reportId2), "var1", STRING));
 
     // then
     assertThat(variableValues).containsExactly("value1", "value2");
   }
 
   @Test
-  public void getAllVariableValues_variableNameAndTypeExistsInSingleReportWithMultipleDefinitions() {
+  public void
+      getAllVariableValues_variableNameAndTypeExistsInSingleReportWithMultipleDefinitions() {
     // given
     final String key1 = "key1";
     final ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition(key1, null);
@@ -869,17 +868,18 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
 
     importAllEngineEntitiesFromScratch();
 
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .definitions(List.of(
-        new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
-      ))
-      .build();
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .definitions(
+                List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)))
+            .build();
     final String reportId = reportClient.createSingleProcessReport(reportData);
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(List.of(reportId), "var1", STRING));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(List.of(reportId), "var1", STRING));
 
     // then
     assertThat(variableValues).containsExactly("value1", "value2");
@@ -897,8 +897,9 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     final String reportId2 = createSingleReport(processDefinition2);
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(List.of(reportId1, reportId2), "var1", STRING));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(List.of(reportId1, reportId2), "var1", STRING));
 
     // then
     assertThat(variableValues).containsExactly("value1");
@@ -915,11 +916,13 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition2, ImmutableMap.of("var2", "value2"));
     final String reportId2 = createSingleReport(processDefinition2);
 
-    final String combinedReportId = reportClient.createCombinedReport(null, List.of(reportId1, reportId2));
+    final String combinedReportId =
+        reportClient.createCombinedReport(null, List.of(reportId1, reportId2));
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(List.of(combinedReportId), "var1", STRING));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(List.of(combinedReportId), "var1", STRING));
 
     // then
     assertThat(variableValues).containsExactly("value1");
@@ -936,11 +939,14 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition2, ImmutableMap.of("var1", "value2"));
     final String reportId2 = createSingleReport(processDefinition2);
 
-    final String combinedReportId = reportClient.createCombinedReport(null, List.of(reportId1, reportId2));
+    final String combinedReportId =
+        reportClient.createCombinedReport(null, List.of(reportId1, reportId2));
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(Collections.singletonList(combinedReportId), "var1", STRING));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(
+                Collections.singletonList(combinedReportId), "var1", STRING));
 
     // then
     assertThat(variableValues).containsExactly("value1", "value2");
@@ -954,11 +960,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, ImmutableMap.of("var1", "putin"));
     startInstanceAndImportEngineEntities(processDefinition, ImmutableMap.of("var1", "LAD"));
     final String reportId = createSingleReport(processDefinition);
-    final ProcessVariableReportValuesRequestDto requestDto = createVariableValuesForReportsRequest(
-      Collections.singletonList(reportId),
-      "var1",
-      STRING
-    );
+    final ProcessVariableReportValuesRequestDto requestDto =
+        createVariableValuesForReportsRequest(Collections.singletonList(reportId), "var1", STRING);
 
     // when no search term used
     List<String> variableValues = variablesClient.getProcessVariableValuesForReports(requestDto);
@@ -983,20 +986,18 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
     final String reportId1 = createSingleReport(processDefinition);
 
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = startDecisionInstanceAndImportEngineEntities(
-      ImmutableMap.of("var1", "value2")
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        startDecisionInstanceAndImportEngineEntities(ImmutableMap.of("var1", "value2"));
 
-    final String reportId2 = reportClient.createSingleDecisionReportDefinitionDto(
-      decisionDefinitionEngineDto.getKey()).getId();
+    final String reportId2 =
+        reportClient
+            .createSingleDecisionReportDefinitionDto(decisionDefinitionEngineDto.getKey())
+            .getId();
 
     // when
-    List<String> variableValues = variablesClient.getProcessVariableValuesForReports(
-      createVariableValuesForReportsRequest(
-        List.of(reportId1, reportId2),
-        "var1",
-        STRING
-      ));
+    List<String> variableValues =
+        variablesClient.getProcessVariableValuesForReports(
+            createVariableValuesForReportsRequest(List.of(reportId1, reportId2), "var1", STRING));
 
     // then
     assertThat(variableValues).containsExactly("value1");
@@ -1013,11 +1014,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition2, ImmutableMap.of("var1", "value2"));
     final String reportId2 = createSingleReport(processDefinition2);
 
-    final ProcessVariableReportValuesRequestDto requestDto = createVariableValuesForReportsRequest(
-      List.of(reportId1, reportId2),
-      "var1",
-      STRING
-    );
+    final ProcessVariableReportValuesRequestDto requestDto =
+        createVariableValuesForReportsRequest(List.of(reportId1, reportId2), "var1", STRING);
     requestDto.setNumResults(0);
 
     // when the max result size is 0
@@ -1041,9 +1039,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     assertThat(variableValues).containsExactly("value2");
   }
 
-  private ProcessVariableReportValuesRequestDto createVariableValuesForReportsRequest(final List<String> reportIds,
-                                                                                      final String name,
-                                                                                      final VariableType type) {
+  private ProcessVariableReportValuesRequestDto createVariableValuesForReportsRequest(
+      final List<String> reportIds, final String name, final VariableType type) {
     ProcessVariableReportValuesRequestDto dto = new ProcessVariableReportValuesRequestDto();
     dto.setReportIds(reportIds);
     dto.setName(name);
@@ -1053,9 +1050,8 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
 
   private Response getVariableValueResponse(ProcessVariableValueRequestDto valueRequestDto) {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableValuesRequest(valueRequestDto)
-      .execute();
+        .getRequestExecutor()
+        .buildProcessVariableValuesRequest(valueRequestDto)
+        .execute();
   }
-
 }

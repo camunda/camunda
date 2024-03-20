@@ -5,7 +5,14 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -13,32 +20,23 @@ import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-
-
 // Passes locally, but fails on CI
-//@Tag(OPENSEARCH_PASSING)
+// @Tag(OPENSEARCH_PASSING)
 public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
-  public static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "customer_onboarding_test_process_instances.json";
-  public static final String CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME = "customer_onboarding_definition.json";
+  public static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES =
+      "customer_onboarding_test_process_instances.json";
+  public static final String CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME =
+      "customer_onboarding_definition.json";
   private static final String CUSTOMER_ONBOARDING_DEFINITION_NAME = "customer_onboarding_en";
 
   @RegisterExtension
   @Order(1)
-  public final LogCapturer logCapturer = LogCapturer.create()
-    .captureForType(CustomerOnboardingDataImportService.class);
+  public final LogCapturer logCapturer =
+      LogCapturer.create().captureForType(CustomerOnboardingDataImportService.class);
 
   @BeforeEach
   public void cleanUpExistingProcessInstanceIndices() {
@@ -52,14 +50,18 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    addDataToOptimize(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
+    addDataToOptimize(
+        CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
 
     // then
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      PROCESS_DEFINITION_INDEX_NAME,
-      ProcessDefinitionOptimizeDto.class
-    )).isEmpty();
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class))
+        .isEmpty();
+    assertThat(
+            indexExist(
+                ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME)))
+        .isFalse();
   }
 
   @Test
@@ -69,26 +71,31 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    addDataToOptimize(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
+    addDataToOptimize(
+        CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        PROCESS_DEFINITION_INDEX_NAME,
-        ProcessDefinitionOptimizeDto.class
-      );
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(processDefinitionDocuments).hasSize(1);
     final ProcessDefinitionOptimizeDto processDefinition = processDefinitionDocuments.get(0);
-    // the onboarding data should already be considered onboarded to avoid the notification being sent upon import
+    // the onboarding data should already be considered onboarded to avoid the notification being
+    // sent upon import
     assertThat(processDefinition.isOnboarded()).isTrue();
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(processDefinition.getKey()))).isTrue();
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      ProcessInstanceIndex.constructIndexName(processDefinition.getKey()),
-      ProcessDefinitionOptimizeDto.class
-    )).hasSize(3);
-    List<ProcessInstanceDto> processInstanceDtos = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      ProcessInstanceIndex.constructIndexName(processDefinition.getKey()), ProcessInstanceDto.class);
-    assertThat(processInstanceDtos).anyMatch(processInstanceDto -> processInstanceDto.getIncidents() != null);
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(processDefinition.getKey())))
+        .isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                ProcessInstanceIndex.constructIndexName(processDefinition.getKey()),
+                ProcessDefinitionOptimizeDto.class))
+        .hasSize(3);
+    List<ProcessInstanceDto> processInstanceDtos =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            ProcessInstanceIndex.constructIndexName(processDefinition.getKey()),
+            ProcessInstanceDto.class);
+    assertThat(processInstanceDtos)
+        .anyMatch(processInstanceDto -> processInstanceDto.getIncidents() != null);
   }
 
   @Test
@@ -102,13 +109,15 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        PROCESS_DEFINITION_INDEX_NAME,
-        ProcessDefinitionOptimizeDto.class
-      );
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(processDefinitionDocuments).isEmpty();
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
-    logCapturer.assertContains("Process definition could not be loaded. Please validate your json file.");
+    assertThat(
+            indexExist(
+                ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME)))
+        .isFalse();
+    logCapturer.assertContains(
+        "Process definition could not be loaded. Please validate your json file.");
   }
 
   @Test
@@ -122,15 +131,16 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        PROCESS_DEFINITION_INDEX_NAME,
-        ProcessDefinitionOptimizeDto.class
-      );
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
+    assertThat(
+            indexExist(
+                ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME)))
+        .isFalse();
     logCapturer.assertContains(
-      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance " +
-        "json file.");
+        "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance "
+            + "json file.");
   }
 
   @Test
@@ -144,15 +154,16 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        PROCESS_DEFINITION_INDEX_NAME,
-        ProcessDefinitionOptimizeDto.class
-      );
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
+    assertThat(
+            indexExist(
+                ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME)))
+        .isFalse();
     logCapturer.assertContains(
-      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance " +
-        "json file.");
+        "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance "
+            + "json file.");
   }
 
   @Test
@@ -166,23 +177,29 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        PROCESS_DEFINITION_INDEX_NAME,
-        ProcessDefinitionOptimizeDto.class
-      );
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(processDefinitionDocuments).isEmpty();
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
-    logCapturer.assertContains("Process definition could not be loaded. Please validate your json file.");
+    assertThat(
+            indexExist(
+                ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME)))
+        .isFalse();
+    logCapturer.assertContains(
+        "Process definition could not be loaded. Please validate your json file.");
   }
 
   @Test
   public void verifyProcessDatesAreUpToDate() {
     // given
     final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
-    final OffsetDateTime instanceStartDate = OffsetDateTime.parse("2022-02-04T21:24:14+01:00", ISO_OFFSET_DATE_TIME);
-    final OffsetDateTime instanceEndDate = OffsetDateTime.parse("2022-02-04T21:25:18+01:00", ISO_OFFSET_DATE_TIME);
-    final OffsetDateTime flowNodeStartDate = OffsetDateTime.parse("2022-02-04T21:24:15+01:00", ISO_OFFSET_DATE_TIME);
-    final OffsetDateTime flowNodeEndDate = OffsetDateTime.parse("2022-02-04T21:24:16+01:00", ISO_OFFSET_DATE_TIME);
+    final OffsetDateTime instanceStartDate =
+        OffsetDateTime.parse("2022-02-04T21:24:14+01:00", ISO_OFFSET_DATE_TIME);
+    final OffsetDateTime instanceEndDate =
+        OffsetDateTime.parse("2022-02-04T21:25:18+01:00", ISO_OFFSET_DATE_TIME);
+    final OffsetDateTime flowNodeStartDate =
+        OffsetDateTime.parse("2022-02-04T21:24:15+01:00", ISO_OFFSET_DATE_TIME);
+    final OffsetDateTime flowNodeEndDate =
+        OffsetDateTime.parse("2022-02-04T21:24:16+01:00", ISO_OFFSET_DATE_TIME);
     final long offset = ChronoUnit.SECONDS.between(instanceEndDate, now);
     final OffsetDateTime newStartDate = instanceStartDate.plusSeconds(offset);
     final OffsetDateTime newEndDate = instanceEndDate.plusSeconds(offset);
@@ -193,43 +210,50 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // when
     addDataToOptimize(
-      "customer_onboarding_process_instance_date_modification.json",
-      CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME
-    );
+        "customer_onboarding_process_instance_date_modification.json",
+        CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        PROCESS_DEFINITION_INDEX_NAME,
-        ProcessDefinitionOptimizeDto.class
-      );
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isTrue();
-    List<ProcessInstanceDto> processInstanceDto = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      ProcessInstanceIndex.constructIndexName(processDefinitionDocuments.get(0).getKey()), ProcessInstanceDto.class);
+    assertThat(
+            indexExist(
+                ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME)))
+        .isTrue();
+    List<ProcessInstanceDto> processInstanceDto =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            ProcessInstanceIndex.constructIndexName(processDefinitionDocuments.get(0).getKey()),
+            ProcessInstanceDto.class);
 
     assertThat(processInstanceDto)
-      .singleElement()
-      .satisfies(instance -> {
-        assertThat(instance.getFlowNodeInstances()).singleElement().satisfies(flowNode -> {
-          assertThat(flowNode.getStartDate()).isEqualTo(newFlowNodeStartDate);
-          assertThat(flowNode.getEndDate()).isEqualTo(newFlowNodeEndDate);
-        });
-        assertThat(instance.getStartDate()).isEqualTo(newStartDate);
-        assertThat(instance.getEndDate()).isEqualTo(newEndDate);
-      });
+        .singleElement()
+        .satisfies(
+            instance -> {
+              assertThat(instance.getFlowNodeInstances())
+                  .singleElement()
+                  .satisfies(
+                      flowNode -> {
+                        assertThat(flowNode.getStartDate()).isEqualTo(newFlowNodeStartDate);
+                        assertThat(flowNode.getEndDate()).isEqualTo(newFlowNodeEndDate);
+                      });
+              assertThat(instance.getStartDate()).isEqualTo(newStartDate);
+              assertThat(instance.getEndDate()).isEqualTo(newEndDate);
+            });
   }
 
   protected boolean indexExist(final String indexName) {
-    return embeddedOptimizeExtension.getDatabaseSchemaManager()
-      .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexName);
+    return embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexName);
   }
 
-  private void addDataToOptimize(final String processInstanceFile, final String processDefinitionFile) {
+  private void addDataToOptimize(
+      final String processInstanceFile, final String processDefinitionFile) {
     CustomerOnboardingDataImportService customerOnboardingDataImportService =
-      embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
+        embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
     customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
-
 }

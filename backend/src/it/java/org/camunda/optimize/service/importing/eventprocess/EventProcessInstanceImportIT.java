@@ -5,6 +5,18 @@
  */
 package org.camunda.optimize.service.importing.eventprocess;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -21,25 +33,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiConsumer;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
-
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
   @Test
   public void dedicatedInstanceIndexIsCreatedForPublishedEventProcess() {
     // given
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
@@ -47,38 +47,41 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final EventProcessPublishStateDto eventProcessPublishState = getEventPublishStateForEventProcessMappingId(
-      eventProcessMappingId);
+    final EventProcessPublishStateDto eventProcessPublishState =
+        getEventPublishStateForEventProcessMappingId(eventProcessMappingId);
 
     final Map<String, List<AliasMetadata>> eventProcessInstanceIndicesAndAliases =
-      getEventProcessInstanceIndicesWithAliasesFromDatabase();
+        getEventProcessInstanceIndicesWithAliasesFromDatabase();
     assertThat(eventProcessInstanceIndicesAndAliases)
-      .hasSize(1)
-      .hasEntrySatisfying(
-        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishState.getId()),
-        aliases -> assertThat(aliases)
-          .extracting(AliasMetadata::alias, AliasMetadata::writeIndex)
-          .containsExactlyInAnyOrder(
-            Tuple.tuple(
-              getOptimizeIndexAliasForIndexName(new EventProcessInstanceIndexES(eventProcessPublishState.getId()).getIndexName()),
-              true
-            ),
-            Tuple.tuple(
-              getOptimizeIndexAliasForIndexName(PROCESS_INSTANCE_MULTI_ALIAS), false
-            ),
-            Tuple.tuple(
-              getOptimizeIndexAliasForIndexName(PROCESS_INSTANCE_INDEX_PREFIX + eventProcessPublishState.getProcessKey()),
-              false
-            )
-          )
-      );
+        .hasSize(1)
+        .hasEntrySatisfying(
+            getVersionedEventProcessInstanceIndexNameForPublishedStateId(
+                eventProcessPublishState.getId()),
+            aliases ->
+                assertThat(aliases)
+                    .extracting(AliasMetadata::alias, AliasMetadata::writeIndex)
+                    .containsExactlyInAnyOrder(
+                        Tuple.tuple(
+                            getOptimizeIndexAliasForIndexName(
+                                new EventProcessInstanceIndexES(eventProcessPublishState.getId())
+                                    .getIndexName()),
+                            true),
+                        Tuple.tuple(
+                            getOptimizeIndexAliasForIndexName(PROCESS_INSTANCE_MULTI_ALIAS), false),
+                        Tuple.tuple(
+                            getOptimizeIndexAliasForIndexName(
+                                PROCESS_INSTANCE_INDEX_PREFIX
+                                    + eventProcessPublishState.getProcessKey()),
+                            false)));
   }
 
   @Test
   public void dedicatedInstanceIndexesAreCreatedForMultipleEventProcesses() {
     // given
-    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
-    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId1 =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
@@ -87,23 +90,27 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final String eventProcessPublishStateId1 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
-    final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
+    final String eventProcessPublishStateId1 =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
+    final String eventProcessPublishStateId2 =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
     assertThat(getEventProcessInstanceIndicesWithAliasesFromDatabase())
-      .hasSize(2)
-      .containsKeys(
-        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId1),
-        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId2)
-      );
+        .hasSize(2)
+        .containsKeys(
+            getVersionedEventProcessInstanceIndexNameForPublishedStateId(
+                eventProcessPublishStateId1),
+            getVersionedEventProcessInstanceIndexNameForPublishedStateId(
+                eventProcessPublishStateId2));
   }
 
   @ParameterizedTest(name = "Instance index is deleted on {0}.")
   @MethodSource("cancelOrDeleteAction")
-  public void dedicatedInstanceIndexIsDeletedOn(final String actionName,
-                                                final BiConsumer<EventProcessClient, String> action) {
+  public void dedicatedInstanceIndexIsDeletedOn(
+      final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
@@ -119,19 +126,22 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     assertThat(eventProcessInstanceIndicesExist).isFalse();
   }
 
-  @ParameterizedTest(name = "Only expected instance index is deleted on {0}, other is still present.")
+  @ParameterizedTest(
+      name = "Only expected instance index is deleted on {0}, other is still present.")
   @MethodSource("cancelOrDeleteAction")
   public void dedicatedInstanceIndexIsDeletedOtherInstanceIndexNotAffected(
-    final String actionName,
-    final BiConsumer<EventProcessClient, String> action) {
+      final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given
-    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
-    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId1 =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
-    final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
+    final String eventProcessPublishStateId2 =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
     executeImportCycle();
 
@@ -141,7 +151,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
     // then
     assertThat(getEventProcessInstanceIndicesWithAliasesFromDatabase())
-      .containsOnlyKeys(getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId2));
+        .containsOnlyKeys(
+            getVersionedEventProcessInstanceIndexNameForPublishedStateId(
+                eventProcessPublishStateId2));
   }
 
   @Test
@@ -158,7 +170,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final String ingestedEndEventName = "finishedEvent";
     final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, endDateTime);
 
-    final String eventProcessMappingId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
@@ -169,46 +182,47 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .usingRecursiveComparison()
-            .ignoringFields(
-              ProcessInstanceDto.Fields.flowNodeInstances,
-              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
-              EventProcessInstanceDto.Fields.correlatedEventsById
-            )
-            .isEqualTo(createExpectedEventProcessInstanceForTraceId(
-              eventProcessMappingId,
-              startDateTime,
-              endDateTime,
-              PROCESS_INSTANCE_STATE_COMPLETED
-            ));
-          assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_START_EVENT_ID,
-                "startEvent",
-                ingestedStartEventId
-              ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_END_EVENT_ID,
-                "endEvent",
-                ingestedEndEventId
-                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
-            );
-        }
-      );
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  .usingRecursiveComparison()
+                  .ignoringFields(
+                      ProcessInstanceDto.Fields.flowNodeInstances,
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      EventProcessInstanceDto.Fields.correlatedEventsById)
+                  .isEqualTo(
+                      createExpectedEventProcessInstanceForTraceId(
+                          eventProcessMappingId,
+                          startDateTime,
+                          endDateTime,
+                          PROCESS_INSTANCE_STATE_COMPLETED));
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .containsOnly(
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_START_EVENT_ID,
+                              "startEvent",
+                              ingestedStartEventId)
+                          .setStartDate(startDateTime)
+                          .setEndDate(startDateTime)
+                          .setTotalDurationInMs(0L),
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_END_EVENT_ID,
+                              "endEvent",
+                              ingestedEndEventId)
+                          .setStartDate(endDateTime)
+                          .setEndDate(endDateTime)
+                          .setTotalDurationInMs(0L));
+            });
   }
 
   @Test
@@ -217,8 +231,10 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     ingestTestEvent(STARTED_EVENT);
     ingestTestEvent(FINISHED_EVENT);
 
-    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
-    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId1 =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
@@ -227,13 +243,15 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final String eventProcessPublishStateId1 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
-    final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
+    final String eventProcessPublishStateId1 =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
+    final String eventProcessPublishStateId2 =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
     final List<EventProcessInstanceDto> eventProcess1ProcessInstances =
-      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishStateId1);
+        getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishStateId1);
     final List<EventProcessInstanceDto> eventProcess2ProcessInstances =
-      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishStateId2);
+        getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishStateId2);
 
     assertThat(eventProcess1ProcessInstances).hasSize(1);
     assertThat(eventProcess2ProcessInstances).hasSize(1);
@@ -243,17 +261,16 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   public void canceledFlowNodesAreCorrelatedToInstanceCorrectlyOnEventProcessInstancePublish() {
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
-    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
+    engineIntegrationExtension.cancelActivityInstance(
+        processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
     importEngineEntities();
     publishEventMappingUsingProcessInstanceCamundaEvents(
-      processInstanceEngineDto,
-      createMappingsForEventProcess(
         processInstanceEngineDto,
-        BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
-        BPMN_END_EVENT_ID
-      )
-    );
+        createMappingsForEventProcess(
+            processInstanceEngineDto,
+            BPMN_START_EVENT_ID,
+            applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+            BPMN_END_EVENT_ID));
     importEngineEntities();
 
     // when
@@ -261,15 +278,14 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
     // then
     assertThat(getEventProcessInstancesFromDatabase())
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-          .containsExactlyInAnyOrder(
-            Tuple.tuple(BPMN_START_EVENT_ID, false),
-            Tuple.tuple(USER_TASK_ID_ONE, true)
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
+                  .containsExactlyInAnyOrder(
+                      Tuple.tuple(BPMN_START_EVENT_ID, false), Tuple.tuple(USER_TASK_ID_ONE, true));
+            });
   }
 
   @Test
@@ -278,14 +294,12 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
     importEngineEntities();
     publishEventMappingUsingProcessInstanceCamundaEvents(
-      processInstanceEngineDto,
-      createMappingsForEventProcess(
         processInstanceEngineDto,
-        BPMN_START_EVENT_ID,
-        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
-        BPMN_END_EVENT_ID
-      )
-    );
+        createMappingsForEventProcess(
+            processInstanceEngineDto,
+            BPMN_START_EVENT_ID,
+            applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+            BPMN_END_EVENT_ID));
     importEngineEntities();
 
     // when
@@ -293,32 +307,32 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
     // then all flow nodes for the process are not canceled
     assertThat(getEventProcessInstancesFromDatabase())
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-          .containsExactlyInAnyOrder(
-            Tuple.tuple(BPMN_START_EVENT_ID, false),
-            Tuple.tuple(USER_TASK_ID_ONE, false)
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
+                  .containsExactlyInAnyOrder(
+                      Tuple.tuple(BPMN_START_EVENT_ID, false),
+                      Tuple.tuple(USER_TASK_ID_ONE, false));
+            });
 
     // when we cancel the running user task and reimport the activity
-    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
+    engineIntegrationExtension.cancelActivityInstance(
+        processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
     importEngineEntities();
     executeImportCycle();
 
     // then the user task is marked as canceled on the event process
     assertThat(getEventProcessInstancesFromDatabase())
-      .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getFlowNodeInstances())
-          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-          .containsExactlyInAnyOrder(
-            Tuple.tuple(BPMN_START_EVENT_ID, false),
-            Tuple.tuple(USER_TASK_ID_ONE, true)
-          );
-      });
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
+                  .containsExactlyInAnyOrder(
+                      Tuple.tuple(BPMN_START_EVENT_ID, false), Tuple.tuple(USER_TASK_ID_ONE, true));
+            });
   }
 
   @Test
@@ -333,7 +347,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final OffsetDateTime endDateTime = LocalDateUtil.getCurrentDateTime();
     final String ingestedEndEventId = ingestTestEvent(FINISHED_EVENT, endDateTime);
 
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     ingestTestEvent("randomOtherEvent", LocalDateUtil.getCurrentDateTime());
     ingestTestEvent("evenAnotherEvent", LocalDateUtil.getCurrentDateTime());
@@ -347,46 +362,47 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .usingRecursiveComparison()
-            .ignoringFields(
-              ProcessInstanceDto.Fields.flowNodeInstances,
-              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
-              EventProcessInstanceDto.Fields.correlatedEventsById
-            )
-            .isEqualTo(createExpectedEventProcessInstanceForTraceId(
-              eventProcessMappingId,
-              startDateTime,
-              endDateTime,
-              PROCESS_INSTANCE_STATE_COMPLETED
-            ));
-          assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_START_EVENT_ID,
-                "startEvent",
-                ingestedStartEventId
-                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_END_EVENT_ID,
-                "endEvent",
-                ingestedEndEventId
-                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
-            );
-        }
-      );
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  .usingRecursiveComparison()
+                  .ignoringFields(
+                      ProcessInstanceDto.Fields.flowNodeInstances,
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      EventProcessInstanceDto.Fields.correlatedEventsById)
+                  .isEqualTo(
+                      createExpectedEventProcessInstanceForTraceId(
+                          eventProcessMappingId,
+                          startDateTime,
+                          endDateTime,
+                          PROCESS_INSTANCE_STATE_COMPLETED));
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .containsOnly(
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_START_EVENT_ID,
+                              "startEvent",
+                              ingestedStartEventId)
+                          .setStartDate(startDateTime)
+                          .setEndDate(startDateTime)
+                          .setTotalDurationInMs(0L),
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_END_EVENT_ID,
+                              "endEvent",
+                              ingestedEndEventId)
+                          .setStartDate(endDateTime)
+                          .setEndDate(endDateTime)
+                          .setTotalDurationInMs(0L));
+            });
   }
 
   @Test
@@ -394,7 +410,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // given
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
 
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
@@ -416,47 +433,48 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .usingRecursiveComparison()
-            .ignoringFields(
-              ProcessInstanceDto.Fields.flowNodeInstances,
-              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
-              EventProcessInstanceDto.Fields.correlatedEventsById
-            )
-            .isEqualTo(createExpectedEventProcessInstanceForTraceId(
-              eventProcessMappingId,
-              startDateTime,
-              endDateTime,
-              PROCESS_INSTANCE_STATE_COMPLETED
-            ));
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  .usingRecursiveComparison()
+                  .ignoringFields(
+                      ProcessInstanceDto.Fields.flowNodeInstances,
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      EventProcessInstanceDto.Fields.correlatedEventsById)
+                  .isEqualTo(
+                      createExpectedEventProcessInstanceForTraceId(
+                          eventProcessMappingId,
+                          startDateTime,
+                          endDateTime,
+                          PROCESS_INSTANCE_STATE_COMPLETED));
 
-          assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_START_EVENT_ID,
-                "startEvent",
-                ingestedStartEventId
-                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_END_EVENT_ID,
-                "endEvent",
-                ingestedEndEventId
-                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
-            );
-        }
-      );
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .containsOnly(
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_START_EVENT_ID,
+                              "startEvent",
+                              ingestedStartEventId)
+                          .setStartDate(startDateTime)
+                          .setEndDate(startDateTime)
+                          .setTotalDurationInMs(0L),
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_END_EVENT_ID,
+                              "endEvent",
+                              ingestedEndEventId)
+                          .setStartDate(endDateTime)
+                          .setEndDate(endDateTime)
+                          .setTotalDurationInMs(0L));
+            });
   }
 
   @Test
@@ -464,7 +482,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // given
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
 
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
@@ -488,47 +507,48 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .usingRecursiveComparison()
-            .ignoringFields(
-              ProcessInstanceDto.Fields.flowNodeInstances,
-              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
-              EventProcessInstanceDto.Fields.correlatedEventsById
-            )
-            .isEqualTo(createExpectedEventProcessInstanceForTraceId(
-              eventProcessMappingId,
-              startDateTime,
-              updatedEndDateTime,
-              PROCESS_INSTANCE_STATE_COMPLETED
-            ));
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  .usingRecursiveComparison()
+                  .ignoringFields(
+                      ProcessInstanceDto.Fields.flowNodeInstances,
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      EventProcessInstanceDto.Fields.correlatedEventsById)
+                  .isEqualTo(
+                      createExpectedEventProcessInstanceForTraceId(
+                          eventProcessMappingId,
+                          startDateTime,
+                          updatedEndDateTime,
+                          PROCESS_INSTANCE_STATE_COMPLETED));
 
-          assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_START_EVENT_ID,
-                "startEvent",
-                ingestedStartEventId
-                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_END_EVENT_ID,
-                "endEvent",
-                ingestedEndEventId
-                ).setStartDate(updatedEndDateTime).setEndDate(updatedEndDateTime).setTotalDurationInMs(0L)
-            );
-        }
-      );
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .containsOnly(
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_START_EVENT_ID,
+                              "startEvent",
+                              ingestedStartEventId)
+                          .setStartDate(startDateTime)
+                          .setEndDate(startDateTime)
+                          .setTotalDurationInMs(0L),
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_END_EVENT_ID,
+                              "endEvent",
+                              ingestedEndEventId)
+                          .setStartDate(updatedEndDateTime)
+                          .setEndDate(updatedEndDateTime)
+                          .setTotalDurationInMs(0L));
+            });
   }
 
   @Test
@@ -541,7 +561,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final OffsetDateTime startDateTime = LocalDateUtil.getCurrentDateTime();
     final String ingestedStartEventId = ingestTestEvent(STARTED_EVENT, startDateTime);
 
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
@@ -552,36 +573,37 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .usingRecursiveComparison()
-            .ignoringFields(
-              ProcessInstanceDto.Fields.flowNodeInstances,
-              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
-              EventProcessInstanceDto.Fields.correlatedEventsById
-            )
-            .isEqualTo(createExpectedEventProcessInstanceForTraceId(
-              eventProcessMappingId,
-              startDateTime,
-              null,
-              PROCESS_INSTANCE_STATE_ACTIVE
-            ));
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  .usingRecursiveComparison()
+                  .ignoringFields(
+                      ProcessInstanceDto.Fields.flowNodeInstances,
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      EventProcessInstanceDto.Fields.correlatedEventsById)
+                  .isEqualTo(
+                      createExpectedEventProcessInstanceForTraceId(
+                          eventProcessMappingId,
+                          startDateTime,
+                          null,
+                          PROCESS_INSTANCE_STATE_ACTIVE));
 
-          assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(new FlowNodeInstanceDto(
-              eventProcessMappingId,
-              "1",
-              null,
-              processInstanceDto.getProcessInstanceId(),
-              BPMN_START_EVENT_ID,
-              "startEvent",
-              ingestedStartEventId
-              ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L));
-        }
-      );
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .containsOnly(
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_START_EVENT_ID,
+                              "startEvent",
+                              ingestedStartEventId)
+                          .setStartDate(startDateTime)
+                          .setEndDate(startDateTime)
+                          .setTotalDurationInMs(0L));
+            });
   }
 
   @Test
@@ -593,7 +615,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final OffsetDateTime startDateTime = LocalDateUtil.getCurrentDateTime();
     final String ingestedStartEventId = ingestTestEvent(STARTED_EVENT, startDateTime);
 
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
@@ -611,47 +634,48 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .usingRecursiveComparison()
-            .ignoringFields(
-              ProcessInstanceDto.Fields.flowNodeInstances,
-              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
-              EventProcessInstanceDto.Fields.correlatedEventsById
-            )
-            .isEqualTo(createExpectedEventProcessInstanceForTraceId(
-              eventProcessMappingId,
-              startDateTime,
-              endDateTime,
-              PROCESS_INSTANCE_STATE_COMPLETED
-            ));
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  .usingRecursiveComparison()
+                  .ignoringFields(
+                      ProcessInstanceDto.Fields.flowNodeInstances,
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      EventProcessInstanceDto.Fields.correlatedEventsById)
+                  .isEqualTo(
+                      createExpectedEventProcessInstanceForTraceId(
+                          eventProcessMappingId,
+                          startDateTime,
+                          endDateTime,
+                          PROCESS_INSTANCE_STATE_COMPLETED));
 
-          assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_START_EVENT_ID,
-                "startEvent",
-                ingestedStartEventId
-                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
-              new FlowNodeInstanceDto(
-                eventProcessMappingId,
-                "1",
-                null,
-                processInstanceDto.getProcessInstanceId(),
-                BPMN_END_EVENT_ID,
-                "endEvent",
-                ingestedEndEventId
-                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
-            );
-        }
-      );
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .containsOnly(
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_START_EVENT_ID,
+                              "startEvent",
+                              ingestedStartEventId)
+                          .setStartDate(startDateTime)
+                          .setEndDate(startDateTime)
+                          .setTotalDurationInMs(0L),
+                      new FlowNodeInstanceDto(
+                              eventProcessMappingId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_END_EVENT_ID,
+                              "endEvent",
+                              ingestedEndEventId)
+                          .setStartDate(endDateTime)
+                          .setEndDate(endDateTime)
+                          .setTotalDurationInMs(0L));
+            });
   }
 
   @Test
@@ -674,85 +698,89 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .usingRecursiveComparison()
-            .ignoringFields(
-              ProcessInstanceDto.Fields.flowNodeInstances,
-              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
-              EventProcessInstanceDto.Fields.correlatedEventsById
-            )
-            .isEqualTo(createExpectedEventProcessInstanceForTraceId(
-              eventProcessId,
-              null,
-              endDateTime,
-              PROCESS_INSTANCE_STATE_COMPLETED
-            ));
-          assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(new FlowNodeInstanceDto(
-              eventProcessId,
-              "1",
-              null,
-              processInstanceDto.getProcessInstanceId(),
-              BPMN_END_EVENT_ID,
-              "endEvent",
-              ingestedEndEventId
-              ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L));
-        });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            processInstanceDto -> {
+              assertThat(processInstanceDto)
+                  .usingRecursiveComparison()
+                  .ignoringFields(
+                      ProcessInstanceDto.Fields.flowNodeInstances,
+                      EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+                      EventProcessInstanceDto.Fields.correlatedEventsById)
+                  .isEqualTo(
+                      createExpectedEventProcessInstanceForTraceId(
+                          eventProcessId, null, endDateTime, PROCESS_INSTANCE_STATE_COMPLETED));
+              assertThat(processInstanceDto.getFlowNodeInstances())
+                  .containsOnly(
+                      new FlowNodeInstanceDto(
+                              eventProcessId,
+                              "1",
+                              null,
+                              processInstanceDto.getProcessInstanceId(),
+                              BPMN_END_EVENT_ID,
+                              "endEvent",
+                              ingestedEndEventId)
+                          .setStartDate(endDateTime)
+                          .setEndDate(endDateTime)
+                          .setTotalDurationInMs(0L));
+            });
   }
 
-  private EventProcessInstanceDto createExpectedEventProcessInstanceForTraceId(final String eventProcessId,
-                                                                               final OffsetDateTime startDateTime,
-                                                                               final OffsetDateTime endDateTime,
-                                                                               final String state) {
+  private EventProcessInstanceDto createExpectedEventProcessInstanceForTraceId(
+      final String eventProcessId,
+      final OffsetDateTime startDateTime,
+      final OffsetDateTime endDateTime,
+      final String state) {
     Long duration = null;
     if (startDateTime != null && endDateTime != null) {
       duration = startDateTime.until(endDateTime, ChronoUnit.MILLIS);
     }
     return EventProcessInstanceDto.eventProcessInstanceBuilder()
-      .processDefinitionId(eventProcessId)
-      .processDefinitionKey(eventProcessId)
-      .processDefinitionVersion("1")
-      .processInstanceId(MY_TRACE_ID_1)
-      .duration(duration)
-      .startDate(startDateTime)
-      .endDate(endDateTime)
-      .state(state)
-      .variables(Collections.singletonList(
-        SimpleProcessVariableDto.builder()
-          .id(VARIABLE_ID)
-          .name(VARIABLE_ID)
-          .value(Collections.singletonList(VARIABLE_VALUE))
-          .type(VARIABLE_VALUE.getClass().getSimpleName())
-          .version(1L)
-          .build()
-      ))
-      .build();
+        .processDefinitionId(eventProcessId)
+        .processDefinitionKey(eventProcessId)
+        .processDefinitionVersion("1")
+        .processInstanceId(MY_TRACE_ID_1)
+        .duration(duration)
+        .startDate(startDateTime)
+        .endDate(endDateTime)
+        .state(state)
+        .variables(
+            Collections.singletonList(
+                SimpleProcessVariableDto.builder()
+                    .id(VARIABLE_ID)
+                    .name(VARIABLE_ID)
+                    .value(Collections.singletonList(VARIABLE_VALUE))
+                    .type(VARIABLE_VALUE.getClass().getSimpleName())
+                    .version(1L)
+                    .build()))
+        .build();
   }
 
-  private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
-    // Since we're not really creating a new index here, but just instantiating it in order to get the name, it's not
+  private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(
+      final String eventProcessPublishStateId) {
+    // Since we're not really creating a new index here, but just instantiating it in order to get
+    // the name, it's not
     // a database dependency that we are instantiating the ES index here.
     return databaseIntegrationTestExtension
-      .getIndexNameService()
-      .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndexES(eventProcessPublishStateId));
+        .getIndexNameService()
+        .getOptimizeIndexNameWithVersion(
+            new EventProcessInstanceIndexES(eventProcessPublishStateId));
   }
 
   private String getOptimizeIndexAliasForIndexName(final String indexName) {
     return databaseIntegrationTestExtension
-      .getIndexNameService()
-      .getOptimizeIndexAliasForIndex(indexName);
+        .getIndexNameService()
+        .getOptimizeIndexAliasForIndex(indexName);
   }
 
   @SneakyThrows
   private boolean eventProcessInstanceIndicesExist() {
-    final String indexAlias = databaseIntegrationTestExtension
-      .getIndexNameService()
-      .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*";
+    final String indexAlias =
+        databaseIntegrationTestExtension
+                .getIndexNameService()
+                .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+            + "*";
     return databaseIntegrationTestExtension.indexExists(indexAlias);
   }
-
 }

@@ -5,19 +5,19 @@
  */
 package org.camunda.optimize.util;
 
+import java.nio.charset.StandardCharsets;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
-
-import java.nio.charset.StandardCharsets;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FileReaderUtil {
 
   @SneakyThrows
   public static String readFile(final String pathString) {
-    return IOUtils.toString(FileReaderUtil.class.getResource(pathString).toURI(), StandardCharsets.UTF_8);
+    return IOUtils.toString(
+        FileReaderUtil.class.getResource(pathString).toURI(), StandardCharsets.UTF_8);
   }
 
   public static String readFileWithWindowsLineSeparator(String path) {

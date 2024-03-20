@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.jetty;
 
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import java.util.Collections;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
-
-import java.util.Collections;
-
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @DirtiesContext
 @Tag(OPENSEARCH_PASSING)
@@ -22,7 +21,10 @@ public class SpringBootCompressionIT extends AbstractPlatformIT {
   public void optimizeBootsWithEnabledCompression() {
     startAndUseNewOptimizeInstance(Collections.singletonMap("server.compression.enabled", "true"));
 
-    embeddedOptimizeExtension.getRequestExecutor().buildCheckImportStatusRequest().execute(200).close();
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildCheckImportStatusRequest()
+        .execute(200)
+        .close();
   }
-
 }

@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.process.combined;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -19,17 +24,12 @@ import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDefinitionIT {
 
   protected abstract ProcessReportDataType getReportDataType();
 
-  protected abstract void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMillis);
+  protected abstract void startInstanceAndModifyRelevantDurations(
+      final String definitionId, final int durationInMillis);
 
   @Test
   public void distinctRangesGetMerged() {
@@ -45,28 +45,33 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     importAllEngineEntitiesFromScratch();
 
     // when
-    final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
-      firstDefinition.getKey(), secondDefinition.getKey()
-    );
-    final IdResponseDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+    final CombinedReportDefinitionRequestDto combinedReport =
+        createCombinedReport(firstDefinition.getKey(), secondDefinition.getKey());
+    final IdResponseDto response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateCombinedReportRequest(combinedReport)
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
-      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
+        reportClient
+            .<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId())
+            .getResult();
     assertThat(result.getData().values())
-      .hasSize(2)
-      .allSatisfy(singleReportResult -> {
-        assertThat(singleReportResult.getResult().getFirstMeasureData())
-          .hasSize(10)
-          .extracting(MapResultEntryDto::getKey)
-          .first().isEqualTo(createDurationBucketKey(1000));
-        assertThat(singleReportResult.getResult().getFirstMeasureData())
-          .extracting(MapResultEntryDto::getKey)
-          .last().isEqualTo(createDurationBucketKey(10_000));
-      });
+        .hasSize(2)
+        .allSatisfy(
+            singleReportResult -> {
+              assertThat(singleReportResult.getResult().getFirstMeasureData())
+                  .hasSize(10)
+                  .extracting(MapResultEntryDto::getKey)
+                  .first()
+                  .isEqualTo(createDurationBucketKey(1000));
+              assertThat(singleReportResult.getResult().getFirstMeasureData())
+                  .extracting(MapResultEntryDto::getKey)
+                  .last()
+                  .isEqualTo(createDurationBucketKey(10_000));
+            });
   }
 
   @Test
@@ -83,29 +88,35 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     importAllEngineEntitiesFromScratch();
 
     // when
-    final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
-      firstDefinition.getKey(), secondDefinition.getKey()
-    );
-    final IdResponseDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+    final CombinedReportDefinitionRequestDto combinedReport =
+        createCombinedReport(firstDefinition.getKey(), secondDefinition.getKey());
+    final IdResponseDto response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateCombinedReportRequest(combinedReport)
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
-      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
+        reportClient
+            .<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId())
+            .getResult();
     assertThat(result.getData().values())
-      .hasSize(2)
-      .allSatisfy(singleReportResult -> {
-        assertThat(singleReportResult.getResult().getFirstMeasureData())
-          // expecting the range to be from 1000ms (nearest lower base 10 to min value) to 10000ms (max value)
-          .hasSize(10)
-          .extracting(MapResultEntryDto::getKey)
-          .first().isEqualTo(createDurationBucketKey(1000));
-        assertThat(singleReportResult.getResult().getFirstMeasureData())
-          .extracting(MapResultEntryDto::getKey)
-          .last().isEqualTo(createDurationBucketKey(10_000));
-      });
+        .hasSize(2)
+        .allSatisfy(
+            singleReportResult -> {
+              assertThat(singleReportResult.getResult().getFirstMeasureData())
+                  // expecting the range to be from 1000ms (nearest lower base 10 to min value) to
+                  // 10000ms (max value)
+                  .hasSize(10)
+                  .extracting(MapResultEntryDto::getKey)
+                  .first()
+                  .isEqualTo(createDurationBucketKey(1000));
+              assertThat(singleReportResult.getResult().getFirstMeasureData())
+                  .extracting(MapResultEntryDto::getKey)
+                  .last()
+                  .isEqualTo(createDurationBucketKey(10_000));
+            });
   }
 
   @Test
@@ -122,33 +133,39 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     importAllEngineEntitiesFromScratch();
 
     // when
-    final CombinedReportDefinitionRequestDto combinedReport = createCombinedReport(
-      firstDefinition.getKey(), secondDefinition.getKey()
-    );
-    final IdResponseDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+    final CombinedReportDefinitionRequestDto combinedReport =
+        createCombinedReport(firstDefinition.getKey(), secondDefinition.getKey());
+    final IdResponseDto response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateCombinedReportRequest(combinedReport)
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     final CombinedProcessReportResultDataDto<List<MapResultEntryDto>> result =
-      reportClient.<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId()).getResult();
+        reportClient
+            .<List<MapResultEntryDto>>evaluateCombinedReportById(response.getId())
+            .getResult();
     assertThat(result.getData().values())
-      .hasSize(2)
-      .allSatisfy(singleReportResult -> {
-        assertThat(singleReportResult.getResult().getFirstMeasureData())
-          // expecting the range to be from 10_000ms (nearest lower base 10 to minimum) to 100_000ms (max value)
-          .hasSize(10)
-          .extracting(MapResultEntryDto::getKey)
-          .first().isEqualTo(createDurationBucketKey(10_000));
-        assertThat(singleReportResult.getResult().getFirstMeasureData())
-          .extracting(MapResultEntryDto::getKey)
-          .last().isEqualTo(createDurationBucketKey(100_000));
-      });
+        .hasSize(2)
+        .allSatisfy(
+            singleReportResult -> {
+              assertThat(singleReportResult.getResult().getFirstMeasureData())
+                  // expecting the range to be from 10_000ms (nearest lower base 10 to minimum) to
+                  // 100_000ms (max value)
+                  .hasSize(10)
+                  .extracting(MapResultEntryDto::getKey)
+                  .first()
+                  .isEqualTo(createDurationBucketKey(10_000));
+              assertThat(singleReportResult.getResult().getFirstMeasureData())
+                  .extracting(MapResultEntryDto::getKey)
+                  .last()
+                  .isEqualTo(createDurationBucketKey(100_000));
+            });
   }
 
-  private CombinedReportDefinitionRequestDto createCombinedReport(final String firstReportDefinitionKey,
-                                                                  final String secondReportDefinitionKey) {
+  private CombinedReportDefinitionRequestDto createCombinedReport(
+      final String firstReportDefinitionKey, final String secondReportDefinitionKey) {
     final String reportId1 = createAndStoreDefaultReportDefinition(firstReportDefinitionKey);
     final String reportId2 = createAndStoreDefaultReportDefinition(secondReportDefinitionKey);
 
@@ -158,7 +175,8 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
     reportIds.add(new CombinedReportItemDto(reportId2));
 
     combinedReportData.setReports(reportIds);
-    final CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
+    final CombinedReportDefinitionRequestDto combinedReport =
+        new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
     return combinedReport;
   }
@@ -168,16 +186,17 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey) {
-    final ProcessReportDataDto reportData = createReport(processDefinitionKey, ReportConstants.ALL_VERSIONS);
+    final ProcessReportDataDto reportData =
+        createReport(processDefinitionKey, ReportConstants.ALL_VERSIONS);
     return createNewReport(reportData);
   }
 
-  private ProcessReportDataDto createReport(final String processKey, final String definitionVersion) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processKey)
-      .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(getReportDataType())
-      .build();
+  private ProcessReportDataDto createReport(
+      final String processKey, final String definitionVersion) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+        .setProcessDefinitionKey(processKey)
+        .setProcessDefinitionVersion(definitionVersion)
+        .setReportDataType(getReportDataType())
+        .build();
   }
 }

@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.plugin.elasticsearch;
 
+import static jakarta.ws.rs.HttpMethod.GET;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockserver.model.HttpRequest.request;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClientConfiguration;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -16,14 +23,6 @@ import org.mockserver.model.Header;
 import org.mockserver.model.NottableString;
 import org.mockserver.model.RequestDefinition;
 import org.mockserver.verify.VerificationTimes;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import static jakarta.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockserver.model.HttpRequest.request;
 
 public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
 
@@ -59,20 +58,20 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     dbMockServer.clear(request());
 
     // when
-    embeddedOptimizeExtension.getBean(OptimizeElasticsearchClientConfiguration.class)
-      .createOptimizeElasticsearchClient(new BackoffCalculator(1, 1));
+    embeddedOptimizeExtension
+        .getBean(OptimizeElasticsearchClientConfiguration.class)
+        .createOptimizeElasticsearchClient(new BackoffCalculator(1, 1));
     // clear the version validation request the client does on first use, which bypasses our plugins
     // see RestHighLevelClient#versionValidationFuture
     dbMockServer.clear(request("/").withMethod(GET));
 
     // then
     dbMockServer.verify(
-      request().withHeader(new Header("Authorization", "Bearer fixedToken")), VerificationTimes.atLeast(1)
-    );
+        request().withHeader(new Header("Authorization", "Bearer fixedToken")),
+        VerificationTimes.atLeast(1));
     // ensure there was no request without the header
     dbMockServer.verify(
-      request().withHeader(NottableString.not("Authorization")), VerificationTimes.exactly(0)
-    );
+        request().withHeader(NottableString.not("Authorization")), VerificationTimes.exactly(0));
   }
 
   @Test
@@ -92,10 +91,13 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     final RequestDefinition[] allRequests = dbMockServer.retrieveRecordedRequests(null);
     assertThat(allRequests).hasSizeGreaterThan(1);
     IntStream.range(0, allRequests.length)
-      .forEach(integerSuffix -> dbMockServer.verify(
-        request().withHeader(new Header("Authorization", "Bearer dynamicToken_" + integerSuffix)),
-        VerificationTimes.once()
-      ));
+        .forEach(
+            integerSuffix ->
+                dbMockServer.verify(
+                    request()
+                        .withHeader(
+                            new Header("Authorization", "Bearer dynamicToken_" + integerSuffix)),
+                    VerificationTimes.once()));
   }
 
   @Test
@@ -113,16 +115,19 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     statusClient.getStatus();
 
     // then
-    dbMockServer.verify(request().withHeaders(
-      new Header("Authorization", "Bearer fixedToken"),
-      new Header("CustomHeader", "customValue")
-    ), VerificationTimes.atLeast(1));
+    dbMockServer.verify(
+        request()
+            .withHeaders(
+                new Header("Authorization", "Bearer fixedToken"),
+                new Header("CustomHeader", "customValue")),
+        VerificationTimes.atLeast(1));
   }
 
-  private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(String... basePackages) {
+  private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(
+      String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
-    // We don't need to reload the configuration as the MockServer initialization already does this immediately after
+    // We don't need to reload the configuration as the MockServer initialization already does this
+    // immediately after
     configurationService.setElasticsearchCustomHeaderPluginBasePackages(basePackagesList);
   }
-
 }

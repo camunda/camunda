@@ -39,16 +39,19 @@ public class ImportIT extends AbstractImportIT {
   private static final String START_EVENT = "startEvent";
   private static final String USER_TASK_1 = "userTask1";
   private static final String PROC_DEF_KEY = "aProcess";
+
   @RegisterExtension
   @Order(5)
   protected final LogCapturer logCapturer =
       LogCapturer.create().captureForType(VariableUpdateDatabaseImportJob.class);
+
   private int originalNestedDocLimit;
 
   @BeforeEach
   public void setup() {
-    originalNestedDocLimit = databaseIntegrationTestExtension.getNestedDocumentLimit(
-        embeddedOptimizeExtension.getConfigurationService());
+    originalNestedDocLimit =
+        databaseIntegrationTestExtension.getNestedDocumentLimit(
+            embeddedOptimizeExtension.getConfigurationService());
   }
 
   @AfterEach
@@ -59,12 +62,13 @@ public class ImportIT extends AbstractImportIT {
   @Test
   public void nestedDocsLimitExceptionLogIncludesConfigHint() {
     // given a process instance with more nested docs than the limit
-    embeddedOptimizeExtension.getConfigurationService()
+    embeddedOptimizeExtension
+        .getConfigurationService()
         .setSkipDataAfterNestedDocLimitReached(false);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
-    final ProcessInstanceEngineDto instance = deployAndStartSimpleTwoUserTaskProcessWithVariables(
-        variables);
+    final ProcessInstanceEngineDto instance =
+        deployAndStartSimpleTwoUserTaskProcessWithVariables(variables);
     // import first instance to create the index
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
@@ -77,15 +81,17 @@ public class ImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.startContinuousImportScheduling();
     Awaitility.dontCatchUncaughtExceptions()
         .timeout(10, TimeUnit.SECONDS)
-        .untilAsserted(() -> {
-          final String regex = "If you are experiencing failures due to too many nested documents, try carefully increasing the configured nested object limit \\((es|opensearch)\\.settings\\.index\\.nested_documents_limit\\) or enabling the skipping of documents that have reached this limit during import \\(import\\.skipDataAfterNestedDocLimitReached\\)\\. See Optimize documentation for details\\.";
-          final Pattern pattern = Pattern.compile(regex);
-          assertThat(logCapturer.getEvents())
-              .extracting(LoggingEvent::getThrowable)
-              .extracting(Throwable::getMessage)
-              .isNotEmpty()
-              .anyMatch(msg -> pattern.matcher(msg).find());
-        });
+        .untilAsserted(
+            () -> {
+              final String regex =
+                  "If you are experiencing failures due to too many nested documents, try carefully increasing the configured nested object limit \\((es|opensearch)\\.settings\\.index\\.nested_documents_limit\\) or enabling the skipping of documents that have reached this limit during import \\(import\\.skipDataAfterNestedDocLimitReached\\)\\. See Optimize documentation for details\\.";
+              final Pattern pattern = Pattern.compile(regex);
+              assertThat(logCapturer.getEvents())
+                  .extracting(LoggingEvent::getThrowable)
+                  .extracting(Throwable::getMessage)
+                  .isNotEmpty()
+                  .anyMatch(msg -> pattern.matcher(msg).find());
+            });
   }
 
   @Test
@@ -96,19 +102,20 @@ public class ImportIT extends AbstractImportIT {
     // import instance to create the index
     importAllEngineEntitiesFromScratch();
     // get the current nested document count for first instance
-    final ProcessInstanceDto firstInstanceOnFirstRoundImport = getProcessInstanceForId(
-        firstInstance.getId());
-    final int currentNestedDocCount = getNestedDocumentCountForProcessInstance(
-        firstInstanceOnFirstRoundImport);
+    final ProcessInstanceDto firstInstanceOnFirstRoundImport =
+        getProcessInstanceForId(firstInstance.getId());
+    final int currentNestedDocCount =
+        getNestedDocumentCountForProcessInstance(firstInstanceOnFirstRoundImport);
     // the instance is incomplete so is initially active
-    assertThat(firstInstanceOnFirstRoundImport.getState()).isEqualTo(
-        ProcessInstanceConstants.ACTIVE_STATE);
+    assertThat(firstInstanceOnFirstRoundImport.getState())
+        .isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
 
     assertThat(currentNestedDocCount).isGreaterThan(0);
     // update index setting so no more nested documents can be stored
-    updateProcessInstanceNestedDocLimit(firstInstance.getProcessDefinitionKey(),
-        currentNestedDocCount);
-    // finished both user tasks so we would expect a second user task and end event flow node instances on next import
+    updateProcessInstanceNestedDocLimit(
+        firstInstance.getProcessDefinitionKey(), currentNestedDocCount);
+    // finished both user tasks so we would expect a second user task and end event flow node
+    // instances on next import
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
     // and start a second instance, which should still be imported
@@ -119,13 +126,13 @@ public class ImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then the first instance does not get updated with new nested data
-    final ProcessInstanceDto firstInstanceAfterSecondRoundImport = getProcessInstanceForId(
-        firstInstance.getId());
+    final ProcessInstanceDto firstInstanceAfterSecondRoundImport =
+        getProcessInstanceForId(firstInstance.getId());
     assertThat(firstInstanceAfterSecondRoundImport.getFlowNodeInstances())
         .isEqualTo(firstInstanceOnFirstRoundImport.getFlowNodeInstances());
     // but the parent document state can still be updated
-    assertThat(firstInstanceAfterSecondRoundImport.getState()).isEqualTo(
-        ProcessInstanceConstants.COMPLETED_STATE);
+    assertThat(firstInstanceAfterSecondRoundImport.getState())
+        .isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
     // and the second instance can be imported included its nested document
     assertThat(getProcessInstanceForId(secondInstance.getId()).getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId)
@@ -134,8 +141,12 @@ public class ImportIT extends AbstractImportIT {
 
   @Test
   public void importIsNotBlockedIfDefinitionDeletedAndNotImported() {
-    // given a definition that was deleted in engine before it could be imported, but instance data remains in engine
-    embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
+    // given a definition that was deleted in engine before it could be imported, but instance data
+    // remains in engine
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getConfiguredEngines()
+        .values()
         .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
     embeddedOptimizeExtension.reloadConfiguration();
 
@@ -149,7 +160,8 @@ public class ImportIT extends AbstractImportIT {
         instanceFromDeletedProcess.getId());
     incidentClient.createOpenIncidentForInstancesWithBusinessKey(
         instanceFromDeletedProcess.getBusinessKey());
-    // need to complete usertasks because definitions with running instances cannot be deleted without cascade
+    // need to complete usertasks because definitions with running instances cannot be deleted
+    // without cascade
     engineIntegrationExtension.completeUserTaskWithoutClaim(instanceFromDeletedProcess.getId());
     engineIntegrationExtension.deleteProcessDefinition(
         instanceFromDeletedProcess.getDefinitionId());
@@ -162,24 +174,25 @@ public class ImportIT extends AbstractImportIT {
   }
 
   private int getNestedDocumentCountForProcessInstance(final ProcessInstanceDto instance) {
-    return instance.getFlowNodeInstances().size() + instance.getVariables().size()
+    return instance.getFlowNodeInstances().size()
+        + instance.getVariables().size()
         + instance.getIncidents().size();
   }
 
   private ProcessInstanceDto getProcessInstanceForId(final String processInstanceId) {
-    final List<ProcessInstanceDto> instances = databaseIntegrationTestExtension.getAllProcessInstances()
-        .stream()
-        .filter(instance -> instance.getProcessInstanceId().equals(processInstanceId))
-        .collect(Collectors.toList());
+    final List<ProcessInstanceDto> instances =
+        databaseIntegrationTestExtension.getAllProcessInstances().stream()
+            .filter(instance -> instance.getProcessInstanceId().equals(processInstanceId))
+            .collect(Collectors.toList());
     assertThat(instances).hasSize(1);
     return instances.get(0);
   }
 
   @SneakyThrows
-  private void updateProcessInstanceNestedDocLimit(final String processDefinitionKey,
-      final int nestedDocLimit) {
-    databaseIntegrationTestExtension.updateProcessInstanceNestedDocLimit(processDefinitionKey,
-        nestedDocLimit, embeddedOptimizeExtension.getConfigurationService());
+  private void updateProcessInstanceNestedDocLimit(
+      final String processDefinitionKey, final int nestedDocLimit) {
+    databaseIntegrationTestExtension.updateProcessInstanceNestedDocLimit(
+        processDefinitionKey, nestedDocLimit, embeddedOptimizeExtension.getConfigurationService());
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcess() {
@@ -191,5 +204,4 @@ public class ImportIT extends AbstractImportIT {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
         BpmnModels.getDoubleUserTaskDiagram(PROC_DEF_KEY), variables);
   }
-
 }

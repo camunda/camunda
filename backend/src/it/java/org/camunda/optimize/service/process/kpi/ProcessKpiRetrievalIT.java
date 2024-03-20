@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.process.kpi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
@@ -30,15 +38,6 @@ import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
 public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
 
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefKey";
@@ -53,40 +52,45 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey)
-      .containsExactly(PROCESS_DEFINITION_KEY);
-    assertThat(processes.get(0).getKpis()).containsExactlyInAnyOrder(
-      createExpectedKpiResponse(reportId1, "1"),
-      createExpectedKpiResponse(reportId2, "2")
-    );
+    assertThat(processes)
+        .hasSize(1)
+        .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey)
+        .containsExactly(PROCESS_DEFINITION_KEY);
+    assertThat(processes.get(0).getKpis())
+        .containsExactlyInAnyOrder(
+            createExpectedKpiResponse(reportId1, "1"), createExpectedKpiResponse(reportId2, "2"));
   }
 
   @Test
   public void getKpisForDefinitionIncludingCollectionKpiReports() {
     // given
-    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
-      getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+        engineIntegrationExtension.deployAndStartProcess(
+            getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processInstanceEngineDto);
+    final String collectionId =
+        collectionClient.createNewCollectionWithProcessScope(processInstanceEngineDto);
     String reportId1 = createKpiReport("1", PROCESS_DEFINITION_KEY);
     String reportId2 = createReport("2", true, PROCESS_DEFINITION_KEY, collectionId);
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey)
-      .containsExactly(PROCESS_DEFINITION_KEY);
-    assertThat(processes.get(0).getKpis()).containsExactlyInAnyOrder(
-      createExpectedKpiResponse(reportId1, "1", null),
-      createExpectedKpiResponse(reportId2, "2", collectionId)
-    );
+    assertThat(processes)
+        .hasSize(1)
+        .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey)
+        .containsExactly(PROCESS_DEFINITION_KEY);
+    assertThat(processes.get(0).getKpis())
+        .containsExactlyInAnyOrder(
+            createExpectedKpiResponse(reportId1, "1", null),
+            createExpectedKpiResponse(reportId2, "2", collectionId));
   }
 
   @Test
@@ -95,16 +99,16 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     String reportId1 = createKpiReport("1", PROCESS_DEFINITION_KEY);
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("1");
-    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
-      new RollingDateFilterStartDto(4L, DateUnit.DAYS)
-    );
+    final RollingDateFilterDataDto dateFilterDataDto =
+        new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateUnit.DAYS));
     final InstanceStartDateFilterDto startDateFilterDto = new InstanceStartDateFilterDto();
     startDateFilterDto.setData(dateFilterDataDto);
     startDateFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
@@ -112,17 +116,18 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          PROCESS_DEFINITION_KEY,
-          List.of(createExpectedKpiResponse(reportId1, "1"))
-        )
-      );
+    assertThat(processes)
+        .hasSize(1)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getKpis)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(
+                PROCESS_DEFINITION_KEY, List.of(createExpectedKpiResponse(reportId1, "1"))));
   }
 
   @Test
@@ -135,17 +140,18 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          PROCESS_DEFINITION_KEY,
-          List.of(createExpectedKpiResponse(kpiReportId, "1"))
-        )
-      );
+    assertThat(processes)
+        .hasSize(1)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getKpis)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(
+                PROCESS_DEFINITION_KEY, List.of(createExpectedKpiResponse(kpiReportId, "1"))));
   }
 
   @Test
@@ -162,22 +168,29 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(2)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
-      .map(tuple2 -> Tuple.tuple(tuple2.toList().get(0), Set.copyOf((List) tuple2.toList().get(1))))
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          PROCESS_DEFINITION_KEY,
-          Set.of(createExpectedKpiResponse(reportId1, "1"), createExpectedKpiResponse(reportId2, "2"))
-        ),
-        Tuple.tuple(
-          defKey,
-          Set.of(createExpectedKpiResponse(reportId3, "1"), createExpectedKpiResponse(reportId4, "2"))
-        )
-      );
+    assertThat(processes)
+        .hasSize(2)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getKpis)
+        .map(
+            tuple2 ->
+                Tuple.tuple(tuple2.toList().get(0), Set.copyOf((List) tuple2.toList().get(1))))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(
+                PROCESS_DEFINITION_KEY,
+                Set.of(
+                    createExpectedKpiResponse(reportId1, "1"),
+                    createExpectedKpiResponse(reportId2, "2"))),
+            Tuple.tuple(
+                defKey,
+                Set.of(
+                    createExpectedKpiResponse(reportId3, "1"),
+                    createExpectedKpiResponse(reportId4, "2"))));
   }
 
   @Test
@@ -192,39 +205,50 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     String reportId2 = createKpiReportWithMeasures("2", ViewProperty.DURATION);
     String reportId3 = createKpiReportWithMeasures("3", ViewProperty.FREQUENCY);
     String reportId4 = createKpiReportWithMeasures("4", ViewProperty.PERCENTAGE);
-    String reportId5 = createKpiReportWithMeasuresAndFilters(
-      "5", ViewProperty.PERCENTAGE, addInstanceDateFilterToBuilder(ProcessFilterBuilder.filter(), now).buildList());
-    String reportId6 = createKpiReportWithMeasuresAndFilters(
-      "6", ViewProperty.PERCENTAGE, addNoIncidentFilterToBuilder(ProcessFilterBuilder.filter()).buildList());
-    String reportId7 = createKpiReportWithMeasuresAndFilters(
-      "7", ViewProperty.PERCENTAGE,
-      addNoIncidentFilterToBuilder(addInstanceDateFilterToBuilder(ProcessFilterBuilder.filter(), now)).buildList()
-    );
+    String reportId5 =
+        createKpiReportWithMeasuresAndFilters(
+            "5",
+            ViewProperty.PERCENTAGE,
+            addInstanceDateFilterToBuilder(ProcessFilterBuilder.filter(), now).buildList());
+    String reportId6 =
+        createKpiReportWithMeasuresAndFilters(
+            "6",
+            ViewProperty.PERCENTAGE,
+            addNoIncidentFilterToBuilder(ProcessFilterBuilder.filter()).buildList());
+    String reportId7 =
+        createKpiReportWithMeasuresAndFilters(
+            "7",
+            ViewProperty.PERCENTAGE,
+            addNoIncidentFilterToBuilder(
+                    addInstanceDateFilterToBuilder(ProcessFilterBuilder.filter(), now))
+                .buildList());
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).hasSize(1);
-    assertThat(processes.get(0).getKpis()).extracting(KpiResultDto::getReportId, KpiResultDto::getType)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(reportId1, KpiType.QUALITY),
-        Tuple.tuple(reportId2, KpiType.TIME),
-        Tuple.tuple(reportId3, KpiType.QUALITY),
-        Tuple.tuple(reportId4, KpiType.TIME),
-        Tuple.tuple(reportId5, KpiType.TIME),
-        Tuple.tuple(reportId6, KpiType.QUALITY),
-        Tuple.tuple(reportId7, KpiType.QUALITY)
-      );
+    assertThat(processes.get(0).getKpis())
+        .extracting(KpiResultDto::getReportId, KpiResultDto::getType)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(reportId1, KpiType.QUALITY),
+            Tuple.tuple(reportId2, KpiType.TIME),
+            Tuple.tuple(reportId3, KpiType.QUALITY),
+            Tuple.tuple(reportId4, KpiType.TIME),
+            Tuple.tuple(reportId5, KpiType.TIME),
+            Tuple.tuple(reportId6, KpiType.QUALITY),
+            Tuple.tuple(reportId7, KpiType.QUALITY));
   }
 
   @Test
   public void kpiUnitGetsReturned() {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    final ProcessInstanceEngineDto procInst = engineIntegrationExtension.deployAndStartProcess(
-      getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
+    final ProcessInstanceEngineDto procInst =
+        engineIntegrationExtension.deployAndStartProcess(
+            getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     engineDatabaseExtension.changeProcessInstanceStartAndEndDate(procInst.getId(), now, now);
     importAllEngineEntitiesFromScratch();
     ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
@@ -243,17 +267,16 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          PROCESS_DEFINITION_KEY,
-          List.of(expectedResponse)
-        )
-      );
+    assertThat(processes)
+        .hasSize(1)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getKpis)
+        .containsExactlyInAnyOrder(Tuple.tuple(PROCESS_DEFINITION_KEY, List.of(expectedResponse)));
   }
 
   @Test
@@ -262,27 +285,28 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     String reportId = createKpiReport("1", PROCESS_DEFINITION_KEY);
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("2");
     runKpiSchedulerAndRefreshIndices();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          PROCESS_DEFINITION_KEY,
-          List.of(createExpectedKpiResponse(reportId, "1"))
-        )
-      );
+    assertThat(processes)
+        .hasSize(1)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getKpis)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(PROCESS_DEFINITION_KEY, List.of(createExpectedKpiResponse(reportId, "1"))));
   }
 
   @Test
@@ -293,21 +317,19 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
-      new SingleProcessReportDefinitionRequestDto();
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+        new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("9999999");
     singleProcessReportDefinitionRequestDto.setData(reportDataDto);
     singleProcessReportDefinitionRequestDto.setId("someId");
     reportClient.createSingleProcessReportAsUser(
-      singleProcessReportDefinitionRequestDto,
-      KERMIT_USER,
-      KERMIT_USER
-    );
+        singleProcessReportDefinitionRequestDto, KERMIT_USER, KERMIT_USER);
     runKpiSchedulerAndRefreshIndices();
 
     // when
@@ -327,21 +349,24 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     targetDto.setValue("999");
     targetDto.setIsBelow(Boolean.TRUE);
     targetDto.setUnit(TargetValueUnit.HOURS);
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.setFilter(
-      ProcessFilterBuilder.filter()
-        .withDeletedIncident()
-        .filterLevel(FilterApplicationLevel.INSTANCE)
-        .add().buildList());
+        ProcessFilterBuilder.filter()
+            .withDeletedIncident()
+            .filterLevel(FilterApplicationLevel.INSTANCE)
+            .add()
+            .buildList());
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getDurationProgress().setTarget(targetDto);
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionRequestDto.setData(reportDataDto);
-    String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionRequestDto);
+    String reportId =
+        reportClient.createSingleProcessReport(singleProcessReportDefinitionRequestDto);
     runKpiSchedulerAndRefreshIndices();
 
     // when
@@ -358,13 +383,16 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     expectedKpiResponseDto.setMeasure(ViewProperty.DURATION);
     expectedKpiResponseDto.setUnit(TargetValueUnit.HOURS);
 
-    assertThat(processes).singleElement()
-      .satisfies(overviewDto -> {
-        assertThat(overviewDto.getProcessDefinitionKey()).isEqualTo(PROCESS_DEFINITION_KEY);
-        assertThat(overviewDto.getKpis()).singleElement()
-          .isEqualTo(expectedKpiResponseDto)
-          .satisfies(kpi -> assertThat(kpi.isTargetMet()).isFalse());
-      });
+    assertThat(processes)
+        .singleElement()
+        .satisfies(
+            overviewDto -> {
+              assertThat(overviewDto.getProcessDefinitionKey()).isEqualTo(PROCESS_DEFINITION_KEY);
+              assertThat(overviewDto.getKpis())
+                  .singleElement()
+                  .isEqualTo(expectedKpiResponseDto)
+                  .satisfies(kpi -> assertThat(kpi.isTargetMet()).isFalse());
+            });
   }
 
   @Test
@@ -372,13 +400,14 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.getConfiguration().setTargetValue(null);
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionRequestDto.setData(reportDataDto);
     reportClient.createSingleProcessReport(singleProcessReportDefinitionRequestDto);
     runKpiSchedulerAndRefreshIndices();
@@ -396,15 +425,16 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(null);
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionRequestDto.setData(reportDataDto);
     reportClient.createSingleProcessReport(singleProcessReportDefinitionRequestDto);
     runKpiSchedulerAndRefreshIndices();
@@ -414,7 +444,9 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
 
     // then
     assertThat(processes).hasSize(1);
-    assertThat(processes.get(0).getKpis()).singleElement().satisfies(kpiResult -> assertThat(kpiResult.isTargetMet()).isFalse());
+    assertThat(processes.get(0).getKpis())
+        .singleElement()
+        .satisfies(kpiResult -> assertThat(kpiResult.isTargetMet()).isFalse());
   }
 
   @Test
@@ -422,15 +454,16 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(null);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("999");
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionRequestDto.setData(reportDataDto);
     reportClient.createSingleProcessReport(singleProcessReportDefinitionRequestDto);
     runKpiSchedulerAndRefreshIndices();
@@ -450,14 +483,16 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     final String secondDefinitionKey = "secondDefinitionKey";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(secondDefinitionKey));
     importAllEngineEntitiesFromScratch();
-    ProcessReportDataDto multiProcessReport = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
-      .definitions(List.of(
-        new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY),
-        new ReportDataDefinitionDto(secondDefinitionKey)
-      )).build();
+    ProcessReportDataDto multiProcessReport =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
+            .definitions(
+                List.of(
+                    new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY),
+                    new ReportDataDefinitionDto(secondDefinitionKey)))
+            .build();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     multiProcessReport.getConfiguration().getTargetValue().setIsKpi(true);
     multiProcessReport.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     multiProcessReport.getConfiguration().getTargetValue().getCountProgress().setTarget("9999999");
@@ -470,16 +505,15 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
 
     // then
     assertThat(processes).hasSize(2);
-    assertThat(processes).hasSize(2)
-      .flatMap(ProcessOverviewResponseDto::getKpis)
-      .isEmpty();
+    assertThat(processes).hasSize(2).flatMap(ProcessOverviewResponseDto::getKpis).isEmpty();
   }
 
   private KpiResultDto createExpectedKpiResponse(final String reportId, final String target) {
     return createExpectedKpiResponse(reportId, target, null);
   }
 
-  private KpiResultDto createExpectedKpiResponse(final String reportId, final String target, final String collectionId) {
+  private KpiResultDto createExpectedKpiResponse(
+      final String reportId, final String target, final String collectionId) {
     KpiResultDto kpiResponseDto = new KpiResultDto();
     kpiResponseDto.setReportId(reportId);
     kpiResponseDto.setReportName("My test report");
@@ -497,30 +531,35 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     return createReport(target, true, definitionKey);
   }
 
-  private String createReport(final String target, final Boolean isKpi, final String definitionKey) {
+  private String createReport(
+      final String target, final Boolean isKpi, final String definitionKey) {
     return createReport(target, isKpi, definitionKey, null);
   }
 
-  private String createReport(final String target, final Boolean isKpi, final String definitionKey, final String collectionId) {
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(definitionKey)))
-      .build();
+  private String createReport(
+      final String target,
+      final Boolean isKpi,
+      final String definitionKey,
+      final String collectionId) {
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(definitionKey)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(isKpi);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(target);
-    return collectionId == null ? reportClient.createSingleProcessReport(reportDataDto) :
-      reportClient.createSingleProcessReport(
-        reportDataDto,
-        collectionId
-      );
+    return collectionId == null
+        ? reportClient.createSingleProcessReport(reportDataDto)
+        : reportClient.createSingleProcessReport(reportDataDto, collectionId);
   }
 
   private String createKpiReportWithDurationProgress() {
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
-      .build();
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(List.of(new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY)))
+            .build();
     TargetDto targetDto = new TargetDto();
     targetDto.setValue("1.0");
     targetDto.setUnit(TargetValueUnit.DAYS);
@@ -530,17 +569,18 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     return reportClient.createSingleProcessReport(reportDataDto);
   }
 
-  private String createKpiReportWithMeasures(final String target,
-                                             final ViewProperty viewProperty) {
+  private String createKpiReportWithMeasures(final String target, final ViewProperty viewProperty) {
     return createKpiReportWithMeasuresAndFilters(target, viewProperty, Collections.emptyList());
   }
 
-  private String createKpiReportWithMeasuresAndFilters(final String target, final ViewProperty viewProperty,
-                                                       List<ProcessFilterDto<?>> filers) {
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
-      .definitions(List.of(new ReportDataDefinitionDto(ProcessKpiRetrievalIT.PROCESS_DEFINITION_KEY)))
-      .build();
+  private String createKpiReportWithMeasuresAndFilters(
+      final String target, final ViewProperty viewProperty, List<ProcessFilterDto<?>> filers) {
+    final ProcessReportDataDto reportDataDto =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
+            .definitions(
+                List.of(new ReportDataDefinitionDto(ProcessKpiRetrievalIT.PROCESS_DEFINITION_KEY)))
+            .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(target);
@@ -555,8 +595,8 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     return builder.noIncidents().add();
   }
 
-  private ProcessFilterBuilder addInstanceDateFilterToBuilder(final ProcessFilterBuilder builder,
-                                                              OffsetDateTime startDate) {
+  private ProcessFilterBuilder addInstanceDateFilterToBuilder(
+      final ProcessFilterBuilder builder, OffsetDateTime startDate) {
     return builder.fixedInstanceStartDate().start(startDate).add();
   }
 
@@ -564,5 +604,4 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getKpiSchedulerService().runKpiImportTask();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
-
 }

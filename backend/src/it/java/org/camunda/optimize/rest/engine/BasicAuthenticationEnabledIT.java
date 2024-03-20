@@ -5,18 +5,6 @@
  */
 package org.camunda.optimize.rest.engine;
 
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.util.Collections;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
@@ -35,6 +23,17 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
+import jakarta.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.List;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
 @Tag(OPENSEARCH_PASSING)
 public class BasicAuthenticationEnabledIT extends AbstractPlatformIT {
 
@@ -44,8 +43,11 @@ public class BasicAuthenticationEnabledIT extends AbstractPlatformIT {
 
   @BeforeEach
   public void init() {
-    EngineConfiguration engineConfiguration = embeddedOptimizeExtension
-      .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE_ALIAS);
+    EngineConfiguration engineConfiguration =
+        embeddedOptimizeExtension
+            .getConfigurationService()
+            .getConfiguredEngines()
+            .get(DEFAULT_ENGINE_ALIAS);
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword(TEST_USERNAME);
     engineConfiguration.getAuthentication().setUser(TEST_PASSWORD);
@@ -58,8 +60,11 @@ public class BasicAuthenticationEnabledIT extends AbstractPlatformIT {
 
   @AfterEach
   public void cleanup() {
-    EngineConfiguration engineConfiguration = embeddedOptimizeExtension
-      .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE_ALIAS);
+    EngineConfiguration engineConfiguration =
+        embeddedOptimizeExtension
+            .getConfigurationService()
+            .getConfiguredEngines()
+            .get(DEFAULT_ENGINE_ALIAS);
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest");
   }
@@ -73,16 +78,17 @@ public class BasicAuthenticationEnabledIT extends AbstractPlatformIT {
     // when
     importAllEngineEntitiesFromScratch();
 
-
     // then
-    Integer activityCount = databaseIntegrationTestExtension.getActivityCountForAllProcessInstances();
+    Integer activityCount =
+        databaseIntegrationTestExtension.getActivityCountForAllProcessInstances();
     assertThat(activityCount).isEqualTo(3);
   }
 
   @Test
   public void logInWithBasicAuthenticationWorks() {
     // when
-    Response response = embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    Response response =
+        embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -145,5 +151,4 @@ public class BasicAuthenticationEnabledIT extends AbstractPlatformIT {
     authorizationDto.setUserId(TEST_USERNAME);
     engineIntegrationExtension.createAuthorization(authorizationDto);
   }
-
 }

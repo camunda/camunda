@@ -65,8 +65,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
     final List<DashboardReportTileDto> reportLocations = dashboardShareDto.getTiles();
@@ -83,14 +83,14 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
     final List<DashboardReportTileDto> reportLocation = dashboardShareDto.getTiles();
     assertThat(reportLocation).hasSize(2);
-    assertThat(reportLocation.get(0).getPosition().getX()).isNotEqualTo(
-        reportLocation.get(1).getPosition().getX());
+    assertThat(reportLocation.get(0).getPosition().getX())
+        .isNotEqualTo(reportLocation.get(1).getPosition().getX());
   }
 
   @Test
@@ -113,10 +113,11 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    final HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedReportRequest(reportShareId)
-        .execute(HashMap.class, Response.Status.OK.getStatusCode());
+    final HashMap<?, ?> evaluatedReportAsMap =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest(reportShareId)
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     // then
     assertReportData(reportId2, evaluatedReportAsMap);
@@ -142,8 +143,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
 
     // when running instance filter is applied
-    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId,
-        runningInstanceFilter());
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, runningInstanceFilter());
 
     // then instances is filtered from result
     assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
@@ -176,8 +176,8 @@ public class SharingServiceIT extends AbstractSharingIT {
   public void dashboardCombinedReportShareCanBeEvaluatedWithAdditionalFilter() {
     // given
     deployAndStartSimpleProcess(DEFAULT_DEFINITION_KEY);
-    final String reportId = reportClient.createSingleReport(null, PROCESS, DEFAULT_DEFINITION_KEY,
-        DEFAULT_TENANTS);
+    final String reportId =
+        reportClient.createSingleReport(null, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     final String combinedReportId = reportClient.createNewCombinedReport(reportId);
     final String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, combinedReportId);
@@ -196,8 +196,9 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
 
     // when running instance filter is applied
-    evaluationResult = evaluateDashboardCombinedReport(combinedReportId, dashboardShareId,
-        runningInstanceFilter());
+    evaluationResult =
+        evaluateDashboardCombinedReport(
+            combinedReportId, dashboardShareId, runningInstanceFilter());
 
     // then the instance is filtered from result
     assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
@@ -211,13 +212,13 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String reportId = createReportWithInstance(DEFAULT_DEFINITION_KEY, collectionId);
     final String reportShareId = addShareForReport(reportId);
 
-    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-        embeddedOptimizeExtension.getRequestExecutor()
-            .buildEvaluateSharedReportRequest(reportShareId)
-            .withoutAuthentication()
-            .execute(
-                new TypeReference<>() {
-                });
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
+        evaluationResult =
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .buildEvaluateSharedReportRequest(reportShareId)
+                .withoutAuthentication()
+                .execute(new TypeReference<>() {});
 
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
     assertThat(evaluationResult.getResult().getData()).hasSize(1);
@@ -245,8 +246,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
 
     // when running instance filter is applied
-    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId,
-        runningInstanceFilter());
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, runningInstanceFilter());
 
     // then instances is filtered from result
     assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
@@ -303,17 +303,19 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
-    HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
-        .execute(HashMap.class, Response.Status.OK.getStatusCode());
+    HashMap<?, ?> evaluatedReportAsMap =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     assertReportData(reportId, evaluatedReportAsMap);
 
-    evaluatedReportAsMap = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId2)
-        .execute(HashMap.class, Response.Status.OK.getStatusCode());
+    evaluatedReportAsMap =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId2)
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     assertReportData(reportId2, evaluatedReportAsMap);
   }
@@ -321,23 +323,24 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void paginationParamsCanBeUsedForSharedDashboardRawDataReportEvaluation() {
     // given
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.deployAndStartProcess(
-        BpmnModels.getSimpleBpmnDiagram());
-    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
-        firstInstance.getDefinitionId());
+    final ProcessInstanceEngineDto firstInstance =
+        engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSimpleBpmnDiagram());
+    final ProcessInstanceEngineDto secondInstance =
+        engineIntegrationExtension.startProcessInstance(firstInstance.getDefinitionId());
     importAllEngineEntitiesFromScratch();
-    final String rawDataReportId = createReport(
-        firstInstance.getProcessDefinitionKey(),
-        Collections.singletonList(ALL_VERSIONS)
-    );
+    final String rawDataReportId =
+        createReport(
+            firstInstance.getProcessDefinitionKey(), Collections.singletonList(ALL_VERSIONS));
     final String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, rawDataReportId);
     final String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-        .buildFindShareForDashboardRequest(dashboardId)
-        .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildFindShareForDashboardRequest(dashboardId)
+            .execute();
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
@@ -354,8 +357,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getData()).hasSize(1);
-    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId()).isEqualTo(
-        secondInstance.getId());
+    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId())
+        .isEqualTo(secondInstance.getId());
 
     // when we get the second page of results
     paginationRequestDto = new PaginationRequestDto();
@@ -370,27 +373,29 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getData()).hasSize(1);
-    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId()).isEqualTo(
-        firstInstance.getId());
+    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId())
+        .isEqualTo(firstInstance.getId());
   }
 
   @Test
   public void paginationParamsCannotBeUsedForNonRawDataSharedDashboardReportEvaluation() {
     // given a report that isn't of raw data type
-    final SingleProcessReportDefinitionRequestDto reportDef = createSingleProcessReport(
-        "someKey",
-        Collections.singletonList(ALL_VERSIONS),
-        ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE
-    );
+    final SingleProcessReportDefinitionRequestDto reportDef =
+        createSingleProcessReport(
+            "someKey",
+            Collections.singletonList(ALL_VERSIONS),
+            ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE);
     final String reportId = reportClient.createSingleProcessReport(reportDef);
     final String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, reportId);
     final String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    final Response findShareResponse = embeddedOptimizeExtension.getRequestExecutor()
-        .buildFindShareForDashboardRequest(dashboardId)
-        .execute();
+    final Response findShareResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildFindShareForDashboardRequest(dashboardId)
+            .execute();
 
     assertThat(findShareResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
@@ -398,10 +403,12 @@ public class SharingServiceIT extends AbstractSharingIT {
     final PaginationRequestDto paginationRequestDto = new PaginationRequestDto();
     paginationRequestDto.setLimit(1);
     paginationRequestDto.setOffset(0);
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId, paginationRequestDto,
-            null)
-        .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(
+                dashboardShareId, reportId, paginationRequestDto, null)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -410,15 +417,14 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void paginationParamsCanBeUsedForSharedRawDataReportEvaluation() {
     // given
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.deployAndStartProcess(
-        BpmnModels.getSimpleBpmnDiagram());
-    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
-        firstInstance.getDefinitionId());
+    final ProcessInstanceEngineDto firstInstance =
+        engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSimpleBpmnDiagram());
+    final ProcessInstanceEngineDto secondInstance =
+        engineIntegrationExtension.startProcessInstance(firstInstance.getDefinitionId());
     importAllEngineEntitiesFromScratch();
-    final String rawDataReportId = createReport(
-        firstInstance.getProcessDefinitionKey(),
-        Collections.singletonList(ALL_VERSIONS)
-    );
+    final String rawDataReportId =
+        createReport(
+            firstInstance.getProcessDefinitionKey(), Collections.singletonList(ALL_VERSIONS));
     final String reportShareId = addShareForReport(rawDataReportId);
 
     // when we get the first page of results
@@ -434,8 +440,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getData()).hasSize(1);
-    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId()).isEqualTo(
-        secondInstance.getId());
+    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId())
+        .isEqualTo(secondInstance.getId());
 
     // when we get the second page of results
     paginationRequestDto = new PaginationRequestDto();
@@ -449,18 +455,18 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(evaluationResult.getResult().getData()).hasSize(1);
-    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId()).isEqualTo(
-        firstInstance.getId());
+    assertThat(evaluationResult.getResult().getData().get(0).getProcessInstanceId())
+        .isEqualTo(firstInstance.getId());
   }
 
   @Test
   public void paginationParamsCannotBeUsedForNonRawDataSharedReportEvaluation() {
     // given a report that isn't of raw data type
-    final SingleProcessReportDefinitionRequestDto reportDef = createSingleProcessReport(
-        "someKey",
-        Collections.singletonList(ALL_VERSIONS),
-        ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE
-    );
+    final SingleProcessReportDefinitionRequestDto reportDef =
+        createSingleProcessReport(
+            "someKey",
+            Collections.singletonList(ALL_VERSIONS),
+            ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE);
     final String reportId = reportClient.createSingleProcessReport(reportDef);
     final String reportShareId = addShareForReport(reportId);
 
@@ -468,9 +474,11 @@ public class SharingServiceIT extends AbstractSharingIT {
     final PaginationRequestDto paginationRequestDto = new PaginationRequestDto();
     paginationRequestDto.setLimit(10);
     paginationRequestDto.setOffset(10);
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-        .buildEvaluateSharedReportRequest(reportShareId, paginationRequestDto)
-        .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest(reportShareId, paginationRequestDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -487,13 +495,14 @@ public class SharingServiceIT extends AbstractSharingIT {
     addShareForDashboard(dashboardId);
 
     // then
-    final Response response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedReportRequest(reportId)
-        .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest(reportId)
+            .execute();
 
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -513,8 +522,8 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -534,8 +543,8 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardReportRequest("fakedashboardshareid", reportId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -553,8 +562,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String dashboardShareId2 = addShareForDashboard(dashboardId2);
 
     // when
-    DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId2);
+    DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId2);
 
     assertThat(dashboardShareDto.getTiles()).hasSize(2);
 
@@ -573,8 +582,8 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId2);
 
@@ -594,8 +603,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     dashboardClient.updateDashboard(dashboardId, fullBoard);
 
     // then
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
 
     assertThat(dashboardShareDto.getTiles()).isEmpty();
   }
@@ -625,8 +634,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String dashboardShareId = addShareForDashboard(dashboardId);
 
     final DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
-    final String reportId = reportClient.createSingleProcessReport(
-        new SingleProcessReportDefinitionRequestDto());
+    final String reportId =
+        reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
     dashboardTileDto.setId(reportId);
     dashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
     dashboardTileDto.setConfiguration("testConfiguration");
@@ -642,8 +651,8 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     dashboardClient.updateDashboard(dashboardId, dashboard);
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
     assertThat(dashboardShareDto.getTiles()).hasSize(1);
@@ -670,9 +679,10 @@ public class SharingServiceIT extends AbstractSharingIT {
     dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
 
     // then
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
-    assertThat(dashboardShareDto.getTiles()).extracting(DashboardReportTileDto::getId)
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
+    assertThat(dashboardShareDto.getTiles())
+        .extracting(DashboardReportTileDto::getId)
         .containsExactly(reportId);
 
     // and then
@@ -692,36 +702,37 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String dashboardId =
         dashboardClient.createDashboard(
             PRIVATE_COLLECTION_ID,
-            Arrays.asList(reportIdToStayInDashboard, reportIdToBeRemovedFromDashboard)
-        );
+            Arrays.asList(reportIdToStayInDashboard, reportIdToBeRemovedFromDashboard));
     final String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    dashboardClient.updateDashboardWithReports(dashboardId,
-        Collections.singletonList(reportIdToStayInDashboard));
+    dashboardClient.updateDashboardWithReports(
+        dashboardId, Collections.singletonList(reportIdToStayInDashboard));
 
     // then
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
     assertThat(dashboardShareDto.getTiles())
         .extracting(DashboardReportTileDto::getId)
         .containsExactly(reportIdToStayInDashboard);
 
     // and then
-    Response response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportIdToStayInDashboard)
-        .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportIdToStayInDashboard)
+            .execute();
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // and then
-    response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId,
-            reportIdToBeRemovedFromDashboard)
-        .execute();
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(
+                dashboardShareId, reportIdToBeRemovedFromDashboard)
+            .execute();
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -735,8 +746,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     addReportToDashboard(dashboardId, reportId);
 
     // then
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
 
     assertThat(dashboardShareDto.getTiles()).hasSize(1);
   }
@@ -749,8 +760,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String dashboardShareId = addShareForDashboard(dashboardWithReport);
     final String reportShareId = addShareForReport(reportId);
 
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
     final String dashboardReportShareId = dashboardShareDto.getTiles().get(0).getId();
 
     // when
@@ -768,13 +779,14 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(dashboardReportShareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
-    final HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedReportRequest(reportShareId)
-        .execute(HashMap.class, Response.Status.OK.getStatusCode());
+    final HashMap<?, ?> evaluatedReportAsMap =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest(reportShareId)
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     assertReportData(reportId, evaluatedReportAsMap);
   }
@@ -794,8 +806,8 @@ public class SharingServiceIT extends AbstractSharingIT {
             .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -805,8 +817,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     final Response response = sharingClient.createReportShareResponse(createReportShare());
 
     // then
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -819,8 +831,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     final Response response = sharingClient.createReportShareResponse(sharingDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -833,8 +845,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     final Response response = sharingClient.createDashboardShareResponse(dashboardShare);
 
     // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -848,15 +860,11 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final String id =
-        response.readEntity(String.class);
+    final String id = response.readEntity(String.class);
     assertThat(id).isNotNull();
 
     response =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildShareReportRequest(share)
-            .execute();
+        embeddedOptimizeExtension.getRequestExecutor().buildShareReportRequest(share).execute();
 
     assertThat(id).isEqualTo(response.readEntity(String.class));
   }
@@ -864,13 +872,14 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void cantEvaluateNotExistingReportShare() {
     // when
-    final Response response = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedReportRequest(FAKE_REPORT_ID)
-        .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest(FAKE_REPORT_ID)
+            .execute();
 
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -882,8 +891,8 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardRequest(FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -914,8 +923,8 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(
-        Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -958,10 +967,11 @@ public class SharingServiceIT extends AbstractSharingIT {
     final String shareId = addShareForReport(reportId);
 
     // when
-    final HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedReportRequest(shareId)
-        .execute(HashMap.class, Response.Status.OK.getStatusCode());
+    final HashMap<?, ?> evaluatedReportAsMap =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest(shareId)
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     // then
     assertReportData(reportId, evaluatedReportAsMap);
@@ -1043,33 +1053,33 @@ public class SharingServiceIT extends AbstractSharingIT {
     final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess("aProcess");
     importAllEngineEntitiesFromScratch();
 
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
-        .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
-        .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-        .build();
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+            .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+            .build();
     reportData.setView(null);
     final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
         new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
 
-    final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+    final String reportId =
+        reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     final String dashboardWithReport = createDashboardWithReport(reportId);
     final String dashboardShareId = addShareForDashboard(dashboardWithReport);
 
     // when
-    final DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(
-        dashboardShareId);
+    final DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
 
-    final ReportEvaluationException errorResponse = embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(
-            dashboardShareId,
-            dashboardShareDto.getTiles().get(0).getId()
-        )
-        .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
+    final ReportEvaluationException errorResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(
+                dashboardShareId, dashboardShareDto.getTiles().get(0).getId())
+            .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     AbstractSharingIT.assertErrorFields(errorResponse);
@@ -1085,13 +1095,12 @@ public class SharingServiceIT extends AbstractSharingIT {
     addReportToDashboard(dashboardId, authorizedReportId, unauthorizedReportId);
 
     authorizationClient.grantSingleResourceAuthorizationForKermit(
-        "processDefinition1",
-        RESOURCE_TYPE_PROCESS_DEFINITION
-    );
+        "processDefinition1", RESOURCE_TYPE_PROCESS_DEFINITION);
 
     // when I want to share the dashboard as kermit and kermit has no access to report 2
     final DashboardShareRestDto share = createDashboardShareDto(dashboardId);
-    final Response response = sharingClient.createDashboardShareResponse(share, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        sharingClient.createDashboardShareResponse(share, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -1105,22 +1114,21 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     final String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     collectionClient.addRolesToCollection(
-        collectionId, new CollectionRoleRequestDto(new IdentityDto(KERMIT_USER, IdentityType.USER),
-            RoleType.VIEWER)
-    );
-    final String reportId =
-        reportClient.createSingleReport(collectionId, PROCESS, DEFAULT_DEFINITION_KEY,
-            DEFAULT_TENANTS);
-    final String combinedReportId = reportClient.createCombinedReport(
         collectionId,
-        Collections.singletonList(reportId)
-    );
+        new CollectionRoleRequestDto(
+            new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER));
+    final String reportId =
+        reportClient.createSingleReport(
+            collectionId, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String combinedReportId =
+        reportClient.createCombinedReport(collectionId, Collections.singletonList(reportId));
     final String dashboardId =
         dashboardClient.createDashboard(collectionId, Collections.singletonList(combinedReportId));
 
     // when
     final DashboardShareRestDto share = createDashboardShareDto(dashboardId);
-    final Response response = sharingClient.createDashboardShareResponse(share, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        sharingClient.createDashboardShareResponse(share, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -1130,60 +1138,61 @@ public class SharingServiceIT extends AbstractSharingIT {
       final String combinedReportId,
       final String dashboardShareId,
       final AdditionalProcessReportEvaluationFilterDto filterDto) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, combinedReportId, null,
-            filterDto)
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildEvaluateSharedDashboardReportRequest(
+            dashboardShareId, combinedReportId, null, filterDto)
         .withoutAuthentication()
-        .execute(new TypeReference<>() {
-        });
+        .execute(new TypeReference<>() {});
   }
 
-  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(
-      final String rawDataReportId,
-      final String dashboardShareId) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
+      evaluateDashboardReport(final String rawDataReportId, final String dashboardShareId) {
     return evaluateDashboardReport(rawDataReportId, dashboardShareId, null, null);
   }
 
-  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(
-      final String rawDataReportId,
-      final String dashboardShareId,
-      final AdditionalProcessReportEvaluationFilterDto filters) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
+      evaluateDashboardReport(
+          final String rawDataReportId,
+          final String dashboardShareId,
+          final AdditionalProcessReportEvaluationFilterDto filters) {
     return evaluateDashboardReport(rawDataReportId, dashboardShareId, null, filters);
   }
 
-  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(
-      final String rawDataReportId,
-      final String dashboardShareId,
-      final PaginationRequestDto paginationRequestDto) {
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
+      evaluateDashboardReport(
+          final String rawDataReportId,
+          final String dashboardShareId,
+          final PaginationRequestDto paginationRequestDto) {
     return evaluateDashboardReport(rawDataReportId, dashboardShareId, paginationRequestDto, null);
   }
 
-  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(
-      final String rawDataReportId, final String dashboardShareId,
-      final PaginationRequestDto paginationRequestDto,
-      final AdditionalProcessReportEvaluationFilterDto filters) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, rawDataReportId,
-            paginationRequestDto, filters)
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
+      evaluateDashboardReport(
+          final String rawDataReportId,
+          final String dashboardShareId,
+          final PaginationRequestDto paginationRequestDto,
+          final AdditionalProcessReportEvaluationFilterDto filters) {
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildEvaluateSharedDashboardReportRequest(
+            dashboardShareId, rawDataReportId, paginationRequestDto, filters)
         .withoutAuthentication()
-        .execute(
-            new TypeReference<>() {
-            });
+        .execute(new TypeReference<>() {});
   }
 
-  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateReportWithPagination(
-      final String reportShareId, final PaginationRequestDto paginationRequestDto) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
+      evaluateReportWithPagination(
+          final String reportShareId, final PaginationRequestDto paginationRequestDto) {
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
         .buildEvaluateSharedReportRequest(reportShareId, paginationRequestDto)
-        .execute(
-            new TypeReference<>() {
-            });
+        .execute(new TypeReference<>() {});
   }
 
   private AdditionalProcessReportEvaluationFilterDto variableInFilter() {
     return new AdditionalProcessReportEvaluationFilterDto(
-        ProcessFilterBuilder
-            .filter()
+        ProcessFilterBuilder.filter()
             .variable()
             .stringType()
             .name("variableName")
@@ -1205,7 +1214,11 @@ public class SharingServiceIT extends AbstractSharingIT {
 
   private AdditionalProcessReportEvaluationFilterDto candidateFilter() {
     return new AdditionalProcessReportEvaluationFilterDto(
-        ProcessFilterBuilder.filter().candidateGroups().operator(IN).id("someId").add()
+        ProcessFilterBuilder.filter()
+            .candidateGroups()
+            .operator(IN)
+            .id("someId")
+            .add()
             .buildList());
   }
 
@@ -1223,5 +1236,4 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     dashboardClient.updateDashboard(dashboardId, fullBoard);
   }
-
 }

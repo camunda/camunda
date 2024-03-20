@@ -5,19 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
-import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
-import org.camunda.optimize.service.sharing.AbstractSharingIT;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.Response;
-import java.util.stream.Stream;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
@@ -35,6 +22,17 @@ import static org.camunda.optimize.rest.SharingRestService.EVALUATE_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.Response;
+import java.util.stream.Stream;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.service.sharing.AbstractSharingIT;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @Tag(OPENSEARCH_PASSING)
 public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
@@ -46,10 +44,11 @@ public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
   @Test
   public void accessingExternalResourcesDirectly_unauthorized() {
     // when
-    Response response = embeddedOptimizeExtension
-      .rootTarget(REST_API_PATH + CANDIDATE_GROUP_RESOURCE_PATH)
-      .request()
-      .get();
+    Response response =
+        embeddedOptimizeExtension
+            .rootTarget(REST_API_PATH + CANDIDATE_GROUP_RESOURCE_PATH)
+            .request()
+            .get();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -57,14 +56,12 @@ public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
 
   @ParameterizedTest
   @MethodSource("publicResourcesIndependentOfSharing")
-  public void publicResourcesIndependentOfSharingAvailableWhenSharingDeactivated(final String resourcePath) {
+  public void publicResourcesIndependentOfSharingAvailableWhenSharingDeactivated(
+      final String resourcePath) {
     // given
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
     // when
-    Response response = embeddedOptimizeExtension
-      .rootTarget(resourcePath)
-      .request()
-      .get();
+    Response response = embeddedOptimizeExtension.rootTarget(resourcePath).request().get();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -80,10 +77,7 @@ public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
 
     // when
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
-    Response response = embeddedOptimizeExtension
-      .rootTarget(resourcePathProcessed)
-      .request()
-      .get();
+    Response response = embeddedOptimizeExtension.rootTarget(resourcePathProcessed).request().get();
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
@@ -98,10 +92,8 @@ public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
 
     // when
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
-    Response response = embeddedOptimizeExtension
-      .rootTarget(resourcePathProcessed)
-      .request()
-      .post(Entity.json(""));
+    Response response =
+        embeddedOptimizeExtension.rootTarget(resourcePathProcessed).request().post(Entity.json(""));
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
@@ -116,62 +108,57 @@ public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
 
     // when
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
-    Response response = embeddedOptimizeExtension
-      .rootTarget(resourcePathProcessed)
-      .request()
-      .get();
+    Response response = embeddedOptimizeExtension.rootTarget(resourcePathProcessed).request().get();
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 
     // when
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(true);
-    response = embeddedOptimizeExtension
-      .rootTarget(resourcePathProcessed)
-      .request()
-      .get();
+    response = embeddedOptimizeExtension.rootTarget(resourcePathProcessed).request().get();
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
-    response = embeddedOptimizeExtension
-      .rootTarget(resourcePathProcessed)
-      .request()
-      .get();
+    response = embeddedOptimizeExtension.rootTarget(resourcePathProcessed).request().get();
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
-
   private static Stream<String> publicResourcesIndependentOfSharing() {
     return Stream.of(
-      EXTERNAL_API_PATH + UIConfigurationRestService.UI_CONFIGURATION_PATH,
-      EXTERNAL_API_PATH + LocalizationRestService.LOCALIZATION_PATH
-    );
+        EXTERNAL_API_PATH + UIConfigurationRestService.UI_CONFIGURATION_PATH,
+        EXTERNAL_API_PATH + LocalizationRestService.LOCALIZATION_PATH);
   }
 
   private static Stream<String> publicResourcesForSharingGet() {
     return Stream.of(
-      EXTERNAL_API_PATH + SHARE_PATH + DASHBOARD_SUB_PATH + "/{dashboardShareId}" + EVALUATE_SUB_PATH,
-      EXTERNAL_API_PATH + CANDIDATE_GROUP_RESOURCE_PATH,
-      EXTERNAL_API_PATH + ASSIGNEE_RESOURCE_PATH
-    );
+        EXTERNAL_API_PATH
+            + SHARE_PATH
+            + DASHBOARD_SUB_PATH
+            + "/{dashboardShareId}"
+            + EVALUATE_SUB_PATH,
+        EXTERNAL_API_PATH + CANDIDATE_GROUP_RESOURCE_PATH,
+        EXTERNAL_API_PATH + ASSIGNEE_RESOURCE_PATH);
   }
 
   private static Stream<String> publicResourcesForSharingPost() {
     return Stream.of(
-      EXTERNAL_API_PATH + SHARE_PATH + REPORT_SUB_PATH + "/{reportShareId}" +  EVALUATE_SUB_PATH,
-      EXTERNAL_API_PATH + SHARE_PATH + DASHBOARD_SUB_PATH + "/{dashboardShareId}" + REPORT_SUB_PATH +
-        "/{reportShareId}" + EVALUATE_SUB_PATH,
-      EXTERNAL_API_PATH + PROCESS_VARIABLES_PATH,
-      EXTERNAL_API_PATH + DECISION_VARIABLES_PATH + DECISION_INPUTS_NAMES_PATH,
-      EXTERNAL_API_PATH + DECISION_VARIABLES_PATH + DECISION_OUTPUTS_NAMES_PATH,
-      EXTERNAL_API_PATH + FLOW_NODE_PATH + FLOW_NODE_NAMES_SUB_PATH
-    );
+        EXTERNAL_API_PATH + SHARE_PATH + REPORT_SUB_PATH + "/{reportShareId}" + EVALUATE_SUB_PATH,
+        EXTERNAL_API_PATH
+            + SHARE_PATH
+            + DASHBOARD_SUB_PATH
+            + "/{dashboardShareId}"
+            + REPORT_SUB_PATH
+            + "/{reportShareId}"
+            + EVALUATE_SUB_PATH,
+        EXTERNAL_API_PATH + PROCESS_VARIABLES_PATH,
+        EXTERNAL_API_PATH + DECISION_VARIABLES_PATH + DECISION_INPUTS_NAMES_PATH,
+        EXTERNAL_API_PATH + DECISION_VARIABLES_PATH + DECISION_OUTPUTS_NAMES_PATH,
+        EXTERNAL_API_PATH + FLOW_NODE_PATH + FLOW_NODE_NAMES_SUB_PATH);
   }
 
-  private void initializeShares()
-  {
+  private void initializeShares() {
     String reportId = createReportWithInstance();
     ReportShareRestDto share = createReportShare(reportId);
     // when

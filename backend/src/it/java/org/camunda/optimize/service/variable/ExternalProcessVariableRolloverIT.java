@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.variable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.IntStream;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
@@ -17,15 +25,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
-
 public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
 
   private static final int NUMBER_OF_VARIABLES_IN_BATCH = 10;
@@ -36,10 +35,11 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
   @AfterEach
   public void cleanUpExternalVariableIndices() {
     databaseIntegrationTestExtension.deleteAllExternalVariableIndices();
-    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
-      new ExternalProcessVariableIndexES()
-    );
+    embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .createOrUpdateOptimizeIndex(
+            embeddedOptimizeExtension.getOptimizeDatabaseClient(),
+            new ExternalProcessVariableIndexES());
   }
 
   @Test
@@ -48,14 +48,15 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
     ingestExternalVariables();
 
     // when
-    final List<String> rolledOverIndexAliases = getExternalProcessVariableIndexRollover().triggerRollover();
+    final List<String> rolledOverIndexAliases =
+        getExternalProcessVariableIndexRollover().triggerRollover();
 
     // then
     final Map<String, Set<AliasMetadata>> aliasMap = getAllExternalVariableIndexAliasInfo();
     assertThat(rolledOverIndexAliases).isEmpty();
     assertThat(extractIndicesWithWriteAlias(aliasMap))
-      .singleElement()
-      .isEqualTo(getExpectedIndexNameBeforeRollover());
+        .singleElement()
+        .isEqualTo(getExpectedIndexNameBeforeRollover());
     assertThat(extractIndicesWithReadOnlyAlias(aliasMap)).isEmpty();
     assertThat(getAllStoredExternalProcessVariables()).hasSize(NUMBER_OF_VARIABLES_IN_BATCH);
   }
@@ -67,17 +68,20 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
     setMaxIndexSizeGBForExternalVariableIndexRollover(0);
 
     // when
-    final List<String> rolledOverIndexAliases = getExternalProcessVariableIndexRollover().triggerRollover();
+    final List<String> rolledOverIndexAliases =
+        getExternalProcessVariableIndexRollover().triggerRollover();
 
     // then
     final Map<String, Set<AliasMetadata>> aliasMap = getAllExternalVariableIndexAliasInfo();
-    assertThat(rolledOverIndexAliases).singleElement().isEqualTo(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
+    assertThat(rolledOverIndexAliases)
+        .singleElement()
+        .isEqualTo(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
     assertThat(extractIndicesWithWriteAlias(aliasMap))
-      .singleElement()
-      .isEqualTo(getExpectedIndexNameAfterFirstRollover());
+        .singleElement()
+        .isEqualTo(getExpectedIndexNameAfterFirstRollover());
     assertThat(extractIndicesWithReadOnlyAlias(aliasMap))
-      .singleElement()
-      .isEqualTo(getExpectedIndexNameBeforeRollover());
+        .singleElement()
+        .isEqualTo(getExpectedIndexNameBeforeRollover());
     assertThat(getAllStoredExternalProcessVariables()).hasSize(NUMBER_OF_VARIABLES_IN_BATCH);
   }
 
@@ -89,58 +93,67 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
 
     // when
     final List<String> rolledOverIndexAliasesAfterFirstRollover =
-      getExternalProcessVariableIndexRollover().triggerRollover();
+        getExternalProcessVariableIndexRollover().triggerRollover();
 
     // then
     Map<String, Set<AliasMetadata>> aliasMap = getAllExternalVariableIndexAliasInfo();
     assertThat(rolledOverIndexAliasesAfterFirstRollover)
-      .singleElement()
-      .isEqualTo(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
+        .singleElement()
+        .isEqualTo(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
     assertThat(extractIndicesWithWriteAlias(aliasMap))
-      .singleElement()
-      .isEqualTo(getExpectedIndexNameAfterFirstRollover());
+        .singleElement()
+        .isEqualTo(getExpectedIndexNameAfterFirstRollover());
     assertThat(extractIndicesWithReadOnlyAlias(aliasMap))
-      .singleElement()
-      .isEqualTo(getExpectedIndexNameBeforeRollover());
+        .singleElement()
+        .isEqualTo(getExpectedIndexNameBeforeRollover());
     assertThat(getAllStoredExternalProcessVariables()).hasSize(NUMBER_OF_VARIABLES_IN_BATCH);
 
     // when
     ingestExternalVariables();
     final List<String> rolledOverIndexAliasesAfterSecondRollover =
-      getExternalProcessVariableIndexRollover().triggerRollover();
+        getExternalProcessVariableIndexRollover().triggerRollover();
     aliasMap = getAllExternalVariableIndexAliasInfo();
 
     // then
     assertThat(rolledOverIndexAliasesAfterSecondRollover)
-      .singleElement()
-      .isEqualTo(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
+        .singleElement()
+        .isEqualTo(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
     assertThat(extractIndicesWithWriteAlias(aliasMap))
-      .singleElement()
-      .isEqualTo(getExpectedIndexNameAfterSecondRollover());
+        .singleElement()
+        .isEqualTo(getExpectedIndexNameAfterSecondRollover());
     assertThat(extractIndicesWithReadOnlyAlias(aliasMap))
-      .hasSize(2)
-      .containsExactlyInAnyOrder(getExpectedIndexNameBeforeRollover(), getExpectedIndexNameAfterFirstRollover());
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            getExpectedIndexNameBeforeRollover(), getExpectedIndexNameAfterFirstRollover());
     assertThat(getAllStoredExternalProcessVariables()).hasSize(NUMBER_OF_VARIABLES_IN_BATCH * 2);
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameBeforeRollover()))
-      .isEqualTo(NUMBER_OF_VARIABLES_IN_BATCH);
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameAfterFirstRollover()))
-      .isEqualTo(NUMBER_OF_VARIABLES_IN_BATCH);
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameAfterSecondRollover()))
-      .isZero();
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(
+                getExpectedIndexNameBeforeRollover()))
+        .isEqualTo(NUMBER_OF_VARIABLES_IN_BATCH);
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(
+                getExpectedIndexNameAfterFirstRollover()))
+        .isEqualTo(NUMBER_OF_VARIABLES_IN_BATCH);
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(
+                getExpectedIndexNameAfterSecondRollover()))
+        .isZero();
   }
 
   private void ingestExternalVariables() {
-    final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, NUMBER_OF_VARIABLES_IN_BATCH)
-      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
-      .toList();
+    final List<ExternalProcessVariableRequestDto> variables =
+        IntStream.range(0, NUMBER_OF_VARIABLES_IN_BATCH)
+            .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
+            .toList();
     ingestionClient.ingestVariables(variables);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void setMaxIndexSizeGBForExternalVariableIndexRollover(final int maxIndexSizeGB) {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getVariableIndexRolloverConfiguration()
-      .setMaxIndexSizeGB(maxIndexSizeGB);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getVariableIndexRolloverConfiguration()
+        .setMaxIndexSizeGB(maxIndexSizeGB);
   }
 
   private ExternalProcessVariableIndexRolloverService getExternalProcessVariableIndexRollover() {
@@ -149,45 +162,57 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
 
   private List<ExternalProcessVariableDto> getAllStoredExternalProcessVariables() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
-    );
+        EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class);
   }
 
   @SneakyThrows
   private Map<String, Set<AliasMetadata>> getAllExternalVariableIndexAliasInfo() {
-    final String aliasNameWithPrefix = embeddedOptimizeExtension.getOptimizeDatabaseClient()
-      .getIndexNameService()
-      .getOptimizeIndexAliasForIndex(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
+    final String aliasNameWithPrefix =
+        embeddedOptimizeExtension
+            .getOptimizeDatabaseClient()
+            .getIndexNameService()
+            .getOptimizeIndexAliasForIndex(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
     final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient().getAlias(aliasesRequest).getAliases();
+    return databaseIntegrationTestExtension
+        .getOptimizeElasticsearchClient()
+        .getAlias(aliasesRequest)
+        .getAliases();
   }
 
-  private List<String> extractIndicesWithWriteAlias(final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {
-    return indexNameToAliasMap.keySet()
-      .stream()
-      .filter(index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
-      .toList();
+  private List<String> extractIndicesWithWriteAlias(
+      final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {
+    return indexNameToAliasMap.keySet().stream()
+        .filter(
+            index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
+        .toList();
   }
 
-  private List<String> extractIndicesWithReadOnlyAlias(final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {
-    return indexNameToAliasMap.keySet()
-      .stream()
-      .filter(index -> indexNameToAliasMap.get(index).stream().anyMatch(alias -> !alias.writeIndex()))
-      .toList();
+  private List<String> extractIndicesWithReadOnlyAlias(
+      final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {
+    return indexNameToAliasMap.keySet().stream()
+        .filter(
+            index -> indexNameToAliasMap.get(index).stream().anyMatch(alias -> !alias.writeIndex()))
+        .toList();
   }
 
   private String getExpectedIndexNameBeforeRollover() {
-    return embeddedOptimizeExtension.getIndexNameService()
-      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES()) + INDEX_SUFFIX_PRE_ROLLOVER;
+    return embeddedOptimizeExtension
+            .getIndexNameService()
+            .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES())
+        + INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
   private String getExpectedIndexNameAfterFirstRollover() {
-    return embeddedOptimizeExtension.getIndexNameService()
-      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES()) + EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER;
+    return embeddedOptimizeExtension
+            .getIndexNameService()
+            .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES())
+        + EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER;
   }
 
   private String getExpectedIndexNameAfterSecondRollover() {
-    return embeddedOptimizeExtension.getIndexNameService()
-      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES()) + EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER;
+    return embeddedOptimizeExtension
+            .getIndexNameService()
+            .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES())
+        + EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER;
   }
 }
