@@ -46,6 +46,7 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
     overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
+    overridePropertyIfAbsent("spring.lifecycle.timeout-per-shutdown-phase", "1s");
 
     if (!beans.containsKey("collectorRegistry")) {
       beans.put(

@@ -11,8 +11,10 @@ import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -24,12 +26,16 @@ public final class BrokerConfiguration {
 
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
+  private final LifecycleProperties lifecycle;
 
   @Autowired
   public BrokerConfiguration(
-      final WorkingDirectory workingDirectory, final BrokerProperties properties) {
+      final WorkingDirectory workingDirectory,
+      final BrokerProperties properties,
+      final LifecycleProperties lifecycle) {
     this.workingDirectory = workingDirectory;
     this.properties = properties;
+    this.lifecycle = lifecycle;
 
     properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
@@ -50,6 +56,10 @@ public final class BrokerConfiguration {
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
+  }
+
+  public Duration shutdownTimeout() {
+    return lifecycle.getTimeoutPerShutdownPhase();
   }
 
   @ConfigurationProperties("zeebe.broker")
