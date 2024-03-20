@@ -23,7 +23,7 @@ jobs:
           distribution: 'temurin'
       - name: Run PMD
         id: pmd
-        uses: pmd/pmd-github-action@d57c0463ebba262a33d1983a5c6ac6031bfde43b # v1.4.1
+        uses: pmd/pmd-github-action@d9c1f3c5940cbf5923f1354e83fa858b4496ebaa # v2.0.0
         with:
           version: '6.55.0'
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
