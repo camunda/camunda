@@ -78,10 +78,12 @@ public class CCSMUserCache {
   public List<UserDto> searchForIdentityUsingSearchTerm(
       final String searchString, final int maxResults) {
     List<UserDto> result =
-        ccsmUsersCache.asMap().values().stream()
-            .filter(user -> user.isIdentityContainsSearchTerm(searchString))
-            .limit(maxResults)
-            .toList();
+        StringUtils.isBlank(searchString)
+            ? ccsmUsersCache.asMap().values().stream().limit(maxResults).toList()
+            : ccsmUsersCache.asMap().values().stream()
+                .filter(user -> user.isIdentityContainsSearchTerm(searchString))
+                .limit(maxResults)
+                .toList();
     if (result.isEmpty()) {
       result = searchUsersInIdentity(searchString, maxResults);
     }

@@ -82,20 +82,27 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
       final int maxResults,
       final boolean excludeUserGroups) {
     try {
-      final List<IdentityWithMetadataResponseDto> users =
-          usersCache.getAllUsers().stream()
-              .filter(
-                  cloudUser ->
-                      cloudUser.getSearchableDtoFields().stream()
-                          .map(Supplier::get)
-                          .anyMatch(
-                              field ->
-                                  StringUtils.isNotBlank(field)
-                                      && StringUtils.containsIgnoreCase(field, searchString)))
-              .limit(maxResults)
-              .map(this::mapToUserDto)
-              .collect(toList());
-      return new IdentitySearchResultResponseDto(users);
+      if (StringUtils.isBlank(searchString)) {
+        return new IdentitySearchResultResponseDto(
+            usersCache.getAllUsers().stream()
+                .limit(maxResults)
+                .map(this::mapToUserDto)
+                .collect(toList()));
+      } else {
+        return new IdentitySearchResultResponseDto(
+            usersCache.getAllUsers().stream()
+                .filter(
+                    cloudUser ->
+                        cloudUser.getSearchableDtoFields().stream()
+                            .map(Supplier::get)
+                            .anyMatch(
+                                field ->
+                                    StringUtils.isNotBlank(field)
+                                        && StringUtils.containsIgnoreCase(field, searchString)))
+                .limit(maxResults)
+                .map(this::mapToUserDto)
+                .collect(toList()));
+      }
     } catch (final OptimizeRuntimeException e) {
       log.warn("Failed retrieving users.", e);
       return new IdentitySearchResultResponseDto(Collections.emptyList());

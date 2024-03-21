@@ -54,7 +54,7 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
 
   @JsonIgnore
   public boolean isIdentityContainsSearchTerm(final String searchTerm) {
-    return StringUtils.isEmpty(searchTerm)
+    return StringUtils.isBlank(searchTerm)
         || getSearchableDtoFields().stream()
             .anyMatch(
                 searchableField ->

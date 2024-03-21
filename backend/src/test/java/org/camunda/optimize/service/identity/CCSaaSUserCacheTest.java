@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CloudUserCacheTest {
+public class CCSaaSUserCacheTest {
 
   public static final String ACCESS_TOKEN = "someToken";
 
