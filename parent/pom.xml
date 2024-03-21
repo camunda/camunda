@@ -568,43 +568,7 @@
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-configuration-processor</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-actuator</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-json</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>identity-spring-boot-starter</artifactId>
-        <version>${version.identity}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
         <artifactId>spring-client-common</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
         <version>${version.spring-boot}</version>
       </dependency>
 
@@ -622,12 +586,6 @@
             <artifactId>log4j-to-slf4j</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-client-common</artifactId>
-        <version>${version.spring-boot}</version>
       </dependency>
 
       <dependency>

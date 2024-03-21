@@ -20,6 +20,7 @@
     <module>parent</module>
     <module>dist</module>
     <module>build-tools</module>
+    <module>spring-boot-starter-camunda-sdk</module>
     <module>zeebe/atomix</module>
     <module>zeebe/auth</module>
     <module>zeebe/broker</module>
@@ -40,7 +41,6 @@
     <module>zeebe/gateway</module>
     <module>zeebe/gateway-rest</module>
     <module>zeebe/clients/java</module>
-    <module>spring-boot-starter-camunda-sdk</module>
     <module>zeebe/clients/zeebe-client-spring</module>
     <module>zeebe/exporter-api</module>
     <module>zeebe/exporter-test</module>
