@@ -18,7 +18,6 @@ package io.camunda.operate.store.opensearch;
 
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinalityAggregation;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ExceptionHelper.withIOException;
 
@@ -54,7 +53,7 @@ public class OpensearchDecisionStore implements DecisionStore {
     final var indexAlias = decisionIndex.getAlias();
     final var searchRequestBuilder =
         searchRequestBuilder(indexAlias)
-            .query(withTenantCheck(matchAll()))
+            .query(matchAll())
             .size(0)
             .aggregations(
                 DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation());

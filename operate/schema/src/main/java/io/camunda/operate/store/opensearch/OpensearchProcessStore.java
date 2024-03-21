@@ -84,7 +84,7 @@ public class OpensearchProcessStore implements ProcessStore {
     final SearchResponse<Void> response;
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
-            .query(withTenantCheck(matchAll()))
+            .query(matchAll())
             .aggregations(
                 DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation())
             .size(0);
