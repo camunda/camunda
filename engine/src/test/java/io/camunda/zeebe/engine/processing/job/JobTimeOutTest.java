@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIMED_OUT;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIME_OUT;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -52,10 +55,10 @@ public final class JobTimeOutTest {
     final long timeout = 10L;
 
     ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
 
     // when expired
-    jobRecords(TIME_OUT).withType(jobType).getFirst();
+    jobRecords(TIMED_OUT).withType(jobType).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
     // then activated again
@@ -72,58 +75,58 @@ public final class JobTimeOutTest {
   public void shouldTimeOutAfterReprocessing() {
     // given
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final long timeout = 10L;
+    final Duration timeout = Duration.ofSeconds(10);
 
-    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
-    jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
+    ENGINE.jobs().withType(jobType).withTimeout(timeout.toMillis()).activate();
+    ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    jobRecords(TIMED_OUT).withRecordKey(jobKey).getFirst();
 
     final long jobKey2 = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    ENGINE.jobs().withType(jobType).activate();
+    ENGINE.jobs().withTimeout(timeout.toMillis()).withType(jobType).activate();
+
     ENGINE.job().withKey(jobKey).complete();
 
     // when
     ENGINE.reprocess();
-    ENGINE.jobs().withType(jobType).activate();
 
     // then
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
-    jobRecords(TIME_OUT).withRecordKey(jobKey2).getFirst();
+    ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    jobRecords(TIMED_OUT).withRecordKey(jobKey2).getFirst();
   }
 
   @Test
   public void shouldTimeOutAfterResumed() {
     // given
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final long timeout = JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL.toMillis() * 2;
+    final long timeout = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL.toMillis() * 2;
 
     ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
     ENGINE.pauseProcessing(1);
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
 
     // when
     ENGINE.resumeProcessing(1);
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
 
     // then
-    jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
+    jobRecords(TIMED_OUT).withRecordKey(jobKey).getFirst();
   }
 
   @Test
   public void shouldActivateAndTimeOutAfterResumed() {
     // given
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    final long timeout = JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL.toMillis();
+    final long timeout = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL.toMillis();
     ENGINE.pauseProcessing(1);
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
 
     // when
     ENGINE.resumeProcessing(1);
     ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
 
     // then
-    jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
+    jobRecords(TIMED_OUT).withRecordKey(jobKey).getFirst();
   }
 
   @Test
@@ -151,8 +154,8 @@ public final class JobTimeOutTest {
     // when
     jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
 
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
-    jobRecords(JobIntent.TIMED_OUT).withProcessInstanceKey(instanceKey1).getFirst();
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+    jobRecords(TIMED_OUT).withProcessInstanceKey(instanceKey1).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
     // then
@@ -201,7 +204,7 @@ public final class JobTimeOutTest {
 
     // when
     jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
-    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
     final Record<JobRecordValue> timedOutRecord =
         jobRecords(TIME_OUT).withProcessInstanceKey(processInstanceKey).getFirst();
 
