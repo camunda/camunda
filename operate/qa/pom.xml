@@ -26,7 +26,7 @@
   </modules>
 
   <properties>
-    <license.header>${project.baseUri}/../../license/license-header</license.header>
+    <license.header>${project.baseUri}/../../../license/license-header</license.header>
 
     <!-- properties for ImportSeveralVersionsTest and import-old-zeebe-tests module -->
     <version.zeebe.old>8.1.0</version.zeebe.old>
