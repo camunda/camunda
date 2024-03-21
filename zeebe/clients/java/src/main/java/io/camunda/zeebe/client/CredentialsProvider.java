@@ -27,7 +27,7 @@ public interface CredentialsProvider {
    * Adds credentials to the headers. For an example of this, see {@link
    * OAuthCredentialsProvider#applyCredentials(CredentialsApplier)}
    *
-   * @param applier where to headers
+   * @param applier where to add the credentials headers
    */
   void applyCredentials(final CredentialsApplier applier) throws IOException;
 
