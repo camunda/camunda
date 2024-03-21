@@ -25,7 +25,7 @@
 
     <!-- database config -->
     <elasticsearch.version>7.17.18</elasticsearch.version>
-    <opensearch.version>2.9.0</opensearch.version>
+    <opensearch.version>2.9.1</opensearch.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -35,7 +35,7 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.23.0</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.23.1</elasticsearch.log4j.version>
 
     <jackson.version>2.17.0</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
@@ -43,13 +43,13 @@
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.1.0-jre</guava.version>
     <spring.boot.version>3.1.9</spring.boot.version>
-    <spring.version>6.1.4</spring.version>
+    <spring.version>6.1.5</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
     <netty.version>4.1.107.Final</netty.version>
     <lombok.version>1.18.30</lombok.version>
-    <logback.version>1.5.0</logback.version>
+    <logback.version>1.5.3</logback.version>
     <slf4j.version>2.0.12</slf4j.version>
     <commons.io.version>2.15.1</commons.io.version>
 
@@ -58,7 +58,7 @@
 
     <!-- testing config -->
     <h2.version>2.2.224</h2.version>
-    <postgres.version>42.7.2</postgres.version>
+    <postgres.version>42.7.3</postgres.version>
     <mockito.version>5.11.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.10.2</junit.jupiter.version>
