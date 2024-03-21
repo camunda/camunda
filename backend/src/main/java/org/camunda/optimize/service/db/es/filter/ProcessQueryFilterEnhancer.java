@@ -46,7 +46,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.User
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.service.db.es.filter.util.IncidentFilterQueryUtil;
 import org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
@@ -54,6 +57,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto<?>> {
 
+  private final ConfigurationService configurationService;
+  private final Environment environment;
   @Getter private final InstanceStartDateQueryFilter instanceStartDateQueryFilter;
   @Getter private final InstanceEndDateQueryFilter instanceEndDateQueryFilter;
   private final ProcessVariableQueryFilter variableQueryFilter;
@@ -132,8 +137,10 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
           filterContext);
       flowNodeDurationQueryFilter.addFilters(
           query, extractInstanceFilters(filters, FlowNodeDurationFilterDto.class), filterContext);
-      assigneeQueryFilter.addFilters(
-          query, extractInstanceFilters(filters, AssigneeFilterDto.class), filterContext);
+      if (isAssigneeFiltersEnabled()) {
+        assigneeQueryFilter.addFilters(
+            query, extractInstanceFilters(filters, AssigneeFilterDto.class), filterContext);
+      }
       candidateGroupQueryFilter.addFilters(
           query, extractInstanceFilters(filters, CandidateGroupFilterDto.class), filterContext);
       openIncidentQueryFilter.addFilters(
@@ -190,5 +197,10 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
         .ifPresent(query::filter);
     IncidentFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters)
         .ifPresent(query::filter);
+  }
+
+  private boolean isAssigneeFiltersEnabled() {
+    return ConfigurationService.getOptimizeProfile(environment).equals(OptimizeProfile.PLATFORM)
+        || configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
   }
 }

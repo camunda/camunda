@@ -22,6 +22,7 @@ public class UIConfigurationResponseDto {
   private boolean sharingEnabled;
   private boolean tenantsAvailable;
   private boolean userSearchAvailable;
+  private boolean userTaskAssigneeAnalyticsEnabled;
   private String optimizeVersion;
   private String optimizeDocsVersion;
   private boolean isEnterpriseMode;

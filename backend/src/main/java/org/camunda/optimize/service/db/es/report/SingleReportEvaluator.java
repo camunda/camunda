@@ -31,6 +31,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -52,24 +53,29 @@ public class SingleReportEvaluator {
       final NotSupportedCommand notSupportedCommand,
       final ApplicationContext applicationContext,
       final Collection<Command<?, ?>> commands) {
-    this(
-        configurationService,
-        notSupportedCommand,
-        applicationContext,
+    final boolean isAssigneeAnalyticsEnabled =
+        ConfigurationService.getOptimizeProfile(applicationContext.getEnvironment())
+                .equals(OptimizeProfile.PLATFORM)
+            || configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
+    this.configurationService = configurationService;
+    this.notSupportedCommand = notSupportedCommand;
+    this.applicationContext = applicationContext;
+    commandSuppliers =
         commands.stream()
+            .filter(command -> isAssigneeAnalyticsEnabled || !command.isAssigneeReport())
             .collect(
                 Collectors.toMap(
-                    Command::createCommandKey, c -> applicationContext.getBean(c.getClass()))));
+                    Command::createCommandKey, c -> applicationContext.getBean(c.getClass())));
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
   public <T> SingleReportEvaluationResult<T> evaluate(
       final ReportEvaluationContext<ReportDefinitionDto<?>> reportEvaluationContext)
       throws OptimizeException {
-    List<Command<T, ReportDefinitionDto<?>>> commands =
+    final List<Command<T, ReportDefinitionDto<?>>> commands =
         extractCommandsWithValidation(reportEvaluationContext);
     final List<CommandEvaluationResult<T>> commandEvaluationResults = new ArrayList<>();
-    for (Command<?, ReportDefinitionDto<?>> command : commands) {
+    for (final Command<?, ReportDefinitionDto<?>> command : commands) {
       commandEvaluationResults.add(
           (CommandEvaluationResult<T>) command.evaluate(reportEvaluationContext));
     }
@@ -79,7 +85,7 @@ public class SingleReportEvaluator {
 
   @SuppressWarnings(UNCHECKED_CAST)
   public <T, R extends ReportDefinitionDto<?>> List<Command<T, R>> extractCommands(
-      R reportDefinition) {
+      final R reportDefinition) {
     return reportDefinition.getData().createCommandKeys().stream()
         .map(
             commandKey ->
@@ -119,7 +125,7 @@ public class SingleReportEvaluator {
     final int limit;
     final String scrollId;
     final Integer scrollTimeout;
-    PaginationDto completePagination;
+    final PaginationDto completePagination;
     if (reportEvaluationContext.isCsvExport()) {
       offset = 0;
       limit =
@@ -139,9 +145,10 @@ public class SingleReportEvaluator {
               .map(PaginationDto::getLimit)
               .orElse(PAGINATION_DEFAULT_LIMIT);
     }
-    PaginationDto pagData = reportEvaluationContext.getPagination().orElse(new PaginationDto());
+    final PaginationDto pagData =
+        reportEvaluationContext.getPagination().orElse(new PaginationDto());
     if (pagData instanceof PaginationScrollableDto) {
-      PaginationScrollableDto paginationFromRequest = (PaginationScrollableDto) pagData;
+      final PaginationScrollableDto paginationFromRequest = (PaginationScrollableDto) pagData;
       scrollId = paginationFromRequest.getScrollId(); // Could be null, but it's ok
       scrollTimeout =
           Optional.of(paginationFromRequest)

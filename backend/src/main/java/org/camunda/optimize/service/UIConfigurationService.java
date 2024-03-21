@@ -59,6 +59,8 @@ public class UIConfigurationService {
     final OptimizeProfile optimizeProfile = ConfigurationService.getOptimizeProfile(environment);
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
     uiConfigurationDto.setUserSearchAvailable(isUserSearchAvailable(optimizeProfile));
+    uiConfigurationDto.setUserTaskAssigneeAnalyticsEnabled(
+        configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled());
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());

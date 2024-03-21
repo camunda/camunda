@@ -36,4 +36,9 @@ public class UserTaskFrequencyGroupByAssigneeDistributeByTaskCmd
         .resultAsHyperMap()
         .build();
   }
+
+  @Override
+  public boolean isAssigneeReport() {
+    return true;
+  }
 }

@@ -34,4 +34,9 @@ public class UserTaskDurationGroupByAssigneeCmd extends ProcessCmd<List<MapResul
         .resultAsMap()
         .build();
   }
+
+  @Override
+  public boolean isAssigneeReport() {
+    return true;
+  }
 }

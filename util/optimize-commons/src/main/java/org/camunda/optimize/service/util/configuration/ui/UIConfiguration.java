@@ -12,4 +12,5 @@ public class UIConfiguration {
 
   private boolean logoutHidden;
   private String mixpanelToken;
+  private boolean userTaskAssigneeAnalyticsEnabled;
 }

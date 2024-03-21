@@ -36,4 +36,9 @@ public class UserTaskDurationGroupByTaskGroupByAssigneeCmd
         .resultAsHyperMap()
         .build();
   }
+
+  @Override
+  public boolean isAssigneeReport() {
+    return true;
+  }
 }

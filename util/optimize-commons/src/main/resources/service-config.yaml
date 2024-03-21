@@ -686,6 +686,8 @@ locales:
 ui:
   # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
   logoutHidden: ${CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN:false}
+  # Flag to disable userTask assignee specific analytics such as report types and filters
+  userTaskAssigneeAnalyticsEnabled: ${CAMUNDA_OPTIMIZE_UI_USER_TASK_ASSIGNEE_ANALYTICS_ENABLED:true}
 
 eventBasedProcess:
   # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
