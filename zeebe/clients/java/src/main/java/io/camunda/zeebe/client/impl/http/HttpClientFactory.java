@@ -215,7 +215,7 @@ public class HttpClientFactory {
 
     @Override
     public void verify(final String host, final X509Certificate cert) throws SSLException {
-      final String hostname = host.equals("0.0.0.0") ? "localhost" : host;
+      final String hostname = "0.0.0.0".equals(host) ? "localhost" : host;
       if (overriddenAuthority != null) {
         delegate.verify(overriddenAuthority, cert);
       } else {
@@ -226,7 +226,7 @@ public class HttpClientFactory {
 
     @Override
     public boolean verify(final String hostname, final SSLSession session) {
-      final String host = hostname.equals("0.0.0.0") ? "localhost" : hostname;
+      final String host = "0.0.0.0".equals(hostname) ? "localhost" : hostname;
       return delegate.verify(overriddenAuthority == null ? host : overriddenAuthority, session);
     }
   }
