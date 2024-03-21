@@ -16,7 +16,6 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Encapsulates an instance of the {@link StandaloneGateway} Spring application. */
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
@@ -32,7 +31,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     config.getCluster().setPort(SocketUtil.getNextAddress().getPort());
 
     //noinspection resource
-    withBean("config", config, GatewayProperties.class);
+    withBean("config", config, GatewayProperties.class).withAdditionalProfile(Profile.GATEWAY);
   }
 
   @Override
@@ -67,11 +66,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
       case CLUSTER -> config.getCluster().getPort();
       default -> super.mappedPort(port);
     };
-  }
-
-  @Override
-  protected SpringApplicationBuilder createSpringBuilder() {
-    return super.createSpringBuilder().profiles(Profile.GATEWAY.getId());
   }
 
   @Override

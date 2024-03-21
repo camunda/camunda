@@ -15,6 +15,8 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.prometheus.client.CollectorRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
@@ -27,21 +29,25 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Class<?> springApplication;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
+  private final Collection<String> additionalProfiles;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
 
   private ConfigurableApplicationContext springContext;
 
   public TestSpringApplication(final Class<?> springApplication) {
-    this(springApplication, new HashMap<>(), new HashMap<>());
+    this(springApplication, new HashMap<>(), new HashMap<>(), new ArrayList<>());
   }
 
   private TestSpringApplication(
       final Class<?> springApplication,
       final Map<String, Bean<?>> beans,
-      final Map<String, Object> propertyOverrides) {
+      final Map<String, Object> propertyOverrides,
+      final Collection<String> additionalProfiles) {
     this.springApplication = springApplication;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
+    this.additionalProfiles = new ArrayList<>(additionalProfiles);
+    this.additionalProfiles.add(Profile.TEST.getId());
 
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
@@ -127,6 +133,12 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  @Override
+  public T withAdditionalProfile(final String profile) {
+    additionalProfiles.add(profile);
+    return self();
+  }
+
   /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
     return new String[0];
@@ -142,7 +154,7 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         .lazyInitialization(true)
         .registerShutdownHook(false)
         .initializers(new ContextOverrideInitializer(beans, propertyOverrides))
-        .profiles(Profile.TEST.getId())
+        .profiles(additionalProfiles.toArray(String[]::new))
         .sources(springApplication);
   }
 

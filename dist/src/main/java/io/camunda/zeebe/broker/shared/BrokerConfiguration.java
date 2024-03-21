@@ -48,11 +48,7 @@ public final class BrokerConfiguration {
     return workingDirectory;
   }
 
-  @ConditionalOnProperty(
-      prefix = "zeebe.broker.gateway",
-      name = "enable",
-      havingValue = "false",
-      matchIfMissing = true)
+  @ConditionalOnProperty(prefix = "zeebe.broker.gateway", name = "enable", havingValue = "false")
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
