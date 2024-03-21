@@ -65,7 +65,7 @@ defaults:
 
 env:
   JAVA_VERSION: 17
-  LIMITS_CPU: 2
+  LIMITS_CPU: 4
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   TAG_VERSION: operate-${{ inputs.releaseVersion }}
   GITHUB_UPLOAD_RELEASE: ${{ inputs.githubUploadRelease }}
