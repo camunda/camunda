@@ -228,7 +228,7 @@ jobs:
           sudo apt install -y jq
           sudo apt install -y bash
 
-          if [ -f operate.Dockerfile ]; then
+          if [ -pl operate.Dockerfile ]; then
             export DOCKER_FILE_NAME=operate.Dockerfile
           else
             export DOCKER_FILE_NAME=Dockerfile

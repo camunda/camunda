@@ -27,9 +27,9 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "17"
-      - run: mvn -f operate -q license:check -Dlicense.header=license/license-header
+      - run: mvn -pl operate -q license:check -Dlicense.header=license/license-header
         name: Check license header
-      - run: mvn -f operate -q checkstyle:check
+      - run: mvn -pl operate -q checkstyle:check
         name: Check Checkstyle
-      - run: mvn -f operate -q spotless:check
+      - run: mvn -pl operate -q spotless:check
         name: Check Google Java codestyle
