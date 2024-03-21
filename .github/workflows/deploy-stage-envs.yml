@@ -92,7 +92,7 @@ jobs:
           echo "git-ref=${GIT_REF}"
         } >> $GITHUB_OUTPUT
       shell: bash
-    - name: Argocd arguments
+    - name: Get ArgoCD arguments for ${{ matrix.env }}
       id: argocd
       env:
         C7: >-
@@ -126,7 +126,7 @@ jobs:
         credentials_json: ${{ steps.secrets.outputs.CI_SERVICE_ACCOUNT }}
     - uses: 'google-github-actions/setup-gcloud@v2'
       if: matrix.env == 'C7'
-    - name: Check if a new database backup is available to restore
+    - name: Check if a new database backup for C7 is available to restore
       if: matrix.env == 'C7'
       id: db_backup
       env:
@@ -144,7 +144,7 @@ jobs:
         {
           echo "etag=$etag_backup"
           echo "restore=$restore"
-        } >> $GITHUB_OUTPUT
+        } | tee -a $GITHUB_OUTPUT
       shell: bash
     - name: Setup PostgreSQL client
       if: matrix.env == 'C7' && steps.db_backup.outputs.restore == 'true'
@@ -187,10 +187,10 @@ jobs:
         app_name: ${{ steps.params.outputs.argocd-app-name }}
         app_url: https://${{ steps.params.outputs.app-name }}${{ matrix.env == 'C8' && '-c8' || '' }}.optimize.camunda.cloud
         argocd_arguments: ${{ steps.argocd.outputs.args }}
-    - name: Ingest event data
+    - name: Ingest event data for C7
       if: matrix.env == 'C7'
       env:
-        OPTIMIZE_ENDPOINT: http://optimize.optimize-stage:8090
+        OPTIMIZE_ENDPOINT: http://optimize.optimize-${{ steps.params.outputs.app-name }}:8090
         OPTIMIZE_DEMO_DATA_FILE: ./client/demo-data/eventIngestionBatch.json
       run: |
         # using -H 'Expect:' to disable 100-continue behavior of curl, see https://gms.tf/when-curl-sends-100-continue.html
