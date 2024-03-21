@@ -369,7 +369,6 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageBefore() {
     // given
@@ -476,7 +475,6 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageAfter() {
     // given
@@ -573,7 +571,6 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageCorrelateBefore() {
     // given

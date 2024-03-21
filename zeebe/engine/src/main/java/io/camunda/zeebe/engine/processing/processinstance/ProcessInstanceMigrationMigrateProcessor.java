@@ -11,8 +11,10 @@ import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstance
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -43,10 +46,12 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -67,6 +72,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final CatchEventBehavior catchEventBehavior;
 
   public ProcessInstanceMigrationMigrateProcessor(
@@ -83,6 +89,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
   }
 
@@ -192,7 +199,11 @@ public class ProcessInstanceMigrationMigrateProcessor
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoBoundaryEventInSource(
         sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
-    requireNoBoundaryEventInTarget(targetProcessDefinition, targetElementId, elementInstanceRecord);
+    requireNoBoundaryEventInTarget(
+        targetProcessDefinition,
+        targetElementId,
+        elementInstanceRecord,
+        EnumSet.of(BpmnEventType.MESSAGE));
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
@@ -274,19 +285,58 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
 
+    final var context = new BpmnElementContextImpl();
+    context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
+    final var targetElement =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableActivity.class);
+    final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
+    catchEventBehavior
+        .subscribeToEvents(
+            context,
+            targetElement,
+            catchEvent -> {
+              final var element = catchEvent.element();
+              final String targetCatchEventId = BufferUtil.bufferAsString(element.getId());
+              requireNoMappedCatchEventsInTarget(
+                  sourceElementIdToTargetElementId,
+                  targetCatchEventId,
+                  processInstanceKey,
+                  elementId,
+                  targetElementId);
+              if (element.isMessage()) {
+                requireNoSubscriptionForMessage(
+                    elementInstance,
+                    catchEvent.messageName(),
+                    elementInstanceRecord.getTenantId(),
+                    targetCatchEventId);
+                subscribedMessageNames.add(catchEvent.messageName());
+              }
+              return true;
+            })
+        .ifLeft(
+            failure -> {
+              throw new ProcessInstanceMigrationPreconditionFailedException(
+                      """
+                  Expected to migrate process instance '%s' \
+                  but active element with id '%s' is mapped to element with id '%s' \
+                  that must be subscribed to a message catch event. %s"""
+                      .formatted(
+                          processInstanceKey, elementId, targetElementId, failure.getMessage()),
+                  RejectionType.INVALID_STATE);
+            });
+
     catchEventBehavior.unsubscribeFromMessageEvents(
         elementInstance.getKey(),
-        catchEventIdBuffer -> {
-          final String catchEventId = BufferUtil.bufferAsString(catchEventIdBuffer);
-          if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
-            throw new ProcessInstanceMigrationPreconditionFailedException(
-                    """
-                    Expected to migrate process instance '%s' \
-                    but active element with id '%s' is subscribed to mapped catch event with id '%s'. \
-                    Migrating active elements with mapped catch events is not possible yet."""
-                    .formatted(processInstanceKey, elementId, catchEventId),
-                RejectionType.INVALID_STATE);
+        subscription -> {
+          if (subscribedMessageNames.contains(subscription.getRecord().getMessageNameBuffer())) {
+            // We just subscribed to this message for this migration, we don't want to undo that
+            return false;
           }
+          final var catchEventId = subscription.getRecord().getElementId();
+          requireNoMappedCatchEventsInSource(
+              sourceElementIdToTargetElementId, catchEventId, processInstanceKey, elementId);
           return true;
         });
   }
@@ -313,6 +363,18 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setProcessDefinitionKey(targetProcessDefinition.getKey())
             .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
             .setElementId(BufferUtil.wrapString(targetElementId)));
+  }
+
+  private void requireNoSubscriptionForMessage(
+      final ElementInstance elementInstance,
+      final DirectBuffer messageName,
+      final String tenantId,
+      final String targetCatchEventId) {
+    final boolean existSubscriptionForMessageName =
+        processMessageSubscriptionState.existSubscriptionForElementInstance(
+            elementInstance.getKey(), messageName, tenantId);
+    ProcessInstanceMigrationPreconditionChecker.requireNoSubscriptionForMessage(
+        existSubscriptionForMessageName, elementInstance, messageName, targetCatchEventId);
   }
 
   /**

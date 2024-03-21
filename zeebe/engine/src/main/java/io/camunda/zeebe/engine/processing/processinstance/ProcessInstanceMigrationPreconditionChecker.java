@@ -97,8 +97,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   private static final String ERROR_TARGET_ELEMENT_WITH_BOUNDARY_EVENT =
       """
               Expected to migrate process instance '%s' \
-              but target element with id '%s' has a boundary event. \
-              Migrating target elements with boundary events is not possible yet.""";
+              but target element with id '%s' has one or more boundary events of types '%s'. \
+              Migrating target elements with boundary events of these types is not possible yet.""";
   private static final String ERROR_CONCURRENT_COMMAND =
       "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
   private static final long NO_PARENT = -1L;
@@ -444,10 +444,46 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       final DeployedProcess sourceProcessDefinition,
       final ProcessInstanceRecord elementInstanceRecord,
       final EnumSet<BpmnEventType> allowedEventTypes) {
+    requireNoBoundaryEvent(
+        sourceProcessDefinition,
+        elementInstanceRecord,
+        elementInstanceRecord.getElementId(),
+        allowedEventTypes,
+        ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT);
+  }
+
+  /**
+   * Checks whether the given target process definition contains a boundary event. Throws an
+   * exception if the target process definition contains a boundary event.
+   *
+   * @param targetProcessDefinition target process definition to do the check
+   * @param targetElementId target element id to retrieve the target element
+   * @param elementInstanceRecord element instance to be logged
+   * @param allowedEventTypes allowed event types for the boundary event
+   */
+  public static void requireNoBoundaryEventInTarget(
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final EnumSet<BpmnEventType> allowedEventTypes) {
+    requireNoBoundaryEvent(
+        targetProcessDefinition,
+        elementInstanceRecord,
+        targetElementId,
+        allowedEventTypes,
+        ERROR_TARGET_ELEMENT_WITH_BOUNDARY_EVENT);
+  }
+
+  private static void requireNoBoundaryEvent(
+      final DeployedProcess sourceProcessDefinition,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final String elementId,
+      final EnumSet<BpmnEventType> allowedEventTypes,
+      final String errorTemplate) {
     final List<ExecutableBoundaryEvent> boundaryEvents =
         sourceProcessDefinition
             .getProcess()
-            .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
+            .getElementById(elementId, ExecutableActivity.class)
             .getBoundaryEvents();
 
     final var rejectedBoundaryEvents =
@@ -462,41 +498,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
               .map(BpmnEventType::name)
               .collect(Collectors.joining(","));
       final String reason =
-          String.format(
-              ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT,
-              elementInstanceRecord.getProcessInstanceKey(),
-              elementInstanceRecord.getElementId(),
-              rejectedEventTypes);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
-    }
-  }
-
-  /**
-   * Checks whether the given target process definition contains a boundary event. Throws an
-   * exception if the target process definition contains a boundary event.
-   *
-   * @param targetProcessDefinition target process definition to do the check
-   * @param targetElementId target element id to retrieve the target element
-   * @param elementInstanceRecord element instance to be logged
-   */
-  public static void requireNoBoundaryEventInTarget(
-      final DeployedProcess targetProcessDefinition,
-      final String targetElementId,
-      final ProcessInstanceRecord elementInstanceRecord) {
-    final boolean hasBoundaryEventInTarget =
-        !targetProcessDefinition
-            .getProcess()
-            .getElementById(targetElementId, ExecutableActivity.class)
-            .getBoundaryEvents()
-            .isEmpty();
-
-    if (hasBoundaryEventInTarget) {
-      final String reason =
-          String.format(
-              ERROR_TARGET_ELEMENT_WITH_BOUNDARY_EVENT,
-              elementInstanceRecord.getProcessInstanceKey(),
-              elementInstanceRecord.getElementId());
+          errorTemplate.formatted(
+              elementInstanceRecord.getProcessInstanceKey(), elementId, rejectedEventTypes);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
@@ -530,6 +533,93 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Throws an exception if the element instance is already subscribed to the same message.
+   *
+   * <p>We cannot support re-subscribing to message catch events that we're already subscribed to.
+   * The user must provide a mapping instruction for such catch events to migrate them instead.
+   *
+   * @param existSubscriptionForMessageName whether the element instance is already subscribed to
+   *     the message, if true this method throws an exception
+   * @param elementInstance the element instance to check for subscriptions
+   * @param messageName the name of the message that the element should not be subscribed to
+   * @param targetCatchEventId the id of the catch event that would subscribe to this message
+   */
+  public static void requireNoSubscriptionForMessage(
+      final boolean existSubscriptionForMessageName,
+      final ElementInstance elementInstance,
+      final DirectBuffer messageName,
+      final String targetCatchEventId) {
+    if (existSubscriptionForMessageName) {
+      final long processInstanceKey = elementInstance.getValue().getProcessInstanceKey();
+      final String elementId = elementInstance.getValue().getElementId();
+      final String messageNameString = BufferUtil.bufferAsString(messageName);
+
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+              """
+          Expected to migrate process instance '%s' but active element with id '%s' \
+          attempts to subscribe to a message it is already subscribed to with name '%s'. \
+          Migrating active elements that subscribe to a message they are already \
+          subscribed to is not possible yet. Please provide a mapping instruction to \
+          message catch event with id '%s' to migrate the respective message subscription.\
+          """
+              .formatted(processInstanceKey, elementId, messageNameString, targetCatchEventId),
+          RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Throws an exception if a mapping is provided for a catch event that the active element is
+   * subscribed to.
+   *
+   * @param sourceElementIdToTargetElementId the mapping instructions
+   * @param sourceCatchEventId the id of the source catch event to check for
+   * @param processInstanceKey the key of the process instance (for logging)
+   * @param elementId the id of the active element (for logging)
+   */
+  public static void requireNoMappedCatchEventsInSource(
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final String sourceCatchEventId,
+      final long processInstanceKey,
+      final String elementId) {
+    if (sourceElementIdToTargetElementId.containsKey(sourceCatchEventId)) {
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+              """
+          Expected to migrate process instance '%s' \
+          but active element with id '%s' is subscribed to mapped catch event with id '%s'. \
+          Migrating active elements with mapped catch events is not possible yet."""
+              .formatted(processInstanceKey, elementId, sourceCatchEventId),
+          RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Throws an exception if a mapping is provided to the target catch event.
+   *
+   * @param sourceElementIdToTargetElementId the mapping instructions
+   * @param targetCatchEventId the id of the target catch event to check for
+   * @param processInstanceKey the key of the process instance (for logging)
+   * @param elementId the id of the active element (for logging)
+   * @param targetElementId the id of the target element (for logging)
+   */
+  public static void requireNoMappedCatchEventsInTarget(
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final String targetCatchEventId,
+      final long processInstanceKey,
+      final String elementId,
+      final String targetElementId) {
+    if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+              """
+          Expected to migrate process instance '%s' \
+          but active element with id '%s' is mapped to element with id '%s' \
+          that must be subscribed to mapped catch event with id '%s'. \
+          Migrating active elements with mapped catch events is not possible yet."""
+              .formatted(processInstanceKey, elementId, targetElementId, targetCatchEventId),
+          RejectionType.INVALID_STATE);
     }
   }
 
