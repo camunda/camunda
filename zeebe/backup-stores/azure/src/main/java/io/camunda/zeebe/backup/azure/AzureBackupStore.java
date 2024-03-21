@@ -140,8 +140,9 @@ public final class AzureBackupStore implements BackupStore {
             throw new UnexpectedManifestState(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS -> throw new UnexpectedManifestState(
-                ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+            case FAILED, IN_PROGRESS ->
+                throw new UnexpectedManifestState(
+                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
