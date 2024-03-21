@@ -8,6 +8,7 @@
 package io.camunda.zeebe.shared.security;
 
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import io.camunda.zeebe.shared.management.ConditionalOnManagementContext;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
@@ -24,8 +25,11 @@ import org.springframework.security.config.web.server.ServerHttpSecurity.CsrfSpe
 import org.springframework.security.config.web.server.ServerHttpSecurity.FormLoginSpec;
 import org.springframework.security.config.web.server.ServerHttpSecurity.HttpBasicSpec;
 import org.springframework.security.config.web.server.ServerHttpSecurity.LogoutSpec;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import reactor.core.publisher.Mono;
 
 @Profile("identity-auth")
 @EnableWebFluxSecurity
@@ -43,6 +47,7 @@ public final class SecurityConfiguration {
     final var authFilter = new AuthenticationWebFilter(authManager);
     authFilter.setServerAuthenticationConverter(converter);
     authFilter.setAuthenticationFailureHandler(authFailureHandler);
+    authFilter.setAuthenticationSuccessHandler(SecurityConfiguration::injectTenantIds);
 
     return configureSecurity(http)
         .authenticationManager(authManager)
@@ -53,6 +58,16 @@ public final class SecurityConfiguration {
                     .accessDeniedHandler(authFailureHandler))
         .authorizeExchange(spec -> spec.anyExchange().authenticated())
         .build();
+  }
+
+  private static Mono<Void> injectTenantIds(
+      final WebFilterExchange webFilterExchange, final Authentication authentication) {
+    final var exchange = webFilterExchange.getExchange();
+    if (authentication instanceof final IdentityAuthentication identity) {
+      TenantAttributeHolder.withTenantIds(exchange, identity.tenantIds());
+    }
+
+    return webFilterExchange.getChain().filter(exchange);
   }
 
   private static ServerHttpSecurity configureSecurity(final ServerHttpSecurity http) {

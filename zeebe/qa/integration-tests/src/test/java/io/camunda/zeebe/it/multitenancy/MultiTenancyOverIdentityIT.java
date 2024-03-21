@@ -776,6 +776,46 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
+  void shouldCompleteUserTaskForTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+
+      // when
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
   void shouldUpdateJobTimeoutForTenant() {
     // given
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {

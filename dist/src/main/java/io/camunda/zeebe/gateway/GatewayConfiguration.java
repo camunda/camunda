@@ -9,11 +9,13 @@ package io.camunda.zeebe.gateway;
 
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
@@ -37,6 +39,11 @@ public final class GatewayConfiguration {
 
   public Duration shutdownTimeout() {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
+  }
+
+  @Bean
+  public MultiTenancyCfg multiTenancyCfg() {
+    return config.getMultiTenancy();
   }
 
   @ConfigurationProperties("zeebe.gateway")
