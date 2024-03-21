@@ -1107,6 +1107,8 @@
     "units": "Units",
     "link": "Link",
     "details": "Details",
+    "nextStep": "Next step",
+    "previousStep": "Previous step",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

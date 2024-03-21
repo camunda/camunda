@@ -45,8 +45,11 @@ export {CopyToClipboard} from './CopyToClipboard';
 export {ShareEntity} from './ShareEntity';
 export {ErrorPage} from './ErrorPage';
 export {ErrorBoundary} from './ErrorBoundary';
+export {TargetSelection} from './TargetSelection';
 // @ts-ignore
 export {DefinitionSelection} from './DefinitionSelection';
+// @ts-ignore
+export {ReportRenderer} from './ReportRenderer';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

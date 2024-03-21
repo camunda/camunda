@@ -62,3 +62,4 @@ export {EntityDescription} from './EntityDescription';
 export {Popover} from './Popover';
 export {InstanceViewTable} from './InstanceViewTable';
 export {TenantInfo} from './TenantInfo';
+export {TargetSelection} from './TargetSelection';

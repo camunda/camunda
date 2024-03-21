@@ -5,29 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {post} from 'request';
 import {t} from 'translation';
 
-export {loadRawData} from './reportService.ts';
+export {loadRawData, evaluateReport} from './reportService.ts';
 
 export function isDurationReport(report) {
   return report?.data?.view?.properties.includes('duration');
-}
-
-export async function evaluateReport(payload, filter = [], query = {}) {
-  let response;
-
-  if (typeof payload !== 'object') {
-    // evaluate saved report
-    response = await post(`api/report/${payload}/evaluate`, {filter}, {query});
-  } else {
-    // evaluate unsaved report
-    // we dont want to send report result in payload to prevent exceedeing request size limit
-    const {result, ...evaluationPayload} = payload;
-    response = await post(`api/report/evaluate/`, evaluationPayload, {query});
-  }
-
-  return await response.json();
 }
 
 export function getReportResult(report, idx = 0) {

@@ -15,6 +15,7 @@ import ProgressBar from './ProgressBar';
 
 jest.mock('services', () => {
   return {
+    ...jest.requireActual('services'),
     loadVariables: jest.fn().mockReturnValue([]),
     formatters: {
       convertDurationToSingleNumber: () => 12,

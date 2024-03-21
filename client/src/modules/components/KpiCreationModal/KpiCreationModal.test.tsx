@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 import {ComboBox} from '@carbon/react';
 
 import {DefinitionSelection} from 'components';
-import {createEntity} from 'services';
+import {createEntity, evaluateReport} from 'services';
 
 import KpiCreationModal from './KpiCreationModal';
 import {automationRate} from './templates';
@@ -19,6 +19,7 @@ jest.mock('services', () => {
   return {
     ...rest,
     createEntity: jest.fn().mockReturnValue('id'),
+    evaluateReport: jest.fn().mockImplementation((report: any) => report),
   };
 });
 
@@ -55,6 +56,9 @@ it('should invoke createEntity when creating a kpi', async () => {
     .simulate('change', {key: 'testProcess', versions: ['1'], tenantIds: [null, 'engineering']});
 
   await node.prop('steps')[0].actions.primary.onClick();
+  expect(evaluateReport).toHaveBeenCalled();
+
+  await node.prop('steps')[1].actions.primary.onClick();
   const params = (createEntity as jest.Mock).mock.calls[0];
   expect(params[0]).toBe('report/process/single');
   expect(params[1].data.definitions).toEqual([
@@ -67,4 +71,29 @@ it('should invoke createEntity when creating a kpi', async () => {
   ]);
 
   expect(params[1].name).toBe('Automation rate');
+});
+
+it('should change the target on the created kpi report', async () => {
+  const node = shallow(<KpiCreationModal {...props} />);
+
+  const firstStep = node.prop('steps')[0];
+  const stepNode = shallow(firstStep.content);
+
+  stepNode.find(ComboBox).simulate('change', {selectedItem: automationRate()});
+  stepNode
+    .find(DefinitionSelection)
+    .simulate('change', {key: 'testProcess', versions: ['1'], tenantIds: [null, 'engineering']});
+
+  await node.prop('steps')[0].actions.primary.onClick();
+
+  const secondStep = node.prop('steps')[1];
+  const secondStepNode = shallow(secondStep.content);
+
+  secondStepNode
+    .find('TargetSelection')
+    .simulate('change', {targetValue: {countProgress: {target: {$set: '300'}}}});
+
+  await node.prop('steps')[1].actions.primary.onClick();
+  const params = (createEntity as jest.Mock).mock.calls[0];
+  expect(params[1].data.configuration.targetValue.countProgress.target).toBe('300');
 });

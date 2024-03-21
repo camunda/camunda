@@ -8,13 +8,15 @@
 import {useState} from 'react';
 import {ComboBox, Stack} from '@carbon/react';
 import {useHistory, useLocation} from 'react-router-dom';
+import update from 'immutability-helper';
 
-import {DefinitionSelection} from 'components';
+import {DefinitionSelection, TargetSelection, ReportRenderer} from 'components';
 import {t} from 'translation';
-import {getCollection, createEntity} from 'services';
+import {getCollection, createEntity, evaluateReport, ReportPayload} from 'services';
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {newReport} from 'config';
+import {SingleProcessReport} from 'types';
 
 import {KpiTemplate} from './templates/types';
 import {automationRate} from './templates';
@@ -25,7 +27,7 @@ interface KpiCreationModalProps {
 }
 
 export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.Element {
-  const [selectedKpi, setSelectedKpi] = useState<KpiTemplate>();
+  const [selectedKpi, setSelectedKpi] = useState<KpiTemplate | null>(null);
   const [definition, setDefinition] = useState<{
     key: string;
     versions: string[];
@@ -35,10 +37,14 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     versions: [],
     tenantIds: [],
   });
+  const [evaluatedReport, setEvaluatedReport] = useState<SingleProcessReport>();
   const history = useHistory();
   const {pathname} = useLocation();
-  const {mightFail} = useErrorHandling();
   const kpiTemplates = [automationRate()];
+  const {mightFail} = useErrorHandling();
+
+  const loadReport = (reportPayload: ReportPayload<'process'>) =>
+    mightFail(evaluateReport(reportPayload, []), setEvaluatedReport, showError);
 
   return (
     <MultiStepModal
@@ -89,7 +95,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
           ),
           actions: {
             primary: {
-              label: t('report.kpiTemplates.create'),
+              label: t('common.nextStep'),
               kind: 'primary',
               disabled: !definition.key || !selectedKpi,
               onClick: async () => {
@@ -97,34 +103,73 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                   return;
                 }
 
-                const collectionId = getCollection(pathname);
-                await mightFail(
-                  createEntity('report/process/single', {
-                    collectionId,
-                    name: selectedKpi.name,
-                    description: selectedKpi.description,
-                    data: {
-                      ...selectedKpi.config,
-                      configuration: {
-                        ...newReport.new.data.configuration,
-                        targetValue: {
-                          ...newReport.new.data.configuration.targetValue,
-                          active: true,
-                          isKpi: true,
-                        },
+                const newReportPayload = newReport.new as unknown as ReportPayload<'process'>;
+                await loadReport({
+                  ...newReportPayload,
+                  collectionId: getCollection(pathname),
+                  name: selectedKpi.name,
+                  description: selectedKpi.description,
+                  data: {
+                    ...selectedKpi.config,
+                    configuration: {
+                      ...newReportPayload.data?.configuration,
+                      targetValue: {
+                        ...newReportPayload.data?.configuration?.targetValue,
+                        isKpi: true,
+                        active: true,
                       },
-                      definitions: [
-                        {
-                          identifier: 'definition',
-                          ...definition,
-                        },
-                      ],
                     },
-                  }),
+                    definitions: [
+                      {
+                        identifier: 'definition',
+                        ...definition,
+                      },
+                    ],
+                  },
+                });
+              },
+            },
+          },
+        },
+        {
+          title: t('report.kpiTemplates.step', {count: 2}).toString(),
+          subtitle: t('report.config.goal.legend').toString(),
+          content: (
+            <Stack gap={6}>
+              {evaluatedReport && (
+                <>
+                  <TargetSelection
+                    report={evaluatedReport}
+                    onChange={(change) => {
+                      setEvaluatedReport((evaluatedReport) =>
+                        update(evaluatedReport, {
+                          data: {configuration: change},
+                        })
+                      );
+                    }}
+                  />
+
+                  <ReportRenderer report={evaluatedReport} loadReport={loadReport} />
+                </>
+              )}
+            </Stack>
+          ),
+          actions: {
+            primary: {
+              label: t('report.kpiTemplates.create'),
+              kind: 'primary',
+              disabled: !definition.key || !selectedKpi,
+              onClick: async () => {
+                await mightFail(
+                  createEntity('report/process/single', evaluatedReport),
                   (id) => history.push(`report/${id}/`),
                   showError
                 );
               },
+            },
+            secondary: {
+              label: t('common.previousStep'),
+              kind: 'secondary',
             },
           },
         },

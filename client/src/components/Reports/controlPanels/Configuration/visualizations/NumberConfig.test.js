@@ -43,40 +43,6 @@ const props = {
   },
 };
 
-it('should contain a target input for count property', () => {
-  const node = shallow(<NumberConfig {...props} />);
-
-  expect(node.find('CountTargetInput')).toExist();
-});
-
-it('should contain a target input for variable reports', () => {
-  const variableReportProps = update(props, {report: {data: {view: {entity: {$set: 'variable'}}}}});
-  const node = shallow(<NumberConfig {...variableReportProps} />);
-
-  expect(node.find('CountTargetInput')).toExist();
-});
-
-it('should contain a target input for duration property', () => {
-  const node = shallow(
-    <NumberConfig
-      {...props}
-      report={update(props.report, {data: {view: {properties: {$set: ['duration']}}}})}
-    />
-  );
-
-  expect(node.find('CountTargetInput')).not.toExist();
-  expect(node.find('DurationTargetInput')).toExist();
-});
-
-it('should not show target input for multi-measure reports', () => {
-  const node = shallow(
-    <NumberConfig report={update(props.report, {result: {measures: {$set: [{}, {}]}}})} />
-  );
-
-  expect(node.find('CountTargetInput')).not.toExist();
-  expect(node.find('DurationTargetInput')).not.toExist();
-});
-
 it('should not show precision selection for percentage reports', () => {
   const node = shallow(
     <NumberConfig
@@ -125,4 +91,15 @@ it('should not show kpi config for multi process reports', () => {
   );
 
   expect(node.find({label: 'Display as a process KPI'})).not.toExist();
+});
+
+it('should not show target input for multi-measure reports', () => {
+  const node = shallow(
+    <NumberConfig
+      {...props}
+      report={update(props.report, {result: {measures: {$set: [{}, {}]}}})}
+    />
+  );
+
+  expect(node.isEmptyRender()).toBe(true);
 });

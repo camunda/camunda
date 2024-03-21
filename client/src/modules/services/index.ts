@@ -26,6 +26,7 @@ export {
   isTextTileTooLong,
   isTextTileValid,
   loadRawData,
+  evaluateReport,
 } from './reportService';
 
 export {addSources, getCollection} from './collectionService';
@@ -37,3 +38,4 @@ export {incompatibleFilters} from './incompatibleFilters';
 export {loadDefinitions} from './loadDefinitions';
 
 export type {Definition} from './loadDefinitions';
+export type {ReportPayload} from './reportService';

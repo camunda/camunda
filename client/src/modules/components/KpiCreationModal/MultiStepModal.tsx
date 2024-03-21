@@ -21,7 +21,7 @@ import {Modal} from 'components';
 interface MultiStepModalAction {
   label: ReactNode;
   kind: ButtonKind;
-  onClick: (step?: number) => void | Promise<void>;
+  onClick?: (step?: number) => void | Promise<void>;
   disabled?: boolean;
 }
 
@@ -77,7 +77,7 @@ export function MultiStepModal({title, steps, size, onClose}: MultiStepModalProp
               if (step > 0) {
                 setStep(step - 1);
               }
-              secondary.onClick(step);
+              secondary.onClick?.(step);
             }}
           >
             {secondary.label}
@@ -89,7 +89,7 @@ export function MultiStepModal({title, steps, size, onClose}: MultiStepModalProp
             disabled={loading || primary.disabled}
             onClick={async () => {
               setLoading(true);
-              await primary.onClick(step);
+              await primary.onClick?.(step);
               setLoading(false);
               if (step < steps.length - 1) {
                 setStep(step + 1);
