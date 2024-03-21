@@ -191,13 +191,15 @@ jobs:
           generate_release_notes: true
           make_latest: \"false\"
 
+      # Easiest way to avoid race condition
+      - name: Wait for GitHub Release
+        run: sleep 10
+
       # Upload: Upload to GitHub Release
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
         run: |
-          sleep 10  # TODO: hack
-
           ARTIFACT="camunda-operate"
 
           cd operate/target/checkout/distro/target
@@ -215,7 +217,7 @@ jobs:
               echo "'${f}' file was created, skip upload in dryRun mode"
             elif $GITHUB_UPLOAD_RELEASE; then
               echo "Uploading '${f}' file to zeebe repo on GitHub"
-              ./github-release upload --user camunda --repo zeebe --tag ${TAG_VERSION} --name "${f}" --file "${f}"
+              ./github-release upload --user camunda --repo zeebe --tag "${TAG_VERSION}" --name "${f}" --file "${f}"
             else
               echo "'${f}' file was created, skip upload"
             fi
