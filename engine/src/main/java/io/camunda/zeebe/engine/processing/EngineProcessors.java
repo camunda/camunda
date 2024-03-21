@@ -117,7 +117,8 @@ public final class EngineProcessors {
         onJobsAvailableCallback,
         bpmnBehaviors,
         writers,
-        jobMetrics);
+        jobMetrics,
+        config);
 
     addIncidentProcessors(processingState, bpmnStreamProcessor, typedRecordProcessors, writers);
 

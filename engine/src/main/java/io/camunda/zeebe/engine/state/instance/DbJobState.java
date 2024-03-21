@@ -25,6 +25,7 @@ import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -291,18 +292,39 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void forEachTimedOutEntry(
-      final long upperBound, final BiPredicate<Long, JobRecord> callback) {
+  public DeadlineIndex forEachTimedOutEntry(
+      final long executionTimestamp,
+      final DeadlineIndex startAt,
+      final BiPredicate<Long, JobRecord> callback) {
+
+    final DbCompositeKey<DbLong, DbForeignKey<DbLong>> startAtKey;
+    if (startAt != null) {
+      deadlineKey.wrapLong(startAt.deadline());
+      jobKey.wrapLong(startAt.key());
+      startAtKey = deadlineJobKey;
+    } else {
+      startAtKey = null;
+    }
+
+    final var lastVisitedIndex = new AtomicReference<DeadlineIndex>();
     deadlinesColumnFamily.whileTrue(
+        startAtKey,
         (key, value) -> {
-          final long deadline = key.first().getValue();
-          final boolean isDue = deadline < upperBound;
-          if (isDue) {
-            final long jobKey1 = key.second().inner().getValue();
-            return visitJob(jobKey1, callback);
+          final var deadline = key.first().getValue();
+          final var isDue = deadline < executionTimestamp;
+          if (!isDue) {
+            return false;
           }
-          return false;
+          final var jobKey = key.second().inner().getValue();
+          if (!visitJob(jobKey, callback)) {
+            lastVisitedIndex.set(
+                new DeadlineIndex(key.first().getValue(), key.second().inner().getValue()));
+            return false;
+          }
+          return true;
         });
+
+    return lastVisitedIndex.get();
   }
 
   @Override
