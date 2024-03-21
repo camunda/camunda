@@ -32,6 +32,7 @@ import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PostConstruct;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -71,21 +72,15 @@ public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeCl
   }
 
   @Override
-  public int getGatewayRestApiPort() {
-    // TODO: implement
-    return 0;
-  }
-
-  @Override
-  public String getDefaultCommunicationApi() {
-    // TODO: implement
+  public URI getRestAddress() {
+    // TODO
     return null;
   }
 
   @Override
-  public boolean useRestApi() {
-    // TODO: implement
-    return false;
+  public URI getGrpcAddress() {
+    // TODO
+    return null;
   }
 
   @Override
@@ -194,6 +189,11 @@ public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeCl
   @Override
   public boolean useDefaultRetryPolicy() {
     return properties.useDefaultRetryPolicy();
+  }
+
+  @Override
+  public boolean preferRestOverGrpc() {
+    return false;
   }
 
   private CredentialsProvider initCredentialsProvider() {
