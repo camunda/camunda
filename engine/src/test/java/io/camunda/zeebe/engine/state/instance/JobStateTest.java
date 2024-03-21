@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -554,16 +555,20 @@ public final class JobStateTest {
     // when
     final List<Long> timedOutKeys = new ArrayList<>();
     final long since = 65536L;
-    jobState.forEachTimedOutEntry(
-        since,
-        (k, e) -> {
-          timedOutKeys.add(k);
-          return k.longValue() < 3;
-        });
+    final DeadlineIndex nextIndex =
+        jobState.forEachTimedOutEntry(
+            since,
+            null,
+            (k, e) -> {
+              timedOutKeys.add(k);
+              return k.longValue() < 3;
+            });
 
     // then
     assertThat(timedOutKeys).hasSize(3);
     assertThat(timedOutKeys).containsExactly(1L, 2L, 3L);
+    assertThat(nextIndex).isNotNull();
+    assertThat(nextIndex.key()).isEqualTo(3);
   }
 
   @Test
@@ -576,16 +581,19 @@ public final class JobStateTest {
     // when
     final List<Long> timedOutKeys = new ArrayList<>();
     final long since = 65536L;
-    jobState.forEachTimedOutEntry(
-        since,
-        (k, e) -> {
-          timedOutKeys.add(k);
-          return true;
-        });
+    final DeadlineIndex nextIndex =
+        jobState.forEachTimedOutEntry(
+            since,
+            null,
+            (k, e) -> {
+              timedOutKeys.add(k);
+              return true;
+            });
 
     // then
     assertThat(timedOutKeys).hasSize(1);
     assertThat(timedOutKeys).containsExactly(2L);
+    assertThat(nextIndex).isNull();
   }
 
   @Test
@@ -842,7 +850,7 @@ public final class JobStateTest {
   private List<Long> getTimedOutKeys(final long since) {
     final List<Long> timedOutKeys = new ArrayList<>();
 
-    jobState.forEachTimedOutEntry(since, (k, e) -> timedOutKeys.add(k));
+    jobState.forEachTimedOutEntry(since, null, (k, e) -> timedOutKeys.add(k));
     return timedOutKeys;
   }
 
