@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,16 +64,30 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
-
     // BlobServiceClientBuilder has their own validations, for building the client
     if (config.connectionString() != null) {
       return new BlobServiceClientBuilder()
           .connectionString(config.connectionString())
           .buildClient();
-    } else {
+    } else if (config.accountName() != null || config.accountKey() != null) {
+      final var credential =
+          new StorageSharedKeyCredential(
+              Objects.requireNonNull(
+                  config.accountName(),
+                  "Account key is specified but no account name was provided."),
+              Objects.requireNonNull(
+                  config.accountKey(),
+                  "Account name is specified but no account key was provided."));
       return new BlobServiceClientBuilder()
           .endpoint(config.endpoint())
-          .credential(new StorageSharedKeyCredential(config.accountName(), config.accountKey()))
+          .credential(credential)
+          .buildClient();
+    } else {
+      LOG.info(
+          "No connection string or account credentials are configured, using DefaultAzureCredentialBuilder for authentication.");
+      return new BlobServiceClientBuilder()
+          .endpoint(config.endpoint())
+          .credential(new DefaultAzureCredentialBuilder().build())
           .buildClient();
     }
   }
@@ -181,12 +197,14 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static void validateConfig(final AzureBackupConfig config) {
-    if (config.connectionString() == null
-        && (config.accountKey() == null
-            || config.accountName() == null
-            || config.endpoint() == null)) {
-      throw new IllegalArgumentException(
-          "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+    if (config.connectionString() == null && config.endpoint() == null) {
+      throw new IllegalArgumentException("Connection string or endpoint is required");
+    }
+    if (config.accountKey() != null && config.accountName() == null) {
+      throw new IllegalArgumentException("Account key is specified but account name is missing");
+    }
+    if (config.accountName() != null && config.accountKey() == null) {
+      throw new IllegalArgumentException("Account name is specified but account key is missing");
     }
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");

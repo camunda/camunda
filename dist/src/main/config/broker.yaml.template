@@ -295,26 +295,32 @@
 
         # Configure the following if store is set to AZURE
         # azure:
-          # Name of the endpoint where the backup will be stored.
-          # Sets the blob service endpoint.
+          # Azure endpoint to connect to. Required unless a connection string is specified.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ENDPOINT
           # endpoint:
 
-          # Account name that is used to connect to the service.
+          # Account name used to authenticate with Azure.
+          # Can only be used in combination with an account key.
+          # If account credentials or connection string are not provided, authentication will use credentials from the
+          # runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTNAME
           # accountName:
 
-          # Account key that is used to connect to the service.
+          # Account key that is used to authenticate with Azure.
+          # Can only be used in combination with an account name.
+          # If account credentials or connection string are not provided, authentication will use credentials from the
+          # runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTKEY
           # accountKey:
 
-          # The connection string to connect to the service.
-          # If this is defined, it will override the account name, account key, and endpoint.
+          # The connection string configures endpoint, account name and account key all at once.
+          # If neither connection string, account name, nor account key are defined, the azure client uses
+          # If connection string or account credentials are not provided, authentication will use credentials from the
+          # runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CONNECTIONSTRING
           # connectionString:
 
-          # Used to define the container name where the blobs will be saved.
-          # This basePath cannot be null.
+          # Defines the container name where backup contents are saved.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_BASEPATH
           # basePath:
 
