@@ -97,6 +97,9 @@
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <version.checkstyle>10.14.2</version.checkstyle>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
+    <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
+    <plugin.version.dependency>3.6.1</plugin.version.dependency>
+    <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
   </properties>
 
   <dependencyManagement>
@@ -512,6 +515,88 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${plugin.version.enforcer}</version>
+          <executions>
+            <execution>
+              <id>enforce-dependency-convergence</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <dependencyConvergence>
+                    <!-- To be removed once these conflicts are resolved by identity. -->
+                    <!-- See https://github.com/camunda-cloud/identity/issues/1696 -->
+                    <excludes>
+                      <exclude>com.auth0:java-jwt</exclude>
+                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
+                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk8</exclude>
+                      <exclude>com.squareup.okio:okio</exclude>
+                    </excludes>
+                  </dependencyConvergence>
+                </rules>
+              </configuration>
+            </execution>
+            <execution>
+              <id>enforce-unique-dependencies</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${plugin.version.dependency}</version>
+          <!-- To run with Java 11 - https://issues.apache.org/jira/browse/MDEP-613-->
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.shared</groupId>
+              <artifactId>maven-dependency-analyzer</artifactId>
+              <version>${plugin.version.dependency-analyzer}</version>
+            </dependency>
+          </dependencies>
+
+          <executions>
+            <execution>
+              <id>analyze-dependencies</id>
+              <goals>
+                <goal>analyze-only</goal>
+              </goals>
+              <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
+              <phase>verify</phase>
+              <configuration>
+                <failOnWarning>true</failOnWarning>
+                <outputXML>true</outputXML>
+                <!-- dependencies not directly used in all projects during tests -->
+                <ignoredUnusedDeclaredDependencies combine.children="append">
+                  <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+                  <dep>org.apache.logging.log4j:log4j-core</dep>
+                  <dep>io.camunda:zeebe-build-tools</dep>
+                  <dep>io.camunda:zeebe-gateway-protocol</dep>
+                  <dep>org.ow2.asm:asm</dep>
+                  <dep>org.bouncycastle:bcpkix-jdk18on</dep>
+                  <dep>org.bouncycastle:bcprov-jdk18on</dep>
+                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+                  <dep>org.junit.vintage:junit-vintage-engine</dep>
+                  <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
+                  <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
+                  <dep>org.postgresql:postgresql</dep>
+                </ignoredUnusedDeclaredDependencies>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -523,21 +608,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.1.0</version>
-        <executions>
-          <execution>
-            <id>enforce</id>
-            <configuration>
-              <rules>
-                <requirePluginVersion />
-                <banDuplicatePomDependencyVersions />
-              </rules>
-            </configuration>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-          </execution>
-        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
