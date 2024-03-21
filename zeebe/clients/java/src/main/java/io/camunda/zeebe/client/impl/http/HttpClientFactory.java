@@ -160,6 +160,17 @@ public class HttpClientFactory {
     }
   }
 
+  /**
+   * Creates a {@link KeyStore} from a provided PEM certificate file. The file is expected to
+   * contain a PEM encoded certificate chain. This is done to maintain backwards compatibility with
+   * how TLS configuration is done in the Zeebe Java client.
+   *
+   * <p>When loading the certificate chain into the key store, the certificate entry alias is set to
+   * the index of the certificate in the chain. This technique is also used by Netty for the gRPC
+   * communication API.
+   *
+   * @return the key store containing the CA certificate chain
+   */
   private KeyStore createKeyStore() {
     final File pemChain = new File(config.getCaCertificatePath());
 
@@ -185,6 +196,15 @@ public class HttpClientFactory {
     }
   }
 
+  /**
+   * A class to ensure the verification of the supplied server {@link X509Certificate}. The class
+   * uses the {@link DefaultHostnameVerifier} to delegate the verification the certificate.
+   * Furthermore, it allows to override the authority used with TLS virtual hosting, i.e. to
+   * override hostname verification in the TLS handshake.
+   *
+   * <p>During verification, the class maps the IP address {@code 0.0.0.0} to {@code localhost}.
+   * This behavior is provided to ease hostname verification during local testing.
+   */
   private static final class HostnameVerifier implements HttpClientHostnameVerifier {
     private final HttpClientHostnameVerifier delegate = new DefaultHostnameVerifier();
     private final String overriddenAuthority;
