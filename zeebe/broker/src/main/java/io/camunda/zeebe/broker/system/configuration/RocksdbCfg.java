@@ -18,6 +18,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
 
   private Properties columnFamilyOptions;
   private boolean enableStatistics = RocksDbConfiguration.DEFAULT_STATISTICS_ENABLED;
+  private boolean enableAccessMetrics = RocksDbConfiguration.DEFAULT_ACCESS_METRICS_ENABLED;
   private DataSize memoryLimit = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT);
   private int maxOpenFiles = RocksDbConfiguration.DEFAULT_UNLIMITED_MAX_OPEN_FILES;
   private int maxWriteBufferNumber = RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_NUMBER;
@@ -25,7 +26,6 @@ public final class RocksdbCfg implements ConfigurationEntry {
       RocksDbConfiguration.DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE;
   private int ioRateBytesPerSecond = RocksDbConfiguration.DEFAULT_IO_RATE_BYTES_PER_SECOND;
   private boolean disableWal = RocksDbConfiguration.DEFAULT_WAL_DISABLED;
-
   private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
 
   @Override
@@ -120,6 +120,14 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.enableSstPartitioning = enableSstPartitioning;
   }
 
+  public boolean isEnableAccessMetrics() {
+    return enableAccessMetrics;
+  }
+
+  public void setEnableAccessMetrics(final boolean enableAccessMetrics) {
+    this.enableAccessMetrics = enableAccessMetrics;
+  }
+
   public RocksDbConfiguration createRocksDbConfiguration() {
     return new RocksDbConfiguration()
         .setColumnFamilyOptions(columnFamilyOptions)
@@ -140,6 +148,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + columnFamilyOptions
         + ", enableStatistics="
         + enableStatistics
+        + ", enableAccessMetrics="
+        + enableAccessMetrics
         + ", memoryLimit="
         + memoryLimit
         + ", maxOpenFiles="

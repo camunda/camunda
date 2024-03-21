@@ -51,14 +51,17 @@ public final class ZeebeRocksDbFactory<
   private final int partitionId;
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final boolean enableAccessMetrics;
 
   public ZeebeRocksDbFactory(
       final int partitionId,
       final RocksDbConfiguration rocksDbConfiguration,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final boolean enableAccessMetrics) {
     this.partitionId = partitionId;
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
+    this.enableAccessMetrics = enableAccessMetrics;
   }
 
   @Override
@@ -71,7 +74,8 @@ public final class ZeebeRocksDbFactory<
           pathName.getAbsolutePath(),
           closeables,
           rocksDbConfiguration,
-          consistencyChecksSettings);
+          consistencyChecksSettings,
+          enableAccessMetrics);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);

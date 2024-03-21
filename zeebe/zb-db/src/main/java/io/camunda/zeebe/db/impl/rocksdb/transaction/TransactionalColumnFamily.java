@@ -64,7 +64,8 @@ class TransactionalColumnFamily<
       final ColumnFamilyNames columnFamily,
       final TransactionContext context,
       final KeyType keyInstance,
-      final ValueType valueInstance) {
+      final ValueType valueInstance,
+      final boolean enableAccessMetrics) {
     this.transactionDb = transactionDb;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.columnFamily = columnFamily;
@@ -73,7 +74,7 @@ class TransactionalColumnFamily<
     this.valueInstance = valueInstance;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
     foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
-    metrics = new ColumnFamilyMetrics(partitionId, columnFamily);
+    metrics = new ColumnFamilyMetrics(enableAccessMetrics, partitionId, columnFamily);
   }
 
   @Override

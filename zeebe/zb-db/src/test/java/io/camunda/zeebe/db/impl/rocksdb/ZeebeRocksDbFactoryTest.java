@@ -85,7 +85,8 @@ final class ZeebeRocksDbFactoryTest {
         new ZeebeRocksDbFactory<>(
             1,
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
-            new ConsistencyChecksSettings());
+            new ConsistencyChecksSettings(),
+            false);
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>());
@@ -118,7 +119,8 @@ final class ZeebeRocksDbFactoryTest {
         new ZeebeRocksDbFactory<>(
             1,
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
-            new ConsistencyChecksSettings());
+            new ConsistencyChecksSettings(),
+            false);
 
     // expect
     //noinspection resource

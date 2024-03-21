@@ -51,6 +51,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final int partitionId;
+  private final boolean enableAccessMetrics;
 
   protected ZeebeTransactionDb(
       final int partitionId,
@@ -58,13 +59,15 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
       final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final boolean enableAccessMetrics) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.partitionId = partitionId;
+    this.enableAccessMetrics = enableAccessMetrics;
 
     prefixReadOptions =
         new ReadOptions()
@@ -88,7 +91,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
           final String path,
           final List<AutoCloseable> closables,
           final RocksDbConfiguration rocksDbConfiguration,
-          final ConsistencyChecksSettings consistencyChecksSettings)
+          final ConsistencyChecksSettings consistencyChecksSettings,
+          final boolean enableAccessMetrics)
           throws RocksDBException {
     final var cfDescriptors =
         Arrays.asList( // todo: could consider using List.of
@@ -113,7 +117,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
         optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
-        consistencyChecksSettings);
+        consistencyChecksSettings,
+        enableAccessMetrics);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -155,7 +160,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
         columnFamily,
         context,
         keyInstance,
-        valueInstance);
+        valueInstance,
+        enableAccessMetrics);
   }
 
   @Override

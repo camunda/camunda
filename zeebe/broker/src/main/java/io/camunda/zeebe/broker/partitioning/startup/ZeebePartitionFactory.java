@@ -191,7 +191,8 @@ public final class ZeebePartitionFactory {
         new ZeebeRocksDbFactory<>(
             raftPartition.id().id(),
             databaseCfg.createRocksDbConfiguration(),
-            consistencyChecks.getSettings()),
+            consistencyChecks.getSettings(),
+            databaseCfg.isEnableAccessMetrics()),
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),

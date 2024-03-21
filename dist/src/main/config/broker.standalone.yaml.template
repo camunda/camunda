@@ -1061,6 +1061,10 @@
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLESTATISTICS
         # enableStatistics: false
 
+        # Enabled RocksDB access statistics, measuring the latency of every access by column family and type.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLEACCESSMETRICS
+        # enableAccessMetrics: false
+
         # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only applies to RocksDB, which is used by the Zeebe's state management and that
         # an RocksDB instance is used per partition.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT

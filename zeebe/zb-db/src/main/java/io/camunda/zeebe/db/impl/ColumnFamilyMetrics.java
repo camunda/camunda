@@ -27,9 +27,11 @@ public final class ColumnFamilyMetrics {
   private final Child putLatency;
   private final Child deleteLatency;
   private final Child iterateLatency;
+  private final boolean enabled;
 
   public <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue> ColumnFamilyMetrics(
-      final int partitionId, final ColumnFamilyNames columnFamily) {
+      final boolean enabled, final int partitionId, final ColumnFamilyNames columnFamily) {
+    this.enabled = enabled;
     final var partitionLabel = String.valueOf(partitionId);
     final var columnFamilyLabel = columnFamily.name();
     getLatency = LATENCY.labels(partitionLabel, columnFamilyLabel, "get");
@@ -39,18 +41,18 @@ public final class ColumnFamilyMetrics {
   }
 
   public Timer measureGetLatency() {
-    return getLatency.startTimer();
+    return enabled ? getLatency.startTimer() : null;
   }
 
   public Timer measurePutLatency() {
-    return putLatency.startTimer();
+    return enabled ? putLatency.startTimer() : null;
   }
 
   public Timer measureDeleteLatency() {
-    return deleteLatency.startTimer();
+    return enabled ? deleteLatency.startTimer() : null;
   }
 
   public Timer measureIterateLatency() {
-    return iterateLatency.startTimer();
+    return enabled ? iterateLatency.startTimer() : null;
   }
 }
