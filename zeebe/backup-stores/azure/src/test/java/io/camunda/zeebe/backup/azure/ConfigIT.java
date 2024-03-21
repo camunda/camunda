@@ -60,8 +60,7 @@ public class ConfigIT {
     Assertions.assertThatCode(() -> new AzureBackupStore(azureBackupConfig))
         .hasMessage("The Azure Storage endpoint url is malformed.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
-        .hasMessage(
-            "Connection string, or account credentials (account name, account key, endpoint), or endpoint for DefaultAzureCredentialBuilder must be provided.");
+        .hasMessage("Connection string or endpoint is required");
   }
 
   @Test
@@ -91,8 +90,28 @@ public class ConfigIT {
     Assertions.assertThatCode(() -> new AzureBackupStore(azureBackupConfig))
         .hasMessage("The Azure Storage endpoint url is malformed.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
-        .hasMessage(
-            "Connection string, or account credentials (account name, account key, endpoint), or endpoint for DefaultAzureCredentialBuilder must be provided.");
+        .hasMessage("Connection string or endpoint is required");
+  }
+
+  @Test
+  void shouldFailValidationWithPartialAccountCredentials() {
+    Assertions.assertThatCode(
+            () ->
+                AzureBackupStore.validateConfig(
+                    new AzureBackupConfig.Builder()
+                        .withEndpoint("test")
+                        .withAccountKey("key")
+                        .build()))
+        .hasMessage("Account key is specified but account name is missing");
+
+    Assertions.assertThatCode(
+            () ->
+                AzureBackupStore.validateConfig(
+                    new AzureBackupConfig.Builder()
+                        .withEndpoint("test")
+                        .withAccountName("name")
+                        .build()))
+        .hasMessage("Account name is specified but account key is missing");
   }
 
   @Test

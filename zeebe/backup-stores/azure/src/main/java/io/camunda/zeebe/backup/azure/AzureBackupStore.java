@@ -197,13 +197,14 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static void validateConfig(final AzureBackupConfig config) {
-    if (config.connectionString() == null
-        && (config.accountKey() == null
-            || config.accountName() == null
-            || config.endpoint() == null)
-        && config.endpoint() == null) {
-      throw new IllegalArgumentException(
-          "Connection string, or account credentials (account name, account key, endpoint), or endpoint for DefaultAzureCredentialBuilder must be provided.");
+    if (config.connectionString() == null && config.endpoint() == null) {
+      throw new IllegalArgumentException("Connection string or endpoint is required");
+    }
+    if (config.accountKey() != null && config.accountName() == null) {
+      throw new IllegalArgumentException("Account key is specified but account name is missing");
+    }
+    if (config.accountName() != null && config.accountKey() == null) {
+      throw new IllegalArgumentException("Account name is specified but account key is missing");
     }
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");
