@@ -61,7 +61,7 @@ public class ConfigIT {
         .hasMessage("The Azure Storage endpoint url is malformed.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
         .hasMessage(
-            "Connection string, or account credentials (account name, account key), or endpoint for DefaultAzureCredentialBuilder must be provided.");
+            "Connection string, or account credentials (account name, account key, endpoint), or endpoint for DefaultAzureCredentialBuilder must be provided.");
   }
 
   @Test
@@ -92,7 +92,7 @@ public class ConfigIT {
         .hasMessage("The Azure Storage endpoint url is malformed.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
         .hasMessage(
-            "Connection string, or account credentials (account name, account key), or endpoint for DefaultAzureCredentialBuilder must be provided.");
+            "Connection string, or account credentials (account name, account key, endpoint), or endpoint for DefaultAzureCredentialBuilder must be provided.");
   }
 
   @Test
