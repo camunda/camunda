@@ -24,6 +24,7 @@ import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,10 +69,18 @@ public final class AzureBackupStore implements BackupStore {
       return new BlobServiceClientBuilder()
           .connectionString(config.connectionString())
           .buildClient();
-    } else if (config.accountName() != null && config.accountKey() != null) {
+    } else if (config.accountName() != null || config.accountKey() != null) {
+      final var credential =
+          new StorageSharedKeyCredential(
+              Objects.requireNonNull(
+                  config.accountName(),
+                  "Account key is specified but no account name was provided."),
+              Objects.requireNonNull(
+                  config.accountKey(),
+                  "Account name is specified but no account key was provided."));
       return new BlobServiceClientBuilder()
           .endpoint(config.endpoint())
-          .credential(new StorageSharedKeyCredential(config.accountName(), config.accountKey()))
+          .credential(credential)
           .buildClient();
     } else {
       LOG.info(
