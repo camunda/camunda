@@ -1,21 +1,21 @@
 ---
 # A workflow to deploy/update the c7 and c8 stage environments
-name: Deploy stage environments
+name: Optimize Deploy stage environments
 
 on:
-  push:
-    branches:
-    - master
+  schedule:
+  - cron: 50 22 * * 1-5
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   deploy-stage:
     name: Deploy ${{ matrix.env }} environment for ${{ github.head_ref || github.ref_name }} branch
-    runs-on: gcp-core-8-default
+    runs-on: gcp-core-2-default
     strategy:
+      fail-fast: false
       matrix:
         env: [C7, C8]
     timeout-minutes: 20
@@ -35,17 +35,24 @@ jobs:
           secret/data/products/optimize/ci/camunda-optimize OPTIMIZE_CI_PERFORMANCE_DB_PASSWORD;
     - name: Checkout
       uses: actions/checkout@v4
+    - name: Read pom.xml
+      id: pom-info
+      uses: YunaBraska/java-info-action@main
     - name: Dependency versions
-      uses: mikefarah/yq@v4.42.1
       id: versions
-      with:
-        cmd: |
-          {
-            echo cambpm=$(yq '.project.properties["camunda.engine.version"]' pom.xml)
-            echo elasticsearch=$(yq '.project.properties["elasticsearch.test.version"]' pom.xml)
-            echo identity=$(yq '.project.properties["identity.version"]' pom.xml)
-            echo zeebe=$(yq '.project.properties["zeebe.version"]' pom.xml)
-          } >> $GITHUB_OUTPUT
+      env:
+        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+        ELASTICSEARCH_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+        IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+        ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+      run: |
+        {
+          echo "cambpm=$CAMBPM_VERSION"
+          echo "elasticsearch=$ELASTICSEARCH_VERSION"
+          echo "identity=$IDENTITY_VERSION"
+          echo "zeebe=$ZEEBE_VERSION"
+        } | tee -a $GITHUB_OUTPUT
+      shell: bash
     - name: Branch name sanitization
       id: sanitize
       uses: camunda/infra-global-github-actions/sanitize-branch-name@main
@@ -166,7 +173,8 @@ jobs:
         pg_isready -d $PGDATABASE
 
         # Restore the database backup
-        echo pg_restore \
+        set -x
+        pg_restore \
           --if-exists --clean --no-owner \
           --jobs=24 \
           -d $PGDATABASE \
@@ -178,6 +186,14 @@ jobs:
         ETAG_RESTORED_BACKUP: ${{ steps.db_backup.outputs.etag }}
       run: |
         echo "$ETAG_RESTORED_BACKUP" | gsutil cp - gs://optimize-data/optimize_large_data-stage.etag
+      shell: bash
+    - name: Preset linux permission for ArgoCD CLI binary
+      run: |
+        # This is a workaround for getting the gha camunda/infra-global-github-actions/preview-env/create
+        # action to work on a self-hosted runner.
+        # The latter downloads the argocd binary and needs sufficient permissions to make it executable.
+        sudo touch /usr/local/bin/argocd
+        sudo chown runner:runner /usr/local/bin/argocd
       shell: bash
     - name: Synchronize ${{ steps.params.outputs.argocd-app-name }} ArgoCD application
       uses: camunda/infra-global-github-actions/preview-env/create@main
