@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

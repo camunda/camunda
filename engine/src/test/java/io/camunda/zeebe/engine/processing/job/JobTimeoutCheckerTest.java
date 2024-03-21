@@ -18,15 +18,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.Task;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.api.scheduling.Task;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,13 +62,9 @@ public class JobTimeoutCheckerTest {
   }
 
   private JobRecord newJobRecord() {
-    return newJobRecord(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  private JobRecord newJobRecord(final String tenantId) {
     final JobRecord jobRecord = new JobRecord();
 
-    jobRecord.setRetries(2).setDeadline(256L).setType("test").setTenantId(tenantId);
+    jobRecord.setRetries(2).setDeadline(256L).setType("test");
 
     return jobRecord;
   }
