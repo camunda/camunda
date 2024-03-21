@@ -335,15 +335,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             return false;
           }
           final var catchEventId = subscription.getRecord().getElementId();
-          if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
-            throw new ProcessInstanceMigrationPreconditionFailedException(
-                """
-                Expected to migrate process instance '%s' \
-                but active element with id '%s' is subscribed to mapped catch event with id '%s'. \
-                Migrating active elements with mapped catch events is not possible yet."""
-                    .formatted(processInstanceKey, elementId, catchEventId),
-                RejectionType.INVALID_STATE);
-          }
+          requireNoMappedCatchEventsInSource(
+              sourceElementIdToTargetElementId, catchEventId, processInstanceKey, elementId);
           return true;
         });
   }
