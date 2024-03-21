@@ -7,17 +7,15 @@
     <artifactId>operate-qa</artifactId>
     <version>8.5.0-SNAPSHOT</version>
   </parent>
-
-  <name>Operate QA Data Generator</name>
   <artifactId>operate-qa-data-generator</artifactId>
 
-  <dependencies>
+  <name>Operate QA Data Generator</name>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+  <properties>
+    <license.header>${project.baseUri}/../../../license/license-header</license.header>
+  </properties>
+
+  <dependencies>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -36,24 +34,50 @@
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
     <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>jakarta.json</artifactId>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
     </dependency>
 
   </dependencies>
-
-  <build>
-
-    <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>
