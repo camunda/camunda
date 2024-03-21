@@ -36,6 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.elasticsearch.ExtendedElasticSearchClient;
 import io.camunda.operate.exceptions.OperateElasticsearchConnectionException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -57,7 +58,6 @@ import java.util.UUID;
 import org.apache.http.HttpStatus;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.SnapshotClient;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.rest.RestStatus;
@@ -100,7 +100,7 @@ public class BackupControllerIT {
 
   @MockBean
   @Qualifier("esClient")
-  private RestHighLevelClient esClient;
+  private ExtendedElasticSearchClient esClient;
 
   @SpyBean private OperateProperties operateProperties;
 

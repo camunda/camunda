@@ -14,71 +14,84 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.tenant;
+package io.camunda.operate.elasticsearch;
 
-import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.elasticsearch.ExtendedElasticSearchClient;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import java.io.IOException;
-import java.util.concurrent.Callable;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.client.RequestOptions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
-@Conditional(ElasticsearchCondition.class)
-@Component
-public class TenantAwareElasticsearchClient
-    implements TenantAwareClient<SearchRequest, SearchResponse> {
+@SpringBootTest(
+    classes = {
+      ObjectMapper.class,
+      OperateProperties.class,
+      ExtendedElasticSearchClientTestConfig.class
+    })
+public class ExtendedElasticSearchClientTest {
 
-  @Autowired
-  @Qualifier("esClient")
-  private ExtendedElasticSearchClient defaultClient;
+  @SpyBean private ExtendedElasticSearchClient spyEsClient;
 
-  @Autowired(required = false)
-  private TenantCheckApplier<SearchRequest> tenantCheckApplier;
+  private final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
 
-  @Override
-  public SearchResponse search(SearchRequest searchRequest) throws IOException {
-    return search(
-        searchRequest,
-        () -> {
-          return defaultClient.search(searchRequest, RequestOptions.DEFAULT);
-        });
+  @BeforeEach
+  public void beforeEach() throws Exception {
+    doReturn(mockResponse)
+        .when(spyEsClient)
+        .search(any(SearchRequest.class), any(RequestOptions.class));
   }
 
-  @Override
-  public SearchResponse search(SearchRequest searchRequest, boolean checkFailedShards)
-      throws IOException {
-    return search(
-        searchRequest,
-        () -> {
-          return defaultClient.search(searchRequest, RequestOptions.DEFAULT, checkFailedShards);
-        });
+  @Test
+  public void shouldThrowWhenShardsFailed() throws IOException {
+
+    when(mockResponse.getFailedShards()).thenReturn(1);
+    when(mockResponse.getShardFailures())
+        .thenReturn(new ShardSearchFailure[] {new ShardSearchFailure(new Exception("Failed"))});
+
+    final Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> spyEsClient.search(new SearchRequest(), RequestOptions.DEFAULT, true));
+    Assertions.assertTrue(
+        exception
+            .getMessage()
+            .startsWith("Invalid search result from ES. Response has 1 failed shard(s)."));
   }
 
-  @Override
-  public <C> C search(SearchRequest searchRequest, Callable<C> searchExecutor) throws IOException {
-    applyTenantCheckIfPresent(searchRequest);
-    try {
-      return searchExecutor.call();
-    } catch (IOException ioe) {
-      throw ioe;
-    } catch (RuntimeException re) {
-      throw re;
-    } catch (Exception e) {
-      final var message =
-          String.format("Unexpectedly failed to execute search request with %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
+  @Test
+  public void shouldNotThrowWhenNoShardsFailed() throws IOException {
+
+    when(mockResponse.getFailedShards()).thenReturn(0);
+    when(mockResponse.getShardFailures()).thenReturn(new ShardSearchFailure[0]);
+
+    final SearchResponse response =
+        spyEsClient.search(new SearchRequest(), RequestOptions.DEFAULT, true);
+    Assertions.assertEquals(response.getFailedShards(), 0);
   }
 
-  private void applyTenantCheckIfPresent(final SearchRequest searchRequest) {
-    if (tenantCheckApplier != null) {
-      tenantCheckApplier.apply(searchRequest);
-    }
+  @Test
+  public void shouldNotThrowWhenShardsFailedAndNoCheck() throws IOException {
+
+    when(mockResponse.getFailedShards()).thenReturn(1);
+    when(mockResponse.getShardFailures())
+        .thenReturn(new ShardSearchFailure[] {new ShardSearchFailure(new Exception("Failed"))});
+
+    final SearchResponse response =
+        spyEsClient.search(new SearchRequest(), RequestOptions.DEFAULT, false);
+    Assertions.assertEquals(response.getFailedShards(), 1);
   }
 }

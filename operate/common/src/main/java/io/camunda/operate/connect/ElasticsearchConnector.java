@@ -22,6 +22,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.elasticsearch.ExtendedElasticSearchClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -145,8 +146,8 @@ public class ElasticsearchConnector {
     }
   }
 
-  @Bean
-  public RestHighLevelClient esClient() {
+  @Bean("esClient")
+  public ExtendedElasticSearchClient esClient() {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
@@ -154,7 +155,7 @@ public class ElasticsearchConnector {
   }
 
   @Bean("zeebeEsClient")
-  public RestHighLevelClient zeebeEsClient() {
+  public ExtendedElasticSearchClient zeebeEsClient() {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
@@ -172,7 +173,7 @@ public class ElasticsearchConnector {
     }
   }
 
-  public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {
+  public ExtendedElasticSearchClient createEsClient(ElasticsearchProperties elsConfig) {
     LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(getHttpHost(elsConfig))
@@ -182,10 +183,8 @@ public class ElasticsearchConnector {
       restClientBuilder.setRequestConfigCallback(
           configCallback -> setTimeouts(configCallback, elsConfig));
     }
-    final RestHighLevelClient esClient =
-        new RestHighLevelClientBuilder(restClientBuilder.build())
-            .setApiCompatibilityMode(true)
-            .build();
+    final ExtendedElasticSearchClient esClient =
+        new ExtendedElasticSearchClient(restClientBuilder, true);
     if (!checkHealth(esClient)) {
       LOGGER.warn("Elasticsearch cluster is not accessible");
     } else {

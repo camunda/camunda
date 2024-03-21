@@ -492,6 +492,7 @@ public class FlowNodeInstanceReader extends AbstractReader
                   FlowNodeInstanceEntity.class,
                   objectMapper,
                   esClient,
+                  true,
                   getSearchHitFunction(null),
                   null,
                   getAggsProcessor(null, runningParent));
@@ -516,7 +517,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   private FlowNodeInstanceResponseDto getOnePage(
       final SearchRequest searchRequest, final String processInstanceId) throws IOException {
-    final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+    final SearchResponse searchResponse = tenantAwareClient.search(searchRequest, true);
 
     final Boolean[] runningParent = new Boolean[1];
     processAggregation(searchResponse.getAggregations(), null, runningParent);

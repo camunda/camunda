@@ -24,6 +24,7 @@ import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_S
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.elasticsearch.ExtendedElasticSearchClient;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -583,6 +584,56 @@ public abstract class ElasticsearchUtil {
       scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
       response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+
+      scrollId = response.getScrollId();
+      hits = response.getHits();
+    }
+
+    clearScroll(scrollId, esClient);
+
+    return result;
+  }
+
+  public static <T> List<T> scroll(
+      SearchRequest searchRequest,
+      Class<T> clazz,
+      ObjectMapper objectMapper,
+      ExtendedElasticSearchClient esClient,
+      boolean checkFailedShards,
+      Function<SearchHit, T> searchHitMapper,
+      Consumer<SearchHits> searchHitsProcessor,
+      Consumer<Aggregations> aggsProcessor)
+      throws IOException {
+
+    searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+    SearchResponse response =
+        esClient.search(searchRequest, RequestOptions.DEFAULT, checkFailedShards);
+
+    // call aggregations processor
+    if (aggsProcessor != null) {
+      aggsProcessor.accept(response.getAggregations());
+    }
+
+    final List<T> result = new ArrayList<>();
+    String scrollId = response.getScrollId();
+    SearchHits hits = response.getHits();
+
+    while (hits.getHits().length != 0) {
+      if (searchHitMapper != null) {
+        result.addAll(mapSearchHits(hits.getHits(), searchHitMapper));
+      } else {
+        result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+      }
+
+      // call response processor
+      if (searchHitsProcessor != null) {
+        searchHitsProcessor.accept(response.getHits());
+      }
+
+      final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+
+      response = esClient.scroll(scrollRequest, RequestOptions.DEFAULT, checkFailedShards);
 
       scrollId = response.getScrollId();
       hits = response.getHits();
