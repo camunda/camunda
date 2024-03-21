@@ -109,15 +109,6 @@ jobs:
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
             secret/data/products/operate/release_process GITHUB_TOKEN;
 
-      - name: Calculate changelog
-        uses: dlavrenuek/conventional-changelog-action@v1.2.4
-        id: changelog
-        if: ${{ env.CREATE_A_RELEASE == 'true' }}
-        with:
-          from: ${{ inputs.fromCommit }}
-          to: HEAD
-          config-file: "${{ github.workspace }}/.github/workflows/operate-defaultChangelogConfig.json"
-
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -187,7 +178,6 @@ jobs:
           draft: true
           name: ${{ env.TAG_VERSION }}
           tag_name: ${{ env.TAG_VERSION }}
-          body: "" # TODO: changelog too big with Zeebe merge
           generate_release_notes: true
           make_latest: \"false\"
 
