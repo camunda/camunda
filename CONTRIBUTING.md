@@ -163,7 +163,7 @@ Before opening your first pull request, please have a look at this [guide](https
    branch to the `main` branch. Give it a meaningful name and describe
    your changes in the body of the pull request. Lastly add a link to the issue
    this pull request closes, i.e. by writing in the description `closes #123`.
-   Without referencing the issue, our changelog generation will not recognize your
+   Without referencing the issue, our [changelog generation] will not recognize your
    PR as a new feature or fix and instead only include it in the list of merged PRs.
 2. Assign the pull request to one developer to review, if you are not sure who
    should review the issue skip this step. Someone will assign a reviewer for
@@ -349,4 +349,5 @@ unacceptable behavior as soon as possible.
 [broker]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20broker
 [clients/java]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fjava
 [clients/go]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fgo
+[changelog generation]: https://github.com/zeebe-io/zeebe-changelog
 
