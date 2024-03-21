@@ -42,7 +42,7 @@ final class MemberJoinApplierTest {
   }
 
   @Test
-  void shouldFailMemberJoinOnInitIfMemberExistsInJoiningState() {
+  void shouldNotFailMemberJoinOnInitIfMemberExistsInJoiningState() {
     final MemberId memberId = MemberId.from("1");
     final var memberJoinApplier = new MemberJoinApplier(memberId, null);
 
@@ -53,10 +53,9 @@ final class MemberJoinApplierTest {
     final var result = memberJoinApplier.init(clusterTopologyWithMember);
 
     // then
-    EitherAssert.assertThat(result).isLeft();
-    assertThat(result.getLeft())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("but the member is already part of the topology");
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get().apply(clusterTopologyWithMember.getMember(memberId)).state())
+        .isEqualTo(JOINING);
   }
 
   @Test
