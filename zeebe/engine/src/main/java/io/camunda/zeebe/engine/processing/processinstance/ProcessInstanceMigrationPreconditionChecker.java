@@ -571,6 +571,33 @@ public final class ProcessInstanceMigrationPreconditionChecker {
     }
   }
 
+  /**
+   * Throws an exception if a mapping is provided to the target catch event.
+   *
+   * @param sourceElementIdToTargetElementId the mapping instructions
+   * @param targetCatchEventId the id of the target catch event to check for
+   * @param processInstanceKey the key of the process instance (for logging)
+   * @param elementId the id of the active element (for logging)
+   * @param targetElementId the id of the target element (for logging)
+   */
+  public static void requireNoMappedCatchEventsInTarget(
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final String targetCatchEventId,
+      final long processInstanceKey,
+      final String elementId,
+      final String targetElementId) {
+    if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          """
+          Expected to migrate process instance '%s' \
+          but active element with id '%s' is mapped to element with id '%s' \
+          that must be subscribed to mapped catch event with id '%s'. \
+          Migrating active elements with mapped catch events is not possible yet."""
+              .formatted(processInstanceKey, elementId, targetElementId, targetCatchEventId),
+          RejectionType.INVALID_STATE);
+    }
+  }
+
   public static final class ProcessInstanceMigrationPreconditionFailedException
       extends RuntimeException {
     private final RejectionType rejectionType;

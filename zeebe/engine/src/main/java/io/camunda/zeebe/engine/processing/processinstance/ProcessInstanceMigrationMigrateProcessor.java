@@ -299,17 +299,12 @@ public class ProcessInstanceMigrationMigrateProcessor
             catchEvent -> {
               final var element = catchEvent.element();
               final String targetCatchEventId = BufferUtil.bufferAsString(element.getId());
-              if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
-                throw new ProcessInstanceMigrationPreconditionFailedException(
-                    """
-                    Expected to migrate process instance '%s' \
-                    but active element with id '%s' is mapped to element with id '%s' \
-                    that must be subscribed to mapped catch event with id '%s'. \
-                    Migrating active elements with mapped catch events is not possible yet."""
-                        .formatted(
-                            processInstanceKey, elementId, targetElementId, targetCatchEventId),
-                    RejectionType.INVALID_STATE);
-              }
+              requireNoMappedCatchEventsInTarget(
+                  sourceElementIdToTargetElementId,
+                  targetCatchEventId,
+                  processInstanceKey,
+                  elementId,
+                  targetElementId);
               if (element.isMessage()) {
                 requireNoSubscriptionForMessage(
                     elementInstance,
