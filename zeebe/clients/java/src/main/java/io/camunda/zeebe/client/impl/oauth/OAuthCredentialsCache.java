@@ -110,7 +110,7 @@ public final class OAuthCredentialsCache {
     if (optionalCredentials.isPresent()) {
       return Optional.ofNullable(function.apply(optionalCredentials.get()));
     } else {
-      return Optional.empty();
+      return Optional.ofNullable(function.apply(null));
     }
   }
 

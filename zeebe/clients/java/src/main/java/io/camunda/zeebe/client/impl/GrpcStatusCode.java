@@ -15,17 +15,24 @@
  */
 package io.camunda.zeebe.client.impl;
 
-import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.grpc.Status.Code;
 
-public final class NoopCredentialsProvider implements CredentialsProvider {
+public final class GrpcStatusCode implements StatusCode {
 
-  @Override
-  public void applyCredentials(final CredentialsApplier ignored) {
-    // Noop
+  private final Code code;
+
+  public GrpcStatusCode(final Code code) {
+    this.code = code;
   }
 
   @Override
-  public boolean shouldRetryRequest(final StatusCode statusCode) {
-    return false;
+  public int code() {
+    return code.value();
+  }
+
+  @Override
+  public boolean isUnauthorized() {
+    return code == Code.UNAUTHENTICATED;
   }
 }

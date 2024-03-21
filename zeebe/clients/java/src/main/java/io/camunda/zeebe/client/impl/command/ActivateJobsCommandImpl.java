@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -44,7 +45,7 @@ public final class ActivateJobsCommandImpl
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
   private final GatewayStub asyncStub;
   private final JsonMapper jsonMapper;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private final Builder builder;
   private Duration requestTimeout;
 
@@ -55,7 +56,7 @@ public final class ActivateJobsCommandImpl
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;

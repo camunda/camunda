@@ -15,24 +15,33 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientHttpException;
 import io.camunda.zeebe.client.api.command.MalformedResponseException;
 import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.impl.HttpStatusCode;
 import io.camunda.zeebe.client.impl.http.JsonAsyncResponseConsumer.JsonResponse;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
 import org.apache.hc.core5.concurrent.FutureCallback;
 
 final class JsonCallback<HttpT, RespT> implements FutureCallback<JsonResponse<HttpT>> {
 
   private final CompletableFuture<RespT> response;
   private final JsonResponseTransformer<HttpT, RespT> transformer;
+  private final Predicate<StatusCode> retryPredicate;
+  private final Runnable retryAction;
 
   public JsonCallback(
       final CompletableFuture<RespT> response,
-      final JsonResponseTransformer<HttpT, RespT> transformer) {
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final Predicate<StatusCode> retryPredicate,
+      final Runnable retryAction) {
     this.response = response;
     this.transformer = transformer;
+    this.retryPredicate = retryPredicate;
+    this.retryAction = retryAction;
   }
 
   @Override
@@ -66,6 +75,11 @@ final class JsonCallback<HttpT, RespT> implements FutureCallback<JsonResponse<Ht
 
   private void handleErrorResponse(
       final JsonEntity<HttpT> body, final int code, final String reason) {
+    if (retryPredicate.test(new HttpStatusCode(code))) {
+      retryAction.run();
+      return;
+    }
+
     if (body == null) {
       response.completeExceptionally(new ClientHttpException(code, reason));
       return;

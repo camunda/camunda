@@ -16,7 +16,9 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -54,6 +56,10 @@ public class HttpClientFactory {
     final CloseableHttpAsyncClient client =
         defaultClientBuilder().setDefaultRequestConfig(defaultRequestConfig).build();
     final URI gatewayAddress = buildGatewayAddress();
+    final CredentialsProvider credentialsProvider =
+        config.getCredentialsProvider() != null
+            ? config.getCredentialsProvider()
+            : new NoopCredentialsProvider();
 
     return new HttpClient(
         client,
@@ -61,7 +67,8 @@ public class HttpClientFactory {
         gatewayAddress,
         defaultRequestConfig,
         config.getMaxMessageSize(),
-        TimeValue.ofSeconds(15));
+        TimeValue.ofSeconds(15),
+        credentialsProvider);
   }
 
   private URI buildGatewayAddress() {

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -33,13 +34,13 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
 
   private final DeleteResourceRequest.Builder requestBuilder = DeleteResourceRequest.newBuilder();
   private final GatewayStub asyncStub;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
   public DeleteResourceCommandImpl(
       final long resourceKey,
       final GatewayStub asyncStub,
-      final Predicate<Throwable> retryPredicate,
+      final Predicate<StatusCode> retryPredicate,
       final Duration requestTimeout) {
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;

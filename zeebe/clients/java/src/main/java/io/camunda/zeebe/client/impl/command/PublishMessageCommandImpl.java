@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -37,7 +38,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final GatewayStub asyncStub;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private final PublishMessageRequest.Builder builder;
   private Duration requestTimeout;
 
@@ -45,7 +46,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
       final JsonMapper jsonMapper,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;

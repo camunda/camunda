@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -40,7 +41,7 @@ public final class SetVariablesCommandImpl
   private final GatewayStub asyncStub;
   private final Builder builder;
   private final JsonMapper jsonMapper;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
   public SetVariablesCommandImpl(
@@ -48,7 +49,7 @@ public final class SetVariablesCommandImpl
       final JsonMapper jsonMapper,
       final long elementInstanceKey,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.requestTimeout = requestTimeout;
