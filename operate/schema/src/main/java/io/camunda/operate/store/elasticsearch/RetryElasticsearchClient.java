@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping;
+import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.RetryOperation;
@@ -216,20 +217,22 @@ public class RetryElasticsearchClient {
                     .mappings();
             for (Map.Entry<String, MappingMetadata> entry : mappings.entrySet()) {
               final Map<String, Object> mappingMetadata =
-                  (Map<String, Object>)
-                      objectMapper
-                          .readValue(
-                              entry.getValue().source().string(),
-                              new TypeReference<HashMap<String, Object>>() {})
-                          .get("properties");
+                  objectMapper.readValue(
+                      entry.getValue().source().string(),
+                      new TypeReference<HashMap<String, Object>>() {});
+              final Map<String, Object> mappingProperties =
+                  (Map<String, Object>) mappingMetadata.get("properties");
+              final Map<String, Object> metaProperties =
+                  (Map<String, Object>) mappingMetadata.get("_meta");
               mappingsMap.put(
                   entry.getKey(),
                   new IndexMapping()
                       .setIndexName(entry.getKey())
                       .setProperties(
-                          mappingMetadata.entrySet().stream()
+                          mappingProperties.entrySet().stream()
                               .map(p -> createIndexMapping(p))
-                              .collect(Collectors.toSet())));
+                              .collect(Collectors.toSet()))
+                      .setMetaProperties(metaProperties));
             }
             return mappingsMap;
           } catch (ElasticsearchException e) {
@@ -765,5 +768,28 @@ public class RetryElasticsearchClient {
         String.format("Put Mapping %s ", request.indices()),
         () -> esClient.indices().putMapping(request, RequestOptions.DEFAULT),
         null);
+  }
+
+  public void updateMetaField(
+      final IndexDescriptor indexDescriptor, final String fieldName, final Object value) {
+    logger.debug("Meta field will be updated. Index name: {}. ");
+    final PutMappingRequest request;
+    try {
+      request =
+          new PutMappingRequest(indexDescriptor.getFullQualifiedName())
+              .source(
+                  "{\"_meta\": {\""
+                      + fieldName
+                      + "\": "
+                      + objectMapper.writeValueAsString(value)
+                      + "}}",
+                  XContentType.JSON);
+    } catch (JsonProcessingException e) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Exception occurred when serializing meta field value for update. Field name: %s. Field value: %s.",
+              fieldName, value));
+    }
+    this.putMapping(request);
   }
 }

@@ -110,6 +110,16 @@ public class OpensearchImportStore implements ImportStore {
     }
   }
 
+  @Override
+  public void setConcurrencyMode(final boolean concurrencyMode) {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public boolean getConcurrencyMode() {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
   private void withImportPositionTimer(final Callable<Void> action) throws Exception {
     metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
   }

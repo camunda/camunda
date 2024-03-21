@@ -32,6 +32,8 @@ public class IndexMapping {
 
   private Set<IndexMappingProperty> properties;
 
+  private Map<String, Object> metaProperties;
+
   public String getIndexName() {
     return indexName;
   }
@@ -62,9 +64,18 @@ public class IndexMapping {
     return IndexMappingDifference.from(difference);
   }
 
+  public Map<String, Object> getMetaProperties() {
+    return metaProperties;
+  }
+
+  public IndexMapping setMetaProperties(final Map<String, Object> metaProperties) {
+    this.metaProperties = metaProperties;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(indexName, properties);
+    return Objects.hash(indexName, properties, metaProperties);
   }
 
   @Override
@@ -76,12 +87,17 @@ public class IndexMapping {
       return false;
     }
     final IndexMapping that = (IndexMapping) o;
-    return Objects.equals(indexName, that.indexName) && Objects.equals(properties, that.properties);
+    return Objects.equals(indexName, that.indexName) && Objects.equals(properties, that.properties)
+        && Objects.equals(metaProperties, that.metaProperties);
   }
 
   @Override
   public String toString() {
-    return "IndexMapping{" + "indexName='" + indexName + '\'' + ", properties=" + properties + '}';
+    return "IndexMapping{" +
+        "indexName='" + indexName + '\'' +
+        ", properties=" + properties +
+        ", metaProperties=" + metaProperties +
+        '}';
   }
 
   public static class IndexMappingProperty {
