@@ -54,7 +54,7 @@ final class MemberJoinApplierTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get().apply(clusterTopologyWithMember).getMember(memberId).state())
+    assertThat(result.get().apply(clusterTopologyWithMember.getMember(memberId)).state())
         .isEqualTo(JOINING);
   }
 
