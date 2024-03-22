@@ -84,6 +84,7 @@ public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeCl
 
   @Override
   public URI getGrpcAddress() {
+    // TODO fix
     try {
       return new URI(properties.getGatewayAddress());
     } catch (final URISyntaxException e) {
@@ -205,7 +206,7 @@ public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeCl
   }
 
   private CredentialsProvider initCredentialsProvider() {
-    // TODO: Refactor when integrating Identity SDK
+
     if (commonConfigurationProperties.getEnabled()
         && !(authentication instanceof DefaultNoopAuthentication)) {
       return new CredentialsProvider() {
@@ -225,8 +226,6 @@ public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeCl
     }
     if (hasText(properties.getCloud().getClientId())
         && hasText(properties.getCloud().getClientSecret())) {
-      //        log.debug("Client ID and secret are configured. Creating OAuthCredientialsProvider
-      // with: {}", this);
       return CredentialsProvider.newCredentialsProviderBuilder()
           .clientId(properties.getCloud().getClientId())
           .clientSecret(properties.getCloud().getClientSecret())
