@@ -55,67 +55,67 @@ public class ZeebeClientSpringConfigurationPropertiesTest {
   @Autowired private JsonMapper jsonMapper;
 
   @Test
-  public void hasDeprecatedGatewayAddress() throws Exception {
+  public void hasDeprecatedGatewayAddress() {
     assertThat(properties.getGatewayAddress()).isEqualTo("localhost12345");
   }
 
   @Test
-  public void hasGrpcAddress() throws Exception {
+  public void hasGrpcAddress() {
     assertThat(properties.getGrpcAddress().toString()).isEqualTo("https://localhost:1234");
   }
 
   @Test
-  public void hasRestAddress() throws Exception {
+  public void hasRestAddress() {
     assertThat(properties.getRestAddress().toString()).isEqualTo("https://localhost:8080");
   }
 
   @Test
-  public void hasRequestTimeout() throws Exception {
+  public void hasRequestTimeout() {
     assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(99));
   }
 
   @Test
-  public void hasWorkerName() throws Exception {
+  public void hasWorkerName() {
     assertThat(properties.getDefaultJobWorkerName()).isEqualTo("testName");
   }
 
   @Test
-  public void hasWorkerType() throws Exception {
+  public void hasWorkerType() {
     assertThat(properties.getDefaultJobWorkerType()).isEqualTo("testType");
   }
 
   @Test
-  public void hasJobTimeout() throws Exception {
+  public void hasJobTimeout() {
     assertThat(properties.getJob().getTimeout()).isEqualTo(Duration.ofSeconds(99));
   }
 
   @Test
-  public void hasWorkerMaxJobsActive() throws Exception {
+  public void hasWorkerMaxJobsActive() {
     assertThat(properties.getWorker().getMaxJobsActive()).isEqualTo(99);
   }
 
   @Test
-  public void hasJobPollInterval() throws Exception {
+  public void hasJobPollInterval() {
     assertThat(properties.getJob().getPollInterval()).isEqualTo(Duration.ofSeconds(99));
   }
 
   @Test
-  public void hasWorkerThreads() throws Exception {
+  public void hasWorkerThreads() {
     assertThat(properties.getWorker().getThreads()).isEqualTo(99);
   }
 
   @Test
-  public void hasMessageTimeToLeave() throws Exception {
+  public void hasMessageTimeToLeave() {
     assertThat(properties.getMessage().getTimeToLive()).isEqualTo(Duration.ofSeconds(99));
   }
 
   @Test
-  public void isSecurityPlainTextDisabled() throws Exception {
+  public void isSecurityPlainTextDisabled() {
     assertThat(properties.getSecurity().isPlaintext()).isTrue();
   }
 
   @Test
-  public void hasSecurityCertificatePath() throws Exception {
+  public void hasSecurityCertificatePath() {
     assertThat(properties.getSecurity().getCertPath()).isEqualTo("aPath");
   }
 
