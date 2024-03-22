@@ -36,7 +36,7 @@ public abstract class SingleProcessReportIndex<TBuilder> extends AbstractReportI
   }
 
   @Override
-  protected XContentBuilder addReportTypeSpecificFields(XContentBuilder xContentBuilder)
+  protected XContentBuilder addReportTypeSpecificFields(final XContentBuilder xContentBuilder)
       throws IOException {
     // @formatter:off
     return xContentBuilder
