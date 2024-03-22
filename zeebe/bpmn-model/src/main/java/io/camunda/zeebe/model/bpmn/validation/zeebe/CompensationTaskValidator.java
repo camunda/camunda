@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.impl.instance.ManualTaskImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.ScriptTaskImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.SendTaskImpl;
@@ -47,7 +48,8 @@ public class CompensationTaskValidator implements ModelElementValidator<Task> {
   public void validate(
       final Task element, final ValidationResultCollector validationResultCollector) {
 
-    final String isForCompensation = element.getAttributeValue("isForCompensation");
+    final String isForCompensation =
+        element.getAttributeValue(BpmnModelConstants.BPMN_ATTRIBUTE_IS_FOR_COMPENSATION);
     if (Boolean.parseBoolean(isForCompensation)) {
       validateCompensationTask(element, validationResultCollector);
 
