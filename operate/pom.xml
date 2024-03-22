@@ -133,6 +133,7 @@
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
     <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
     <version.commons-io>2.15.1</version.commons-io>
+    <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
   </properties>
 
   <dependencyManagement>
@@ -627,6 +628,12 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${version.commons-io}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.thymeleaf</groupId>
+        <artifactId>thymeleaf</artifactId>
+        <version>${version.thymeleaf}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
