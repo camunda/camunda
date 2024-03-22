@@ -259,8 +259,6 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
         + jsonMapper
         + ", interceptors="
         + interceptors
-        + ", zeebeClientExecutorService="
-        + zeebeClientExecutorService
         + '}';
   }
 }
