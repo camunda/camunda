@@ -1061,6 +1061,12 @@
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLESTATISTICS
         # enableStatistics: false
 
+        # Configures which, if any, RocksDB column family access metrics are exposed.
+        # Valid values are none (the default), and fine which exposes many metrics covering the read, write, delete and iteration
+        # latency per partition and column family.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLEACCESSMETRICS
+        # accessMetrics: none
+
         # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only applies to RocksDB, which is used by the Zeebe's state management and that
         # an RocksDB instance is used per partition.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT

@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -63,5 +64,11 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
   @Override
   public B zeebeEndExecutionListener(final String type) {
     return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
   }
 }

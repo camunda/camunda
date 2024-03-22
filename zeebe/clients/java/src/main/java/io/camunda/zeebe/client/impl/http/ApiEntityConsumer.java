@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.util.TokenBuffer;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
 
@@ -46,7 +46,7 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  *
  * @param <T> the type of the successful response body
  */
-final class JsonAsyncEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<JsonEntity<T>> {
+final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntity<T>> {
   private final ObjectMapper json;
   private final Class<T> type;
   private final int maxCapacity;
@@ -55,8 +55,10 @@ final class JsonAsyncEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<Js
   private TokenBuffer buffer;
   private int bufferedBytes;
   private boolean isResponse;
+  private boolean isUnknownContentType;
+  private byte[] nonJsonBody;
 
-  JsonAsyncEntityConsumer(final ObjectMapper json, final Class<T> type, final int maxCapacity) {
+  ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int maxCapacity) {
     this.json = json;
     this.type = type;
     this.maxCapacity = maxCapacity;
@@ -64,26 +66,14 @@ final class JsonAsyncEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<Js
 
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
-    if (contentType == null) {
-      throw new IOException("Expected to parse a JSON response, but no content type detected");
-    }
-
     if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
       isResponse = true;
     } else if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
       isResponse = false;
     } else {
-      throw new IOException(
-          "Expected to parse a application/json response or an application/problem+json error, but got: "
-              + contentType);
-    }
-
-    // Jackson does not support asynchronous parsing of any charset but UTF-8
-    // If this is required, we can always perform some transcoding, or we switch to synchronous
-    // parsing
-    if (contentType.getCharset() != null
-        && !StandardCharsets.UTF_8.equals(contentType.getCharset())) {
-      throw new IOException("Expected to parse UTF-8 JSON, but got: " + contentType.getCharset());
+      isUnknownContentType = true;
+      nonJsonBody = new byte[1024];
+      return;
     }
 
     parser =
@@ -92,18 +82,22 @@ final class JsonAsyncEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<Js
   }
 
   @Override
-  protected JsonEntity<T> generateContent() throws IOException {
+  protected ApiEntity<T> generateContent() throws IOException {
     if (parser == null || buffer == null) {
-      return null;
+      if (nonJsonBody == null) {
+        return null;
+      }
+
+      return ApiEntity.of(ByteBuffer.wrap(nonJsonBody, 0, bufferedBytes));
     }
 
     buffer.asParserOnFirstToken();
 
     if (isResponse) {
-      return JsonEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+      return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
     }
 
-    return JsonEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
+    return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
   }
 
   @Override
@@ -113,16 +107,13 @@ final class JsonAsyncEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<Js
 
   @Override
   protected void data(final ByteBuffer src, final boolean endOfStream) throws IOException {
+    final int offset = bufferedBytes;
     bufferedBytes += src.remaining();
-    parser.feedInput(src);
-    JsonToken jsonToken = parser.nextToken();
-    while (jsonToken != null && jsonToken != JsonToken.NOT_AVAILABLE) {
-      buffer.copyCurrentEvent(parser);
-      jsonToken = parser.nextToken();
-    }
 
-    if (endOfStream) {
-      parser.endOfInput();
+    if (isUnknownContentType) {
+      consumeNonJsonBody(src, offset);
+    } else {
+      consumeJsonBody(src, endOfStream);
     }
   }
 
@@ -145,5 +136,26 @@ final class JsonAsyncEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<Js
     }
 
     bufferedBytes = 0;
+  }
+
+  private void consumeNonJsonBody(final ByteBuffer src, final int offset) {
+    if (nonJsonBody.length < bufferedBytes) {
+      nonJsonBody = Arrays.copyOf(nonJsonBody, nonJsonBody.length + 1024);
+    }
+
+    src.get(nonJsonBody, offset, src.remaining());
+  }
+
+  private void consumeJsonBody(final ByteBuffer src, final boolean endOfStream) throws IOException {
+    parser.feedInput(src);
+    JsonToken jsonToken = parser.nextToken();
+    while (jsonToken != null && jsonToken != JsonToken.NOT_AVAILABLE) {
+      buffer.copyCurrentEvent(parser);
+      jsonToken = parser.nextToken();
+    }
+
+    if (endOfStream) {
+      parser.endOfInput();
+    }
   }
 }

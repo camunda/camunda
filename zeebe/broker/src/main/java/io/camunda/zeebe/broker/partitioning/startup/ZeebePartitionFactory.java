@@ -43,6 +43,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -186,10 +187,12 @@ public final class ZeebePartitionFactory {
     }
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
-
     return new StateControllerImpl(
         new ZeebeRocksDbFactory<>(
-            databaseCfg.createRocksDbConfiguration(), consistencyChecks.getSettings()),
+            databaseCfg.createRocksDbConfiguration(),
+            consistencyChecks.getSettings(),
+            new AccessMetricsConfiguration(
+                databaseCfg.getAccessMetrics(), raftPartition.id().id())),
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),

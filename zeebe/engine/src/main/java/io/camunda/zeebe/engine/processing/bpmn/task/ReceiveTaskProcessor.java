@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -26,6 +27,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public ReceiveTaskProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
@@ -34,6 +36,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
     this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = behaviors.variableMappingBehavior();
     stateBehavior = behaviors.stateBehavior();
+    compensationSubscriptionBehaviour = behaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -61,9 +64,14 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+        .thenDo(
+            completed -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            });
   }
 
   @Override

@@ -21,19 +21,20 @@ import io.camunda.zeebe.client.api.command.ClientHttpException;
 import io.camunda.zeebe.client.api.command.MalformedResponseException;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.impl.HttpStatusCode;
-import io.camunda.zeebe.client.impl.http.JsonAsyncResponseConsumer.JsonResponse;
+import io.camunda.zeebe.client.impl.http.ApiResponseConsumer.ApiResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.apache.hc.core5.concurrent.FutureCallback;
 
-final class JsonCallback<HttpT, RespT> implements FutureCallback<JsonResponse<HttpT>> {
+final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<HttpT>> {
 
   private final CompletableFuture<RespT> response;
   private final JsonResponseTransformer<HttpT, RespT> transformer;
   private final Predicate<StatusCode> retryPredicate;
   private final Runnable retryAction;
 
-  public JsonCallback(
+  public ApiCallback(
       final CompletableFuture<RespT> response,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final Predicate<StatusCode> retryPredicate,
@@ -45,8 +46,8 @@ final class JsonCallback<HttpT, RespT> implements FutureCallback<JsonResponse<Ht
   }
 
   @Override
-  public void completed(final JsonResponse<HttpT> result) {
-    final JsonEntity<HttpT> body = result.entity();
+  public void completed(final ApiResponse<HttpT> result) {
+    final ApiEntity<HttpT> body = result.entity();
     final int code = result.getCode();
     final String reason = result.getReasonPhrase();
 
@@ -74,7 +75,7 @@ final class JsonCallback<HttpT, RespT> implements FutureCallback<JsonResponse<Ht
   }
 
   private void handleErrorResponse(
-      final JsonEntity<HttpT> body, final int code, final String reason) {
+      final ApiEntity<HttpT> body, final int code, final String reason) {
     if (retryPredicate.test(new HttpStatusCode(code))) {
       retryAction.run();
       return;
@@ -85,10 +86,23 @@ final class JsonCallback<HttpT, RespT> implements FutureCallback<JsonResponse<Ht
       return;
     }
 
-    if (!body.isProblem()) {
+    if (body.isUnknown()) {
       response.completeExceptionally(
           new MalformedResponseException(
-              "Expected to receive a ProblemDetail as the error body, but got a successful response",
+              String.format(
+                  "Expected to receive a problem body, but got an unknown body type: %s",
+                  StandardCharsets.UTF_8.decode(body.unknown())),
+              code,
+              reason));
+      return;
+    }
+
+    if (body.isResponse()) {
+      response.completeExceptionally(
+          new MalformedResponseException(
+              String.format(
+                  "Expected to receive a problem body, but got an actual response: %s",
+                  body.response()),
               code,
               reason));
       return;
@@ -98,17 +112,28 @@ final class JsonCallback<HttpT, RespT> implements FutureCallback<JsonResponse<Ht
   }
 
   private void handleSuccessResponse(
-      final JsonEntity<HttpT> body, final int code, final String reason) {
+      final ApiEntity<HttpT> body, final int code, final String reason) {
     if (body == null) {
       response.complete(null);
       return;
     }
 
-    if (!body.isResponse()) {
+    if (body.isUnknown()) {
       response.completeExceptionally(
           new MalformedResponseException(
               String.format(
-                  "Expected to receive a response body, but got an error: %s", body.problem()),
+                  "Expected to receive a response body, but got an unknown body type: %s",
+                  StandardCharsets.UTF_8.decode(body.unknown())),
+              code,
+              reason));
+      return;
+    }
+
+    if (body.isProblem()) {
+      response.completeExceptionally(
+          new MalformedResponseException(
+              String.format(
+                  "Expected to receive a response body, but got a problem: %s", body.problem()),
               code,
               reason));
       return;

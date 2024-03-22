@@ -280,16 +280,19 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final Function<ExecutableFlowNode, List<ExecutionListener>> listenersGetter,
       final BiFunction<ExecutableFlowElement, BpmnElementContext, Either<Failure, ?>> finalizer) {
 
-    final String currentListenerType =
-        stateBehavior.getElementInstance(context).getExecutionListenerType();
-
     final List<ExecutionListener> listeners = listenersGetter.apply(element);
-
+    final int currentListenerIndex =
+        stateBehavior.getElementInstance(context).getExecutionListenerIndex();
     final Optional<ExecutionListener> nextListener =
-        findNextExecutionListener(listeners, currentListenerType);
+        findNextExecutionListener(listeners, currentListenerIndex);
     return nextListener.isPresent()
         ? createExecutionListenerJob(element, context, nextListener.get())
         : finalizer.apply(element, context);
+  }
+
+  private Optional<ExecutionListener> findNextExecutionListener(
+      final List<ExecutionListener> listeners, final int nextListenerIndex) {
+    return listeners.stream().skip(nextListenerIndex).findFirst();
   }
 
   private void mergeVariablesOfExecutionListener(
@@ -320,14 +323,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                   context.getElementInstanceKey(),
                   eventTrigger.getElementId());
             });
-  }
-
-  private Optional<ExecutionListener> findNextExecutionListener(
-      final List<ExecutionListener> listeners, final String currentType) {
-    return listeners.stream()
-        .dropWhile(el -> !el.getJobWorkerProperties().getType().getExpression().equals(currentType))
-        .skip(1) // skip current listener
-        .findFirst();
   }
 
   private ExecutableFlowElement getElement(

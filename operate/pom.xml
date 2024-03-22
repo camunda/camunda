@@ -75,7 +75,7 @@
     <version.zeebe>8.5.0-alpha2</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
     <version.identity>8.5.0-alpha2</version.identity>
-    <version.elasticsearch>7.17.16</version.elasticsearch>
+    <version.elasticsearch>7.17.18</version.elasticsearch>
     <version.parsson>1.1.5</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
@@ -120,7 +120,7 @@
     <version.okio-jvm>3.4.0</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>9.37.2</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
     <version.keycloak>22.0.1</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.commons-compress>1.26.1</version.commons-compress>

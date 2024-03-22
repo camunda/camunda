@@ -164,8 +164,8 @@ public final class HttpClient implements AutoCloseable {
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
-            new JsonAsyncResponseConsumer<>(jsonMapper, responseType, maxMessageSize),
-            new JsonCallback<>(
+            new ApiResponseConsumer<>(jsonMapper, responseType, maxMessageSize),
+            new ApiCallback<>(
                 result, transformer, credentialsProvider::shouldRetryRequest, retryAction)));
   }
 
