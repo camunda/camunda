@@ -190,6 +190,10 @@ public interface QueryDSL {
     return sourceExclude(List.of(fields));
   }
 
+  static SourceConfig sourceExcluded() {
+    return SourceConfig.of(s -> s.fetch(false));
+  }
+
   static SourceConfig sourceExclude(List<String> fields) {
     return SourceConfig.of(s -> s.filter(f -> f.excludes(fields)));
   }

@@ -24,6 +24,7 @@ import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InstanceIndexUtil {
@@ -86,6 +87,12 @@ public class InstanceIndexUtil {
             msg ->
                 msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
                     && containsInstanceIndexAliasOrPrefix(type, msg));
+  }
+
+  public static boolean isOSInstanceIndexNotFoundException(
+      final DefinitionType type, final OpenSearchException e) {
+    return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
+        && containsInstanceIndexAliasOrPrefix(type, e.getMessage());
   }
 
   private static boolean containsInstanceIndexAliasOrPrefix(

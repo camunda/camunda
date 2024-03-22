@@ -45,7 +45,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@Tag(OPENSEARCH_PASSING)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CombinedReportCombinationsIT extends AbstractPlatformIT {
 
@@ -54,8 +53,6 @@ public class CombinedReportCombinationsIT extends AbstractPlatformIT {
     LocalDateUtil.reset();
   }
 
-  // Passes locally, but fails on CI
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("getCombinableSingleReports")
   public void combineCombinableSingleReports(
