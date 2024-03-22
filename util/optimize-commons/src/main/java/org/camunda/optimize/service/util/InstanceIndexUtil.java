@@ -68,18 +68,18 @@ public class InstanceIndexUtil {
     }
   }
 
-  public static boolean isInstanceIndexNotFoundException(final Exception e) {
+  public static boolean isInstanceIndexNotFoundException(final RuntimeException e) {
     return isInstanceIndexNotFoundException(e, msg -> true);
   }
 
   public static boolean isInstanceIndexNotFoundException(
-      final DefinitionType type, final Exception e) {
+      final DefinitionType type, final RuntimeException e) {
     return isInstanceIndexNotFoundException(
         e, msg -> containsInstanceIndexAliasOrPrefix(type, e.getMessage()));
   }
 
   private static boolean isInstanceIndexNotFoundException(
-      final Exception e, Function<String, Boolean> messageFilter) {
+      final RuntimeException e, Function<String, Boolean> messageFilter) {
     if (e instanceof ElasticsearchStatusException) {
       return Arrays.stream(e.getSuppressed())
           .map(Throwable::getMessage)

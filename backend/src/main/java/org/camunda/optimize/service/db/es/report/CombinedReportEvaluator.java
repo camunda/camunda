@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -58,11 +57,11 @@ public class CombinedReportEvaluator {
         .filter(Optional::isPresent)
         .map(Optional::get)
         .map(result -> (SingleReportEvaluationResult<T>) result)
-        .collect(Collectors.toList());
+        .collect(toList());
   }
 
   public long evaluateCombinedReportInstanceCount(
-      List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
+      final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
     if (CollectionUtils.isEmpty(singleReportDefinitions)) {
       return 0L;
     }
@@ -100,8 +99,8 @@ public class CombinedReportEvaluator {
   }
 
   private List<QueryBuilder> getAllBaseQueries(
-      List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
-      SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
+      final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
+      final SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
     return singleReportDefinitions.stream()
         .filter(
             reportDefinition ->
