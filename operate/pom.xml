@@ -92,7 +92,7 @@
     <version.okio-jvm>3.4.0</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>9.37.2</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
 
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <version.checkstyle>10.14.2</version.checkstyle>
