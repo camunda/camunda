@@ -441,8 +441,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     final String response =
         getOpenSearchClient()
             .arbitraryRequestAsString(
-                "GET",
-                indexNameService.getOptimizeIndexAliasForIndex(indicesToQuery[0]) + "/_search",
+                "POST",
+                "/"
+                    + indexNameService.getOptimizeIndexAliasForIndex(indicesToQuery[0])
+                    + "/_search",
                 jsonQuery);
     return getSearchResponseFromJson(response);
   }
