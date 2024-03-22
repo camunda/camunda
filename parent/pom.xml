@@ -568,12 +568,6 @@
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-client-common</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-webflux</artifactId>
         <version>${version.spring-boot}</version>
         <exclusions>
@@ -586,6 +580,18 @@
             <artifactId>log4j-to-slf4j</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-client-common</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-client-spring</artifactId>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
