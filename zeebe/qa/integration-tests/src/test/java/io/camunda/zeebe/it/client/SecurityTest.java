@@ -12,78 +12,111 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.response.Topology;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.it.clustering.ClusteringRule;
-import io.netty.util.NetUtil;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.io.File;
 import java.net.URL;
 import java.security.cert.CertificateException;
 import org.assertj.core.api.Assertions;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.openjdk.jmh.annotations.Timeout;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Timeout(time = 120)
+@Testcontainers
+@ZeebeIntegration
+@AutoCloseResources
 public final class SecurityTest {
-  public final Timeout testTimeout = Timeout.seconds(120);
 
-  public final ClusteringRule clusteringRule =
-      new ClusteringRule(
-          1, 1, 1, brokerCfg -> {}, this::configureGatewayForTls, this::configureClientForTls);
+  @TestZeebe(autoStart = false)
+  private final TestCluster testCluster =
+      TestCluster.builder()
+          .withEmbeddedGateway(false)
+          .withGatewaysCount(1)
+          .withBrokersCount(1)
+          .withPartitionsCount(1)
+          .withReplicationFactor(1)
+          .withGatewayConfig(this::configureGatewayForTls)
+          .build();
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(testTimeout).around(clusteringRule);
-
-  @Test
-  public void shouldEstablishSecureConnection() {
-    final var client = newSecureClient().build();
-
-    // when
-    final Topology topology = client.newTopologyRequest().send().join();
-
-    // then
-    assertThat(topology.getBrokers().size()).isEqualTo(1);
+  @BeforeEach
+  void setUp() {
+    testCluster.start().awaitCompleteTopology();
   }
 
-  @Test
-  public void shouldAllowToOverrideAuthority() {
-    final var client = newSecureClient().overrideAuthority("localhost").build();
-
-    // when
-    final Topology topology = client.newTopologyRequest().send().join();
-
-    // then
-    assertThat(topology.getBrokers().size()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldRejectDifferentAuthority() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldEstablishSecureConnectionWithGrpc(final boolean useRest) {
     // given
-    final var client = newSecureClient().overrideAuthority("virtualhost").build();
+    try (final var client = newSecureClient(useRest).build()) {
 
-    // when, then
-    Assertions.assertThatThrownBy(() -> client.newTopologyRequest().send().join())
-        .hasRootCauseInstanceOf(CertificateException.class)
-        .hasRootCauseMessage("No name matching virtualhost found");
+      // when
+      final Topology topology = client.newTopologyRequest().send().join();
+
+      // then
+      assertThat(topology.getBrokers().size()).isEqualTo(1);
+    }
   }
 
-  private ZeebeClientBuilder newSecureClient() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldAllowToOverrideAuthority(final boolean useRest) {
+    // given
+    try (final var client = newSecureClient(useRest).overrideAuthority("localhost").build()) {
+
+      // when
+      final Topology topology = client.newTopologyRequest().useGrpc().send().join();
+
+      // then
+      assertThat(topology.getBrokers().size()).isEqualTo(1);
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldRejectDifferentAuthority(final boolean useRest) {
+    // given
+    try (final var client = newSecureClient(useRest).overrideAuthority("virtualhost").build()) {
+      // when, then
+      Assertions.assertThatThrownBy(() -> client.newTopologyRequest().useGrpc().send().join())
+          .hasRootCauseInstanceOf(CertificateException.class)
+          .hasRootCauseMessage("No name matching virtualhost found");
+    }
+  }
+
+  private ZeebeClientBuilder newSecureClient(final boolean useRest) {
     return configureClientForTls(ZeebeClient.newClientBuilder())
-        .gatewayAddress(NetUtil.toSocketAddressString(clusteringRule.getGatewayAddress()));
+        .preferRestOverGrpc(useRest)
+        .grpcAddress(testCluster.anyGateway().grpcAddress())
+        .restAddress(testCluster.anyGateway().restAddress());
   }
 
   private ZeebeClientBuilder configureClientForTls(final ZeebeClientBuilder clientBuilder) {
     return clientBuilder.caCertificatePath(getResource("security/test-chain.cert.pem").getPath());
   }
 
-  private void configureGatewayForTls(final GatewayCfg gatewayCfg) {
+  private void configureGatewayForTls(final TestGateway gateway) {
     final String certificatePath = getResource("security/test-chain.cert.pem").getFile();
     final String privateKeyPath = getResource("security/test-server.key.pem").getFile();
 
-    gatewayCfg
+    // configure the gRPC server for TLS/SSL
+    gateway
+        .gatewayConfig()
         .getSecurity()
         .setEnabled(true)
         .setCertificateChainPath(new File(certificatePath))
         .setPrivateKeyPath(new File(privateKeyPath));
+
+    // configure the REST API server for TLS/SSL
+    gateway
+        .withProperty("server.ssl.enabled", true)
+        .withProperty("server.ssl.certificate", certificatePath)
+        .withProperty("server.ssl.certificate-private-key", privateKeyPath);
   }
 
   private URL getResource(final String name) {
