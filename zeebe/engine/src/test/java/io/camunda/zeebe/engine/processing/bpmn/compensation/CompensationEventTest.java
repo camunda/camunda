@@ -93,18 +93,6 @@ public class CompensationEventTest {
   }
 
   @Test
-  public void shouldNotDeployCompensationHandlerNotValid() {
-    final var process =
-        createModelFromClasspathResource("/compensation/compensation-not-valid-task.bpmn");
-
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            Task.class,
-            "Compensation task must be one of: service task, user task, send task, script task, manual task, or undefined task"));
-  }
-
-  @Test
   public void shouldNotDeployCompensationHandlerWithOutgoingFlow() {
     final var process =
         createModelFromClasspathResource("/compensation/compensation-task-with-outgoing.bpmn");
