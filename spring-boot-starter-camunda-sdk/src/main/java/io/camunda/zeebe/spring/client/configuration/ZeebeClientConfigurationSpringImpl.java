@@ -21,6 +21,7 @@ import io.camunda.common.auth.Authentication;
 import io.camunda.common.auth.DefaultNoopAuthentication;
 import io.camunda.common.auth.Product;
 import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.Environment;
@@ -41,7 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 
-public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeClientConfiguration {
+public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfiguration {
 
   @Autowired private ZeebeClientConfigurationProperties properties;
 
@@ -84,7 +85,7 @@ public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeCl
 
   @Override
   public URI getGrpcAddress() {
-    // TODO fix
+    // TODO implement
     try {
       return new URI(properties.getGatewayAddress());
     } catch (final URISyntaxException e) {

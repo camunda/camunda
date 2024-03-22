@@ -16,6 +16,7 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
@@ -47,7 +48,7 @@ public class ZeebeClientProdAutoConfiguration {
 
   @Bean
   public ZeebeClientConfiguration zeebeClientConfiguration() {
-    return new ZeebeClientConfiguration();
+    return new ZeebeClientConfigurationSpringImpl();
   }
 
   @Bean(destroyMethod = "close")
