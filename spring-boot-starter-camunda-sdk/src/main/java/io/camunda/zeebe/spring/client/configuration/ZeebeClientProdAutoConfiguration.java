@@ -21,7 +21,6 @@ import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
 import io.grpc.ManagedChannel;
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,7 @@ import org.springframework.context.annotation.Bean;
 @AutoConfigureBefore(ZeebeClientAllAutoConfiguration.class)
 public class ZeebeClientProdAutoConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
 
   @Bean
   public ZeebeClientConfiguration zeebeClientConfiguration() {
@@ -66,35 +65,4 @@ public class ZeebeClientProdAutoConfiguration {
       return new ZeebeClientImpl(configuration);
     }
   }
-  // TODO: Interceptors
-  // TODO: applyOverrides()
-  /*
-  @Bean
-  public ZeebeClientBuilder builder(JsonMapper jsonMapper,
-                                    @Autowired(required = false) List<ClientInterceptor> clientInterceptorList) {
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-
-    builder.gatewayAddress(configurationProperties.getGatewayAddress());
-    builder.defaultJobPollInterval(configurationProperties.getDefaultJobPollInterval());
-    builder.defaultJobTimeout(configurationProperties.getDefaultJobTimeout());
-    builder.defaultJobWorkerMaxJobsActive(configurationProperties.getDefaultJobWorkerMaxJobsActive());
-    builder.defaultJobWorkerName(configurationProperties.getDefaultJobWorkerName());
-    builder.defaultMessageTimeToLive(configurationProperties.getDefaultMessageTimeToLive());
-    builder.numJobWorkerExecutionThreads(configurationProperties.getNumJobWorkerExecutionThreads());
-    builder.defaultRequestTimeout(configurationProperties.getDefaultRequestTimeout());
-    builder.credentialsProvider(configurationProperties.getCredentialsProvider());
-    builder.caCertificatePath(configurationProperties.getCaCertificatePath());
-    if (configurationProperties.isPlaintextConnectionEnabled()) {
-      builder.usePlaintext();
-    }
-    builder.withJsonMapper(jsonMapper);
-    final List<ClientInterceptor> legacyInterceptors = configurationProperties.getInterceptors();
-    if (!legacyInterceptors.isEmpty()) {
-      builder.withInterceptors(legacyInterceptors.toArray(new ClientInterceptor[0]));
-    } else if (clientInterceptorList != null && !clientInterceptorList.isEmpty()) {
-      builder.withInterceptors(clientInterceptorList.toArray(new ClientInterceptor[0]));
-    }
-    return builder;
-  }*/
-
 }

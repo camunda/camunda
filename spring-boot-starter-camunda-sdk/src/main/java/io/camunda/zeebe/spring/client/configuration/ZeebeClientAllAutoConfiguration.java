@@ -19,12 +19,10 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
-import io.camunda.zeebe.spring.client.annotation.processor.AnnotationProcessorConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.zeebe.spring.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
 import io.camunda.zeebe.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
-import io.camunda.zeebe.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.camunda.zeebe.spring.client.properties.PropertyBasedZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
@@ -70,10 +68,7 @@ public class ZeebeClientAllAutoConfiguration {
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final JsonMapper jsonMapper,
       final MetricsRecorder metricsRecorder) {
-    return new JobWorkerManager(
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        new DefaultParameterResolverStrategy(jsonMapper));
+    return new JobWorkerManager(commandExceptionHandlingStrategy, jsonMapper, metricsRecorder);
   }
 
   @Bean

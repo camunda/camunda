@@ -33,6 +33,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -73,14 +74,21 @@ public class ZeebeClientConfiguration implements io.camunda.zeebe.client.ZeebeCl
 
   @Override
   public URI getRestAddress() {
-    // TODO
-    return null;
+    // TODO implement
+    try {
+      return new URI("http://localhost:1235");
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public URI getGrpcAddress() {
-    // TODO
-    return null;
+    try {
+      return new URI(properties.getGatewayAddress());
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

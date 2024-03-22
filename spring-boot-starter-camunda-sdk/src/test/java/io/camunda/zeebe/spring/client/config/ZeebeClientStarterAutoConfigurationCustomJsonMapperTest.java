@@ -41,7 +41,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(SpringExtension.class)
 @TestPropertySource(
     properties = {
-      "zeebe.client.broker.gatewayAddress=localhost12345",
+      "zeebe.client.broker.gatewayAddress=http://localhost:1234",
       "zeebe.client.requestTimeout=99s",
       "zeebe.client.job.timeout=99s",
       "zeebe.client.job.pollInterval=99s",
@@ -96,15 +96,13 @@ public class ZeebeClientStarterAutoConfigurationCustomJsonMapperTest {
 
   @Test
   void testBuilder() {
-    // ZeebeClientBuilder builder = autoConfiguration.builder(jsonMapper, Collections.emptyList());
-    // assertThat(builder).isNotNull();
-
     final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
     final io.camunda.zeebe.client.api.JsonMapper clientJsonMapper =
         AopTestUtils.getUltimateTargetObject(client.getConfiguration().getJsonMapper());
     assertThat(clientJsonMapper).isSameAs(jsonMapper);
     assertThat(clientJsonMapper).isSameAs(applicationContext.getBean("overridingJsonMapper"));
-    assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("localhost12345");
+    assertThat(client.getConfiguration().getGrpcAddress().toString())
+        .isEqualTo("http://localhost:1234");
     assertThat(client.getConfiguration().getDefaultRequestTimeout())
         .isEqualTo(Duration.ofSeconds(99));
     assertThat(client.getConfiguration().getCaCertificatePath()).isEqualTo("aPath");

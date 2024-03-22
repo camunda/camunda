@@ -36,7 +36,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(SpringExtension.class)
 @TestPropertySource(
     properties = {
-      "zeebe.client.broker.gatewayAddress=localhost12345",
+      "zeebe.client.broker.gatewayAddress=http://localhost:1234",
       "zeebe.client.requestTimeout=99s",
       "zeebe.client.job.timeout=99s",
       "zeebe.client.job.pollInterval=99s",
