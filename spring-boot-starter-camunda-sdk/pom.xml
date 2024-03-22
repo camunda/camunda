@@ -163,14 +163,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <!-- we need to filter the resources, so placeholders in banner.txt get replaced -->
-      <resource>
-        <filtering>true</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
-
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
