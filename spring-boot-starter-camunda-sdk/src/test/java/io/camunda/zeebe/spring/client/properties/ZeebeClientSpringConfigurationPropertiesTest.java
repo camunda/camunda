@@ -34,6 +34,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @TestPropertySource(
     properties = {
       "zeebe.client.broker.gatewayAddress=localhost12345",
+      "zeebe.client.broker.grpcAddress=https://localhost:1234",
+      "zeebe.client.broker.restAddress=https://localhost:8080",
       "zeebe.client.requestTimeout=99s",
       "zeebe.client.job.timeout=99s",
       "zeebe.client.job.pollInterval=99s",
@@ -53,8 +55,18 @@ public class ZeebeClientSpringConfigurationPropertiesTest {
   @Autowired private JsonMapper jsonMapper;
 
   @Test
-  public void hasBrokerContactPoint() throws Exception {
+  public void hasDeprecatedGatewayAddress() throws Exception {
     assertThat(properties.getGatewayAddress()).isEqualTo("localhost12345");
+  }
+
+  @Test
+  public void hasGrpcAddress() throws Exception {
+    assertThat(properties.getGrpcAddress().toString()).isEqualTo("https://localhost:1234");
+  }
+
+  @Test
+  public void hasRestAddress() throws Exception {
+    assertThat(properties.getRestAddress().toString()).isEqualTo("https://localhost:8080");
   }
 
   @Test

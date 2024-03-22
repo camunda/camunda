@@ -33,8 +33,18 @@ public class ZeebeClientSpringConfigurationDefaultPropertiesTest {
   @Autowired private ZeebeClientConfigurationProperties properties;
 
   @Test
-  public void hasGatewayAddress() throws Exception {
+  public void hasDeprecatedGatewayAddress() throws Exception {
     assertThat(properties.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
+  }
+
+  @Test
+  public void hasGrpcAddress() throws Exception {
+    assertThat(properties.getGrpcAddress().toString()).isEqualTo("https://0.0.0.0:26500");
+  }
+
+  @Test
+  public void hasRestAddress() throws Exception {
+    assertThat(properties.getRestAddress().toString()).isEqualTo("https://0.0.0.0:8080");
   }
 
   @Test

@@ -32,7 +32,6 @@ import io.grpc.ClientInterceptor;
 import io.grpc.Status.Code;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -73,22 +72,12 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
 
   @Override
   public URI getRestAddress() {
-    // TODO implement
-    try {
-      return new URI("http://localhost:1235");
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
+    return properties.getRestAddress();
   }
 
   @Override
   public URI getGrpcAddress() {
-    // TODO implement
-    try {
-      return new URI(properties.getGatewayAddress());
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
+    return properties.getGrpcAddress();
   }
 
   @Override
