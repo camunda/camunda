@@ -33,7 +33,6 @@
   </licenses>
 
   <properties>
-    <version.slf4j-api>2.0.12</version.slf4j-api>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
 
@@ -41,7 +40,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${version.slf4j-api}</version>
     </dependency>
 
     <dependency>
@@ -83,7 +81,6 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-      <version>2.1.1</version>
     </dependency>
 
     <dependency>
