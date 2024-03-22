@@ -823,6 +823,12 @@
         <version>${version.tomcat}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+
       <!-- Testcontainers & Docker for container based integration tests -->
       <dependency>
         <groupId>org.testcontainers</groupId>
