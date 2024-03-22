@@ -22,5 +22,7 @@ public interface TenantAwareClient<REQ, RES> {
 
   public RES search(REQ searchRequest) throws Exception;
 
+  public RES search(REQ searchRequest, boolean checkFailedShards) throws Exception;
+
   public <C> C search(REQ searchRequest, Callable<C> searchExecutor) throws Exception;
 }

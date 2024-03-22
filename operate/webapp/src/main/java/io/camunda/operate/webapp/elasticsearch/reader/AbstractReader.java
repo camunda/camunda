@@ -17,6 +17,7 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.elasticsearch.ExtendedElasticSearchClient;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -24,14 +25,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class AbstractReader {
 
-  @Autowired protected RestHighLevelClient esClient;
+  @Autowired protected ExtendedElasticSearchClient esClient;
 
   @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 

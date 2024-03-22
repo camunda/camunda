@@ -30,14 +30,10 @@ import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.OpenSearchFailedShardsException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -56,6 +52,7 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
@@ -63,6 +60,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public static final String INTERNAL_SCROLL_KEEP_ALIVE_MS = "30000ms";
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchDocumentOperations.class);
 
   public OpenSearchDocumentOperations(Logger logger, OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
@@ -92,6 +91,14 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   private void checkFailedShards(SearchRequest request, SearchResponse<?> response) {
     if (!response.shards().failures().isEmpty()) {
+      if (LOGGER.isDebugEnabled()) {
+        final String failures =
+            "Shard failures: "
+                + response.shards().failures().stream()
+                    .map(x -> x.reason().reason())
+                    .collect(Collectors.joining(", "));
+        LOGGER.debug(failures);
+      }
       throw new OpenSearchFailedShardsException(
           format(
               "Shards failed executing request (request=%s, failed shards=%s)",

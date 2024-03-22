@@ -14,71 +14,70 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.tenant;
+package io.camunda.operate.elasticsearch;
 
-import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.elasticsearch.ExtendedElasticSearchClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.io.IOException;
-import java.util.concurrent.Callable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Conditional(ElasticsearchCondition.class)
-@Component
-public class TenantAwareElasticsearchClient
-    implements TenantAwareClient<SearchRequest, SearchResponse> {
+public class ExtendedElasticSearchClient extends RestHighLevelClient {
 
-  @Autowired
-  @Qualifier("esClient")
-  private ExtendedElasticSearchClient defaultClient;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExtendedElasticSearchClient.class);
 
-  @Autowired(required = false)
-  private TenantCheckApplier<SearchRequest> tenantCheckApplier;
-
-  @Override
-  public SearchResponse search(SearchRequest searchRequest) throws IOException {
-    return search(
-        searchRequest,
-        () -> {
-          return defaultClient.search(searchRequest, RequestOptions.DEFAULT);
-        });
+  public ExtendedElasticSearchClient(RestClientBuilder restClientBuilder) {
+    super(restClientBuilder);
   }
 
-  @Override
-  public SearchResponse search(SearchRequest searchRequest, boolean checkFailedShards)
+  public ExtendedElasticSearchClient(
+      RestClientBuilder restClientBuilder, Boolean useAPICompatibility) {
+    super(
+        restClientBuilder.build(), RestClient::close, Collections.emptyList(), useAPICompatibility);
+  }
+
+  public SearchResponse search(
+      SearchRequest searchRequest, RequestOptions options, boolean checkFailedShards)
       throws IOException {
-    return search(
-        searchRequest,
-        () -> {
-          return defaultClient.search(searchRequest, RequestOptions.DEFAULT, checkFailedShards);
-        });
+    final SearchResponse response = search(searchRequest, options);
+    validateResponseIfNeeded(response, checkFailedShards);
+    return response;
   }
 
-  @Override
-  public <C> C search(SearchRequest searchRequest, Callable<C> searchExecutor) throws IOException {
-    applyTenantCheckIfPresent(searchRequest);
-    try {
-      return searchExecutor.call();
-    } catch (IOException ioe) {
-      throw ioe;
-    } catch (RuntimeException re) {
-      throw re;
-    } catch (Exception e) {
-      final var message =
-          String.format("Unexpectedly failed to execute search request with %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
+  public SearchResponse scroll(
+      SearchScrollRequest searchRequest, RequestOptions options, boolean checkFailedShards)
+      throws IOException {
+    final SearchResponse response = scroll(searchRequest, options);
+    validateResponseIfNeeded(response, checkFailedShards);
+    return response;
   }
 
-  private void applyTenantCheckIfPresent(final SearchRequest searchRequest) {
-    if (tenantCheckApplier != null) {
-      tenantCheckApplier.apply(searchRequest);
+  private void validateResponseIfNeeded(SearchResponse response, boolean checkFailedShards) {
+    if (checkFailedShards
+        && (response.getShardFailures() != null)
+        && (response.getFailedShards() > 0)) {
+      String failures = "";
+      if (LOGGER.isDebugEnabled()) {
+        failures =
+            "Shard failures: "
+                + Arrays.stream(response.getShardFailures())
+                    .map(Throwable::getMessage)
+                    .collect(Collectors.joining(", "));
+        LOGGER.debug(failures);
+      }
+      throw new OperateRuntimeException(
+          String.format(
+              "Invalid search result from ES. Response has %d failed shard(s). %s",
+              response.getFailedShards(), failures));
     }
   }
 }

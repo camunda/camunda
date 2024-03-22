@@ -14,71 +14,25 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.tenant;
+package io.camunda.operate.elasticsearch;
 
-import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.elasticsearch.ExtendedElasticSearchClient;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import java.io.IOException;
-import java.util.concurrent.Callable;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 
-@Conditional(ElasticsearchCondition.class)
-@Component
-public class TenantAwareElasticsearchClient
-    implements TenantAwareClient<SearchRequest, SearchResponse> {
+@TestConfiguration
+public class ExtendedElasticSearchClientTestConfig {
 
-  @Autowired
+  @Bean
   @Qualifier("esClient")
-  private ExtendedElasticSearchClient defaultClient;
-
-  @Autowired(required = false)
-  private TenantCheckApplier<SearchRequest> tenantCheckApplier;
-
-  @Override
-  public SearchResponse search(SearchRequest searchRequest) throws IOException {
-    return search(
-        searchRequest,
-        () -> {
-          return defaultClient.search(searchRequest, RequestOptions.DEFAULT);
-        });
-  }
-
-  @Override
-  public SearchResponse search(SearchRequest searchRequest, boolean checkFailedShards)
-      throws IOException {
-    return search(
-        searchRequest,
-        () -> {
-          return defaultClient.search(searchRequest, RequestOptions.DEFAULT, checkFailedShards);
-        });
-  }
-
-  @Override
-  public <C> C search(SearchRequest searchRequest, Callable<C> searchExecutor) throws IOException {
-    applyTenantCheckIfPresent(searchRequest);
-    try {
-      return searchExecutor.call();
-    } catch (IOException ioe) {
-      throw ioe;
-    } catch (RuntimeException re) {
-      throw re;
-    } catch (Exception e) {
-      final var message =
-          String.format("Unexpectedly failed to execute search request with %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private void applyTenantCheckIfPresent(final SearchRequest searchRequest) {
-    if (tenantCheckApplier != null) {
-      tenantCheckApplier.apply(searchRequest);
-    }
+  public ExtendedElasticSearchClient esClient() {
+    final RestClientBuilder restClientBuilder =
+        RestClient.builder(new HttpHost("http://localhost:9999"));
+    final ExtendedElasticSearchClient client =
+        new ExtendedElasticSearchClient(restClientBuilder, true);
+    return client;
   }
 }
