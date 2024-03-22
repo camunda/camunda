@@ -169,7 +169,7 @@ public class MinMaxStatsService {
               script.toString(), Arrays.toString(indexNames));
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
 
@@ -277,6 +277,8 @@ public class MinMaxStatsService {
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
+    } catch (RuntimeException e) {
+      return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
     return mapCrossFieldStatAggregationsToStatDto(response);
   }
@@ -328,7 +330,7 @@ public class MinMaxStatsService {
   }
 
   private MinMaxStatDto returnEmptyResultIfInstanceIndexNotFound(
-      final ElasticsearchStatusException e, final String[] indexNames) {
+      final RuntimeException e, final String[] indexNames) {
     if (isInstanceIndexNotFoundException(e)) {
       log.info(
           "Could not calculate minMaxStats because at least one required instance indices from {} does not exist. "

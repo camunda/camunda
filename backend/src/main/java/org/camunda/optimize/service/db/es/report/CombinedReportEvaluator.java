@@ -28,7 +28,6 @@ import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
@@ -82,7 +81,7 @@ public class CombinedReportEvaluator {
               singleReportDefinitions.stream().map(ReportDefinitionDto::getId));
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
             "Could not evaluate combined instance count because no instance indices exist. "

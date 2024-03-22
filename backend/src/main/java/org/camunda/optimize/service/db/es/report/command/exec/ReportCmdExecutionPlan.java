@@ -78,7 +78,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchResponse response;
     try {
       response = executeRequests(executionContext, searchRequest);
-    } catch (ElasticsearchStatusException e) {
+    } catch (RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
         if (executionContext.getReportData().getDefinitions().size() > 1) {
           // If there are multiple data sources, we retry with the process instance index multi

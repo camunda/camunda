@@ -10,7 +10,7 @@ import static org.camunda.optimize.service.db.os.externalcode.client.dsl.Aggrega
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.sourceExcluded;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isOSInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -77,7 +77,7 @@ public class DefinitionInstanceReaderOS extends DefinitionInstanceReader {
           String.format("Was not able to retrieve definition keys for instances of type %s", type),
           e);
     } catch (OpenSearchException e) {
-      if (isOSInstanceIndexNotFoundException(type, e)) {
+      if (isInstanceIndexNotFoundException(type, e)) {
         log.info(
             "Was not able to retrieve definition keys for instances because no {} instance indices exist. "
                 + "Returning empty set.",
