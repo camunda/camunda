@@ -53,7 +53,6 @@ public final class IdentityAuthenticationManager implements ReactiveAuthenticati
 
     tenants = getTenants(tokenValue);
 
-    // TODO: if no tenants are returned should we set the default tenant?
     return Mono.just(new IdentityAuthentication(token, tenants));
   }
 
