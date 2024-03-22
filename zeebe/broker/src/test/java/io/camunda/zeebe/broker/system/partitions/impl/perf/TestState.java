@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.perf;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -77,7 +79,9 @@ final class TestState {
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
     return new ZeebeRocksDbFactory<>(
-        1, new RocksDbConfiguration(), new ConsistencyChecksSettings(false, false), false);
+        new RocksDbConfiguration(),
+        new ConsistencyChecksSettings(false, false),
+        new AccessMetricsConfiguration(Kind.NONE, 1));
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {

@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.db.impl;
 
+import io.camunda.zeebe.db.ColumnFamilyMetrics;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Child;
 import io.prometheus.client.Histogram.Timer;
 
-public final class ColumnFamilyMetrics {
+public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics {
 
   private static final Histogram LATENCY =
       Histogram.build()
@@ -27,11 +28,9 @@ public final class ColumnFamilyMetrics {
   private final Child putLatency;
   private final Child deleteLatency;
   private final Child iterateLatency;
-  private final boolean enabled;
 
-  public <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue> ColumnFamilyMetrics(
-      final boolean enabled, final int partitionId, final ColumnFamilyNames columnFamily) {
-    this.enabled = enabled;
+  public <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
+      FineGrainedColumnFamilyMetrics(final int partitionId, final ColumnFamilyNames columnFamily) {
     final var partitionLabel = String.valueOf(partitionId);
     final var columnFamilyLabel = columnFamily.name();
     getLatency = LATENCY.labels(partitionLabel, columnFamilyLabel, "get");
@@ -40,19 +39,23 @@ public final class ColumnFamilyMetrics {
     iterateLatency = LATENCY.labels(partitionLabel, columnFamilyLabel, "iterate");
   }
 
+  @Override
   public Timer measureGetLatency() {
-    return enabled ? getLatency.startTimer() : null;
+    return getLatency.startTimer();
   }
 
+  @Override
   public Timer measurePutLatency() {
-    return enabled ? putLatency.startTimer() : null;
+    return putLatency.startTimer();
   }
 
+  @Override
   public Timer measureDeleteLatency() {
-    return enabled ? deleteLatency.startTimer() : null;
+    return deleteLatency.startTimer();
   }
 
+  @Override
   public Timer measureIterateLatency() {
-    return enabled ? iterateLatency.startTimer() : null;
+    return iterateLatency.startTimer();
   }
 }

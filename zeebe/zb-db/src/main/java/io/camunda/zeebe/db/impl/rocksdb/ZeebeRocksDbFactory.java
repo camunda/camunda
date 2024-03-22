@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -48,20 +49,17 @@ public final class ZeebeRocksDbFactory<
     RocksDB.loadLibrary();
   }
 
-  private final int partitionId;
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
-  private final boolean enableAccessMetrics;
+  private final AccessMetricsConfiguration metrics;
 
   public ZeebeRocksDbFactory(
-      final int partitionId,
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
-      final boolean enableAccessMetrics) {
-    this.partitionId = partitionId;
+      final AccessMetricsConfiguration metricsConfiguration) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
-    this.enableAccessMetrics = enableAccessMetrics;
+    metrics = metricsConfiguration;
   }
 
   @Override
@@ -69,13 +67,12 @@ public final class ZeebeRocksDbFactory<
     final List<AutoCloseable> closeables = Collections.synchronizedList(new ArrayList<>());
     try {
       return ZeebeTransactionDb.openTransactionalDb(
-          partitionId,
           prepareOptions(closeables),
           pathName.getAbsolutePath(),
           closeables,
           rocksDbConfiguration,
           consistencyChecksSettings,
-          enableAccessMetrics);
+          metrics);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);

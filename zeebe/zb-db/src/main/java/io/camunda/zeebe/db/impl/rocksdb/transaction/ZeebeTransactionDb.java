@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
@@ -15,6 +16,8 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.FineGrainedColumnFamilyMetrics;
+import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -50,24 +53,21 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   private final ColumnFamilyHandle defaultHandle;
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
-  private final int partitionId;
-  private final boolean enableAccessMetrics;
+  private final AccessMetricsConfiguration accessMetricsConfiguration;
 
   protected ZeebeTransactionDb(
-      final int partitionId,
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
-      final boolean enableAccessMetrics) {
+      final AccessMetricsConfiguration accessMetricsConfiguration) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
-    this.partitionId = partitionId;
-    this.enableAccessMetrics = enableAccessMetrics;
+    this.accessMetricsConfiguration = accessMetricsConfiguration;
 
     prefixReadOptions =
         new ReadOptions()
@@ -86,13 +86,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
 
   public static <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
-          final int partitionId,
           final RocksDbOptions options,
           final String path,
           final List<AutoCloseable> closables,
           final RocksDbConfiguration rocksDbConfiguration,
           final ConsistencyChecksSettings consistencyChecksSettings,
-          final boolean enableAccessMetrics)
+          final AccessMetricsConfiguration metrics)
           throws RocksDBException {
     final var cfDescriptors =
         Arrays.asList( // todo: could consider using List.of
@@ -112,13 +111,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     closables.add(defaultColumnFamilyHandle);
 
     return new ZeebeTransactionDb<>(
-        partitionId,
         defaultColumnFamilyHandle,
         optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
         consistencyChecksSettings,
-        enableAccessMetrics);
+        metrics);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -153,15 +151,21 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
           final TransactionContext context,
           final KeyType keyInstance,
           final ValueType valueInstance) {
+    final var metrics =
+        switch (accessMetricsConfiguration.kind()) {
+          case NONE -> new NoopColumnFamilyMetrics();
+          case FINE ->
+              new FineGrainedColumnFamilyMetrics(
+                  accessMetricsConfiguration.partitionId(), columnFamily);
+        };
     return new TransactionalColumnFamily<>(
-        partitionId,
         this,
         consistencyChecksSettings,
         columnFamily,
         context,
         keyInstance,
         valueInstance,
-        enableAccessMetrics);
+        metrics);
   }
 
   @Override

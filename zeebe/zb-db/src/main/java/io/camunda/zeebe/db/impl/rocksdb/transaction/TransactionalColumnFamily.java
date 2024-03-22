@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ColumnFamilyMetrics;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.db.impl.ColumnFamilyMetrics;
 import io.camunda.zeebe.protocol.EnumValue;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,23 +58,22 @@ class TransactionalColumnFamily<
   private final ColumnFamilyMetrics metrics;
 
   TransactionalColumnFamily(
-      final int partitionId,
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final ColumnFamilyNames columnFamily,
       final TransactionContext context,
       final KeyType keyInstance,
       final ValueType valueInstance,
-      final boolean enableAccessMetrics) {
+      final ColumnFamilyMetrics metrics) {
     this.transactionDb = transactionDb;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.columnFamily = columnFamily;
     this.context = context;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
+    this.metrics = metrics;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
     foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
-    metrics = new ColumnFamilyMetrics(enableAccessMetrics, partitionId, columnFamily);
   }
 
   @Override

@@ -16,7 +16,6 @@ public final class RocksDbConfiguration {
   public static final int DEFAULT_MAX_WRITE_BUFFER_NUMBER = 6;
   public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;
   public static final boolean DEFAULT_STATISTICS_ENABLED = false;
-  public static final boolean DEFAULT_ACCESS_METRICS_ENABLED = false;
 
   /**
    * WARN: It is safe to disable wal as long as there is only one column family. With more than one

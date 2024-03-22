@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -18,7 +19,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
 
   private Properties columnFamilyOptions;
   private boolean enableStatistics = RocksDbConfiguration.DEFAULT_STATISTICS_ENABLED;
-  private boolean enableAccessMetrics = RocksDbConfiguration.DEFAULT_ACCESS_METRICS_ENABLED;
+  private AccessMetricsConfiguration.Kind accessMetrics = AccessMetricsConfiguration.Kind.NONE;
   private DataSize memoryLimit = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_LIMIT);
   private int maxOpenFiles = RocksDbConfiguration.DEFAULT_UNLIMITED_MAX_OPEN_FILES;
   private int maxWriteBufferNumber = RocksDbConfiguration.DEFAULT_MAX_WRITE_BUFFER_NUMBER;
@@ -120,12 +121,12 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.enableSstPartitioning = enableSstPartitioning;
   }
 
-  public boolean isEnableAccessMetrics() {
-    return enableAccessMetrics;
+  public AccessMetricsConfiguration.Kind getAccessMetrics() {
+    return accessMetrics;
   }
 
-  public void setEnableAccessMetrics(final boolean enableAccessMetrics) {
-    this.enableAccessMetrics = enableAccessMetrics;
+  public void setAccessMetrics(final AccessMetricsConfiguration.Kind accessMetrics) {
+    this.accessMetrics = accessMetrics;
   }
 
   public RocksDbConfiguration createRocksDbConfiguration() {
@@ -148,8 +149,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + columnFamilyOptions
         + ", enableStatistics="
         + enableStatistics
-        + ", enableAccessMetrics="
-        + enableAccessMetrics
+        + ", accessMetrics="
+        + accessMetrics
         + ", memoryLimit="
         + memoryLimit
         + ", maxOpenFiles="
