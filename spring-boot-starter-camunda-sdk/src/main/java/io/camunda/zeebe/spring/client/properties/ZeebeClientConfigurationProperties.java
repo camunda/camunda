@@ -20,7 +20,6 @@ import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import jakarta.annotation.PostConstruct;
-import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,14 +35,13 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(prefix = "zeebe.client")
 public class ZeebeClientConfigurationProperties {
-
   // Used to read default config values
   public static final ZeebeClientBuilderImpl DEFAULT =
       (ZeebeClientBuilderImpl) new ZeebeClientBuilderImpl().withProperties(new Properties());
   public static final String CONNECTION_MODE_CLOUD = "CLOUD";
   public static final String CONNECTION_MODE_ADDRESS = "ADDRESS";
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+      LoggerFactory.getLogger(ZeebeClientConfigurationProperties.class);
   private final org.springframework.core.env.Environment environment;
 
   /**

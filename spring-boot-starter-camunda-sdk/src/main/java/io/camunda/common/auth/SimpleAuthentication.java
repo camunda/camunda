@@ -15,7 +15,6 @@
  */
 package io.camunda.common.auth;
 
-import java.lang.invoke.MethodHandles;
 import java.util.*;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
@@ -29,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class SimpleAuthentication implements Authentication {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOG = LoggerFactory.getLogger(SimpleAuthentication.class);
 
   private final SimpleConfig simpleConfig;
   private final Map<Product, String> tokens = new HashMap<>();

@@ -16,7 +16,6 @@
 package io.camunda.common.auth;
 
 import io.camunda.common.json.JsonMapper;
-import java.lang.invoke.MethodHandles;
 import java.time.LocalDateTime;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -28,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class SaaSAuthentication extends JwtAuthentication {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOG = LoggerFactory.getLogger(SaaSAuthentication.class);
 
   private final JsonMapper jsonMapper;
 
