@@ -125,10 +125,15 @@ public class ZeebeResourcesHelper {
   }
 
   public long deployProcess(final BpmnModelInstance modelInstance) {
+    return deployProcess(modelInstance, "");
+  }
+
+  public long deployProcess(final BpmnModelInstance modelInstance, final String tenantId) {
     final DeploymentEvent deploymentEvent =
         client
             .newDeployResourceCommand()
             .addProcessModel(modelInstance, "process.bpmn")
+            .tenantId(tenantId)
             .send()
             .join();
     waitUntilDeploymentIsDone(deploymentEvent.getKey());
@@ -136,10 +141,16 @@ public class ZeebeResourcesHelper {
   }
 
   public long createProcessInstance(final long processDefinitionKey, final String variables) {
+    return createProcessInstance(processDefinitionKey, variables, "");
+  }
+
+  public long createProcessInstance(
+      final long processDefinitionKey, final String variables, final String tenantId) {
     return client
         .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
         .variables(variables)
+        .tenantId(tenantId)
         .send()
         .join()
         .getProcessInstanceKey();
@@ -155,9 +166,13 @@ public class ZeebeResourcesHelper {
   }
 
   public long createSingleUserTask() {
+    return createSingleUserTask("");
+  }
+
+  public long createSingleUserTask(final String tenantId) {
     final var modelInstance = createSingleUserTaskModelInstance();
-    final var processDefinitionKey = deployProcess(modelInstance);
-    final var processInstanceKey = createProcessInstance(processDefinitionKey);
+    final var processDefinitionKey = deployProcess(modelInstance, tenantId);
+    final var processInstanceKey = createProcessInstance(processDefinitionKey, "{}", tenantId);
     final var userTaskKey =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .filter(r -> processInstanceKey == r.getValue().getProcessInstanceKey())
