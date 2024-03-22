@@ -21,16 +21,24 @@ import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
+import {Modifications} from 'modules/api/processInstances/operations';
 
-export default function useOperationApply() {
+type ApplyBatchOperationParams = {
+  operationType: OperationEntityType;
+  onSuccess: () => void;
+  modifications?: Modifications;
+};
+
+function useOperationApply() {
   const {selectedProcessInstanceIds, excludedProcessInstanceIds, reset} =
     processInstancesSelectionStore;
 
   return {
-    applyBatchOperation: (
-      operationType: OperationEntityType,
-      onSuccess: () => void,
-    ) => {
+    applyBatchOperation: ({
+      operationType,
+      onSuccess,
+      modifications,
+    }: ApplyBatchOperationParams) => {
       const query = getProcessInstancesRequestFilters();
       const filterIds = query.ids || [];
 
@@ -61,6 +69,7 @@ export default function useOperationApply() {
           ids,
           excludeIds: excludedProcessInstanceIds,
         },
+        modifications,
         onSuccess() {
           onSuccess();
           tracking.track({
@@ -88,3 +97,5 @@ export default function useOperationApply() {
     },
   };
 }
+
+export default useOperationApply;

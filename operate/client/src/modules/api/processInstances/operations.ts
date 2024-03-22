@@ -17,18 +17,15 @@
 
 import {requestAndParse} from 'modules/request';
 import {BatchOperationDto} from '../sharedTypes';
+import {RequestFilters} from 'modules/utils/filter';
 
-type BatchOperationQuery = {
-  active?: boolean;
-  canceled?: boolean;
-  completed?: boolean;
-  excludeIds: string[];
-  processIds?: string[];
-  finished?: boolean;
-  ids: string[];
-  incidents?: boolean;
-  running?: boolean;
-};
+type Modifications = {
+  modification: 'MOVE_TOKEN';
+  fromFlowNodeId: string;
+  toFlowNodeId: string;
+}[];
+
+type BatchOperationQuery = RequestFilters | {excludeIds: string[]};
 
 type MigrationPlan = {
   targetProcessDefinitionKey: string;
@@ -38,11 +35,19 @@ type MigrationPlan = {
   }[];
 };
 
-const applyBatchOperation = async (
-  operationType: OperationEntityType,
-  query: BatchOperationQuery,
-  migrationPlan?: MigrationPlan,
-) => {
+type ApplyBatchOperationParams = {
+  operationType: OperationEntityType;
+  query: BatchOperationQuery;
+  migrationPlan?: MigrationPlan;
+  modifications?: Modifications;
+};
+
+const applyBatchOperation = async ({
+  operationType,
+  query,
+  migrationPlan,
+  modifications,
+}: ApplyBatchOperationParams) => {
   return requestAndParse<BatchOperationDto>({
     url: '/api/process-instances/batch-operation',
     method: 'POST',
@@ -50,6 +55,7 @@ const applyBatchOperation = async (
       operationType,
       query,
       migrationPlan,
+      modifications,
     },
   });
 };
@@ -72,4 +78,4 @@ const applyOperation = async (
 };
 
 export {applyBatchOperation, applyOperation};
-export type {BatchOperationQuery, MigrationPlan};
+export type {BatchOperationQuery, MigrationPlan, Modifications};

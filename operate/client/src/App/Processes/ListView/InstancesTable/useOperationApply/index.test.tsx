@@ -50,7 +50,10 @@ const mockedGetSearchString = getSearchString as jest.MockedFunction<
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
 
-  result.current.applyBatchOperation('RESOLVE_INCIDENT', jest.fn());
+  result.current.applyBatchOperation({
+    operationType: 'RESOLVE_INCIDENT',
+    onSuccess: jest.fn(),
+  });
 }
 
 describe('useOperationApply', () => {
@@ -83,11 +86,10 @@ describe('useOperationApply', () => {
       expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
 
-    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
-      expectedBody.operationType,
-      expectedBody.query,
-      undefined,
-    );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith({
+      operationType: expectedBody.operationType,
+      query: expectedBody.query,
+    });
   });
 
   it('should call apply (set id filter, select all ids)', async () => {
@@ -113,11 +115,10 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
-    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
-      expectedBody.operationType,
-      expectedBody.query,
-      undefined,
-    );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith({
+      operationType: expectedBody.operationType,
+      query: expectedBody.query,
+    });
   });
 
   it('should call apply (set id filter, select one id)', async () => {
@@ -142,11 +143,10 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
-    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
-      expectedBody.operationType,
-      expectedBody.query,
-      undefined,
-    );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith({
+      operationType: expectedBody.operationType,
+      query: expectedBody.query,
+    });
   });
 
   it('should call apply (set id filter, exclude one id)', async () => {
@@ -174,11 +174,10 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
-    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
-      expectedBody.operationType,
-      expectedBody.query,
-      undefined,
-    );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith({
+      operationType: expectedBody.operationType,
+      query: expectedBody.query,
+    });
   });
 
   it('should call apply (set process filter, select one)', async () => {
@@ -207,11 +206,10 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated]),
     );
-    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
-      expectedBody.operationType,
-      expectedBody.query,
-      undefined,
-    );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith({
+      operationType: expectedBody.operationType,
+      query: expectedBody.query,
+    });
   });
 
   it('should poll all visible instances', async () => {

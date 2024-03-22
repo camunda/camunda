@@ -29,6 +29,7 @@ import {BatchOperationDto} from 'modules/api/sharedTypes';
 import {
   BatchOperationQuery,
   MigrationPlan,
+  Modifications,
   applyBatchOperation,
   applyOperation,
 } from 'modules/api/processInstances/operations';
@@ -131,21 +132,24 @@ class Operations extends NetworkReconnectionHandler {
     operationType,
     query,
     migrationPlan,
+    modifications,
     onSuccess,
     onError,
   }: {
     operationType: OperationEntityType;
     query: Query;
     migrationPlan?: MigrationPlan;
+    modifications?: Modifications;
     onSuccess: () => void;
     onError: ErrorHandler;
   }) => {
     try {
-      const response = await applyBatchOperation(
+      const response = await applyBatchOperation({
         operationType,
         query,
         migrationPlan,
-      );
+        modifications,
+      });
 
       if (response.isSuccess) {
         this.prependOperations(response.data);
