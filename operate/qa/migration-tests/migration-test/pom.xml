@@ -203,7 +203,6 @@
             <dependency>io.camunda:operate-qa-migration-tests-test-fixture-840</dependency>
           </usedDependencies>
           <ignoredUsedUndeclaredDependencies>
-            <dependency>org.apache.tomcat:tomcat-annotations-api</dependency>
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>

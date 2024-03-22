@@ -165,7 +165,6 @@
             <dependency>io.camunda:operate-webapp</dependency>
           </usedDependencies>
           <ignoredUsedUndeclaredDependencies>
-            <dependency>org.apache.tomcat:tomcat-annotations-api</dependency>
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>

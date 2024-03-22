@@ -95,7 +95,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUsedUndeclaredDependencies>
-            <dependency>org.apache.tomcat:tomcat-annotations-api</dependency>
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </ignoredUsedUndeclaredDependencies>
           <usedDependencies>

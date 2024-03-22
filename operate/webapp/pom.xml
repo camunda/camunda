@@ -320,6 +320,12 @@
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.tomcat</groupId>
+          <artifactId>tomcat-annotations-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -405,9 +411,6 @@
      classes on the classpath in order to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
           </usedDependencies>
-          <ignoredUsedUndeclaredDependencies>
-            <dep>org.apache.tomcat:tomcat-annotations-api</dep>
-          </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
