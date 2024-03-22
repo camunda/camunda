@@ -10,6 +10,8 @@ package io.camunda.zeebe.backup.processing.state;
 import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKPOINT;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
@@ -35,7 +37,9 @@ final class DbCheckpointStateTest {
   void before() {
     zeebedb =
         new ZeebeRocksDbFactory<>(
-                new RocksDbConfiguration(), new ConsistencyChecksSettings(true, true))
+                new RocksDbConfiguration(),
+                new ConsistencyChecksSettings(true, true),
+                new AccessMetricsConfiguration(Kind.NONE, 1))
             .createDb(database.toFile());
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
   }
