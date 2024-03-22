@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.model.bpmn.builder;
 
+import java.util.function.Consumer;
+
 /** A fluent builder for elements with execution listeners. */
 public interface ZeebeExecutionListenersBuilder<B> {
 
@@ -25,4 +27,7 @@ public interface ZeebeExecutionListenersBuilder<B> {
   B zeebeEndExecutionListener(String type, String retries);
 
   B zeebeEndExecutionListener(String type);
+
+  B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer);
 }

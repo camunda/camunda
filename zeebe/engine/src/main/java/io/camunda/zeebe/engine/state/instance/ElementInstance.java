@@ -16,7 +16,6 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
@@ -41,8 +40,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
-  private final StringProperty executionListenerTypeProp =
-      new StringProperty("executionListenerType", "");
+  private final IntegerProperty executionListenerIndexProp =
+      new IntegerProperty("executionListenerIndex", 0);
 
   public ElementInstance() {
     super(13);
@@ -58,7 +57,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
         .declareProperty(userTaskKeyProp)
-        .declareProperty(executionListenerTypeProp);
+        .declareProperty(executionListenerIndexProp);
   }
 
   public ElementInstance(
@@ -235,11 +234,15 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     userTaskKeyProp.setValue(userTaskKey);
   }
 
-  public String getExecutionListenerType() {
-    return BufferUtil.bufferAsString(executionListenerTypeProp.getValue());
+  public int getExecutionListenerIndex() {
+    return executionListenerIndexProp.getValue();
   }
 
-  public void setExecutionListenerType(final String executionListenerType) {
-    executionListenerTypeProp.setValue(executionListenerType);
+  public void incrementExecutionListenerIndex() {
+    executionListenerIndexProp.increment();
+  }
+
+  public void resetExecutionListenerIndex() {
+    executionListenerIndexProp.setValue(0);
   }
 }
