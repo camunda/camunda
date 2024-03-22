@@ -116,7 +116,7 @@ public class RetryElasticsearchClient {
     return numberOfRetries;
   }
 
-  public RetryElasticsearchClient setNumberOfRetries(int numberOfRetries) {
+  public RetryElasticsearchClient setNumberOfRetries(final int numberOfRetries) {
     this.numberOfRetries = numberOfRetries;
     return this;
   }
@@ -131,7 +131,7 @@ public class RetryElasticsearchClient {
                   RequestOptions.DEFAULT);
       final ClusterHealthStatus status = response.getStatus();
       return !response.isTimedOut() && !status.equals(ClusterHealthStatus.RED);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(
           String.format(
               "Couldn't connect to Elasticsearch due to %s. Return unhealthy state. ",
@@ -145,12 +145,12 @@ public class RetryElasticsearchClient {
     return delayIntervalInSeconds;
   }
 
-  public RetryElasticsearchClient setDelayIntervalInSeconds(int delayIntervalInSeconds) {
+  public RetryElasticsearchClient setDelayIntervalInSeconds(final int delayIntervalInSeconds) {
     this.delayIntervalInSeconds = delayIntervalInSeconds;
     return this;
   }
 
-  public RetryElasticsearchClient setRequestOptions(RequestOptions requestOptions) {
+  public RetryElasticsearchClient setRequestOptions(final RequestOptions requestOptions) {
     this.requestOptions = requestOptions;
     return this;
   }
@@ -160,10 +160,10 @@ public class RetryElasticsearchClient {
         "Refresh " + indexPattern,
         () -> {
           try {
-            for (var index : getFilteredIndices(indexPattern)) {
+            for (final var index : getFilteredIndices(indexPattern)) {
               esClient.indices().refresh(new RefreshRequest(index), requestOptions);
             }
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new RuntimeException(e);
           }
           return true;
@@ -177,7 +177,7 @@ public class RetryElasticsearchClient {
         (r) -> r.getFailedShards() > 0);
   }
 
-  public long getNumberOfDocumentsFor(String... indexPatterns) {
+  public long getNumberOfDocumentsFor(final String... indexPatterns) {
     final var response =
         executeWithRetries(
             "Count number of documents in " + Arrays.asList(indexPatterns),
@@ -186,7 +186,7 @@ public class RetryElasticsearchClient {
     return response.getCount();
   }
 
-  public Set<String> getIndexNames(String namePattern) {
+  public Set<String> getIndexNames(final String namePattern) {
     return executeWithRetries(
         "Get indices for " + namePattern,
         () -> {
@@ -194,7 +194,7 @@ public class RetryElasticsearchClient {
             final GetIndexResponse response =
                 esClient.indices().get(new GetIndexRequest(namePattern), RequestOptions.DEFAULT);
             return Set.of(response.getIndices());
-          } catch (ElasticsearchException e) {
+          } catch (final ElasticsearchException e) {
             if (e.status().equals(RestStatus.NOT_FOUND)) {
               return Set.of();
             }
@@ -203,7 +203,7 @@ public class RetryElasticsearchClient {
         });
   }
 
-  public Map<String, IndexMapping> getIndexMappings(String namePattern) {
+  public Map<String, IndexMapping> getIndexMappings(final String namePattern) {
     return executeWithRetries(
         "Get indices mappings for " + namePattern,
         () -> {
@@ -215,7 +215,7 @@ public class RetryElasticsearchClient {
                     .getMapping(
                         new GetMappingsRequest().indices(namePattern), RequestOptions.DEFAULT)
                     .mappings();
-            for (Map.Entry<String, MappingMetadata> entry : mappings.entrySet()) {
+            for (final Map.Entry<String, MappingMetadata> entry : mappings.entrySet()) {
               final Map<String, Object> mappingMetadata =
                   objectMapper.readValue(
                       entry.getValue().source().string(),
@@ -235,7 +235,7 @@ public class RetryElasticsearchClient {
                       .setMetaProperties(metaProperties));
             }
             return mappingsMap;
-          } catch (ElasticsearchException e) {
+          } catch (final ElasticsearchException e) {
             if (e.status().equals(RestStatus.NOT_FOUND)) {
               return Map.of();
             }
@@ -244,7 +244,7 @@ public class RetryElasticsearchClient {
         });
   }
 
-  public Set<String> getAliasesNames(String namePattern) {
+  public Set<String> getAliasesNames(final String namePattern) {
     return executeWithRetries(
         "Get aliases for " + namePattern,
         () -> {
@@ -255,12 +255,12 @@ public class RetryElasticsearchClient {
 
             final Set<String> returnAliases = new HashSet<>();
             final Map<String, Set<AliasMetadata>> mapAliases = response.getAliases();
-            for (Map.Entry<String, Set<AliasMetadata>> a : mapAliases.entrySet()) {
+            for (final Map.Entry<String, Set<AliasMetadata>> a : mapAliases.entrySet()) {
               returnAliases.addAll(
                   a.getValue().stream().map(m -> m.getAlias()).collect(Collectors.toSet()));
             }
             return returnAliases;
-          } catch (ElasticsearchException e) {
+          } catch (final ElasticsearchException e) {
             // NOT_FOUND response means that aliases are not found
             if (e.status().equals(RestStatus.NOT_FOUND)) {
               return Set.of();
@@ -270,7 +270,7 @@ public class RetryElasticsearchClient {
         });
   }
 
-  public boolean createIndex(CreateIndexRequest createIndexRequest) {
+  public boolean createIndex(final CreateIndexRequest createIndexRequest) {
     return executeWithRetries(
         "CreateIndex " + createIndexRequest.index(),
         () -> {
@@ -301,12 +301,12 @@ public class RetryElasticsearchClient {
         });
   }
 
-  private boolean aliasExists(Alias alias, String index) throws IOException {
+  private boolean aliasExists(final Alias alias, final String index) throws IOException {
     final GetAliasesRequest aliasExistsReq = new GetAliasesRequest(alias.name()).indices(index);
     return esClient.indices().existsAlias(aliasExistsReq, RequestOptions.DEFAULT);
   }
 
-  public boolean createOrUpdateDocument(String name, String id, Map source) {
+  public boolean createOrUpdateDocument(final String name, final String id, final Map source) {
     return executeWithRetries(
         "RetryElasticsearchClient#createOrUpdateDocument",
         () -> {
@@ -319,7 +319,7 @@ public class RetryElasticsearchClient {
         });
   }
 
-  public boolean createOrUpdateDocument(String name, String id, String source) {
+  public boolean createOrUpdateDocument(final String name, final String id, final String source) {
     return executeWithRetries(
         "RetryElasticsearchClient#createOrUpdateDocument",
         () -> {
@@ -332,7 +332,7 @@ public class RetryElasticsearchClient {
         });
   }
 
-  public boolean documentExists(String name, String id) {
+  public boolean documentExists(final String name, final String id) {
     return executeWithGivenRetries(
         10,
         String.format("Exists document from %s with id %s", name, id),
@@ -342,7 +342,7 @@ public class RetryElasticsearchClient {
         null);
   }
 
-  public Map<String, Object> getDocument(String name, String id) {
+  public Map<String, Object> getDocument(final String name, final String id) {
     return executeWithGivenRetries(
         10,
         String.format("Get document from %s with id %s", name, id),
@@ -358,7 +358,7 @@ public class RetryElasticsearchClient {
         null);
   }
 
-  public boolean deleteDocument(String name, String id) {
+  public boolean deleteDocument(final String name, final String id) {
     return executeWithRetries(
         "RetryElasticsearchClient#deleteDocument",
         () -> {
@@ -376,7 +376,7 @@ public class RetryElasticsearchClient {
             new ComposableIndexTemplateExistRequest(templatePattern), requestOptions);
   }
 
-  public boolean createComponentTemplate(PutComponentTemplateRequest request) {
+  public boolean createComponentTemplate(final PutComponentTemplateRequest request) {
     return executeWithRetries(
         "CreateComponentTemplate " + request.name(),
         () -> {
@@ -390,11 +390,12 @@ public class RetryElasticsearchClient {
         });
   }
 
-  public boolean createTemplate(PutComposableIndexTemplateRequest request) {
+  public boolean createTemplate(final PutComposableIndexTemplateRequest request) {
     return createTemplate(request, false);
   }
 
-  public boolean createTemplate(PutComposableIndexTemplateRequest request, boolean overwrite) {
+  public boolean createTemplate(
+      final PutComposableIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
@@ -443,14 +444,14 @@ public class RetryElasticsearchClient {
     return executeWithRetries(
         "DeleteIndices " + indexPattern,
         () -> {
-          for (var index : getFilteredIndices(indexPattern)) {
+          for (final var index : getFilteredIndices(indexPattern)) {
             esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
           }
           return true;
         });
   }
 
-  public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
+  public Map<String, String> getIndexSettingsFor(final String indexName, final String... fields) {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
@@ -459,14 +460,14 @@ public class RetryElasticsearchClient {
               esClient
                   .indices()
                   .getSettings(new GetSettingsRequest().indices(indexName), requestOptions);
-          for (String field : fields) {
+          for (final String field : fields) {
             settings.put(field, response.getSetting(indexName, field));
           }
           return settings;
         });
   }
 
-  public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
+  public String getOrDefaultRefreshInterval(final String indexName, final String defaultValue) {
     final Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
     String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
     if (refreshInterval.trim().equals(NO_REFRESH)) {
@@ -475,7 +476,7 @@ public class RetryElasticsearchClient {
     return refreshInterval;
   }
 
-  public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
+  public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
     final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
     String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
@@ -484,7 +485,7 @@ public class RetryElasticsearchClient {
     return numbersOfReplica;
   }
 
-  public boolean setIndexSettingsFor(Settings settings, String indexPattern) {
+  public boolean setIndexSettingsFor(final Settings settings, final String indexPattern) {
     return executeWithRetries(
         "SetIndexSettings " + indexPattern,
         () ->
@@ -495,7 +496,7 @@ public class RetryElasticsearchClient {
                 .isAcknowledged());
   }
 
-  public boolean addPipeline(String name, String definition) {
+  public boolean addPipeline(final String name, final String definition) {
     final BytesReference content = new BytesArray(definition.getBytes());
     return executeWithRetries(
         "AddPipeline " + name,
@@ -507,7 +508,7 @@ public class RetryElasticsearchClient {
                 .isAcknowledged());
   }
 
-  public boolean removePipeline(String name) {
+  public boolean removePipeline(final String name) {
     return executeWithRetries(
         "RemovePipeline " + name,
         () ->
@@ -521,7 +522,7 @@ public class RetryElasticsearchClient {
     reindex(reindexRequest, true);
   }
 
-  public void reindex(final ReindexRequest reindexRequest, boolean checkDocumentCount) {
+  public void reindex(final ReindexRequest reindexRequest, final boolean checkDocumentCount) {
     executeWithRetries(
         "Reindex "
             + Arrays.asList(reindexRequest.getSearchRequest().indices())
@@ -567,7 +568,7 @@ public class RetryElasticsearchClient {
         done -> !done);
   }
 
-  private boolean waitUntilTaskIsCompleted(String taskId) {
+  private boolean waitUntilTaskIsCompleted(final String taskId) {
     return waitUntilTaskIsCompleted(taskId, null);
   }
 
@@ -577,7 +578,7 @@ public class RetryElasticsearchClient {
   // - If the response has a status with uncompleted flag and a sum of changed documents
   // (created,updated and deleted documents) not equal to total documents
   //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(final String taskId, Long srcCount) {
+  private boolean waitUntilTaskIsCompleted(final String taskId, final Long srcCount) {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
     final Long smallTaskId = Long.parseLong(taskIdParts[1]);
@@ -628,7 +629,7 @@ public class RetryElasticsearchClient {
   }
 
   public int doWithEachSearchResult(
-      SearchRequest searchRequest, Consumer<SearchHit> searchHitConsumer) {
+      final SearchRequest searchRequest, final Consumer<SearchHit> searchHitConsumer) {
     return executeWithRetries(
         "RetryElasticsearchClient#doWithEachSearchResult",
         () -> {
@@ -657,7 +658,9 @@ public class RetryElasticsearchClient {
   }
 
   public <T> List<T> searchWithScroll(
-      SearchRequest searchRequest, Class<T> resultClass, ObjectMapper objectMapper) {
+      final SearchRequest searchRequest,
+      final Class<T> resultClass,
+      final ObjectMapper objectMapper) {
     final long totalHits =
         executeWithRetries(
             "Count search results",
@@ -668,7 +671,8 @@ public class RetryElasticsearchClient {
         resultList -> resultList.size() != totalHits);
   }
 
-  private <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper)
+  private <T> List<T> scroll(
+      final SearchRequest searchRequest, final Class<T> clazz, final ObjectMapper objectMapper)
       throws IOException {
     final List<T> results = new ArrayList<>();
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
@@ -694,10 +698,11 @@ public class RetryElasticsearchClient {
     return results;
   }
 
-  private <T> T searchHitToObject(SearchHit searchHit, Class<T> clazz, ObjectMapper objectMapper) {
+  private <T> T searchHitToObject(
+      final SearchHit searchHit, final Class<T> clazz, final ObjectMapper objectMapper) {
     try {
       return objectMapper.readValue(searchHit.getSourceAsString(), clazz);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new OperateRuntimeException(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
@@ -708,22 +713,22 @@ public class RetryElasticsearchClient {
   // ------------------- Retry part ------------------
 
   private <T> T executeWithRetries(
-      String operationName, RetryOperation.RetryConsumer<T> retryConsumer) {
+      final String operationName, final RetryOperation.RetryConsumer<T> retryConsumer) {
     return executeWithRetries(operationName, retryConsumer, null);
   }
 
   private <T> T executeWithRetries(
-      String operationName,
-      RetryOperation.RetryConsumer<T> retryConsumer,
-      RetryOperation.RetryPredicate<T> retryPredicate) {
+      final String operationName,
+      final RetryOperation.RetryConsumer<T> retryConsumer,
+      final RetryOperation.RetryPredicate<T> retryPredicate) {
     return executeWithGivenRetries(numberOfRetries, operationName, retryConsumer, retryPredicate);
   }
 
   private <T> T executeWithGivenRetries(
-      int retries,
-      String operationName,
-      RetryOperation.RetryConsumer<T> retryConsumer,
-      RetryOperation.RetryPredicate<T> retryPredicate) {
+      final int retries,
+      final String operationName,
+      final RetryOperation.RetryConsumer<T> retryConsumer,
+      final RetryOperation.RetryPredicate<T> retryPredicate) {
     try {
       return RetryOperation.<T>newBuilder()
           .retryConsumer(retryConsumer)
@@ -735,7 +740,7 @@ public class RetryElasticsearchClient {
           .message(operationName)
           .build()
           .retry();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(
           "Couldn't execute operation "
               + operationName
@@ -772,7 +777,7 @@ public class RetryElasticsearchClient {
 
   public void updateMetaField(
       final IndexDescriptor indexDescriptor, final String fieldName, final Object value) {
-    logger.debug("Meta field will be updated. Index name: {}. ");
+    LOGGER.debug("Meta field will be updated. Index name: {}. ");
     final PutMappingRequest request;
     try {
       request =
@@ -784,12 +789,12 @@ public class RetryElasticsearchClient {
                       + objectMapper.writeValueAsString(value)
                       + "}}",
                   XContentType.JSON);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new OperateRuntimeException(
           String.format(
               "Exception occurred when serializing meta field value for update. Field name: %s. Field value: %s.",
               fieldName, value));
     }
-    this.putMapping(request);
+    putMapping(request);
   }
 }

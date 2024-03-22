@@ -32,7 +32,6 @@ public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
   public static final String CREATION_TIME = "creationTime";
   public static final String INTENT = "intent";
   public static final String PARTITION_ID = "partitionId";
-  public static final String POSITION = "position";
 
   @Override
   public String getIndexName() {

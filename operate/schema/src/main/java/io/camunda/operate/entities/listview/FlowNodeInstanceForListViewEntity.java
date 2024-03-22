@@ -41,6 +41,8 @@ public class FlowNodeInstanceForListViewEntity
 
   @Deprecated @JsonIgnore private boolean pendingIncident;
 
+  private Long position;
+
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
@@ -162,8 +164,17 @@ public class FlowNodeInstanceForListViewEntity
     return this;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public FlowNodeInstanceForListViewEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -175,12 +186,18 @@ public class FlowNodeInstanceForListViewEntity
     }
     final FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
     return incident == that.incident
+        && jobFailedWithRetriesLeft == that.jobFailedWithRetriesLeft
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(activityId, that.activityId)
         && activityState == that.activityState
         && activityType == that.activityType
+        && Objects.equals(incidentKeys, that.incidentKeys)
         && Objects.equals(errorMessage, that.errorMessage)
-        && Objects.equals(joinRelation, that.joinRelation);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position)
+        && Objects.equals(joinRelation, that.joinRelation)
+        && Objects.equals(startTime, that.startTime)
+        && Objects.equals(endTime, that.endTime);
   }
 
   @Override
@@ -191,8 +208,14 @@ public class FlowNodeInstanceForListViewEntity
         activityId,
         activityState,
         activityType,
+        incidentKeys,
         errorMessage,
         incident,
-        joinRelation);
+        jobFailedWithRetriesLeft,
+        tenantId,
+        position,
+        joinRelation,
+        startTime,
+        endTime);
   }
 }

@@ -19,7 +19,6 @@ package io.camunda.operate.entities;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.Arrays;
 import java.util.Objects;
 
 public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
@@ -38,6 +37,8 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   private String bpmnProcessId;
 
   private String tenantId = DEFAULT_TENANT_ID;
+
+  private Long position;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -131,8 +132,17 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return this;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public VariableEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -152,24 +162,22 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
-        && Arrays.equals(sortValues, that.sortValues);
+        && Objects.equals(position, that.position);
   }
 
   @Override
   public int hashCode() {
-    int result =
-        Objects.hash(
-            super.hashCode(),
-            name,
-            value,
-            fullValue,
-            isPreview,
-            scopeKey,
-            processInstanceKey,
-            processDefinitionKey,
-            bpmnProcessId,
-            tenantId);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
+    return Objects.hash(
+        super.hashCode(),
+        name,
+        value,
+        fullValue,
+        isPreview,
+        scopeKey,
+        processInstanceKey,
+        processDefinitionKey,
+        bpmnProcessId,
+        tenantId,
+        position);
   }
 }

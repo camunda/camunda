@@ -87,17 +87,22 @@ public class IndexMapping {
       return false;
     }
     final IndexMapping that = (IndexMapping) o;
-    return Objects.equals(indexName, that.indexName) && Objects.equals(properties, that.properties)
+    return Objects.equals(indexName, that.indexName)
+        && Objects.equals(properties, that.properties)
         && Objects.equals(metaProperties, that.metaProperties);
   }
 
   @Override
   public String toString() {
-    return "IndexMapping{" +
-        "indexName='" + indexName + '\'' +
-        ", properties=" + properties +
-        ", metaProperties=" + metaProperties +
-        '}';
+    return "IndexMapping{"
+        + "indexName='"
+        + indexName
+        + '\''
+        + ", properties="
+        + properties
+        + ", metaProperties="
+        + metaProperties
+        + '}';
   }
 
   public static class IndexMappingProperty {
