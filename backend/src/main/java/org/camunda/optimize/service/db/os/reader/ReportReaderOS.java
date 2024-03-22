@@ -252,6 +252,24 @@ public class ReportReaderOS implements ReportReader {
     }
   }
 
+  @Override
+  public long getUserTaskReportCount() {
+    final Query query =
+        new BoolQuery.Builder()
+            .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
+            .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
+            .build()
+            .toQuery();
+    final SearchRequest.Builder searchRequest =
+        getSearchRequestOmitXml(query, new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME});
+    final String errorMessage = "Was not able to fetch process reports to count userTask reports.";
+    final SearchResponse<SingleProcessReportDefinitionRequestDto> searchResponse =
+        osClient.search(searchRequest, SingleProcessReportDefinitionRequestDto.class, errorMessage);
+    final List<SingleProcessReportDefinitionRequestDto> allProcessReports =
+        OpensearchReaderUtil.extractResponseValues(searchResponse);
+    return allProcessReports.stream().filter(report -> report.getData().isUserTaskReport()).count();
+  }
+
   private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(
       final String definitionKey) {
     log.debug(

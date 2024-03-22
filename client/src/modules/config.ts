@@ -56,6 +56,7 @@ type Config = {
   onboarding: Onboarding;
   notificationsUrl: string;
   userSearchAvailable: boolean;
+  optimizeDatabase: 'opensearch' | 'elasticsearch';
 };
 
 let config: Record<string, unknown>;
@@ -110,5 +111,7 @@ export const isEnterpriseMode = createAccessorFunction<boolean>('enterpriseMode'
 export const getOnboardingConfig = createAccessorFunction<Onboarding>('onboarding');
 export const getNotificationsUrl = createAccessorFunction<string>('notificationsUrl');
 export const isUserSearchAvailable = createAccessorFunction<boolean>('userSearchAvailable');
+export const getOptimizeDatabase =
+  createAccessorFunction<Config['optimizeDatabase']>('optimizeDatabase');
 
 export {default as newReport} from './newReport.json';

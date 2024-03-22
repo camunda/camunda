@@ -30,6 +30,9 @@ public class MixpanelHeartbeatProperties extends MixpanelEventProperties {
   @JsonProperty("alertCount")
   private long alertCount;
 
+  @JsonProperty("taskReportCount")
+  private long taskReportCount;
+
   public MixpanelHeartbeatProperties(
       final MixpanelHeartbeatMetrics mixpanelHeartbeatMetrics,
       final String stage,
@@ -42,5 +45,6 @@ public class MixpanelHeartbeatProperties extends MixpanelEventProperties {
     this.reportShareCount = mixpanelHeartbeatMetrics.getReportShareCount();
     this.dashboardShareCount = mixpanelHeartbeatMetrics.getDashboardShareCount();
     this.alertCount = mixpanelHeartbeatMetrics.getAlertCount();
+    this.taskReportCount = mixpanelHeartbeatMetrics.getTaskReportCount();
   }
 }

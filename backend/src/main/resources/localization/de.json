@@ -27,7 +27,9 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support"
+    "feedback": "Feedback und Support",
+    "opensearchPreview": "Opensearch Vorschauversion",
+    "opensearchWarningText": "Dies ist eine Vorschauversion von Optimize mit OpenSearch-Unterstützung. Der Datenimport ist voll funktionsfähig, jedoch befinden sich die Datenvisualisierungs- und Auswertungsfunktionen in einem experimentellen Stadium und sollten nicht für Produktionszwecke verwendet werden."
   },
   "login": {
     "label": "Einloggen",
@@ -46,7 +48,8 @@
     "notConnected": "ist nicht verbunden",
     "rightsReserved": "Alle Rechte vorbehalten",
     "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)",
-    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
+    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:",
+    "database": "Database"
   },
   "license": {
     "label": "Lizenz",
