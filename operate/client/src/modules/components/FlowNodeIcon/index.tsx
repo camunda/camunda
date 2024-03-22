@@ -94,6 +94,11 @@ import {ReactComponent as FlowNodeEventSignalInterruptingBoundary} from 'modules
 import {ReactComponent as FlowNodeEventSignalNonInterruptingBoundary} from 'modules/components/Icon/flow-node-event-signal-non-interrupting-boundary.svg';
 import {ReactComponent as FlowNodeEventSignalNonInterruptingStart} from 'modules/components/Icon/flow-node-event-signal-non-interrupting-start.svg';
 
+import {ReactComponent as FlowNodeEventCompensationStart} from 'modules/components/Icon/flow-node-compensation-start-event.svg';
+import {ReactComponent as FlowNodeEventCompensationEnd} from 'modules/components/Icon/flow-node-compensation-end-event.svg';
+import {ReactComponent as FlowNodeEventCompensationIntermediateThrow} from 'modules/components/Icon/flow-node-compensation-intermediate-event-throw.svg';
+import {ReactComponent as FlowNodeEventCompensationBoundary} from 'modules/components/Icon/flow-node-compensation-boundary-event.svg';
+
 const getSVGComponent = (
   businessObject: BusinessObject,
   isMultiInstanceBody: boolean,
@@ -218,6 +223,19 @@ const getSVGComponent = (
           return FlowNodeEventSignalIntermediateCatch;
         case 'bpmn:EndEvent':
           return FlowNodeEventSignalEnd;
+      }
+
+    case 'bpmn:CompensateEventDefinition':
+      switch (businessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return FlowNodeEventCompensationStart;
+        case 'bpmn:BoundaryEvent':
+          return FlowNodeEventCompensationBoundary;
+        case 'bpmn:IntermediateThrowEvent':
+          return FlowNodeEventCompensationIntermediateThrow;
+        case 'bpmn:EndEvent':
+          return FlowNodeEventCompensationEnd;
       }
   }
 
