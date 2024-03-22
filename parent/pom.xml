@@ -589,8 +589,8 @@
       </dependency>
 
       <dependency>
-        <groupId>io.camunda.spring</groupId>
-        <artifactId>spring-client-zeebe</artifactId>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-client-spring</artifactId>
         <version>${project.version}</version>
       </dependency>
 
