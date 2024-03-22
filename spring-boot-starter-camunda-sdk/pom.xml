@@ -51,13 +51,14 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda.spring</groupId>
-      <artifactId>spring-client-zeebe</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>zeebe-client-spring</artifactId>
+      <version>${parent.version}</version>
     </dependency>
 
     <dependency>
