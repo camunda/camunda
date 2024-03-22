@@ -33,62 +33,62 @@ public class ZeebeClientSpringConfigurationDefaultPropertiesTest {
   @Autowired private ZeebeClientConfigurationProperties properties;
 
   @Test
-  public void hasDeprecatedGatewayAddress() throws Exception {
+  public void hasDeprecatedGatewayAddress() {
     assertThat(properties.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
   }
 
   @Test
-  public void hasGrpcAddress() throws Exception {
+  public void hasGrpcAddress() {
     assertThat(properties.getGrpcAddress().toString()).isEqualTo("https://0.0.0.0:26500");
   }
 
   @Test
-  public void hasRestAddress() throws Exception {
+  public void hasRestAddress() {
     assertThat(properties.getRestAddress().toString()).isEqualTo("https://0.0.0.0:8080");
   }
 
   @Test
-  public void hasRequestTimeout() throws Exception {
+  public void hasRequestTimeout() {
     assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
   }
 
   @Test
-  public void hasNoWorkerName() throws Exception {
+  public void hasNoWorkerName() {
     assertThat(properties.getDefaultJobWorkerName()).isNull();
   }
 
   @Test
-  public void hasJobTimeout() throws Exception {
+  public void hasJobTimeout() {
     assertThat(properties.getDefaultJobTimeout()).isEqualTo(Duration.ofSeconds(300));
   }
 
   @Test
-  public void hasWorkerMaxJobsActive() throws Exception {
+  public void hasWorkerMaxJobsActive() {
     assertThat(properties.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
   }
 
   @Test
-  public void hasJobPollInterval() throws Exception {
+  public void hasJobPollInterval() {
     assertThat(properties.getDefaultJobPollInterval()).isEqualTo(Duration.ofNanos(100000000));
   }
 
   @Test
-  public void hasWorkerThreads() throws Exception {
+  public void hasWorkerThreads() {
     assertThat(properties.getNumJobWorkerExecutionThreads()).isEqualTo(1);
   }
 
   @Test
-  public void hasMessageTimeToLeave() throws Exception {
+  public void hasMessageTimeToLeave() {
     assertThat(properties.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofSeconds(3600));
   }
 
   @Test
-  public void isSecurityPlainTextDisabled() throws Exception {
+  public void isSecurityPlainTextDisabled() {
     assertThat(properties.isPlaintextConnectionEnabled()).isFalse();
   }
 
   @Test
-  public void hasSecurityCertificatePath() throws Exception {
+  public void hasSecurityCertificatePath() {
     assertThat(properties.getCaCertificatePath()).isNull();
   }
 

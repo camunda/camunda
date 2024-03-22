@@ -46,30 +46,30 @@ public class JavaClientPropertiesTest {
   @Autowired private ZeebeClientConfigurationProperties properties;
 
   @Test
-  public void hasDeprecatedGatewayAddress() throws Exception {
+  public void hasDeprecatedGatewayAddress() {
     assertThat(properties.getGatewayAddress()).isEqualTo("localhost12345");
   }
 
-  public void hasGrpcAddress() throws Exception {
+  public void hasGrpcAddress() {
     assertThat(properties.getGrpcAddress().toString()).isEqualTo("https://localhost:1234");
   }
 
-  public void hasRestAddress() throws Exception {
+  public void hasRestAddress() {
     assertThat(properties.getRestAddress().toString()).isEqualTo("https://localhost:8080");
   }
 
   @Test
-  public void hasWorkerName() throws Exception {
+  public void hasWorkerName() {
     assertThat(properties.getDefaultJobWorkerName()).isEqualTo("testName");
   }
 
   @Test
-  public void hasJobPollInterval() throws Exception {
+  public void hasJobPollInterval() {
     assertThat(properties.getJob().getPollInterval()).isEqualTo(Duration.ofSeconds(99));
   }
 
   @Test
-  public void hasCloudSecret() throws Exception {
+  public void hasCloudSecret() {
     assertThat(properties.getCloud().getClientSecret()).isEqualTo("processOrchestration");
   }
 
