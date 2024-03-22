@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -39,6 +40,7 @@ public class ZeebeResourcesHelper {
   public void waitUntilDeploymentIsDone(final long key) {
     if (getPartitions().size() > 1) {
       Awaitility.await("deployment is distributed")
+          .atMost(Duration.ofSeconds(getPartitions().size() * 10L))
           .until(
               () ->
                   RecordingExporter.commandDistributionRecords()
