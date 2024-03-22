@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.impl.http.JsonAsyncResponseConsumer.JsonResponse;
+import io.camunda.zeebe.client.impl.http.ApiResponseConsumer.ApiResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
@@ -33,33 +33,32 @@ import org.apache.hc.core5.http.protocol.HttpContext;
  *
  * @param <T> the type of the successful response body
  */
-final class JsonAsyncResponseConsumer<T>
-    extends AbstractAsyncResponseConsumer<JsonResponse<T>, JsonEntity<T>> {
+final class ApiResponseConsumer<T>
+    extends AbstractAsyncResponseConsumer<ApiResponse<T>, ApiEntity<T>> {
 
-  JsonAsyncResponseConsumer(
-      final ObjectMapper jsonMapper, final Class<T> type, final int maxCapacity) {
-    super(new JsonAsyncEntityConsumer<>(jsonMapper, type, maxCapacity));
+  ApiResponseConsumer(final ObjectMapper jsonMapper, final Class<T> type, final int maxCapacity) {
+    super(new ApiEntityConsumer<>(jsonMapper, type, maxCapacity));
   }
 
   @Override
-  protected JsonResponse<T> buildResult(
-      final HttpResponse response, final JsonEntity<T> entity, final ContentType contentType) {
-    return new JsonResponse<>(response.getCode(), response.getReasonPhrase(), entity);
+  protected ApiResponse<T> buildResult(
+      final HttpResponse response, final ApiEntity<T> entity, final ContentType contentType) {
+    return new ApiResponse<>(response.getCode(), response.getReasonPhrase(), entity);
   }
 
   @Override
   public void informationResponse(final HttpResponse response, final HttpContext context) {}
 
-  static final class JsonResponse<T> extends BasicHttpResponse {
+  static final class ApiResponse<T> extends BasicHttpResponse {
 
-    private final JsonEntity<T> entity;
+    private final ApiEntity<T> entity;
 
-    JsonResponse(final int code, final String reasonPhrase, final JsonEntity<T> entity) {
+    ApiResponse(final int code, final String reasonPhrase, final ApiEntity<T> entity) {
       super(code, reasonPhrase);
       this.entity = entity;
     }
 
-    public JsonEntity<T> entity() {
+    public ApiEntity<T> entity() {
       return entity;
     }
   }

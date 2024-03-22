@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.http;
 
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -25,43 +26,63 @@ import java.util.Objects;
  *
  * @param <T> the type of the successful response
  */
-interface JsonEntity<T> {
+public interface ApiEntity<T> {
 
   /**
    * @return a successful response if any
-   * @throws NoSuchElementException if there is no successful response; this indicates the result is
-   *     in fact a problem (see {@link #problem()})
+   * @throws NoSuchElementException if this is any other API entity
    */
   T response();
 
   /**
    * @return a problem returned by the server if any
-   * @throws NoSuchElementException if this is, in fact, a successful response (see {@link
-   *     #response()})
+   * @throws NoSuchElementException if this is any other API entity
    */
   ProblemDetail problem();
+
+  /**
+   * @return a raw byte buffer of the consumed body returned by the server, e.g. when it returns a
+   *     body with unknown content type
+   * @throws NoSuchElementException if this is any other API entity
+   */
+  ByteBuffer unknown();
 
   /**
    * @return true if there is a response, false otherwise; always returns the opposite of {@link
    *     #isProblem()}
    */
-  boolean isResponse();
+  default boolean isResponse() {
+    return false;
+  }
 
   /**
    * @return true if there is a problem, false otherwise; always returns the opposite of {@link
    *     #isResponse()}
    */
-  boolean isProblem();
+  default boolean isProblem() {
+    return false;
+  }
 
-  static <T> JsonEntity<T> of(final T response) {
+  /**
+   * @return true if the response is neither a problem nor an expected JSON body
+   */
+  default boolean isUnknown() {
+    return false;
+  }
+
+  static <T> ApiEntity<T> of(final T response) {
     return new Response<>(response);
   }
 
-  static <T> JsonEntity<T> of(final ProblemDetail error) {
+  static <T> ApiEntity<T> of(final ProblemDetail error) {
     return new Error<>(error);
   }
 
-  final class Response<T> implements JsonEntity<T> {
+  static <T> ApiEntity<T> of(final ByteBuffer body) {
+    return new Unknown<>(body);
+  }
+
+  final class Response<T> implements ApiEntity<T> {
     private final T response;
 
     private Response(final T response) {
@@ -80,17 +101,18 @@ interface JsonEntity<T> {
     }
 
     @Override
-    public boolean isResponse() {
-      return true;
+    public ByteBuffer unknown() {
+      throw new NoSuchElementException(
+          "Expected to get an unknown body, but this is a successful response; use #response()");
     }
 
     @Override
-    public boolean isProblem() {
-      return false;
+    public boolean isResponse() {
+      return true;
     }
   }
 
-  final class Error<T> implements JsonEntity<T> {
+  final class Error<T> implements ApiEntity<T> {
     private final ProblemDetail problem;
 
     private Error(final ProblemDetail problem) {
@@ -109,12 +131,43 @@ interface JsonEntity<T> {
     }
 
     @Override
-    public boolean isResponse() {
-      return false;
+    public ByteBuffer unknown() {
+      throw new NoSuchElementException(
+          "Expected to get an unknown body, but this is a problem; use #problem()");
     }
 
     @Override
     public boolean isProblem() {
+      return true;
+    }
+  }
+
+  final class Unknown<T> implements ApiEntity<T> {
+    private final ByteBuffer body;
+
+    private Unknown(final ByteBuffer body) {
+      this.body = body;
+    }
+
+    @Override
+    public T response() {
+      throw new NoSuchElementException(
+          "Expected to get a response, but this is an unknown body; use #unknown()");
+    }
+
+    @Override
+    public ProblemDetail problem() {
+      throw new NoSuchElementException(
+          "Expected to get a response, but this is an unknown body; use #unknown()");
+    }
+
+    @Override
+    public ByteBuffer unknown() {
+      return body;
+    }
+
+    @Override
+    public boolean isUnknown() {
       return true;
     }
   }
