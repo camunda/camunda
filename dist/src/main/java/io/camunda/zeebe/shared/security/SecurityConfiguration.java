@@ -47,7 +47,10 @@ public final class SecurityConfiguration {
     return configureSecurity(http)
         .authenticationManager(authManager)
         .addFilterAt(authFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-        .exceptionHandling(spec -> spec.accessDeniedHandler(authFailureHandler))
+        .exceptionHandling(
+            spec ->
+                spec.authenticationEntryPoint(authFailureHandler)
+                    .accessDeniedHandler(authFailureHandler))
         .authorizeExchange(spec -> spec.anyExchange().authenticated())
         .build();
   }

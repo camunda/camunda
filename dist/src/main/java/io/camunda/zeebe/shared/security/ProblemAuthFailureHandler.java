@@ -15,6 +15,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
 import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
@@ -24,7 +25,9 @@ import reactor.core.publisher.Mono;
 
 @Component
 public final class ProblemAuthFailureHandler
-    implements ServerAuthenticationFailureHandler, ServerAccessDeniedHandler {
+    implements ServerAuthenticationFailureHandler,
+        ServerAccessDeniedHandler,
+        ServerAuthenticationEntryPoint {
 
   private final ObjectMapper objectMapper;
 
@@ -49,12 +52,18 @@ public final class ProblemAuthFailureHandler
         .getPrincipal()
         .flatMap(
             principal -> {
-              if (principal instanceof Authentication auth && auth.isAuthenticated()) {
+              if (principal instanceof final Authentication auth && auth.isAuthenticated()) {
                 return handleFailure(exchange, HttpStatus.FORBIDDEN, error);
               }
 
               return handleFailure(exchange, HttpStatus.UNAUTHORIZED, error);
             });
+  }
+
+  @Override
+  public Mono<Void> commence(
+      final ServerWebExchange exchange, final AuthenticationException error) {
+    return handleFailure(exchange, HttpStatus.UNAUTHORIZED, error);
   }
 
   private Mono<Void> handleFailure(
