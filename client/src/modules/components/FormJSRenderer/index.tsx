@@ -6,7 +6,7 @@
  */
 
 import {FormRoot, FormJSCustomStyling, Layer} from './styled';
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {Variable} from 'modules/types';
 import {FormManager} from 'modules/formManager';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
@@ -14,6 +14,7 @@ import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 import {mergeVariables} from './mergeVariables';
 import {ValidationMessage} from './ValidationMessage';
 import {getFieldLabels} from './getFieldLabels';
+import {usePrefersReducedMotion} from 'modules/hooks/usePrefersReducedMotion';
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
@@ -28,6 +29,63 @@ type Props = {
   onSubmitSuccess?: () => void;
   onValidationError?: () => void;
 };
+
+function htmlDomId(
+  fieldId: string,
+  formId?: string,
+  indices?: string[],
+): string {
+  const result = ['fjs-form'];
+  if (formId) {
+    result.push('-', formId);
+  }
+  result.push('-', fieldId);
+  if (indices) {
+    result.push(indices.join(''));
+  }
+  return result.join('');
+}
+
+function useScrollToError(manager: FormManager) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  return useCallback(
+    (fieldId: string) => {
+      if (prefersReducedMotion) {
+        return;
+      }
+      const form = manager.get('form');
+      const ffr = manager.get('formFieldRegistry');
+      const field = ffr.get(fieldId);
+      const indicies: string[] = [];
+      if (field._path.length > 2) {
+        let parent = field;
+        while (parent._path.length > 2) {
+          parent = ffr.get(parent._parent);
+          if (parent.type === 'dynamiclist') {
+            indicies.push('_0');
+          }
+        }
+      }
+      let firstInvalidDomId: string | undefined;
+      if (field.type === 'radio' || field.type === 'checklist') {
+        firstInvalidDomId = htmlDomId(fieldId, form._id, [...indicies, '-0']);
+      } else if (field.type === 'datetime') {
+        firstInvalidDomId = htmlDomId(fieldId, form._id, [
+          ...indicies,
+          '-date',
+        ]);
+      } else {
+        firstInvalidDomId = htmlDomId(fieldId, form._id, indicies);
+      }
+      if (firstInvalidDomId) {
+        document
+          .getElementById(firstInvalidDomId)
+          ?.scrollIntoView({behavior: 'auto', block: 'center'});
+      }
+    },
+    [manager, prefersReducedMotion],
+  );
+}
 
 const FormJSRenderer: React.FC<Props> = ({
   handleSubmit,
@@ -47,6 +105,7 @@ const FormJSRenderer: React.FC<Props> = ({
   const [invalidFields, setInvalidFields] = useState<
     {ids: string[]; labels: string[]} | undefined
   >();
+  const scrollToError = useScrollToError(formManagerRef.current);
 
   useEffect(() => {
     const formManager = formManagerRef.current;
@@ -93,6 +152,9 @@ const FormJSRenderer: React.FC<Props> = ({
                 ids: fieldIds,
                 labels: getFieldLabels(formManager, fieldIds),
               });
+              if (fieldIds.length > 0) {
+                scrollToError(fieldIds[0]);
+              }
             }
           },
         });
@@ -110,6 +172,7 @@ const FormJSRenderer: React.FC<Props> = ({
     onSubmitError,
     onValidationError,
     data,
+    scrollToError,
   ]);
 
   useEffect(() => {

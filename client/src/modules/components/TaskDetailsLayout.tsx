@@ -12,6 +12,7 @@ const ScrollableContent = styled.div`
   width: 100%;
   height: 100%;
   overflow: auto;
+  scroll-behavior: smooth;
 `;
 
 type TaskDetailsRowProps = {

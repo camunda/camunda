@@ -17,8 +17,8 @@ import {isEqual} from 'lodash';
 type FormJSData = Record<string, unknown>;
 
 type GetOptions = {
-  formFieldRegistry: FormFieldRegistry;
   form: Form;
+  formFieldRegistry: FormFieldRegistry;
   templating: FeelersTemplating;
   conditionChecker: ConditionChecker;
 };
