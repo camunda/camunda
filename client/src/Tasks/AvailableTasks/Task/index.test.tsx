@@ -12,6 +12,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {LocationLog} from 'modules/utils/LocationLog';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import {format, subDays} from 'date-fns';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<
@@ -39,7 +40,7 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
@@ -55,7 +56,7 @@ describe('<Task />', () => {
     expect(screen.getByText('name')).toBeInTheDocument();
     expect(screen.getByText('processName')).toBeInTheDocument();
     expect(
-      screen.getByTitle('Created at 29 May 2020 - 02:00 PM'),
+      screen.getByTitle('Created at 29 May 2024 - 02:00 PM'),
     ).toBeInTheDocument();
     expect(screen.getByText('Me')).toBeInTheDocument();
   });
@@ -66,7 +67,7 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={null}
         followUpDate={null}
         dueDate={null}
@@ -110,7 +111,7 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
@@ -133,7 +134,7 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
@@ -159,10 +160,10 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
         followUpDate={null}
-        dueDate="2021-05-29T14:00:00.000Z"
+        dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
@@ -172,7 +173,7 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Due at 29 May 2021')).toBeInTheDocument();
+    expect(screen.getByTitle('Due at 29 May 2025')).toBeInTheDocument();
   });
 
   it('should render a task with due date when filtered by due date', async () => {
@@ -181,10 +182,10 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
-        followUpDate="2021-05-29T14:00:00.000Z"
-        dueDate="2021-05-29T14:00:00.000Z"
+        followUpDate="2025-05-29T14:00:00.000Z"
+        dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
@@ -194,7 +195,7 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Due at 29 May 2021')).toBeInTheDocument();
+    expect(screen.getByTitle('Due at 29 May 2025')).toBeInTheDocument();
     expect(screen.queryByText('Follow-up at')).not.toBeInTheDocument();
     expect(screen.queryByText('Completed at')).not.toBeInTheDocument();
   });
@@ -205,10 +206,10 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
-        followUpDate="2021-05-29T14:00:00.000Z"
-        dueDate="2021-05-29T14:00:00.000Z"
+        followUpDate="2025-05-29T14:00:00.000Z"
+        dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
@@ -218,7 +219,7 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Follow-up at 29 May 2021')).toBeInTheDocument();
+    expect(screen.getByTitle('Follow-up at 29 May 2025')).toBeInTheDocument();
     expect(screen.queryByText('Due at')).not.toBeInTheDocument();
     expect(screen.queryByText('Completed at')).not.toBeInTheDocument();
   });
@@ -229,11 +230,11 @@ describe('<Task />', () => {
         taskId="1"
         name="name"
         processName="processName"
-        creationDate="2020-05-29T14:00:00.000Z"
+        creationDate="2024-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
         followUpDate={null}
-        dueDate="2021-05-29T14:00:00.000Z"
-        completionDate="2021-05-28T14:00:00.000Z"
+        dueDate="2025-05-29T14:00:00.000Z"
+        completionDate="2025-05-28T14:00:00.000Z"
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -242,7 +243,36 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Completed at 28 May 2021')).toBeInTheDocument();
+    expect(screen.getByTitle('Completed at 28 May 2025')).toBeInTheDocument();
+    expect(screen.queryByText('Due at')).not.toBeInTheDocument();
+  });
+
+  it('should render a task with overdue date', async () => {
+    const todaysDate = new Date().toISOString();
+    const yesterdaysDate = subDays(todaysDate, 1).toISOString();
+    const formattedDate = format(yesterdaysDate, 'dd MMM yyyy');
+
+    render(
+      <Task
+        taskId="1"
+        name="name"
+        processName="processName"
+        creationDate="2024-05-29T14:00:00.000Z"
+        assignee={currentUser.userId}
+        followUpDate={null}
+        dueDate={yesterdaysDate}
+        completionDate={null}
+        currentUser={userMocks.currentUser}
+        position={0}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    expect(
+      screen.getByTitle(`Overdue at ${formattedDate}`),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Due at')).not.toBeInTheDocument();
   });
 });

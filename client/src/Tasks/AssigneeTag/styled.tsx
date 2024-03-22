@@ -11,16 +11,18 @@ import styled, {css} from 'styled-components';
 type AssigneeTagProps = {
   $isHighlighted?: boolean;
   $isAssigned?: boolean;
+  $isSmall?: boolean;
 };
 
 const Tag = styled(BaseTag)<AssigneeTagProps>`
-  ${({$isHighlighted, $isAssigned}) => css`
+  ${({$isHighlighted, $isAssigned, $isSmall}) => css`
     margin: 0;
     background-color: ${$isHighlighted
       ? 'var(--cds-layer-selected)'
       : 'transparent'};
-    padding: var(--cds-spacing-01) var(--cds-spacing-03) var(--cds-spacing-01)
-      var(--cds-spacing-02);
+    padding-left: ${$isSmall
+      ? 'var(--cds-spacing-01)'
+      : 'var(--cds-spacing-02)'};
     color: ${$isAssigned
       ? 'var(--cds-text-primary)'
       : 'var(--cds-text-secondary)'};

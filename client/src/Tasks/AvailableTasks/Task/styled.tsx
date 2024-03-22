@@ -165,7 +165,7 @@ const SkeletonContainer = styled.article`
 `;
 
 const DateLabel = styled(Label)`
-  padding: var(--cds-spacing-01) var(--cds-spacing-02);
+  padding: var(--cds-spacing-01) var(--cds-spacing-01);
 `;
 
 export {Row, Label, TaskLink, Stack, Container, SkeletonContainer, DateLabel};

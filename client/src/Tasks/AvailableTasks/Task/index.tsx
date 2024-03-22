@@ -15,7 +15,13 @@ import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {BodyCompact} from 'modules/components/FontTokens';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
-import {Calendar, CheckmarkFilled} from '@carbon/icons-react';
+import {
+  Calendar,
+  CheckmarkFilled,
+  Warning,
+  Notification,
+} from '@carbon/icons-react';
+import {compareAsc} from 'date-fns';
 
 type Props = {
   taskId: TaskType['id'];
@@ -53,22 +59,32 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const location = useLocation();
     const isActive = match?.params?.id === taskId;
     const {filter, sortBy} = useTaskFilters();
+    const hasCompletionDate =
+      completionDate !== null && formatDate(completionDate) !== '';
+    const hasDueDate = dueDate !== null && formatDate(dueDate) !== '';
+    const hasFollowupDate =
+      followUpDate !== null && formatDate(followUpDate) !== '';
+    const todaysDate = new Date().toISOString();
+    const isOverdue =
+      !hasCompletionDate &&
+      hasDueDate &&
+      compareAsc(dueDate, todaysDate) === -1;
+    const isFollowupBeforeDueDate =
+      hasDueDate && hasFollowupDate && compareAsc(dueDate, followUpDate) === 1;
+
     const showCompletionDate =
-      completionDate !== null &&
-      formatDate(completionDate) !== '' &&
-      sortBy !== 'follow-up' &&
-      sortBy !== 'due';
+      hasCompletionDate && sortBy !== 'due' && sortBy !== 'follow-up';
+    const showFollowupDate =
+      !showCompletionDate &&
+      hasFollowupDate &&
+      sortBy !== 'due' &&
+      sortBy !== 'completion' &&
+      (sortBy === 'follow-up' || (!isOverdue && isFollowupBeforeDueDate));
     const showDueDate =
       !showCompletionDate &&
-      dueDate !== null &&
-      formatDate(dueDate) !== '' &&
-      sortBy !== 'follow-up' &&
-      sortBy !== 'completion';
-    const showFollowupDate =
-      !showDueDate &&
-      followUpDate !== null &&
-      formatDate(followUpDate) !== '' &&
-      sortBy === 'follow-up';
+      !showFollowupDate &&
+      hasDueDate &&
+      sortBy !== 'follow-up';
 
     const searchWithRefTag = useMemo(() => {
       const params = new URLSearchParams(location.search);
@@ -134,18 +150,37 @@ const Task = React.forwardRef<HTMLElement, Props>(
                 >
                   <Stack orientation="vertical" gap={1}>
                     <Label $variant="secondary">Follow-up</Label>
-                    {formatDate(followUpDate!, false)}
+                    <Stack orientation="horizontal" gap={2}>
+                      <Notification color="blue" />
+                      {formatDate(followUpDate!, false)}
+                    </Stack>
                   </Stack>
                 </DateLabel>
               ) : null}
               {showDueDate ? (
                 <DateLabel
                   $variant="primary"
-                  title={`Due at ${formatDate(dueDate!, false)}`}
+                  title={
+                    isOverdue
+                      ? `Overdue at ${formatDate(dueDate!, false)}`
+                      : `Due at ${formatDate(dueDate!, false)}`
+                  }
                 >
                   <Stack orientation="vertical" gap={1}>
-                    <Label $variant="secondary">Due</Label>
-                    {formatDate(dueDate!, false)}
+                    {isOverdue ? (
+                      <>
+                        <Label $variant="secondary">Overdue</Label>
+                        <Stack orientation="horizontal" gap={2}>
+                          <Warning color="red" />
+                          {formatDate(dueDate!, false)}
+                        </Stack>
+                      </>
+                    ) : (
+                      <>
+                        <Label $variant="secondary">Due</Label>
+                        {formatDate(dueDate!, false)}
+                      </>
+                    )}
                   </Stack>
                 </DateLabel>
               ) : null}

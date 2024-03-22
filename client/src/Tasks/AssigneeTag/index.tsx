@@ -26,7 +26,12 @@ const AssigneeTag: React.FC<Props> = ({
 
   if (!isAssigned) {
     return (
-      <Tag title="Task unassigned" unselectable="off">
+      <Tag
+        title="Task unassigned"
+        size={isShortFormat ? 'sm' : 'md'}
+        $isSmall={isShortFormat}
+        unselectable="off"
+      >
         <CircleDash size={16} />
         Unassigned
       </Tag>
@@ -38,6 +43,8 @@ const AssigneeTag: React.FC<Props> = ({
         $isHighlighted
         $isAssigned
         title="Task assigned to me"
+        size={isShortFormat ? 'sm' : 'md'}
+        $isSmall={isShortFormat}
         unselectable="off"
       >
         <UserAvatarFilled size={16} />
@@ -46,7 +53,13 @@ const AssigneeTag: React.FC<Props> = ({
     );
   }
   return (
-    <Tag $isAssigned title={`Task assigned to ${assignee}`} unselectable="off">
+    <Tag
+      $isAssigned
+      title={`Task assigned to ${assignee}`}
+      size={isShortFormat ? 'sm' : 'md'}
+      $isSmall={isShortFormat}
+      unselectable="off"
+    >
       <UserAvatar size={16} />
       {isShortFormat ? assignee : `Assigned to ${assignee}`}
     </Tag>
