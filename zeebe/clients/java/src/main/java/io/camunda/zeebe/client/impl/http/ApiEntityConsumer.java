@@ -84,7 +84,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
   @Override
   protected ApiEntity<T> generateContent() throws IOException {
     if (parser == null || buffer == null) {
-      if (nonJsonBody == null) {
+      if (nonJsonBody == null || bufferedBytes == 0) {
         return null;
       }
 
