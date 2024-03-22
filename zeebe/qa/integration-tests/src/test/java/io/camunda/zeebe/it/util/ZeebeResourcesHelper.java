@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.util;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 
 public class ZeebeResourcesHelper {
 
@@ -38,20 +38,22 @@ public class ZeebeResourcesHelper {
 
   public void waitUntilDeploymentIsDone(final long key) {
     if (getPartitions().size() > 1) {
-      waitUntil(
-          () ->
-              RecordingExporter.commandDistributionRecords()
-                  .withDistributionIntent(DeploymentIntent.CREATE)
-                  .withRecordKey(key)
-                  .withIntent(CommandDistributionIntent.FINISHED)
-                  .exists());
+      Awaitility.await("deployment is distributed")
+          .until(
+              () ->
+                  RecordingExporter.commandDistributionRecords()
+                      .withDistributionIntent(DeploymentIntent.CREATE)
+                      .withRecordKey(key)
+                      .withIntent(CommandDistributionIntent.FINISHED)
+                      .exists());
     } else {
-      waitUntil(
-          () ->
-              RecordingExporter.deploymentRecords()
-                  .withIntent(DeploymentIntent.CREATED)
-                  .withRecordKey(key)
-                  .exists());
+      Awaitility.await("deployment is created")
+          .until(
+              () ->
+                  RecordingExporter.deploymentRecords()
+                      .withIntent(DeploymentIntent.CREATED)
+                      .withRecordKey(key)
+                      .exists());
     }
   }
 
@@ -95,7 +97,7 @@ public class ZeebeResourcesHelper {
         IntStream.range(0, amount)
             .boxed()
             .map(i -> createProcessInstance(processDefinitionKey, variables))
-            .collect(Collectors.toList());
+            .toList();
 
     final List<Long> jobKeys =
         RecordingExporter.jobRecords(JobIntent.CREATED)
