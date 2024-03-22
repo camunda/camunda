@@ -94,7 +94,6 @@
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
-    <keycloak-client.version>22.0.5</keycloak-client.version>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.httpclient>4.5.14</version.httpclient>
     <version.elasticsearch7>7.17.16</version.elasticsearch7>
@@ -122,7 +121,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.37.2</version.nimbus-jose-jwt>
-    <version.keycloak-core>22.0.1</version.keycloak-core>
+    <version.keycloak>22.0.5</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.commons-compress>1.26.1</version.commons-compress>
 
@@ -502,12 +501,12 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-admin-client</artifactId>
-        <version>${keycloak-client.version}</version>
+        <version>${version.keycloak}</version>
       </dependency>
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-core</artifactId>
-        <version>${version.keycloak-core}</version>
+        <version>${version.keycloak}</version>
       </dependency>
 
 
