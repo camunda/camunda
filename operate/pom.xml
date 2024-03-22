@@ -133,6 +133,7 @@
     <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
     <version.commons-io>2.15.1</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
+    <version.unboundid-ldapsdk>6.0.11</version.unboundid-ldapsdk>
   </properties>
 
   <dependencyManagement>
@@ -634,6 +635,11 @@
         <groupId>org.thymeleaf</groupId>
         <artifactId>thymeleaf</artifactId>
         <version>${version.thymeleaf}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.unboundid</groupId>
+        <artifactId>unboundid-ldapsdk</artifactId>
+        <version>${version.unboundid-ldapsdk}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
