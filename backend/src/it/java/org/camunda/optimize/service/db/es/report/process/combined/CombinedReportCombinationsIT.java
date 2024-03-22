@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.report.process.combined;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE;
@@ -39,10 +40,12 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEva
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CombinedReportCombinationsIT extends AbstractPlatformIT {
 
