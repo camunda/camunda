@@ -39,12 +39,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.camunda.spring</groupId>
-      <artifactId>spring-client-annotations</artifactId>
-      <version>8.5.0-SNAPSHOT</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${version.slf4j-api}</version>
@@ -58,17 +52,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-spring</artifactId>
-      <version>${parent.version}</version>
+      <version>${project.parent.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
     </dependency>
 
     <dependency>

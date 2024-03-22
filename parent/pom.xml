@@ -589,12 +589,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.camunda.spring</groupId>
-        <artifactId>spring-client-zeebe</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>

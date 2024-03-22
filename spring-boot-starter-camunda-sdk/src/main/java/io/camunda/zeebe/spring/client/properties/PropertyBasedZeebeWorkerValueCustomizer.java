@@ -20,8 +20,6 @@ import static org.apache.commons.lang3.StringUtils.*;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.spring.client.annotation.Variable;
 import io.camunda.zeebe.spring.client.annotation.VariablesAsType;
-import io.camunda.zeebe.spring.client.annotation.ZeebeVariable;
-import io.camunda.zeebe.spring.client.annotation.ZeebeVariablesAsType;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.bean.CopyNotNullBeanUtilsBean;
@@ -91,9 +89,7 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   }
 
   private List<ParameterInfo> readZeebeVariableParameters(final MethodInfo methodInfo) {
-    final List<ParameterInfo> result = methodInfo.getParametersFilteredByAnnotation(Variable.class);
-    result.addAll(methodInfo.getParametersFilteredByAnnotation(ZeebeVariable.class));
-    return result;
+    return methodInfo.getParametersFilteredByAnnotation(Variable.class);
   }
 
   private String extractVariableName(final ParameterInfo parameterInfo) {
@@ -109,7 +105,6 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
     final List<String> result = new ArrayList<>();
     final List<ParameterInfo> parameters =
         methodInfo.getParametersFilteredByAnnotation(VariablesAsType.class);
-    parameters.addAll(methodInfo.getParametersFilteredByAnnotation(ZeebeVariablesAsType.class));
     parameters.forEach(
         pi ->
             ReflectionUtils.doWithFields(
