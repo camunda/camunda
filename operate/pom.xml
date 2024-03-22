@@ -81,7 +81,7 @@
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
-    <keycloak-client.version>22.0.1</keycloak-client.version>
+    <keycloak-client.version>22.0.5</keycloak-client.version>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
@@ -95,7 +95,7 @@
     <version.nimbus-jose-jwt>9.37.2</version.nimbus-jose-jwt>
 
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
-    <version.checkstyle>10.13.0</version.checkstyle>
+    <version.checkstyle>10.14.2</version.checkstyle>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
   </properties>
 
@@ -257,7 +257,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-sts</artifactId>
-        <version>1.12.647</version>
+        <version>1.12.685</version>
       </dependency>
 
       <dependency>
@@ -435,7 +435,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.1</version>
+          <version>3.5.2</version>
         </plugin>
 
         <!-- Google code format plugin -->

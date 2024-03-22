@@ -26,12 +26,17 @@ import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 import {Title, DataTable} from './styled';
+import useOperationApply from '../../useOperationApply';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
     const location = useLocation();
+
+    const {applyBatchOperation} = useOperationApply();
+    const processInstancesFilters = getProcessInstanceFilters(location.search);
     const {flowNodeId: sourceFlowNodeId, process: bpmnProcessId} =
-      getProcessInstanceFilters(location.search);
+      processInstancesFilters;
     const process = processesStore.getProcess({bpmnProcessId});
     const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
     const {selectedTargetFlowNodeId: targetFlowNodeId} =
@@ -46,6 +51,8 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       processStatisticsBatchModificationStore.getInstancesCount(
         sourceFlowNodeId,
       );
+    const isPrimaryButtonDisabled =
+      sourceFlowNodeId === undefined || targetFlowNodeId === null;
     const headers = [
       {
         header: 'Operation',
@@ -74,6 +81,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
 
     return (
       <Modal
+        primaryButtonDisabled={isPrimaryButtonDisabled}
         modalHeading="Apply Modifications"
         size="lg"
         primaryButtonText="Apply"
@@ -82,7 +90,22 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
         onRequestClose={() => setOpen(false)}
         preventCloseOnClickOutside
         onRequestSubmit={() => {
+          if (isPrimaryButtonDisabled) {
+            return;
+          }
           setOpen(false);
+          batchModificationStore.reset();
+          applyBatchOperation({
+            operationType: 'MODIFY_PROCESS_INSTANCE',
+            modifications: [
+              {
+                modification: 'MOVE_TOKEN',
+                fromFlowNodeId: sourceFlowNodeId,
+                toFlowNodeId: targetFlowNodeId,
+              },
+            ],
+            onSuccess: panelStatesStore.expandOperationsPanel,
+          });
         }}
       >
         <p>
