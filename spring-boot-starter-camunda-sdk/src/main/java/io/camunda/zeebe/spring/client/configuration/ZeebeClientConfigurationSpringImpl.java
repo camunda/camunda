@@ -29,9 +29,7 @@ import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CommonConfigurationProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
-import io.grpc.Metadata;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import io.grpc.Status.Code;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -212,16 +210,14 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
         && !(authentication instanceof DefaultNoopAuthentication)) {
       return new CredentialsProvider() {
         @Override
-        public void applyCredentials(final Metadata headers) {
+        public void applyCredentials(final CredentialsApplier applier) {
           final Map.Entry<String, String> authHeader = authentication.getTokenHeader(Product.ZEEBE);
-          final Metadata.Key<String> authHeaderKey =
-              Metadata.Key.of(authHeader.getKey(), Metadata.ASCII_STRING_MARSHALLER);
-          headers.put(authHeaderKey, authHeader.getValue());
+          applier.put(authHeader.getKey(), authHeader.getValue());
         }
 
         @Override
-        public boolean shouldRetryRequest(final Throwable throwable) {
-          return ((StatusRuntimeException) throwable).getStatus() == Status.DEADLINE_EXCEEDED;
+        public boolean shouldRetryRequest(final StatusCode statusCode) {
+          return statusCode.code() == Code.DEADLINE_EXCEEDED.value();
         }
       };
     }
