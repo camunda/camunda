@@ -11,7 +11,7 @@ import {EntityList, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
-import {isUserSearchAvailable} from 'config';
+import {isUserSearchAvailable, getOptimizeDatabase} from 'config';
 import {track} from 'tracking';
 
 import {DashboardView} from '../Dashboards/DashboardView';
@@ -29,6 +29,7 @@ export function Processes({mightFail, user}) {
   const [editProcessConfig, setEditProcessConfig] = useState();
   const [userSearchAvailable, setUserSearchAvailable] = useState();
   const [dashboard, setDashboard] = useState();
+  const [optimizeDatabase, setOptimizeDatabase] = useState();
 
   useEffect(() => {
     mightFail(loadManagementDashboard(), setDashboard, showError);
@@ -49,6 +50,7 @@ export function Processes({mightFail, user}) {
   useEffect(() => {
     (async () => {
       setUserSearchAvailable(await isUserSearchAvailable());
+      setOptimizeDatabase(await getOptimizeDatabase());
     })();
   }, []);
 
@@ -73,21 +75,25 @@ export function Processes({mightFail, user}) {
   return (
     <div className="Processes">
       <PageTitle pageName={t('processes.defaultDashboardAndKPI')} />
-      <h1 className="processOverview">
-        {t('processes.adoptionDashboard')}
-        {processes && (
-          <div className="info">
-            <span>
-              {t('processes.analysing', {count: processes.length, label: processesLabel})}
-            </span>
-          </div>
-        )}
-      </h1>
-      {dashboard && (
-        <DashboardView
-          tiles={dashboard.tiles}
-          customizeReportLink={(id) => `/processes/report/${id}/`}
-        />
+      {optimizeDatabase === 'elasticsearch' && (
+        <>
+          <h1 className="processOverview">
+            {t('processes.adoptionDashboard')}
+            {processes && (
+              <div className="info">
+                <span>
+                  {t('processes.analysing', {count: processes.length, label: processesLabel})}
+                </span>
+              </div>
+            )}
+          </h1>
+          {dashboard && (
+            <DashboardView
+              tiles={dashboard.tiles}
+              customizeReportLink={(id) => `/processes/report/${id}/`}
+            />
+          )}
+        </>
       )}
       <EntityList
         name={t('processes.defaultDashboardAndKPI')}
