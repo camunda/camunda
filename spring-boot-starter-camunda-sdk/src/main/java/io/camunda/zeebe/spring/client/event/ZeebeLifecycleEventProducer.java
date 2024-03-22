@@ -35,19 +35,13 @@ public class ZeebeLifecycleEventProducer implements SmartLifecycle {
 
   @Override
   public void start() {
-    publisher.publishEvent(
-        new ClientStartedEvent()); // keep old deprecated event for a bit before delting it
     publisher.publishEvent(new ZeebeClientCreatedEvent(this, client));
-
     running = true;
   }
 
   @Override
   public void stop() {
-    publisher.publishEvent(
-        new ClientStoppedEvent()); // keep old deprecated event for a bit before delting it
     publisher.publishEvent(new ZeebeClientClosingEvent(this, client));
-
     running = false;
   }
 

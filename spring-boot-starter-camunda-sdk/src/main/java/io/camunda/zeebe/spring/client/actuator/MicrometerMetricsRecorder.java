@@ -20,7 +20,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class MicrometerMetricsRecorder implements MetricsRecorder {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOGGER = LoggerFactory.getLogger(MicrometerMetricsRecorder.class);
 
   private final MeterRegistry meterRegistry;
   private final Map<String, Counter> counters = new ConcurrentHashMap<>();
