@@ -17,30 +17,25 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-importer-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-importer-8_4</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-importer-8_5</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
 

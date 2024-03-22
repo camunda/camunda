@@ -19,7 +19,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -63,7 +62,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

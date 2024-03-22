@@ -19,7 +19,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-qa-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>

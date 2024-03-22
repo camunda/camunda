@@ -20,13 +20,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-qa-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -63,7 +61,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.elasticsearch</groupId>

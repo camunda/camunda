@@ -18,19 +18,16 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!-- ELASTICSEARCH -->
@@ -138,7 +135,6 @@
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>${plugin.version.license}</version>
         <configuration>
           <header>${license.header}</header>
           <includes>

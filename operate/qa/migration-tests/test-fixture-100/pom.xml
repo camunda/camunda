@@ -44,7 +44,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>

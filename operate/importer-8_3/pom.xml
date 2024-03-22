@@ -16,7 +16,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-importer-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!-- Record classes and interfaces -->
@@ -38,7 +37,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
   </dependencies>

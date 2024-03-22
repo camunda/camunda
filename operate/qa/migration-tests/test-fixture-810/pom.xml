@@ -19,13 +19,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-qa-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!-- ELASTICSEARCH -->
@@ -41,7 +39,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.elasticsearch.client</groupId>

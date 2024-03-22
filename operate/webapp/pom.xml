@@ -16,41 +16,34 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-archiver</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webjar</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-mvc-auth-commons</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
