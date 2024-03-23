@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.shared;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,11 @@ public final class BrokerConfiguration {
 
   public Duration shutdownTimeout() {
     return lifecycle.getTimeoutPerShutdownPhase();
+  }
+
+  @Bean
+  public MultiTenancyCfg multiTenancyCfg() {
+    return properties.getGateway().getMultiTenancy();
   }
 
   @ConfigurationProperties("zeebe.broker")
