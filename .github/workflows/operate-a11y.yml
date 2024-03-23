@@ -5,6 +5,7 @@ on:
       - '.github/workflows/zeebe-*'
       - 'dist/**'
       - 'zeebe/**'
+      - 'spring-boot-starter-camunda-sdk/**'
 
 jobs:
   test:

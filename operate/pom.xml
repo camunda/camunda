@@ -84,13 +84,12 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.17.2</version.log4j.testjar>
-    <version.awssdk>2.25.15</version.awssdk>
+    <version.awssdk>2.25.16</version.awssdk>
     <version.aws-java-sdk>1.12.685</version.aws-java-sdk>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <version.grpc>1.62.2</version.grpc>
     <version.protobuf>3.25.3</version.protobuf>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>

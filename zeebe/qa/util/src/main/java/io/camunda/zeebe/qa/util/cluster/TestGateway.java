@@ -102,7 +102,8 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
 
   /** Returns a new pre-configured client builder for this gateway */
   default ZeebeClientBuilder newClientBuilder() {
-    final var builder = ZeebeClient.newClientBuilder().grpcAddress(grpcAddress());
+    final var builder =
+        ZeebeClient.newClientBuilder().grpcAddress(grpcAddress()).restAddress(restAddress());
     final var security = gatewayConfig().getSecurity();
     if (security.isEnabled()) {
       builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());
