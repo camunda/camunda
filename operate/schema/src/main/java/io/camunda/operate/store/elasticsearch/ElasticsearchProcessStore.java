@@ -562,7 +562,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                                     .toString();
                             updateFields.put(TREE_PATH, newTreePath);
                             updateRequest
-                                .index(listViewTemplate.getFullQualifiedName())
+                                .index(sh.getIndex())
                                 .id(sh.getId())
                                 .doc(updateFields)
                                 .retryOnConflict(UPDATE_RETRY_COUNT);
