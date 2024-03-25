@@ -14,7 +14,6 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskP
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 
 import com.google.common.collect.ImmutableMap;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.github.netmikey.logunit.api.LogCapturer;
 import java.time.Instant;
@@ -29,12 +28,10 @@ import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
-import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.importing.zeebe.fetcher.es.AbstractZeebeRecordFetcherES;
 import org.camunda.optimize.service.importing.zeebe.fetcher.os.AbstractZeebeRecordFetcherOS;
-import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
@@ -492,18 +489,5 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
             + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         expectedIndex, ZeebeProcessInstanceRecordDto.class);
-  }
-
-  private void waitUntilInstanceRecordWithElementTypeAndIntentExported(
-      final BpmnElementType elementType, final Intent intent) {
-    final TermsQueryContainer query = new TermsQueryContainer();
-    query.addTermQuery(
-        ZeebeProcessInstanceRecordDto.Fields.value
-            + "."
-            + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
-        elementType.name());
-    query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.intent, intent.name().toUpperCase());
-    waitUntilMinimumDataExportedCount(
-        1, DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, query, 10);
   }
 }

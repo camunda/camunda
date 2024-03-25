@@ -5,13 +5,16 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static org.camunda.optimize.util.ZeebeBpmnModels.COMPENSATION_EVENT_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT_2;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK_WITH_COMPENSATION_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_CATCH;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_GATEWAY_CATCH;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_INTERRUPTING_BOUNDARY;
@@ -29,6 +32,7 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_NON_INT_SUB
 import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_THROW;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createCompensationEventProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createProcessWith83SignalEvents;
@@ -694,6 +698,39 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                         SIGNAL_INTERRUPTING_BOUNDARY,
                         SIGNAL_NON_INTERRUPTING_BOUNDARY,
                         SIGNAL_PROCESS_END));
+  }
+
+  @DisabledIf("isZeebeVersionPre85")
+  @Test
+  public void importZeebeProcessInstanceData_processContainsCompensationTasks() {
+    // given
+    deployAndStartInstanceForProcess(createCompensationEventProcess());
+    zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK_WITH_COMPENSATION_EVENT);
+    zeebeExtension.completeTaskForInstanceWithJobType(COMPENSATION_EVENT_TASK);
+
+    // when
+    waitUntilInstanceRecordWithElementTypeAndIntentExported(
+        BpmnElementType.BOUNDARY_EVENT, ELEMENT_COMPLETED);
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            instance -> {
+              assertThat(instance.getFlowNodeInstances())
+                  .extracting(FlowNodeInstanceDto::getFlowNodeType)
+                  .containsExactlyInAnyOrder(
+                      BpmnElementType.END_EVENT.getElementTypeName().get(),
+                      BpmnElementType.BOUNDARY_EVENT.getElementTypeName().get(),
+                      BpmnElementType.SERVICE_TASK.getElementTypeName().get(),
+                      BpmnElementType.START_EVENT.getElementTypeName().get(),
+                      BpmnElementType.SERVICE_TASK.getElementTypeName().get());
+              assertThat(instance.getFlowNodeInstances())
+                  .extracting(FlowNodeInstanceDto::getFlowNodeId)
+                  .contains(SERVICE_TASK_WITH_COMPENSATION_EVENT, COMPENSATION_EVENT_TASK);
+            });
   }
 
   // Test backwards compatibility for default tenantID applied when importing records pre multi

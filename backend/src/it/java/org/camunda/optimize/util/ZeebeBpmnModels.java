@@ -48,6 +48,8 @@ public class ZeebeBpmnModels {
   public static final String SIGNAL_PROCESS_FIRST_SIGNAL = "nonInterruptingBoundarySignal";
   public static final String SIGNAL_PROCESS_SECOND_SIGNAL = "interruptingBoundarySignal";
   public static final String SIGNAL_PROCESS_THIRD_SIGNAL = "eventBasedGatewaySignal";
+  public static final String SERVICE_TASK_WITH_COMPENSATION_EVENT = "compensationEvent";
+  public static final String COMPENSATION_EVENT_TASK = "compensationEventTask";
 
   public static BpmnModelInstance createStartEndProcess(final String processName) {
     return createStartEndProcess(processName, null);
@@ -204,6 +206,24 @@ public class ZeebeBpmnModels {
         .sequenceFlowId("s2")
         .conditionExpression("= contains(varName,\"b\")")
         .endEvent(END_EVENT_2)
+        .done();
+  }
+
+  public static BpmnModelInstance createCompensationEventProcess() {
+    return Bpmn.createExecutableProcess()
+        .startEvent()
+        .serviceTask(
+            SERVICE_TASK_WITH_COMPENSATION_EVENT,
+            task ->
+                task.zeebeJobType(SERVICE_TASK_WITH_COMPENSATION_EVENT)
+                    .boundaryEvent()
+                    .compensation(
+                        compensation ->
+                            compensation
+                                .serviceTask(COMPENSATION_EVENT_TASK)
+                                .zeebeJobType(COMPENSATION_EVENT_TASK)))
+        .endEvent()
+        .compensateEventDefinition()
         .done();
   }
 

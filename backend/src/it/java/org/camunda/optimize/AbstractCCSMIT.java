@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -353,5 +354,18 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         ZeebeUserTaskRecordDto.Fields.intent,
         ZeebeUserTaskImportService.INTENTS_TO_IMPORT.stream().map(UserTaskIntent::name).toList());
     return query;
+  }
+
+  protected void waitUntilInstanceRecordWithElementTypeAndIntentExported(
+      final BpmnElementType elementType, final Intent intent) {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value
+            + "."
+            + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
+        elementType.name());
+    query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.intent, intent.name().toUpperCase());
+    waitUntilMinimumDataExportedCount(
+        1, DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, query, 10);
   }
 }

@@ -11,6 +11,7 @@ import lombok.Data;
 public class UIConfiguration {
 
   private boolean logoutHidden;
-  private String mixpanelToken;
   private boolean userTaskAssigneeAnalyticsEnabled;
+  private String consoleUrl;
+  private String modelerUrl;
 }
