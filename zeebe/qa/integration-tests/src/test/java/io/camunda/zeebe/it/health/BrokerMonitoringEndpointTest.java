@@ -11,6 +11,7 @@ import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.restassured.builder.RequestSpecBuilder;
@@ -26,14 +27,18 @@ import org.junit.jupiter.api.Test;
 public final class BrokerMonitoringEndpointTest {
 
   static RequestSpecification brokerServerSpec;
-  @TestZeebe private static final TestStandaloneBroker BROKER = new TestStandaloneBroker();
+
+  @TestZeebe
+  private static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
 
   @BeforeAll
   static void setUpClass() {
     brokerServerSpec =
         new RequestSpecBuilder()
             .setContentType(ContentType.TEXT)
-            .setBaseUri("http://" + BROKER.monitoringAddress())
+            // set URL explicitly since we want to ensure the mapping is correct
+            .setBaseUri("http://localhost:" + BROKER.mappedPort(TestZeebePort.MONITORING) + "/foo")
             .addFilter(new ResponseLoggingFilter())
             .addFilter(new RequestLoggingFilter())
             .build();
