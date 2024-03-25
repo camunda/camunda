@@ -16,18 +16,19 @@
  */
 package io.camunda.operate.util.j5templates;
 
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.util.SearchTestRuleProvider;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Future;
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -76,16 +77,10 @@ public class OperateJ5Tester {
         searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
   }
 
-  public void modifyProcessInstanceOperation(final ModifyProcessInstanceRequestDto requestDto)
-      throws Exception {
-
-    mockMvcManager.postModifyOperation(requestDto);
-    searchTestRuleProvider.refreshSearchIndices();
-  }
-
   public void batchProcessInstanceOperation(final CreateBatchOperationRequestDto batchDto)
       throws Exception {
-    mockMvcManager.postBatchOperation(batchDto);
+    mockMvcManager.postRequest(
+        PROCESS_INSTANCE_URL + "/batch-operation", batchDto, HttpStatus.SC_OK);
     searchTestRuleProvider.refreshSearchIndices();
   }
 
@@ -95,7 +90,7 @@ public class OperateJ5Tester {
         searchPredicates.getOperationsByProcessInstanceAreCompletedCheck(), processInstanceKey);
   }
 
-  public void waitForFlowNode(final Long processInstanceKey, final String flowNodeId) {
+  public void waitForFlowNodeActive(final Long processInstanceKey, final String flowNodeId) {
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getFlowNodeIsActiveCheck(), processInstanceKey, flowNodeId);
   }

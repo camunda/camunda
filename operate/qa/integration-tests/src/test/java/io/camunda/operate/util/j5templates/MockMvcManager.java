@@ -16,18 +16,12 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import org.apache.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -55,38 +49,16 @@ public class MockMvcManager {
     this.objectMapper = objectMapper;
   }
 
-  public BatchOperationDto postBatchOperation(final CreateBatchOperationRequestDto operationRequest)
-      throws Exception {
+  public MvcResult postRequest(
+      final String url, final Object dtoRequest, final Integer expectedStatus) throws Exception {
     final MockHttpServletRequestBuilder ope =
-        post(PROCESS_INSTANCE_URL + "/batch-operation")
-            .content(objectMapper.writeValueAsString(operationRequest))
-            .contentType(jsonContentType);
+        post(url).content(objectMapper.writeValueAsString(dtoRequest)).contentType(jsonContentType);
 
-    final MvcResult mvcResult =
-        mockMvc.perform(ope).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
-
-    final BatchOperationEntity entity =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
-
-    return BatchOperationDto.createFrom(entity, objectMapper);
-  }
-
-  public BatchOperationDto postModifyOperation(
-      final ModifyProcessInstanceRequestDto operationRequest) throws Exception {
-    final MockHttpServletRequestBuilder ope =
-        post(format(PROCESS_INSTANCE_URL + "/%s/modify", operationRequest.getProcessInstanceKey()))
-            .content(objectMapper.writeValueAsString(operationRequest))
-            .contentType(jsonContentType);
-
-    final MvcResult mvcResult =
-        mockMvc.perform(ope).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
-
-    final BatchOperationEntity entity =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
-
-    return BatchOperationDto.createFrom(entity, objectMapper);
+    if (expectedStatus != null) {
+      return mockMvc.perform(ope).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
+    } else {
+      return mockMvc.perform(ope).andReturn();
+    }
   }
 
   public MvcResult getRequestShouldFailWithException(
