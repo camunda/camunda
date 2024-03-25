@@ -33,8 +33,7 @@
   </licenses>
 
   <properties>
-    <version.spring-aop>6.1.5</version.spring-aop>
-    <version.commons-beanutils>1.9.4</version.commons-beanutils>
+    <version.java>17</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
 
