@@ -32,6 +32,8 @@ public interface SchemaManager {
 
   void createSchema();
 
+  void checkAndUpdateIndices();
+
   boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern);
 
   String getOrDefaultRefreshInterval(String indexName, String defaultValue);

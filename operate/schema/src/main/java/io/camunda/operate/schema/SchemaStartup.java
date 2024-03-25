@@ -63,12 +63,15 @@ public class SchemaStartup {
         LOGGER.info(
             "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       }
+
+      schemaManager.checkAndUpdateIndices();
+
       if (migrationProperties.isMigrationEnabled()) {
         LOGGER.info("SchemaStartup: migrate schema.");
         migrator.migrate();
       }
       LOGGER.info("SchemaStartup finished.");
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
       throw ex;
     }
