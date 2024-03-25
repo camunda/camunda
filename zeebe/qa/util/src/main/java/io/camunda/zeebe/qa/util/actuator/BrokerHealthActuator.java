@@ -15,6 +15,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 
@@ -33,17 +34,18 @@ public interface BrokerHealthActuator extends HealthActuator {
    * @return a new instance of {@link BrokerHealthActuator}
    */
   static BrokerHealthActuator of(final ZeebeNode<?> node) {
-    return ofAddress(node.getExternalMonitoringAddress());
+    final String address = node.getExternalMonitoringAddress();
+    return of("http://" + address);
   }
 
   /**
-   * Returns a {@link BrokerHealthActuator} instance using the given base monitoring address.
+   * Returns a {@link BrokerHealthActuator} instance using the given node as upstream.
    *
-   * @param address the base monitoring address
+   * @param node the node to connect to
    * @return a new instance of {@link BrokerHealthActuator}
    */
-  static BrokerHealthActuator ofAddress(final String address) {
-    return of("http://" + address);
+  static BrokerHealthActuator of(final TestStandaloneBroker node) {
+    return of(node.monitoringAddress());
   }
 
   /**

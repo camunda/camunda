@@ -128,6 +128,16 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   @Override
+  public <V> V property(final String property, final Class<V> type, final V fallback) {
+    if (springContext == null) {
+      //noinspection unchecked
+      return (V) propertyOverrides.getOrDefault(property, fallback);
+    }
+
+    return springContext.getEnvironment().getProperty(property, type, fallback);
+  }
+
+  @Override
   public T withProperty(final String key, final Object value) {
     propertyOverrides.put(key, value);
     return self();
