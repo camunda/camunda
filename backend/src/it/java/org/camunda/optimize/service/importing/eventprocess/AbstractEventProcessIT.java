@@ -894,7 +894,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
     Map<String, List<AliasMetadata>> currentIndices = new HashMap<>();
     try {
       currentIndices = getEventProcessInstanceIndicesWithAliasesFromDatabase();
-    } catch (ElasticsearchStatusException ex) {
+    } catch (RuntimeException ex) {
       if (InstanceIndexUtil.isInstanceIndexNotFoundException(ex)) {
         return false;
       }
