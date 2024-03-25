@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
-import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.EnumMap;
