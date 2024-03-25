@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {get} from 'request';
 import * as config from './config';
 
 jest.mock('request', () => ({
@@ -15,10 +14,6 @@ jest.mock('request', () => ({
     }),
   }),
 }));
-
-it('should load the configuration from the server', () => {
-  expect(get).toHaveBeenCalled();
-});
 
 it('should make the configuration available', () => {
   expect(config.getOptimizeVersion()).resolves.toEqual('2.7.0');

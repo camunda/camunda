@@ -5,13 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
 import {CarbonSelect} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
+import {useUiConfig} from 'hooks';
 
 import GroupBy from './GroupBy';
+
+jest.mock('hooks', () => ({
+  useUiConfig: jest.fn().mockReturnValue(true),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -190,4 +196,13 @@ it('should not fail if variables are null', () => {
   );
 
   expect(node.find({label: 'Variable'}).prop('disabled')).toBe(true);
+});
+
+it('should hide assignee option in cloud environment', async () => {
+  useUiConfig.mockImplementation(() => false);
+  const node = shallow(<GroupBy {...config} />);
+
+  await runAllEffects();
+
+  expect(node.find({value: 'assignee'})).not.toExist();
 });
