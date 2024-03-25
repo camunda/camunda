@@ -93,7 +93,7 @@ public class HttpClientFactory {
 
   private URI buildGatewayAddress() {
     try {
-      final URIBuilder builder = new URIBuilder(config.getRestAddress()).setPath(REST_API_PATH);
+      final URIBuilder builder = new URIBuilder(config.getRestAddress()).appendPath(REST_API_PATH);
       builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
       return builder.build();
