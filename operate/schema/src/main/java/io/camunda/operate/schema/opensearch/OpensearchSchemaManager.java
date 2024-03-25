@@ -104,7 +104,31 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   @Override
-  public boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern) {
+  public void checkAndUpdateIndices() {
+    LOGGER.info("Updating Indices with currently-configured number of replicas...");
+    final String currentConfigNumberOfReplicas =
+        String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
+    indexDescriptors.forEach(
+        indexDescriptor -> {
+          final String index = indexDescriptor.getIndexName();
+          final Map<String, String> indexSettings =
+              getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+          final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
+          if (currentIndexNumberOfReplicas == null
+              || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
+            indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
+            final boolean success = setIndexSettingsFor(indexSettings, index);
+            if (success) {
+              LOGGER.debug("Successfully updated number of replicas for index {}", index);
+            } else {
+              LOGGER.warn("Failed to update number of replicas for index {}", index);
+            }
+          }
+        });
+  }
+
+  @Override
+  public boolean setIndexSettingsFor(final Map<String, ?> settings, final String indexPattern) {
     final IndexSettings indexSettings =
         new IndexSettings.Builder()
             .refreshInterval(ri -> ri.time(((String) settings.get(REFRESH_INTERVAL))))
@@ -114,17 +138,17 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   @Override
-  public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
+  public String getOrDefaultRefreshInterval(final String indexName, final String defaultValue) {
     return richOpenSearchClient.index().getOrDefaultRefreshInterval(indexName, defaultValue);
   }
 
   @Override
-  public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
+  public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
     return richOpenSearchClient.index().getOrDefaultNumbersOfReplica(indexName, defaultValue);
   }
 
   @Override
-  public void refresh(String indexPattern) {
+  public void refresh(final String indexPattern) {
     richOpenSearchClient.index().refreshWithRetries(indexPattern);
   }
 
@@ -134,46 +158,46 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   @Override
-  public Set<String> getIndexNames(String indexPattern) {
+  public Set<String> getIndexNames(final String indexPattern) {
     return richOpenSearchClient.index().getIndexNamesWithRetries(indexPattern);
   }
 
   @Override
-  public Set<String> getAliasesNames(String indexPattern) {
+  public Set<String> getAliasesNames(final String indexPattern) {
     return richOpenSearchClient.index().getAliasesNamesWithRetries(indexPattern);
   }
 
   @Override
-  public long getNumberOfDocumentsFor(String... indexPatterns) {
+  public long getNumberOfDocumentsFor(final String... indexPatterns) {
     return richOpenSearchClient.index().getNumberOfDocumentsWithRetries(indexPatterns);
   }
 
   @Override
-  public boolean deleteIndicesFor(String indexPattern) {
+  public boolean deleteIndicesFor(final String indexPattern) {
     return richOpenSearchClient.index().deleteIndicesWithRetries(indexPattern);
   }
 
   @Override
-  public boolean deleteTemplatesFor(String deleteTemplatePattern) {
+  public boolean deleteTemplatesFor(final String deleteTemplatePattern) {
     return richOpenSearchClient.template().deleteTemplatesWithRetries(deleteTemplatePattern);
   }
 
   @Override
-  public void removePipeline(String pipelineName) {
+  public void removePipeline(final String pipelineName) {
     richOpenSearchClient.pipeline().removePipelineWithRetries(pipelineName);
   }
 
   @Override
-  public boolean addPipeline(String name, String pipelineDefinition) {
+  public boolean addPipeline(final String name, final String pipelineDefinition) {
     return richOpenSearchClient.pipeline().addPipelineWithRetries(name, pipelineDefinition);
   }
 
   @Override
-  public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
+  public Map<String, String> getIndexSettingsFor(final String indexName, final String... fields) {
     final IndexSettings indexSettings =
         richOpenSearchClient.index().getIndexSettingsWithRetries(indexName);
     final var result = new HashMap<String, String>();
-    for (String field : fields) {
+    for (final String field : fields) {
       if (field.equals(REFRESH_INTERVAL)) {
         final var refreshInterval = indexSettings.refreshInterval();
         result.put(REFRESH_INTERVAL, refreshInterval != null ? refreshInterval.time() : null);
@@ -218,7 +242,7 @@ public class OpensearchSchemaManager implements SchemaManager {
         .build();
   }
 
-  private IndexSettings getIndexSettings(String indexName) {
+  private IndexSettings getIndexSettings(final String indexName) {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
     final var shards =
         osConfig
@@ -309,7 +333,7 @@ public class OpensearchSchemaManager implements SchemaManager {
                   templateDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build()),
               getIndexSettings(templateDescriptor.getIndexName()));
       createIndex(request, indexName);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(e);
     }
   }
@@ -323,7 +347,7 @@ public class OpensearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
+  private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {
     final boolean created = richOpenSearchClient.index().createIndexWithRetries(createIndexRequest);
     if (created) {
       LOGGER.debug("Index [{}] was successfully created", indexName);
@@ -345,7 +369,7 @@ public class OpensearchSchemaManager implements SchemaManager {
               Map.of(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build()),
               getIndexSettings(indexDescriptor.getIndexName()));
       createIndex(request, indexDescriptor.getFullQualifiedName());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(
           "Could not create index " + indexDescriptor.getIndexName(), e);
     }
@@ -353,7 +377,10 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   /** Reads mappings and optionally settings from json file */
   private CreateIndexRequest createIndexFromJson(
-      String json, String indexName, Map<String, Alias> aliases, IndexSettings settings) {
+      final String json,
+      final String indexName,
+      final Map<String, Alias> aliases,
+      final IndexSettings settings) {
     try {
       final var indexAsJSONNode = objectMapper.readTree(new StringReader(json));
 
@@ -366,18 +393,19 @@ public class OpensearchSchemaManager implements SchemaManager {
           .settings(customSettings)
           .mappings(mappings)
           .build();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException("Could not load schema for " + indexName, e);
     }
   }
 
-  private TypeMapping getMappings(JsonNode mappingsAsJSON) {
+  private TypeMapping getMappings(final JsonNode mappingsAsJSON) {
     final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
     return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
   }
 
-  private IndexSettings getCustomSettings(IndexSettings defaultSettings, JsonNode indexAsJSONNode) {
+  private IndexSettings getCustomSettings(
+      final IndexSettings defaultSettings, final JsonNode indexAsJSONNode) {
     if (indexAsJSONNode.has(SETTINGS)) {
       final var settingsJSON = indexAsJSONNode.get(SETTINGS);
       final JsonParser jsonParser =
@@ -399,7 +427,7 @@ public class OpensearchSchemaManager implements SchemaManager {
     try {
       return Optional.ofNullable(
           richOpenSearchClient.ism().getPolicy(OPERATE_DELETE_ARCHIVED_INDICES));
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (e.status() != 404) {
         LOGGER.error(format("Failed to get policy %s", OPERATE_DELETE_ARCHIVED_INDICES), e);
       }
@@ -433,7 +461,7 @@ public class OpensearchSchemaManager implements SchemaManager {
                     "Created ISM policy {} for min age of {}.",
                     OPERATE_DELETE_ARCHIVED_INDICES,
                     operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 throw new OperateRuntimeException(
                     "Failed to create ISM policy " + OPERATE_DELETE_ARCHIVED_INDICES, e);
               }
