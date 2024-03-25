@@ -186,7 +186,8 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   @Override
   public void setIndexLifeCycle(final String destinationIndexName) {
     try {
-      if (operateProperties.getArchiver().isIlmEnabled()) {
+      if (operateProperties.getArchiver().isIlmEnabled()
+          && richOpenSearchClient.index().indexExists(destinationIndexName)) {
         richOpenSearchClient
             .ism()
             .addPolicyToIndex(destinationIndexName, OPERATE_DELETE_ARCHIVED_INDICES);
