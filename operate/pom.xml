@@ -75,7 +75,6 @@
     <version.zeebe>8.5.0-alpha2</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
     <version.identity>8.5.0-alpha2</version.identity>
-    <version.elasticsearch>7.17.18</version.elasticsearch>
     <version.parsson>1.1.5</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
@@ -95,7 +94,7 @@
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.elasticsearch7>7.17.16</version.elasticsearch7>
+    <version.elasticsearch7>7.17.18</version.elasticsearch7>
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <version.lucene>8.11.1</version.lucene>
     <version.error-prone>2.25.0</version.error-prone>
