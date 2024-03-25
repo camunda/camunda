@@ -9,8 +9,10 @@ package io.camunda.zeebe.broker.health;
 
 import io.camunda.zeebe.shared.management.ConditionalOnManagementContext;
 import java.net.URI;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
+import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -24,12 +26,20 @@ import reactor.core.publisher.Mono;
 @ManagementContextConfiguration(value = ManagementContextType.ANY, proxyBeanMethods = false)
 public class BrokerHealthRoutes {
 
+  private final ManagementServerProperties properties;
+
+  @Autowired
+  public BrokerHealthRoutes(final ManagementServerProperties properties) {
+    this.properties = properties;
+  }
+
   @Bean
   public RouterFunction<ServerResponse> routes() {
+    final String basePath = properties.getBasePath();
     return RouterFunctions.route()
-        .GET("/health", req -> movedPermanently("/actuator/health/status"))
-        .GET("/ready", req -> movedPermanently("/actuator/health/readiness"))
-        .GET("/startup", req -> movedPermanently("/actuator/health/startup"))
+        .GET("/health", req -> movedPermanently(basePath + "/actuator/health/status"))
+        .GET("/ready", req -> movedPermanently(basePath + "/actuator/health/readiness"))
+        .GET("/startup", req -> movedPermanently(basePath + "/actuator/health/startup"))
         .build();
   }
 
