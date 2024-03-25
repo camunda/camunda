@@ -32,6 +32,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
+import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto.MappingInstruction;
 import io.camunda.operate.webapp.zeebe.operation.*;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -64,6 +65,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
   @Autowired private UserTaskReader userTaskReader;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -73,6 +75,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
   }
 
+  @Override
   @After
   public void after() {
     operateProperties.setBatchOperationMaxSize(initialBatchOperationMaxSize);
@@ -699,6 +702,100 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
     assertThat(migratedFlowNode.getProcessDefinitionKey()).isEqualTo(processDefinitionKey2);
     assertThat(migratedFlowNode.getBpmnProcessId()).isEqualTo("demoProcess");
+  }
+
+  @Test
+  public void testMigrateSubprocessToSubprocess() throws Exception {
+    // given
+    // process instances that are running
+    final var processDefinitionFrom =
+        tester
+            .deployProcess("migration-subprocess.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .getProcessDefinitionKey();
+    final var processFrom =
+        tester
+            .startProcessInstance("prWithSubprocess", null)
+            .and()
+            .waitUntil()
+            .processInstanceIsStarted()
+            .then()
+            .completeTask("taskA")
+            .and()
+            .waitUntil()
+            .flowNodeIsActive("subprocess")
+            .then()
+            .getProcessInstanceKey();
+    final var processDefinitionTo =
+        tester
+            .deployProcess("migration-subprocess2.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .getProcessDefinitionKey();
+    // when
+    // execute MIGRATE_PROCESS_INSTANCE operation
+    final var query = createGetProcessInstancesByIdsQuery(List.of(processFrom));
+    final var request =
+        new CreateBatchOperationRequestDto()
+            .setName("migrate process with subprocesses")
+            .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
+            .setQuery(query)
+            .setMigrationPlan(
+                new MigrationPlanDto()
+                    .setTargetProcessDefinitionKey(String.valueOf(processDefinitionTo))
+                    .setMappingInstructions(
+                        List.of(
+                            new MappingInstruction()
+                                .setSourceElementId("taskA")
+                                .setTargetElementId("taskA"),
+                            new MappingInstruction()
+                                .setSourceElementId("subprocess")
+                                .setTargetElementId("subprocess2"),
+                            new MappingInstruction()
+                                .setSourceElementId("innerSubprocess")
+                                .setTargetElementId("innerSubprocess2"),
+                            new MappingInstruction()
+                                .setSourceElementId("taskB")
+                                .setTargetElementId("taskB"))));
+
+    final var mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    // and execute the operation
+    tester.waitUntil().operationIsCompleted();
+
+    // then
+    // subprocesses are migrated
+    final var subprocessFlowNodes =
+        searchAllDocuments(flowNodeInstanceTemplate.getAlias(), FlowNodeInstanceEntity.class)
+            .stream()
+            .filter(fn -> fn.getType().equals(FlowNodeType.SUB_PROCESS))
+            .toList();
+
+    assertThat(subprocessFlowNodes).hasSize(2);
+    assertMigratedFieldsByFlowNodeId(
+        subprocessFlowNodes, "subprocess2", processFrom, processDefinitionTo, "prWithSubprocess2");
+    assertMigratedFieldsByFlowNodeId(
+        subprocessFlowNodes,
+        "innerSubprocess2",
+        processFrom,
+        processDefinitionTo,
+        "prWithSubprocess2");
+  }
+
+  private void assertMigratedFieldsByFlowNodeId(
+      final List<FlowNodeInstanceEntity> candidates,
+      final String flowNodeId,
+      final Long instanceKey,
+      final Long processDefinitionTo,
+      final String bpmnProcessId) {
+    final var flowNode =
+        candidates.stream()
+            .filter(fn -> fn.getFlowNodeId().equals(flowNodeId))
+            .findFirst()
+            .orElseThrow();
+    assertThat(flowNode.getProcessInstanceKey()).isEqualTo(instanceKey);
+    assertThat(flowNode.getProcessDefinitionKey()).isEqualTo(processDefinitionTo);
+    assertThat(flowNode.getBpmnProcessId()).isEqualTo(bpmnProcessId);
   }
 
   @Test
