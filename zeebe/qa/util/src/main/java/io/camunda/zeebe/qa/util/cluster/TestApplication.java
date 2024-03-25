@@ -9,13 +9,17 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import com.google.common.collect.ObjectArrays;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.shared.Profile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.SequencedCollection;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 
@@ -99,11 +103,25 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param port the target port
    * @return externally accessible address for {@code port}
    */
-  default URI parsedAddress(final String scheme, final TestZeebePort port, final String... paths) {
+  default URI uri(final String scheme, final TestZeebePort port, final String... paths) {
+    return uri(scheme, port, List.of(paths));
+  }
+
+  /**
+   * Returns the address of this node for the given port and scheme as a URI.
+   *
+   * @param scheme the URI scheme, e.g. http, or https
+   * @param port the target port
+   * @return externally accessible address for {@code port}
+   */
+  default URI uri(final String scheme, final TestZeebePort port, final SequencedCollection<String> paths) {
     try {
       final var path =
-          Arrays.stream(paths)
+          paths.stream()
+              .filter(Predicate.not(Objects::isNull))
+              .map(String::trim)
               .map(p -> p.replaceFirst("^\\/", ""))
+              .filter(Predicate.not(String::isBlank))
               .collect(Collectors.joining("/"));
       return new URI(scheme + "://" + address(port) + "/" + path);
     } catch (final URISyntaxException e) {
@@ -113,15 +131,26 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
 
   /**
    * Returns the address to access the monitoring API of this node from outside the container
-   * network of this node.
+   * network of this node. This method returns a URI which is scheme and context path aware.
    *
    * @return the external monitoring address
    */
-  default String monitoringAddress() {
+  default URI monitoringUri(final String... paths) {
     final var serverBasePath = property("management.server.base-path", String.class, "");
     final var sslEnabled = property("management.server.ssl.enabled", Boolean.class, false);
-    return parsedAddress(sslEnabled ? "https" : "http", TestZeebePort.MONITORING, serverBasePath)
-        .toString();
+    return uri(sslEnabled ? "https" : "http", TestZeebePort.MONITORING, ObjectArrays.concat(serverBasePath, paths));
+  }
+
+  /**
+   * Returns the address to access the actuators of this node from outside the container network of
+   * this node. This method returns a URI which is scheme and context-path aware, as well as
+   * actuator path aware.
+   *
+   * @return the external actuator address
+   */
+  default URI actuatorUri(final String... paths) {
+    final var actuatorBasePath = property("management.endpoints.web.base-path", String.class, "/actuator");
+    return monitoringUri(ObjectArrays.concat(actuatorBasePath, paths));
   }
 
   /** Returns the default health actuator for this application. */

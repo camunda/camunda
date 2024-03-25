@@ -41,7 +41,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    */
   default URI grpcAddress() {
     final var scheme = gatewayConfig().getSecurity().isEnabled() ? "https" : "http";
-    return parsedAddress(scheme, TestZeebePort.GATEWAY);
+    return uri(scheme, TestZeebePort.GATEWAY);
   }
 
   /**
@@ -61,7 +61,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
   default URI restAddress() {
     final var basePath = property("spring.webflux.base-path", String.class, "");
     final var sslEnabled = property("server.ssl.enabled", Boolean.class, false);
-    return parsedAddress(sslEnabled ? "https" : "http", TestZeebePort.REST, basePath);
+    return uri(sslEnabled ? "https" : "http", TestZeebePort.REST, basePath);
   }
 
   /**

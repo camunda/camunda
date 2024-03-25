@@ -71,8 +71,7 @@ public interface BackupActuator {
    * @return a new instance of {@link BackupActuator}
    */
   static BackupActuator of(final TestApplication<?> node) {
-    final var endpoint = String.format("http://%s/actuator/backups", node.monitoringAddress());
-    return of(endpoint);
+    return of(node.actuatorUri("backups").toString());
   }
 
   /**

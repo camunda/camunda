@@ -25,8 +25,7 @@ public interface ExportingActuator {
   }
 
   static ExportingActuator of(final TestApplication<?> node) {
-    final var endpoint = String.format("http://%s/actuator/exporting", node.monitoringAddress());
-    return of(endpoint);
+    return of(node.actuatorUri("exporting").toString());
   }
 
   static ExportingActuator of(final String endpoint) {
