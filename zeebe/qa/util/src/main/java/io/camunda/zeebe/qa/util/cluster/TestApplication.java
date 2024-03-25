@@ -114,7 +114,8 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param port the target port
    * @return externally accessible address for {@code port}
    */
-  default URI uri(final String scheme, final TestZeebePort port, final SequencedCollection<String> paths) {
+  default URI uri(
+      final String scheme, final TestZeebePort port, final SequencedCollection<String> paths) {
     try {
       final var path =
           paths.stream()
@@ -138,7 +139,10 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
   default URI monitoringUri(final String... paths) {
     final var serverBasePath = property("management.server.base-path", String.class, "");
     final var sslEnabled = property("management.server.ssl.enabled", Boolean.class, false);
-    return uri(sslEnabled ? "https" : "http", TestZeebePort.MONITORING, ObjectArrays.concat(serverBasePath, paths));
+    return uri(
+        sslEnabled ? "https" : "http",
+        TestZeebePort.MONITORING,
+        ObjectArrays.concat(serverBasePath, paths));
   }
 
   /**
@@ -149,7 +153,8 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @return the external actuator address
    */
   default URI actuatorUri(final String... paths) {
-    final var actuatorBasePath = property("management.endpoints.web.base-path", String.class, "/actuator");
+    final var actuatorBasePath =
+        property("management.endpoints.web.base-path", String.class, "/actuator");
     return monitoringUri(ObjectArrays.concat(actuatorBasePath, paths));
   }
 

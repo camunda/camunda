@@ -96,7 +96,8 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
     final var builder =
         ZeebeClient.newClientBuilder().grpcAddress(grpcAddress()).restAddress(restAddress());
     final var security = gatewayConfig().getSecurity();
-    if (security.isEnabled()) {
+    final var restSSL = property("server.ssl.enabled", Boolean.class, false);
+    if (security.isEnabled() || restSSL) {
       builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());
     } else {
       builder.usePlaintext();
