@@ -15,12 +15,9 @@
  */
 package io.camunda.zeebe.spring.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.common.json.SdkObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.spring.client.configuration.CommonClientConfiguration;
+import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.zeebe.spring.client.configuration.MetricsDefaultConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeActuatorConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
@@ -41,12 +38,12 @@ import org.springframework.context.annotation.Configuration;
   ZeebeClientProdAutoConfiguration.class,
   ZeebeClientAllAutoConfiguration.class,
   CommonClientConfiguration.class,
+  JsonMapperConfiguration.class,
   ZeebeActuatorConfiguration.class,
   MetricsDefaultConfiguration.class
 })
-@AutoConfigureAfter(
-    JacksonAutoConfiguration
-        .class) // make sure Spring created ObjectMapper is preferred if available
+// make sure Spring created ObjectMapper is preferred if available
+@AutoConfigureAfter(JacksonAutoConfiguration.class)
 public class CamundaAutoConfiguration {
 
   @Bean
@@ -57,29 +54,5 @@ public class CamundaAutoConfiguration {
   public ZeebeLifecycleEventProducer zeebeLifecycleEventProducer(
       final ZeebeClient client, final ApplicationEventPublisher publisher) {
     return new ZeebeLifecycleEventProducer(client, publisher);
-  }
-
-  /**
-   * Registering a JsonMapper bean when there is none already exists in {@link
-   * org.springframework.beans.factory.BeanFactory}.
-   *
-   * <p>NOTE: This method SHOULD NOT be explicitly called as it might lead to unexpected behaviour
-   * due to the {@link ConditionalOnMissingBean} annotation. i.e. Calling this method when another
-   * JsonMapper bean is defined in the context might throw {@link
-   * org.springframework.beans.factory.NoSuchBeanDefinitionException}
-   *
-   * @return a new JsonMapper bean if none already exists in {@link
-   *     org.springframework.beans.factory.BeanFactory}
-   */
-  @Bean(name = "zeebeJsonMapper")
-  @ConditionalOnMissingBean
-  public JsonMapper jsonMapper(final ObjectMapper objectMapper) {
-    return new ZeebeObjectMapper(objectMapper);
-  }
-
-  @Bean(name = "commonJsonMapper")
-  @ConditionalOnMissingBean
-  public io.camunda.common.json.JsonMapper commonJsonMapper(final ObjectMapper objectMapper) {
-    return new SdkObjectMapper(objectMapper);
   }
 }

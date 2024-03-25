@@ -76,7 +76,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultName() throws NoSuchMethodException {
+  void shouldSetDefaultName() {
     // given
     final ZeebeClientConfigurationProperties properties = properties();
     properties.getWorker().setDefaultName("defaultName");
