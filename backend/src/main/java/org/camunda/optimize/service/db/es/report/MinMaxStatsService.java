@@ -20,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -169,7 +168,7 @@ public class MinMaxStatsService {
               script.toString(), Arrays.toString(indexNames));
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
 
@@ -275,7 +274,7 @@ public class MinMaxStatsService {
               firstField, secondField, Arrays.toString(indexNames));
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
     return mapCrossFieldStatAggregationsToStatDto(response);
@@ -328,7 +327,7 @@ public class MinMaxStatsService {
   }
 
   private MinMaxStatDto returnEmptyResultIfInstanceIndexNotFound(
-      final ElasticsearchStatusException e, final String[] indexNames) {
+      final RuntimeException e, final String[] indexNames) {
     if (isInstanceIndexNotFoundException(e)) {
       log.info(
           "Could not calculate minMaxStats because at least one required instance indices from {} does not exist. "

@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.util;
 
-import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
@@ -14,6 +12,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 import java.util.Arrays;
+import java.util.function.Function;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -24,6 +23,7 @@ import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InstanceIndexUtil {
@@ -68,24 +68,29 @@ public class InstanceIndexUtil {
     }
   }
 
-  public static boolean isInstanceIndexNotFoundException(final ElasticsearchStatusException e) {
-    return Arrays.stream(e.getSuppressed())
-        .map(Throwable::getMessage)
-        .anyMatch(
-            msg ->
-                msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
-                    && (containsInstanceIndexAliasOrPrefix(PROCESS, msg)
-                        || containsInstanceIndexAliasOrPrefix(DECISION, msg)));
+  public static boolean isInstanceIndexNotFoundException(final RuntimeException e) {
+    return isInstanceIndexNotFoundException(e, msg -> true);
   }
 
   public static boolean isInstanceIndexNotFoundException(
-      final DefinitionType type, final ElasticsearchStatusException e) {
-    return Arrays.stream(e.getSuppressed())
-        .map(Throwable::getMessage)
-        .anyMatch(
-            msg ->
-                msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
-                    && containsInstanceIndexAliasOrPrefix(type, msg));
+      final DefinitionType type, final RuntimeException e) {
+    return isInstanceIndexNotFoundException(
+        e, msg -> containsInstanceIndexAliasOrPrefix(type, e.getMessage()));
+  }
+
+  private static boolean isInstanceIndexNotFoundException(
+      final RuntimeException e, Function<String, Boolean> messageFilter) {
+    if (e instanceof ElasticsearchStatusException) {
+      return Arrays.stream(e.getSuppressed())
+          .map(Throwable::getMessage)
+          .anyMatch(
+              msg -> msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE) && messageFilter.apply(msg));
+    } else if (e instanceof OpenSearchException) {
+      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
+          && messageFilter.apply(e.getMessage());
+    } else {
+      return false;
+    }
   }
 
   private static boolean containsInstanceIndexAliasOrPrefix(

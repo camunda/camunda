@@ -54,8 +54,6 @@ public class CombinedReportCombinationsIT extends AbstractPlatformIT {
     LocalDateUtil.reset();
   }
 
-  // Passes locally, but fails on CI
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("getCombinableSingleReports")
   public void combineCombinableSingleReports(

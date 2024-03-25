@@ -60,7 +60,6 @@ import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -894,7 +893,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
     Map<String, List<AliasMetadata>> currentIndices = new HashMap<>();
     try {
       currentIndices = getEventProcessInstanceIndicesWithAliasesFromDatabase();
-    } catch (ElasticsearchStatusException ex) {
+    } catch (RuntimeException ex) {
       if (InstanceIndexUtil.isInstanceIndexNotFoundException(ex)) {
         return false;
       }

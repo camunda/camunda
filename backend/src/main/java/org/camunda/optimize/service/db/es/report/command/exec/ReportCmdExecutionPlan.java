@@ -26,7 +26,6 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.GroupB
 import org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.db.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -78,7 +77,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchResponse response;
     try {
       response = executeRequests(executionContext, searchRequest);
-    } catch (ElasticsearchStatusException e) {
+    } catch (RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
         if (executionContext.getReportData().getDefinitions().size() > 1) {
           // If there are multiple data sources, we retry with the process instance index multi
@@ -90,8 +89,12 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
           searchRequest.indices(getMultiIndexAlias());
           try {
             response = executeRequests(executionContext, searchRequest);
-          } catch (ElasticsearchStatusException ex) {
-            return returnEmptyResult(executionContext);
+          } catch (RuntimeException ex) {
+            if (isInstanceIndexNotFoundException(e)) {
+              return returnEmptyResult(executionContext);
+            } else {
+              throw ex;
+            }
           } catch (IOException ex) {
             throw e;
           }
@@ -159,9 +162,9 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
         searchRequest.scroll(TimeValue.timeValueSeconds(timeout));
       }
       response =
-          (scrollRequest != null
+          scrollRequest != null
               ? databaseClient.scroll(scrollRequest)
-              : databaseClient.search(searchRequest));
+              : databaseClient.search(searchRequest);
     } else {
       response = databaseClient.search(searchRequest);
     }

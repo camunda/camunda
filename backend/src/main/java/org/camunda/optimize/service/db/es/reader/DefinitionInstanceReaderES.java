@@ -6,9 +6,7 @@
 package org.camunda.optimize.service.db.es.reader;
 
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -20,8 +18,6 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.DefinitionInstanceReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -43,14 +39,9 @@ import org.springframework.util.CollectionUtils;
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class DefinitionInstanceReaderES implements DefinitionInstanceReader {
+public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
 
   private final OptimizeElasticsearchClient esClient;
-
-  @Override
-  public Set<String> getAllExistingDefinitionKeys(final DefinitionType type) {
-    return getAllExistingDefinitionKeys(type, Collections.emptySet());
-  }
 
   @Override
   public Set<String> getAllExistingDefinitionKeys(
@@ -93,29 +84,5 @@ public class DefinitionInstanceReaderES implements DefinitionInstanceReader {
     return definitionKeyTerms.getBuckets().stream()
         .map(MultiBucketsAggregation.Bucket::getKeyAsString)
         .collect(toSet());
-  }
-
-  private String[] resolveIndexMultiAliasForType(final DefinitionType type) {
-    return switch (type) {
-      case PROCESS -> new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
-      case DECISION -> new String[] {DECISION_INSTANCE_MULTI_ALIAS};
-      default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
-    };
-  }
-
-  private String resolveDefinitionKeyFieldForType(final DefinitionType type) {
-    return switch (type) {
-      case PROCESS -> ProcessInstanceDto.Fields.processDefinitionKey;
-      case DECISION -> DecisionInstanceDto.Fields.decisionDefinitionKey;
-      default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
-    };
-  }
-
-  private String resolveInstanceIdFieldForType(final DefinitionType type) {
-    return switch (type) {
-      case PROCESS -> ProcessInstanceDto.Fields.processInstanceId;
-      case DECISION -> DecisionInstanceDto.Fields.decisionInstanceId;
-      default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
-    };
   }
 }

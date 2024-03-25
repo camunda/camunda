@@ -47,11 +47,6 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
     }
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
-  /**
-   * Fails due to missing implementation in CompletedActivityInstanceWriterOS and
-   * DefinitionInstanceReaderOS
-   */
   @Test
   public void processInstanceArchiverCreatesMissingArchiveIndices() {
     // given

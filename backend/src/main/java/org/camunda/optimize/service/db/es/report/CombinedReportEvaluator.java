@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -28,7 +27,6 @@ import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
@@ -59,11 +57,11 @@ public class CombinedReportEvaluator {
         .filter(Optional::isPresent)
         .map(Optional::get)
         .map(result -> (SingleReportEvaluationResult<T>) result)
-        .collect(Collectors.toList());
+        .collect(toList());
   }
 
   public long evaluateCombinedReportInstanceCount(
-      List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
+      final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
     if (CollectionUtils.isEmpty(singleReportDefinitions)) {
       return 0L;
     }
@@ -82,7 +80,7 @@ public class CombinedReportEvaluator {
               singleReportDefinitions.stream().map(ReportDefinitionDto::getId));
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
             "Could not evaluate combined instance count because no instance indices exist. "
@@ -101,8 +99,8 @@ public class CombinedReportEvaluator {
   }
 
   private List<QueryBuilder> getAllBaseQueries(
-      List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
-      SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
+      final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,
+      final SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
     return singleReportDefinitions.stream()
         .filter(
             reportDefinition ->

@@ -289,6 +289,12 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         .aggregations();
   }
 
+  public Map<String, Aggregate> searchAggregationsUnsafe(SearchRequest.Builder requestBuilder)
+      throws IOException {
+    requestBuilder.size(0);
+    return unsafeSearch(requestBuilder.build(), Void.class).aggregations();
+  }
+
   public <R> R searchUnique(
       SearchRequest.Builder requestBuilder, Class<R> entityClass, String key) {
     final SearchResponse<R> response =

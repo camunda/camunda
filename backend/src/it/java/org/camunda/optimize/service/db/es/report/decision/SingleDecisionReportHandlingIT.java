@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.report.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -26,10 +27,12 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
 
   @Test
