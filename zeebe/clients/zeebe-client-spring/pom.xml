@@ -33,7 +33,7 @@
   </licenses>
 
   <properties>
-    <version.spring-aop>6.1.5</version.spring-aop>
+    <version.java>17</version.java>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
@@ -76,7 +76,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-aop</artifactId>
-      <version>6.1.5</version>
+      <version>${version.spring}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -106,7 +106,7 @@
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
-      <version>1.9.4</version>
+      <version>${version.commons-beanutils}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-collections</groupId>
