@@ -16,6 +16,8 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.EventMetadataEntity;
 import io.camunda.operate.entities.FlowNodeType;
@@ -23,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Objects;
 
+@JsonInclude(Include.NON_NULL)
 public class JobFlowNodeInstanceMetadataDto extends FlowNodeInstanceMetadataDto
     implements FlowNodeInstanceMetadata {
 
