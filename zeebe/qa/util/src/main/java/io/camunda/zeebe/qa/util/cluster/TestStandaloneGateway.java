@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.StandaloneGateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
-import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
@@ -47,11 +45,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   @Override
   public String host() {
     return config.getNetwork().getHost();
-  }
-
-  @Override
-  public HealthActuator healthActuator() {
-    return GatewayHealthActuator.ofAddress(monitoringAddress());
   }
 
   @Override

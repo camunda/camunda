@@ -58,8 +58,7 @@ public interface PartitionsActuator {
    * @return a new instance of {@link PartitionsActuator}
    */
   static PartitionsActuator of(final TestStandaloneBroker node) {
-    final var endpoint = String.format("http://%s/actuator/partitions", node.monitoringAddress());
-    return of(endpoint);
+    return of(node.actuatorUri("partitions").toString());
   }
 
   /**

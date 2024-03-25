@@ -51,7 +51,7 @@ public interface RestoreAcceptance {
             .withBrokerConfig(this::configureBackupStore)
             .start()
             .awaitCompleteTopology()) {
-      final var actuator = BackupActuator.ofAddress(zeebe.monitoringAddress());
+      final var actuator = BackupActuator.of(zeebe);
 
       try (final var client = zeebe.newClientBuilder().build()) {
         client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();

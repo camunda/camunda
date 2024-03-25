@@ -26,8 +26,7 @@ public interface BanningActuator {
   }
 
   static BanningActuator of(final TestApplication<?> node) {
-    final var endpoint = String.format("http://%s/actuator/banning", node.monitoringAddress());
-    return of(endpoint);
+    return of(node.actuatorUri("banning").toString());
   }
 
   static BanningActuator of(final String endpoint) {
