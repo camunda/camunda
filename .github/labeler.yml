@@ -4,9 +4,11 @@ component/zeebe:
       - '!.github/workflows/operate-*'
       - '!distro/**'
       - '!operate/**'
+      - '!operate.Dockerfile'
 component/operate:
   - changed-files:
     - all-globs-to-any-file:
       - '!.github/workflows/zeebe-*'
       - '!dist/**'
       - '!zeebe/**'
+      - '!Dockerfile'

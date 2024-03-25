@@ -12,11 +12,13 @@ on:
       - '.github/workflows/operate-*'
       - 'distro/**'
       - 'operate/**'
+      - 'operate.Dockerfile'
   pull_request:
     paths-ignore:
       - '.github/workflows/operate-*'
       - 'distro/**'
       - 'operate/**'
+      - 'operate.Dockerfile'
   merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }

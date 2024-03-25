@@ -6,6 +6,7 @@ on:
       - 'dist/**'
       - 'zeebe/**'
       - 'spring-boot-starter-camunda-sdk/**'
+      - 'Dockerfile'
 
 jobs:
   test:

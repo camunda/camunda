@@ -5,17 +5,9 @@ on:
       - main
     paths:
       - 'operate/client/**'
-      - '!.github/workflows/zeebe-*'
-      - '!dist/**'
-      - '!zeebe/**'
-      - '!spring-boot-starter-camunda-sdk/**'
   pull_request:
     paths:
       - 'operate/client/**'
-      - '!.github/workflows/zeebe-*'
-      - '!dist/**'
-      - '!zeebe/**'
-      - '!spring-boot-starter-camunda-sdk/**'
 
 jobs:
   linting-and-testing:
