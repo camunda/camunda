@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import org.apache.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -54,8 +55,25 @@ public class MockMvcManager {
     this.objectMapper = objectMapper;
   }
 
-  public BatchOperationDto postOperation(final ModifyProcessInstanceRequestDto operationRequest)
+  public BatchOperationDto postBatchOperation(final CreateBatchOperationRequestDto operationRequest)
       throws Exception {
+    final MockHttpServletRequestBuilder ope =
+        post(PROCESS_INSTANCE_URL + "/batch-operation")
+            .content(objectMapper.writeValueAsString(operationRequest))
+            .contentType(jsonContentType);
+
+    final MvcResult mvcResult =
+        mockMvc.perform(ope).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
+
+    final BatchOperationEntity entity =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
+
+    return BatchOperationDto.createFrom(entity, objectMapper);
+  }
+
+  public BatchOperationDto postModifyOperation(
+      final ModifyProcessInstanceRequestDto operationRequest) throws Exception {
     final MockHttpServletRequestBuilder ope =
         post(format(PROCESS_INSTANCE_URL + "/%s/modify", operationRequest.getProcessInstanceKey()))
             .content(objectMapper.writeValueAsString(operationRequest))

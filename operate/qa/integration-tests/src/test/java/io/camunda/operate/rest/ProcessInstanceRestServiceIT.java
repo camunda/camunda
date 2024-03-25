@@ -16,36 +16,38 @@
  */
 package io.camunda.operate.rest;
 
+import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
-import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.operate.util.j5templates.SearchFieldValueMap;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
+import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import jakarta.validation.ConstraintViolationException;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class ProcessInstanceRestServiceIT extends OperateZeebeSearchAbstractIT {
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-  @Autowired private VariableTemplate variableTemplate;
-  @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
-
-  @Override
-  protected void runAdditionalBeforeAllSetup() {
-    modifyProcessInstanceHandler.setZeebeClient(zeebeClient);
-    final Long processDefinitionKey = operateTester.deployProcess("demoProcess_v_2.bpmn");
-    operateTester.waitForProcessDeployed(processDefinitionKey);
-  }
+@SpringBootTest(
+    classes = {TestApplication.class},
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+    })
+@WebAppConfiguration
+@TestExecutionListeners(
+    listeners = DependencyInjectionTestExecutionListener.class,
+    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@WithMockUser(DEFAULT_USER)
+public class ProcessInstanceRestServiceIT {
+  @Autowired MockMvcManager mockMvcManager;
 
   @Test
   public void testGetInstanceByIdWithInvalidId() throws Exception {
@@ -90,55 +92,5 @@ public class ProcessInstanceRestServiceIT extends OperateZeebeSearchAbstractIT {
     final MvcResult mvcResult =
         mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
-  }
-
-  @Test
-  public void shouldAddTokenWithVariables() throws Exception {
-    final Long processInstanceKey = operateTester.startProcess("demoProcess", "{\"a\": \"b\"}");
-    operateTester.waitForProcessInstanceStarted(processInstanceKey);
-
-    var result =
-        testSearchRepository.searchTerms(
-            flowNodeInstanceTemplate.getFullQualifiedName(),
-            new SearchFieldValueMap()
-                .addFieldValue(FlowNodeInstanceTemplate.FLOW_NODE_ID, "taskB")
-                .addFieldValue(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
-            FlowNodeInstanceEntity.class,
-            1);
-    assertThat(result).isEmpty();
-
-    // when
-    final List<Modification> modifications =
-        List.of(
-            new Modification()
-                .setModification(Modification.Type.ADD_TOKEN)
-                .setToFlowNodeId("taskB")
-                .setVariables(Map.of("taskB", List.of(Map.of("c", "d")))));
-
-    operateTester.modifyProcessInstanceOperation(processInstanceKey, modifications);
-    operateTester.waitForOperationFinished(processInstanceKey);
-    operateTester.waitForFlowNode(processInstanceKey, "taskB");
-
-    result =
-        testSearchRepository.searchTerms(
-            flowNodeInstanceTemplate.getFullQualifiedName(),
-            new SearchFieldValueMap()
-                .addFieldValue(FlowNodeInstanceTemplate.FLOW_NODE_ID, "taskB")
-                .addFieldValue(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
-            FlowNodeInstanceEntity.class,
-            1);
-    assertThat(result).isNotEmpty();
-    assertThat(result.get(0).getState()).isEqualTo(FlowNodeState.ACTIVE);
-
-    final var variableResult =
-        testSearchRepository.searchTerms(
-            variableTemplate.getFullQualifiedName(),
-            new SearchFieldValueMap()
-                .addFieldValue(VariableTemplate.NAME, "c")
-                .addFieldValue(VariableTemplate.SCOPE_KEY, result.get(0).getKey()),
-            VariableEntity.class,
-            10);
-    assertThat(variableResult).isNotEmpty();
-    assertThat(variableResult.get(0).getValue()).isEqualTo("\"d\"");
   }
 }

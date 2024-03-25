@@ -87,8 +87,9 @@ public class CreateBatchOperationRequestDto {
     return modifications;
   }
 
-  public void setModifications(final List<Modification> modifications) {
+  public CreateBatchOperationRequestDto setModifications(final List<Modification> modifications) {
     this.modifications = modifications;
+    return this;
   }
 
   @Override

@@ -21,8 +21,8 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import io.camunda.operate.util.SearchTestRuleProvider;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.Arrays;
@@ -62,17 +62,6 @@ public class OperateJ5Tester {
         searchPredicates.getProcessIsDeployedCheck(), processDefinitionKey);
   }
 
-  // Deprecated
-  public Long deployProcessAndWait(final String classpathResource) {
-    final Long processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
-
-    searchTestRuleProvider.processAllRecordsAndWait(
-        searchPredicates.getProcessIsDeployedCheck(), processDefinitionKey);
-
-    return processDefinitionKey;
-  }
-
   public Long startProcess(final String bpmnProcessId, final String payload) {
     return ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
   }
@@ -87,23 +76,16 @@ public class OperateJ5Tester {
         searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
   }
 
-  // Deprecated
-  public Long startProcessAndWait(final String bpmnProcessId) {
-    final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, null);
-    searchTestRuleProvider.processAllRecordsAndWait(
-        searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
-    return processInstanceKey;
+  public void modifyProcessInstanceOperation(final ModifyProcessInstanceRequestDto requestDto)
+      throws Exception {
+
+    mockMvcManager.postModifyOperation(requestDto);
+    searchTestRuleProvider.refreshSearchIndices();
   }
 
-  public void modifyProcessInstanceOperation(
-      final Long processInstanceKey, final List<Modification> modifications) throws Exception {
-    final ModifyProcessInstanceRequestDto op =
-        new ModifyProcessInstanceRequestDto()
-            .setProcessInstanceKey(processInstanceKey + "")
-            .setModifications(modifications);
-
-    mockMvcManager.postOperation(op);
+  public void batchProcessInstanceOperation(final CreateBatchOperationRequestDto batchDto)
+      throws Exception {
+    mockMvcManager.postBatchOperation(batchDto);
     searchTestRuleProvider.refreshSearchIndices();
   }
 
@@ -134,18 +116,14 @@ public class OperateJ5Tester {
     searchTestRuleProvider.refreshSearchIndices();
   }
 
-  public OperateJ5Tester waitUntilIncidentsAreActive(
-      final Long processInstanceKey, final int count) {
+  public void waitUntilIncidentsAreActive(final Long processInstanceKey, final int count) {
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getIncidentsAreActiveCheck(), processInstanceKey, count);
-    return this;
   }
 
-  public OperateJ5Tester waitUntilIncidentsInProcessAreActive(
-      final String bpmnProcessId, final int count) {
+  public void waitUntilIncidentsInProcessAreActive(final String bpmnProcessId, final int count) {
     searchTestRuleProvider.processAllRecordsAndWait(
         searchPredicates.getIncidentsInProcessAreActiveCheck(), bpmnProcessId, count);
-    return this;
   }
 
   private int executeOneBatch() throws Exception {
@@ -155,5 +133,25 @@ public class OperateJ5Tester {
       f.get();
     }
     return 0; // return futures.size()
+  }
+
+  // Deprecated
+  public Long startProcessAndWait(final String bpmnProcessId) {
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, null);
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
+    return processInstanceKey;
+  }
+
+  // Deprecated
+  public Long deployProcessAndWait(final String classpathResource) {
+    final Long processDefinitionKey =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResource);
+
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getProcessIsDeployedCheck(), processDefinitionKey);
+
+    return processDefinitionKey;
   }
 }
