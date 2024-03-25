@@ -21,16 +21,19 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public final class RestAPIContextPathIT {
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withProperty("spring.webflux.base-path", "/zeebe");
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withProperty("spring.webflux.base-path", "/zeebe");
 
   @Test
   void shouldConnectWithContextPath() {
     // given
     //noinspection resource
-    final var client = zeebe.newClientBuilder()
-        .preferRestOverGrpc(true)
-        .restAddress(zeebe.uri("http", TestZeebePort.REST, "zeebe"))
-        .build();
+    final var client =
+        zeebe
+            .newClientBuilder()
+            .preferRestOverGrpc(true)
+            .restAddress(zeebe.uri("http", TestZeebePort.REST, "zeebe"))
+            .build();
 
     // when
     final Future<Topology> topology = client.newTopologyRequest().send();
