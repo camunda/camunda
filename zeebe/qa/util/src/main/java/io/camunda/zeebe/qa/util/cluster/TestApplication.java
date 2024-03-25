@@ -15,6 +15,8 @@ import io.camunda.zeebe.shared.Profile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 
 @SuppressWarnings("UnusedReturnValue")
@@ -97,9 +99,13 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param port the target port
    * @return externally accessible address for {@code port}
    */
-  default URI parsedAddress(final String scheme, final TestZeebePort port) {
+  default URI parsedAddress(final String scheme, final TestZeebePort port, final String... paths) {
     try {
-      return new URI(scheme + "://" + address(port));
+      final var path =
+          Arrays.stream(paths)
+              .map(p -> p.replaceFirst("^\\/", ""))
+              .collect(Collectors.joining("/"));
+      return new URI(scheme + "://" + address(port) + "/" + path);
     } catch (final URISyntaxException e) {
       throw new IllegalArgumentException("Failed to parse URI", e);
     }
@@ -112,7 +118,10 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @return the external monitoring address
    */
   default String monitoringAddress() {
-    return address(TestZeebePort.MONITORING);
+    final var serverBasePath = property("management.server.base-path", String.class, "");
+    final var sslEnabled = property("management.server.ssl.enabled", Boolean.class, false);
+    return parsedAddress(sslEnabled ? "https" : "http", TestZeebePort.MONITORING, serverBasePath)
+        .toString();
   }
 
   /** Returns the default health actuator for this application. */
@@ -158,6 +167,19 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param <V> the expected bean type
    */
   <V> V bean(final Class<V> type);
+
+  /**
+   * If the application is started (e.g. {@link #isStarted()}, resolves and returns the value for
+   * this property, or a given fallback if there was none set. If the application is not started, it
+   * will look it up only in the property overrides (e.g. {@link #withProperty(String, Object)}.
+   *
+   * @param property the key identifying this property
+   * @param type the expected type of the property value
+   * @param fallback a default value if the property is not set
+   * @return the value of this (if any was resolved), or the fallback value
+   * @param <V> the expected property type type
+   */
+  <V> V property(final String property, final Class<V> type, final V fallback);
 
   /**
    * Configures Spring via properties. This does not work with properties that would be applied to

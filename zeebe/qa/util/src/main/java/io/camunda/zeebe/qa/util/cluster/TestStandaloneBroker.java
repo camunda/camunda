@@ -63,6 +63,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     };
   }
 
+  @Override
   protected SpringApplicationBuilder createSpringBuilder() {
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
     // we need to hook in at the last minute and set the property as it won't resolve from the
@@ -151,7 +152,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * and startup.
    */
   public BrokerHealthActuator brokerHealth() {
-    return BrokerHealthActuator.ofAddress(monitoringAddress());
+    return BrokerHealthActuator.of(this);
   }
 
   /**

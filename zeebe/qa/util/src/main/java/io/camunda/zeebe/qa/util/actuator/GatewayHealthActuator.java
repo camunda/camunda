@@ -15,6 +15,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 
@@ -33,17 +34,18 @@ public interface GatewayHealthActuator extends HealthActuator {
    * @return a new instance of {@link GatewayHealthActuator}
    */
   static GatewayHealthActuator of(final ZeebeNode<?> node) {
-    return ofAddress(node.getExternalMonitoringAddress());
+    final String address = node.getExternalMonitoringAddress();
+    return of("http://" + address);
   }
 
   /**
-   * Returns a {@link GatewayHealthActuator} instance using the given base monitoring address.
+   * Returns a {@link GatewayHealthActuator} instance using the given node as upstream.
    *
-   * @param address the base monitoring address
+   * @param node the node to connect to
    * @return a new instance of {@link GatewayHealthActuator}
    */
-  static GatewayHealthActuator ofAddress(final String address) {
-    return of("http://" + address);
+  static GatewayHealthActuator of(final TestGateway<?> node) {
+    return of(node.monitoringAddress());
   }
 
   /**
