@@ -66,6 +66,8 @@ public class UIConfigurationService {
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(
         configurationService.getCsvConfiguration().getExportCsvLimit());
+    uiConfigurationDto.setMaxNumDataSourcesForReport(
+        configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
 
     final SettingsResponseDto settings = settingService.getSettings();

@@ -19,7 +19,10 @@ import VersionPopover from './VersionPopover';
 import {loadVersions, loadTenants} from './service';
 import MultiDefinitionSelection from './MultiDefinitionSelection';
 
-jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
+jest.mock('config', () => ({
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getMaxNumDataSourcesForReport: jest.fn().mockReturnValue(10),
+}));
 
 jest.mock('./service', () => ({
   loadVersions: jest.fn().mockReturnValue([

@@ -90,7 +90,7 @@
     "noProcessHint": "Leeres Dashboard erstellen",
     "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen",
     "blankSlate": {
-      "selectProcess": "Wählen Sie bis zu 10 Prozessdefinitionen aus",
+      "selectProcess": "Wählen Sie bis zu {maxNumProcesses} Prozessdefinitionen aus",
       "selectTemplate": "Wählen Sie eine Vorlage aus",
       "review": "Überprüfen Sie Ihren Dashboardentwurf und entfernen Sie unerwünschte Berichte",
       "refine": "Verfeinern Sie Ihr Dashboard und Ihre Berichte"
@@ -1458,7 +1458,7 @@
       "latest": "Neueste",
       "multiple": "Mehrere",
       "noDefinition": "Keine Definitionen gefunden",
-      "limitReached": "Prozessdefinitionsgrenze erreicht. Nur zehn Prozesse erlaubt.",
+      "limitReached": "Prozessdefinitionsgrenze erreicht. Nur {maxNumProcesses} Prozesse erlaubt.",
       "select": {
         "process": "Prozess auswählen",
         "decision": "Entscheidung auswählen",

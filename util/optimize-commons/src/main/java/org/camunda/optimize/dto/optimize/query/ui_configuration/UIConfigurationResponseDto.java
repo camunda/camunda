@@ -32,6 +32,7 @@ public class UIConfigurationResponseDto {
   private String notificationsUrl;
   private List<String> webhooks;
   private boolean logoutHidden;
+  private int maxNumDataSourcesForReport;
   private Integer exportCsvLimit;
   private DatabaseType optimizeDatabase;
 

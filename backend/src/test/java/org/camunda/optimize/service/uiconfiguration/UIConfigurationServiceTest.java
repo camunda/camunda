@@ -142,6 +142,20 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.isEnterpriseMode()).isEqualTo(expectedIsEnterprise);
   }
 
+  @Test
+  public void testMaximumNumberOfDataSourcesForReportIsReturned() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+    when(configurationService.getUiConfiguration().getMaxNumDataSourcesForReport()).thenReturn(50);
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getMaxNumDataSourcesForReport()).isEqualTo(50);
+  }
+
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);

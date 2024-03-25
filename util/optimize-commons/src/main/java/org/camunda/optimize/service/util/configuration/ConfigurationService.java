@@ -78,26 +78,20 @@ public class ConfigurationService {
   private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF =
       new TypeRef<>() {};
   // @formatter:on
-
+  // job executor settings
+  protected Integer jobExecutorQueueSize;
+  protected Integer jobExecutorThreadCount;
   private ElasticSearchConfiguration elasticSearchConfiguration;
-
   private OpenSearchConfiguration openSearchConfiguration;
-
   private ReadContext configJsonContext;
-
   private SecurityConfiguration securityConfiguration;
-
   private DataArchiveConfiguration dataArchiveConfiguration;
-
   private UsersConfiguration usersConfiguration;
-
   private Map<String, EngineConfiguration> configuredEngines;
   private ZeebeConfiguration configuredZeebe;
-
   private String engineDateFormat;
   private Long initialBackoff;
   private Long maximumBackoff;
-
   // engine import settings
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
@@ -123,7 +117,6 @@ public class ConfigurationService {
   private Boolean importUserTaskWorkerDataEnabled;
   private Boolean skipDataAfterNestedDocLimitReached;
   private Boolean customerOnboarding;
-
   // plugin base packages
   private List<String> variableImportPluginBasePackages;
   private List<String> engineRestFilterPluginBasePackages;
@@ -133,7 +126,6 @@ public class ConfigurationService {
   private List<String> businessKeyImportPluginBasePackages;
   private List<String> elasticsearchCustomHeaderPluginBasePackages;
   private String pluginDirectory;
-
   private String containerHost;
   private String contextPath;
   private String containerKeystorePassword;
@@ -160,7 +152,6 @@ public class ConfigurationService {
   private Optional<Integer> containerHttpPort;
 
   private Integer maxStatusConnections;
-
   private Boolean emailEnabled;
   private String notificationEmailAddress;
   private String notificationEmailHostname;
@@ -168,65 +159,36 @@ public class ConfigurationService {
   private Boolean notificationEmailCheckServerIdentity;
   private String notificationEmailCompanyBranding;
   private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
-
   private Map<String, WebhookConfiguration> configuredWebhooks;
-
   private String digestCronTrigger;
-
   private EntityConfiguration entityConfiguration;
-
   private CsvConfiguration csvConfiguration;
-
   private Properties quartzProperties;
-
   // history cleanup
   private CleanupConfiguration cleanupServiceConfiguration;
-
   private Boolean sharingEnabled;
-
   // localization
   private List<String> availableLocales;
   private String fallbackLocale;
-
   // ui customization
   private UIConfiguration uiConfiguration;
-
   private UserTaskIdentityCacheConfiguration userTaskIdentityCacheConfiguration;
   private UserIdentityCacheConfiguration userIdentityCacheConfiguration;
-
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
-
   private TelemetryConfiguration telemetryConfiguration;
-
   private ExternalVariableConfiguration externalVariableConfiguration;
-
   private GlobalCacheConfiguration caches;
-
   private AnalyticsConfiguration analytics;
-
   private OptimizeApiConfiguration optimizeApiConfiguration;
-
   private OnboardingConfiguration onboarding;
-
   private PanelNotificationConfiguration panelNotificationConfiguration;
-
   private M2mAuth0ClientConfiguration m2mAuth0ClientConfiguration;
-
   private Boolean multiTenancyEnabled;
-
-  // job executor settings
-  protected Integer jobExecutorQueueSize;
-  protected Integer jobExecutorThreadCount;
-
-  @JsonCreator
-  public static ConfigurationService createDefault() {
-    return ConfigurationServiceBuilder.createDefaultConfiguration();
-  }
 
   public ConfigurationService(
       final String[] configLocations, final ConfigurationValidator configurationValidator) {
-    List<InputStream> configStreams = getLocationsAsInputStream(configLocations);
-    this.configJsonContext =
+    final List<InputStream> configStreams = getLocationsAsInputStream(configLocations);
+    configJsonContext =
         parseConfigFromLocations(configStreams)
             .orElseThrow(
                 () ->
@@ -235,7 +197,12 @@ public class ConfigurationService {
     Optional.ofNullable(configurationValidator).ifPresent(validator -> validator.validate(this));
   }
 
-  public static OptimizeProfile getOptimizeProfile(Environment environment) {
+  @JsonCreator
+  public static ConfigurationService createDefault() {
+    return ConfigurationServiceBuilder.createDefaultConfiguration();
+  }
+
+  public static OptimizeProfile getOptimizeProfile(final Environment environment) {
     final List<OptimizeProfile> specifiedProfiles =
         Arrays.stream(environment.getActiveProfiles())
             .filter(optimizeModeProfiles::contains)
@@ -250,7 +217,7 @@ public class ConfigurationService {
     }
   }
 
-  public static DatabaseType getDatabaseType(Environment environment) {
+  public static DatabaseType getDatabaseType(final Environment environment) {
     final String configuredProperty =
         environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY);
     return convertToDatabaseProperty(configuredProperty);
@@ -504,8 +471,8 @@ public class ConfigurationService {
     return customerOnboarding;
   }
 
-  public void setCustomerOnboardingImport(boolean isActive) {
-    this.customerOnboarding = isActive;
+  public void setCustomerOnboardingImport(final boolean isActive) {
+    customerOnboarding = isActive;
   }
 
   public int getEngineImportDecisionInstanceMaxPageSize() {
@@ -695,7 +662,7 @@ public class ConfigurationService {
   }
 
   // Note: special setter for Optional field value, see note on field why the field is Optional
-  public void setContainerAccessUrlValue(String containerAccessUrl) {
+  public void setContainerAccessUrlValue(final String containerAccessUrl) {
     this.containerAccessUrl = Optional.ofNullable(containerAccessUrl);
   }
 
@@ -797,7 +764,7 @@ public class ConfigurationService {
 
   // Note: special setter for Optional field value, see note on field why the field is Optional
   @SuppressWarnings(SuppressionConstants.UNUSED)
-  public void setContainerHttpPortValue(Integer containerHttpPort) {
+  public void setContainerHttpPortValue(final Integer containerHttpPort) {
     this.containerHttpPort = Optional.ofNullable(containerHttpPort);
   }
 
@@ -810,25 +777,25 @@ public class ConfigurationService {
     return maxStatusConnections;
   }
 
-  public Optional<String> getEngineDefaultTenantIdOfCustomEngine(String engineAlias) {
+  public Optional<String> getEngineDefaultTenantIdOfCustomEngine(final String engineAlias) {
     return getEngineConfiguration(engineAlias)
         .map(EngineConfiguration::getDefaultTenantId)
         .orElseThrow(
             () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public List<String> getExcludedTenants(String engineAlias) {
+  public List<String> getExcludedTenants(final String engineAlias) {
     return getEngineConfiguration(engineAlias)
         .map(EngineConfiguration::getExcludedTenants)
         .orElseThrow(
             () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public String getEngineRestApiEndpointOfCustomEngine(String engineAlias) {
-    return this.getEngineRestApiEndpoint(engineAlias) + "/engine/" + getEngineName(engineAlias);
+  public String getEngineRestApiEndpointOfCustomEngine(final String engineAlias) {
+    return getEngineRestApiEndpoint(engineAlias) + "/engine/" + getEngineName(engineAlias);
   }
 
-  public String getDefaultEngineAuthenticationUser(String engineAlias) {
+  public String getDefaultEngineAuthenticationUser(final String engineAlias) {
     return getEngineConfiguration(engineAlias)
         .map(EngineConfiguration::getAuthentication)
         .map(EngineAuthenticationConfiguration::getUser)
@@ -836,7 +803,7 @@ public class ConfigurationService {
             () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public String getDefaultEngineAuthenticationPassword(String engineAlias) {
+  public String getDefaultEngineAuthenticationPassword(final String engineAlias) {
     return getEngineConfiguration(engineAlias)
         .map(EngineConfiguration::getAuthentication)
         .map(EngineAuthenticationConfiguration::getPassword)
@@ -851,14 +818,14 @@ public class ConfigurationService {
    * @param engineAlias - an alias of configured engine
    * @return <b>raw</b> REST endpoint, without engine suffix
    */
-  private String getEngineRestApiEndpoint(String engineAlias) {
+  private String getEngineRestApiEndpoint(final String engineAlias) {
     return getEngineConfiguration(engineAlias)
         .map(EngineConfiguration::getRest)
         .orElseThrow(
             () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public String getEngineName(String engineAlias) {
+  public String getEngineName(final String engineAlias) {
     return getEngineConfiguration(engineAlias)
         .map(EngineConfiguration::getName)
         .orElseThrow(
@@ -881,8 +848,8 @@ public class ConfigurationService {
     throw new OptimizeConfigurationException("Invalid data import source");
   }
 
-  public Optional<EngineConfiguration> getEngineConfiguration(String engineAlias) {
-    return Optional.ofNullable(this.getConfiguredEngines().get(engineAlias));
+  public Optional<EngineConfiguration> getEngineConfiguration(final String engineAlias) {
+    return Optional.ofNullable(getConfiguredEngines().get(engineAlias));
   }
 
   public Properties getQuartzProperties() {
@@ -1060,6 +1027,7 @@ public class ConfigurationService {
   public UIConfiguration getUiConfiguration() {
     if (uiConfiguration == null) {
       uiConfiguration = configJsonContext.read(UI_CONFIGURATION, UIConfiguration.class);
+      uiConfiguration.validate();
     }
     return uiConfiguration;
   }

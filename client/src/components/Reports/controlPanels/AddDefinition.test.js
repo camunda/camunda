@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runLastEffect, runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Modal} from 'components';
@@ -26,6 +26,10 @@ jest.mock('services', () => ({
     {key: 'definitionB', name: 'Definition B'},
     {key: 'definitionA2', name: 'Definition A'},
   ]),
+}));
+
+jest.mock('config', () => ({
+  getMaxNumDataSourcesForReport: jest.fn().mockReturnValue(10),
 }));
 
 const props = {
@@ -118,12 +122,20 @@ it('should call back with definitions to add', () => {
   ]);
 });
 
-it('should show a warning if limit of 10 definitions is reached', () => {
-  const node = shallow(<AddDefinition {...props} definitions={Array(9).fill({})} />);
+it('should show a warning if definitions limit is reached', async () => {
+  const node = shallow(<AddDefinition {...props} definitions={Array(10).fill({})} />);
+  await runAllEffects();
 
   expect(node.find('MessageBox')).not.toExist();
 
   node.find('Checklist').simulate('change', [{}]);
 
   expect(node.find('MessageBox')).toExist();
+});
+
+it('should disable the "Add" button when definitions limit is reached', async () => {
+  const node = shallow(<AddDefinition {...props} definitions={Array(10).fill({})} />);
+  runLastEffect();
+
+  expect(node.find('.confirm')).toBeDisabled();
 });

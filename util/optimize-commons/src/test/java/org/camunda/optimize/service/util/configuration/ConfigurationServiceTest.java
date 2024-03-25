@@ -74,6 +74,7 @@ public class ConfigurationServiceTest {
   private static final Boolean CUSTOM_SHARING_ENABLED = true;
   private static final Boolean CUSTOM_UI_LOGOUT_HIDDEN = true;
   private static final String CUSTOM_REPOSITORY_NAME = "snapshotRepoName";
+  private static final int CUSTOM_MAX_REPORT_DATASOURCE = 50;
 
   @RegisterExtension
   @Order(1)
@@ -226,6 +227,9 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
+        String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
+    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
@@ -303,6 +307,9 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
+        String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
@@ -377,6 +384,9 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(!CUSTOM_UI_LOGOUT_HIDDEN));
     environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
+        String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
+    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", "wrong");
     environmentVariablesExtension.set(
@@ -441,6 +451,9 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
+        String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
     System.setProperty(
@@ -530,6 +543,9 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES",
+        String.valueOf(CUSTOM_MAX_REPORT_DATASOURCE));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
     System.setProperty(
@@ -726,6 +742,8 @@ public class ConfigurationServiceTest {
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
+    assertThat(underTest.getUiConfiguration().getMaxNumDataSourcesForReport())
+        .isEqualTo(CUSTOM_MAX_REPORT_DATASOURCE);
     assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes())
         .isEqualTo(CUSTOM_AUTH_TOKEN_LIFE_MIN);
     assertThat(

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode, useMemo} from 'react';
+import {ReactNode, useMemo, useState, useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
 import {FilterableMultiSelect} from '@carbon/react';
 
@@ -13,6 +13,7 @@ import {useErrorHandling} from 'hooks';
 import {Definition, getRandomId, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import {getMaxNumDataSourcesForReport} from 'config';
 
 import {loadTenants} from './service';
 
@@ -41,8 +42,13 @@ function MultiDefinitionSelection({
   invalid,
   invalidText,
 }: MultiDefinitionSelectionProps): JSX.Element {
+  const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const location = useLocation();
   const {mightFail} = useErrorHandling();
+
+  useEffect(() => {
+    (async () => setReportDataSourceLimit(await getMaxNumDataSourcesForReport()))();
+  }, []);
 
   function update(newDefinitions: Definition[]) {
     if (newDefinitions.length === 0) {
@@ -82,7 +88,7 @@ function MultiDefinitionSelection({
   const selectedItems = allItems.filter((item) =>
     selectedDefinitions.some((def) => def.key === item.id)
   );
-  disableIfLimitReached(allItems, selectedItems);
+  disableIfLimitReached(allItems, selectedItems, reportDataSourceLimit);
 
   const handleSelectionChange = (selectedItems: Item[]) => {
     const selectedKeys = selectedItems.map((item) => item.id);
@@ -116,9 +122,13 @@ function getItems(defintions: Definition[]): Item[] {
   }));
 }
 
-function disableIfLimitReached(allItems: Item[], selectedItems: Item[]) {
+function disableIfLimitReached(
+  allItems: Item[],
+  selectedItems: Item[],
+  reportDataSourceLimit: number
+) {
   // we use forEach because the multi-select expects that the reference to items does not change
-  if (selectedItems.length >= 10) {
+  if (selectedItems.length >= reportDataSourceLimit) {
     allItems.forEach((item) => {
       if (!selectedItems.some((selectedItem) => selectedItem.id === item.id)) {
         item.disabled = true;

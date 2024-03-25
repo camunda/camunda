@@ -686,6 +686,8 @@ locales:
 ui:
   # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
   logoutHidden: ${CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN:false}
+  # The maximum number of data sources available for a report. The minimum value is 1, the maximum is 1024
+  maxNumDataSourcesForReport: ${CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES:100}
   # Flag to disable userTask assignee specific analytics such as report types and filters
   userTaskAssigneeAnalyticsEnabled: ${CAMUNDA_OPTIMIZE_UI_USER_TASK_ASSIGNEE_ANALYTICS_ENABLED:true}
   # The URL for Optimize to use to navigate to console in the sidebar

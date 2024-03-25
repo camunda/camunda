@@ -15,18 +15,25 @@ import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import {getMaxNumDataSourcesForReport} from 'config';
 
 import {loadTenants} from './service';
 
 import './AddDefinition.scss';
 
 export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
+  const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const [availableDefinitions, setAvailableDefinitions] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDefinitions, setSelectedDefinitions] = useState([]);
 
   const collection = getCollection(location.pathname);
-  const isDefinitionLimitReached = selectedDefinitions.length + definitions.length >= 10;
+  const isDefinitionLimitReached =
+    selectedDefinitions.length + definitions.length > reportDataSourceLimit;
+
+  useEffect(() => {
+    (async () => setReportDataSourceLimit(await getMaxNumDataSourcesForReport()))();
+  }, []);
 
   useEffect(() => {
     mightFail(
@@ -62,7 +69,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
           setSelectedDefinitions([]);
           setModalOpen(true);
         }}
-        disabled={definitions.length >= 10}
+        disabled={definitions.length >= reportDataSourceLimit}
         renderIcon={Add}
       >
         {t('common.add')}
@@ -74,7 +81,11 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
         </Modal.Header>
         <Modal.Content>
           {isDefinitionLimitReached && (
-            <MessageBox type="warning">{t('common.definitionSelection.limitReached')}</MessageBox>
+            <MessageBox type="warning">
+              {t('common.definitionSelection.limitReached', {
+                maxNumProcesses: reportDataSourceLimit,
+              })}
+            </MessageBox>
           )}
           <Checklist
             hideSelectAllInView
@@ -133,7 +144,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                 showError
               );
             }}
-            disabled={selectedDefinitions.length === 0}
+            disabled={selectedDefinitions.length === 0 || isDefinitionLimitReached}
           >
             {t('common.add')}
           </Button>

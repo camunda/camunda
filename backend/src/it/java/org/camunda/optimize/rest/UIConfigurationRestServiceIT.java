@@ -328,6 +328,21 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
         .isEqualTo(databaseIntegrationTestExtension.getDatabaseVendor());
   }
 
+  @Test
+  public void maxNumDataSourceIsReturnedCorrectly() {
+    // given
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getUiConfiguration()
+        .setMaxNumDataSourcesForReport(50);
+
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.getMaxNumDataSourcesForReport()).isEqualTo(50);
+  }
+
   protected void createTenant(final String tenantId) {
     final TenantDto tenantDto = new TenantDto(tenantId, tenantId, DEFAULT_ENGINE_ALIAS);
     databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);

@@ -53,6 +53,7 @@ type Config = {
   mixpanel: MixpanelConfig;
   logoutHidden: boolean;
   exportCsvLimit: number;
+  maxNumDataSourcesForReport: number;
   onboarding: Onboarding;
   notificationsUrl: string;
   userSearchAvailable: boolean;
@@ -107,6 +108,9 @@ export const getOptimizeProfile =
   createAccessorFunction<Config['optimizeProfile']>('optimizeProfile');
 export const isLogoutHidden = createAccessorFunction<boolean>('logoutHidden');
 export const getExportCsvLimit = createAccessorFunction<number>('exportCsvLimit');
+export const getMaxNumDataSourcesForReport = createAccessorFunction<number>(
+  'maxNumDataSourcesForReport'
+);
 export const isEnterpriseMode = createAccessorFunction<boolean>('enterpriseMode');
 export const getOnboardingConfig = createAccessorFunction<Onboarding>('onboarding');
 export const getNotificationsUrl = createAccessorFunction<string>('notificationsUrl');
