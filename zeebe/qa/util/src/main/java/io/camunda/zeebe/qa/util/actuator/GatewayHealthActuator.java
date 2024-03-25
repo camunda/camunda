@@ -35,7 +35,7 @@ public interface GatewayHealthActuator extends HealthActuator {
    */
   static GatewayHealthActuator of(final ZeebeNode<?> node) {
     final String address = node.getExternalMonitoringAddress();
-    return of("http://" + address);
+    return of("http://" + address + "/actuator/health");
   }
 
   /**
@@ -45,7 +45,7 @@ public interface GatewayHealthActuator extends HealthActuator {
    * @return a new instance of {@link GatewayHealthActuator}
    */
   static GatewayHealthActuator of(final TestGateway<?> node) {
-    return of(node.monitoringAddress());
+    return of(node.actuatorUri("health").toString());
   }
 
   /**
@@ -68,14 +68,14 @@ public interface GatewayHealthActuator extends HealthActuator {
   }
 
   @Override
-  @RequestLine("GET /actuator/health")
+  @RequestLine("GET /")
   void ready();
 
   @Override
-  @RequestLine("GET /actuator/health/startup")
+  @RequestLine("GET /startup")
   void startup();
 
   @Override
-  @RequestLine("GET /actuator/health/liveness")
+  @RequestLine("GET /liveness")
   void live();
 }

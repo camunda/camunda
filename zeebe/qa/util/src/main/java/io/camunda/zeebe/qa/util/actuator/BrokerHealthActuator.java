@@ -45,7 +45,7 @@ public interface BrokerHealthActuator extends HealthActuator {
    * @return a new instance of {@link BrokerHealthActuator}
    */
   static BrokerHealthActuator of(final TestStandaloneBroker node) {
-    return of(node.monitoringAddress());
+    return of(node.monitoringUri().toString());
   }
 
   /**

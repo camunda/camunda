@@ -119,7 +119,7 @@ final class ControlledActorClockEndpointIT {
 
   private Builder buildRequest(final String operation) {
     return HttpRequest.newBuilder(
-            URI.create("http://" + broker.monitoringAddress() + "/actuator/clock/" + operation))
+            URI.create("http://" + broker.monitoringUri() + "/actuator/clock/" + operation))
         .headers("Content-Type", "application/json", "Accept", "application/json");
   }
 

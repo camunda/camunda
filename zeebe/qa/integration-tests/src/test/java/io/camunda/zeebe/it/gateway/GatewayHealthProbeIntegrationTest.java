@@ -44,7 +44,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri(gateway.monitoringUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -79,7 +79,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri("http://" + gateway.monitoringUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -124,7 +124,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri("http://" + gateway.monitoringUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -139,7 +139,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri("http://" + gateway.monitoringUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -173,7 +173,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri("http://" + gateway.monitoringUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
