@@ -10,6 +10,7 @@
         <option value="fieldCanBeFinal" />
         <option value="localCanBeFinal" />
         <option value="missingOverrideAnnotation" />
+        <option value="useBlocks" />
         <option value="unnecessaryThis" />
       </set>
     </option>

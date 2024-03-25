@@ -47,11 +47,8 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.TreePath;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -59,6 +56,7 @@ import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +82,7 @@ public class OpensearchProcessStore implements ProcessStore {
     final SearchResponse<Void> response;
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
-            .query(withTenantCheck(matchAll()))
+            .query(matchAll())
             .aggregations(
                 DISTINCT_FIELD_COUNTS, cardinalityAggregation(fieldName, 1_000)._toAggregation())
             .size(0);
@@ -362,9 +360,18 @@ public class OpensearchProcessStore implements ProcessStore {
                         term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
                         term(TREE_PATH, treePath),
                         not(term(KEY, processInstanceKey)))))
-            .source(sourceInclude(TREE_PATH));
+            .source(sourceInclude(ID, TREE_PATH));
 
-    final var results = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, Result.class);
+    final List<Result> results = new ArrayList<>();
+    final Map<String, String> idToIndex = new HashMap<>();
+    final Consumer<List<Hit<Result>>> hitsConsumer =
+        hits -> {
+          for (Hit<Result> hit : hits) {
+            results.add(hit.source());
+            idToIndex.put(hit.id(), hit.index());
+          }
+        };
+    richOpenSearchClient.doc().scrollWith(searchRequestBuilder, Result.class, hitsConsumer);
     if (results.isEmpty()) {
       LOGGER.debug(
           "No results in deleteProcessInstanceFromTreePath for process instance key {}",
@@ -378,12 +385,13 @@ public class OpensearchProcessStore implements ProcessStore {
                 op ->
                     op.update(
                         upd -> {
+                          final String index = idToIndex.get(r.id);
                           final String newTreePath =
                               new TreePath(r.treePath())
                                   .removeProcessInstance(processInstanceKey)
                                   .toString();
 
-                          return upd.index(listViewTemplate.getFullQualifiedName())
+                          return upd.index(index)
                               .id(r.id)
                               .document(new ProcessEntityUpdate(newTreePath))
                               .retryOnConflict(UPDATE_RETRY_COUNT);

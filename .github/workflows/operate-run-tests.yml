@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.8.0
+        uses: hashicorp/vault-action@v2.8.1
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -48,7 +48,7 @@ jobs:
       - name: Run Tests
         run: ${{ inputs.command }}
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.14.0
+        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
         if: always()
         with:
           comment_mode: off

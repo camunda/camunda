@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -37,7 +38,7 @@ public final class BroadcastSignalCommandImpl
     implements BroadcastSignalCommandStep1, BroadcastSignalCommandStep2 {
 
   private final GatewayStub asyncStub;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private final BroadcastSignalRequest.Builder builder;
   private Duration requestTimeout;
 
@@ -45,7 +46,7 @@ public final class BroadcastSignalCommandImpl
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
       final JsonMapper jsonMapper,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;

@@ -105,11 +105,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' \
-            but a concurrent command was executed on the process instance. \
-            Please retry the migration."""
-                .formatted(processInstanceKey));
+            createMigrationRejectionDueConcurrentModificationReason(processInstanceKey));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -276,11 +272,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' \
-            but a concurrent command was executed on the process instance. \
-            Please retry the migration."""
-                .formatted(processInstanceKey));
+            createMigrationRejectionDueConcurrentModificationReason(processInstanceKey));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -399,7 +391,6 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageBefore() {
     // given
@@ -508,7 +499,6 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageAfter() {
     // given
@@ -605,7 +595,6 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageCorrelateBefore() {
     // given
@@ -688,11 +677,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' \
-            but a concurrent command was executed on the process instance. \
-            Please retry the migration."""
-                .formatted(processInstanceKey));
+            createMigrationRejectionDueConcurrentModificationReason(processInstanceKey));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -793,10 +778,10 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' \
-            but active element with id 'timer' has an unsupported type. \
-            The migration of a BOUNDARY_EVENT is not supported."""
+                """
+                Expected to migrate process instance '%d' \
+                but active element with id 'timer' has an unsupported type. \
+                The migration of a BOUNDARY_EVENT is not supported."""
                 .formatted(processInstanceKey));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -892,11 +877,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' \
-            but a concurrent command was executed on the process instance. \
-            Please retry the migration."""
-                .formatted(processInstanceKey));
+            createMigrationRejectionDueConcurrentModificationReason(processInstanceKey));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -927,5 +908,15 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private static String createMigrationRejectionDueConcurrentModificationReason(
+      final long processInstanceKey) {
+    return
+        """
+        Expected to migrate process instance '%d' \
+        but a concurrent command was executed on the process instance. \
+        Please retry the migration."""
+        .formatted(processInstanceKey);
   }
 }

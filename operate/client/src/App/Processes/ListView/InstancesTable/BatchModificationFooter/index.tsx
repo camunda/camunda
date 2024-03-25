@@ -19,24 +19,38 @@ import {Button} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {ModalStateManager} from 'modules/components/ModalStateManager';
+import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
 import {Stack} from './styled';
 
 const BatchModificationFooter: React.FC = observer(() => {
+  const isButtonDisabled =
+    processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
+    batchModificationStore.state.selectedTargetFlowNodeId === null;
+
   return (
-    <Stack orientation="horizontal" gap={5}>
-      <Button kind="secondary" size="sm" onClick={batchModificationStore.reset}>
-        Exit
-      </Button>
-      <Button
-        size="sm"
-        disabled={
-          processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
-          batchModificationStore.state.selectedTargetFlowNodeId === null
-        }
-      >
-        Apply Modification
-      </Button>
-    </Stack>
+    <>
+      <Stack orientation="horizontal" gap={5}>
+        <Button
+          kind="secondary"
+          size="sm"
+          onClick={batchModificationStore.reset}
+        >
+          Exit
+        </Button>
+        <ModalStateManager
+          renderLauncher={({setOpen}) => (
+            <Button size="sm" disabled={isButtonDisabled} onClick={setOpen}>
+              Apply Modification
+            </Button>
+          )}
+        >
+          {({open, setOpen}) => (
+            <BatchModificationSummaryModal open={open} setOpen={setOpen} />
+          )}
+        </ModalStateManager>
+      </Stack>
+    </>
   );
 });
 

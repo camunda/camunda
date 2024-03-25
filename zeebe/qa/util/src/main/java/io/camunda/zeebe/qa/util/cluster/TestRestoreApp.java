@@ -31,7 +31,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     this.config = config;
 
     //noinspection resource
-    withBean("config", config, BrokerProperties.class);
+    withBean("config", config, BrokerProperties.class).withAdditionalProfile(Profile.RESTORE);
   }
 
   @Override
@@ -61,9 +61,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    return super.createSpringBuilder()
-        .web(WebApplicationType.NONE)
-        .profiles(Profile.RESTORE.getId());
+    return super.createSpringBuilder().web(WebApplicationType.NONE);
   }
 
   public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {

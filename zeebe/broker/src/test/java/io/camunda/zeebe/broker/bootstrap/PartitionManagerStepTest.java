@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class PartitionManagerStepTest {
+  public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
@@ -90,7 +91,8 @@ class PartitionManagerStepTest {
               mock(ExporterRepository.class),
               mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(BrokerClient.class),
-              Collections.emptyList());
+              Collections.emptyList(),
+              TEST_SHUTDOWN_TIMEOUT);
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
@@ -186,7 +188,8 @@ class PartitionManagerStepTest {
               mock(ExporterRepository.class),
               mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(BrokerClient.class),
-              Collections.emptyList());
+              Collections.emptyList(),
+              TEST_SHUTDOWN_TIMEOUT);
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       final ClusterTopologyService mockClusterTopology = mock(ClusterTopologyService.class);

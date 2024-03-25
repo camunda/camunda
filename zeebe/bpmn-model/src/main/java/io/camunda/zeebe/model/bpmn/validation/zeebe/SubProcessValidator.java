@@ -40,8 +40,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
           MessageEventDefinition.class,
           ErrorEventDefinition.class,
           SignalEventDefinition.class,
-          EscalationEventDefinition.class,
-          CompensateEventDefinition.class);
+          EscalationEventDefinition.class);
 
   @Override
   public Class<SubProcess> getElementType() {
@@ -89,7 +88,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
     if (eventDefinitions.isEmpty()) {
       validationResultCollector.addError(
           0,
-          "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or compensation");
+          "Start events in event subprocesses must be one of: message, timer, error, signal or escalation");
     }
 
     if (eventDefinitions.stream().anyMatch(CompensateEventDefinition.class::isInstance)
@@ -103,7 +102,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
           if (SUPPORTED_START_TYPES.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
                 0,
-                "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or compensation");
+                "Start events in event subprocesses must be one of: message, timer, error, signal or escalation");
           }
         });
 

@@ -161,7 +161,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                             .precisionThreshold(1_000)
                             .field(fieldName)));
     try {
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final Cardinality distinctFieldCounts =
           searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
@@ -365,6 +365,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     }
   }
 
+  @Override
   public ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey) {
     try {
       final QueryBuilder query =
@@ -561,7 +562,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                                     .toString();
                             updateFields.put(TREE_PATH, newTreePath);
                             updateRequest
-                                .index(listViewTemplate.getFullQualifiedName())
+                                .index(sh.getIndex())
                                 .id(sh.getId())
                                 .doc(updateFields)
                                 .retryOnConflict(UPDATE_RETRY_COUNT);

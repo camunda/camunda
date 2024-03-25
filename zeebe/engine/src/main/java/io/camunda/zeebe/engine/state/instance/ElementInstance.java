@@ -40,9 +40,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
+  private final IntegerProperty executionListenerIndexProp =
+      new IntegerProperty("executionListenerIndex", 0);
 
   public ElementInstance() {
-    super(12);
+    super(13);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -54,7 +56,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
-        .declareProperty(userTaskKeyProp);
+        .declareProperty(userTaskKeyProp)
+        .declareProperty(executionListenerIndexProp);
   }
 
   public ElementInstance(
@@ -229,5 +232,17 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setUserTaskKey(final long userTaskKey) {
     userTaskKeyProp.setValue(userTaskKey);
+  }
+
+  public int getExecutionListenerIndex() {
+    return executionListenerIndexProp.getValue();
+  }
+
+  public void incrementExecutionListenerIndex() {
+    executionListenerIndexProp.increment();
+  }
+
+  public void resetExecutionListenerIndex() {
+    executionListenerIndexProp.setValue(0);
   }
 }

@@ -37,7 +37,7 @@ public interface BackupAcceptance {
   default void shouldTakeBackup() {
     // given
     final TestCluster cluster = getTestCluster();
-    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+    final var actuator = BackupActuator.of(cluster.availableGateway());
     try (final var client = cluster.newClientBuilder().build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
@@ -54,7 +54,7 @@ public interface BackupAcceptance {
   default void shouldListBackups() {
     // given
     final TestCluster cluster = getTestCluster();
-    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+    final var actuator = BackupActuator.of(cluster.availableGateway());
     try (final var client = cluster.newClientBuilder().build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
@@ -79,7 +79,7 @@ public interface BackupAcceptance {
   default void shouldDeleteBackup() {
     // given
     final TestCluster cluster = getTestCluster();
-    final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+    final var actuator = BackupActuator.of(cluster.availableGateway());
     final long backupId = 1;
     actuator.take(backupId);
     waitUntilBackupIsCompleted(actuator, backupId);

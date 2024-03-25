@@ -8,6 +8,22 @@
     <version>8.5.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <artifactId>operate-qa</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Operate QA</name>
+
+  <modules>
+    <module>util</module>
+    <module>data-generator</module>
+    <module>integration-tests</module>
+    <module>import-performance-tests</module>
+    <module>query-performance-tests</module>
+    <module>batch-operation-performance-tests</module>
+    <module>migration-tests</module>
+    <module>migration-performance-test</module>
+    <module>backup-restore-tests</module>
+  </modules>
 
   <properties>
     <license.header>${project.baseUri}/../../../license/license-header</license.header>
@@ -18,21 +34,5 @@
     <version.identity.docker.current>8.5.0-alpha2</version.identity.docker.current>
 
   </properties>
-
-  <name>Operate QA</name>
-  <artifactId>operate-qa</artifactId>
-  <packaging>pom</packaging>
-
-    <modules>
-        <module>util</module>
-        <module>data-generator</module>
-        <module>integration-tests</module>
-        <module>import-performance-tests</module>
-        <module>query-performance-tests</module>
-        <module>batch-operation-performance-tests</module>
-        <module>migration-tests</module>
-        <module>migration-performance-test</module>
-        <module>backup-restore-tests</module>
-    </modules>
 
 </project>

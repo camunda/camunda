@@ -44,7 +44,7 @@ public interface ClusterActuator {
    * @return a new instance of {@link ClusterActuator}
    */
   static ClusterActuator of(final TestApplication<?> node) {
-    return ofAddress(node.monitoringAddress());
+    return of(node.actuatorUri("cluster").toString());
   }
 
   /**

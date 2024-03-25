@@ -50,7 +50,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
     //noinspection resource
-    withBean("config", config, BrokerProperties.class);
+    withBean("config", config, BrokerProperties.class).withAdditionalProfile(Profile.BROKER);
   }
 
   @Override
@@ -65,7 +65,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    return super.createSpringBuilder().profiles(Profile.BROKER.getId());
+    // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
+    // we need to hook in at the last minute and set the property as it won't resolve from the
+    // config bean
+    withProperty("zeebe.broker.gateway.enable", config.getGateway().isEnable());
+    return super.createSpringBuilder();
   }
 
   @Override
@@ -148,7 +152,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * and startup.
    */
   public BrokerHealthActuator brokerHealth() {
-    return BrokerHealthActuator.ofAddress(monitoringAddress());
+    return BrokerHealthActuator.of(this);
   }
 
   /**

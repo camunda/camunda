@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.gateway;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
@@ -15,25 +14,35 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
+import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
+import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.grpc.Metadata;
-import io.grpc.Metadata.Key;
 import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
+import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.assertj.core.api.ThrowableAssertAlternative;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -105,85 +114,72 @@ public class GatewayAuthenticationIdentityIT {
                   .forStatusCode(200))
           .withNetworkAliases("identity");
 
-  @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
-  private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
-
   @SuppressWarnings("unused")
   @RegisterExtension
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(() -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY));
 
-  @BeforeAll
-  static void beforeAll() {
-    ZEEBE
-        .withBrokerConfig(
-            cfg -> {
-              final var auth = cfg.getGateway().getSecurity().getAuthentication();
-              auth.setMode(AuthMode.IDENTITY);
-            })
-        .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
-        .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE)
-        .start()
-        .await(TestHealthProbe.READY);
+  @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withBrokerConfig(
+              cfg -> {
+                final var auth = cfg.getGateway().getSecurity().getAuthentication();
+                auth.setMode(AuthMode.IDENTITY);
+              })
+          .withAdditionalProfile(Profile.IDENTITY_AUTH)
+          .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
+          .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE);
+
+  @BeforeEach
+  void beforeEach() {
+    zeebe.start().await(TestHealthProbe.READY);
   }
 
-  @Test
-  void getTopologyRequestFailsWithoutAuthToken() {
-    // given
-    try (final var client = createZeebeClientBuilder().build()) {
-      // when
-      final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
-
-      // then
-      assertThat(topologyFuture)
-          .failsWithin(FIRST_REQUEST_TIMEOUT)
-          .withThrowableOfType(ExecutionException.class)
-          .withCauseInstanceOf(StatusRuntimeException.class)
-          .extracting(
-              Throwable::getCause, as(InstanceOfAssertFactories.type(StatusRuntimeException.class)))
-          .satisfies(
-              statusRuntimeException -> {
-                assertThat(statusRuntimeException.getStatus())
-                    .hasFieldOrPropertyWithValue("code", Status.UNAUTHENTICATED.getCode())
-                    .hasFieldOrPropertyWithValue(
-                        "description",
-                        "Expected bearer token at header with key [authorization], but found nothing");
-              });
-    }
-  }
-
-  @Test
-  void getTopologyRequestFailsWithInvalidAuthToken() {
+  @ParameterizedTest
+  @MethodSource("provideInvalidTokenCases")
+  void getTopologyRequestFailsWithInvalidAuthToken(final InvalidTokenTestCase testCase) {
     // given
     try (final var client =
         createZeebeClientBuilder().credentialsProvider(new InvalidAuthTokenProvider()).build()) {
       // when
-      final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
+      final Future<?> topologyFuture = testCase.apiPicker.apply(client.newTopologyRequest()).send();
 
       // then
-      assertThat(topologyFuture)
-          .failsWithin(FIRST_REQUEST_TIMEOUT)
-          .withThrowableOfType(ExecutionException.class)
-          .withCauseInstanceOf(StatusRuntimeException.class)
-          .extracting(
-              Throwable::getCause, as(InstanceOfAssertFactories.type(StatusRuntimeException.class)))
-          .satisfies(
-              statusRuntimeException -> {
-                assertThat(statusRuntimeException.getStatus())
-                    .hasFieldOrPropertyWithValue("code", Status.UNAUTHENTICATED.getCode())
-                    .hasFieldOrPropertyWithValue(
-                        "description", "Failed to parse bearer token, see cause for details");
-              });
+      final var assertion =
+          assertThat(topologyFuture)
+              .failsWithin(FIRST_REQUEST_TIMEOUT)
+              .withThrowableOfType(ExecutionException.class);
+      testCase.expectations.accept(assertion);
     }
   }
 
-  @Test
-  void getTopologyRequestSucceedsWithValidAuthToken() {
+  @ParameterizedTest
+  @MethodSource("provideInvalidTokenCases")
+  void getTopologyRequestFailsWithoutAuthToken(final InvalidTokenTestCase testCase) {
+    // given
+    try (final var client = createZeebeClientBuilder().build()) {
+      // when
+      final Future<?> topologyFuture = testCase.apiPicker.apply(client.newTopologyRequest()).send();
+
+      // then
+      final var assertion =
+          assertThat(topologyFuture)
+              .failsWithin(FIRST_REQUEST_TIMEOUT)
+              .withThrowableOfType(ExecutionException.class);
+      testCase.expectations.accept(assertion);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideValidTokenCases")
+  void getTopologyRequestSucceedsWithValidAuthToken(
+      final UnaryOperator<TopologyRequestStep1> apiPicker) {
     // given
     try (final var client =
         createZeebeClientBuilder()
             .credentialsProvider(
-                new OAuthCredentialsProviderBuilder()
+                CredentialsProvider.newCredentialsProviderBuilder()
                     .clientId(ZEEBE_CLIENT_ID)
                     .clientSecret(ZEEBE_CLIENT_SECRET)
                     .audience(ZEEBE_CLIENT_AUDIENCE)
@@ -191,8 +187,10 @@ public class GatewayAuthenticationIdentityIT {
                         getKeycloakRealmAddress() + "/protocol/openid-connect/token")
                     .build())
             .build()) {
+
       // when
-      final var topologyFuture = client.newTopologyRequest().send().toCompletableFuture();
+      final Future<io.camunda.zeebe.client.api.response.Topology> topologyFuture =
+          apiPicker.apply(client.newTopologyRequest()).send();
 
       // then
       assertThat(topologyFuture).succeedsWithin(FIRST_REQUEST_TIMEOUT);
@@ -200,6 +198,35 @@ public class GatewayAuthenticationIdentityIT {
       assertThat(client.newTopologyRequest().send().toCompletableFuture())
           .succeedsWithin(Duration.ofSeconds(1));
     }
+  }
+
+  private static Stream<Named<UnaryOperator<TopologyRequestStep1>>> provideValidTokenCases() {
+    return Stream.of(
+        Named.of("grpc", CommandWithCommunicationApiStep::useGrpc),
+        Named.of("rest", CommandWithCommunicationApiStep::useRest));
+  }
+
+  private static Stream<Named<InvalidTokenTestCase>> provideInvalidTokenCases() {
+    return Stream.of(
+        Named.of(
+            "grpc",
+            new InvalidTokenTestCase(
+                CommandWithCommunicationApiStep::useGrpc,
+                assertion ->
+                    assertion
+                        .havingCause()
+                        .asInstanceOf(InstanceOfAssertFactories.type(StatusRuntimeException.class))
+                        .extracting(StatusRuntimeException::getStatus)
+                        .returns(Code.UNAUTHENTICATED, Status::getCode))),
+        Named.of(
+            "rest",
+            new InvalidTokenTestCase(
+                CommandWithCommunicationApiStep::useRest,
+                assertion ->
+                    assertion
+                        .havingCause()
+                        .asInstanceOf(InstanceOfAssertFactories.type(ProblemException.class))
+                        .returns(HttpStatus.SC_UNAUTHORIZED, ProblemException::code))));
   }
 
   private static String getKeycloakRealmAddress() {
@@ -212,7 +239,8 @@ public class GatewayAuthenticationIdentityIT {
 
   private ZeebeClientBuilder createZeebeClientBuilder() {
     return ZeebeClient.newClientBuilder()
-        .grpcAddress(ZEEBE.grpcAddress())
+        .grpcAddress(zeebe.grpcAddress())
+        .restAddress(zeebe.restAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .usePlaintext();
   }
@@ -228,14 +256,17 @@ public class GatewayAuthenticationIdentityIT {
   private static final class InvalidAuthTokenProvider implements CredentialsProvider {
 
     @Override
-    public void applyCredentials(final Metadata headers) {
-      headers.put(
-          Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Bearer youShallNotPass");
+    public void applyCredentials(final CredentialsApplier applier) {
+      applier.put("Authorization", "Bearer youShallNotPass");
     }
 
     @Override
-    public boolean shouldRetryRequest(final Throwable throwable) {
+    public boolean shouldRetryRequest(final StatusCode statusCode) {
       return false;
     }
   }
+
+  private record InvalidTokenTestCase(
+      UnaryOperator<TopologyRequestStep1> apiPicker,
+      Consumer<ThrowableAssertAlternative<?>> expectations) {}
 }

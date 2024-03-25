@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
@@ -32,15 +33,19 @@ public final class BpmnVariableMappingBehavior {
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
 
+  private final EventTriggerBehavior eventTriggerBehavior;
+
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
       final ProcessingState processingState,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final EventTriggerBehavior eventTriggerBehavior) {
     this.expressionProcessor = expressionProcessor;
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    this.eventTriggerBehavior = eventTriggerBehavior;
   }
 
   /**
@@ -100,6 +105,14 @@ public final class BpmnVariableMappingBehavior {
     if (eventTrigger != null) {
       variables = eventTrigger.getVariables();
       hasVariables = variables.capacity() > 0;
+
+      eventTriggerBehavior.processEventTriggered(
+          eventTrigger.getEventKey(),
+          processDefinitionKey,
+          processInstanceKey,
+          context.getTenantId(),
+          elementInstanceKey,
+          element.getId());
     }
 
     if (outputMappingExpression.isPresent()) {

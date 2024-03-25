@@ -24,7 +24,10 @@ public enum Profile {
   // environment profiles
   TEST("test"),
   DEVELOPMENT("dev"),
-  PRODUCTION("prod");
+  PRODUCTION("prod"),
+
+  // other
+  IDENTITY_AUTH("identity-auth");
 
   private final String id;
 

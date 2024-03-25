@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -50,12 +51,15 @@ public final class ZeebeRocksDbFactory<
 
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final AccessMetricsConfiguration metrics;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final AccessMetricsConfiguration metricsConfiguration) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
+    metrics = metricsConfiguration;
   }
 
   @Override
@@ -67,7 +71,8 @@ public final class ZeebeRocksDbFactory<
           pathName.getAbsolutePath(),
           closeables,
           rocksDbConfiguration,
-          consistencyChecksSettings);
+          consistencyChecksSettings,
+          metrics);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);

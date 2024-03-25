@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.stub.StreamObserver;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -22,13 +25,13 @@ import java.util.function.Predicate;
 
 public final class RetriableStreamingFutureImpl<C, B> extends ZeebeStreamingClientFutureImpl<C, B> {
 
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private final Consumer<StreamObserver<B>> retryAction;
 
   public RetriableStreamingFutureImpl(
       final C clientResponse,
       final Consumer<B> collector,
-      final Predicate<Throwable> retryPredicate,
+      final Predicate<StatusCode> retryPredicate,
       final Consumer<StreamObserver<B>> retryAction) {
     super(clientResponse, collector);
 
@@ -40,7 +43,12 @@ public final class RetriableStreamingFutureImpl<C, B> extends ZeebeStreamingClie
 
   @Override
   public void onError(final Throwable throwable) {
-    if (retryPredicate.test(throwable)) {
+    final Status status = Status.fromThrowable(throwable);
+
+    // if the throwable was not a status exception (i.e. it has no code), then UNKNOWN is used, so
+    // we can skip calling the predicate here
+    if (status.getCode() != Code.UNKNOWN
+        && retryPredicate.test(new GrpcStatusCode(status.getCode()))) {
       retryAction.accept(this);
     } else {
       super.onError(throwable);

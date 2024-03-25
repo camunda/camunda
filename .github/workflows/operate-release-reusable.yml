@@ -65,12 +65,12 @@ defaults:
 
 env:
   JAVA_VERSION: 17
-  LIMITS_CPU: 2
+  LIMITS_CPU: 4
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   TAG_VERSION: operate-${{ inputs.releaseVersion }}
   GITHUB_UPLOAD_RELEASE: ${{ inputs.githubUploadRelease }}
   DRY_RUN: ${{ inputs.dryRun }}
-  CREATE_A_RELEASE: ${{ inputs.dryRun == false && inputs.branch != 'stable/opensearch-8.2' && inputs.fromCommit != '' }}
+  CREATE_A_RELEASE: ${{ inputs.dryRun == false && inputs.fromCommit != '' }}
 
 jobs:
   release:
@@ -94,7 +94,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@v2.8.0
+        uses: hashicorp/vault-action@v2.8.1
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -108,15 +108,6 @@ jobs:
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
             secret/data/products/operate/release_process GITHUB_TOKEN;
-
-      - name: Calculate changelog
-        uses: dlavrenuek/conventional-changelog-action@v1.2.3
-        id: changelog
-        if: ${{ env.CREATE_A_RELEASE == 'true' }}
-        with:
-          from: ${{ inputs.fromCommit }}
-          to: HEAD
-          config-file: "${{ github.workspace }}/.github/workflows/operate-defaultChangelogConfig.json"
 
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
@@ -146,34 +137,51 @@ jobs:
 
       #########################################################################
       # Release: run Maven release
-      - name: Maven release
+      - name: Prepare Maven release
         env:
-          PUSH_CHANGES: ${{ inputs.dryRun == false }}
-          SKIP_DEPLOY: ${{ inputs.dryRun }}
           NEXT_DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
         run: |
-          cd operate
-          mvn release:prepare release:perform -P -docker \
-          -DpushChanges=$PUSH_CHANGES \
-          -DlocalCheckout=true \
+          mvn -f operate release:prepare -P -docker \
+          -DpushChanges=false \
           -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
           -Dtag=$TAG_VERSION \
           -DreleaseVersion=$RELEASE_VERSION \
           -DdevelopmentVersion=$NEXT_DEVELOPMENT_VERSION \
-          -Darguments='-Dmaven.deploy.skip=$SKIP_DEPLOY -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$SKIP_DEPLOY -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+          -Darguments='-Dmaven.deploy.skip=$DRY_RUN -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$DRY_RUN -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml'
 
-      - name: Create a release
+      # Pushing changes manually since maven-release-plugin fails in subfolders:
+      # https://issues.apache.org/jira/browse/MRELEASE-885
+      - name: Push Git changes
+        if: ${{ env.CREATE_A_RELEASE == 'true' }}
+        run: |
+          git push --tags
+          git push --all
+
+      - name: Perform Maven release
+        run: |
+          mvn -f operate release:perform -P -docker \
+          -DlocalCheckout=true \
+          -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+          -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+          -Darguments='-Dmaven.deploy.skip=$DRY_RUN -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$DRY_RUN -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml'
+
+      - name: Create a GitHub release
         if: ${{ env.CREATE_A_RELEASE == 'true' }}
         env:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
         uses: octokit/request-action@v2.1.9
         with:
           route: POST /repos/camunda/zeebe/releases
-          draft: false
+          draft: true
           name: ${{ env.TAG_VERSION }}
           tag_name: ${{ env.TAG_VERSION }}
-          body: ${{ toJSON(format('{0}', steps.changelog.outputs.body)) }}
+          generate_release_notes: true
+          make_latest: \"false\"
+
+      # Easiest way to avoid race condition
+      - name: Wait for GitHub Release
+        run: sleep 10
 
       # Upload: Upload to GitHub Release
       - name: Upload to GitHub Release
@@ -182,7 +190,7 @@ jobs:
         run: |
           ARTIFACT="camunda-operate"
 
-          cd target/checkout/distro/target
+          cd operate/target/checkout/distro/target
 
           # create checksums
           sha1sum ${ARTIFACT}-${RELEASE_VERSION}.tar.gz > ${ARTIFACT}-${RELEASE_VERSION}.tar.gz.sha1sum
@@ -197,7 +205,7 @@ jobs:
               echo "'${f}' file was created, skip upload in dryRun mode"
             elif $GITHUB_UPLOAD_RELEASE; then
               echo "Uploading '${f}' file to zeebe repo on GitHub"
-              ./github-release upload --user camunda --repo zeebe --tag ${TAG_VERSION} --name "${f}" --file "${f}"
+              ./github-release upload --user camunda --repo zeebe --tag "${TAG_VERSION}" --name "${f}" --file "${f}"
             else
               echo "'${f}' file was created, skip upload"
             fi
@@ -205,7 +213,6 @@ jobs:
 
       # Upload: Upload Docker Image
       - name: Upload Docker Image
-        if: ${{ inputs.dryRun == false }}
         env:
           IMAGE_NAME: 'camunda/operate'
           IMAGE_TAG: ${{ inputs.releaseVersion }}
@@ -228,17 +235,11 @@ jobs:
           sudo apt install -y jq
           sudo apt install -y bash
 
-          if [ -f operate.Dockerfile ]; then
-            export DOCKER_FILE_NAME=operate.Dockerfile
-          else
-            export DOCKER_FILE_NAME=Dockerfile
-          fi
-
           # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
           # able to perform the checks before pushing
           # First amd64
           docker buildx build \
-            -f $DOCKER_FILE_NAME \
+            -f operate.Dockerfile \
             -t $IMAGE_NAME:$IMAGE_TAG \
             --build-arg VERSION=$VERSION \
             --build-arg DATE=$date_time_stamp \
@@ -252,7 +253,7 @@ jobs:
 
           # Now arm64
           docker buildx build \
-            -f $DOCKER_FILE_NAME \
+            -f operate.Dockerfile \
             -t $IMAGE_NAME:$IMAGE_TAG \
             --build-arg VERSION=$VERSION \
             --build-arg DATE=$date_time_stamp \
@@ -264,24 +265,26 @@ jobs:
           export ARCHITECTURE=arm64
           bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
 
-          docker buildx build -f $DOCKER_FILE_NAME . \
-          --platform linux/arm64,linux/amd64 \
-          --build-arg VERSION=$VERSION \
-          --build-arg REVISION=$commit_hash \
-          --build-arg DATE=$date_time_stamp \
-          --provenance false \
-          -t $IMAGE_NAME:$IMAGE_TAG \
-          --push
-
-          if ${IS_LATEST}; then
-            docker buildx build -f $DOCKER_FILE_NAME . \
+          if ${CREATE_A_RELEASE}; then
+            docker buildx build -f operate.Dockerfile . \
             --platform linux/arm64,linux/amd64 \
             --build-arg VERSION=$VERSION \
             --build-arg REVISION=$commit_hash \
             --build-arg DATE=$date_time_stamp \
             --provenance false \
-            -t $IMAGE_NAME:latest \
+            -t $IMAGE_NAME:$IMAGE_TAG \
             --push
+
+            if ${IS_LATEST}; then
+              docker buildx build -f operate.Dockerfile . \
+              --platform linux/arm64,linux/amd64 \
+              --build-arg VERSION=$VERSION \
+              --build-arg REVISION=$commit_hash \
+              --build-arg DATE=$date_time_stamp \
+              --provenance false \
+              -t $IMAGE_NAME:latest \
+              --push
+            fi
           fi
 
       #########################################################################

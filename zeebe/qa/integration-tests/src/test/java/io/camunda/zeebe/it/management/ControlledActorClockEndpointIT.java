@@ -26,7 +26,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -118,8 +117,7 @@ final class ControlledActorClockEndpointIT {
   }
 
   private Builder buildRequest(final String operation) {
-    return HttpRequest.newBuilder(
-            URI.create("http://" + broker.monitoringAddress() + "/actuator/clock/" + operation))
+    return HttpRequest.newBuilder(broker.actuatorUri("clock", operation))
         .headers("Content-Type", "application/json", "Accept", "application/json");
   }
 

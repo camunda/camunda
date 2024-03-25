@@ -22,7 +22,6 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
@@ -180,9 +179,7 @@ public class RequestMapper {
   }
 
   private static String getAuthorizationToken(final ServerWebExchange context) {
-    final List<String> authorizedTenants =
-        context.getAttributeOrDefault(
-            TENANT_CTX_KEY, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds(context);
 
     return Authorization.jwtEncoder()
         .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)

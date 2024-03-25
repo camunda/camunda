@@ -27,9 +27,9 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class GatewayHealthProbeIntegrationTest {
 
-  private static final String PATH_LIVENESS_PROBE = "/actuator/health/liveness";
-  private static final String PATH_READINESS_PROBE = "/actuator/health/readiness";
-  private static final String PATH_TO_HEALTH_PROBE = "/actuator/health";
+  private static final String PATH_LIVENESS_PROBE = "/health/liveness";
+  private static final String PATH_READINESS_PROBE = "/health/readiness";
+  private static final String PATH_TO_HEALTH_PROBE = "/health";
 
   @Nested
   final class WithBrokerTest {
@@ -44,7 +44,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri(gateway.actuatorUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -79,7 +79,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri(gateway.actuatorUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -124,7 +124,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri(gateway.actuatorUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -139,7 +139,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri(gateway.actuatorUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();
@@ -173,7 +173,7 @@ public class GatewayHealthProbeIntegrationTest {
       final var gatewayServerSpec =
           new RequestSpecBuilder()
               .setContentType(ContentType.JSON)
-              .setBaseUri("http://" + gateway.monitoringAddress())
+              .setBaseUri(gateway.actuatorUri())
               .addFilter(new ResponseLoggingFilter())
               .addFilter(new RequestLoggingFilter())
               .build();

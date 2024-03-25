@@ -29,6 +29,7 @@ import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
 final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
@@ -135,7 +136,7 @@ final class StandaloneGatewaySecurityTest {
   }
 
   private StandaloneGateway buildGateway(final GatewayProperties gatewayCfg) {
-    final var config = new GatewayConfiguration(gatewayCfg);
+    final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = new GatewayClusterConfiguration();
     atomixCluster =
         new GatewayClusterConfiguration().atomixCluster(clusterConfig.clusterConfig(config));
@@ -152,7 +153,7 @@ final class StandaloneGatewaySecurityTest {
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
     return new StandaloneGateway(
-        new GatewayConfiguration(gatewayCfg),
+        config,
         null, // identity is disabled by default
         new SpringGatewayBridge(),
         actorScheduler,

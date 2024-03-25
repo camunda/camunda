@@ -16,17 +16,16 @@
 package io.camunda.zeebe.client.impl;
 
 import io.camunda.zeebe.client.CredentialsProvider;
-import io.grpc.Metadata;
 
 public final class NoopCredentialsProvider implements CredentialsProvider {
 
   @Override
-  public void applyCredentials(final Metadata headers) {
+  public void applyCredentials(final CredentialsApplier ignored) {
     // Noop
   }
 
   @Override
-  public boolean shouldRetryRequest(final Throwable throwable) {
+  public boolean shouldRetryRequest(final StatusCode statusCode) {
     return false;
   }
 }

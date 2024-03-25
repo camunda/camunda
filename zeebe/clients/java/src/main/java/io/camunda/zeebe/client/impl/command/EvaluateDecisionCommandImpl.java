@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -39,7 +40,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
 
   private final GatewayStub asyncStub;
   private final Builder builder;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private final JsonMapper jsonMapper;
   private Duration requestTimeout;
 
@@ -47,7 +48,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final ZeebeClientConfiguration config,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
@@ -72,7 +73,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;

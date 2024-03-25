@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
@@ -40,14 +41,14 @@ public final class MigrateProcessInstanceCommandImpl
   private final MigrateProcessInstanceRequest.Builder requestBuilder =
       MigrateProcessInstanceRequest.newBuilder();
   private final GatewayStub asyncStub;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
   public MigrateProcessInstanceCommandImpl(
       final long processInstanceKey,
       final GatewayStub asyncStub,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     requestBuilder.setProcessInstanceKey(processInstanceKey);
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;

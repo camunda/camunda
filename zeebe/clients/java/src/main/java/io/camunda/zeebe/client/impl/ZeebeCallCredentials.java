@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl;
 
 import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
 import io.grpc.Metadata;
 import io.grpc.SecurityLevel;
 import io.grpc.Status;
@@ -45,7 +46,7 @@ public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
         () -> {
           try {
             final Metadata headers = new Metadata();
-            credentialsProvider.applyCredentials(headers);
+            credentialsProvider.applyCredentials(CredentialsApplier.ofMetadata(headers));
             applier.apply(headers);
           } catch (final IOException e) {
             applier.fail(Status.CANCELLED.withCause(e));

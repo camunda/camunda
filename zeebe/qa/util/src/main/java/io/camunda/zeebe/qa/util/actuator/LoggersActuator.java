@@ -55,8 +55,7 @@ public interface LoggersActuator {
    * @return a new instance of {@link LoggersActuator}
    */
   static LoggersActuator of(final TestApplication<?> node) {
-    final var endpoint = String.format("http://%s/actuator/loggers", node.monitoringAddress());
-    return of(endpoint);
+    return of(node.actuatorUri("loggers").toString());
   }
 
   /**

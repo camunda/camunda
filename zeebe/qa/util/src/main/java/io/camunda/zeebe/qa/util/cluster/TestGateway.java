@@ -40,7 +40,8 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * @return the address for the gRPC gateway
    */
   default URI grpcAddress() {
-    return parsedAddress(TestZeebePort.GATEWAY);
+    final var scheme = gatewayConfig().getSecurity().isEnabled() ? "https" : "http";
+    return uri(scheme, TestZeebePort.GATEWAY);
   }
 
   /**
@@ -58,19 +59,9 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * @return the REST gateway address
    */
   default URI restAddress() {
-    return parsedAddress(TestZeebePort.REST);
-  }
-
-  /**
-   * Returns the address of this node for the given port, using the security config to determine the
-   * default scheme (http for plaintext, https as default).
-   *
-   * @param port the target port
-   * @return externally accessible address for {@code port}
-   */
-  default URI parsedAddress(final TestZeebePort port) {
-    final var scheme = gatewayConfig().getSecurity().isEnabled() ? "https" : "http";
-    return parsedAddress(scheme, port);
+    final var basePath = property("spring.webflux.base-path", String.class, "");
+    final var sslEnabled = property("server.ssl.enabled", Boolean.class, false);
+    return uri(sslEnabled ? "https" : "http", TestZeebePort.REST, basePath);
   }
 
   /**
@@ -78,7 +69,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * readiness, and startup.
    */
   default GatewayHealthActuator gatewayHealth() {
-    return GatewayHealthActuator.ofAddress(monitoringAddress());
+    return GatewayHealthActuator.of(this);
   }
 
   @Override
@@ -102,9 +93,11 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
 
   /** Returns a new pre-configured client builder for this gateway */
   default ZeebeClientBuilder newClientBuilder() {
-    final var builder = ZeebeClient.newClientBuilder().grpcAddress(grpcAddress());
+    final var builder =
+        ZeebeClient.newClientBuilder().grpcAddress(grpcAddress()).restAddress(restAddress());
     final var security = gatewayConfig().getSecurity();
-    if (security.isEnabled()) {
+    final var restSSL = property("server.ssl.enabled", Boolean.class, false);
+    if (security.isEnabled() || restSSL) {
       builder.caCertificatePath(security.getCertificateChainPath().getAbsolutePath());
     } else {
       builder.usePlaintext();

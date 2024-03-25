@@ -24,6 +24,7 @@ type OperationsMock = {
   DELETE_DECISION_DEFINITION: OperationEntity;
   MODIFY: OperationEntity;
   MIGRATE: OperationEntity;
+  MOVE: OperationEntity;
 };
 
 const OPERATIONS: OperationsMock = {
@@ -106,6 +107,16 @@ const OPERATIONS: OperationsMock = {
     id: '8ba1a9a7-8537-4af3-97dc-f7249743b20b',
     name: null,
     type: 'MIGRATE_PROCESS_INSTANCE',
+    startDate: '2023-11-22T09:02:30.178+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
+    instancesCount: 1,
+    operationsTotalCount: 1,
+    operationsFinishedCount: 1,
+  },
+  MOVE: {
+    id: '8ba1a9a7-8537-4af3-97dc-f7249743b20b',
+    name: null,
+    type: 'MOVE_TOKEN',
     startDate: '2023-11-22T09:02:30.178+0100',
     endDate: '2023-11-22T09:03:29.564+0100',
     instancesCount: 1,

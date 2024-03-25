@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -37,13 +38,13 @@ public final class JobClientImpl implements JobClient {
   private final GatewayStub asyncStub;
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
 
   public JobClientImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     this.config = config;
     this.jsonMapper = jsonMapper;

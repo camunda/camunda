@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
@@ -42,14 +43,14 @@ public final class CreateProcessInstanceWithResultCommandImpl
   private final GatewayStub asyncStub;
   private final CreateProcessInstanceRequest.Builder createProcessInstanceRequestBuilder;
   private final Builder builder;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
   public CreateProcessInstanceWithResultCommandImpl(
       final JsonMapper jsonMapper,
       final GatewayStub asyncStub,
       final CreateProcessInstanceRequest.Builder builder,
-      final Predicate<Throwable> retryPredicate,
+      final Predicate<StatusCode> retryPredicate,
       final Duration requestTimeout) {
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;

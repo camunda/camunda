@@ -80,7 +80,7 @@ describe('Filters', () => {
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
     await selectProcess({user, option: 'Big variable process'});
-    await selectFlowNode({user, option: 'StartEvent_1'});
+    await selectFlowNode({user, option: 'Start Event 1'});
 
     expect(screen.getByRole('combobox', {name: /version/i})).toBeEnabled();
     expect(screen.getByRole('combobox', {name: /flow node/i})).toBeEnabled();

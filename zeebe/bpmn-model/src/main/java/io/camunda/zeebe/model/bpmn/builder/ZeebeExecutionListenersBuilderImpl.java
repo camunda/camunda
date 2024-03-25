@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
+import java.util.function.Consumer;
 
 public class ZeebeExecutionListenersBuilderImpl<B extends AbstractBaseElementBuilder<?, ?>>
     implements ZeebeExecutionListenersBuilder<B> {
@@ -30,10 +31,7 @@ public class ZeebeExecutionListenersBuilderImpl<B extends AbstractBaseElementBui
 
   @Override
   public B zeebeStartExecutionListener(final String type, final String retries) {
-    final ZeebeExecutionListeners executionListeners =
-        elementBuilder.getCreateSingleExtensionElement(ZeebeExecutionListeners.class);
-    final ZeebeExecutionListener listener =
-        elementBuilder.createChild(executionListeners, ZeebeExecutionListener.class);
+    final ZeebeExecutionListener listener = createZeebeExecutionListener();
     listener.setEventType(ZeebeExecutionListenerEventType.start);
     listener.setType(type);
     listener.setRetries(retries);
@@ -48,10 +46,7 @@ public class ZeebeExecutionListenersBuilderImpl<B extends AbstractBaseElementBui
 
   @Override
   public B zeebeEndExecutionListener(final String type, final String retries) {
-    final ZeebeExecutionListeners executionListeners =
-        elementBuilder.getCreateSingleExtensionElement(ZeebeExecutionListeners.class);
-    final ZeebeExecutionListener listener =
-        elementBuilder.createChild(executionListeners, ZeebeExecutionListener.class);
+    final ZeebeExecutionListener listener = createZeebeExecutionListener();
     listener.setEventType(ZeebeExecutionListenerEventType.end);
     listener.setType(type);
     listener.setRetries(retries);
@@ -62,5 +57,22 @@ public class ZeebeExecutionListenersBuilderImpl<B extends AbstractBaseElementBui
   @Override
   public B zeebeEndExecutionListener(final String type) {
     return zeebeEndExecutionListener(type, ZeebeExecutionListener.DEFAULT_RETRIES);
+  }
+
+  @Override
+  public B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    final ZeebeExecutionListener listener = createZeebeExecutionListener();
+    final ExecutionListenerBuilder builder = new ExecutionListenerBuilder(listener, elementBuilder);
+
+    executionListenerBuilderConsumer.accept(builder);
+
+    return elementBuilder;
+  }
+
+  private ZeebeExecutionListener createZeebeExecutionListener() {
+    final ZeebeExecutionListeners executionListeners =
+        elementBuilder.getCreateSingleExtensionElement(ZeebeExecutionListeners.class);
+    return elementBuilder.createChild(executionListeners, ZeebeExecutionListener.class);
   }
 }

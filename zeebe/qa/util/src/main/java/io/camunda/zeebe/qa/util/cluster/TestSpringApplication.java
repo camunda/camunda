@@ -15,6 +15,8 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.prometheus.client.CollectorRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
@@ -27,25 +29,30 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Class<?> springApplication;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
+  private final Collection<String> additionalProfiles;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
 
   private ConfigurableApplicationContext springContext;
 
   public TestSpringApplication(final Class<?> springApplication) {
-    this(springApplication, new HashMap<>(), new HashMap<>());
+    this(springApplication, new HashMap<>(), new HashMap<>(), new ArrayList<>());
   }
 
   private TestSpringApplication(
       final Class<?> springApplication,
       final Map<String, Bean<?>> beans,
-      final Map<String, Object> propertyOverrides) {
+      final Map<String, Object> propertyOverrides,
+      final Collection<String> additionalProfiles) {
     this.springApplication = springApplication;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
+    this.additionalProfiles = new ArrayList<>(additionalProfiles);
+    this.additionalProfiles.add(Profile.TEST.getId());
 
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
     overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
+    overridePropertyIfAbsent("spring.lifecycle.timeout-per-shutdown-phase", "1s");
 
     if (!beans.containsKey("collectorRegistry")) {
       beans.put(
@@ -121,8 +128,24 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   @Override
+  public <V> V property(final String property, final Class<V> type, final V fallback) {
+    if (springContext == null) {
+      //noinspection unchecked
+      return (V) propertyOverrides.getOrDefault(property, fallback);
+    }
+
+    return springContext.getEnvironment().getProperty(property, type, fallback);
+  }
+
+  @Override
   public T withProperty(final String key, final Object value) {
     propertyOverrides.put(key, value);
+    return self();
+  }
+
+  @Override
+  public T withAdditionalProfile(final String profile) {
+    additionalProfiles.add(profile);
     return self();
   }
 
@@ -141,7 +164,7 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         .lazyInitialization(true)
         .registerShutdownHook(false)
         .initializers(new ContextOverrideInitializer(beans, propertyOverrides))
-        .profiles(Profile.TEST.getId())
+        .profiles(additionalProfiles.toArray(String[]::new))
         .sources(springApplication);
   }
 

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
@@ -19,6 +21,9 @@ public final class DefaultZeebeDbFactory {
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    return new ZeebeRocksDbFactory<>(new RocksDbConfiguration(), consistencyChecks);
+    return new ZeebeRocksDbFactory<>(
+        new RocksDbConfiguration(),
+        consistencyChecks,
+        new AccessMetricsConfiguration(Kind.NONE, 1));
   }
 }

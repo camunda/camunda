@@ -12,10 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
+import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
 import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
@@ -25,9 +29,12 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
+import io.camunda.zeebe.client.api.response.UnassignUserTaskResponse;
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
+import io.camunda.zeebe.client.api.response.UpdateUserTaskResponse;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -35,6 +42,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
+import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -51,11 +59,18 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
+import org.apache.hc.core5.http.HttpStatus;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -179,7 +194,10 @@ public class MultiTenancyOverIdentityIT {
                   .forStatusCode(200))
           .withNetworkAliases("identity");
 
-  @AutoCloseResource private static final TestStandaloneBroker ZEEBE = new TestStandaloneBroker();
+  @AutoCloseResource
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withAdditionalProfile(Profile.IDENTITY_AUTH);
+
   private static final String TENANT_A = "tenant-a";
   private static final String TENANT_B = "tenant-b";
 
@@ -241,22 +259,26 @@ public class MultiTenancyOverIdentityIT {
             .done();
   }
 
-  @Test
-  void shouldAuthorizeTopologyRequestWithTenantAccess() {
+  @ParameterizedTest
+  @MethodSource("provideTopologyCases")
+  void shouldAuthorizeTopologyRequestWithTenantAccess(
+      final UnaryOperator<TopologyRequestStep1> apiPicker) {
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
       // when
-      final var topology = client.newTopologyRequest().send().join();
+      final var topology = apiPicker.apply(client.newTopologyRequest()).send().join();
 
       // then
       assertThat(topology.getBrokers()).hasSize(1);
     }
   }
 
-  @Test
-  void shouldAuthorizeTopologyRequestWithoutTenantAccess() {
+  @ParameterizedTest
+  @MethodSource("provideTopologyCases")
+  void shouldAuthorizeTopologyRequestWithoutTenantAccess(
+      final UnaryOperator<TopologyRequestStep1> apiPicker) {
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
       // when
-      final var topology = client.newTopologyRequest().send().join();
+      final var topology = apiPicker.apply(client.newTopologyRequest()).send().join();
 
       // then
       assertThat(topology.getBrokers()).hasSize(1);
@@ -737,6 +759,46 @@ public class MultiTenancyOverIdentityIT {
 
   @Test
   void shouldCompleteJobForTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+
+      // when
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldCompleteUserTaskForTenant() {
     // given
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
       client
@@ -1349,6 +1411,170 @@ public class MultiTenancyOverIdentityIT {
     }
   }
 
+  @Test
+  void shouldAllowAssignUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<AssignUserTaskResponse> result =
+          clientTenantB.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectAssignUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var skeletorClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<AssignUserTaskResponse> result =
+          skeletorClient.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
+
+  @Test
+  void shouldAllowCompleteUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<CompleteUserTaskResponse> result =
+          clientTenantB.newUserTaskCompleteCommand(userTaskKey).send();
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectCompleteUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var invalidClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<CompleteUserTaskResponse> result =
+          invalidClient.newUserTaskCompleteCommand(userTaskKey).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
+
+  @Test
+  void shouldAllowUnassignUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+      clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+
+      // when
+      final Future<UnassignUserTaskResponse> result =
+          clientTenantB.newUserTaskUnassignCommand(userTaskKey).send();
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectUnassignUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var invalidClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+      clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+
+      // when
+      final Future<UnassignUserTaskResponse> result =
+          invalidClient.newUserTaskUnassignCommand(userTaskKey).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
+
+  @Test
+  void shouldAllowUpdateUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<UpdateUserTaskResponse> result =
+          clientTenantB.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectUpdateUserTaskForTenant() {
+    try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
+        final var invalidClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<UpdateUserTaskResponse> result =
+          invalidClient.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
+
+  private static Stream<Named<UnaryOperator<TopologyRequestStep1>>> provideTopologyCases() {
+    return Stream.of(
+        Named.of("grpc", TopologyRequestStep1::useGrpc),
+        Named.of("rest", TopologyRequestStep1::useRest));
+  }
+
   /**
    * Creates a new Zeebe Client with the given client ID such that Identity can provide the
    * associated tenant IDs. The credentials are cached separately for each test case.
@@ -1389,12 +1615,12 @@ public class MultiTenancyOverIdentityIT {
       // Create access rule for service account
       try (final var resultSet =
           postgres.executeQuery(
-              """
-              INSERT INTO access_rules \
-                (member_id, member_type, global) \
-              VALUES ('%s', 'APPLICATION', false) \
-              ON CONFLICT DO NOTHING \
-              RETURNING id"""
+                  """
+                  INSERT INTO access_rules \
+                    (member_id, member_type, global) \
+                  VALUES ('%s', 'APPLICATION', false) \
+                  ON CONFLICT DO NOTHING \
+                  RETURNING id"""
                   .formatted(clientId))) {
         if (!resultSet.next()) {
           throw new IllegalStateException(
@@ -1408,18 +1634,18 @@ public class MultiTenancyOverIdentityIT {
       tenantIds.forEach(
           (tenantId) ->
               postgres.execute(
-                  """
-                  INSERT INTO tenants \
-                    (name, tenant_id) \
-                  VALUES ('%s', '%s') \
-                  ON CONFLICT DO NOTHING"""
+                      """
+                      INSERT INTO tenants \
+                        (name, tenant_id) \
+                      VALUES ('%s', '%s') \
+                      ON CONFLICT DO NOTHING"""
                       .formatted(tenantId, tenantId)));
 
       // Connect tenants to access rule
       tenantIds.forEach(
           tenantId ->
               postgres.execute(
-                  """
+                      """
                       INSERT INTO access_rules_tenants \
                         (tenant_id, access_rule_id) \
                       VALUES ('%s', '%s') \

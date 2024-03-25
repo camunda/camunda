@@ -140,4 +140,26 @@ describe('FlowNodeIcon', () => {
       screen.getByText('flow-node-subprocess-event.svg'),
     ).toBeInTheDocument();
   });
+
+  it('should render compensation end event', () => {
+    render(
+      <FlowNodeIcon
+        flowNodeInstanceType=""
+        diagramBusinessObject={{
+          id: 'compensationEndEvent',
+          name: 'Compensation End Event',
+          $type: 'bpmn:EndEvent',
+          eventDefinitions: [
+            {
+              $type: 'bpmn:CompensateEventDefinition',
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText('flow-node-compensation-end-event.svg'),
+    ).toBeInTheDocument();
+  });
 });

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.util;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -23,10 +22,12 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 
 public class ZeebeResourcesHelper {
 
@@ -38,20 +39,23 @@ public class ZeebeResourcesHelper {
 
   public void waitUntilDeploymentIsDone(final long key) {
     if (getPartitions().size() > 1) {
-      waitUntil(
-          () ->
-              RecordingExporter.commandDistributionRecords()
-                  .withDistributionIntent(DeploymentIntent.CREATE)
-                  .withRecordKey(key)
-                  .withIntent(CommandDistributionIntent.FINISHED)
-                  .exists());
+      Awaitility.await("deployment is distributed")
+          .atMost(Duration.ofSeconds(getPartitions().size() * 10L))
+          .until(
+              () ->
+                  RecordingExporter.commandDistributionRecords()
+                      .withDistributionIntent(DeploymentIntent.CREATE)
+                      .withRecordKey(key)
+                      .withIntent(CommandDistributionIntent.FINISHED)
+                      .exists());
     } else {
-      waitUntil(
-          () ->
-              RecordingExporter.deploymentRecords()
-                  .withIntent(DeploymentIntent.CREATED)
-                  .withRecordKey(key)
-                  .exists());
+      Awaitility.await("deployment is created")
+          .until(
+              () ->
+                  RecordingExporter.deploymentRecords()
+                      .withIntent(DeploymentIntent.CREATED)
+                      .withRecordKey(key)
+                      .exists());
     }
   }
 
@@ -95,7 +99,7 @@ public class ZeebeResourcesHelper {
         IntStream.range(0, amount)
             .boxed()
             .map(i -> createProcessInstance(processDefinitionKey, variables))
-            .collect(Collectors.toList());
+            .toList();
 
     final List<Long> jobKeys =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -125,10 +129,15 @@ public class ZeebeResourcesHelper {
   }
 
   public long deployProcess(final BpmnModelInstance modelInstance) {
+    return deployProcess(modelInstance, "");
+  }
+
+  public long deployProcess(final BpmnModelInstance modelInstance, final String tenantId) {
     final DeploymentEvent deploymentEvent =
         client
             .newDeployResourceCommand()
             .addProcessModel(modelInstance, "process.bpmn")
+            .tenantId(tenantId)
             .send()
             .join();
     waitUntilDeploymentIsDone(deploymentEvent.getKey());
@@ -136,10 +145,16 @@ public class ZeebeResourcesHelper {
   }
 
   public long createProcessInstance(final long processDefinitionKey, final String variables) {
+    return createProcessInstance(processDefinitionKey, variables, "");
+  }
+
+  public long createProcessInstance(
+      final long processDefinitionKey, final String variables, final String tenantId) {
     return client
         .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
         .variables(variables)
+        .tenantId(tenantId)
         .send()
         .join()
         .getProcessInstanceKey();
@@ -155,9 +170,13 @@ public class ZeebeResourcesHelper {
   }
 
   public long createSingleUserTask() {
+    return createSingleUserTask("");
+  }
+
+  public long createSingleUserTask(final String tenantId) {
     final var modelInstance = createSingleUserTaskModelInstance();
-    final var processDefinitionKey = deployProcess(modelInstance);
-    final var processInstanceKey = createProcessInstance(processDefinitionKey);
+    final var processDefinitionKey = deployProcess(modelInstance, tenantId);
+    final var processInstanceKey = createProcessInstance(processDefinitionKey, "{}", tenantId);
     final var userTaskKey =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .filter(r -> processInstanceKey == r.getValue().getProcessInstanceKey())

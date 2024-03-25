@@ -27,11 +27,12 @@ import {
   RetryFailed,
   Edit,
   MigrateAlt,
+  Move,
 } from '@carbon/react/icons';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED} from 'modules/feature-flags';
 
 type OperationLabelType =
   | 'Edit'
@@ -39,7 +40,8 @@ type OperationLabelType =
   | 'Cancel'
   | 'Modify'
   | 'Delete'
-  | 'Migrate';
+  | 'Migrate'
+  | 'Batch Modification';
 
 const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
   ADD_VARIABLE: 'Edit',
@@ -51,6 +53,7 @@ const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
   DELETE_PROCESS_DEFINITION: 'Delete',
   DELETE_DECISION_DEFINITION: 'Delete',
   MIGRATE_PROCESS_INSTANCE: 'Migrate',
+  MOVE_TOKEN: 'Batch Modification',
 };
 
 type Props = {
@@ -114,8 +117,11 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         {label === 'Migrate' && (
           <MigrateAlt size={16} data-testid="operation-migrate-icon" />
         )}
+        {label === 'Batch Modification' && (
+          <Move size={16} data-testid="operation-move-icon" />
+        )}
       </Header>
-      {IS_BATCH_MOVE_MODIFICATION_ENABLED && shouldHaveIdLink ? (
+      {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED && shouldHaveIdLink ? (
         <Link
           data-testid="operation-id"
           to={{
@@ -132,7 +138,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
       )}
       {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
-        {IS_BATCH_MOVE_MODIFICATION_ENABLED && (
+        {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED && (
           <OperationEntryStatus
             isTypeDeleteProcessOrDecision={isTypeDeleteProcessOrDecision}
             label={label}
@@ -141,7 +147,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           />
         )}
 
-        {!IS_BATCH_MOVE_MODIFICATION_ENABLED && label !== 'Delete' && (
+        {!IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED && label !== 'Delete' && (
           <Link
             to={{
               pathname: Paths.processes(),
@@ -154,7 +160,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           </Link>
         )}
 
-        {!IS_BATCH_MOVE_MODIFICATION_ENABLED &&
+        {!IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED &&
           isTypeDeleteProcessOrDecision && (
             <div>{`${pluralSuffix(instancesCount, 'instance')} deleted`}</div>
           )}
