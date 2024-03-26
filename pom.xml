@@ -42,13 +42,13 @@
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.1.0-jre</guava.version>
-    <spring.boot.version>3.1.9</spring.boot.version>
+    <spring.boot.version>3.1.10</spring.boot.version>
     <spring.version>6.1.5</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
     <netty.version>4.1.108.Final</netty.version>
-    <lombok.version>1.18.30</lombok.version>
+    <lombok.version>1.18.32</lombok.version>
     <logback.version>1.5.3</logback.version>
     <slf4j.version>2.0.12</slf4j.version>
     <commons.io.version>2.15.1</commons.io.version>
@@ -373,7 +373,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.0</version>
+      <version>4.2.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -459,7 +459,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.7.0</version>
+          <version>3.7.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
