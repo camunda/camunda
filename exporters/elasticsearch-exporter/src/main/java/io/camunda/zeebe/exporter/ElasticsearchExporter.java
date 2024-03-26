@@ -349,6 +349,10 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
+  void setIndexTemplatesCreated(final boolean indexTemplatesCreated) {
+    this.indexTemplatesCreated = indexTemplatesCreated;
+  }
+
   private static class ElasticsearchRecordFilter implements Context.RecordFilter {
 
     private final ElasticsearchExporterConfiguration configuration;
