@@ -154,6 +154,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+      nextExecution = null;
+
       if (shouldRescheduleChecker) {
         final long nextDueDate = visitor.apply(taskResultBuilder);
 
@@ -163,12 +165,9 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
           final Duration delay = calculateDelayForNextRun(nextDueDate);
           final var task = scheduleService.runDelayed(delay, this);
           nextExecution = new NextExecution(nextDueDate, task);
-        } else {
-          nextExecution = null;
         }
-      } else {
-        nextExecution = null;
       }
+
       return taskResultBuilder.build();
     }
   }
