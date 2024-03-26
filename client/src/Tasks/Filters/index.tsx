@@ -18,11 +18,15 @@ import {taskFilters} from 'modules/constants/taskFilters';
 import {tracking} from 'modules/tracking';
 import {Button, Dropdown, OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark, Filter} from '@carbon/react/icons';
-import {useRef, useState} from 'react';
+import {memo, useRef, useState} from 'react';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
 import {MENU_OPTIONS_STYLES_CLASSNAME} from './constants';
 import {IS_PROCESS_CUSTOM_FILTERS_ENABLED} from 'modules/featureFlags';
 import {CustomFiltersModal} from './CustomFiltersModal';
+import {getStateLocally} from 'modules/utils/localStorage';
+import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
+import difference from 'lodash/difference';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 type FormValues = Pick<TaskFilters, 'filter' | 'sortBy'>;
 
@@ -43,47 +47,94 @@ const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'follow-up',
   'completion',
 ];
+const CUSTOM_FILTER_ITEM = {id: 'custom', text: 'Custom filter'} as const;
+const CUSTOM_FILTERS_PARAMS = [
+  'state',
+  'followUpDateFrom',
+  'followUpDateTo',
+  'dueDateFrom',
+  'dueDateTo',
+  'assigned',
+  'assignee',
+  'taskDefinitionId',
+  'candidateGroup',
+  'candidateUser',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'tenantIds',
+  'taskVariables',
+] as const;
 
 type Props = {
   disabled: boolean;
 };
 
-const Filters: React.FC<Props> = ({disabled}) => {
+const Filters: React.FC<Props> = memo(({disabled}) => {
+  const {data: currentUser} = useCurrentUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const {filter, sortBy} = useTaskFilters();
   const dropdownRef = useRef<null | HTMLButtonElement>(null);
   const initialValues = {filter, sortBy};
-  const sortOptionsOrder =
-    filter === 'completed'
-      ? COMPLETED_SORTING_OPTIONS_ORDER
-      : SORTING_OPTIONS_ORDER;
+  const sortOptionsOrder = ['completed', 'custom'].includes(filter)
+    ? COMPLETED_SORTING_OPTIONS_ORDER
+    : SORTING_OPTIONS_ORDER;
   const [isCustomFiltersModalOpen, setIsCustomFiltersModalOpen] =
     useState(false);
+  const customFilters = getStateLocally('customFilters')?.custom;
 
   return (
-    <>
-      <Container aria-label="Filters">
-        <MenuOptionsStyles />
-        <Form<FormValues>
-          onSubmit={(values) => {
-            const updatedParams = new URLSearchParams(
-              Object.assign(
-                Object.fromEntries(new URLSearchParams(searchParams).entries()),
-                values,
-              ),
-            );
+    <Container aria-label="Filters">
+      <MenuOptionsStyles />
+      <Form<FormValues>
+        onSubmit={(values) => {
+          const customFilters = getStateLocally('customFilters')?.custom;
+          const customFiltersParams =
+            values.filter === 'custom' && customFilters !== undefined
+              ? prepareCustomFiltersParams(
+                  customFilters,
+                  currentUser?.userId ?? '',
+                )
+              : {};
 
-            tracking.track({
-              eventName: 'tasks-filtered',
-              filter: values.filter,
-              sorting: values.sortBy,
+          const updatedParams =
+            Object.keys(customFiltersParams).length > 0
+              ? new URLSearchParams({
+                  ...searchParams,
+                  ...values,
+                  ...customFiltersParams,
+                })
+              : new URLSearchParams({
+                  ...searchParams,
+                  ...values,
+                });
+
+          const paramsToDelete = difference(
+            CUSTOM_FILTERS_PARAMS,
+            Object.keys(customFiltersParams),
+          );
+
+          paramsToDelete.forEach((param) => {
+            updatedParams.delete(param);
+          });
+
+          if (values.filter !== 'custom') {
+            CUSTOM_FILTERS_PARAMS.forEach((param) => {
+              updatedParams.delete(param);
             });
+          }
 
-            setSearchParams(updatedParams);
-          }}
-          initialValues={initialValues}
-        >
-          {({handleSubmit, form}) => (
+          tracking.track({
+            eventName: 'tasks-filtered',
+            filter: values.filter,
+            sorting: values.sortBy,
+          });
+
+          setSearchParams(updatedParams);
+        }}
+        initialValues={initialValues}
+      >
+        {({handleSubmit, form}) => (
+          <>
             <FormElement onSubmit={handleSubmit}>
               <Field<FormValues['filter']> name="filter">
                 {({input}) => (
@@ -93,7 +144,11 @@ const Filters: React.FC<Props> = ({disabled}) => {
                     hideLabel
                     titleText="Filter options"
                     label="Filter options"
-                    items={Object.values(taskFilters)}
+                    items={
+                      customFilters === undefined
+                        ? Object.values(taskFilters)
+                        : [...Object.values(taskFilters), CUSTOM_FILTER_ITEM]
+                    }
                     itemToString={(item) => (item ? item.text : '')}
                     disabled={disabled}
                     onChange={(event) => {
@@ -118,7 +173,11 @@ const Filters: React.FC<Props> = ({disabled}) => {
                       form.submit();
                       dropdownRef.current?.focus();
                     }}
-                    selectedItem={taskFilters[input.value]}
+                    selectedItem={
+                      input.value === 'custom'
+                        ? CUSTOM_FILTER_ITEM
+                        : taskFilters[input.value]
+                    }
                     onBlur={input.onBlur}
                     onFocus={input.onFocus}
                     size="md"
@@ -128,7 +187,7 @@ const Filters: React.FC<Props> = ({disabled}) => {
               {IS_PROCESS_CUSTOM_FILTERS_ENABLED ? (
                 <Button
                   hasIconOnly
-                  iconDescription="Custom filters"
+                  iconDescription={CUSTOM_FILTER_ITEM.text}
                   renderIcon={Filter}
                   kind="ghost"
                   size="md"
@@ -177,18 +236,24 @@ const Filters: React.FC<Props> = ({disabled}) => {
                 )}
               </Field>
             </FormElement>
-          )}
-        </Form>
-      </Container>
-      {IS_PROCESS_CUSTOM_FILTERS_ENABLED ? (
-        <CustomFiltersModal
-          isOpen={isCustomFiltersModalOpen}
-          onClose={() => setIsCustomFiltersModalOpen(false)}
-          onApply={() => setIsCustomFiltersModalOpen(false)}
-        />
-      ) : null}
-    </>
+            {IS_PROCESS_CUSTOM_FILTERS_ENABLED ? (
+              <CustomFiltersModal
+                isOpen={isCustomFiltersModalOpen}
+                onClose={() => {
+                  setIsCustomFiltersModalOpen(false);
+                }}
+                onApply={() => {
+                  setIsCustomFiltersModalOpen(false);
+                  form.change('filter', 'custom');
+                  form.submit();
+                }}
+              />
+            ) : null}
+          </>
+        )}
+      </Form>
+    </Container>
   );
-};
+});
 
 export {Filters};

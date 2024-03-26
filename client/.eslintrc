@@ -13,7 +13,10 @@
     "plugin:testing-library/react"
   ],
   "parser": "@typescript-eslint/parser",
-  "plugins": ["react-refresh", "testing-library"],
+  "plugins": [
+    "react-refresh",
+    "testing-library"
+  ],
   "rules": {
     "react-refresh/only-export-components": [
       "error",
@@ -23,6 +26,18 @@
     ],
     "import/no-anonymous-default-export": 0,
     "testing-library/no-debugging-utils": "error",
-    "no-duplicate-imports": "error"
+    "no-duplicate-imports": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "args": "all",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ]
   }
 }

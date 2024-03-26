@@ -7,6 +7,7 @@
 
 import {TaskFilters} from 'modules/hooks/useTaskFilters';
 import {TasksSearchBody} from 'modules/types';
+import {getStateLocally} from './localStorage';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
@@ -48,6 +49,8 @@ const getQueryVariables = (
     searchAfter,
     searchAfterOrEqual,
   };
+  const {taskVariables, ...parsedFilters} =
+    convertFiltersToQueryVariables(remainingFilters);
 
   switch (filter) {
     case 'assigned-to-me': {
@@ -56,7 +59,7 @@ const getQueryVariables = (
         assigned: true,
         assignee: assignee!,
         state: 'CREATED',
-        ...remainingFilters,
+        ...parsedFilters,
       };
     }
     case 'unassigned': {
@@ -64,14 +67,21 @@ const getQueryVariables = (
         ...BASE_QUERY_VARIABLES,
         assigned: false,
         state: 'CREATED',
-        ...remainingFilters,
+        ...parsedFilters,
       };
     }
     case 'completed': {
       return {
         ...BASE_QUERY_VARIABLES,
         state: 'COMPLETED',
-        ...remainingFilters,
+        ...parsedFilters,
+      };
+    }
+    case 'custom': {
+      return {
+        ...BASE_QUERY_VARIABLES,
+        ...parsedFilters,
+        taskVariables,
       };
     }
     case 'all-open':
@@ -79,10 +89,64 @@ const getQueryVariables = (
       return {
         ...BASE_QUERY_VARIABLES,
         state: 'CREATED',
-        ...remainingFilters,
+        ...parsedFilters,
       };
     }
   }
 };
+
+function convertFiltersToQueryVariables(
+  filters: Omit<TaskFilters, 'filter' | 'sortBy' | 'sortOrder'>,
+): TasksSearchBody {
+  const {
+    dueDateFrom,
+    dueDateTo,
+    followUpDateFrom,
+    followUpDateTo,
+    ...restFilters
+  } = filters;
+  const updatedFilters: TasksSearchBody = restFilters;
+  const customFilters = getStateLocally('customFilters')?.custom;
+
+  if (customFilters !== undefined && Array.isArray(customFilters?.variables)) {
+    updatedFilters.taskVariables = customFilters.variables.map<{
+      name: string;
+      value: string;
+      operator: 'eq';
+    }>(({name, value}) => ({
+      name: name!,
+      value: value!,
+      operator: 'eq',
+    }));
+  }
+
+  if (filters.dueDateFrom !== undefined) {
+    updatedFilters.dueDate = {
+      from: filters.dueDateFrom.toISOString(),
+    };
+  }
+
+  if (filters.dueDateTo !== undefined) {
+    updatedFilters.dueDate = {
+      ...updatedFilters.dueDate,
+      to: filters.dueDateTo.toISOString(),
+    };
+  }
+
+  if (filters.followUpDateFrom !== undefined) {
+    updatedFilters.followUpDate = {
+      from: filters.followUpDateFrom.toISOString(),
+    };
+  }
+
+  if (filters.followUpDateTo !== undefined) {
+    updatedFilters.followUpDate = {
+      ...updatedFilters.followUpDate,
+      to: filters.followUpDateTo.toISOString(),
+    };
+  }
+
+  return updatedFilters;
+}
 
 export {getQueryVariables};

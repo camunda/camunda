@@ -6,7 +6,7 @@
  */
 
 const IS_PROCESS_INSTANCES_ENABLED = false;
-const IS_PROCESS_CUSTOM_FILTERS_ENABLED = false;
+const IS_PROCESS_CUSTOM_FILTERS_ENABLED = true;
 const IS_OS_NOTIFICATIONS_ENABLED = true;
 
 export {

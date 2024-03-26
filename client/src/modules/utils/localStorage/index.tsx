@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {customFiltersSchema} from 'modules/custom-filters/customFiltersSchema';
 import {z} from 'zod';
 
 const validators = {
@@ -14,6 +15,9 @@ const validators = {
   hasConsentedToStartProcess: z.boolean(),
   theme: z.enum(['light', 'dark', 'system']),
   autoSelectNextTask: z.boolean(),
+  customFilters: z.object({
+    custom: customFiltersSchema,
+  }),
 } as const;
 
 type Validators = typeof validators;

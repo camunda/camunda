@@ -9,31 +9,47 @@ import {useEffect, useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import zod from 'zod';
 
-const dateFilterSchema = zod.object({
-  from: zod.string(),
-  to: zod.string(),
-});
 const searchSchema = zod.tuple([zod.string(), zod.string()]);
 
 const filtersSchema = zod.object({
   filter: zod
-    .enum(['all-open', 'unassigned', 'assigned-to-me', 'completed'])
+    .enum(['all-open', 'unassigned', 'assigned-to-me', 'completed', 'custom'])
     .default('all-open'),
   sortBy: zod
     .enum(['creation', 'follow-up', 'due', 'completion'])
     .default('creation'),
   sortOrder: zod.enum(['asc', 'desc']).default('desc'),
   state: zod.enum(['CREATED', 'COMPLETED', 'CANCELED']).optional(),
-  assigned: zod.boolean().optional(),
+  assigned: zod
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
   assignee: zod.string().optional(),
   taskDefinitionId: zod.string().optional(),
   candidateGroup: zod.string().optional(),
   candidateUser: zod.string().optional(),
   processDefinitionKey: zod.string().optional(),
   processInstanceKey: zod.string().optional(),
-  pageSize: zod.number().optional(),
-  followUpDate: dateFilterSchema.optional(),
-  dueDate: dateFilterSchema.optional(),
+  pageSize: zod.coerce.number().optional(),
+  tenantIds: zod
+    .string()
+    .transform<string[] | undefined>((value) => {
+      if (value === undefined) {
+        return undefined;
+      }
+      const parsedValue = JSON.parse(value);
+
+      if (Array.isArray(parsedValue)) {
+        return parsedValue;
+      }
+
+      return [parsedValue];
+    })
+    .optional(),
+  dueDateFrom: zod.coerce.date().optional(),
+  dueDateTo: zod.coerce.date().optional(),
+  followUpDateFrom: zod.coerce.date().optional(),
+  followUpDateTo: zod.coerce.date().optional(),
   sort: zod
     .array(
       zod.object({
@@ -81,11 +97,17 @@ function useTaskFilters(): TaskFilters {
     }
   });
 
-  const result = filtersSchema.safeParse(Object.fromEntries(params.entries()));
-  const filters = result.success ? result.data : DEFAULT_FILTERS;
+  const queryString = params.toString();
 
-  return useMemo<TaskFilters>(() => filters, [filters]);
+  return useMemo<TaskFilters>(() => {
+    const result = filtersSchema.safeParse(
+      Object.fromEntries(new URLSearchParams(queryString).entries()),
+    );
+    const filters = result.success ? result.data : DEFAULT_FILTERS;
+
+    return filters;
+  }, [queryString]);
 }
 
-export {useTaskFilters};
+export {useTaskFilters, filtersSchema};
 export type {TaskFilters};

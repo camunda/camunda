@@ -11,6 +11,12 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {HttpResponse, http} from 'msw';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 vi.mock('modules/featureFlags');
 
@@ -19,21 +25,37 @@ const createWrapper = (
     typeof MemoryRouter
   >['initialEntries'] = ['/'],
 ) => {
+  const mockClient = getMockQueryClient();
+
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <MockThemeProvider>
-      <MemoryRouter initialEntries={initialEntries}>
-        {children}
-        <LocationLog />
-      </MemoryRouter>
-    </MockThemeProvider>
+    <QueryClientProvider client={mockClient}>
+      <MockThemeProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          {children}
+          <LocationLog />
+        </MemoryRouter>
+      </MockThemeProvider>
+    </QueryClientProvider>
   );
 
   return Wrapper;
 };
 
 describe('<Filters />', () => {
+  beforeEach(() => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+    );
+  });
+
   it('should filters', () => {
     render(<Filters disabled={false} />, {
       wrapper: createWrapper(),
@@ -140,6 +162,71 @@ describe('<Filters />', () => {
 
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?filter=all-open&sortBy=creation',
+    );
+  });
+
+  it('should load custom filters', async () => {
+    const {rerender, user} = render(<Filters disabled={false} />, {
+      wrapper: createWrapper(),
+    });
+
+    await user.click(screen.getByRole('combobox', {name: 'Filter options'}));
+    expect(
+      screen.queryByRole('option', {name: /custom filter/i}),
+    ).not.toBeInTheDocument();
+
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'completed',
+        assignee: 'me',
+        bpmnProcess: 'process-1',
+      },
+    });
+
+    rerender(<Filters disabled={false} />);
+
+    expect(
+      await screen.findByRole('option', {name: /custom filter/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should write custom filter to the URL except variables', async () => {
+    storeStateLocally('customFilters', {
+      custom: {
+        status: 'completed',
+        assignee: 'me',
+        bpmnProcess: 'process-1',
+        variables: [
+          {
+            name: 'variable-1',
+            value: 'value-1',
+          },
+        ],
+      },
+    });
+    const {user} = render(<Filters disabled={false} />, {
+      wrapper: createWrapper(),
+    });
+
+    await user.click(screen.getByRole('combobox', {name: 'Filter options'}));
+    await user.click(screen.getByRole('option', {name: /custom filter/i}));
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?filter=custom&sortBy=creation&assigned=true&assignee=&state=COMPLETED&processDefinitionKey=process-1',
+    );
+  });
+
+  it('should apply new custom filters', async () => {
+    const {user} = render(<Filters disabled={false} />, {
+      wrapper: createWrapper(),
+    });
+
+    await user.click(screen.getByRole('button', {name: /custom filter/i}));
+    await user.click(screen.getByRole('radio', {name: /me/i}));
+    await user.click(screen.getByRole('button', {name: /apply/i}));
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?filter=custom&sortBy=creation&assigned=true&assignee=demo',
     );
   });
 });

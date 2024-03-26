@@ -99,8 +99,8 @@ type ProcessInstance = {
 };
 
 type DateSearch = {
-  from: string;
-  to: string;
+  from?: string;
+  to?: string;
 };
 
 type PaginationSearchPair = [string, string];
@@ -125,6 +125,12 @@ type TasksSearchBody = {
   searchAfterOrEqual?: PaginationSearchPair;
   searchBefore?: PaginationSearchPair;
   searchBeforeOrEqual?: PaginationSearchPair;
+  tenantIds?: string[];
+  taskVariables?: Array<{
+    name: string;
+    value: string;
+    operator: 'eq';
+  }>;
 };
 
 export type {

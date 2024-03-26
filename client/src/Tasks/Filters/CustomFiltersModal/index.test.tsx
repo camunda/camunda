@@ -14,6 +14,7 @@ import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {HttpResponse, http} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {createMockProcess} from 'modules/queries/useProcesses';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
@@ -272,5 +273,140 @@ describe('<CustomFiltersModal />', () => {
     expect(
       await screen.findByRole('combobox', {name: /in a group/i}),
     ).toBeInTheDocument();
+  });
+
+  it('should load from previously saved filters', async () => {
+    const mockDate = new Date('2022-01-01');
+    storeStateLocally('customFilters', {
+      custom: {
+        assignee: 'me',
+        status: 'completed',
+        bpmnProcess: 'process-0',
+        dueDateFrom: mockDate,
+        dueDateTo: mockDate,
+        followUpDateFrom: mockDate,
+        followUpDateTo: mockDate,
+        taskId: 'task-0',
+        variables: [
+          {
+            name: 'variable-0',
+            value: 'value-0',
+          },
+        ],
+      },
+    });
+
+    render(
+      <CustomFiltersModal isOpen onClose={() => {}} onApply={() => {}} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: /process/i})).toHaveValue(
+        'process-0',
+      ),
+    );
+    expect(screen.getByRole('radio', {name: /me/i})).toBeChecked();
+    expect(screen.getByRole('radio', {name: /completed/i})).toBeChecked();
+
+    const dueDateGroup = screen.getByRole('group', {name: /due date/i});
+    expect(
+      within(dueDateGroup).getByRole('textbox', {name: /from/i}),
+    ).toHaveValue('01/01/22');
+    expect(
+      within(dueDateGroup).getByRole('textbox', {name: /to/i}),
+    ).toHaveValue('01/01/22');
+
+    const followUpDateGroup = screen.getByRole('group', {name: /due date/i});
+    expect(
+      within(followUpDateGroup).getByRole('textbox', {name: /from/i}),
+    ).toHaveValue('01/01/22');
+    expect(
+      within(followUpDateGroup).getByRole('textbox', {name: /to/i}),
+    ).toHaveValue('01/01/22');
+
+    expect(screen.getByRole('textbox', {name: /task id/i})).toHaveValue(
+      'task-0',
+    );
+
+    const variablesGroup = screen.getByRole('group', {name: /task variables/i});
+
+    expect(
+      within(variablesGroup).getByRole('textbox', {name: /name/i}),
+    ).toHaveValue('variable-0');
+    expect(
+      within(variablesGroup).getByRole('textbox', {name: /value/i}),
+    ).toHaveValue('value-0');
+  });
+
+  it('should submit filters', async () => {
+    const mockOnApply = vi.fn();
+    const submitValues = {
+      assignee: 'unassigned',
+      status: 'open',
+      bpmnProcess: 'process-1',
+      dueDateFrom: new Date('2022-01-01'),
+      dueDateTo: new Date('2022-01-01'),
+      followUpDateFrom: new Date('2022-01-01'),
+      followUpDateTo: new Date('2022-01-01'),
+      taskId: 'task-0',
+      variables: [
+        {
+          name: 'variable-0',
+          value: 'value-0',
+        },
+      ],
+    } as const;
+
+    const {user} = render(
+      <CustomFiltersModal isOpen onClose={() => {}} onApply={mockOnApply} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(getStateLocally('customFilters')).toBeNull();
+
+    await user.click(screen.getByRole('radio', {name: /unassigned/i}));
+    await user.click(screen.getByRole('radio', {name: /open/i}));
+    await user.selectOptions(
+      screen.getByRole('combobox', {name: /process/i}),
+      'process-1',
+    );
+    await user.click(screen.getByRole('switch', {name: /advanced filters/i}));
+    const dueDateGroup = screen.getByRole('group', {name: /due date/i});
+    await user.type(
+      within(dueDateGroup).getByRole('textbox', {name: /from/i}),
+      '01/01/22',
+    );
+    await user.type(
+      within(dueDateGroup).getByRole('textbox', {name: /to/i}),
+      '01/01/22',
+    );
+    const followUpDateGroup = screen.getByRole('group', {
+      name: /follow up date/i,
+    });
+    await user.type(
+      within(followUpDateGroup).getByRole('textbox', {name: /from/i}),
+      '01/01/22',
+    );
+    await user.type(
+      within(followUpDateGroup).getByRole('textbox', {name: /to/i}),
+      '01/01/22',
+    );
+    await user.type(screen.getByRole('textbox', {name: /task id/i}), 'task-0');
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    await user.type(screen.getByRole('textbox', {name: /name/i}), 'variable-0');
+    await user.type(screen.getByRole('textbox', {name: /value/i}), 'value-0');
+
+    await user.click(screen.getByRole('button', {name: /apply/i}));
+
+    expect(mockOnApply).toHaveBeenCalledOnce();
+    expect(mockOnApply).toHaveBeenLastCalledWith(submitValues);
+    expect(getStateLocally('customFilters')).toEqual({
+      custom: submitValues,
+    });
   });
 });

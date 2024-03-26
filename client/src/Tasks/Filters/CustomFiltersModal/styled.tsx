@@ -10,6 +10,7 @@ import {
   ModalFooter as BaseModalFooter,
   Toggle as BaseToggle,
   FormGroup as BaseFormGroup,
+  DatePicker as BaseDatePicker,
 } from '@carbon/react';
 import styled from 'styled-components';
 
@@ -70,4 +71,27 @@ const VariableFormGroup = styled(BaseFormGroup)`
   max-width: unset;
 `;
 
-export {ModalFooter, TwoColumnGrid, VariablesGrid, Toggle, VariableFormGroup};
+const DateRangeFormGroup = styled(BaseFormGroup)`
+  display: inline-flex;
+`;
+
+const DatePicker = styled(BaseDatePicker)`
+  &,
+  & input.cds--date-picker__input.flatpickr-input {
+    inline-size: ${rem(143.5)};
+  }
+
+  &:first-of-type {
+    margin-inline-end: ${rem(1)};
+  }
+`;
+
+export {
+  ModalFooter,
+  TwoColumnGrid,
+  VariablesGrid,
+  Toggle,
+  VariableFormGroup,
+  DateRangeFormGroup,
+  DatePicker,
+};

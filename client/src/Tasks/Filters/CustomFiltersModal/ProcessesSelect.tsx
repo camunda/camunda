@@ -24,6 +24,7 @@ const ProcessesSelect: React.FC<Props> = ({
     },
     {
       enabled: !disabled,
+      refetchInterval: false,
     },
   );
   const processes = data?.processes ?? [];
