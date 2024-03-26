@@ -30,13 +30,14 @@ public class DueDateCheckerTest {
   @Test
   public void shouldNotScheduleTwoTasks() {
     // given
-    final var dueDateChecker = new DueDateChecker(100, false, (builder) -> 0L);
+    final var timerResolution = 100;
+    final var dueDateChecker = new DueDateChecker(timerResolution, false, (builder) -> 0L);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     dueDateChecker.execute(mock(TaskResultBuilder.class));
     Mockito.clearInvocations(mockScheduleService);
 
@@ -52,7 +53,8 @@ public class DueDateCheckerTest {
   @Test
   public void shouldScheduleForAnEarlierTasks() {
     // given
-    final var dueDateChecker = new DueDateChecker(100, false, (builder) -> 0L);
+    final var timerResolution = 100;
+    final var dueDateChecker = new DueDateChecker(timerResolution, false, (builder) -> 0L);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -61,7 +63,7 @@ public class DueDateCheckerTest {
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     dueDateChecker.execute(mock(TaskResultBuilder.class));
     Mockito.clearInvocations(mockScheduleService);
 
@@ -81,7 +83,8 @@ public class DueDateCheckerTest {
     final Function<TaskResultBuilder, Long> visitor =
         (builder) -> ActorClock.currentTimeMillis() + 1000L;
 
-    final var dueDateChecker = new DueDateChecker(100, false, visitor);
+    final var timerResolution = 100;
+    final var dueDateChecker = new DueDateChecker(timerResolution, false, visitor);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -90,7 +93,7 @@ public class DueDateCheckerTest {
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     Mockito.clearInvocations(mockScheduleService);
 
     // when
@@ -106,7 +109,8 @@ public class DueDateCheckerTest {
     final Function<TaskResultBuilder, Long> visitor =
         (builder) -> ActorClock.currentTimeMillis() + 1000L;
 
-    final var dueDateChecker = new DueDateChecker(100, false, visitor);
+    final var timerResolution = 100;
+    final var dueDateChecker = new DueDateChecker(timerResolution, false, visitor);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -115,7 +119,7 @@ public class DueDateCheckerTest {
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     Mockito.clearInvocations(mockScheduleService);
 
     dueDateChecker.execute(mock(TaskResultBuilder.class));
