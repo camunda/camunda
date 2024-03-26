@@ -22,7 +22,7 @@ jest.mock('./service');
 const props: ComponentProps<typeof DateFilter> = {
   filterType: 'instanceStartDate',
   filterLevel: 'instance',
-  filterData: {appliedTo: [], data: {}, type: ''},
+  filterData: {appliedTo: [], data: {}, type: 'instanceStartDate'},
   definitions: [{identifier: 'definition'}],
   close: jest.fn(),
   addFilter: jest.fn(),

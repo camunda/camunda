@@ -106,7 +106,7 @@ export function NodeDateFilter({
         flowNodeIds: isInstanceFilter ? (selectedNodes as string[]) : null,
         ...convertStateToFilter(dateRange),
       },
-      appliedTo: [applyTo?.identifier],
+      appliedTo: applyTo ? [applyTo.identifier] : [],
     });
   };
 

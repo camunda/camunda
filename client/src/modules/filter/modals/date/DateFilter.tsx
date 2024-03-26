@@ -20,11 +20,6 @@ import {convertFilterToState, convertStateToFilter, isValid} from './service';
 
 import './DateFilter.scss';
 
-interface DateFilterProps extends FilterProps<Partial<Filter>> {
-  filterType: 'instanceStartDate' | 'instanceEndDate';
-  filterLevel: 'instance';
-}
-
 type DateFilterState = FilterState & {
   applyTo?: Definition[] | string[];
 };
@@ -35,7 +30,7 @@ export default function DateFilter({
   definitions,
   addFilter,
   close,
-}: DateFilterProps) {
+}: FilterProps<Partial<Filter>>) {
   const [filterState, setFilterState] = useState<DateFilterState>(() => {
     let initialData = {};
     const defaultState = {

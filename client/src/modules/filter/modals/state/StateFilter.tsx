@@ -17,7 +17,7 @@ import {FilterProps} from '../types';
 
 import getMapping from './options';
 
-interface StateFilterProps extends FilterProps<FilterData | undefined> {
+interface StateFilterProps extends Omit<FilterProps<FilterData | undefined>, 'filterType'> {
   filterType: 'instanceState' | 'incident' | 'incidentInstances' | 'flowNodeStatus';
 }
 

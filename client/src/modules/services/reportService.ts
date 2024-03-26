@@ -7,7 +7,7 @@
 
 import {post} from 'request';
 
-import {SingleDecisionReport, SingleProcessReport} from 'types';
+import {GenericReport, SingleDecisionReport, SingleProcessReport} from 'types';
 
 interface ConfigParams {
   processDefinitionKey: string;
@@ -52,7 +52,7 @@ type ObjectType<T> = T extends 'process'
     : never;
 
 export async function evaluateReport<T extends 'process' | 'decision'>(
-  payload: ReportPayload<T>,
+  payload: ReportPayload<T> | GenericReport,
   filter = [],
   query = {}
 ): Promise<ObjectType<T>> {

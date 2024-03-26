@@ -10,6 +10,7 @@ import {ComboBox} from '@carbon/react';
 
 import {DefinitionSelection} from 'components';
 import {createEntity, evaluateReport} from 'services';
+import {NodeSelection} from 'filter';
 
 import KpiCreationModal from './KpiCreationModal';
 import {automationRate} from './templates';
@@ -32,7 +33,10 @@ jest.mock('react-router-dom', () => ({
 jest.mock('hooks', () => ({
   ...jest.requireActual('hooks'),
   useErrorHandling: () => ({
-    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+    mightFail: jest.fn().mockImplementation(async (data, cb, err, finallyFunc) => {
+      await cb(data);
+      finallyFunc?.();
+    }),
   }),
 }));
 
@@ -96,4 +100,41 @@ it('should change the target on the created kpi report', async () => {
   await node.prop('steps')[1].actions.primary.onClick();
   const params = (createEntity as jest.Mock).mock.calls[0];
   expect(params[1].data.configuration.targetValue.countProgress.target).toBe('300');
+});
+
+it('should add a filter to the kpi report', async () => {
+  const node = shallow(<KpiCreationModal {...props} />);
+
+  const firstStep = node.prop('steps')[0];
+  const stepNode = shallow(firstStep.content);
+
+  stepNode.find(ComboBox).simulate('change', {selectedItem: automationRate()});
+  stepNode
+    .find(DefinitionSelection)
+    .simulate('change', {key: 'testProcess', versions: ['1'], tenantIds: [null, 'engineering']});
+
+  await node.prop('steps')[0].actions.primary.onClick();
+  await flushPromises();
+  (evaluateReport as jest.Mock).mockClear();
+
+  let secondStep = node.prop('steps')[1];
+  let secondStepNode = shallow(secondStep.content);
+
+  secondStepNode.find('.filterTile Button').at(0).simulate('click');
+
+  secondStep = node.prop('steps')[1];
+  secondStepNode = shallow(secondStep.content);
+
+  secondStepNode.find(NodeSelection).prop('addFilter')({
+    type: 'executedFlowNodes',
+    data: {},
+    appliedTo: [],
+  });
+  const evaluatedReport = (evaluateReport as jest.Mock).mock.calls[0][0];
+  expect(evaluatedReport.data.filter.length).toBe(1);
+
+  await node.prop('steps')[1].actions.primary.onClick();
+  const params = (createEntity as jest.Mock).mock.calls[0];
+  expect(params[1].data.filter[0].type).toBe('executedFlowNodes');
+  expect(params[1].data.filter[0].filterLevel).toBe('view');
 });

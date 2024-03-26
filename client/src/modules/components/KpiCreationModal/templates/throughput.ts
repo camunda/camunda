@@ -9,28 +9,31 @@ import {t} from 'translation';
 
 import {KpiTemplate} from './types';
 
-export default function automationRate(): KpiTemplate {
+export default function throughput(): KpiTemplate {
   return {
-    name: t('report.kpiTemplates.automationRate').toString(),
-    description: t('report.kpiTemplates.automationRate-description').toString(),
+    name: t('report.kpiTemplates.throughput').toString(),
+    description: t('report.kpiTemplates.throughput-description').toString(),
     config: {
-      view: {entity: 'processInstance', properties: ['percentage']},
+      view: {entity: 'processInstance', properties: ['duration']},
       groupBy: {
         type: 'none',
         value: null,
       },
       visualization: 'number',
+      configuration: {
+        aggregationTypes: [{type: 'percentile', value: 90}],
+      },
     },
     uiConfig: {
       filters: [
         {
-          label: t('report.kpiTemplates.automationRate-filter1').toString(),
+          label: t('report.kpiTemplates.throughput-filter1').toString(),
           type: 'executedFlowNodes',
           data: {},
           filterLevel: 'view',
         },
         {
-          label: t('report.kpiTemplates.automationRate-filter1').toString(),
+          label: t('report.kpiTemplates.throughput-filter2').toString(),
           type: 'instanceEndDate',
           data: {},
           filterLevel: 'instance',

@@ -20,21 +20,15 @@ import {FilterProps} from '../types';
 
 import './NodeSelection.scss';
 
-interface NodeSelectionProps
-  extends FilterProps<{
-    values?: string[];
-    operator?: string;
-  }> {
-  filterLevel: 'view';
-  filterType: 'executedFlowNodes';
-}
-
 export default function NodeSelection({
   filterData,
   definitions,
   close,
   addFilter,
-}: NodeSelectionProps) {
+}: FilterProps<{
+  values?: string[];
+  operator?: string;
+}>) {
   const [allFlowNodes, setAllFlowNodes] = useState<string[]>([]);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
@@ -106,7 +100,7 @@ export default function NodeSelection({
         selectionPercentage < 50
           ? {operator: 'in', values: selectedNodes}
           : {operator: 'not in', values: deselectedFlowNodes},
-      appliedTo: [applyTo?.identifier],
+      appliedTo: applyTo ? [applyTo.identifier] : [],
     });
   };
 

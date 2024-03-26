@@ -1,0 +1,14 @@
+@use '@carbon/colors';
+
+.KpiCreationModal {
+  .filterTile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    button {
+      margin-left: auto;
+      width: 100px;
+    }
+  }
+}

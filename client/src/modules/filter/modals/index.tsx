@@ -13,3 +13,5 @@ export {NodeDateFilter} from './nodeDate';
 export {NodeDuration} from './NodeDuration';
 export {NodeSelection} from './NodeSelection';
 export {StateFilter} from './state';
+
+export type {FilterProps} from './types';

@@ -5,5 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as automationRate} from './automationRate';
-export {default as throughput} from './throughput';
+export {AssigneeFilter, NodeSelection, DateFilter} from './modals';
+
+export type {FilterProps} from './modals';

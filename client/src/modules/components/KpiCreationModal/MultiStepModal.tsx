@@ -35,12 +35,19 @@ export interface MultiStepModalContent {
   };
 }
 
-export interface MultiStepModalProps extends Pick<ComponentProps<typeof Modal>, 'title' | 'size'> {
+export interface MultiStepModalProps
+  extends Pick<ComponentProps<typeof Modal>, 'title' | 'size' | 'className'> {
   steps: MultiStepModalContent[];
   onClose: () => void;
 }
 
-export function MultiStepModal({title, steps, size, onClose}: MultiStepModalProps): JSX.Element {
+export function MultiStepModal({
+  title,
+  steps,
+  size,
+  onClose,
+  className,
+}: MultiStepModalProps): JSX.Element {
   const [step, setStep] = React.useState<number>(0);
   const [loading, setLoading] = React.useState<boolean>(false);
 
@@ -56,7 +63,7 @@ export function MultiStepModal({title, steps, size, onClose}: MultiStepModalProp
   } = actions || {};
 
   return (
-    <Modal size={size} open onClose={onClose} isOverflowVisible>
+    <Modal className={className} size={size} open onClose={onClose} isOverflowVisible>
       <Modal.Header title={title} />
       <Modal.Content>
         <Stack gap={8}>

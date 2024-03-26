@@ -44,7 +44,7 @@ const props: ComponentProps<typeof AssigneeFilter> = {
   addFilter: jest.fn(),
 };
 
-const filterData = {
+const filterData: ComponentProps<typeof AssigneeFilter>['filterData'] = {
   type: 'assignee',
   data: {
     operator: 'not in',

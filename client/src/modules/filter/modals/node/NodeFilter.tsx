@@ -87,7 +87,7 @@ export function NodeFilter({
     addFilter({
       type,
       data: {operator, values},
-      appliedTo: [applyTo?.identifier],
+      appliedTo: applyTo ? [applyTo.identifier] : [],
     });
   };
 
@@ -95,7 +95,13 @@ export function NodeFilter({
     return selectedNodes.length > 0;
   };
 
-  const setTypeAndOperator = ({type, operator}: {type: string; operator?: string}) => {
+  const setTypeAndOperator = ({
+    type,
+    operator,
+  }: {
+    type: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
+    operator?: string;
+  }) => {
     setType(type);
     setOperator(operator);
   };

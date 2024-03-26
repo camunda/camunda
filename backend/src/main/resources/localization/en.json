@@ -390,7 +390,15 @@
       "step": "Step {count}",
       "selectKpi": "Select process KPI",
       "automationRate": "Automation rate",
-      "automationRate-description": "The automation rate measures which percentage of the process is executed without human interaction."
+      "automationRate-description": "The automation rate measures which percentage of the process is executed without human interaction.",
+      "automationRate-filter1": "Select the end events that indicate a fully automated process",
+      "automationRate-filter2": "Select the timeframe for which to evaluate automation rate",
+      "preview": "Preview",
+      "setTargetAndFilters": "Set target and filters",
+      "throughput": "Throughput",
+      "throughput-description": "The throughput indicates how long a process on the happy path needs in average to end",
+      "throughput-filter1": "Select the end events that indicate a fully automated process",
+      "throughput-filter2": "Select the timeframe for which to evaluate throughput"
     },
     "instanceCount": {
       "appliedFilters": "Applied filters",

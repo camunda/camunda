@@ -152,7 +152,10 @@ it('should use the in operator when the more than half of the nodes are deselect
 
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(
-    <NodeSelection {...props} filterData={{type: '', appliedTo: [], data: {values: []}}} />
+    <NodeSelection
+      {...props}
+      filterData={{type: 'executedFlowNodes', appliedTo: [], data: {values: []}}}
+    />
   );
 
   const buttons = node.find(Modal.Footer).find(Button);
@@ -214,9 +217,9 @@ it('should load new xml after changing definition', async () => {
 });
 
 it('should populate selected values correctly', async () => {
-  const filterData = {
+  const filterData: ComponentProps<typeof NodeSelection>['filterData'] = {
     type: 'executedFlowNodes',
-    appliedTo: [props.definitions[0]?.identifier],
+    appliedTo: props.definitions[0] ? [props.definitions[0].identifier] : [],
     data: {operator: 'in', values: ['a']},
   };
   const spy = jest.fn();

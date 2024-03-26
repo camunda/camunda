@@ -6,7 +6,8 @@
  */
 
 import {useState} from 'react';
-import {ComboBox, Stack} from '@carbon/react';
+import {ComboBox, Stack, Tile, Button, Layer, FormLabel, TextAreaSkeleton} from '@carbon/react';
+import {CheckmarkFilled, CircleDash} from '@carbon/icons-react';
 import {useHistory, useLocation} from 'react-router-dom';
 import update from 'immutability-helper';
 
@@ -16,11 +17,14 @@ import {getCollection, createEntity, evaluateReport, ReportPayload} from 'servic
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {newReport} from 'config';
-import {SingleProcessReport} from 'types';
+import {ProcessFilter, SingleProcessReport} from 'types';
+import {DateFilter, NodeSelection, FilterProps} from 'filter';
 
-import {KpiTemplate} from './templates/types';
-import {automationRate} from './templates';
+import {KpiTemplate, defaultProcessFilter} from './templates/types';
+import {automationRate, throughput} from './templates';
 import {MultiStepModal} from './MultiStepModal';
+
+import './KpiCreationModal.scss';
 
 interface KpiCreationModalProps {
   onClose: () => void;
@@ -38,16 +42,50 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     tenantIds: [],
   });
   const [evaluatedReport, setEvaluatedReport] = useState<SingleProcessReport>();
+  const [loading, setLoading] = useState(false);
+  const [openedFilter, setOpenedFilter] = useState<defaultProcessFilter | null>(null);
   const history = useHistory();
   const {pathname} = useLocation();
-  const kpiTemplates = [automationRate()];
+  const kpiTemplates = [automationRate(), throughput()];
   const {mightFail} = useErrorHandling();
 
-  const loadReport = (reportPayload: ReportPayload<'process'>) =>
-    mightFail(evaluateReport(reportPayload, []), setEvaluatedReport, showError);
+  const loadReport = async (reportPayload: ReportPayload<'process'> | SingleProcessReport) => {
+    setLoading(true);
+    await mightFail(evaluateReport(reportPayload, []), setEvaluatedReport, showError, () =>
+      setLoading(false)
+    );
+  };
+
+  const getFilterModal = (type?: defaultProcessFilter['type']): React.FC<FilterProps<any>> => {
+    switch (type) {
+      case 'instanceStartDate':
+      case 'instanceEndDate':
+        return DateFilter;
+      case 'executedFlowNodes':
+        return NodeSelection;
+      default:
+        return () => null;
+    }
+  };
+
+  function getFilter(
+    filter: defaultProcessFilter | null = openedFilter
+  ): ProcessFilter | undefined {
+    if (!evaluatedReport || !filter) {
+      return undefined;
+    }
+
+    const {type, filterLevel} = filter;
+    return evaluatedReport.data.filter.find(
+      (filter) => filter.type === type && filter.filterLevel === filterLevel
+    );
+  }
+
+  const FilterModal = getFilterModal(openedFilter?.type);
 
   return (
     <MultiStepModal
+      className="KpiCreationModal"
       title={t('report.kpiTemplates.create').toString()}
       onClose={onClose}
       steps={[
@@ -113,6 +151,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                     ...selectedKpi.config,
                     configuration: {
                       ...newReportPayload.data?.configuration,
+                      ...selectedKpi.config.configuration,
                       targetValue: {
                         ...newReportPayload.data?.configuration?.targetValue,
                         isKpi: true,
@@ -125,6 +164,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                         ...definition,
                       },
                     ],
+                    filter: [],
                   },
                 });
               },
@@ -133,7 +173,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
         },
         {
           title: t('report.kpiTemplates.step', {count: 2}).toString(),
-          subtitle: t('report.config.goal.legend').toString(),
+          subtitle: t('report.kpiTemplates.setTargetAndFilters').toString(),
           content: (
             <Stack gap={6}>
               {evaluatedReport && (
@@ -148,8 +188,77 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                       );
                     }}
                   />
+                  <Layer>
+                    <FormLabel>{t('common.filter.label')}</FormLabel>
+                    <Stack gap={4}>
+                      {selectedKpi?.uiConfig.filters.map((filter, idx) => {
+                        const existingFilter = getFilter(filter);
+                        return (
+                          <Tile
+                            className="filterTile"
+                            key={`kpi-filter-${idx}`}
+                            id={`kpi-filter-${idx}`}
+                          >
+                            {existingFilter ? (
+                              <CheckmarkFilled size="20" />
+                            ) : (
+                              <CircleDash size="20" />
+                            )}
+                            {filter.label}
+                            <Button
+                              size="sm"
+                              kind="tertiary"
+                              onClick={() => {
+                                if (existingFilter) {
+                                  setOpenedFilter({...filter, data: existingFilter?.data});
+                                } else {
+                                  setOpenedFilter(filter);
+                                }
+                              }}
+                            >
+                              {existingFilter ? t('common.edit') : t('common.select')}
+                            </Button>
+                          </Tile>
+                        );
+                      })}
+                    </Stack>
+                  </Layer>
+                  {loading ? (
+                    <TextAreaSkeleton />
+                  ) : (
+                    <div>
+                      <FormLabel>{t('report.kpiTemplates.preview')}</FormLabel>
+                      <ReportRenderer report={evaluatedReport} />
+                    </div>
+                  )}
+                  {openedFilter && (
+                    <FilterModal
+                      definitions={evaluatedReport?.data.definitions}
+                      filterData={getFilter()}
+                      addFilter={(newFilter) => {
+                        if (!newFilter) {
+                          return;
+                        }
 
-                  <ReportRenderer report={evaluatedReport} loadReport={loadReport} />
+                        setEvaluatedReport((evaluatedReport) => {
+                          if (!evaluatedReport) {
+                            return;
+                          }
+
+                          const reportWithFilters = getReportWithFilters(
+                            {...newFilter, filterLevel: openedFilter.filterLevel},
+                            evaluatedReport
+                          );
+                          loadReport(reportWithFilters!);
+                          return reportWithFilters;
+                        });
+                        setOpenedFilter(null);
+                      }}
+                      close={() => setOpenedFilter(null)}
+                      filterType={openedFilter.type}
+                      filterLevel={openedFilter.filterLevel}
+                    />
+                  )}
                 </>
               )}
             </Stack>
@@ -158,7 +267,10 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
             primary: {
               label: t('report.kpiTemplates.create'),
               kind: 'primary',
-              disabled: !definition.key || !selectedKpi,
+              disabled:
+                !definition.key ||
+                !selectedKpi ||
+                evaluatedReport?.data.filter.length !== selectedKpi.uiConfig.filters.length,
               onClick: async () => {
                 await mightFail(
                   createEntity('report/process/single', evaluatedReport),
@@ -176,4 +288,20 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
       ]}
     />
   );
+}
+
+function getReportWithFilters(newFilter: ProcessFilter, report: SingleProcessReport) {
+  const existingFilter = report.data.filter.find(
+    (filter) => filter.type === newFilter.type && filter.filterLevel === newFilter.filterLevel
+  );
+  if (existingFilter) {
+    const index = report.data.filter.indexOf(existingFilter);
+    return update(report, {
+      data: {filter: {[index]: {$set: newFilter}}},
+    });
+  } else {
+    return update(report, {
+      data: {filter: {$push: [newFilter]}},
+    });
+  }
 }
