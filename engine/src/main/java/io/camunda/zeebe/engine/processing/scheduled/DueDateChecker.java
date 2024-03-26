@@ -87,19 +87,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     }
   }
 
-  private void scheduleInitialExecution() {
-    if (!shouldRescheduleChecker) {
-      return;
-    }
-
-    // ensure that the checker is scheduled only once. No execution is expected, but we want to
-    // cover all edge cases.
-    cancelNextExecution();
-
-    final var task = scheduleService.runDelayed(Duration.ZERO, this::execute);
-    nextExecution = new NextExecution(-1, task);
-  }
-
   /**
    * Calculates the delay for the next run so that it occurs at (or close to) due date. If due date
    * is in the future, the delay will be precise. If due date is in the past, now or in the very
@@ -124,7 +111,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     }
 
     shouldRescheduleChecker = true;
-    scheduleInitialExecution();
+    schedule(-1);
   }
 
   @Override
@@ -148,7 +135,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onResumed() {
     shouldRescheduleChecker = true;
-    scheduleInitialExecution();
+    schedule(-1);
   }
 
   /**
