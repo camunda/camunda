@@ -111,6 +111,22 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     }
   }
 
+  /**
+   * Abstracts over async and sync scheduling methods of {@link
+   * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService}.
+   */
+  @FunctionalInterface
+  interface ScheduleDelayed {
+    /**
+     * Implemented by either {@link
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayed(Duration, Task)}
+     * or {@link
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayedAsync(Duration,
+     * Task)}
+     */
+    void runDelayed(final Duration delay, final Task task);
+  }
+
   private final class TriggerEntitiesTask implements Task {
 
     @Override
@@ -132,21 +148,5 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       }
       return taskResultBuilder.build();
     }
-  }
-
-  /**
-   * Abstracts over async and sync scheduling methods of {@link
-   * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService}.
-   */
-  @FunctionalInterface
-  interface ScheduleDelayed {
-    /**
-     * Implemented by either {@link
-     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayed(Duration, Task)}
-     * or {@link
-     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayedAsync(Duration,
-     * Task)}
-     */
-    void runDelayed(final Duration delay, final Task task);
   }
 }
