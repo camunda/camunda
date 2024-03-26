@@ -112,6 +112,16 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     }
   }
 
+  /** Abstracts over async and sync scheduling methods of {@link ProcessingScheduleService}. */
+  @FunctionalInterface
+  interface ScheduleDelayed {
+    /**
+     * Implemented by either {@link ProcessingScheduleService#runDelayed(Duration, Task)} or {@link
+     * ProcessingScheduleService#runDelayedAsync(Duration, Task)}
+     */
+    void runDelayed(final Duration delay, final Task task);
+  }
+
   private final class TriggerEntitiesTask implements Task {
 
     @Override
@@ -133,15 +143,5 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       }
       return taskResultBuilder.build();
     }
-  }
-
-  /** Abstracts over async and sync scheduling methods of {@link ProcessingScheduleService}. */
-  @FunctionalInterface
-  interface ScheduleDelayed {
-    /**
-     * Implemented by either {@link ProcessingScheduleService#runDelayed(Duration, Task)} or {@link
-     * ProcessingScheduleService#runDelayedAsync(Duration, Task)}
-     */
-    void runDelayed(final Duration delay, final Task task);
   }
 }
