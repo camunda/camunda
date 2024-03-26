@@ -108,23 +108,29 @@ public class OpensearchSchemaManager implements SchemaManager {
     LOGGER.info("Updating Indices with currently-configured number of replicas...");
     final String currentConfigNumberOfReplicas =
         String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
-    indexDescriptors.forEach(
-        indexDescriptor -> {
-          final String index = indexDescriptor.getIndexName();
-          final Map<String, String> indexSettings =
-              getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
-          final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
-          if (currentIndexNumberOfReplicas == null
-              || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
-            indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-            final boolean success = setIndexSettingsFor(indexSettings, index);
-            if (success) {
-              LOGGER.debug("Successfully updated number of replicas for index {}", index);
-            } else {
-              LOGGER.warn("Failed to update number of replicas for index {}", index);
-            }
-          }
-        });
+    getIndexNames("*")
+        .forEach(
+            index -> {
+              final Map<String, String> indexSettings =
+                  getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+              final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
+              final String refreshInterval = indexSettings.get(REFRESH_INTERVAL);
+              if (currentIndexNumberOfReplicas == null
+                  || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
+                indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
+                indexSettings.put(
+                    REFRESH_INTERVAL,
+                    (refreshInterval == null)
+                        ? operateProperties.getOpensearch().getRefreshInterval()
+                        : refreshInterval);
+                final boolean success = setIndexSettingsFor(indexSettings, index);
+                if (success) {
+                  LOGGER.debug("Successfully updated number of replicas for index {}", index);
+                } else {
+                  LOGGER.warn("Failed to update number of replicas for index {}", index);
+                }
+              }
+            });
   }
 
   @Override
