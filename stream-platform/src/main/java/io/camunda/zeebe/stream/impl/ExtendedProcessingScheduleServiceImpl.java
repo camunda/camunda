@@ -47,13 +47,13 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
-  public void runDelayed(final Duration delay, final Runnable task) {
-    processorActorService.runDelayed(delay, task);
+  public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
+    return processorActorService.runDelayed(delay, task);
   }
 
   @Override
-  public void runDelayed(final Duration delay, final Task task) {
-    processorActorService.runDelayed(delay, task);
+  public ScheduledTask runDelayed(final Duration delay, final Task task) {
+    return processorActorService.runDelayed(delay, task);
   }
 
   @Override
