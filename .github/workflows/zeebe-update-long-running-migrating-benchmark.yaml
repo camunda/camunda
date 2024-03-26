@@ -9,12 +9,12 @@ jobs:
     name: Fetch latest release
     runs-on: ubuntu-latest
     outputs:
-      release-name: ${{ steps.fetch_release.outputs.release-name }}
+      release-tag: ${{ steps.fetch_release.outputs.release-tag }}
     steps:
       - name: Fetch latest release
         id: fetch_release
         run: |
-          echo "release-name=$(curl -s https://api.github.com/repos/camunda/zeebe/releases/latest | jq -r '.tag_name')" >> $GITHUB_OUTPUT
+          echo "release-tag=$(curl -s https://api.github.com/repos/camunda/zeebe/releases/latest | jq -r '.tag_name')" >> $GITHUB_OUTPUT
 
   update-long-running-migrating-benchmark:
     name: Update Long Running Migrating Benchmark with mixed load
@@ -22,10 +22,10 @@ jobs:
       - fetch-release
     uses: ./.github/workflows/zeebe-benchmark.yml
     with:
-      name: long-running-migrating-benchmark
+      name: release-rolling
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: refs/tags/${{ needs.fetch-release.outputs.release-name }}
+      ref: refs/tags/${{ needs.fetch-release.outputs.release-tag }}
       benchmark-load: >
         --set starter.rate=5
         --set worker.replicas=1
