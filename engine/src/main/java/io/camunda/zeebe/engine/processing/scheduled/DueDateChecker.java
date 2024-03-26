@@ -61,13 +61,14 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   private void scheduleInitialExecution() {
+    if (!shouldRescheduleChecker) {
+      return;
+    }
     if (nextExecution != null) {
       return;
     }
-    if (shouldRescheduleChecker) {
-      final var task = scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
-      nextExecution = new NextExecution(-1, task);
-    }
+    final var task = scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
+    nextExecution = new NextExecution(-1, task);
   }
 
   /**
