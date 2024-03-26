@@ -21,7 +21,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private ScheduleDelayed scheduleService;
   private final boolean scheduleAsync;
 
-  private boolean checkerRunning;
   private boolean shouldRescheduleChecker;
 
   private NextExecution nextExecution = null;
@@ -52,14 +51,12 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     final Duration delay = calculateDelayForNextRun(dueDate);
 
     if (shouldRescheduleChecker) {
-      if (!checkerRunning) {
+      if (nextExecution == null) {
         final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
         nextExecution = new NextExecution(dueDate, task);
-        checkerRunning = true;
       } else if (nextExecution.nextDueDate() - dueDate > timerResolution) {
         final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
         nextExecution = new NextExecution(dueDate, task);
-        checkerRunning = true;
       }
     }
   }
@@ -68,10 +65,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     if (shouldRescheduleChecker) {
       final var task = scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
       nextExecution = new NextExecution(-1, task);
-      checkerRunning = true;
     } else {
       nextExecution = null;
-      checkerRunning = false;
     }
   }
 
@@ -112,7 +107,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onResumed() {
     shouldRescheduleChecker = true;
-    if (!checkerRunning) {
+    if (nextExecution == null) {
       scheduleTriggerEntitiesTask();
     }
   }
@@ -155,14 +150,11 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
           final Duration delay = calculateDelayForNextRun(nextDueDate);
           final var task = scheduleService.runDelayed(delay, this);
           nextExecution = new NextExecution(nextDueDate, task);
-          checkerRunning = true;
         } else {
           nextExecution = null;
-          checkerRunning = false;
         }
       } else {
         nextExecution = null;
-        checkerRunning = false;
       }
       return taskResultBuilder.build();
     }
