@@ -48,14 +48,11 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     nextExecution = null;
 
-    if (shouldRescheduleChecker) {
-      final long nextDueDate = visitor.apply(taskResultBuilder);
+    final long nextDueDate = visitor.apply(taskResultBuilder);
 
-      // reschedule the runnable if there are timers left
-
-      if (nextDueDate > 0) {
-        schedule(nextDueDate);
-      }
+    // reschedule the runnable if there are timers left
+    if (nextDueDate > 0) {
+      schedule(nextDueDate);
     }
 
     return taskResultBuilder.build();
