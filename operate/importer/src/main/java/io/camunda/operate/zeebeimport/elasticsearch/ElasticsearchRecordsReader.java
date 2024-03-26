@@ -32,6 +32,7 @@ import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
+import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.util.NumberThrottleable;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.*;
@@ -105,6 +106,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
   private int countEmptyRuns;
 
+  private BackoffIdleStrategy errorStrategy;
+
   @Autowired
   @Qualifier("importThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
@@ -144,6 +147,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     // 1st sequence of next partition - 1
     maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
     countEmptyRuns = 0;
+    errorStrategy =
+        new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
   }
 
   @Override
@@ -195,6 +200,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           return;
         }
       }
+      errorStrategy.reset();
       if (autoContinue) {
         rescheduleReader(nextRunDelay);
       }
@@ -206,7 +212,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     } catch (final Exception ex) {
       LOGGER.error(ex.getMessage(), ex);
       if (autoContinue) {
-        rescheduleReader(null);
+        errorStrategy.idle();
+        rescheduleReader((int) errorStrategy.idleTime());
       }
     }
   }
@@ -313,7 +320,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       final SearchResponse searchResponse =
           withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
       checkForFailedShards(searchResponse);
-
       return createImportBatch(searchResponse);
     } catch (final ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
