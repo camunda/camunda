@@ -29,17 +29,16 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchSchemaManagerTest {
@@ -57,18 +56,8 @@ public class ElasticsearchSchemaManagerTest {
         mock(OperateElasticsearchProperties.class);
     when(operateElasticsearchProperties.getNumberOfReplicas()).thenReturn(5);
     when(operateProperties.getElasticsearch()).thenReturn(operateElasticsearchProperties);
-
-    final AbstractIndexDescriptor abstractIndexDescriptor1 = mock(AbstractIndexDescriptor.class);
-    final AbstractIndexDescriptor abstractIndexDescriptor2 = mock(AbstractIndexDescriptor.class);
-    final AbstractIndexDescriptor abstractIndexDescriptor3 = mock(AbstractIndexDescriptor.class);
-    when(abstractIndexDescriptor1.getIndexName()).thenReturn("index1");
-    when(abstractIndexDescriptor2.getIndexName()).thenReturn("index2");
-    when(abstractIndexDescriptor3.getIndexName()).thenReturn("index3");
-    ReflectionTestUtils.setField(
-        underTest,
-        "indexDescriptors",
-        Arrays.asList(
-            abstractIndexDescriptor1, abstractIndexDescriptor2, abstractIndexDescriptor3));
+    when(retryElasticsearchClient.getIndexNames("*"))
+        .thenReturn(Set.of("index1", "index2", "index3"));
 
     final Map<String, String> indexMap1 = new HashMap<>();
     indexMap1.put(NUMBERS_OF_REPLICA, "5");

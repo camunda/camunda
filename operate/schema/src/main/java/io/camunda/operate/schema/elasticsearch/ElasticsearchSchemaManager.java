@@ -87,22 +87,23 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     LOGGER.info("Updating Indices with currently-configured number of replicas...");
     final String currentConfigNumberOfReplicas =
         String.valueOf(operateProperties.getElasticsearch().getNumberOfReplicas());
-    indexDescriptors.forEach(
-        indexDescriptor -> {
-          final String index = indexDescriptor.getIndexName();
-          final Map<String, String> indexSettings = getIndexSettingsFor(index, NUMBERS_OF_REPLICA);
-          final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
-          if (currentIndexNumberOfReplicas == null
-              || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
-            indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-            final boolean success = setIndexSettingsFor(indexSettings, index);
-            if (success) {
-              LOGGER.info("Successfully updated number of replicas for index {}", index);
-            } else {
-              LOGGER.warn("Failed to update number of replicas for index {}", index);
-            }
-          }
-        });
+    getIndexNames("*")
+        .forEach(
+            index -> {
+              final Map<String, String> indexSettings =
+                  getIndexSettingsFor(index, NUMBERS_OF_REPLICA);
+              final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
+              if (currentIndexNumberOfReplicas == null
+                  || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
+                indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
+                final boolean success = setIndexSettingsFor(indexSettings, index);
+                if (success) {
+                  LOGGER.info("Successfully updated number of replicas for index {}", index);
+                } else {
+                  LOGGER.warn("Failed to update number of replicas for index {}", index);
+                }
+              }
+            });
   }
 
   @Override
