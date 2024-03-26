@@ -15,7 +15,10 @@ import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.util.AtomicUtil;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
@@ -35,7 +38,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    * Keeps track of the next execution of the checker. It is set to null when the checker has no
    * need to reschedule itself anymore.
    */
-  private NextExecution nextExecution = null;
+  private AtomicReference<NextExecution> nextExecution = new AtomicReference<>(null);
 
   public DueDateChecker(
       final long timerResolution,
@@ -72,18 +75,23 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       return;
     }
 
-    if (nextExecution == null || nextExecution.nextDueDate() - dueDate > timerResolution) {
-      cancelNextExecution();
-      final var delay = calculateDelayForNextRun(dueDate);
-      final var task = scheduleService.runDelayed(delay, this::execute);
-      nextExecution = new NextExecution(dueDate, task);
-    }
-  }
+    final var previouslyScheduled =
+        AtomicUtil.update(
+            nextExecution,
+            currentlyScheduled -> {
+              if (currentlyScheduled == null
+                  || currentlyScheduled.nextDueDate() - dueDate > timerResolution) {
+                final var delay = calculateDelayForNextRun(dueDate);
+                final var task = scheduleService.runDelayed(delay, this::execute);
+                return Optional.of(new NextExecution(dueDate, task));
+              }
+              return Optional.empty();
+            },
+            newlyScheduled -> newlyScheduled.task().cancel());
 
-  private void cancelNextExecution() {
-    if (nextExecution != null) {
-      nextExecution.task().cancel();
-      nextExecution = null;
+    if (previouslyScheduled != null) {
+      // cancel the execution that we just replaced
+      previouslyScheduled.task().cancel();
     }
   }
 
