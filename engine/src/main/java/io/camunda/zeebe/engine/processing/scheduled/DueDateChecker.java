@@ -22,8 +22,16 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private ScheduleDelayed scheduleService;
   private final boolean scheduleAsync;
 
+  /**
+   * Indicates whether the checker should reschedule itself. Controlled by the stream processor's
+   * lifecycle events, e.g. {@link #onPaused()} and {@link #onResumed()}.
+   */
   private boolean shouldRescheduleChecker;
 
+  /**
+   * Keeps track of the next execution of the checker. It is set to null when the checker has no
+   * need to reschedule itself anymore.
+   */
   private NextExecution nextExecution = null;
 
   private final long timerResolution;
