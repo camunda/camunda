@@ -162,9 +162,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
         // reschedule the runnable if there are timers left
 
         if (nextDueDate > 0) {
-          final Duration delay = calculateDelayForNextRun(nextDueDate);
-          final var task = scheduleService.runDelayed(delay, this);
-          nextExecution = new NextExecution(nextDueDate, task);
+          schedule(nextDueDate);
         }
       }
 
