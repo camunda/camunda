@@ -96,7 +96,9 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     shouldRescheduleChecker = true;
     // check if timers are due after restart
-    scheduleTriggerEntitiesTask();
+    if (nextExecution == null) {
+      scheduleTriggerEntitiesTask();
+    }
   }
 
   @Override
