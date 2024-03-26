@@ -13,7 +13,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.topology.PartitionDistributor;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +45,9 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
     final List<MemberId> sorted = new ArrayList<>(clusterMembers);
-    Collections.sort(sorted);
+    // We know that the memberIds are always integer. Sort it based on the integer value instead of
+    // string.
+    sorted.sort(Comparator.comparing(m -> Integer.parseInt(m.id())));
 
     final int length = sorted.size();
     final int count = Math.min(replicationFactor, length);
