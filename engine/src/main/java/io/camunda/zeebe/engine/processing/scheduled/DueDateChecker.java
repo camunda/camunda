@@ -62,12 +62,13 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     }
   }
 
-  private void scheduleTriggerEntitiesTask() {
+  private void scheduleInitialExecution() {
+    if (nextExecution != null) {
+      return;
+    }
     if (shouldRescheduleChecker) {
       final var task = scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
       nextExecution = new NextExecution(-1, task);
-    } else {
-      nextExecution = null;
     }
   }
 
@@ -96,9 +97,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     shouldRescheduleChecker = true;
     // check if timers are due after restart
-    if (nextExecution == null) {
-      scheduleTriggerEntitiesTask();
-    }
+    scheduleInitialExecution();
   }
 
   @Override
@@ -110,9 +109,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onResumed() {
     shouldRescheduleChecker = true;
-    if (nextExecution == null) {
-      scheduleTriggerEntitiesTask();
-    }
+    scheduleInitialExecution();
   }
 
   /**
