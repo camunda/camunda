@@ -11,9 +11,21 @@ import java.time.Duration;
 
 public interface SimpleProcessingScheduleService {
 
-  void runDelayed(Duration delay, Runnable task);
+  /**
+   * Schedules the task to run after the given delay.
+   *
+   * @implNote Can be silently ignored if the scheduling service is not ready.
+   * @return A representation of the scheduled task.
+   */
+  ScheduledTask runDelayed(Duration delay, Runnable task);
 
-  void runDelayed(Duration delay, Task task);
+  /**
+   * Schedules the task to run after the given delay.
+   *
+   * @implNote Can be silently ignored if the scheduling service is not ready.
+   * @return A representation of the scheduled task.
+   */
+  ScheduledTask runDelayed(Duration delay, Task task);
 
   /**
    * Schedule a task to execute at a fixed rate. After an initial delay, the task is executed. Once
@@ -40,4 +52,20 @@ public interface SimpleProcessingScheduleService {
   }
 
   void runAtFixedRate(final Duration delay, final Task task);
+
+  /***
+   * A task scheduled by {@link SimpleProcessingScheduleService} to give the caller control over the
+   * task, i.e. for cancellation.
+   */
+  @FunctionalInterface
+  interface ScheduledTask {
+
+    /**
+     * Cancels the scheduled execution of this task.
+     *
+     * @implNote can be a noop if the task already ran or if the task scheduling was silently
+     *     ignored.
+     */
+    void cancel();
+  }
 }

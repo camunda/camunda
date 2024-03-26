@@ -405,13 +405,35 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public void runDelayed(final Duration delay, final Runnable task) {
-      actor.submit(() -> processingScheduleService.runDelayed(delay, task));
+    public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runDelayed(delay, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
     }
 
     @Override
-    public void runDelayed(final Duration delay, final Task task) {
-      actor.submit(() -> processingScheduleService.runDelayed(delay, task));
+    public ScheduledTask runDelayed(final Duration delay, final Task task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runDelayed(delay, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
     }
 
     @Override
