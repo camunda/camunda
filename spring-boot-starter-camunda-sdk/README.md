@@ -1,5 +1,3 @@
-[![Community Extension](https://img.shields.io/badge/Community%20Extension-An%20open%20source%20community%20maintained%20project-FF4700)](https://github.com/camunda-community-hub/community) ![Compatible with: Camunda Platform 8](https://img.shields.io/badge/Compatible%20with-Camunda%20Platform%208-0072Ce) [![](https://img.shields.io/badge/Lifecycle-Stable-brightgreen)](https://github.com/Camunda-Community-Hub/community/blob/main/extension-lifecycle.md#stable-)
-
 # Spring Zeebe -> Camunda Spring SDK
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda/spring-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda/spring-zeebe)
@@ -13,36 +11,37 @@ This project allows you to leverage Zeebe within your Spring or Spring Boot envi
 
 **Getting Started**
 
--   [ Version compatibility ](#version-compatibility)
--   [ Examples ](#examples)
--   [ Quickstart ](#quickstart)
--   [ Add Spring Boot Starter to your project](#add-spring-boot-starter-to-your-project)
--   [ Configuring Camunda 8 SaaS connection ](#configuring-camunda-8-saas-connection)
--   [ Connect to Zeebe ](#connect-to-zeebe)
--   [ Deploy process models ](#deploy-process-models)
--   [ Implement job worker ](#implement-job-worker)
--   [ Run Connectors ](#run-connectors)
+- [Version compatibility](#version-compatibility)
+- [Examples](#examples)
+- [Quickstart](#quickstart)
+- [Add Spring Boot Starter to your project](#add-spring-boot-starter-to-your-project)
+- [Configuring Camunda 8 SaaS connection](#configuring-camunda-8-saas-connection)
+- [Connect to Zeebe](#connect-to-zeebe)
+- [Deploy process models](#deploy-process-models)
+- [Implement job worker](#implement-job-worker)
+- [Run Connectors](#run-connectors)
 
 **Documentation**
 
--   [ Job worker configuration options ](#job-worker-configuration-options)
--   [ Additional configuration options ](#additional-configuration-options)
--   [ Observing metrics ](#observing-metrics)
+- [Job worker configuration options](#job-worker-configuration-options)
+- [Additional configuration options](#additional-configuration-options)
+- [Observing metrics](#observing-metrics)
 
 # Getting started
+
 ## Version compatibility
 
-| Spring Zeebe version | JDK   | Camunda version | Bundled Spring Boot version | Compatible Spring Boot versions |
-|----------------------|-------|-----------------|-----------------------------|-----------------------------|
-| >= 8.4.0             | >= 17 | 8.4.0           | 3.2.0                       | >= 2.7.x, 3.x.x             |
-| >= 8.3.4             | >= 17 | 8.3.4           | 3.2.0                       | >= 2.7.x, 3.x.x             |
-| >= 8.3.0             | >= 17 | 8.3.1           | 2.7.7                       | >= 2.7.x, 3.x.x             |
-| >= 8.3.0             | >= 8  | 8.3.1           | 2.7.7                       | >= 2.7.x                    |
-| >= 8.2.4             | >= 17 | 8.2.4           | 2.7.7                       | >= 2.7.x, 3.x.x             |
-| >= 8.2.4             | >= 8  | 8.2.4           | 2.7.7                       | >= 2.7.x                    |
-| >= 8.1.15            | >= 17 | 8.1.x           | 2.7.7                       | >= 2.7.6, 3.x.x             |
-| >= 8.1.15            | >= 8  | 8.1.x           | 2.7.7                       | >= 2.7.6                    |
-| <= 8.1.14            | >= 8  | 8.1.x           | 2.7.5                       | = 2.7.x                     |
+| Spring Zeebe version |  JDK  | Camunda version | Bundled Spring Boot version | Compatible Spring Boot versions |
+|----------------------|-------|-----------------|-----------------------------|---------------------------------|
+| >= 8.4.0             | >= 17 | 8.4.0           | 3.2.0                       | >= 2.7.x, 3.x.x                 |
+| >= 8.3.4             | >= 17 | 8.3.4           | 3.2.0                       | >= 2.7.x, 3.x.x                 |
+| >= 8.3.0             | >= 17 | 8.3.1           | 2.7.7                       | >= 2.7.x, 3.x.x                 |
+| >= 8.3.0             | >= 8  | 8.3.1           | 2.7.7                       | >= 2.7.x                        |
+| >= 8.2.4             | >= 17 | 8.2.4           | 2.7.7                       | >= 2.7.x, 3.x.x                 |
+| >= 8.2.4             | >= 8  | 8.2.4           | 2.7.7                       | >= 2.7.x                        |
+| >= 8.1.15            | >= 17 | 8.1.x           | 2.7.7                       | >= 2.7.6, 3.x.x                 |
+| >= 8.1.15            | >= 8  | 8.1.x           | 2.7.7                       | >= 2.7.6                        |
+| <= 8.1.14            | >= 8  | 8.1.x           | 2.7.5                       | = 2.7.x                         |
 
 ## Examples
 
@@ -77,6 +76,7 @@ Although Spring Zeebe has a transitive dependency to the [Zeebe Java client](htt
 Note that if you are using [@Variables](https://github.com/camunda-community-hub/spring-zeebe#using-variable), compiler flag `-parameters` is required for Spring-Zeebe versions higher than 8.3.1.
 
 If using Maven:
+
 ```xml
 <build>
     <plugins>
@@ -164,7 +164,9 @@ This annotation internally uses [the Spring resource loader](https://docs.spring
 ```java
 @Deployment(resources = {"classpath:demoProcess.bpmn" , "classpath:demoProcess2.bpmn"})
 ```
+
 or define wildcard patterns:
+
 ```java
 @Deployment(resources = "classpath*:/bpmn/**/*.bpmn")
 ```
@@ -192,6 +194,7 @@ To run Connectors, you can now use the following dependency in your project:
   <version>${connectors.version}</version>
 </dependency>
 ```
+
 To configure the Connector Runtime use the properties explained here:
 [Camunda Connector Runtime](https://github.com/camunda/connectors/blob/main/connector-runtime/README.md)
 
@@ -231,7 +234,6 @@ zeebe.client.worker.default-type=foo
 ```
 
 This is used for all workers that do **not** set a task type via the annoation.
-
 
 ### Define variables to fetch
 
@@ -310,6 +312,7 @@ public void handleJobFoo(final ActivatedJob job) {
   // no need to call client.newCompleteCommand()...
 }
 ```
+
 Which is the same as:
 
 ```java
@@ -368,8 +371,6 @@ This is discussed in more detail in [this blog post about writing good workers f
 
 Note that when completing jobs programmatically, you must specify `autoComplete = false`.  Otherwise, there is a race condition between your programmatic job completion and the Spring integration job completion, this can lead to unpredictable results.
 
-
-
 ### `@CustomHeaders`
 
 You can use the `@CustomHeaders` annotation for a parameter to retrieve [custom headers](https://docs.camunda.io/docs/components/concepts/job-workers/) for a job:
@@ -406,9 +407,6 @@ public void handleJobFoo() {
 }
 ```
 
-
-
-
 ## Additional Configuration Options
 
 ### Disabling ZeebeClient
@@ -438,9 +436,7 @@ zeebe.client.cloud.auth-url=https://login.cloud.camunda.io/oauth/token
 
 As an alternative you can use the [Zeebe Client environment variables](https://docs.camunda.io/docs/components/clients/java-client/index/#bootstrapping).
 
-
 ### Default task type
-
 
 If you build a worker that only serves one thing, it might also be handy to define the worker job type globally - and not in the annotation:
 
@@ -460,7 +456,6 @@ zeebe.client.worker.threads=1
 For a full set of configuration options please see [ZeebeClientConfigurationProperties.java](spring-boot-starter-camunda/src/main/java/io/camunda/zeebe/spring/client/properties/ZeebeClientConfigurationProperties.java)
 
 Note that we generally do not advise to use a thread pool for workers, but rather implement asynchronous code, see [Writing Good Workers](https://docs.camunda.io/docs/components/best-practices/development/writing-good-workers/).
-
 
 ### ObjectMapper customization
 
@@ -503,7 +498,6 @@ This is especially useful, if you have a bigger code base including many workers
 * Load Balancing: You want to control which workers run on which instance of cluster nodes
 * Migration: There are two applications, and you want to migrate a worker from one to another. With this switch, you can simply disable workers via configuration in the old application once they are available within the new.
 
-
 ### Overriding `JobWorker` values via configuration file
 
 You can override the `JobWorker` annotation's values, as you could see in the example above where the `enabled` property is overridden:
@@ -524,7 +518,7 @@ You could also provide a custom class that can customize the `JobWorker` configu
 
 ### Enable job streaming
 
->Please read aboutt this feature in the [docs](https://docs.camunda.io/docs/apis-tools/java-client/job-worker/#job-streaming) upfront.
+> Please read aboutt this feature in the [docs](https://docs.camunda.io/docs/apis-tools/java-client/job-worker/#job-streaming) upfront.
 
 To enable job streaming on the zeebe client, you can configure it:
 
