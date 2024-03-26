@@ -22,7 +22,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private final boolean scheduleAsync;
   private final long timerResolution;
   private final Function<TaskResultBuilder, Long> visitor;
-  private final TriggerEntitiesTask triggerEntitiesTask = new TriggerEntitiesTask();
 
   private ScheduleDelayed scheduleService;
 
@@ -47,6 +46,22 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     this.visitor = visitor;
   }
 
+  private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+    nextExecution = null;
+
+    if (shouldRescheduleChecker) {
+      final long nextDueDate = visitor.apply(taskResultBuilder);
+
+      // reschedule the runnable if there are timers left
+
+      if (nextDueDate > 0) {
+        schedule(nextDueDate);
+      }
+    }
+
+    return taskResultBuilder.build();
+  }
+
   public void schedule(final long dueDate) {
 
     // We schedule only one runnable for all timers.
@@ -63,7 +78,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     if (nextExecution == null || nextExecution.nextDueDate() - dueDate > timerResolution) {
       cancelNextExecution();
       final var delay = calculateDelayForNextRun(dueDate);
-      final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
+      final var task = scheduleService.runDelayed(delay, this::execute);
       nextExecution = new NextExecution(dueDate, task);
     }
   }
@@ -84,7 +99,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     // cover all edge cases.
     cancelNextExecution();
 
-    final var task = scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
+    final var task = scheduleService.runDelayed(Duration.ZERO, this::execute);
     nextExecution = new NextExecution(-1, task);
   }
 
@@ -156,25 +171,5 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
      * ProcessingScheduleService#runDelayedAsync(Duration, Task)}
      */
     ScheduledTask runDelayed(final Duration delay, final Task task);
-  }
-
-  private final class TriggerEntitiesTask implements Task {
-
-    @Override
-    public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-      nextExecution = null;
-
-      if (shouldRescheduleChecker) {
-        final long nextDueDate = visitor.apply(taskResultBuilder);
-
-        // reschedule the runnable if there are timers left
-
-        if (nextDueDate > 0) {
-          schedule(nextDueDate);
-        }
-      }
-
-      return taskResultBuilder.build();
-    }
   }
 }
