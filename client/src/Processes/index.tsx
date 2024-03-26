@@ -320,37 +320,39 @@ const Processes: React.FC = observer(() => {
           <ProcessTilesContainer>
             <ProcessTilesContainerInner>
               {!isInitialLoading && processes.length === 0 ? (
-                <C3EmptyState
-                  icon={
-                    isFiltered
-                      ? undefined
-                      : {path: EmptyMessageImage, altText: ''}
-                  }
-                  heading={
-                    isFiltered
-                      ? 'We could not find any process with that name'
-                      : 'No published processes yet'
-                  }
-                  description={
-                    <span data-testid="empty-message">
-                      Contact your process administrator to publish processes or
-                      learn how to publish processes{' '}
-                      <Link
-                        href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        inline
-                        onClick={() => {
-                          tracking.track({
-                            eventName: 'processes-empty-message-link-clicked',
-                          });
-                        }}
-                      >
-                        here
-                      </Link>
-                    </span>
-                  }
-                />
+                <Layer>
+                  <C3EmptyState
+                    icon={
+                      isFiltered
+                        ? undefined
+                        : {path: EmptyMessageImage, altText: ''}
+                    }
+                    heading={
+                      isFiltered
+                        ? 'We could not find any process with that name'
+                        : 'No published processes yet'
+                    }
+                    description={
+                      <span data-testid="empty-message">
+                        Contact your process administrator to publish processes
+                        or learn how to publish processes{' '}
+                        <Link
+                          href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          inline
+                          onClick={() => {
+                            tracking.track({
+                              eventName: 'processes-empty-message-link-clicked',
+                            });
+                          }}
+                        >
+                          here
+                        </Link>
+                      </span>
+                    }
+                  />
+                </Layer>
               ) : (
                 <Grid narrow as={Layer}>
                   {isInitialLoading
