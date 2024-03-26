@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.scheduled;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -23,7 +24,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private boolean checkerRunning;
   private boolean shouldRescheduleChecker;
 
-  private long nextDueDate = -1L;
+  private NextExecution nextExecution = null;
+
   private final long timerResolution;
   private final Function<TaskResultBuilder, Long> nextDueDateSupplier;
   private final TriggerEntitiesTask triggerEntitiesTask;
@@ -51,20 +53,24 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     if (shouldRescheduleChecker) {
       if (!checkerRunning) {
-        scheduleService.runDelayed(delay, triggerEntitiesTask);
-        nextDueDate = dueDate;
+        final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
+        nextExecution = new NextExecution(dueDate, task);
         checkerRunning = true;
-      } else if (nextDueDate - dueDate > timerResolution) {
-        scheduleService.runDelayed(delay, triggerEntitiesTask);
-        nextDueDate = dueDate;
+      } else if (nextExecution.nextDueDate() - dueDate > timerResolution) {
+        final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
+        nextExecution = new NextExecution(dueDate, task);
+        checkerRunning = true;
       }
     }
   }
 
   private void scheduleTriggerEntitiesTask() {
     if (shouldRescheduleChecker) {
-      scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
+      final var task = scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
+      nextExecution = new NextExecution(-1, task);
+      checkerRunning = true;
     } else {
+      nextExecution = null;
       checkerRunning = false;
     }
   }
@@ -100,7 +106,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onPaused() {
     shouldRescheduleChecker = false;
-    nextDueDate = -1;
+    nextExecution = null;
   }
 
   @Override
@@ -110,6 +116,15 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       scheduleTriggerEntitiesTask();
     }
   }
+
+  /**
+   * Keeps track of the next execution of the checker.
+   *
+   * @param nextDueDate The due date of the next timer to be checked or -1 on the first execution,
+   *     i.e. we don't know the next due date yet.
+   * @param task The scheduled task for the next execution, can be used for canceling the task.
+   */
+  private record NextExecution(long nextDueDate, ScheduledTask task) {}
 
   /**
    * Abstracts over async and sync scheduling methods of {@link
@@ -124,7 +139,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
      * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayedAsync(Duration,
      * Task)}
      */
-    void runDelayed(final Duration delay, final Task task);
+    ScheduledTask runDelayed(final Duration delay, final Task task);
   }
 
   private final class TriggerEntitiesTask implements Task {
@@ -132,18 +147,21 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
       if (shouldRescheduleChecker) {
-        nextDueDate = nextDueDateSupplier.apply(taskResultBuilder);
+        final long nextDueDate = nextDueDateSupplier.apply(taskResultBuilder);
 
         // reschedule the runnable if there are timers left
 
         if (nextDueDate > 0) {
           final Duration delay = calculateDelayForNextRun(nextDueDate);
-          scheduleService.runDelayed(delay, this);
+          final var task = scheduleService.runDelayed(delay, this);
+          nextExecution = new NextExecution(nextDueDate, task);
           checkerRunning = true;
         } else {
+          nextExecution = null;
           checkerRunning = false;
         }
       } else {
+        nextExecution = null;
         checkerRunning = false;
       }
       return taskResultBuilder.build();
