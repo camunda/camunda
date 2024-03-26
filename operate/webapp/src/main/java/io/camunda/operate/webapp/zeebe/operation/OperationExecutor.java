@@ -22,6 +22,7 @@ import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
@@ -45,12 +46,16 @@ public class OperationExecutor extends Thread {
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationExecutor.class);
 
   private boolean shutdown = false;
+  private final int defaultBackoff = 2000;
 
   @Autowired private List<OperationHandler> handlers;
 
   @Autowired private BatchOperationWriter batchOperationWriter;
 
   @Autowired private OperateProperties operateProperties;
+
+  private final BackoffIdleStrategy errorStrategy =
+      new BackoffIdleStrategy(defaultBackoff, 1.2f, 10_000);
 
   @Autowired
   @Qualifier("operationsThreadPoolExecutor")
@@ -76,19 +81,19 @@ public class OperationExecutor extends Thread {
       try {
         final List<Future<?>> operations = executeOneBatch();
 
-        // TODO backoff strategy
         if (operations.size() == 0) {
 
           notifyExecutionFinishedListeners();
-          sleepFor(2000);
+          errorStrategy.reset();
+          sleepFor(defaultBackoff);
         }
 
       } catch (Exception ex) {
         // retry
         LOGGER.error(
             "Something went wrong, while executing operations batch. Will be retried.", ex);
-
-        sleepFor(2000);
+        errorStrategy.idle();
+        sleepFor(errorStrategy.idleTime());
       }
     }
   }
