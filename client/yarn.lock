@@ -300,18 +300,26 @@
   resolved "https://registry.yarnpkg.com/@carbon/colors/-/colors-11.20.1.tgz#15bf97aa075674f9a198c0ce89f7dadde1d0499c"
   integrity sha512-CiW+05/LaYCZ8LW5ioEz4EL0DBxI0psZGdiA7leQSH/Wvec7mvEANhze3lYhfx3ZH700Q4Y2O9/roW+yLB1CQw==
 
-"@carbon/elements@11.41.0":
-  version "11.41.0"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.41.0.tgz#eba2fe3c2e5a11b777b7dd1b9dac3c3261a50b76"
-  integrity sha512-vS7e1NeJjssOk06pLdyYqedl9SPgW4JC46u2bMts3CbkOALXpHIpGeX574Hn43j+5GR55IsurmvyxoXtW2sutg==
+"@carbon/colors@^11.21.0":
+  version "11.21.0"
+  resolved "https://registry.yarnpkg.com/@carbon/colors/-/colors-11.21.0.tgz#46be56ce835247dd6bb6723fd353f5d415ed3201"
+  integrity sha512-qvVcguNL+rOfdOv7NsJPLh6uVvRycO0e3HDl3SD5B/QhviUu76tAHpm23xwe0BDqVHGnmC71xQsUKXL5rOsMPg==
   dependencies:
-    "@carbon/colors" "^11.20.0"
-    "@carbon/grid" "^11.21.0"
-    "@carbon/icons" "^11.37.0"
-    "@carbon/layout" "^11.20.0"
-    "@carbon/motion" "^11.16.0"
-    "@carbon/themes" "^11.32.0"
-    "@carbon/type" "^11.25.0"
+    "@ibm/telemetry-js" "^1.2.1"
+
+"@carbon/elements@11.42.1":
+  version "11.42.1"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.42.1.tgz#2f21bbd4bf93a4ce5cac6636a7534e7d95ca6e27"
+  integrity sha512-Ad2y+O/qcAdmmRcY+Zv3gDUWqwht1UYkDwi+VyzH3+EKnpSHZa4pDTogUOIa2QNRF7rG+LrwkbgNgkd7cRQgKQ==
+  dependencies:
+    "@carbon/colors" "^11.21.0"
+    "@carbon/grid" "^11.22.0"
+    "@carbon/icons" "^11.38.0"
+    "@carbon/layout" "^11.21.0"
+    "@carbon/motion" "^11.17.0"
+    "@carbon/themes" "^11.33.1"
+    "@carbon/type" "^11.26.0"
+    "@ibm/telemetry-js" "^1.2.1"
 
 "@carbon/feature-flags@^0.16.0":
   version "0.16.0"
@@ -330,6 +338,14 @@
   dependencies:
     "@carbon/layout" "^11.20.1"
 
+"@carbon/grid@^11.22.0":
+  version "11.22.0"
+  resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.22.0.tgz#8f63255618abc51d2d6ada6eacd5ea38a2ee9dba"
+  integrity sha512-b5R4LMRatZ0ZmRh+outCkPIFIF+gvM3sPjC0NAuAc2CQ6lAZP07/m5f8TOX9YAo10kE1j63hU+unEzs6lAHPRA==
+  dependencies:
+    "@carbon/layout" "^11.21.0"
+    "@ibm/telemetry-js" "^1.2.1"
+
 "@carbon/icon-helpers@^10.46.0":
   version "10.46.0"
   resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.46.0.tgz#b4e3f2568b9f9d9c33bdab4b02f162fb7357dd60"
@@ -344,20 +360,36 @@
     "@carbon/telemetry" "0.1.0"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.37.0":
-  version "11.37.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.37.0.tgz#808bef203cb49f9dd5220d67651a19b3e1178a7d"
-  integrity sha512-0YVFxSrSdCYpDvyjZfJNPhWF3LPG5enaKhWGdoGmvbqiWqkhkd0L7RlOmYN/VJKTrGiAEIuo+g6iWM9mbJaEGg==
+"@carbon/icons@^11.38.0":
+  version "11.38.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.38.0.tgz#5ad1d7a135098dd5e265dc8629238d6af7474166"
+  integrity sha512-8ZL+7UyE01/MQxq6frmcty7t86pLV0z9wXLo9PC14nsk3eSs0Zbh5aw2PUv7scD4eNDVbEGg8UI7LUqCO3as9Q==
+  dependencies:
+    "@ibm/telemetry-js" "^1.2.1"
 
 "@carbon/layout@^11.20.0", "@carbon/layout@^11.20.1":
   version "11.20.1"
   resolved "https://registry.yarnpkg.com/@carbon/layout/-/layout-11.20.1.tgz#42394091af8b14713fa1c0e2c60621809a0e43f0"
   integrity sha512-l4Hh/lghptUykZ1r+6vHYGV3R8jEx2F5A3wcgUnMeAuw369/qwmy5VtTmSUqD8Krw7tsOb5v4S60FJaZLzBvXA==
 
+"@carbon/layout@^11.21.0":
+  version "11.21.0"
+  resolved "https://registry.yarnpkg.com/@carbon/layout/-/layout-11.21.0.tgz#a8c8ccf2be30f777170653dd6c9ec40d9af84b21"
+  integrity sha512-R0EEMIzdsWzF2rphzTwDJ6ywnSvDxvZwffBKn7+7bBcTWu0cp/XFeG1UzRL0LoZ25Ixv/aEQYCkoDebgUMfrfQ==
+  dependencies:
+    "@ibm/telemetry-js" "^1.2.1"
+
 "@carbon/motion@^11.16.0":
   version "11.16.1"
   resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.16.1.tgz#91d6cd57cc4402d391ac55e3985f96d051a749be"
   integrity sha512-e865DvKnoxg41/L3g2zaNc5+xA+OXk0dNfOmG9MpzWBMlViCYUnCYCVKuyhdT7YSbRJuBuXXsisAVIJzBkEQKQ==
+
+"@carbon/motion@^11.17.0":
+  version "11.17.0"
+  resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.17.0.tgz#fbc776373473764d8d590dc3be5ae88ef98a6191"
+  integrity sha512-/EXBzFU5hbVxO7yqf/VREesjy8Z6GxhfXjV9etBtj84Z4H460e0CN1z+5KDLpKyq6zVmRnLlFmxVmZgyHwMTfA==
+  dependencies:
+    "@ibm/telemetry-js" "^1.2.1"
 
 "@carbon/react@1.50.0":
   version "1.50.0"
@@ -415,6 +447,17 @@
     "@carbon/type" "^11.25.0"
     color "^4.0.0"
 
+"@carbon/themes@^11.33.1":
+  version "11.33.1"
+  resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.33.1.tgz#b9dc64d73c4421269423e98c5b124ea7929548cd"
+  integrity sha512-pEsqqJBdt3ttpZY1gKydqZ7TL80FPuklnfuNNIFKqVTWnQedFZVAkEnmRKiZTmdT9dMj9Hr2nng92IyGS0rFDA==
+  dependencies:
+    "@carbon/colors" "^11.21.0"
+    "@carbon/layout" "^11.21.0"
+    "@carbon/type" "^11.26.0"
+    "@ibm/telemetry-js" "^1.2.1"
+    color "^4.0.0"
+
 "@carbon/type@^11.25.0":
   version "11.25.1"
   resolved "https://registry.yarnpkg.com/@carbon/type/-/type-11.25.1.tgz#6c19306ca494c92fa7fb28e9f9eb09b6a1ed5e79"
@@ -422,6 +465,15 @@
   dependencies:
     "@carbon/grid" "^11.21.1"
     "@carbon/layout" "^11.20.1"
+
+"@carbon/type@^11.26.0":
+  version "11.26.0"
+  resolved "https://registry.yarnpkg.com/@carbon/type/-/type-11.26.0.tgz#8e23f7d1e890830b2da7fdd10cd10e63175cbc6f"
+  integrity sha512-Q9ehK/Q68UZjlLE4L+8AfhkNObCksCoGvPb2IMe1IkVoCjJI6QbG3yugGm4D8nfTbs3fGTGAKs4+6HkbkW8Lyw==
+  dependencies:
+    "@carbon/grid" "^11.22.0"
+    "@carbon/layout" "^11.21.0"
+    "@ibm/telemetry-js" "^1.2.1"
 
 "@codemirror/autocomplete@^6.10.1":
   version "6.10.2"
@@ -683,6 +735,11 @@
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.2.1.tgz#0b12801a683af23bcd2b90d1b83f332b3cca7f0e"
   integrity sha512-ZNuqoclscha2RC089RBPkiGzv8g+mQfBOnHDJZEGBFrvsXg0B9lfRGFBSLzCuTR5nFDqVFYb6XqMRu36EiHIDA==
+
+"@ibm/telemetry-js@^1.2.1":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.3.0.tgz#321f2ed4bbbc78d69dc1ee9cb6f83d2d2af9baef"
+  integrity sha512-9gIkyF2B9RizWN6rsdQN76DN6D+/Xbr4HGTwm6EUujfXvEVtWbf4jzxDFwKvZkeTC2tjHpkUNJQKdivbMKt8yg==
 
 "@inquirer/confirm@^3.0.0":
   version "3.0.0"
