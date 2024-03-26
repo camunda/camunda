@@ -287,10 +287,10 @@
   dependencies:
     statuses "^2.0.1"
 
-"@camunda/camunda-composite-components@0.6.0":
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.0.tgz#47492804d7528940d09c94268fd7c8158ece5e96"
-  integrity sha512-ASq7+rPuR73K7xeqCvCBhV8X7SD5RcRer0QmCkE2IrQ3PJUC6FVRdJswqlxgPBD/6aBSCF0icUrSn+rPZP/6Dw==
+"@camunda/camunda-composite-components@0.6.1":
+  version "0.6.1"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.1.tgz#d6cbca03272493e6e1e2f13f1149744cb6f08b8a"
+  integrity sha512-68rMhPgkpMLBu8IFag5cbFULQSNeVNZ6IJlLSfELuFQln23OcQlVYG+28zMSKwVKGB1G/hkpDsXTa2NLdEd1tA==
   dependencies:
     jwt-decode "4.0.0"
     react-markdown "8.0.7"
@@ -1361,13 +1361,21 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@18.2.71":
+"@types/react@*":
   version "18.2.71"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.71.tgz#77c3b97b02014bf351b21b684f80273a3a343f96"
   integrity sha512-PxEsB9OjmQeYGffoWnYAd/r5FiJuUw2niFQHPc2v2idwh8wGPkkYzOHuinNJJY6NZqfoTCiOIizDOz38gYNsyw==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
+    csstype "^3.0.2"
+
+"@types/react@18.2.72":
+  version "18.2.72"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.72.tgz#3341a6d0746d1c7d8510810319323850c04bd6ed"
+  integrity sha512-/e7GWxGzXQF7OJAua7UAYqYi/4VpXEfbGtmYQcAQwP3SjjjAXfybTf/JK5S+SaetB/ChXl8Y2g1hCsj7jDXxcg==
+  dependencies:
+    "@types/prop-types" "*"
     csstype "^3.0.2"
 
 "@types/responselike@^1.0.0":
