@@ -63,9 +63,17 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     }
 
     if (nextExecution == null || nextExecution.nextDueDate() - dueDate > timerResolution) {
+      cancelNextExecution();
       final var delay = calculateDelayForNextRun(dueDate);
       final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
       nextExecution = new NextExecution(dueDate, task);
+    }
+  }
+
+  private void cancelNextExecution() {
+    if (nextExecution != null) {
+      nextExecution.task().cancel();
+      nextExecution = null;
     }
   }
 
@@ -73,6 +81,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     if (!shouldRescheduleChecker) {
       return;
     }
+
     if (nextExecution != null) {
       return;
     }
@@ -110,19 +119,19 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onClose() {
     shouldRescheduleChecker = false;
-    nextExecution = null;
+    cancelNextExecution();
   }
 
   @Override
   public void onFailed() {
     shouldRescheduleChecker = false;
-    nextExecution = null;
+    cancelNextExecution();
   }
 
   @Override
   public void onPaused() {
     shouldRescheduleChecker = false;
-    nextExecution = null;
+    cancelNextExecution();
   }
 
   @Override
