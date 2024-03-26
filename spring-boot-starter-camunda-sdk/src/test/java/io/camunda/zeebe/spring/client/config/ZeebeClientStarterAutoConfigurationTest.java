@@ -19,9 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.CamundaAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +38,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(SpringExtension.class)
 @TestPropertySource(
     properties = {
-      "zeebe.client.broker.gatewayAddress=http://localhost:1234",
+      "zeebe.client.broker.gatewayAddress=localhost:1234",
+      "zeebe.client.broker.grpcAddress=https://localhost:1234",
+      "zeebe.client.broker.restAddress=https://localhost:8080",
       "zeebe.client.requestTimeout=99s",
       "zeebe.client.job.timeout=99s",
       "zeebe.client.job.pollInterval=99s",
@@ -85,6 +89,23 @@ public class ZeebeClientStarterAutoConfigurationTest {
                 .getDeserializationConfig()
                 .isEnabled(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES))
         .isFalse();
+  }
+
+  @Test
+  void testClientConfiguration() {
+    final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
+    assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("localhost:1234");
+    assertThat(client.getConfiguration().getGrpcAddress().toString())
+        .isEqualTo("https://localhost:1234");
+    assertThat(client.getConfiguration().getRestAddress().toString())
+        .isEqualTo("https://localhost:8080");
+    assertThat(client.getConfiguration().getDefaultRequestTimeout())
+        .isEqualTo(Duration.ofSeconds(99));
+    assertThat(client.getConfiguration().getCaCertificatePath()).isEqualTo("aPath");
+    assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isTrue();
+    assertThat(client.getConfiguration().getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
+    assertThat(client.getConfiguration().getDefaultJobPollInterval())
+        .isEqualTo(Duration.ofSeconds(99));
   }
 
   public static class TestConfig {

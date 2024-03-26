@@ -16,10 +16,12 @@
 package io.camunda.zeebe.spring.client.properties;
 
 import io.camunda.zeebe.client.ClientProperties;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import jakarta.annotation.PostConstruct;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -217,87 +219,60 @@ public class ZeebeClientConfigurationProperties {
     return ownsJobWorkerExecutor;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(broker, cloud, worker, message, security, job, requestTimeout);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final ZeebeClientConfigurationProperties that = (ZeebeClientConfigurationProperties) o;
-    return Objects.equals(broker, that.broker)
-        && Objects.equals(cloud, that.cloud)
-        && Objects.equals(worker, that.worker)
-        && Objects.equals(message, that.message)
-        && Objects.equals(security, that.security)
-        && Objects.equals(job, that.job)
-        && Objects.equals(requestTimeout, that.requestTimeout);
-  }
-
-  @Override
-  public String toString() {
-    return "ZeebeClientConfigurationProperties{"
-        + "environment="
-        + environment
-        + ", connectionMode='"
-        + connectionMode
-        + '\''
-        + ", defaultTenantId='"
-        + defaultTenantId
-        + '\''
-        + ", defaultJobWorkerTenantIds="
-        + defaultJobWorkerTenantIds
-        + ", applyEnvironmentVariableOverrides="
-        + applyEnvironmentVariableOverrides
-        + ", enabled="
-        + enabled
-        + ", broker="
-        + broker
-        + ", cloud="
-        + cloud
-        + ", worker="
-        + worker
-        + ", message="
-        + message
-        + ", security="
-        + security
-        + ", job="
-        + job
-        + ", ownsJobWorkerExecutor="
-        + ownsJobWorkerExecutor
-        + ", defaultJobWorkerStreamEnabled="
-        + defaultJobWorkerStreamEnabled
-        + ", requestTimeout="
-        + requestTimeout
-        + '}';
-  }
-
+  /**
+   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
+   *     ZeebeClientConfigurationProperties#getGrpcAddress()}
+   * @see ZeebeClientConfiguration#getGatewayAddress()
+   */
+  @Deprecated
   public String getGatewayAddress() {
-    if (connectionMode != null && connectionMode.length() > 0) {
+    if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe", connectionMode);
       if (CONNECTION_MODE_CLOUD.equalsIgnoreCase(connectionMode)) {
         return cloud.getGatewayAddress();
       } else if (CONNECTION_MODE_ADDRESS.equalsIgnoreCase(connectionMode)) {
         return broker.getGatewayAddress();
       } else {
-        throw new RuntimeException(
-            "Value '"
-                + connectionMode
-                + "' for ConnectionMode is invalid, valid values are "
-                + CONNECTION_MODE_CLOUD
-                + " or "
-                + CONNECTION_MODE_ADDRESS);
+        throw new RuntimeException(createInvalidConnectionModeErrorMessage());
       }
     } else if (cloud.isConfigured()) {
       return cloud.getGatewayAddress();
     } else {
       return broker.getGatewayAddress();
+    }
+  }
+
+  public URI getGrpcAddress() {
+    if (connectionMode != null && !connectionMode.isEmpty()) {
+      LOGGER.info("Using connection mode '{}' to connect to Zeebe GRPC", connectionMode);
+      if (CONNECTION_MODE_CLOUD.equalsIgnoreCase(connectionMode)) {
+        return cloud.getGrpcAddress();
+      } else if (CONNECTION_MODE_ADDRESS.equalsIgnoreCase(connectionMode)) {
+        return broker.getGrpcAddress();
+      } else {
+        throw new RuntimeException(createInvalidConnectionModeErrorMessage());
+      }
+    } else if (cloud.isConfigured()) {
+      return cloud.getGrpcAddress();
+    } else {
+      return broker.getGrpcAddress();
+    }
+  }
+
+  public URI getRestAddress() {
+    if (connectionMode != null && !connectionMode.isEmpty()) {
+      LOGGER.info("Using connection mode '{}' to connect to Zeebe REST", connectionMode);
+      if (CONNECTION_MODE_CLOUD.equalsIgnoreCase(connectionMode)) {
+        return cloud.getRestAddress();
+      } else if (CONNECTION_MODE_ADDRESS.equalsIgnoreCase(connectionMode)) {
+        return broker.getRestAddress();
+      } else {
+        throw new RuntimeException(createInvalidConnectionModeErrorMessage());
+      }
+    } else if (cloud.isConfigured()) {
+      return cloud.getRestAddress();
+    } else {
+      return broker.getRestAddress();
     }
   }
 
@@ -389,31 +364,92 @@ public class ZeebeClientConfigurationProperties {
     return message.getMaxMessageSize();
   }
 
-  public static class Broker {
+  @Override
+  public int hashCode() {
+    return Objects.hash(broker, cloud, worker, message, security, job, requestTimeout);
+  }
 
-    private String gatewayAddress;
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeClientConfigurationProperties that = (ZeebeClientConfigurationProperties) o;
+    return Objects.equals(broker, that.broker)
+        && Objects.equals(cloud, that.cloud)
+        && Objects.equals(worker, that.worker)
+        && Objects.equals(message, that.message)
+        && Objects.equals(security, that.security)
+        && Objects.equals(job, that.job)
+        && Objects.equals(requestTimeout, that.requestTimeout);
+  }
+
+  @Override
+  public String toString() {
+    return "ZeebeClientConfigurationProperties{"
+        + "environment="
+        + environment
+        + ", connectionMode='"
+        + connectionMode
+        + '\''
+        + ", defaultTenantId='"
+        + defaultTenantId
+        + '\''
+        + ", defaultJobWorkerTenantIds="
+        + defaultJobWorkerTenantIds
+        + ", applyEnvironmentVariableOverrides="
+        + applyEnvironmentVariableOverrides
+        + ", enabled="
+        + enabled
+        + ", broker="
+        + broker
+        + ", cloud="
+        + cloud
+        + ", worker="
+        + worker
+        + ", message="
+        + message
+        + ", security="
+        + security
+        + ", job="
+        + job
+        + ", ownsJobWorkerExecutor="
+        + ownsJobWorkerExecutor
+        + ", defaultJobWorkerStreamEnabled="
+        + defaultJobWorkerStreamEnabled
+        + ", requestTimeout="
+        + requestTimeout
+        + '}';
+  }
+
+  private String createInvalidConnectionModeErrorMessage() {
+    return "Value '"
+        + connectionMode
+        + "' for ConnectionMode is invalid, valid values are "
+        + CONNECTION_MODE_CLOUD
+        + " or "
+        + CONNECTION_MODE_ADDRESS;
+  }
+
+  public static class Broker {
+    /**
+     * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
+     * @see ZeebeClientConfiguration#getGatewayAddress()
+     */
+    @Deprecated private String gatewayAddress;
+
+    private URI grpcAddress;
+    private URI restAddress;
     private Duration keepAlive = DEFAULT.getKeepAlive();
 
     /**
-     * Use gatewayAddress. It's deprecated since 0.25.0, and will be removed in 0.26.0
-     *
-     * @return gatewayAddress
+     * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
+     * @see ZeebeClientConfiguration#getGatewayAddress()
      */
     @Deprecated
-    public String getContactPoint() {
-      return getGatewayAddress();
-    }
-
-    /**
-     * Use gatewayAddress. It's deprecated since 0.25.0, and will be removed in 0.26.0
-     *
-     * @param contactPoint
-     */
-    @Deprecated
-    public void setContactPoint(final String contactPoint) {
-      setGatewayAddress(contactPoint);
-    }
-
     public String getGatewayAddress() {
       if (gatewayAddress != null) {
         return gatewayAddress;
@@ -422,8 +458,37 @@ public class ZeebeClientConfigurationProperties {
       }
     }
 
+    /**
+     * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
+     * @see ZeebeClientConfiguration#getGatewayAddress()
+     */
+    @Deprecated
     public void setGatewayAddress(final String gatewayAddress) {
       this.gatewayAddress = gatewayAddress;
+    }
+
+    public URI getGrpcAddress() {
+      if (grpcAddress != null) {
+        return grpcAddress;
+      } else {
+        return DEFAULT.getGrpcAddress();
+      }
+    }
+
+    public void setGrpcAddress(final URI grpcAddress) {
+      this.grpcAddress = grpcAddress;
+    }
+
+    public URI getRestAddress() {
+      if (restAddress != null) {
+        return restAddress;
+      } else {
+        return DEFAULT.getRestAddress();
+      }
+    }
+
+    public void setRestAddress(final URI restAddress) {
+      this.restAddress = restAddress;
     }
 
     public Duration getKeepAlive() {
@@ -436,7 +501,7 @@ public class ZeebeClientConfigurationProperties {
 
     @Override
     public int hashCode() {
-      return Objects.hash(gatewayAddress, keepAlive);
+      return Objects.hash(gatewayAddress, grpcAddress, restAddress, keepAlive);
     }
 
     @Override
@@ -449,6 +514,8 @@ public class ZeebeClientConfigurationProperties {
       }
       final Broker broker = (Broker) o;
       return Objects.equals(gatewayAddress, broker.gatewayAddress)
+          && Objects.equals(grpcAddress, broker.grpcAddress)
+          && Objects.equals(restAddress, broker.restAddress)
           && Objects.equals(keepAlive, broker.keepAlive);
     }
 
@@ -457,7 +524,10 @@ public class ZeebeClientConfigurationProperties {
       return "Broker{"
           + "gatewayAddress='"
           + gatewayAddress
-          + '\''
+          + ", grpcAddress="
+          + grpcAddress
+          + ", restAddress="
+          + restAddress
           + ", keepAlive="
           + keepAlive
           + '}';
@@ -475,38 +545,6 @@ public class ZeebeClientConfigurationProperties {
     private String authUrl = "https://login.cloud.camunda.io/oauth/token";
     private int port = 443;
     private String credentialsCachePath;
-
-    @Override
-    public String toString() {
-      return "Cloud{"
-          + "clusterId='"
-          + clusterId
-          + '\''
-          + ", clientId='"
-          + "***"
-          + '\''
-          + ", clientSecret='"
-          + "***"
-          + '\''
-          + ", region='"
-          + region
-          + '\''
-          + ", scope='"
-          + scope
-          + '\''
-          + ", baseUrl='"
-          + baseUrl
-          + '\''
-          + ", authUrl='"
-          + authUrl
-          + '\''
-          + ", port="
-          + port
-          + ", credentialsCachePath='"
-          + credentialsCachePath
-          + '\''
-          + '}';
-    }
 
     public String getClusterId() {
       return clusterId;
@@ -588,8 +626,87 @@ public class ZeebeClientConfigurationProperties {
       return (clusterId != null);
     }
 
+    /**
+     * @deprecated since 8.5 for removal with 8.8, replaced by {@link Cloud#getGrpcAddress()}
+     * @see ZeebeClientConfiguration#getGatewayAddress()
+     */
+    @Deprecated
     public String getGatewayAddress() {
       return String.format("%s.%s.%s:%d", clusterId, region, baseUrl, port);
+    }
+
+    public URI getGrpcAddress() {
+      return URI.create(String.format("https://%s.%s.%s:%d", clusterId, region, baseUrl, port));
+    }
+
+    public URI getRestAddress() {
+      return URI.create(String.format("https://%s.%s:%d/%s", region, baseUrl, port, clusterId));
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          clusterId,
+          clientId,
+          clientSecret,
+          region,
+          scope,
+          baseUrl,
+          authUrl,
+          port,
+          credentialsCachePath);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final Cloud cloud = (Cloud) o;
+      return port == cloud.port
+          && Objects.equals(clusterId, cloud.clusterId)
+          && Objects.equals(clientId, cloud.clientId)
+          && Objects.equals(clientSecret, cloud.clientSecret)
+          && Objects.equals(region, cloud.region)
+          && Objects.equals(scope, cloud.scope)
+          && Objects.equals(baseUrl, cloud.baseUrl)
+          && Objects.equals(authUrl, cloud.authUrl)
+          && Objects.equals(credentialsCachePath, cloud.credentialsCachePath);
+    }
+
+    @Override
+    public String toString() {
+      return "Cloud{"
+          + "clusterId='"
+          + clusterId
+          + '\''
+          + ", clientId='"
+          + clientId
+          + '\''
+          + ", clientSecret='"
+          + clientSecret
+          + '\''
+          + ", region='"
+          + region
+          + '\''
+          + ", scope='"
+          + scope
+          + '\''
+          + ", baseUrl='"
+          + baseUrl
+          + '\''
+          + ", authUrl='"
+          + authUrl
+          + '\''
+          + ", port="
+          + port
+          + ", credentialsCachePath='"
+          + credentialsCachePath
+          + '\''
+          + '}';
     }
   }
 
