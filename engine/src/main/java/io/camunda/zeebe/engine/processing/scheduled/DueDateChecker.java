@@ -46,7 +46,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     this.visitor = visitor;
   }
 
-  private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+  TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     nextExecution = null;
 
     final long nextDueDate = visitor.apply(taskResultBuilder);
