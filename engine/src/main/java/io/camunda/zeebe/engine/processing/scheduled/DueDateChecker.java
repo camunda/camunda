@@ -48,12 +48,14 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     // - Otherwise, we don't need to cancel the runnable. It will be rescheduled when it is
     // executed.
 
-    if (shouldRescheduleChecker) {
-      if (nextExecution == null || nextExecution.nextDueDate() - dueDate > timerResolution) {
-        final var delay = calculateDelayForNextRun(dueDate);
-        final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
-        nextExecution = new NextExecution(dueDate, task);
-      }
+    if (!shouldRescheduleChecker) {
+      return;
+    }
+
+    if (nextExecution == null || nextExecution.nextDueDate() - dueDate > timerResolution) {
+      final var delay = calculateDelayForNextRun(dueDate);
+      final var task = scheduleService.runDelayed(delay, triggerEntitiesTask);
+      nextExecution = new NextExecution(dueDate, task);
     }
   }
 
