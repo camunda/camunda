@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
+import io.camunda.zeebe.exporter.TestClient.IndexSettings;
+import io.camunda.zeebe.exporter.TestClient.IndexSettings.Index;
+import io.camunda.zeebe.exporter.TestClient.IndexSettings.Settings;
 import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -194,5 +197,66 @@ final class ElasticsearchExporterIT {
         .get()
         .extracting(ComponentTemplateWrapper::name)
         .isEqualTo(config.index.prefix);
+  }
+
+  @Test
+  void shouldUpdateIndexLifecycleSettingsOnRerunWhenRetentionConfigChanges() {
+    // given
+    config.retention.setEnabled(false);
+    final var record1 = factory.generateRecord(ValueType.JOB);
+
+    // when
+    exporter.export(record1);
+
+    // then
+    final var index1 = indexRouter.indexFor(record1);
+    var response1 = testClient.getIndexSettings(index1);
+
+    assertThat(response1)
+        .as("should have found the index")
+        .isPresent()
+        .get()
+        .extracting(IndexSettings::settings)
+        .extracting(Settings::index)
+        .extracting(Index::lifecycle)
+        .as("Lifecycle policy should not be configured")
+        .isNull();
+
+    /* Tests when retention is later enabled all indices should have lifecycle policy */
+    // given
+    config.retention.setEnabled(true);
+    final var record2 = factory.generateRecord(ValueType.JOB);
+
+    // when
+    exporter.setIndexTemplatesCreated(false);
+    exporter.export(record2);
+
+    // then
+    final var index2 = indexRouter.indexFor(record2);
+    final var response2 = testClient.getIndexSettings(index2);
+    assertThat(response2)
+        .as("should have found the index")
+        .isPresent()
+        .get()
+        .extracting(IndexSettings::settings)
+        .extracting(Settings::index)
+        .extracting(Index::lifecycle)
+        .as("should have lifecycle config")
+        .isNotNull()
+        .extracting(IndexSettings.Lifecycle::name)
+        .isEqualTo(config.retention.getPolicyName());
+
+    response1 = testClient.getIndexSettings(index1);
+    assertThat(response1)
+        .as("should have found the index")
+        .isPresent()
+        .get()
+        .extracting(IndexSettings::settings)
+        .extracting(Settings::index)
+        .extracting(Index::lifecycle)
+        .as("should have lifecycle config")
+        .isNotNull()
+        .extracting(IndexSettings.Lifecycle::name)
+        .isEqualTo(config.retention.getPolicyName());
   }
 }
