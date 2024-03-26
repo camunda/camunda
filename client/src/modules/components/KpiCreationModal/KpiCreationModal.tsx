@@ -106,6 +106,9 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                 itemToString={(item) => (item ? item.name : '')}
                 titleText={t('report.kpiTemplates.selectKpi')}
               />
+              <div className="preview">
+                {selectedKpi?.img && <img src={selectedKpi.img} alt={selectedKpi.name} />}
+              </div>
               <DefinitionSelection
                 definitionKey={definition.key}
                 versions={definition.versions}

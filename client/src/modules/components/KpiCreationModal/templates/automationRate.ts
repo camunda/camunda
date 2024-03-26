@@ -9,10 +9,13 @@ import {t} from 'translation';
 
 import {KpiTemplate} from './types';
 
+import automationRateImg from './images/automationRate.png';
+
 export default function automationRate(): KpiTemplate {
   return {
     name: t('report.kpiTemplates.automationRate').toString(),
     description: t('report.kpiTemplates.automationRate-description').toString(),
+    img: automationRateImg,
     config: {
       view: {entity: 'processInstance', properties: ['percentage']},
       groupBy: {

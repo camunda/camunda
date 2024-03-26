@@ -11,4 +11,14 @@
       width: 100px;
     }
   }
+
+  .preview {
+    min-width: 0;
+    text-align: center;
+
+    img {
+      width: 100%;
+      max-width: 400px;
+    }
+  }
 }
