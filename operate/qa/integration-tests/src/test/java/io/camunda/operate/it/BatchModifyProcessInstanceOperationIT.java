@@ -43,7 +43,10 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
 
   @Override
   protected void runAdditionalBeforeAllSetup() {
+    // Zeebe client utilized by the handler needs to be set to the one manually created during test
+    // startup to correctly communicate with zeebe
     modifyProcessInstanceHandler.setZeebeClient(zeebeClient);
+
     final Long processDefinitionKey = operateTester.deployProcess("demoProcess_v_2.bpmn");
     operateTester.waitForProcessDeployed(processDefinitionKey);
   }
