@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -38,12 +39,15 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
-  public void runDelayedAsync(final Duration delay, final Task task) {
+  public ScheduledTask runDelayedAsync(final Duration delay, final Task task) {
+    final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
     concurrencyControl.run(
         () -> {
           // we must run in different actor in order to schedule task
-          asyncActorService.runDelayed(delay, task);
+          final var scheduledTask = asyncActorService.runDelayed(delay, task);
+          futureScheduledTask.complete(scheduledTask);
         });
+    return new AsyncScheduledTask(futureScheduledTask);
   }
 
   @Override
@@ -59,5 +63,35 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
     processorActorService.runAtFixedRate(delay, task);
+  }
+
+  /**
+   * Allows control over a task that is asynchronously scheduled. It uses a future that holds the
+   * task once it's scheduled.
+   */
+  private final class AsyncScheduledTask implements ScheduledTask {
+
+    private final ActorFuture<ScheduledTask> futureScheduledTask;
+
+    public AsyncScheduledTask(final ActorFuture<ScheduledTask> futureScheduledTask) {
+      this.futureScheduledTask = futureScheduledTask;
+    }
+
+    /**
+     * Cancels the task after it's scheduled. Depending on the delay, the task may execute before
+     * cancellation takes effect.
+     */
+    @Override
+    public void cancel() {
+      concurrencyControl.run(
+          () ->
+              concurrencyControl.runOnCompletion(
+                  futureScheduledTask,
+                  (scheduledTask, throwable) -> {
+                    if (scheduledTask != null) {
+                      scheduledTask.cancel();
+                    }
+                  }));
+    }
   }
 }
