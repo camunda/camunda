@@ -35,10 +35,11 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private boolean shouldRescheduleChecker;
 
   /**
-   * Keeps track of the next execution of the checker. It is set to null when the checker has no
-   * need to reschedule itself anymore.
+   * Keeps track of the next execution of the checker. As it's not set to null, it could refer to
+   * the last execution. We can always use its due date to determine whether it is in the past.
    */
-  private AtomicReference<NextExecution> nextExecution = new AtomicReference<>(null);
+  private final AtomicReference<NextExecution> nextExecution =
+      new AtomicReference<>(new NextExecution(-1, () -> {}));
 
   public DueDateChecker(
       final long timerResolution,
@@ -50,8 +51,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    nextExecution = null;
-
     final long nextDueDate = visitor.apply(taskResultBuilder);
 
     // reschedule the runnable if there are timers left
@@ -79,7 +78,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
         AtomicUtil.update(
             nextExecution,
             currentlyScheduled -> {
-              if (currentlyScheduled == null
+              if (currentlyScheduled.nextDueDate() < ActorClock.currentTimeMillis()
                   || currentlyScheduled.nextDueDate() - dueDate > timerResolution) {
                 final var delay = calculateDelayForNextRun(dueDate);
                 final var task = scheduleService.runDelayed(delay, this::execute);
