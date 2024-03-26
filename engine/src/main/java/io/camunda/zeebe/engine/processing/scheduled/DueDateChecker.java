@@ -82,9 +82,10 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       return;
     }
 
-    if (nextExecution != null) {
-      return;
-    }
+    // ensure that the checker is scheduled only once. No execution is expected, but we want to
+    // cover all edge cases.
+    cancelNextExecution();
+
     final var task = scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
     nextExecution = new NextExecution(-1, task);
   }
