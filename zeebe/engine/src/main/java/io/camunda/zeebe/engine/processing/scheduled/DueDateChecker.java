@@ -34,16 +34,17 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private NextExecution nextExecution = null;
 
   private final long timerResolution;
-  private final Function<TaskResultBuilder, Long> nextDueDateSupplier;
+
+  private final Function<TaskResultBuilder, Long> visitor;
   private final TriggerEntitiesTask triggerEntitiesTask;
 
   public DueDateChecker(
       final long timerResolution,
       final boolean scheduleAsync,
-      final Function<TaskResultBuilder, Long> nextDueDateFunction) {
+      final Function<TaskResultBuilder, Long> visitor) {
     this.timerResolution = timerResolution;
     this.scheduleAsync = scheduleAsync;
-    nextDueDateSupplier = nextDueDateFunction;
+    this.visitor = visitor;
     triggerEntitiesTask = new TriggerEntitiesTask();
   }
 
@@ -148,7 +149,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
       if (shouldRescheduleChecker) {
-        final long nextDueDate = nextDueDateSupplier.apply(taskResultBuilder);
+        final long nextDueDate = visitor.apply(taskResultBuilder);
 
         // reschedule the runnable if there are timers left
 
