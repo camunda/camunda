@@ -117,19 +117,16 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onClose() {
     shouldRescheduleChecker = false;
-    cancelNextExecution();
   }
 
   @Override
   public void onFailed() {
     shouldRescheduleChecker = false;
-    cancelNextExecution();
   }
 
   @Override
   public void onPaused() {
     shouldRescheduleChecker = false;
-    cancelNextExecution();
   }
 
   @Override
