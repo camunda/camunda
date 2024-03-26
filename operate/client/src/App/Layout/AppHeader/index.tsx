@@ -161,7 +161,6 @@ const AppHeader: React.FC = observer(() => {
                 key: appName,
                 label: capitalize(appName),
                 href: c8Links[appName],
-                target: '_blank',
                 active: appName === 'operate',
                 routeProps:
                   appName === 'operate' ? {to: Paths.dashboard()} : undefined,
