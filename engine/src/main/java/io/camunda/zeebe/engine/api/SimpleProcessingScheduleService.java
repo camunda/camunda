@@ -63,8 +63,9 @@ public interface SimpleProcessingScheduleService {
     /**
      * Cancels the scheduled execution of this task.
      *
-     * @implNote can be a noop if the task already ran or if the task scheduling was silently
-     *     ignored.
+     * @implNote can be a noop if the task scheduling was silently ignored or cancellation can no
+     *     longer prevent execution, e.g. because the task already ran or due to asynchronous
+     *     scheduling.
      */
     void cancel();
   }
