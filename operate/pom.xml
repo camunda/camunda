@@ -96,7 +96,7 @@
     <version.httpclient>4.5.14</version.httpclient>
     <version.elasticsearch7>7.17.18</version.elasticsearch7>
     <version.elasticsearch>8.9.2</version.elasticsearch>
-    <version.lucene>8.11.1</version.lucene>
+    <version.lucene>8.11.3</version.lucene>
     <version.error-prone>2.25.0</version.error-prone>
     <version.guava>33.0.0-jre</version.guava>
     <version.guava.annotations>r03</version.guava.annotations>
