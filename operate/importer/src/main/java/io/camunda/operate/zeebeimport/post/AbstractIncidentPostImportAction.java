@@ -23,6 +23,7 @@ import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import java.io.IOException;
@@ -49,16 +50,18 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
   @Autowired protected OperateProperties operateProperties;
 
   @Autowired protected ImportPositionHolder importPositionHolder;
-
   protected ImportPositionEntity lastProcessedPosition;
+  private final BackoffIdleStrategy errorStrategy;
 
   public AbstractIncidentPostImportAction(final int partitionId) {
     this.partitionId = partitionId;
+    errorStrategy = new BackoffIdleStrategy(BACKOFF, 1.2f, 10_000);
   }
 
   @Override
   public boolean performOneRound() throws IOException {
     final List<IncidentEntity> pendingIncidents = processPendingIncidents();
+    errorStrategy.reset();
     final boolean smthWasProcessed = pendingIncidents.size() > 0;
     return smthWasProcessed;
   }
@@ -83,8 +86,8 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
                 "Exception occurred when performing post import for partition %d: %s. Will be retried...",
                 partitionId, ex.getMessage()),
             ex);
-        // TODO can it fail here?
-        postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
+        errorStrategy.idle();
+        postImportScheduler.schedule(this, Instant.now().plus(errorStrategy.idleTime(), MILLIS));
       }
     }
   }
