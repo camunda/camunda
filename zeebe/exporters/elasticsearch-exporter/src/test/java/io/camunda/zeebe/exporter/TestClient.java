@@ -11,7 +11,9 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
 import org.elasticsearch.client.Request;
@@ -88,6 +91,19 @@ final class TestClient implements CloseableSilently {
     }
   }
 
+  Optional<IndexSettings> getIndexSettings(final String index) {
+    try {
+      final var request = new Request("GET", index + "/_settings");
+      final var response = restClient.performRequest(request);
+      final TypeReference<Map<String, IndexSettings>> mapTypeReference = new TypeReference<>() {};
+      final Map<String, IndexSettings> settings =
+          MAPPER.readValue(response.getEntity().getContent(), mapTypeReference);
+      return settings.values().stream().findFirst();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   ElasticsearchClient getEsClient() {
     return esClient;
   }
@@ -105,5 +121,16 @@ final class TestClient implements CloseableSilently {
       @JsonProperty("component_templates") List<ComponentTemplateWrapper> wrappers) {
     record ComponentTemplateWrapper(
         String name, @JsonProperty("component_template") Template template) {}
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record IndexSettings(Settings settings) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record Settings(Index index) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record Index(Lifecycle lifecycle) {}
+
+    record Lifecycle(String name) {}
   }
 }
