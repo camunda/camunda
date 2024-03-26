@@ -40,4 +40,21 @@ public interface SimpleProcessingScheduleService {
   }
 
   void runAtFixedRate(final Duration delay, final Task task);
+
+  /***
+   * A task scheduled by {@link SimpleProcessingScheduleService} to give the caller control over the
+   * task, i.e. for cancellation.
+   */
+  @FunctionalInterface
+  interface ScheduledTask {
+
+    /**
+     * Cancels the scheduled execution of this task.
+     *
+     * @implNote can be a noop if the task scheduling was silently ignored or cancellation can no
+     *     longer prevent execution, e.g. because the task already ran or due to asynchronous
+     *     scheduling.
+     */
+    void cancel();
+  }
 }
