@@ -68,7 +68,7 @@ public class ClusteredBackupRestoreTest {
             .build()
             .start()
             .awaitCompleteTopology()) {
-      final var actuator = BackupActuator.ofAddress(cluster.availableGateway().monitoringAddress());
+      final var actuator = BackupActuator.of(cluster.availableGateway());
 
       try (final var client = cluster.newClientBuilder().build()) {
         IntStream.range(0, 30)

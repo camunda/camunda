@@ -50,8 +50,7 @@ public interface RebalanceActuator {
    * @return a new instance of {@link RebalanceActuator}
    */
   static RebalanceActuator of(final TestApplication<?> node) {
-    final var endpoint = String.format("http://%s/actuator/rebalance", node.monitoringAddress());
-    return of(endpoint);
+    return of(node.actuatorUri("rebalance").toString());
   }
 
   /**

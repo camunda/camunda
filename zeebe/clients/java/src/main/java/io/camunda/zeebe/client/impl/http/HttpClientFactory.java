@@ -92,8 +92,16 @@ public class HttpClientFactory {
   }
 
   private URI buildGatewayAddress() {
+    String basePath = config.getRestAddress().toString();
+
+    // we need to strip the last / otherwise we'll have an empty path segment which Spring
+    // interprets as a different route
+    if (basePath.endsWith("/")) {
+      basePath = basePath.substring(0, basePath.length() - 1);
+    }
+
     try {
-      final URIBuilder builder = new URIBuilder(config.getRestAddress()).setPath(REST_API_PATH);
+      final URIBuilder builder = new URIBuilder(basePath).appendPath(REST_API_PATH);
       builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
       return builder.build();

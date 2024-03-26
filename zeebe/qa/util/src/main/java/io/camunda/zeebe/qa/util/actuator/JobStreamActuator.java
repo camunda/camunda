@@ -50,8 +50,7 @@ public interface JobStreamActuator {
    * @return a new instance of {@link JobStreamActuator}
    */
   static JobStreamActuator of(final TestApplication<?> node) {
-    final var endpoint = String.format("http://%s/actuator/jobstreams", node.monitoringAddress());
-    return of(endpoint);
+    return of(node.actuatorUri("jobstreams").toString());
   }
 
   /**

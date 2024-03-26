@@ -9,12 +9,18 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import com.google.common.collect.ObjectArrays;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.shared.Profile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.SequencedCollection;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 
 @SuppressWarnings("UnusedReturnValue")
@@ -97,9 +103,28 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param port the target port
    * @return externally accessible address for {@code port}
    */
-  default URI parsedAddress(final String scheme, final TestZeebePort port) {
+  default URI uri(final String scheme, final TestZeebePort port, final String... paths) {
+    return uri(scheme, port, List.of(paths));
+  }
+
+  /**
+   * Returns the address of this node for the given port and scheme as a URI.
+   *
+   * @param scheme the URI scheme, e.g. http, or https
+   * @param port the target port
+   * @return externally accessible address for {@code port}
+   */
+  default URI uri(
+      final String scheme, final TestZeebePort port, final SequencedCollection<String> paths) {
     try {
-      return new URI(scheme + "://" + address(port));
+      final var path =
+          paths.stream()
+              .filter(Predicate.not(Objects::isNull))
+              .map(String::trim)
+              .map(p -> p.replaceFirst("^\\/", ""))
+              .filter(Predicate.not(String::isBlank))
+              .collect(Collectors.joining("/"));
+      return new URI(scheme + "://" + address(port) + "/" + path);
     } catch (final URISyntaxException e) {
       throw new IllegalArgumentException("Failed to parse URI", e);
     }
@@ -107,12 +132,30 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
 
   /**
    * Returns the address to access the monitoring API of this node from outside the container
-   * network of this node.
+   * network of this node. This method returns a URI which is scheme and context path aware.
    *
    * @return the external monitoring address
    */
-  default String monitoringAddress() {
-    return address(TestZeebePort.MONITORING);
+  default URI monitoringUri(final String... paths) {
+    final var serverBasePath = property("management.server.base-path", String.class, "");
+    final var sslEnabled = property("management.server.ssl.enabled", Boolean.class, false);
+    return uri(
+        sslEnabled ? "https" : "http",
+        TestZeebePort.MONITORING,
+        ObjectArrays.concat(serverBasePath, paths));
+  }
+
+  /**
+   * Returns the address to access the actuators of this node from outside the container network of
+   * this node. This method returns a URI which is scheme and context-path aware, as well as
+   * actuator path aware.
+   *
+   * @return the external actuator address
+   */
+  default URI actuatorUri(final String... paths) {
+    final var actuatorBasePath =
+        property("management.endpoints.web.base-path", String.class, "/actuator");
+    return monitoringUri(ObjectArrays.concat(actuatorBasePath, paths));
   }
 
   /** Returns the default health actuator for this application. */
@@ -158,6 +201,19 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param <V> the expected bean type
    */
   <V> V bean(final Class<V> type);
+
+  /**
+   * If the application is started (e.g. {@link #isStarted()}, resolves and returns the value for
+   * this property, or a given fallback if there was none set. If the application is not started, it
+   * will look it up only in the property overrides (e.g. {@link #withProperty(String, Object)}.
+   *
+   * @param property the key identifying this property
+   * @param type the expected type of the property value
+   * @param fallback a default value if the property is not set
+   * @return the value of this (if any was resolved), or the fallback value
+   * @param <V> the expected property type type
+   */
+  <V> V property(final String property, final Class<V> type, final V fallback);
 
   /**
    * Configures Spring via properties. This does not work with properties that would be applied to
