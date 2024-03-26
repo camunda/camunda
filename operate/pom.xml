@@ -554,7 +554,6 @@
 
       <!-- Start AWS -->
 
-
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
@@ -564,30 +563,15 @@
       </dependency>
 
       <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>auth</artifactId>
-        <version>${version.awssdk}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>sts</artifactId>
-        <version>${version.awssdk}</version>
-      </dependency>
-      <dependency>
         <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-sts</artifactId>
+        <artifactId>aws-java-sdk-bom</artifactId>
         <version>${version.aws-java-sdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
-
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-core</artifactId>
-        <version>${version.aws-java-sdk}</version>
-      </dependency>
-
 
       <!-- End AWS -->
+
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
