@@ -19,8 +19,12 @@ import java.time.Duration;
 import java.util.function.Function;
 
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
-  private ScheduleDelayed scheduleService;
   private final boolean scheduleAsync;
+  private final long timerResolution;
+  private final Function<TaskResultBuilder, Long> visitor;
+  private final TriggerEntitiesTask triggerEntitiesTask = new TriggerEntitiesTask();
+
+  private ScheduleDelayed scheduleService;
 
   /**
    * Indicates whether the checker should reschedule itself. Controlled by the stream processor's
@@ -34,11 +38,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    */
   private NextExecution nextExecution = null;
 
-  private final long timerResolution;
-
-  private final Function<TaskResultBuilder, Long> visitor;
-  private final TriggerEntitiesTask triggerEntitiesTask;
-
   public DueDateChecker(
       final long timerResolution,
       final boolean scheduleAsync,
@@ -46,7 +45,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     this.timerResolution = timerResolution;
     this.scheduleAsync = scheduleAsync;
     this.visitor = visitor;
-    triggerEntitiesTask = new TriggerEntitiesTask();
   }
 
   public void schedule(final long dueDate) {
