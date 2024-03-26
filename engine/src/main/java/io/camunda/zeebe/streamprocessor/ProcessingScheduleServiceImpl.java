@@ -52,7 +52,11 @@ public class ProcessingScheduleServiceImpl
 
   @Override
   public void runDelayed(final Duration delay, final Runnable followUpTask) {
-    useActorControl(() -> actorControl.runDelayed(delay, followUpTask));
+    if (actorControl == null) {
+      LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
+      return;
+    }
+    actorControl.runDelayed(delay, followUpTask);
   }
 
   @Override
@@ -72,14 +76,6 @@ public class ProcessingScheduleServiceImpl
                 runAtFixedRate(delay, task);
               }
             }));
-  }
-
-  private void useActorControl(final Runnable task) {
-    if (actorControl == null) {
-      LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
-      return;
-    }
-    task.run();
   }
 
   public ActorFuture<Void> open(final ActorControl control) {
