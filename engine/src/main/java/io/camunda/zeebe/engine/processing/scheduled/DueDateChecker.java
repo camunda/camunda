@@ -20,6 +20,15 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+/**
+ * The Due Date Checker is a special purpose checker (for due date related tasks) that doesn't
+ * execute periodically but can be scheduled to run at a specific due date, i.e. it can idle for
+ * extended periods of time and only runs when needed.
+ *
+ * <p>This class is thread safe and can be used concurrently. However, it cannot entirely prevent
+ * that multiple executions are scheduled. See the comment in {@link #execute(TaskResultBuilder)}
+ * for details.
+ */
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private final boolean scheduleAsync;
   private final long timerResolution;
@@ -39,6 +48,11 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    */
   private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(null);
 
+  /**
+   * @param timerResolution The resolution in ms for the timer
+   * @param scheduleAsync Whether to schedule the execution happens asynchronously or not
+   * @param visitor Function that runs the task and returns the next due date or -1 if there is none
+   */
   public DueDateChecker(
       final long timerResolution,
       final boolean scheduleAsync,
@@ -68,6 +82,26 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     return taskResultBuilder.build();
   }
 
+  /**
+   * Schedules the next execution of the checker and stores it in {@link #nextExecution}.
+   *
+   * <p>When called it guarantees that there is an execution scheduled at or before the provided due
+   * date within the {@link #timerResolution}.
+   *
+   * <p>If there is no execution scheduled, it always schedules a new one. If there is already an
+   * execution scheduled for a later time (within the timer resolution), that execution is cancelled
+   * and replaced by the new one. In all other cases, no new execution is scheduled.
+   *
+   * <p>It is guaranteed that the next execution is scheduled at least {@link #timerResolution} ms
+   * into the future. For example when the due date is in the past, now or in the very near future.
+   * This is to prevent the checker from being immediately rescheduled and thus not giving any other
+   * tasks a chance to run.
+   *
+   * <p>This method is thread safe and can be called concurrently. On concurrent scheduling, this
+   * execution is cancelled and rescheduled.
+   *
+   * @param dueDate The due date for the next execution
+   */
   public void schedule(final long dueDate) {
     if (!shouldRescheduleChecker) {
       return;
