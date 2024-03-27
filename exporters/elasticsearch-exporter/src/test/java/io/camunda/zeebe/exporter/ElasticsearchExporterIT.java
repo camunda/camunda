@@ -279,7 +279,8 @@ final class ElasticsearchExporterIT {
         .isEqualTo(config.retention.getPolicyName());
   }
 
-  private static void assertIndexSettingsHasNoLifecyclePolicy(final Optional<IndexSettings> indexSettings) {
+  private static void assertIndexSettingsHasNoLifecyclePolicy(
+      final Optional<IndexSettings> indexSettings) {
     assertThat(indexSettings)
         .as("should have found the index")
         .isPresent()
