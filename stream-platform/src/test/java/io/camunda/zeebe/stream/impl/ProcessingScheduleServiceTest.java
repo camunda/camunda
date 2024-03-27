@@ -359,6 +359,25 @@ class ProcessingScheduleServiceTest {
     assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
   }
 
+  @Test
+  void shouldNotExecuteCancelledDelayedTask() {
+    // given
+    final var mockedTask = spy(new DummyTask());
+
+    final var scheduledTask = scheduleService.runDelayed(Duration.ofMinutes(1), mockedTask);
+    actorScheduler.workUntilDone(); // Ensure task is scheduled
+
+    scheduledTask.cancel();
+    actorScheduler.workUntilDone(); // Ensure task is cancelled
+
+    // when
+    actorScheduler.updateClock(Duration.ofMinutes(2));
+    actorScheduler.workUntilDone(); // Would execute task if not cancelled
+
+    // then
+    verify(mockedTask, never()).execute(any());
+  }
+
   /**
    * This decorator is an actor and implements {@link ProcessingScheduleService} and delegates to
    * {@link ProcessingScheduleServiceImpl}, on each call it will submit an extra job to the related
@@ -378,13 +397,35 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public void runDelayed(final Duration delay, final Runnable task) {
-      actor.submit(() -> processingScheduleService.runDelayed(delay, task));
+    public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runDelayed(delay, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
     }
 
     @Override
-    public void runDelayed(final Duration delay, final Task task) {
-      actor.submit(() -> processingScheduleService.runDelayed(delay, task));
+    public ScheduledTask runDelayed(final Duration delay, final Task task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runDelayed(delay, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
     }
 
     @Override

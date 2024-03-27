@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 public class ProcessingScheduleServiceImpl
     implements SimpleProcessingScheduleService, AutoCloseable {
 
+  private static final ScheduledTask NOOP_SCHEDULED_TASK = () -> {};
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
@@ -50,13 +51,18 @@ public class ProcessingScheduleServiceImpl
   }
 
   @Override
-  public void runDelayed(final Duration delay, final Runnable followUpTask) {
-    useActorControl(() -> actorControl.runDelayed(delay, followUpTask));
+  public ScheduledTask runDelayed(final Duration delay, final Runnable followUpTask) {
+    if (actorControl == null) {
+      LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
+      return NOOP_SCHEDULED_TASK;
+    }
+    final var scheduledTimer = actorControl.runDelayed(delay, followUpTask);
+    return scheduledTimer::cancel;
   }
 
   @Override
-  public void runDelayed(final Duration delay, final Task task) {
-    runDelayed(delay, toRunnable(task));
+  public ScheduledTask runDelayed(final Duration delay, final Task task) {
+    return runDelayed(delay, toRunnable(task));
   }
 
   @Override
@@ -71,14 +77,6 @@ public class ProcessingScheduleServiceImpl
                 runAtFixedRate(delay, task);
               }
             }));
-  }
-
-  private void useActorControl(final Runnable task) {
-    if (actorControl == null) {
-      LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
-      return;
-    }
-    task.run();
   }
 
   public ActorFuture<Void> open(final ActorControl control) {
