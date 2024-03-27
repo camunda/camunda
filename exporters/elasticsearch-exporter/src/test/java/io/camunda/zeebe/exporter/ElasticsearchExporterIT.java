@@ -200,7 +200,7 @@ final class ElasticsearchExporterIT {
   }
 
   @Test
-  void shouldUpdateIndexLifecycleSettingsOnRerunWhenRetentionConfigChanges() {
+  void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
     // given
     config.retention.setEnabled(false);
     final var record1 = factory.generateRecord(ValueType.JOB);
@@ -258,5 +258,63 @@ final class ElasticsearchExporterIT {
         .isNotNull()
         .extracting(IndexSettings.Lifecycle::name)
         .isEqualTo(config.retention.getPolicyName());
+  }
+
+  @Test
+  void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
+    // given
+    config.retention.setEnabled(true);
+    final var record1 = factory.generateRecord(ValueType.JOB);
+
+    // when
+    exporter.export(record1);
+
+    // then
+    final var index1 = indexRouter.indexFor(record1);
+    var response1 = testClient.getIndexSettings(index1);
+    assertThat(response1)
+        .as("should have found the index")
+        .isPresent()
+        .get()
+        .extracting(IndexSettings::settings)
+        .extracting(Settings::index)
+        .extracting(Index::lifecycle)
+        .as("should have lifecycle config")
+        .isNotNull()
+        .extracting(IndexSettings.Lifecycle::name)
+        .isEqualTo(config.retention.getPolicyName());
+
+    /* Tests when retention is later disabled all indices should not have a lifecycle policy */
+    // given
+    config.retention.setEnabled(false);
+    final var record2 = factory.generateRecord(ValueType.JOB);
+
+    // when
+    exporter.setIndexTemplatesCreated(false);
+    exporter.export(record2);
+
+    // then
+    final var index2 = indexRouter.indexFor(record2);
+    final var response2 = testClient.getIndexSettings(index2);
+    assertThat(response2)
+        .as("should have found the index")
+        .isPresent()
+        .get()
+        .extracting(IndexSettings::settings)
+        .extracting(Settings::index)
+        .extracting(Index::lifecycle)
+        .as("Lifecycle policy should not be configured")
+        .isNull();
+
+    response1 = testClient.getIndexSettings(index1);
+    assertThat(response1)
+        .as("should have found the index")
+        .isPresent()
+        .get()
+        .extracting(IndexSettings::settings)
+        .extracting(Settings::index)
+        .extracting(Index::lifecycle)
+        .as("Lifecycle policy should not be configured")
+        .isNull();
   }
 }
