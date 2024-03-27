@@ -95,7 +95,8 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     final int numberOfChunks = 1;
     disconnectFollowerAndTakeSnapshot(numberOfChunks);
 
-    leaderProtocol.interceptResponse(InstallResponse.class, new TimingOutInterceptor(1));
+    final TimingOutInterceptor responseInterceptor = new TimingOutInterceptor(1);
+    leaderProtocol.interceptResponse(InstallResponse.class, responseInterceptor);
 
     // when
     reconnectFollowerAndAwaitSnapshot();
@@ -108,9 +109,13 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     Awaitility.await("Snapshot chunk-0 is resend")
         .untilAsserted(
             () ->
-                assertThat(totalInstallRequest.get())
+                assertThat(responseInterceptor.getCount())
                     .describedAs("Should resent snapshot chunk")
-                    .isEqualTo(numberOfChunks + 1));
+                    // Before follower reconnects, sometimes leader sends an InstallRequest which
+                    // ends up in connect exception. So comparing number of requests results in
+                    // flaky test. Instead, compare there were two responses. First one is timeout
+                    // and second is success.
+                    .isEqualTo(2));
   }
 
   private void reconnectFollowerAndAwaitSnapshot() throws InterruptedException {
@@ -150,6 +155,10 @@ public class RaftSnapshotReplicationFailureHandlingTest {
       } else {
         return CompletableFuture.completedFuture(installResponse);
       }
+    }
+
+    int getCount() {
+      return count;
     }
   }
 
