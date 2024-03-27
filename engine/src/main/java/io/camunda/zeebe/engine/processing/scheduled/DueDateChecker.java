@@ -35,11 +35,10 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private boolean shouldRescheduleChecker;
 
   /**
-   * Keeps track of the next execution of the checker. As it's not set to null, it could refer to
-   * the last execution. We can always use its due date to determine whether it is in the past.
+   * Keeps track of the next execution of the checker. Value can be null if there is no scheduled
+   * execution known.
    */
-  private final AtomicReference<NextExecution> nextExecution =
-      new AtomicReference<>(new NextExecution(-1, () -> {}));
+  private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(null);
 
   public DueDateChecker(
       final long timerResolution,
@@ -51,6 +50,14 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+    // There is a benign edge case where we are not supposed to set nextExecution to null here.
+    // If this execution was supposed to be cancelled because an earlier execution was scheduled
+    // instead, nextExecution would hold that earlier execution. We still overwrite it with null and
+    // thus forget that we planned an execution. The next time something is scheduled, we will
+    // observe the null value and thus decide to schedule something new without cancelling what's
+    // already scheduled. While we try to avoid this, we can't prevent it entirely anyway because
+    // cancellation of scheduled executions is best-effort and does not reliably prevent execution.
+    nextExecution.set(null);
     final long nextDueDate = visitor.apply(taskResultBuilder);
 
     // reschedule the runnable if there are timers left
@@ -62,23 +69,14 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   public void schedule(final long dueDate) {
-
-    // We schedule only one runnable for all timers.
-    // - The runnable is scheduled when the first timer is scheduled.
-    // - If a new timer is scheduled which should be triggered before the current runnable is
-    // executed then the runnable is canceled and re-scheduled with the new delay.
-    // - Otherwise, we don't need to cancel the runnable. It will be rescheduled when it is
-    // executed.
-
     if (!shouldRescheduleChecker) {
       return;
     }
-
     final var replacedExecution =
         AtomicUtil.update(
             nextExecution,
             currentlyScheduled -> {
-              if (currentlyScheduled.nextDueDate() < ActorClock.currentTimeMillis()
+              if (currentlyScheduled == null
                   || currentlyScheduled.nextDueDate() - dueDate > timerResolution) {
                 final var delay = calculateDelayForNextRun(dueDate);
                 final var task = scheduleService.runDelayed(delay, this::execute);
