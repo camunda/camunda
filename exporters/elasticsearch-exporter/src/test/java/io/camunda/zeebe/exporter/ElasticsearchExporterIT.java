@@ -19,12 +19,14 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +37,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -263,6 +266,57 @@ final class ElasticsearchExporterIT {
 
     response1 = testClient.getIndexSettings(index1);
     assertIndexSettingsHasNoLifecyclePolicy(response1);
+  }
+
+  /**
+   * Default timeout for elasticsearch `PUT /<target>/_settings` is 30 seconds.
+   *
+   * <p>500 records each has a shard and a replica means 1000 shards, which is the maximum open
+   * shards in a one node cluster
+   */
+  @Test
+  @Timeout(30)
+  void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() throws InterruptedException {
+    // given
+    config.retention.setEnabled(false);
+    final var records = new ArrayList<Record<RecordValue>>();
+    for (int i = 0; i < 499; i++) {
+      records.add(factory.generateRecord(ValueType.JOB));
+    }
+
+    // when
+    for (final var record : records) {
+      exporter.export(record);
+    }
+
+    // then
+    for (final var record : records) {
+      final var index = indexRouter.indexFor(record);
+      final var response = testClient.getIndexSettings(index);
+
+      assertIndexSettingsHasNoLifecyclePolicy(response);
+    }
+
+    /* Tests when retention is later enabled all indices should have lifecycle policy */
+    // given
+    config.retention.setEnabled(true);
+    final var record2 = factory.generateRecord(ValueType.JOB);
+
+    // when
+    exporter.setIndexTemplatesCreated(false);
+    exporter.export(record2);
+
+    // then
+    final var index2 = indexRouter.indexFor(record2);
+    final var response2 = testClient.getIndexSettings(index2);
+    assertIndexSettingsHasLifecyclePolicy(response2);
+
+    for (final var record : records) {
+      final var index = indexRouter.indexFor(record);
+      final var response = testClient.getIndexSettings(index);
+
+      assertIndexSettingsHasLifecyclePolicy(response);
+    }
   }
 
   private void assertIndexSettingsHasLifecyclePolicy(final Optional<IndexSettings> indexSettings) {
