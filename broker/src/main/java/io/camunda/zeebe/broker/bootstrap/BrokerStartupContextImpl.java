@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -49,6 +50,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerClient brokerClient;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
+  private final Duration shutdownTimeout;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -72,7 +74,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final ExporterRepository exporterRepository,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
-      final List<PartitionListener> additionalPartitionListeners) {
+      final List<PartitionListener> additionalPartitionListeners,
+      final Duration shutdownTimeout) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -83,6 +86,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.clusterServices = requireNonNull(clusterServices);
     this.identityConfiguration = identityConfiguration;
     this.brokerClient = brokerClient;
+    this.shutdownTimeout = shutdownTimeout;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -95,7 +99,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final ExporterRepository exporterRepository,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
-      final List<PartitionListener> additionalPartitionListeners) {
+      final List<PartitionListener> additionalPartitionListeners,
+      final Duration shutdownTimeout) {
 
     this(
         brokerInfo,
@@ -107,7 +112,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         exporterRepository,
         clusterServices,
         brokerClient,
-        additionalPartitionListeners);
+        additionalPartitionListeners,
+        shutdownTimeout);
   }
 
   @Override
@@ -297,5 +303,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerClient getBrokerClient() {
     return brokerClient;
+  }
+
+  @Override
+  public Duration getShutdownTimeout() {
+    return shutdownTimeout;
   }
 }

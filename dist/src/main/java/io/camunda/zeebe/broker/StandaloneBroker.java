@@ -82,7 +82,12 @@ public class StandaloneBroker
   public void run(final String... args) throws IOException {
     final SystemContext systemContext =
         new SystemContext(
-            configuration.config(), identityConfiguration, actorScheduler, cluster, brokerClient);
+            configuration.shutdownTimeout(),
+            configuration.config(),
+            identityConfiguration,
+            actorScheduler,
+            cluster,
+            brokerClient);
 
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();

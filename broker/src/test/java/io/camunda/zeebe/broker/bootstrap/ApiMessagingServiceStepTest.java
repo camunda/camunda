@@ -36,6 +36,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class ApiMessagingServiceStepTest {
+
+  public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final BrokerInfo TEST_BROKER_INFO = new BrokerInfo(0, "localhost");
@@ -66,7 +68,8 @@ class ApiMessagingServiceStepTest {
             mock(ExporterRepository.class),
             mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
             mock(BrokerClient.class),
-            Collections.emptyList());
+            Collections.emptyList(),
+            TEST_SHUTDOWN_TIMEOUT);
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
   }
 

@@ -107,6 +107,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
 public class ClusteringRule extends ExternalResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusteringRule.class);
@@ -354,7 +355,14 @@ public class ClusteringRule extends ExternalResource {
             scheduler,
             topologyManager);
 
-    final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster, brokerClient);
+    final var systemContext =
+        new SystemContext(
+            brokerSpringConfig.shutdownTimeout(),
+            brokerCfg,
+            null,
+            scheduler,
+            atomixCluster,
+            brokerClient);
     systemContexts.put(nodeId, systemContext);
     scheduler.submitActor(topologyManager).join();
 
@@ -454,7 +462,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private GatewayResource createGateway(final GatewayProperties gatewayCfg) {
-    final var config = new GatewayConfiguration(gatewayCfg);
+    final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterFactory = new GatewayClusterConfiguration();
     final var atomixCluster = clusterFactory.atomixCluster(clusterFactory.clusterConfig(config));
     atomixCluster.start().join();
@@ -932,7 +940,7 @@ public class ClusteringRule extends ExternalResource {
     final var workingDir =
         new WorkingDirectoryConfiguration.WorkingDirectory(brokerBase.toPath(), false);
 
-    return new BrokerConfiguration(workingDir, cfg);
+    return new BrokerConfiguration(workingDir, cfg, new LifecycleProperties());
   }
 
   public Leader getCurrentLeaderForPartition(final int partition) {
