@@ -386,6 +386,7 @@
       "monitorTargetsOverTime-description": "Monitor targets over time on duration, percentage, and count of a process."
     },
     "kpiTemplates": {
+      "processKpi": "Process KPI",
       "create": "Create process KPI",
       "step": "Step {count}",
       "selectKpi": "Select process KPI",

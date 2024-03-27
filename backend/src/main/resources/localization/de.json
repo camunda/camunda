@@ -386,6 +386,7 @@
       "monitorTargetsOverTime-description": "Messe Ziele über die Zeit für zeitliche, prozentuale und zählbare Metriken eines Prozesses."
     },
     "kpiTemplates": {
+      "processKpi": "Prozess-KPI",
       "create": "Prozess-KPI erstellen",
       "step": "Schritt {count}",
       "selectKpi": "Prozess-KPI auswählen",
