@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.management;
 
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -73,8 +74,22 @@ final class ExportingEndpointIT {
     // when
     getActuator().pause();
 
+    client
+        .newPublishMessageCommand()
+        .messageName("Test")
+        .correlationKey("2")
+        .messageId("2")
+        .send()
+        .join();
+
+    final var recordsAfterPause =
+        Awaitility.await()
+            .atMost(Duration.ofSeconds(30))
+            .during(Duration.ofSeconds(5))
+            .until(RecordingExporter.getRecords()::size, hasStableValue());
+
     // then
-    RecordingExporter.records().limit(recordsBeforePause + 1).await();
+    assertEquals(recordsAfterPause, recordsBeforePause);
     Awaitility.await().untilAsserted(this::allPartitionsPausedExporting);
   }
 
@@ -82,17 +97,18 @@ final class ExportingEndpointIT {
   void shouldResumeExporting() {
     // given
     final var actuator = getActuator();
+
     actuator.pause();
 
     client
         .newPublishMessageCommand()
         .messageName("Test")
-        .correlationKey("1")
-        .messageId("2")
+        .correlationKey("3")
+        .messageId("3")
         .send()
         .join();
 
-    final var recordsBeforePause =
+    final var recordsBeforeResume =
         Awaitility.await()
             .atMost(Duration.ofSeconds(30))
             .during(Duration.ofSeconds(5))
@@ -101,8 +117,14 @@ final class ExportingEndpointIT {
     // when
     getActuator().resume();
 
+    final var recordsAfterResume =
+        Awaitility.await()
+            .atMost(Duration.ofSeconds(30))
+            .during(Duration.ofSeconds(5))
+            .until(RecordingExporter.getRecords()::size, hasStableValue());
+
     // then
-    RecordingExporter.records().limit(recordsBeforePause + 1).await();
+    assertThat(recordsAfterResume).isGreaterThan(recordsBeforeResume);
     Awaitility.await().untilAsserted(this::allPartitionsExporting);
   }
 
@@ -115,7 +137,7 @@ final class ExportingEndpointIT {
         .newPublishMessageCommand()
         .messageName("Test")
         .correlationKey("5")
-        .messageId("3")
+        .messageId("5")
         .send()
         .join();
 
@@ -130,8 +152,22 @@ final class ExportingEndpointIT {
     CLUSTER.shutdown();
     CLUSTER.start();
 
+    client
+        .newPublishMessageCommand()
+        .messageName("Test")
+        .correlationKey("6")
+        .messageId("6")
+        .send()
+        .join();
+
+    final var recordsAfterRestart =
+        Awaitility.await()
+            .atMost(Duration.ofSeconds(30))
+            .during(Duration.ofSeconds(5))
+            .until(RecordingExporter.getRecords()::size, hasStableValue());
+
     // then
-    RecordingExporter.records().limit(recordsBeforePause + 1).await();
+    assertEquals(recordsAfterRestart, recordsBeforePause);
     Awaitility.await().untilAsserted(this::allPartitionsPausedExporting);
   }
 
