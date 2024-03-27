@@ -18,26 +18,27 @@ public final class AtomicUtil {
   private AtomicUtil() {}
 
   /**
-   * Locklessly updates an atomic reference using the provided update function and rollbacks if the
-   * reference changed during the update, e.g. by another thread.
+   * Locklessly replaces the value of an atomic reference using the provided replacer function and
+   * rollbacks if the value was replaced concurrently.
    *
-   * <p>If the update function returns an empty optional, the atomic reference is not updated.
+   * <p>If the replacer function returns an empty optional, the value of the atomic reference is not
+   * replaced.
    *
-   * <p>If the atomic reference has been updated by another thread in the meantime, the rollback
-   * function is called with the value provided by the update function, and the update function is
-   * called again.
+   * <p>If the value of the atomic reference has been replaced by another thread in the meantime,
+   * the rollback function is called with the value provided by the replacer function, and the
+   * replacer function is called again.
    *
-   * @param ref The atomic reference to update
-   * @param update The update function used to provide a new value to the atomic reference; if
-   *     {@code empty} the atomic reference is not updated
-   * @param rollback The rollback function used to revert any side effect produced by the update
+   * @param ref The atomic reference that holds the value to replace
+   * @param replacer The replacer function used to provide a new value to the atomic reference; if
+   *     {@code empty} the value of atomic reference is not replaced
+   * @param rollback The rollback function used to revert any side effect produced by the replacer
    *     function
-   * @return The previous value of the atomic reference, or null if the value was left unchanged
-   * @param <T> The type of the atomic reference
+   * @return The previous value of the atomic reference, or null if the value was not replaced
+   * @param <T> The type of the value of the atomic reference
    */
-  public static <T> T update(
+  public static <T> T replace(
       final AtomicReference<T> ref,
-      final Function<T, Optional<T>> update,
+      final Function<T, Optional<T>> replacer,
       final Consumer<T> rollback) {
     T currentVal;
     T newVal = null;
@@ -47,7 +48,7 @@ public final class AtomicUtil {
         rollback.accept(newVal);
       }
       currentVal = ref.get();
-      final var result = update.apply(currentVal);
+      final var result = replacer.apply(currentVal);
       if (result.isEmpty()) {
         return null;
       }
