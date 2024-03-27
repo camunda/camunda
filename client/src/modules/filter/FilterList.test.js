@@ -230,7 +230,9 @@ it('should display excluded flow nodes for flow node selection filter with not i
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
 
-  expect(node.find('.parameterName').dive()).toIncludeText('Flow node selection');
+  expect(node.find('.parameterName').dive().find('Text').dive()).toIncludeText(
+    'Flow node selection'
+  );
   expect(node.find('.filterText')).toIncludeText('2 excluded flow node(s)');
 });
 
@@ -250,7 +252,9 @@ it('should display included flow nodes for flow node selection filter with in op
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
 
-  expect(node.find('.parameterName').dive()).toIncludeText('Flow node selection');
+  expect(node.find('.parameterName').dive().find('Text').dive()).toIncludeText(
+    'Flow node selection'
+  );
   expect(node.find('.filterText')).toIncludeText('1 selected flow node(s)');
 });
 
@@ -310,7 +314,7 @@ it('should display a duration filter', () => {
   const actionItem = node.find('ActionItem').dive();
 
   expect(actionItem).toIncludeText('is less than');
-  expect(actionItem.find('Tag').dive()).toIncludeText('duration');
+  expect(actionItem.find('Tag').dive().find('Text').dive()).toIncludeText('duration');
   expect(actionItem.find('b').prop('children').join('')).toBe('18 hours');
 });
 
@@ -328,7 +332,9 @@ it('should display a flow node duration filter', () => {
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({a: 'flow node name'}));
 
-  expect(node.find(ActionItem).dive().find('Tag').dive()).toIncludeText('Flow node duration');
+  expect(node.find(ActionItem).dive().find('Tag').dive().find('Text').dive()).toIncludeText(
+    'Flow node duration'
+  );
 });
 
 it('should show flow node duration filter in expanded state if specified', () => {

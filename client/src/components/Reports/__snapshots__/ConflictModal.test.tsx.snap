@@ -6,9 +6,7 @@ exports[`should match snapshot 1`] = `
   onClose={[MockFunction]}
   open={true}
 >
-  <ForwardRef(ModalHeader)
-    iconDescription="Close"
-  >
+  <ForwardRef(ModalHeader)>
     Destructive changes
   </ForwardRef(ModalHeader)>
   <ForwardRef>
@@ -36,11 +34,7 @@ exports[`should match snapshot 1`] = `
       </p>
     </div>
   </ForwardRef>
-  <ForwardRef(ModalFooter)
-    closeModal={[Function]}
-    onRequestClose={[Function]}
-    onRequestSubmit={[Function]}
-  >
+  <ForwardRef(ModalFooter)>
     <Button
       className="close"
       disabled={false}

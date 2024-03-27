@@ -29,10 +29,7 @@ exports[`should render a user task duration selection for user task duration rep
       gap={3}
     >
       <FormGroup
-        invalid={false}
         legendText="User task duration"
-        message={false}
-        messageText=""
       >
         <ForwardRef(Stack)
           gap={3}
@@ -70,10 +67,7 @@ exports[`should render a user task duration selection for user task duration rep
         </ForwardRef(Stack)>
       </FormGroup>
       <FormGroup
-        invalid={false}
         legendText="Basic aggregations"
-        message={false}
-        messageText=""
       >
         <ForwardRef(Stack)
           gap={3}
@@ -121,10 +115,7 @@ exports[`should render a user task duration selection for user task duration rep
         </ForwardRef(Stack)>
       </FormGroup>
       <FormGroup
-        invalid={false}
         legendText="Percentile aggregations"
-        message={false}
-        messageText=""
       >
         <ForwardRef(Stack)
           gap={3}
@@ -225,10 +216,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       gap={3}
     >
       <FormGroup
-        invalid={false}
         legendText="Basic aggregations"
-        message={false}
-        messageText=""
       >
         <ForwardRef(Stack)
           gap={3}
@@ -276,10 +264,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
         </ForwardRef(Stack)>
       </FormGroup>
       <FormGroup
-        invalid={false}
         legendText="Percentile aggregations"
-        message={false}
-        messageText=""
       >
         <ForwardRef(Stack)
           gap={3}

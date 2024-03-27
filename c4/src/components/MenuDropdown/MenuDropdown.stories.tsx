@@ -26,6 +26,7 @@ export const mainStory: Story = {
 		children: [
 			<MenuItemSelectable label="item1" />,
 			<MenuItemSelectable label="item2" />,
+			// @ts-ignore
 			<MenuItemSelectable label="item3" selected>
 				<MenuItemSelectable label="sub item" selected />
 			</MenuItemSelectable>,
@@ -47,6 +48,7 @@ export const invalidInput: Story = {
 		children: [
 			<MenuItemSelectable label="item1" />,
 			<MenuItemSelectable label="item2" />,
+			// @ts-ignore
 			<MenuItemSelectable label="item3" selected>
 				<MenuItemSelectable label="sub item" selected />
 				{Array.from(Array(30).keys()).map((id) => (
@@ -77,6 +79,7 @@ export const tooManyOptions: Story = {
 		children: [
 			<MenuItemSelectable label="item1" />,
 			<MenuItemSelectable label="item2" />,
+			// @ts-ignore
 			<MenuItemSelectable label="item3" selected>
 				<MenuItemSelectable label="sub item" selected />
 				{Array.from(Array(30).keys()).map((id) => (

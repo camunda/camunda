@@ -304,17 +304,17 @@ test('should only enable valid combinations for process instance count grouped b
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(Common.menuOption('Start date').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Variable').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Flow nodes').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Start date').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Variable').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Flow nodes').getAttribute('aria-disabled')).eql('true');
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar/line chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Number').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Table').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Bar chart').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Heatmap').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Bar/line chart').getAttribute('aria-disabled')).eql('true');
 
   await t.expect(e.reportNumber.visible).ok();
 });
@@ -388,13 +388,13 @@ test('select process instance count grouped by end date', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Line chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Pie chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar/line chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Number').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Table').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Bar chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Line chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Pie chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Heatmap').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Bar/line chart').getAttribute('aria-disabled')).eql('true');
 
   await t.click(e.visualizationDropdown);
 
@@ -412,13 +412,13 @@ test('select process instance count grouped by variable', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Line chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Pie chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar/line chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Number').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Table').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Bar chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Line chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Pie chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Heatmap').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Bar/line chart').getAttribute('aria-disabled')).eql('true');
 
   await t.click(e.visualizationDropdown);
 
@@ -449,10 +449,10 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Number').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Table').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Bar chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Heatmap').getAttribute('aria-disabled')).eql('false');
 });
 
 test('bar chart and line chart configuration', async (t) => {
@@ -761,26 +761,26 @@ test('should only enable valid combinations for user task', async (t) => {
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(Common.menuOption('Flow nodes').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('User task').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Assignee').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Candidate group').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Start date').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Flow nodes').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('User task').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Assignee').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Candidate group').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Start date').getAttribute('aria-disabled')).eql('false');
 
   await t.click(Common.menuOption('User tasks'));
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Number').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Table').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Bar chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Heatmap').getAttribute('aria-disabled')).eql('false');
 
   await u.selectGroupby(t, 'Assignee');
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Heatmap').getAttribute('aria-disabled')).eql('true');
 
   await t.click(Common.menuOption('Table'));
 
@@ -809,11 +809,11 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Line chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Pie chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Table').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Bar chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Line chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Number').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Pie chart').getAttribute('aria-disabled')).eql('true');
 
   await t.click(Common.menuOption('Table'));
   await t.expect(e.reportTable.visible).ok();

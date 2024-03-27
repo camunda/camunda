@@ -51,7 +51,7 @@ export default forwardRef(function MenuDropdown(
 ) {
 	const prefix = usePrefix()
 	const triggerRef = useRef<HTMLDivElement>(null)
-	const menuRef = useRef<HTMLElement>(null)
+	const menuRef = useRef<HTMLUListElement>(null)
 	const buttonRef = useRef<HTMLButtonElement>(null)
 	const [width, setWidth] = useState(0)
 	const id = useId()
@@ -136,7 +136,7 @@ export default forwardRef(function MenuDropdown(
 				target={menuTarget || undefined}
 				className="MenuDropdownMenu"
 				ref={menuRef}
-				label={label}
+				label={label?.toString()}
 				size={size}
 				open={open}
 				onClose={handleClose}

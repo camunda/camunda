@@ -119,9 +119,7 @@ exports[`should match snapshot 1`] = `
       }
     }
     toolbar={
-      <TableToolbar
-        aria-label="data table toolbar"
-      >
+      <TableToolbar>
         <TableToolbarContent>
           <b>
             Events list

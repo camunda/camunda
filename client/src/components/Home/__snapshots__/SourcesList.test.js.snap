@@ -113,17 +113,11 @@ exports[`should match snapshot 1`] = `
     onClose={[Function]}
     open={null}
   >
-    <ForwardRef(ModalHeader)
-      iconDescription="Close"
-    >
+    <ForwardRef(ModalHeader)>
       Destructive changes
     </ForwardRef(ModalHeader)>
     <ForwardRef />
-    <ForwardRef(ModalFooter)
-      closeModal={[Function]}
-      onRequestClose={[Function]}
-      onRequestSubmit={[Function]}
-    >
+    <ForwardRef(ModalFooter)>
       <Button
         className="close"
         disabled={false}

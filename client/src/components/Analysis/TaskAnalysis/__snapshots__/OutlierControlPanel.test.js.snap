@@ -4,7 +4,7 @@ exports[`show display a definition selection and an info message 1`] = `
 <div
   className="OutlierControlPanel"
 >
-  <ForwardRef(Layer)
+  <Layer
     as="ul"
     className="list"
   >
@@ -63,6 +63,6 @@ exports[`show display a definition selection and an info message 1`] = `
         variables={Array []}
       />
     </li>
-  </ForwardRef(Layer)>
+  </Layer>
 </div>
 `;

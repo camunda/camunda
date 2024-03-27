@@ -6,11 +6,9 @@
  */
 
 import {
-	FC,
 	PropsWithoutRef,
 	PropsWithChildren,
 	RefAttributes,
-	ReactNode,
 	ComponentProps,
 } from "react"
 
@@ -19,27 +17,6 @@ declare module "@carbon/react" {
 		PropsWithChildren<P>
 	> &
 		RefAttributes<T>
-
-	interface MenuProps {
-		id: string
-		className?: string
-		target?: Element | null
-		label: ReactNode
-		size: "xs" | "sm" | "md" | "lg"
-		open: boolean
-		onClose: () => void
-		onOpen: () => void
-		x: number[]
-		y: number[]
-		target?: Element | null
-	}
-
-	function Menu(props: ForwardRefProps<HTMLElement, MenuProps>): JSX.Element
-
-	function MenuItem(props: ForwardRefProps<HTMLElement, {}>): JSX.Element
-	function MenuItemSelectable(
-		props: ForwardRefProps<HTMLElement, { label: string; selected?: boolean }>,
-	): JSX.Element
 
 	interface MenuButtonProps extends ComponentProps<"div"> {
 		label: string

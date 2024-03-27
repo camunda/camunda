@@ -67,7 +67,9 @@ it('should show the header of the filter if there exists a filter after it', () 
   node.setProps({filter: testFilter, filters: [testFilter, {}]});
   runAllEffects();
 
-  expect(node.find('.sectionTitle Tag').dive()).toIncludeText(props.variables[0].label);
+  expect(node.find('.sectionTitle Tag').dive().find('Text').dive()).toIncludeText(
+    props.variables[0].label
+  );
 });
 
 it('should show the filter header on the last collapsed filter', () => {
@@ -82,7 +84,7 @@ it('should show the filter header on the last collapsed filter', () => {
   );
   runAllEffects();
 
-  expect(node.find('.sectionTitle Tag').dive()).toIncludeText(validFilter.name);
+  expect(node.find('.sectionTitle Tag').dive().find('Text').dive()).toIncludeText(validFilter.name);
 });
 
 it('should prevent collapsing the invalid filter', () => {

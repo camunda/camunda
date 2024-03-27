@@ -106,10 +106,12 @@ export default function CarbonSelect<T extends object | string | number>(
 
 type SubmenuProps = Omit<ComponentProps<typeof MenuItemSelectable>, 'label'> & {
   label?: string | JSX.Element[];
+  children?: ReactNode;
 };
 
 CarbonSelect.Submenu = function Submenu(props: SubmenuProps) {
   return (
+    // @ts-ignore
     <MenuItemSelectable className="Submenu" {...props} label={props.label?.toString() || ''}>
       {props.children}
     </MenuItemSelectable>
@@ -124,6 +126,7 @@ CarbonSelect.Option = function Option<T extends object | string | number = strin
   props: OptionProps<T>
 ) {
   return (
+    // @ts-ignore
     <MenuItemSelectable className="Option" {...props} label={props.label?.toString() || ''}>
       {props.children}
     </MenuItemSelectable>

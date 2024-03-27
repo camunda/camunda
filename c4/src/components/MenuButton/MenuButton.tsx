@@ -45,7 +45,7 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 	},
 	forwardedRef,
 ) {
-	const menuRef = useRef<HTMLDivElement>(null)
+	const menuRef = useRef<HTMLUListElement>(null)
 	const triggerRef = useRef<HTMLDivElement>(null)
 	const ref = useMergedRefs<HTMLDivElement>([triggerRef, forwardedRef])
 	const [width, setWidth] = useState(0)

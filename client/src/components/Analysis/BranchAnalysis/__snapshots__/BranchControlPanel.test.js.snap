@@ -4,7 +4,7 @@ exports[`should display a sentence to describe what the user can do on this page
 <div
   className="BranchControlPanel"
 >
-  <ForwardRef(Layer)
+  <Layer
     as="ul"
     className="list"
   >
@@ -62,6 +62,6 @@ exports[`should display a sentence to describe what the user can do on this page
         variables={null}
       />
     </li>
-  </ForwardRef(Layer)>
+  </Layer>
 </div>
 `;

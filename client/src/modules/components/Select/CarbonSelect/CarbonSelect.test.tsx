@@ -74,7 +74,7 @@ it('should select option onClick and add checked property', () => {
     </CarbonSelect>
   );
 
-  node.find(CarbonSelect.Option).prop('onChange')?.({
+  node.find(CarbonSelect.Option).simulate('change', {
     target: {closest: () => ({getAttribute: () => '1'})},
   } as unknown as UIEvent<HTMLElement>);
   expect(spy).toHaveBeenCalledWith('1');
@@ -95,7 +95,7 @@ it('should select submenu option onClick and set checked property on the submenu
     </CarbonSelect>
   );
 
-  node.find(CarbonSelect.Option).prop('onChange')?.({
+  node.find(CarbonSelect.Option).simulate('change', {
     target: {closest: () => ({getAttribute: () => '1'})},
   } as unknown as UIEvent<HTMLElement>);
   expect(spy).toHaveBeenCalledWith('1');
