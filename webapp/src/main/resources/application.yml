@@ -5,3 +5,6 @@ spring:
 graphql:
   tools:
     introspection-enabled: true
+camunda:
+  tasklist:
+    csrf-prevention-enabled: ${camunda.tasklist.csrfPreventionEnabled:true}

@@ -34,10 +34,7 @@ public class TasklistProperties {
   private boolean webappEnabled = true;
 
   private boolean persistentSessionsEnabled = false;
-
-  /** Indicates, whether CSRF prevention is enabled. */
-  @Deprecated private boolean csrfPreventionEnabled = true;
-
+  private boolean csrfPreventionEnabled = true;
   private boolean fixUsernames = true;
   private String userId = "demo";
   private String displayName = "demo";
@@ -106,7 +103,7 @@ public class TasklistProperties {
     return importerEnabled;
   }
 
-  public void setImporterEnabled(boolean importerEnabled) {
+  public void setImporterEnabled(final boolean importerEnabled) {
     this.importerEnabled = importerEnabled;
   }
 
@@ -114,7 +111,7 @@ public class TasklistProperties {
     return archiverEnabled;
   }
 
-  public void setArchiverEnabled(boolean archiverEnabled) {
+  public void setArchiverEnabled(final boolean archiverEnabled) {
     this.archiverEnabled = archiverEnabled;
   }
 
@@ -122,7 +119,7 @@ public class TasklistProperties {
     return webappEnabled;
   }
 
-  public void setWebappEnabled(boolean webappEnabled) {
+  public void setWebappEnabled(final boolean webappEnabled) {
     this.webappEnabled = webappEnabled;
   }
 
@@ -130,7 +127,7 @@ public class TasklistProperties {
     return batchOperationMaxSize;
   }
 
-  public void setBatchOperationMaxSize(Long batchOperationMaxSize) {
+  public void setBatchOperationMaxSize(final Long batchOperationMaxSize) {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
@@ -142,13 +139,11 @@ public class TasklistProperties {
     return getCloud().getClusterId() == null;
   }
 
-  @Deprecated
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
 
-  @Deprecated
-  public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
+  public void setCsrfPreventionEnabled(final boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
 
@@ -156,7 +151,7 @@ public class TasklistProperties {
     return elasticsearch;
   }
 
-  public void setElasticsearch(TasklistElasticsearchProperties elasticsearch) {
+  public void setElasticsearch(final TasklistElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 
@@ -164,7 +159,7 @@ public class TasklistProperties {
     return zeebeElasticsearch;
   }
 
-  public void setZeebeElasticsearch(ZeebeElasticsearchProperties zeebeElasticsearch) {
+  public void setZeebeElasticsearch(final ZeebeElasticsearchProperties zeebeElasticsearch) {
     this.zeebeElasticsearch = zeebeElasticsearch;
   }
 
@@ -172,7 +167,7 @@ public class TasklistProperties {
     return zeebe;
   }
 
-  public void setZeebe(ZeebeProperties zeebe) {
+  public void setZeebe(final ZeebeProperties zeebe) {
     this.zeebe = zeebe;
   }
 
@@ -180,7 +175,7 @@ public class TasklistProperties {
     return userId;
   }
 
-  public void setUserId(String userId) {
+  public void setUserId(final String userId) {
     this.userId = userId;
   }
 
@@ -196,7 +191,7 @@ public class TasklistProperties {
     return password;
   }
 
-  public void setPassword(String password) {
+  public void setPassword(final String password) {
     this.password = password;
   }
 
@@ -204,7 +199,7 @@ public class TasklistProperties {
     return importer;
   }
 
-  public void setImporter(ImportProperties importer) {
+  public void setImporter(final ImportProperties importer) {
     this.importer = importer;
   }
 
@@ -212,7 +207,7 @@ public class TasklistProperties {
     return archiver;
   }
 
-  public void setArchiver(ArchiverProperties archiver) {
+  public void setArchiver(final ArchiverProperties archiver) {
     this.archiver = archiver;
   }
 
@@ -220,7 +215,7 @@ public class TasklistProperties {
     return clusterNode;
   }
 
-  public void setClusterNode(ClusterNodeProperties clusterNode) {
+  public void setClusterNode(final ClusterNodeProperties clusterNode) {
     this.clusterNode = clusterNode;
   }
 
@@ -228,7 +223,7 @@ public class TasklistProperties {
     return enterprise;
   }
 
-  public void setEnterprise(boolean enterprise) {
+  public void setEnterprise(final boolean enterprise) {
     this.enterprise = enterprise;
   }
 
@@ -244,7 +239,7 @@ public class TasklistProperties {
     return persistentSessionsEnabled;
   }
 
-  public TasklistProperties setPersistentSessionsEnabled(boolean persistentSessionsEnabled) {
+  public TasklistProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }
@@ -286,7 +281,7 @@ public class TasklistProperties {
     return backup;
   }
 
-  public TasklistProperties setBackup(BackupProperties backup) {
+  public TasklistProperties setBackup(final BackupProperties backup) {
     this.backup = backup;
     return this;
   }
@@ -295,7 +290,7 @@ public class TasklistProperties {
     return version;
   }
 
-  public TasklistProperties setVersion(String version) {
+  public TasklistProperties setVersion(final String version) {
     this.version = version;
     return this;
   }
@@ -304,7 +299,7 @@ public class TasklistProperties {
     return fixUsernames;
   }
 
-  public void setFixUsernames(boolean fixUsernames) {
+  public void setFixUsernames(final boolean fixUsernames) {
     this.fixUsernames = fixUsernames;
   }
 
@@ -312,7 +307,7 @@ public class TasklistProperties {
     return securityProperties;
   }
 
-  public TasklistProperties setSecurityProperties(SecurityProperties securityProperties) {
+  public TasklistProperties setSecurityProperties(final SecurityProperties securityProperties) {
     this.securityProperties = securityProperties;
     return this;
   }
@@ -321,7 +316,7 @@ public class TasklistProperties {
     return featureFlag;
   }
 
-  public TasklistProperties setFeatureFlag(FeatureFlagProperties featureFlag) {
+  public TasklistProperties setFeatureFlag(final FeatureFlagProperties featureFlag) {
     this.featureFlag = featureFlag;
     return this;
   }
@@ -330,7 +325,7 @@ public class TasklistProperties {
     return operatorUserId;
   }
 
-  public TasklistProperties setOperatorUserId(String operatorUserId) {
+  public TasklistProperties setOperatorUserId(final String operatorUserId) {
     this.operatorUserId = operatorUserId;
     return this;
   }
@@ -339,7 +334,7 @@ public class TasklistProperties {
     return operatorPassword;
   }
 
-  public TasklistProperties setOperatorPassword(String operatorPassword) {
+  public TasklistProperties setOperatorPassword(final String operatorPassword) {
     this.operatorPassword = operatorPassword;
     return this;
   }
@@ -348,7 +343,7 @@ public class TasklistProperties {
     return operatorDisplayName;
   }
 
-  public TasklistProperties setOperatorDisplayName(String operatorDisplayName) {
+  public TasklistProperties setOperatorDisplayName(final String operatorDisplayName) {
     this.operatorDisplayName = operatorDisplayName;
     return this;
   }
@@ -357,7 +352,7 @@ public class TasklistProperties {
     return readerUserId;
   }
 
-  public TasklistProperties setReaderUserId(String readerUserId) {
+  public TasklistProperties setReaderUserId(final String readerUserId) {
     this.readerUserId = readerUserId;
     return this;
   }
@@ -366,7 +361,7 @@ public class TasklistProperties {
     return readerPassword;
   }
 
-  public TasklistProperties setReaderPassword(String readerPassword) {
+  public TasklistProperties setReaderPassword(final String readerPassword) {
     this.readerPassword = readerPassword;
     return this;
   }
@@ -375,7 +370,7 @@ public class TasklistProperties {
     return readerDisplayName;
   }
 
-  public TasklistProperties setReaderDisplayName(String readerDisplayName) {
+  public TasklistProperties setReaderDisplayName(final String readerDisplayName) {
     this.readerDisplayName = readerDisplayName;
     return this;
   }
@@ -384,7 +379,7 @@ public class TasklistProperties {
     return openSearch;
   }
 
-  public TasklistProperties setOpenSearch(TasklistOpenSearchProperties openSearch) {
+  public TasklistProperties setOpenSearch(final TasklistOpenSearchProperties openSearch) {
     this.openSearch = openSearch;
     return this;
   }
@@ -393,7 +388,7 @@ public class TasklistProperties {
     return database;
   }
 
-  public TasklistProperties setDatabase(String database) {
+  public TasklistProperties setDatabase(final String database) {
     this.database = database;
     return this;
   }
@@ -402,7 +397,7 @@ public class TasklistProperties {
     return zeebeOpenSearch;
   }
 
-  public TasklistProperties setZeebeOpenSearch(ZeebeOpenSearchProperties zeebeOpenSearch) {
+  public TasklistProperties setZeebeOpenSearch(final ZeebeOpenSearchProperties zeebeOpenSearch) {
     this.zeebeOpenSearch = zeebeOpenSearch;
     return this;
   }
@@ -411,7 +406,7 @@ public class TasklistProperties {
     return multiTenancy;
   }
 
-  public TasklistProperties setMultiTenancy(MultiTenancyProperties multiTenancy) {
+  public TasklistProperties setMultiTenancy(final MultiTenancyProperties multiTenancy) {
     this.multiTenancy = multiTenancy;
     return this;
   }
@@ -420,7 +415,7 @@ public class TasklistProperties {
     return documentation;
   }
 
-  public void setDocumentation(TasklistDocumentationProperties documentation) {
+  public void setDocumentation(final TasklistDocumentationProperties documentation) {
     this.documentation = documentation;
   }
 }
