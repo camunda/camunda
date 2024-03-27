@@ -12,18 +12,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
+import java.nio.file.StandardOpenOption;
 import java.util.stream.Stream;
 
 public class PartitionProcessingState {
 
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
   private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
-  private static final String PAUSED = "paused";
-  private static final String SOFT_PAUSED = "softPaused";
-  private static final String EXPORTING = "";
   private boolean isProcessingPaused;
-  private String exporterState;
+  private EXPORTER_STATE exporterState;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
 
@@ -75,18 +72,18 @@ public class PartitionProcessingState {
   }
 
   public boolean isExportingPaused() {
-    return exporterState.equals(PAUSED);
+    return exporterState.equals(EXPORTER_STATE.PAUSED);
   }
 
   public boolean isExportingSoftPaused() {
-    return exporterState.equals(SOFT_PAUSED);
+    return exporterState.equals(EXPORTER_STATE.SOFT_PAUSED);
   }
 
   @SuppressWarnings({"squid:S899"})
   /** Returns true if exporting is paused. This method overrides the effects of soft pause. */
   public boolean pauseExporting() {
     try {
-      setPersistedExporterState(PAUSED);
+      setPersistedExporterState(EXPORTER_STATE.PAUSED);
     } catch (final IOException e) {
       return false;
     }
@@ -96,7 +93,7 @@ public class PartitionProcessingState {
   /** Returns true if soft exporting is paused. This method overrides the effects of hard pause. */
   public boolean softPauseExporting() {
     try {
-      setPersistedExporterState(SOFT_PAUSED);
+      setPersistedExporterState(EXPORTER_STATE.SOFT_PAUSED);
     } catch (final IOException e) {
       return false;
     }
@@ -106,34 +103,53 @@ public class PartitionProcessingState {
   /** Returns true if exporting is resumed. This method resumes both soft and "hard" exporting. */
   public boolean resumeExporting() {
     try {
-      setPersistedExporterState(EXPORTING);
+      setPersistedExporterState(EXPORTER_STATE.EXPORTING);
     } catch (final IOException e) {
       return false;
     }
     return true;
   }
 
-  void setPersistedExporterState(final String state) throws IOException {
+  void setPersistedExporterState(final EXPORTER_STATE state) throws IOException {
+    exporterState = state;
+    if (state.equals(EXPORTER_STATE.EXPORTING)) {
+      // since exporting is the default state, we can delete the file
+      Files.deleteIfExists(
+          getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
+      return;
+    }
+
     final File persistedExporterPauseState =
         getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
-    Files.write(persistedExporterPauseState.toPath(), Arrays.asList(state), StandardCharsets.UTF_8);
-    exporterState = state;
+    persistedExporterPauseState.createNewFile();
+    Files.writeString(
+        persistedExporterPauseState.toPath(),
+        state.name(),
+        StandardCharsets.UTF_8,
+        StandardOpenOption.DSYNC);
   }
 
   private void initExportingState() {
     Stream<String> stream = null;
     try {
       if (!getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists()) {
-        setPersistedExporterState(EXPORTING);
+        setPersistedExporterState(EXPORTER_STATE.EXPORTING);
+        exporterState = EXPORTER_STATE.EXPORTING;
       } else {
         stream =
             Files.lines(getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
-        exporterState = stream.findFirst().get();
+        exporterState = EXPORTER_STATE.valueOf(stream.findFirst().get());
         stream.close();
       }
     } catch (final IOException e) {
       // exporting is the default state
-      exporterState = EXPORTING;
+      exporterState = EXPORTER_STATE.EXPORTING;
     }
+  }
+
+  public enum EXPORTER_STATE {
+    PAUSED,
+    SOFT_PAUSED,
+    EXPORTING;
   }
 }
