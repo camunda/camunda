@@ -32,7 +32,7 @@ public final class AtomicUtil {
    *     {@code empty} the atomic reference is not updated
    * @param rollback The rollback function used to revert any side effect produced by the update
    *     function
-   * @return The previous value of the atomic reference
+   * @return The previous value of the atomic reference, or null if the value was left unchanged
    * @param <T> The type of the atomic reference
    */
   public static <T> T update(
@@ -49,7 +49,7 @@ public final class AtomicUtil {
       currentVal = ref.get();
       final var result = update.apply(currentVal);
       if (result.isEmpty()) {
-        return currentVal;
+        return null;
       }
       newVal = result.get();
     } while (!ref.compareAndSet(currentVal, newVal));
