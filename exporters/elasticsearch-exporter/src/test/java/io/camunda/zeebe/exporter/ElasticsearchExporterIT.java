@@ -34,9 +34,13 @@ import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -65,6 +69,7 @@ final class ElasticsearchExporterIT {
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
 
   private TestClient testClient;
+  private int exportedRecordsCounter = 0;
 
   @BeforeAll
   public void beforeAll() {
@@ -97,7 +102,7 @@ final class ElasticsearchExporterIT {
     final var record = factory.generateRecord(valueType);
 
     // when
-    exporter.export(record);
+    export(record);
 
     // then
     final var response = testClient.getExportedDocumentFor(record);
@@ -127,7 +132,7 @@ final class ElasticsearchExporterIT {
         factory.generateRecord(ValueType.JOB, builder -> builder.withValue(value));
 
     // when
-    exporter.export(record);
+    export(record);
 
     // then
     final var response = testClient.getExportedDocumentFor(record);
@@ -153,7 +158,7 @@ final class ElasticsearchExporterIT {
         factory.generateRecord(ValueType.JOB_BATCH, builder -> builder.withValue(value));
 
     // when
-    exporter.export(record);
+    export(record);
 
     // then
     final var response = testClient.getExportedDocumentFor(record);
@@ -173,7 +178,7 @@ final class ElasticsearchExporterIT {
     final var expectedIndexTemplateName = indexRouter.indexPrefixForValueType(valueType);
 
     // when - export a single record to enforce installing all index templatesWrapper
-    exporter.export(record);
+    export(record);
 
     // then
     final var template = testClient.getIndexTemplate(valueType);
@@ -191,7 +196,7 @@ final class ElasticsearchExporterIT {
     final var record = factory.generateRecord();
 
     // when - export a single record to enforce installing all index templatesWrapper
-    exporter.export(record);
+    export(record);
 
     // then
     final var template = testClient.getComponentTemplate();
@@ -203,146 +208,164 @@ final class ElasticsearchExporterIT {
         .isEqualTo(config.index.prefix);
   }
 
-  @Test
-  void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
-    // given
-    config.retention.setEnabled(false);
-    final var record1 = factory.generateRecord(ValueType.JOB);
-
-    // when
-    exporter.export(record1);
-
-    // then
-    final var index1 = indexRouter.indexFor(record1);
-    var response1 = testClient.getIndexSettings(index1);
-
-    assertIndexSettingsHasNoLifecyclePolicy(response1);
-
-    /* Tests when retention is later enabled all indices should have lifecycle policy */
-    // given
-    config.retention.setEnabled(true);
-    final var record2 = factory.generateRecord(ValueType.JOB);
-
-    // when
-    exporter.setIndexTemplatesCreated(false);
-    exporter.export(record2);
-
-    // then
-    final var index2 = indexRouter.indexFor(record2);
-    final var response2 = testClient.getIndexSettings(index2);
-    assertIndexSettingsHasLifecyclePolicy(response2);
-
-    response1 = testClient.getIndexSettings(index1);
-    assertIndexSettingsHasLifecyclePolicy(response1);
+  private void export(final Record<?> record) {
+    exporter.export(record);
+    exportedRecordsCounter++;
   }
 
-  @Test
-  void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
-    // given
-    config.retention.setEnabled(true);
-    final var record1 = factory.generateRecord(ValueType.JOB);
+  @Nested
+  @TestMethodOrder(OrderAnnotation.class)
+  final class IndexSettingsTest {
+    @Test
+    @Order(1)
+    void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
+      // given
+      exporter.setIndexTemplatesCreated(false);
+      config.retention.setEnabled(false);
+      final var record1 = factory.generateRecord(ValueType.JOB);
 
-    // when
-    exporter.export(record1);
+      // when
+      export(record1);
 
-    // then
-    final var index1 = indexRouter.indexFor(record1);
-    var response1 = testClient.getIndexSettings(index1);
-    assertIndexSettingsHasLifecyclePolicy(response1);
+      // then
+      final var index1 = indexRouter.indexFor(record1);
+      var response1 = testClient.getIndexSettings(index1);
 
-    /* Tests when retention is later disabled all indices should not have a lifecycle policy */
-    // given
-    config.retention.setEnabled(false);
-    final var record2 = factory.generateRecord(ValueType.JOB);
+      assertIndexSettingsHasNoLifecyclePolicy(response1);
 
-    // when
-    exporter.setIndexTemplatesCreated(false);
-    exporter.export(record2);
+      /* Tests when retention is later enabled all indices should have lifecycle policy */
+      // given
+      config.retention.setEnabled(true);
+      final var record2 = factory.generateRecord(ValueType.JOB);
 
-    // then
-    final var index2 = indexRouter.indexFor(record2);
-    final var response2 = testClient.getIndexSettings(index2);
-    assertIndexSettingsHasNoLifecyclePolicy(response2);
+      // when
+      exporter.setIndexTemplatesCreated(false);
+      export(record2);
 
-    response1 = testClient.getIndexSettings(index1);
-    assertIndexSettingsHasNoLifecyclePolicy(response1);
-  }
+      // then
+      final var index2 = indexRouter.indexFor(record2);
+      final var response2 = testClient.getIndexSettings(index2);
+      assertIndexSettingsHasLifecyclePolicy(response2);
 
-  /**
-   * Default timeout for elasticsearch `PUT /<target>/_settings` is 30 seconds.
-   *
-   * <p>500 records each has a shard and a replica means 1000 shards, which is the maximum open
-   * shards in a one node cluster
-   */
-  @Test
-  @Timeout(30)
-  void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() throws InterruptedException {
-    // given
-    config.retention.setEnabled(false);
-    final var records = new ArrayList<Record<RecordValue>>();
-    for (int i = 0; i < 499; i++) {
-      records.add(factory.generateRecord(ValueType.JOB));
+      response1 = testClient.getIndexSettings(index1);
+      assertIndexSettingsHasLifecyclePolicy(response1);
     }
 
-    // when
-    for (final var record : records) {
-      exporter.export(record);
+    @Test
+    @Order(2)
+    void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
+      // given
+      exporter.setIndexTemplatesCreated(false);
+      config.retention.setEnabled(true);
+      final var record1 = factory.generateRecord(ValueType.JOB);
+
+      // when
+      export(record1);
+
+      // then
+      final var index1 = indexRouter.indexFor(record1);
+      var response1 = testClient.getIndexSettings(index1);
+      assertIndexSettingsHasLifecyclePolicy(response1);
+
+      /* Tests when retention is later disabled all indices should not have a lifecycle policy */
+      // given
+      config.retention.setEnabled(false);
+      final var record2 = factory.generateRecord(ValueType.JOB);
+
+      // when
+      exporter.setIndexTemplatesCreated(false);
+      export(record2);
+
+      // then
+      final var index2 = indexRouter.indexFor(record2);
+      final var response2 = testClient.getIndexSettings(index2);
+      assertIndexSettingsHasNoLifecyclePolicy(response2);
+
+      response1 = testClient.getIndexSettings(index1);
+      assertIndexSettingsHasNoLifecyclePolicy(response1);
     }
 
-    // then
-    for (final var record : records) {
-      final var index = indexRouter.indexFor(record);
-      final var response = testClient.getIndexSettings(index);
+    /**
+     * Default timeout for elasticsearch `PUT /<target>/_settings` is 30 seconds.
+     *
+     * <p>500 records each has a shard and a replica means 1000 shards, which is the maximum open
+     * shards in a one node cluster
+     */
+    @Test
+    @Order(3)
+    @Timeout(30)
+    void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices()
+        throws InterruptedException {
+      // given
+      exporter.setIndexTemplatesCreated(false);
+      config.retention.setEnabled(false);
+      final var records = new ArrayList<Record<RecordValue>>();
+      final int limit = 498 - exportedRecordsCounter;
+      for (int i = 0; i < limit; i++) {
+        records.add(factory.generateRecord(ValueType.JOB));
+      }
 
-      assertIndexSettingsHasNoLifecyclePolicy(response);
+      // when
+      for (final var record : records) {
+        export(record);
+      }
+
+      // then
+      for (final var record : records) {
+        final var index = indexRouter.indexFor(record);
+        final var response = testClient.getIndexSettings(index);
+
+        assertIndexSettingsHasNoLifecyclePolicy(response);
+      }
+
+      /* Tests when retention is later enabled all indices should have lifecycle policy */
+      // given
+      config.retention.setEnabled(true);
+      final var record2 = factory.generateRecord(ValueType.JOB);
+
+      // when
+      exporter.setIndexTemplatesCreated(false);
+      export(record2);
+
+      // then
+      final var index2 = indexRouter.indexFor(record2);
+      final var response2 = testClient.getIndexSettings(index2);
+      assertIndexSettingsHasLifecyclePolicy(response2);
+
+      for (final var record : records) {
+        final var index = indexRouter.indexFor(record);
+        final var response = testClient.getIndexSettings(index);
+
+        assertIndexSettingsHasLifecyclePolicy(response);
+      }
     }
 
-    /* Tests when retention is later enabled all indices should have lifecycle policy */
-    // given
-    config.retention.setEnabled(true);
-    final var record2 = factory.generateRecord(ValueType.JOB);
-
-    // when
-    exporter.setIndexTemplatesCreated(false);
-    exporter.export(record2);
-
-    // then
-    final var index2 = indexRouter.indexFor(record2);
-    final var response2 = testClient.getIndexSettings(index2);
-    assertIndexSettingsHasLifecyclePolicy(response2);
-
-    for (final var record : records) {
-      final var index = indexRouter.indexFor(record);
-      final var response = testClient.getIndexSettings(index);
-
-      assertIndexSettingsHasLifecyclePolicy(response);
+    private void assertIndexSettingsHasLifecyclePolicy(
+        final Optional<IndexSettings> indexSettings) {
+      assertThat(indexSettings)
+          .as("should have found the index")
+          .isPresent()
+          .get()
+          .extracting(IndexSettings::settings)
+          .extracting(Settings::index)
+          .extracting(Index::lifecycle)
+          .as("should have lifecycle config")
+          .isNotNull()
+          .extracting(IndexSettings.Lifecycle::name)
+          .isEqualTo(config.retention.getPolicyName());
     }
-  }
 
-  private void assertIndexSettingsHasLifecyclePolicy(final Optional<IndexSettings> indexSettings) {
-    assertThat(indexSettings)
-        .as("should have found the index")
-        .isPresent()
-        .get()
-        .extracting(IndexSettings::settings)
-        .extracting(Settings::index)
-        .extracting(Index::lifecycle)
-        .as("should have lifecycle config")
-        .isNotNull()
-        .extracting(IndexSettings.Lifecycle::name)
-        .isEqualTo(config.retention.getPolicyName());
-  }
-
-  private static void assertIndexSettingsHasNoLifecyclePolicy(
-      final Optional<IndexSettings> indexSettings) {
-    assertThat(indexSettings)
-        .as("should have found the index")
-        .isPresent()
-        .get()
-        .extracting(IndexSettings::settings)
-        .extracting(Settings::index)
-        .extracting(Index::lifecycle)
-        .as("Lifecycle policy should not be configured")
-        .isNull();
+    private static void assertIndexSettingsHasNoLifecyclePolicy(
+        final Optional<IndexSettings> indexSettings) {
+      assertThat(indexSettings)
+          .as("should have found the index")
+          .isPresent()
+          .get()
+          .extracting(IndexSettings::settings)
+          .extracting(Settings::index)
+          .extracting(Index::lifecycle)
+          .as("Lifecycle policy should not be configured")
+          .isNull();
+    }
   }
 }
