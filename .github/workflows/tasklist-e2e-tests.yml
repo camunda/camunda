@@ -20,6 +20,7 @@ jobs:
           bootstrap.memory_lock: true
           xpack.security.enabled: false
           ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+          action.destructive_requires_name: false
         ports:
           - 9200:9200
           - 9300:9300
