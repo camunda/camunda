@@ -31,25 +31,20 @@ import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 @Component("webSecurityConfig")
 public class IdentityWebSecurityConfig extends BaseWebConfigurer {
 
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
+  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Override
-  protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
+  protected void applyOAuth2Settings(HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 
   @Override
   protected void applySecurityFilterSettings(
-      final HttpSecurity http, final HandlerMappingIntrospector introspector) throws Exception {
-    if (tasklistProperties.isCsrfPreventionEnabled()) {
-      logger.info("CSRF Protection Enabled");
-      configureCSRF(http);
-    } else {
-      http.csrf((csrf) -> csrf.disable());
-    }
-    http.authorizeRequests(
+      HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
+    http.csrf((csrf) -> csrf.disable())
+        .authorizeRequests(
             (authorize) -> {
               authorize
                   .requestMatchers(getAuthWhitelist(introspector))
@@ -69,7 +64,7 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
   }
 
   protected void authenticationEntry(
-      final HttpServletRequest req, final HttpServletResponse res, final AuthenticationException ex)
+      HttpServletRequest req, HttpServletResponse res, AuthenticationException ex)
       throws IOException {
     String requestedUrl = req.getRequestURI();
     if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {

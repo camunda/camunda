@@ -11,7 +11,6 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.USERS_URL_V1;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -21,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -41,36 +39,15 @@ public interface AuthenticationTestable {
 
   TestRestTemplate getTestRestTemplate();
 
-  default HttpHeaders getHeaderWithCSRF(final HttpHeaders responseHeaders) {
-    final HttpHeaders headers = new HttpHeaders();
-    if (responseHeaders.containsKey(X_CSRF_TOKEN)) {
-      final String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
-      headers.set(X_CSRF_TOKEN, csrfToken);
-    }
-    return headers;
-  }
-
-  default List<String> getCSRFCookies(final ResponseEntity<?> response) {
-    return getCookies(response.getHeaders()).stream()
-        .filter(key -> key.contains(X_CSRF_TOKEN))
-        .collect(Collectors.toList());
-  }
-
-  default HttpEntity<Map<String, ?>> prepareRequestWithCookies(final HttpHeaders httpHeaders) {
+  default HttpEntity<Map<String, ?>> prepareRequestWithCookies(HttpHeaders httpHeaders) {
     return prepareRequestWithCookies(httpHeaders, null);
   }
 
   default HttpEntity<Map<String, ?>> prepareRequestWithCookies(
-      final HttpHeaders httpHeaders, final String graphQlQuery) {
-    final HttpHeaders headers = getHeaderWithCSRF(httpHeaders);
+      HttpHeaders httpHeaders, String graphQlQuery) {
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
-
-    // Extract and set cookies
-    final List<String> cookieList = httpHeaders.get(HttpHeaders.SET_COOKIE);
-    if (cookieList != null) {
-      final String cookies = String.join("; ", cookieList);
-      headers.set(HttpHeaders.COOKIE, cookies);
-    }
+    headers.add("Cookie", getCookiesAsString(httpHeaders));
 
     final HashMap<String, String> body = new HashMap<>();
     if (graphQlQuery != null) {
@@ -80,7 +57,7 @@ public interface AuthenticationTestable {
     return new HttpEntity<>(body, headers);
   }
 
-  default ResponseEntity<Void> login(final String username, final String password) {
+  default ResponseEntity<Void> login(String username, String password) {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
@@ -92,7 +69,7 @@ public interface AuthenticationTestable {
         .postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
-  default ResponseEntity<String> logout(final ResponseEntity<?> response) {
+  default ResponseEntity<String> logout(ResponseEntity<?> response) {
     final HttpEntity<Map<String, ?>> request = prepareRequestWithCookies(response.getHeaders());
     return getTestRestTemplate().postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
@@ -115,25 +92,17 @@ public interface AuthenticationTestable {
             String.class);
   }
 
-  default void assertThatCookiesAreSet(
-      final ResponseEntity<?> response, final boolean csrfEnabled) {
+  default void assertThatCookiesAreSet(ResponseEntity<?> response) {
     final HttpHeaders headers = response.getHeaders();
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
     final String sessionCookie = getSessionCookie(headers).orElse("");
     assertThat(sessionCookie).contains(COOKIE_JSESSIONID);
     assertThat(sessionCookie).contains("SameSite=Lax");
     assertThat(headers).containsKey(CONTENT_SECURITY_POLICY_HEADER);
-    if (csrfEnabled) {
-      final List<String> csrfTokens = getCSRFCookies(response);
-      assertThat(csrfTokens).isNotEmpty();
-      final String lastSetCRSFCookie = csrfTokens.get(csrfTokens.size() - 1);
-      assertThat(lastSetCRSFCookie).contains(X_CSRF_TOKEN);
-      assertThat(lastSetCRSFCookie.split(";")[0]).isNotEmpty();
-    }
     assertThat(headers.get(CONTENT_SECURITY_POLICY_HEADER)).isNotNull().isNotEmpty();
   }
 
-  default void assertThatCookiesAreDeleted(final ResponseEntity<?> response) {
+  default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
     final HttpHeaders headers = response.getHeaders();
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
     final List<String> cookies = headers.get(SET_COOKIE_HEADER);
@@ -141,23 +110,23 @@ public interface AuthenticationTestable {
     assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
   }
 
-  default ResponseEntity<String> get(final String path) {
+  default ResponseEntity<String> get(String path) {
     return getTestRestTemplate().getForEntity(path, String.class);
   }
 
-  default String getCookiesAsString(final HttpHeaders headers) {
+  default String getCookiesAsString(HttpHeaders headers) {
     return getSessionCookie(headers).orElse("");
   }
 
-  default Optional<String> getSessionCookie(final HttpHeaders headers) {
+  default Optional<String> getSessionCookie(HttpHeaders headers) {
     return getCookies(headers).stream().filter(key -> key.contains(COOKIE_JSESSIONID)).findFirst();
   }
 
-  default List<String> getCookies(final HttpHeaders headers) {
+  default List<String> getCookies(HttpHeaders headers) {
     return Optional.ofNullable(headers.get(SET_COOKIE_HEADER)).orElse(List.of());
   }
 
-  default String redirectLocationIn(final ResponseEntity<?> response) {
+  default String redirectLocationIn(ResponseEntity<?> response) {
     final URI uri = response.getHeaders().getLocation();
     return uri == null ? "" : uri.toString();
   }

@@ -53,6 +53,7 @@ public class UserInternalControllerIT extends TasklistZeebeIntegrationTest {
     assertThat(result)
         .hasOkHttpStatus()
         .hasApplicationJsonContentType()
-        .extractingContent(objectMapper, UserDTO.class);
+        .extractingContent(objectMapper, UserDTO.class)
+        .isEqualTo(user);
   }
 }

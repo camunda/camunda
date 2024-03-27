@@ -91,7 +91,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response, true);
+    assertThatCookiesAreSet(response);
   }
 
   @Test
@@ -111,7 +111,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(loginResponse, true);
+    assertThatCookiesAreSet(loginResponse);
     // when
     final ResponseEntity<String> logoutResponse = logout(loginResponse);
 
@@ -142,7 +142,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
   public void shouldReturnCurrentUser() {
     // given authenticated user
     final ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
-    assertThatCookiesAreSet(loginResponse, true);
+    assertThatCookiesAreSet(loginResponse);
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(

@@ -15,7 +15,6 @@ import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 public final class TasklistURIs {
 
-  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String ROOT_URL = "/";
   public static final String ROOT = ROOT_URL;
   public static final String ERROR_URL = "/error";
@@ -44,8 +43,7 @@ public final class TasklistURIs {
 
   private TasklistURIs() {}
 
-  public static final RequestMatcher[] getAuthWhitelist(
-      final HandlerMappingIntrospector introspector) {
+  public static final RequestMatcher[] getAuthWhitelist(HandlerMappingIntrospector introspector) {
     final RequestMatcher[] requestMatchers = {
       AntPathRequestMatcher.antMatcher("/webjars/**"),
       AntPathRequestMatcher.antMatcher(CLIENT_CONFIG_RESOURCE),
