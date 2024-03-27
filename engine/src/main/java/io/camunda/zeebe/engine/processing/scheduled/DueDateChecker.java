@@ -74,7 +74,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       return;
     }
 
-    final var previouslyScheduled =
+    final var replacedExecution =
         AtomicUtil.update(
             nextExecution,
             currentlyScheduled -> {
@@ -88,9 +88,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
             },
             newlyScheduled -> newlyScheduled.task().cancel());
 
-    if (previouslyScheduled != null) {
-      // cancel the execution that we just replaced
-      previouslyScheduled.task().cancel();
+    if (replacedExecution != null) {
+      replacedExecution.task().cancel();
     }
   }
 
