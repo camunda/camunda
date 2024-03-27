@@ -2114,23 +2114,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.46.0":
-  version: 10.46.0
-  resolution: "@carbon/icon-helpers@npm:10.46.0"
-  checksum: 10c0/b6df75295471992fd5141971940af6859d551465dfe8f4048badf494bded2b6ae2793d89705a2b8d2512ae4e5db627741096fb3608aafc216a73ec977a11a40d
+"@carbon/icon-helpers@npm:^10.47.0":
+  version: 10.47.0
+  resolution: "@carbon/icon-helpers@npm:10.47.0"
+  dependencies:
+    "@ibm/telemetry-js": "npm:^1.2.1"
+  checksum: 10c0/4ff57b2c506c2e6af5f95fa842539e0cb61f663ec9a72687bfd4e2c378b3cda6b4370fd437f3250e6dac37be08b4abbc7cb7b753449b52f9d01b94751a44ccdd
   languageName: node
   linkType: hard
 
 "@carbon/icons-react@npm:^11.28.0, @carbon/icons-react@npm:^11.36.0":
-  version: 11.37.0
-  resolution: "@carbon/icons-react@npm:11.37.0"
+  version: 11.38.0
+  resolution: "@carbon/icons-react@npm:11.38.0"
   dependencies:
-    "@carbon/icon-helpers": "npm:^10.46.0"
-    "@carbon/telemetry": "npm:0.1.0"
+    "@carbon/icon-helpers": "npm:^10.47.0"
+    "@ibm/telemetry-js": "npm:^1.2.1"
     prop-types: "npm:^15.7.2"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/1410ecff489968756fabf5f716328826b787e5ff51d7bee050f6cd7b2c8c323bead0a610bebb38452ffc7c678a981cb4ef4941073df6d082b607f7f15102aa81
+  checksum: 10c0/1cb5f314a16d078b2ca8acb6770a07aa8105e95f1c7791589842f128787360d4d8932c0111db4a269eb39b176db52fa18971ee0a7a7c0f060414fb82640a1e17
   languageName: node
   linkType: hard
 
@@ -2199,15 +2201,6 @@ __metadata:
     sass:
       optional: true
   checksum: 10c0/6cb84c78995323c6f34ff029052103972c12250816a60b2f4b548a79bc7cfff5f079c89bde77d591e48aa3534bfd94f78985d77b3206b36f45b20d7eefa12ae4
-  languageName: node
-  linkType: hard
-
-"@carbon/telemetry@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@carbon/telemetry@npm:0.1.0"
-  bin:
-    carbon-telemetry: bin/carbon-telemetry.js
-  checksum: 10c0/63ccb4de06beab043d8366da6391ba30e11e86479d84e58f3c486695cde5d93a5615034b3e5c802c50a54b18fe916cdcad075859d29510ea985b175974603c9e
   languageName: node
   linkType: hard
 
@@ -2622,6 +2615,15 @@ __metadata:
   bin:
     ibmtelemetry: dist/collect.js
   checksum: 10c0/15d7e8ff82042c96f3ea6599056e18ec7f38eb06cf16dced77c1222d9aa9a494a3b7ef457b9dc6770aa388b52d4c47a78d14972bb4e2a0895886a201f3e946fe
+  languageName: node
+  linkType: hard
+
+"@ibm/telemetry-js@npm:^1.2.1":
+  version: 1.3.0
+  resolution: "@ibm/telemetry-js@npm:1.3.0"
+  bin:
+    ibmtelemetry: dist/collect.js
+  checksum: 10c0/478c6ecdeba0645a1c3b30270dbc30e5c0b35d8b2534191ce90fe1a1d32f78394701e308fc7fe9a41a01af25eb47f1b329ebbbf36a2da1efc099bd3693a02239
   languageName: node
   linkType: hard
 

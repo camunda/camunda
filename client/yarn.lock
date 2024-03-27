@@ -1989,10 +1989,12 @@
   dependencies:
     "@carbon/layout" "^11.20.0"
 
-"@carbon/icon-helpers@^10.46.0":
-  version "10.46.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.46.0.tgz#b4e3f2568b9f9d9c33bdab4b02f162fb7357dd60"
-  integrity sha512-2SYjOWdiR13iQ5s1job/ajYYIByqk+rCu6M+m5hmsytgFLf0TxRwGzQn7itHELwxKUQLC5XYJjZ4Sug6urWOMw==
+"@carbon/icon-helpers@^10.47.0":
+  version "10.47.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.47.0.tgz#40a6618867980a6da3aedf0da9d8fd7fd078200a"
+  integrity sha512-vv2Wkuw7lYkYVKrn5ABzlZD+6ioAYwMuyKi2XPqYY3hrHYoL4CQUnuSFDhlj0DR2HHCB0L5MGRLxHLucx5cc7g==
+  dependencies:
+    "@ibm/telemetry-js" "^1.2.1"
 
 "@carbon/icon-helpers@^10.47.0":
   version "10.47.0"
@@ -2011,12 +2013,12 @@
     prop-types "^15.7.2"
 
 "@carbon/icons-react@^11.25.0", "@carbon/icons-react@^11.36.0":
-  version "11.36.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.36.0.tgz#63ac3bed34cdf95495e7355ed22253a8dcbd1c7d"
-  integrity sha512-gOs0TLvbu7YOk3wUO2BSISDr6cO0yaZ8b1C8SBfUN39pmJVPJ+ZFVUyWLR2tc+im2ksFouuzKGFRz9w3b85bCA==
+  version "11.38.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.38.0.tgz#3d69ae70e62bcd2a74db027649dac967f53ae943"
+  integrity sha512-xlkiJV1vRru+sGoScvhcHuIKckk1Z1tLJFF27mgXiYmXeLUdHZiJ1PTbNnm/93nFuMJdxqe6wJLDYGDri+TEMQ==
   dependencies:
-    "@carbon/icon-helpers" "^10.46.0"
-    "@carbon/telemetry" "0.1.0"
+    "@carbon/icon-helpers" "^10.47.0"
+    "@ibm/telemetry-js" "^1.2.1"
     prop-types "^15.7.2"
 
 "@carbon/layout@^11.20.0":
@@ -2069,11 +2071,6 @@
     "@carbon/themes" "^11.32.0"
     "@carbon/type" "^11.25.0"
     "@ibm/plex" "6.0.0-next.6"
-
-"@carbon/telemetry@0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@carbon/telemetry/-/telemetry-0.1.0.tgz#57b331cd5a855b4abbf55457456da8211624d879"
-  integrity sha512-kNWt0bkgPwGW0i5h7HFuljbKRXPvIhsKbB+1tEURAYLXoJg9iJLF1eGvWN5iVoFCS2zje4GR3OGOsvvKVe7Hlg==
 
 "@carbon/themes@^11.32.0":
   version "11.32.0"
