@@ -1898,6 +1898,14 @@
     htm "^3.1.1"
     preact "^10.11.2"
 
+"@bpmn-io/diagram-js-ui@^0.2.3":
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.3.tgz#7ace8aadb1b701eb770d0b34595dc1d1fb4c327c"
+  integrity sha512-OGyjZKvGK8tHSZ0l7RfeKhilGoOGtFDcoqSGYkX0uhFlo99OVZ9Jn1K7TJGzcE9BdKwvA5Y5kGqHEhdTxHvFfw==
+  dependencies:
+    htm "^3.1.1"
+    preact "^10.11.2"
+
 "@bpmn-io/dmn-migrate@^0.5.0":
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/@bpmn-io/dmn-migrate/-/dmn-migrate-0.5.0.tgz#b1ef55978339c6a2ed5d8b3ed40786d71d779fc3"
@@ -4731,14 +4739,14 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@16.5.0:
-  version "16.5.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-16.5.0.tgz#8fd119ed7a364e4008e5eac08af4a27fb961bf9d"
-  integrity sha512-thQM7EaTfzek1jnqo8emBn3nyZQSi4k2UOIzwKeIUgX2Mry3qrjraNHpSOWBJbLZ8Re2V4IBPvaZJ7c9EHKlmw==
+bpmn-js@17.2.1:
+  version "17.2.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.2.1.tgz#a856aa35f0721e33eee402cd61efc574d1100d36"
+  integrity sha512-gj39OuDwZlAnpMpy4t1jZA7srNVlT9hvveZut42aTWZvg3bbxfhtCZE9LuGyCTi1sxCB05s9Z4xiGpACziTDgQ==
   dependencies:
     bpmn-moddle "^8.1.0"
-    diagram-js "^13.4.0"
-    diagram-js-direct-editing "^2.1.1"
+    diagram-js "^14.3.1"
+    diagram-js-direct-editing "^2.1.2"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
     min-dash "^4.1.1"
@@ -5202,7 +5210,7 @@ clsx@^1.1.1:
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.2.1.tgz#0ddc4a20a549b59c93a4116bb26f5294ca17dc12"
   integrity sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==
 
-clsx@^2.0.0:
+clsx@^2.0.0, clsx@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-2.1.0.tgz#e851283bcb5c80ee7608db18487433f7b23f77cb"
   integrity sha512-m3iNNWpd9rl3jvvcBnu70ylMdrXt8Vlq4HYadnU5fwcOtvkSQWPmj7amUcDT2qYI7risszBjI5AUIUox9D16pg==
@@ -6086,7 +6094,7 @@ diagram-js-direct-editing@^1.6.3:
     min-dash "^3.5.2"
     min-dom "^3.1.3"
 
-diagram-js-direct-editing@^2.1.1:
+diagram-js-direct-editing@^2.1.1, diagram-js-direct-editing@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-2.1.2.tgz#1d561ef9ff8c61615bb8a1c8168cc3186d7f5992"
   integrity sha512-VpccLAnLqLF1cp3fk363QUbRVTd/qTcj2oOb+IqgcmOiWszJp7J9Ta6y5GjUvw48hDZpzCatlmWwA4CJ3MaYGQ==
@@ -6103,6 +6111,21 @@ diagram-js@^13.4.0:
     clsx "^2.0.0"
     didi "^10.0.1"
     hammerjs "^2.0.1"
+    inherits-browser "^0.1.0"
+    min-dash "^4.1.0"
+    min-dom "^4.1.0"
+    object-refs "^0.4.0"
+    path-intersection "^3.0.0"
+    tiny-svg "^3.0.1"
+
+diagram-js@^14.3.1:
+  version "14.3.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.3.1.tgz#45ce299a8bc3d4bc3fd2f00e7d7c36f76c1ff514"
+  integrity sha512-QXwH2kdlTP8cfWDCfYnnhvJ9PXX8UQ/M8TJaeLfcIjJPBOrfSEfLI/wuI7VNtAZZ9munlcGmCnh8hEBtcjB8kA==
+  dependencies:
+    "@bpmn-io/diagram-js-ui" "^0.2.3"
+    clsx "^2.1.0"
+    didi "^10.2.2"
     inherits-browser "^0.1.0"
     min-dash "^4.1.0"
     min-dom "^4.1.0"
@@ -6134,6 +6157,11 @@ didi@^10.0.1:
   version "10.0.1"
   resolved "https://registry.yarnpkg.com/didi/-/didi-10.0.1.tgz#b995c7cd2d42232be081688512ecc4e67663e344"
   integrity sha512-rddmyUjpIh8pIu9OVtqQjGkZB4jNOaaRMz9AClSH3WUEOoJctxpFmqjTButmI5na5sSIDpfjABe34wEvEhrjcg==
+
+didi@^10.2.2:
+  version "10.2.2"
+  resolved "https://registry.yarnpkg.com/didi/-/didi-10.2.2.tgz#438741b8281be97cdedd8da2a42c307a918b9706"
+  integrity sha512-l8NYkYFXV1izHI65EyT8EXOjUZtKmQkHLTT89cSP7HU5J/G7AOj0dXKtLc04EXYlga99PBY18IPjOeZ+c3DI4w==
 
 didi@^5.2.1:
   version "5.2.1"
