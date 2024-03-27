@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.stream.Stream;
 
 public class PartitionProcessingState {
 
@@ -130,16 +129,19 @@ public class PartitionProcessingState {
   }
 
   private void initExportingState() {
-    Stream<String> stream = null;
     try {
       if (!getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists()) {
         setPersistedExporterState(EXPORTER_STATE.EXPORTING);
         exporterState = EXPORTER_STATE.EXPORTING;
       } else {
-        stream =
-            Files.lines(getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
-        exporterState = EXPORTER_STATE.valueOf(stream.findFirst().get());
-        stream.close();
+        final var state =
+            Files.readString(
+                getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
+        if (state == null || state.isEmpty() || state.isBlank()) {
+          // Backwards compatibility. If the file exists, it is paused.
+          setPersistedExporterState(EXPORTER_STATE.PAUSED);
+        }
+        exporterState = EXPORTER_STATE.valueOf(state);
       }
     } catch (final IOException e) {
       // exporting is the default state
