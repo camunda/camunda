@@ -36,13 +36,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
-      <version>8.4.5</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <version>8.4.5</version>
     </dependency>
 
     <!-- SPRING -->
