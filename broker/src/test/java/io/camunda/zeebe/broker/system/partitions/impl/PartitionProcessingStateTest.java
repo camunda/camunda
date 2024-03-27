@@ -35,7 +35,7 @@ class PartitionProcessingStateTest {
   private static final File exporterStateFile = mock(File.class);
 
   @BeforeAll
-  static void beforeAll() {
+  static void beforeAll() throws IOException {
 
     when(mockRaftPartition
             .dataDirectory()
