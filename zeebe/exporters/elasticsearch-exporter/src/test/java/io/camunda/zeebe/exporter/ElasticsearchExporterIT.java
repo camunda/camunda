@@ -69,6 +69,7 @@ final class ElasticsearchExporterIT {
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
 
   private TestClient testClient;
+  private ExporterTestContext exporterTestContext;
   private int exportedRecordsCounter = 0;
 
   @BeforeAll
@@ -84,9 +85,10 @@ final class ElasticsearchExporterIT {
 
     testClient = new TestClient(config, indexRouter);
 
-    exporter.configure(
+    exporterTestContext =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", config)));
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+    exporter.configure(exporterTestContext);
     exporter.open(controller);
   }
 
@@ -220,8 +222,7 @@ final class ElasticsearchExporterIT {
     @Order(1)
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
-      exporter.setIndexTemplatesCreated(false);
-      config.retention.setEnabled(false);
+      configureExporter(false);
       final var record1 = factory.generateRecord(ValueType.JOB);
 
       // when
@@ -235,11 +236,10 @@ final class ElasticsearchExporterIT {
 
       /* Tests when retention is later enabled all indices should have lifecycle policy */
       // given
-      config.retention.setEnabled(true);
+      configureExporter(true);
       final var record2 = factory.generateRecord(ValueType.JOB);
 
       // when
-      exporter.setIndexTemplatesCreated(false);
       export(record2);
 
       // then
@@ -255,8 +255,7 @@ final class ElasticsearchExporterIT {
     @Order(2)
     void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
       // given
-      exporter.setIndexTemplatesCreated(false);
-      config.retention.setEnabled(true);
+      configureExporter(true);
       final var record1 = factory.generateRecord(ValueType.JOB);
 
       // when
@@ -269,11 +268,10 @@ final class ElasticsearchExporterIT {
 
       /* Tests when retention is later disabled all indices should not have a lifecycle policy */
       // given
-      config.retention.setEnabled(false);
+      configureExporter(false);
       final var record2 = factory.generateRecord(ValueType.JOB);
 
       // when
-      exporter.setIndexTemplatesCreated(false);
       export(record2);
 
       // then
@@ -294,11 +292,9 @@ final class ElasticsearchExporterIT {
     @Test
     @Order(3)
     @Timeout(30)
-    void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices()
-        throws InterruptedException {
+    void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() {
       // given
-      exporter.setIndexTemplatesCreated(false);
-      config.retention.setEnabled(false);
+      configureExporter(false);
       final var records = new ArrayList<Record<RecordValue>>();
       final int limit = 498 - exportedRecordsCounter;
       for (int i = 0; i < limit; i++) {
@@ -320,11 +316,10 @@ final class ElasticsearchExporterIT {
 
       /* Tests when retention is later enabled all indices should have lifecycle policy */
       // given
-      config.retention.setEnabled(true);
+      configureExporter(true);
       final var record2 = factory.generateRecord(ValueType.JOB);
 
       // when
-      exporter.setIndexTemplatesCreated(false);
       export(record2);
 
       // then
@@ -338,6 +333,11 @@ final class ElasticsearchExporterIT {
 
         assertIndexSettingsHasLifecyclePolicy(response);
       }
+    }
+
+    private void configureExporter(final boolean retentionEnabled) {
+      config.retention.setEnabled(retentionEnabled);
+      exporter.configure(exporterTestContext);
     }
 
     private void assertIndexSettingsHasLifecyclePolicy(
