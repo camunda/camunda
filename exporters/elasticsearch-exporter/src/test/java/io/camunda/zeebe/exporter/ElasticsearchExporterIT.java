@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Optional;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -212,15 +213,7 @@ final class ElasticsearchExporterIT {
     final var index1 = indexRouter.indexFor(record1);
     var response1 = testClient.getIndexSettings(index1);
 
-    assertThat(response1)
-        .as("should have found the index")
-        .isPresent()
-        .get()
-        .extracting(IndexSettings::settings)
-        .extracting(Settings::index)
-        .extracting(Index::lifecycle)
-        .as("Lifecycle policy should not be configured")
-        .isNull();
+    assertIndexSettingsHasNoLifecyclePolicy(response1);
 
     /* Tests when retention is later enabled all indices should have lifecycle policy */
     // given
@@ -234,30 +227,10 @@ final class ElasticsearchExporterIT {
     // then
     final var index2 = indexRouter.indexFor(record2);
     final var response2 = testClient.getIndexSettings(index2);
-    assertThat(response2)
-        .as("should have found the index")
-        .isPresent()
-        .get()
-        .extracting(IndexSettings::settings)
-        .extracting(Settings::index)
-        .extracting(Index::lifecycle)
-        .as("should have lifecycle config")
-        .isNotNull()
-        .extracting(IndexSettings.Lifecycle::name)
-        .isEqualTo(config.retention.getPolicyName());
+    assertIndexSettingsHasLifecyclePolicy(response2);
 
     response1 = testClient.getIndexSettings(index1);
-    assertThat(response1)
-        .as("should have found the index")
-        .isPresent()
-        .get()
-        .extracting(IndexSettings::settings)
-        .extracting(Settings::index)
-        .extracting(Index::lifecycle)
-        .as("should have lifecycle config")
-        .isNotNull()
-        .extracting(IndexSettings.Lifecycle::name)
-        .isEqualTo(config.retention.getPolicyName());
+    assertIndexSettingsHasLifecyclePolicy(response1);
   }
 
   @Test
@@ -272,17 +245,7 @@ final class ElasticsearchExporterIT {
     // then
     final var index1 = indexRouter.indexFor(record1);
     var response1 = testClient.getIndexSettings(index1);
-    assertThat(response1)
-        .as("should have found the index")
-        .isPresent()
-        .get()
-        .extracting(IndexSettings::settings)
-        .extracting(Settings::index)
-        .extracting(Index::lifecycle)
-        .as("should have lifecycle config")
-        .isNotNull()
-        .extracting(IndexSettings.Lifecycle::name)
-        .isEqualTo(config.retention.getPolicyName());
+    assertIndexSettingsHasLifecyclePolicy(response1);
 
     /* Tests when retention is later disabled all indices should not have a lifecycle policy */
     // given
@@ -296,18 +259,28 @@ final class ElasticsearchExporterIT {
     // then
     final var index2 = indexRouter.indexFor(record2);
     final var response2 = testClient.getIndexSettings(index2);
-    assertThat(response2)
+    assertIndexSettingsHasNoLifecyclePolicy(response2);
+
+    response1 = testClient.getIndexSettings(index1);
+    assertIndexSettingsHasNoLifecyclePolicy(response1);
+  }
+
+  private void assertIndexSettingsHasLifecyclePolicy(final Optional<IndexSettings> indexSettings) {
+    assertThat(indexSettings)
         .as("should have found the index")
         .isPresent()
         .get()
         .extracting(IndexSettings::settings)
         .extracting(Settings::index)
         .extracting(Index::lifecycle)
-        .as("Lifecycle policy should not be configured")
-        .isNull();
+        .as("should have lifecycle config")
+        .isNotNull()
+        .extracting(IndexSettings.Lifecycle::name)
+        .isEqualTo(config.retention.getPolicyName());
+  }
 
-    response1 = testClient.getIndexSettings(index1);
-    assertThat(response1)
+  private static void assertIndexSettingsHasNoLifecyclePolicy(final Optional<IndexSettings> indexSettings) {
+    assertThat(indexSettings)
         .as("should have found the index")
         .isPresent()
         .get()
