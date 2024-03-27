@@ -1,25 +1,18 @@
-# Spring Zeebe -> Camunda Spring SDK
+# Camunda Spring SDK
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda/spring-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda/spring-zeebe)
-[![Project Stats](https://www.openhub.net/p/spring-zeebe/widgets/project_thin_badge.gif)](https://www.openhub.net/p/spring-zeebe)
-
-Spring Zeebe will slowly evolve towards Camunda Spring SDK.
-
-This project allows you to leverage Zeebe within your Spring or Spring Boot environment.
+This project allows you to leverage Camunda APIs in your spring boot project.
 
 ## Table of Contents
 
 **Getting Started**
 
 - [Version compatibility](#version-compatibility)
-- [Examples](#examples)
-- [Quickstart](#quickstart)
-- [Add Spring Boot Starter to your project](#add-spring-boot-starter-to-your-project)
+- [Add Spring Boot Starter Camunda SDK to your project](#add-spring-boot-starter-to-your-project)
+- [Enable the Java Compiler `-parameters`-flag](#enable-the-java-compiler--parameters-flag)
 - [Configuring Camunda 8 SaaS connection](#configuring-camunda-8-saas-connection)
-- [Connect to Zeebe](#connect-to-zeebe)
+- [Obtain the Zeebe client](#obtain-the-zeebe-client)
 - [Deploy process models](#deploy-process-models)
-- [Implement job worker](#implement-job-worker)
-- [Run Connectors](#run-connectors)
+- [Implement job workers](#implement-job-worker)
 
 **Documentation**
 
@@ -31,19 +24,11 @@ This project allows you to leverage Zeebe within your Spring or Spring Boot envi
 
 ## Version compatibility
 
-| Spring Zeebe version |  JDK  | Camunda version | Bundled Spring Boot version | Compatible Spring Boot versions |
-|----------------------|-------|-----------------|-----------------------------|---------------------------------|
-| >= 8.5.0             | >= 17 | 8.5.0           | 3.2.0                       | >= 2.7.x, 3.x.x                 |
+| Camunda Spring SDK version | JDK     | Camunda version | Bundled Spring Boot version |
+|----------------------------|---------|-----------------|-----------------------------|
+| 8.5.x                      | \>= 17 | 8.5.x           | 3.2.x                       |
 
-## Examples
-
-Full examples, including test cases, are available here: [Twitter review example](https://github.com/camunda-community-hub/camunda-cloud-examples/tree/main/twitter-review-java-springboot), [process solution template](https://github.com/camunda-community-hub/camunda-8-process-solution-template). Further, you might want to have a look into the [example/](example/) folder.
-
-## Quickstart
-
-Create a new Spring Boot project (e.g. using [Spring initializr](https://start.spring.io/)), open a pre-existing one you already have, or fork our [Camunda 8 Process Solution Template](https://github.com/camunda-community-hub/camunda-8-process-solution-template).
-
-## Add Spring Boot Starter to your project
+## Add Spring Boot Starter Camunda SDK to your project
 
 Add the following Maven dependency to your Spring Boot Starter project:
 
@@ -55,19 +40,11 @@ Add the following Maven dependency to your Spring Boot Starter project:
 </dependency>
 ```
 
-Although Spring Zeebe has a transitive dependency to the [Zeebe Java client](https://docs.camunda.io/docs/apis-clients/java-client/), you could also add a direct dependency if you need to specify the concrete version in your `pom.xml` (even this is rarely necessary):
+## Enable the Java Compiler `-parameters`-flag
 
-```xml
-<dependency>
-  <groupId>io.camunda</groupId>
-  <artifactId>zeebe-client-java</artifactId>
-  <version>8.5.0</version>
-</dependency>
-```
+If you want to omit having to specify annotation values just as the process variable name on the [@Variable](#using-variable) annotation, the Java compiler flag `-parameters` is required on your project.
 
-Note that if you are using [@Variables](https://github.com/camunda-community-hub/spring-zeebe#using-variable), compiler flag `-parameters` is required for Spring-Zeebe versions higher than 8.3.1.
-
-If using Maven:
+If you are using Maven you can enable with on the compiler plugin like this:
 
 ```xml
 <build>
@@ -85,7 +62,7 @@ If using Maven:
   </build>
 ```
 
-If using Gradle:
+If you are using Gradle, like this:
 
 ```xml
 tasks.withType(JavaCompile) {
@@ -93,7 +70,7 @@ tasks.withType(JavaCompile) {
 }
 ```
 
-If using Intellij:
+And if you are using Intellij, like this:
 
 ```agsl
 Settings > Build, Execution, Deployment > Compiler > Java Compiler
@@ -113,7 +90,8 @@ zeebe.client.cloud.region=bru-2
 You can also configure the connection to a Self-Managed Zeebe broker:
 
 ```properties
-zeebe.client.broker.gateway-address=127.0.0.1:26500
+zeebe.client.broker.grpcAddress=https://127.0.0.1:26500
+zeebe.client.broker.restAddress=https://127.0.0.1:8080
 zeebe.client.security.plaintext=true
 ```
 
@@ -131,7 +109,7 @@ common.clientId=xxx
 common.clientSecret=xxx
 ```
 
-## Connect to Zeebe
+## Obtain the Zeebe client
 
 You can inject the ZeebeClient and work with it, e.g. to create new workflow instances:
 
@@ -151,7 +129,7 @@ Use the `@Deployment` annotation:
 public class MySpringBootApplication {
 ```
 
-This annotation internally uses [the Spring resource loader](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-resourceloader) mechanism which is pretty powerful and can for example also deploy multiple files at once:
+This annotation internally uses [the Spring resource loader](#resources-resourceloader) mechanism which is pretty powerful and can for example also deploy multiple files at once:
 
 ```java
 @Deployment(resources = {"classpath:demoProcess.bpmn" , "classpath:demoProcess2.bpmn"})
@@ -174,27 +152,6 @@ public void handleJobFoo(final ActivatedJob job) {
 
 See documentation below for a more in-depth discussion on parameters and configuration options of job workers.
 
-## Run Connectors
-
-Spring Zeebe project previously included the Runtime for Camunda 8 Connectors. It has been moved to a separate [Connectors](https://github.com/camunda/connectors) project.
-To run Connectors, you can now use the following dependency in your project:
-
-```xml
-<dependency>
-  <groupId>io.camunda.connector</groupId>
-  <artifactId>spring-boot-starter-camunda-connectors</artifactId>
-  <version>${connectors.version}</version>
-</dependency>
-```
-
-To configure the Connector Runtime use the properties explained here:
-[Camunda Connector Runtime](https://github.com/camunda/connectors/blob/main/connector-runtime/README.md)
-
-If you have previously used the pure Spring Zeebe project to run Connectors, you should migrate to the new dependency.
-
-You can find the latest version of Connectors on [this page](https://github.com/camunda/connectors/releases).
-Consult the [Connector SDK](https://github.com/camunda/connectors/tree/main/connector-sdk/core#connector-core) for details on Connectors in general.
-
 # Documentation
 
 ## Job worker configuration options
@@ -210,7 +167,7 @@ public void handleJobFoo() {
 }
 ```
 
-If you don't specify the `type` the **method name** is used as default:
+If you don't specify the `type` attribute, the **method name** is used as default, if you enabled the [`-parameters` compiler flag](#enable-the-java-compiler--parameters-flag)):
 
 ```java
 @JobWorker
@@ -242,7 +199,17 @@ public void handleJobFoo(final JobClient client, final ActivatedJob job) {
 
 ### Using `@Variable`
 
-By using the `@Variable` annotation there is a shortcut to make variable retrieval simpler, including the type cast:
+By using the `@Variable` annotation there is a shortcut to make variable retrieval simpler and only fetch certain variables making them available as parameters:
+
+```java
+@JobWorker(type = "foo")
+public void handleJobFoo(final JobClient client, final ActivatedJob job, @Variable(name = "variable1") String variable1) {
+  System.out.println(variable1);
+  // ...
+}
+```
+
+If you don't specify the `name` attribute on the annotation, the **method parameter name** is used as the variable name, if you enabled the [`-parameters` compiler flag](#enable-the-java-compiler--parameters-flag)):
 
 ```java
 @JobWorker(type = "foo")
@@ -292,8 +259,6 @@ public void handleJobFoo(final ActivatedJob job) {
 ### Auto-completing jobs
 
 By default, the `autoComplete` attribute is set to `true` for any job worker.
-
-**Note that the described default behavior of auto-completion was introduced with 8.1 and was different before, see https://github.com/camunda-community-hub/spring-zeebe/issues/239 for details.**
 
 In this case, the Spring integration will take care about job completion for you:
 
@@ -401,18 +366,11 @@ public void handleJobFoo() {
 
 ## Additional Configuration Options
 
-### Disabling ZeebeClient
-
-If you don't want to use a ZeebeClient for certain scenarios, you can switch it off by setting:
-
-```properties
-zeebe.client.enabled=false
-```
-
 ### Configuring Self-managed Zeebe Connection
 
 ```properties
-zeebe.client.broker.gateway-address=127.0.0.1:26500
+zeebe.client.broker.grpcAddress=http://127.0.0.1:26500
+zeebe.client.broker.restAddress=http://127.0.0.1:8080
 zeebe.client.security.plaintext=true
 ```
 
@@ -445,25 +403,9 @@ zeebe.client.worker.max-jobs-active=32
 zeebe.client.worker.threads=1
 ```
 
-For a full set of configuration options please see [ZeebeClientConfigurationProperties.java](spring-boot-starter-camunda/src/main/java/io/camunda/zeebe/spring/client/properties/ZeebeClientConfigurationProperties.java)
+For a full set of configuration options please see [ZeebeClientConfigurationProperties.java](src/main/java/io/camunda/zeebe/spring/client/properties/ZeebeClientConfigurationProperties.java)
 
 Note that we generally do not advise to use a thread pool for workers, but rather implement asynchronous code, see [Writing Good Workers](https://docs.camunda.io/docs/components/best-practices/development/writing-good-workers/).
-
-### ObjectMapper customization
-
-If you need to customize the ObjectMapper that the Zeebe client uses to work with variables, you can declare a bean with type `io.camunda.zeebe.client.api.JsonMapper` like this:
-
-```java
-@Configuration
-class MyConfiguration {
-  @Bean
-  public JsonMapper jsonMapper() {
-    ObjectMapper objectMapper = new ObjectMapper()
-      .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
-    new ZeebeObjectMapper(objectMapper);
-  }
-}
-```
 
 ### Disable worker
 
@@ -510,7 +452,7 @@ You could also provide a custom class that can customize the `JobWorker` configu
 
 ### Enable job streaming
 
-> Please read aboutt this feature in the [docs](https://docs.camunda.io/docs/apis-tools/java-client/job-worker/#job-streaming) upfront.
+> Please read about this feature in the [docs](https://docs.camunda.io/docs/apis-tools/java-client/job-worker/#job-streaming) upfront.
 
 To enable job streaming on the zeebe client, you can configure it:
 
@@ -540,11 +482,9 @@ zeebe.client.worker.override.tenant-ids=myThirdTenant
 
 ## Observing metrics
 
-Spring-zeebe-starter will provide some out-of-the-box metrics, that can be leveraged via [Spring Actuator](https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/). Whenever actuator is on the classpath, you can access the following metrics:
+Spring Boot Starter Camunda SDK will provide some out-of-the-box metrics, that can be leveraged via [Spring Actuator](https://docs.spring.io/spring-boot/docs/current/actuator-api/htmlsingle/). Whenever actuator is on the classpath, you can access the following metrics:
 
 * `camunda.job.invocations`: Number of invocations of job workers (tagging the job type)
-* `camunda.connector.inbound.invocations`: Number of invocations of any inbound connectors (tagging the connector type)
-* `camunda.connector.outbound.invocations`: Number of invocations of any outbound connectors (tagging the connector type)
 
 For all of those metrics, the following actions are recorded:
 
@@ -560,7 +500,3 @@ management.endpoints.web.exposure.include=metrics
 ```
 
 And then access them via http://localhost:8080/actuator/metrics/.
-
-# Community Code of Conduct
-
-This project adheres to the Contributor Covenant [Code of Conduct](/.github/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please [report unacceptable behavior](https://camunda.com/events/code-conduct/reporting-violations/) as soon as possible.
