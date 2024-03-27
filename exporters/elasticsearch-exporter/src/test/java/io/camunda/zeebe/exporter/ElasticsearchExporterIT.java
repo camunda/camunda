@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
@@ -41,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -210,9 +211,10 @@ final class ElasticsearchExporterIT {
         .isEqualTo(config.index.prefix);
   }
 
-  private void export(final Record<?> record) {
+  private boolean export(final Record<?> record) {
     exporter.export(record);
     exportedRecordsCounter++;
+    return true;
   }
 
   @Nested
@@ -291,7 +293,6 @@ final class ElasticsearchExporterIT {
      */
     @Test
     @Order(3)
-    @Timeout(30)
     void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() {
       // given
       configureExporter(false);
@@ -320,7 +321,9 @@ final class ElasticsearchExporterIT {
       final var record2 = factory.generateRecord(ValueType.JOB);
 
       // when
-      export(record2);
+      await("New record is exported, and existing indices are updated")
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> export(record2));
 
       // then
       final var index2 = indexRouter.indexFor(record2);
