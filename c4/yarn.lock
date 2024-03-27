@@ -2110,20 +2110,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-react@npm:^11.28.0":
-  version: 11.37.0
-  resolution: "@carbon/icons-react@npm:11.37.0"
-  dependencies:
-    "@carbon/icon-helpers": "npm:^10.46.0"
-    "@carbon/telemetry": "npm:0.1.0"
-    prop-types: "npm:^15.7.2"
-  peerDependencies:
-    react: ">=16"
-  checksum: 10c0/1410ecff489968756fabf5f716328826b787e5ff51d7bee050f6cd7b2c8c323bead0a610bebb38452ffc7c678a981cb4ef4941073df6d082b607f7f15102aa81
-  languageName: node
-  linkType: hard
-
-"@carbon/icons-react@npm:^11.36.0":
+"@carbon/icons-react@npm:^11.28.0, @carbon/icons-react@npm:^11.36.0":
   version: 11.37.0
   resolution: "@carbon/icons-react@npm:11.37.0"
   dependencies:

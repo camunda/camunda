@@ -1994,6 +1994,22 @@
   resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.46.0.tgz#b4e3f2568b9f9d9c33bdab4b02f162fb7357dd60"
   integrity sha512-2SYjOWdiR13iQ5s1job/ajYYIByqk+rCu6M+m5hmsytgFLf0TxRwGzQn7itHELwxKUQLC5XYJjZ4Sug6urWOMw==
 
+"@carbon/icon-helpers@^10.47.0":
+  version "10.47.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.47.0.tgz#40a6618867980a6da3aedf0da9d8fd7fd078200a"
+  integrity sha512-vv2Wkuw7lYkYVKrn5ABzlZD+6ioAYwMuyKi2XPqYY3hrHYoL4CQUnuSFDhlj0DR2HHCB0L5MGRLxHLucx5cc7g==
+  dependencies:
+    "@ibm/telemetry-js" "^1.2.1"
+
+"@carbon/icons-react@*":
+  version "11.38.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.38.0.tgz#3d69ae70e62bcd2a74db027649dac967f53ae943"
+  integrity sha512-xlkiJV1vRru+sGoScvhcHuIKckk1Z1tLJFF27mgXiYmXeLUdHZiJ1PTbNnm/93nFuMJdxqe6wJLDYGDri+TEMQ==
+  dependencies:
+    "@carbon/icon-helpers" "^10.47.0"
+    "@ibm/telemetry-js" "^1.2.1"
+    prop-types "^15.7.2"
+
 "@carbon/icons-react@^11.25.0", "@carbon/icons-react@^11.36.0":
   version "11.36.0"
   resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.36.0.tgz#63ac3bed34cdf95495e7355ed22253a8dcbd1c7d"
@@ -2355,6 +2371,11 @@
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.2.1.tgz#0b12801a683af23bcd2b90d1b83f332b3cca7f0e"
   integrity sha512-ZNuqoclscha2RC089RBPkiGzv8g+mQfBOnHDJZEGBFrvsXg0B9lfRGFBSLzCuTR5nFDqVFYb6XqMRu36EiHIDA==
+
+"@ibm/telemetry-js@^1.2.1":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.3.0.tgz#321f2ed4bbbc78d69dc1ee9cb6f83d2d2af9baef"
+  integrity sha512-9gIkyF2B9RizWN6rsdQN76DN6D+/Xbr4HGTwm6EUujfXvEVtWbf4jzxDFwKvZkeTC2tjHpkUNJQKdivbMKt8yg==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
@@ -3195,9 +3216,11 @@
     "@types/node" "*"
 
 "@types/carbon__icons-react@^11.26.1":
-  version "11.26.2"
-  resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.26.2.tgz#e906b687337b0f22ce68be038bdb2d478147c75c"
-  integrity sha512-/ZuJEZT+9e0CNAfwlnYhuar6eyQjcPIKmPSHZ8OBaBO9DMKBSdUMuadaqAAeaGnRV17zUiQSVsYL7++nSA1KPg==
+  version "11.29.0"
+  resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.29.0.tgz#64b7d2bc01d1746a50fd971d99d1ace61d5aee28"
+  integrity sha512-flTM1afzTPyZRhcRBcHEGqlpYquhnokptdJvyUnWr8Qe9Ma1/FwS4VWyYs67Rc3qfBs+KqAQYAI66OsCswwXvQ==
+  dependencies:
+    "@carbon/icons-react" "*"
 
 "@types/cheerio@*":
   version "0.22.35"
