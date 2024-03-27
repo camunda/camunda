@@ -63,6 +63,7 @@ public class ElasticsearchExporter implements Exporter {
     validate(configuration);
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
+    indexTemplatesCreated = false;
   }
 
   @Override
@@ -347,10 +348,6 @@ public class ElasticsearchExporter implements Exporter {
     if (!acknowledged) {
       log.warn("Failed to acknowledge the the update of retention policy for existing indices");
     }
-  }
-
-  void setIndexTemplatesCreated(final boolean indexTemplatesCreated) {
-    this.indexTemplatesCreated = indexTemplatesCreated;
   }
 
   private static class ElasticsearchRecordFilter implements Context.RecordFilter {
