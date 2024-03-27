@@ -149,6 +149,7 @@ const mockFailedDrdData: DrdDataDto = {
 };
 
 const mockFailedXml = open('invoiceClassificationFailed.dmn');
+const mockEvaluatedLargeXml = open('invoiceClassificationEvaluatedLarge.dmn');
 
 function mockResponses({
   decisionInstanceDetail,
@@ -223,5 +224,6 @@ export {
   mockFailedDecisionInstance,
   mockFailedDrdData,
   mockFailedXml,
+  mockEvaluatedLargeXml,
   mockResponses,
 };

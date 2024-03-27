@@ -28,6 +28,7 @@ import {
   mockFailedDecisionInstance,
   mockFailedDrdData,
   mockFailedXml,
+  mockEvaluatedLargeXml,
   mockResponses,
 } from '../mocks/decisionInstance.mocks';
 
@@ -113,6 +114,37 @@ test.describe('decision instance page', () => {
 
       // wait for monaco-editor to be fully rendered
       await page.waitForTimeout(500);
+
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`evaluated (with large table) - ${theme}`, async ({
+      page,
+      commonPage,
+      decisionInstancePage,
+    }) => {
+      await commonPage.changeTheme(theme);
+
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          decisionInstanceDetail: mockEvaluatedDecisionInstance,
+          drdData: mockEvaluatedDrdData,
+          xml: mockEvaluatedLargeXml,
+        }),
+      );
+
+      await page.goto(Paths.decisionInstance('1'), {
+        waitUntil: 'networkidle',
+      });
+
+      // wait for monaco-editor to be fully rendered
+      await page.waitForTimeout(500);
+
+      await decisionInstancePage.closeDrdPanel();
+
+      // Scroll decision table to bottom right
+      await page.getByText(/test annotation/i).hover();
 
       await expect(page).toHaveScreenshot();
     });
