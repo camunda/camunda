@@ -77,11 +77,13 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
         AtomicUtil.replace(
             nextExecution,
             currentlyScheduled -> {
+              final var now = ActorClock.currentTimeMillis();
+              final var scheduleFor = now + Math.max(dueDate - now, timerResolution);
               if (currentlyScheduled == null
-                  || currentlyScheduled.nextDueDate() - dueDate > timerResolution) {
-                final var delay = calculateDelayForNextRun(dueDate);
+                  || currentlyScheduled.scheduledFor() - scheduleFor > timerResolution) {
+                final var delay = Duration.ofMillis(scheduleFor - now);
                 final var task = scheduleService.runDelayed(delay, this::execute);
-                return Optional.of(new NextExecution(dueDate, task));
+                return Optional.of(new NextExecution(scheduleFor, task));
               }
               return Optional.empty();
             },
@@ -90,20 +92,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     if (replacedExecution != null) {
       replacedExecution.task().cancel();
     }
-  }
-
-  /**
-   * Calculates the delay for the next run so that it occurs at (or close to) due date. If due date
-   * is in the future, the delay will be precise. If due date is in the past, now or in the very
-   * near future, then a lower floor is applied to the delay. The lower floor is {@code
-   * timerResolution}. This is to prevent the checker from being immediately rescheduled and thus
-   * not giving any other tasks a chance to run.
-   *
-   * @param dueDate due date for which a scheduling delay is calculated
-   * @return delay to hit the next due date; will be {@code >= timerResolution}
-   */
-  private Duration calculateDelayForNextRun(final long dueDate) {
-    return Duration.ofMillis(Math.max(dueDate - ActorClock.currentTimeMillis(), timerResolution));
   }
 
   @Override
@@ -143,11 +131,10 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   /**
    * Keeps track of the next execution of the checker.
    *
-   * @param nextDueDate The due date of the next timer to be checked or -1 on the first execution,
-   *     i.e. we don't know the next due date yet.
+   * @param scheduledFor The deadline in ms for when this execution is scheduled.
    * @param task The scheduled task for the next execution, can be used for canceling the task.
    */
-  private record NextExecution(long nextDueDate, ScheduledTask task) {}
+  private record NextExecution(long scheduledFor, ScheduledTask task) {}
 
   /** Abstracts over async and sync scheduling methods of {@link ProcessingScheduleService}. */
   @FunctionalInterface
