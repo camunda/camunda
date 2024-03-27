@@ -12,6 +12,11 @@ inputs:
     default: "false"
     required: false
 
+outputs:
+  flakyTests:
+    description: "A collection of flaky tests, if there are any"
+    value: ${{ steps.find-flakes.outputs.FLAKY_TESTS }}
+
 runs:
   using: composite
   steps:
@@ -22,6 +27,43 @@ runs:
       paths: |
         **/target/failsafe-reports/TEST-*.xml
         **/target/surefire-reports/TEST-*.xml
+  - name: Find flaky tests
+    id: find-flakes
+    shell: bash
+    env:
+      BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
+    run: |
+      if [ ! -s "$BUILD_OUTPUT_FILE_PATH" ]; then
+        echo "::error::Build output file does not exist or is empty!"
+        exit 1
+      fi
+
+      # Extracting flaky tests
+      # Based on old Jenkins script
+      # https://github.com/camunda/zeebe/blob/stable/8.1/.ci/scripts/lib/flaky-tests.sh
+      if grep -q "\[WARNING\] Flakes:" "$BUILD_OUTPUT_FILE_PATH"; then
+        irOutputFile=$(mktemp)
+
+        # Extracting the essential lines
+        awk '/^\[WARNING\] Flakes:.*$/{flag=1}/^\[ERROR\] Tests run:.*Flakes: [0-9]*$/{print;flag=0}flag' "$BUILD_OUTPUT_FILE_PATH" > ${irOutputFile}
+
+        # To cover cases where we use parameterized tests like
+        # [WARNING]  io.camunda.zeebe.engine.state.BanInstanceTest.shouldBanInstance[PROCESS_MESSAGE_SUBSCRIPTION DELETE should ban instance true]
+        # We grep the WARNING line and set the first argument to an empty string
+        flakyTests=$(grep "\[WARNING\] io.camunda" ${irOutputFile} | awk '{$1=""; print $0}')
+
+        # To support multi-line string in output we have to work with EOF delimiter
+        # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
+        {
+          echo 'FLAKY_TESTS<<EOF'
+            # echo ${flakyTests[*]}
+            echo $flakyTests
+          echo EOF
+        } >> $GITHUB_OUTPUT
+
+        echo "::error::Found flaky tests!\n ${flakyTests}"
+      fi
+
   - name: Duplicate test runs
     shell: bash
     env:
