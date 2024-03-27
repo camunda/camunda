@@ -57,6 +57,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     // already scheduled. While we try to avoid this, we can't prevent it entirely anyway because
     // cancellation of scheduled executions is best-effort and does not reliably prevent execution.
     nextExecution.set(null);
+
     final long nextDueDate = visitor.apply(taskResultBuilder);
 
     // reschedule the runnable if there are timers left
@@ -72,7 +73,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
       return;
     }
     final var replacedExecution =
-        AtomicUtil.update(
+        AtomicUtil.replace(
             nextExecution,
             currentlyScheduled -> {
               if (currentlyScheduled == null
