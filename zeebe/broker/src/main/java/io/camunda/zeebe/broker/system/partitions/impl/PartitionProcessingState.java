@@ -78,6 +78,10 @@ public class PartitionProcessingState {
     return exporterState.equals(PAUSED);
   }
 
+  public boolean isExportingSoftPaused() {
+    return exporterState.equals(SOFT_PAUSED);
+  }
+
   @SuppressWarnings({"squid:S899"})
   /** Returns true if exporting is paused. This method overrides the effects of soft pause. */
   public boolean pauseExporting() {
