@@ -75,7 +75,7 @@
     "@vitejs/plugin-react": "4.2.1",
     "@vitest/coverage-istanbul": "1.4.0",
     "@vitest/ui": "1.4.0",
-    "axe-core": "4.8.4",
+    "axe-core": "4.9.0",
     "browserslist": "4.23.0",
     "browserslist-to-esbuild": "2.1.1",
     "eslint": "8.57.0",
