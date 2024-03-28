@@ -174,6 +174,8 @@ public class OpensearchBatchOperationWriter
           createBatchOperationEntity(
               batchOperationRequest.getOperationType(), batchOperationRequest.getName());
 
+      // Creates an OperationEntity object for each process instance that will be changed and
+      // sends to the batch processor to be executed asynchronously
       final var operationsCount = addOperations(batchOperationRequest, batchOperation);
 
       // update counts

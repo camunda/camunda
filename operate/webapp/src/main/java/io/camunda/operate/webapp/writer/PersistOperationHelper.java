@@ -38,13 +38,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+/**
+ * Helper class that creates the individual OperationEntity objects from a batch request or
+ * operation modify request. A single request might contain multiple modifications or have a query
+ * for multiple process instances. An OperationEntity object is created for each process instance to
+ * be modified and all the modifications are serialized into a single field.
+ */
 @Component
 public class PersistOperationHelper {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PersistOperationHelper.class);
   private final OperationStore operationStore;
   private final IncidentReader incidentReader;
   private final ListViewStore listViewStore;
@@ -97,7 +100,7 @@ public class PersistOperationHelper {
       throw new NotFoundException("Couldn't find index names for process instances.", e);
     }
     for (final ProcessInstanceSource processInstanceSource : processInstanceSources) {
-      // add single operations
+      // Create each entity object and set the appropriate fields based on the operation type
       final Long processInstanceKey = processInstanceSource.getProcessInstanceKey();
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
         final List<Long> allIncidentKeys = incidentKeys.get(processInstanceKey);
@@ -136,7 +139,8 @@ public class PersistOperationHelper {
         batchRequest.add(operationTemplate.getFullQualifiedName(), operationEntity);
         operationsCount++;
       }
-      // update process instance
+
+      // Place the update script in the batch request
       final String processInstanceId = String.valueOf(processInstanceKey);
       final String indexForProcessInstance =
           getOrDefaultForNullValue(

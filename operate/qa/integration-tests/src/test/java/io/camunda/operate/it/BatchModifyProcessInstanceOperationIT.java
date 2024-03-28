@@ -16,6 +16,8 @@
  */
 package io.camunda.operate.it;
 
+// This test will be merged with ProcessRestServiceIT and ModifyProcessInstanceOperationZeebeIT in
+// the next round of test refactoring
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
@@ -25,7 +27,6 @@ import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.operate.util.j5templates.SearchFieldValueMap;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
@@ -45,7 +46,7 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
   protected void runAdditionalBeforeAllSetup() {
     // Zeebe client utilized by the handler needs to be set to the one manually created during test
     // startup to correctly communicate with zeebe
-    modifyProcessInstanceHandler.setZeebeClient(zeebeClient);
+    modifyProcessInstanceHandler.setZeebeClient(zeebeContainerManager.getClient());
 
     final Long processDefinitionKey = operateTester.deployProcess("demoProcess_v_2.bpmn");
     operateTester.waitForProcessDeployed(processDefinitionKey);
@@ -65,8 +66,7 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
     operateTester.waitForProcessInstanceStarted(firstProcessInstanceKey);
     operateTester.waitForProcessInstanceStarted(secondProcessInstanceKey);
 
-    // Create the modification that should apply to all active processes. Add in a non-present
-    // process id to ensure this does not break anything
+    // Create the modification that should apply to all active processes.
     final CreateBatchOperationRequestDto op =
         new CreateBatchOperationRequestDto()
             .setOperationType(OperationType.MODIFY_PROCESS_INSTANCE)
@@ -84,9 +84,9 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
                 List.of(
                     new Modification()
                         .setModification(Modification.Type.MOVE_TOKEN)
-                        .setFromFlowNodeId("taskA")
-                        .setToFlowNodeId("taskB")
-                        .setVariables(Map.of("taskB", List.of(Map.of("e", "f"))))));
+                        .setFromFlowNodeId(sourceFlowNodeId)
+                        .setToFlowNodeId(targetFlowNodeId)
+                        .setVariables(Map.of(targetFlowNodeId, List.of(Map.of("e", "f"))))));
 
     operateTester.batchProcessInstanceOperation(op);
 
@@ -115,7 +115,7 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
     assertThat(result.get(0).getState()).isEqualTo(FlowNodeState.TERMINATED);
 
     // Target flow node on second process should be active
-    result = queryFlowNode("taskB", secondProcessInstanceKey);
+    result = queryFlowNode(targetFlowNodeId, secondProcessInstanceKey);
     assertThat(result).isNotEmpty();
     assertThat(result.get(0).getState()).isEqualTo(FlowNodeState.ACTIVE);
 
@@ -129,9 +129,11 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
       final String flowNodeId, final Long processInstanceKey) throws IOException {
     return testSearchRepository.searchTerms(
         flowNodeInstanceTemplate.getFullQualifiedName(),
-        new SearchFieldValueMap()
-            .addFieldValue(FlowNodeInstanceTemplate.FLOW_NODE_ID, flowNodeId)
-            .addFieldValue(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+        Map.of(
+            FlowNodeInstanceTemplate.FLOW_NODE_ID,
+            flowNodeId,
+            FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY,
+            processInstanceKey),
         FlowNodeInstanceEntity.class,
         10);
   }
@@ -140,9 +142,7 @@ public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbs
       throws IOException {
     return testSearchRepository.searchTerms(
         variableTemplate.getFullQualifiedName(),
-        new SearchFieldValueMap()
-            .addFieldValue(VariableTemplate.NAME, varName)
-            .addFieldValue(VariableTemplate.SCOPE_KEY, scopeKey),
+        Map.of(VariableTemplate.NAME, varName, VariableTemplate.SCOPE_KEY, scopeKey),
         VariableEntity.class,
         10);
   }

@@ -175,6 +175,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
           createBatchOperationEntity(
               batchOperationRequest.getOperationType(), batchOperationRequest.getName());
 
+      // Creates an OperationEntity object for each process instance that will be changed and
+      // sends to the batch processor to be executed asynchronously
       final var operationsCount = addOperations(batchOperationRequest, batchOperation);
 
       // update counts
@@ -484,6 +486,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
           OperationTemplate.PROCESS_DEFINITION_KEY,
           OperationTemplate.BPMN_PROCESS_ID
         };
+
+    // Query the list of process instances that will be modified based on the input query
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
             .source(

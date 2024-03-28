@@ -38,6 +38,10 @@ public class SearchCheckPredicatesHolder {
   @Qualifier("flowNodeIsActiveCheck")
   private Predicate<Object[]> flowNodeIsActiveCheck;
 
+  // Note: The operation check predicates check for the same status for *all* operations for
+  // a process instance, not a single one. This causes issues in tests where we want mixed
+  // operation statuses (ex: 1 completed 1 failed operation) and should be used sparingly
+  // and deliberately until a better solution is found.
   @Autowired
   @Qualifier("operationsByProcessInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByProcessInstanceAreCompletedCheck;

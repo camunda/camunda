@@ -31,13 +31,13 @@ import org.springframework.util.StringUtils;
 public class CancelTokenHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(CancelTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;
-  private final CancelFlowNodeHelper cancelFlowNodeHelper;
+  private final CancelTokenHelper cancelTokenHelper;
 
   public CancelTokenHandler(
       final FlowNodeInstanceReader flowNodeInstanceReader,
-      final CancelFlowNodeHelper cancelFlowNodeHelper) {
+      final CancelTokenHelper cancelTokenHelper) {
     this.flowNodeInstanceReader = flowNodeInstanceReader;
-    this.cancelFlowNodeHelper = cancelFlowNodeHelper;
+    this.cancelTokenHelper = cancelTokenHelper;
   }
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 cancelToken(
@@ -49,8 +49,7 @@ public class CancelTokenHandler {
     if (StringUtils.hasText(flowNodeInstanceKeyAsString)) {
       final Long flowNodeInstanceKey = Long.parseLong(flowNodeInstanceKeyAsString);
       LOGGER.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
-      return cancelFlowNodeHelper.cancelFlowNodeInstances(
-          currentStep, List.of(flowNodeInstanceKey));
+      return cancelTokenHelper.cancelFlowNodeInstances(currentStep, List.of(flowNodeInstanceKey));
     } else {
       final List<Long> flowNodeInstanceKeys =
           flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
@@ -62,7 +61,7 @@ public class CancelTokenHandler {
                 processInstanceKey, flowNodeId));
       }
       LOGGER.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
-      return cancelFlowNodeHelper.cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
+      return cancelTokenHelper.cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
     }
   }
 }

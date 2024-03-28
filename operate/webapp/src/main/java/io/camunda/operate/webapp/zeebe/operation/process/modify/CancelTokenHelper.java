@@ -23,8 +23,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CancelFlowNodeHelper {
-  private static final Logger LOGGER = LoggerFactory.getLogger(CancelFlowNodeHelper.class);
+public class CancelTokenHelper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CancelTokenHelper.class);
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
       cancelFlowNodeInstances(

@@ -35,13 +35,13 @@ import org.springframework.util.StringUtils;
 public class MoveTokenHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(MoveTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;
-  private final CancelFlowNodeHelper cancelFlowNodeHelper;
+  private final CancelTokenHelper cancelTokenHelper;
 
   public MoveTokenHandler(
       final FlowNodeInstanceReader flowNodeInstanceReader,
-      final CancelFlowNodeHelper cancelFlowNodeHelper) {
+      final CancelTokenHelper cancelTokenHelper) {
     this.flowNodeInstanceReader = flowNodeInstanceReader;
-    this.cancelFlowNodeHelper = cancelFlowNodeHelper;
+    this.cancelTokenHelper = cancelTokenHelper;
   }
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 moveToken(
@@ -161,8 +161,7 @@ public class MoveTokenHandler {
                 processInstanceKey, fromFlowNodeId));
       }
     }
-    return cancelFlowNodeHelper.cancelFlowNodeInstances(
-        nextStep.and(), flowNodeInstanceKeysToCancel);
+    return cancelTokenHelper.cancelFlowNodeInstances(nextStep.and(), flowNodeInstanceKeysToCancel);
   }
 
   private int calculateNewTokensCount(

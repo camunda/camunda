@@ -33,15 +33,11 @@ import org.springframework.web.context.WebApplicationContext;
 
 @Component
 public class MockMvcManager {
-
   private final MockMvc mockMvc;
   private final ObjectMapper objectMapper;
 
   private final MediaType jsonContentType =
-      new MediaType(
-          MediaType.APPLICATION_JSON.getType(), MediaType.APPLICATION_JSON.getSubtype()
-          // ,Charset.forName("utf8")
-          );
+      new MediaType(MediaType.APPLICATION_JSON.getType(), MediaType.APPLICATION_JSON.getSubtype());
 
   public MockMvcManager(
       final WebApplicationContext webAppContext, final ObjectMapper objectMapper) {
