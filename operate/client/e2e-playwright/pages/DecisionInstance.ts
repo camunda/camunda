@@ -15,29 +15,16 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled, {css} from 'styled-components';
+import {Page} from '@playwright/test';
 
-type Props = {
-  $hasFooter?: boolean;
-  $hasBreadcrumb?: boolean;
-};
+export class DecisionInstance {
+  private page: Page;
 
-const Container = styled.div<Props>`
-  ${({$hasBreadcrumb = false, $hasFooter = false}) => {
-    return css`
-      display: grid;
-      height: 100%;
-      grid-template-rows: ${`
-        ${
-          $hasBreadcrumb ? 'var(--cds-spacing-07)' : ''
-        } var(--cds-spacing-09) 1fr ${$hasFooter ? 'var(--cds-spacing-09)' : ''}
-      `};
-    `;
-  }}
-`;
+  constructor(page: Page) {
+    this.page = page;
+  }
 
-const PanelContainer = styled.div`
-  overflow: auto;
-`;
-
-export {Container, PanelContainer};
+  async closeDrdPanel() {
+    await this.page.getByRole('button', {name: /close drd panel/i}).click();
+  }
+}
