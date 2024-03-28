@@ -80,6 +80,7 @@
         "type": "keyword"
       },
       "evaluatedInputs": {
+        "type": "object",
         "properties": {
           "id": {
             "type": "keyword"
@@ -88,11 +89,13 @@
             "type": "keyword"
           },
           "value": {
+            "type": "object",
             "enabled": false
           }
         }
       },
       "evaluatedOutputs": {
+        "type": "object",
         "properties": {
           "id": {
             "type": "keyword"
@@ -101,6 +104,7 @@
             "type": "keyword"
           },
           "value": {
+            "type": "object",
             "enabled": false
           },
           "ruleId": {

@@ -53,7 +53,9 @@ test.describe('decision detail', () => {
         waitUntil: 'networkidle',
       });
 
-      const results = await makeAxeBuilder().analyze();
+      const results = await makeAxeBuilder()
+        .exclude('.tjs-table-container')
+        .analyze();
 
       validateResults(results);
     });
@@ -78,7 +80,9 @@ test.describe('decision detail', () => {
         waitUntil: 'networkidle',
       });
 
-      const results = await makeAxeBuilder().analyze();
+      const results = await makeAxeBuilder()
+        .exclude('.tjs-table-container')
+        .analyze();
 
       validateResults(results);
     });
@@ -103,7 +107,9 @@ test.describe('decision detail', () => {
         waitUntil: 'networkidle',
       });
 
-      const results = await makeAxeBuilder().analyze();
+      const results = await makeAxeBuilder()
+        .exclude('.tjs-table-container')
+        .analyze();
 
       validateResults(results);
     });

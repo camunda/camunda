@@ -72,7 +72,7 @@
     <netty.version>4.1.100.Final</netty.version>
 
     <!-- Library versions not provided by spring boot -->
-    <version.zeebe>8.5.0-alpha2</version.zeebe>
+    <version.zeebe>8.5.0-RC2</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
     <version.identity>8.5.0-alpha2</version.identity>
     <version.parsson>1.1.5</version.parsson>
@@ -83,8 +83,8 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.17.2</version.log4j.testjar>
-    <version.awssdk>2.25.18</version.awssdk>
-    <version.aws-java-sdk>1.12.685</version.aws-java-sdk>
+    <version.awssdk>2.25.19</version.awssdk>
+    <version.aws-java-sdk>1.12.689</version.aws-java-sdk>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <version.grpc>1.62.2</version.grpc>
     <version.protobuf>3.25.3</version.protobuf>
@@ -209,13 +209,6 @@
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-util</artifactId>
         <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-100</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>

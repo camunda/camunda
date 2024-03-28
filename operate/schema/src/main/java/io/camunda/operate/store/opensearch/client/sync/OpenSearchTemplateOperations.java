@@ -35,11 +35,11 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplateWithRetries(PutIndexTemplateRequest request) {
+  public boolean createTemplateWithRetries(PutIndexTemplateRequest request, boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return openSearchClient.indices().putIndexTemplate(request).acknowledged();
           }
           return true;

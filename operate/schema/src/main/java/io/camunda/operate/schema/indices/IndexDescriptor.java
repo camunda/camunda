@@ -31,6 +31,10 @@ public interface IndexDescriptor extends Versionable {
     return getFullQualifiedName() + "*";
   }
 
+  String getAllVersionsIndexNameRegexPattern();
+
+  String getSchemaClasspathFilename();
+
   default String getAlias() {
     return getFullQualifiedName() + "alias";
   }

@@ -169,29 +169,29 @@ public class IndexSchemaValidatorIT {
   public void testIsValid() {
     // No indices
     whenDatabaseClientReturnsIndexNames(Set.of());
-    indexSchemaValidator.validate();
+    indexSchemaValidator.validateIndexVersions();
 
     // Current indices
     whenDatabaseClientReturnsIndexNames(new HashSet<>(allIndexNames));
-    indexSchemaValidator.validate();
+    indexSchemaValidator.validateIndexVersions();
 
     // 1 older version for index
     whenDatabaseClientReturnsIndexNames(Set.of(getFullQualifiedIndexName(processIndex, "0.9.0")));
-    indexSchemaValidator.validate();
+    indexSchemaValidator.validateIndexVersions();
 
     // two indices with one name substring of another name
     whenDatabaseClientReturnsIndexNames(
         Set.of(
             getFullQualifiedIndexName("process", "0.8.0"),
             getFullQualifiedIndexName("process-instance", "0.9.0")));
-    indexSchemaValidator.validate();
+    indexSchemaValidator.validateIndexVersions();
 
     // two indices with one name substring of another name
     whenDatabaseClientReturnsIndexNames(
         Set.of(
             getFullQualifiedIndexName("operation", "0.8.0"),
             getFullQualifiedIndexName("batch-operation", "0.9.0")));
-    indexSchemaValidator.validate();
+    indexSchemaValidator.validateIndexVersions();
   }
 
   @Test
@@ -202,7 +202,7 @@ public class IndexSchemaValidatorIT {
             getFullQualifiedIndexName(processIndex, "0.9.0"),
             getFullQualifiedIndexName(processIndex, "0.8.0")));
     assertThatExceptionOfType(OperateRuntimeException.class)
-        .isThrownBy(() -> indexSchemaValidator.validate())
+        .isThrownBy(() -> indexSchemaValidator.validateIndexVersions())
         .withMessageContaining(
             "More than one older version for process ("
                 + processIndex.getVersion()
@@ -216,7 +216,7 @@ public class IndexSchemaValidatorIT {
     whenDatabaseClientReturnsIndexNames(
         Set.of(getFullQualifiedIndexName(processIndex, newerVersion)));
     assertThatExceptionOfType(OperateRuntimeException.class)
-        .isThrownBy(() -> indexSchemaValidator.validate())
+        .isThrownBy(() -> indexSchemaValidator.validateIndexVersions())
         .withMessageContaining(
             "Newer version(s) for process ("
                 + processIndex.getVersion()

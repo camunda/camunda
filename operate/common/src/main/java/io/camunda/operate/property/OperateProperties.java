@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.property;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -373,5 +374,21 @@ public class OperateProperties {
 
   public void setRfc3339ApiDateFormat(boolean rfc3339ApiDateFormat) {
     this.rfc3339ApiDateFormat = rfc3339ApiDateFormat;
+  }
+
+  public String getIndexPrefix() {
+    if (DatabaseInfo.isElasticsearch()) {
+      if (this.getElasticsearch() != null) {
+        return this.getElasticsearch().getIndexPrefix();
+      } else {
+        return null;
+      }
+    } else {
+      if (this.getOpensearch() != null) {
+        return this.getOpensearch().getIndexPrefix();
+      } else {
+        return null;
+      }
+    }
   }
 }

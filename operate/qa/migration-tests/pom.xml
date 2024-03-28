@@ -13,7 +13,6 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>test-fixture-100</module>
 		<module>test-fixture-110</module>
     <module>test-fixture-120</module>
     <module>test-fixture-130</module>

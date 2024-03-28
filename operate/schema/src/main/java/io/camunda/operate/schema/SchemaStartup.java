@@ -23,9 +23,13 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.migration.Migrator;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,8 +58,11 @@ public class SchemaStartup {
   public void initializeSchema() throws MigrationException {
     try {
       LOGGER.info("SchemaStartup started.");
-      LOGGER.info("SchemaStartup: validate schema.");
-      schemaValidator.validate();
+      LOGGER.info("SchemaStartup: validate index versions.");
+      schemaValidator.validateIndexVersions();
+      LOGGER.info("SchemaStartup: validate index mappings.");
+      final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields =
+          schemaValidator.validateIndexMappings();
       final boolean createSchema =
           DatabaseInfo.isOpensearch()
               ? operateProperties.getOpensearch().isCreateSchema()
@@ -63,6 +70,7 @@ public class SchemaStartup {
       if (createSchema && !schemaValidator.schemaExists()) {
         LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
         schemaManager.createSchema();
+        LOGGER.info("SchemaStartup: update index mappings.");
       } else {
         LOGGER.info(
             "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
@@ -81,9 +89,17 @@ public class SchemaStartup {
                 LOGGER.info("settings for index {}: {}", index, indexSettings);
               });
 
+      if (!newFields.isEmpty()) {
+        if (createSchema) {
+          schemaManager.updateSchema(newFields);
+        } else {
+          LOGGER.info(
+              "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
+        }
+      }
       if (migrationProperties.isMigrationEnabled()) {
         LOGGER.info("SchemaStartup: migrate schema.");
-        migrator.migrate();
+        migrator.migrateData();
       }
       LOGGER.info("SchemaStartup finished.");
     } catch (final Exception ex) {
