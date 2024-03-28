@@ -81,6 +81,7 @@ export default function FontSizeOptions({
       disabled={disabled}
       label={fontSize}
       className="FontSizeOptions"
+      menuAlignment="bottom-start"
     >
       {FONT_SIZES.map((size) => (
         <MenuItemSelectable

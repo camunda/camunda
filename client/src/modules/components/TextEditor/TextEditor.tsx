@@ -23,22 +23,6 @@ function onError(error: Error) {
   console.error(error);
 }
 
-const emptyState: SerializedEditorState = {
-  root: {
-    children: [
-      {
-        type: 'paragraph',
-        version: 1,
-      },
-    ],
-    direction: null,
-    format: '',
-    indent: 0,
-    type: 'root',
-    version: 1,
-  },
-};
-
 const theme = {
   paragraph: 'p',
   text: {
@@ -78,7 +62,7 @@ export default function TextEditor({
   limit = TEXT_REPORT_MAX_CHARACTERS,
 }: TextEditorProps) {
   const initialConfig: InitialConfigType = {
-    editorState: JSON.stringify(initialValue || emptyState),
+    editorState: initialValue ? JSON.stringify(initialValue) : undefined,
     editable: !!onChange,
     namespace: 'Editor',
     nodes: editorNodes,
@@ -86,7 +70,7 @@ export default function TextEditor({
     onError,
   };
   const [isError, setIsError] = useState(
-    !simpleEditor && isTextTileTooLong(TextEditor.getEditorStateLength(initialValue || emptyState))
+    !simpleEditor && isTextTileTooLong(TextEditor.getEditorStateLength(initialValue))
   );
 
   return (

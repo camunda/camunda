@@ -6,12 +6,7 @@
  */
 
 import {MenuButton, MenuItemSelectable} from '@carbon/react';
-import {
-  $createParagraphNode,
-  $getSelection,
-  $INTERNAL_isPointSelection,
-  LexicalEditor,
-} from 'lexical';
+import {$createParagraphNode, $getSelection, LexicalEditor} from 'lexical';
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
@@ -36,9 +31,7 @@ export default function BlockTypeDropdown({
   const formatParagraph = () => {
     editor.update(() => {
       const selection = $getSelection();
-      if ($INTERNAL_isPointSelection(selection)) {
-        $setBlocksType(selection, () => $createParagraphNode());
-      }
+      $setBlocksType(selection, () => $createParagraphNode());
     });
   };
 
@@ -46,9 +39,7 @@ export default function BlockTypeDropdown({
     if (blockType !== headingSize) {
       editor.update(() => {
         const selection = $getSelection();
-        if ($INTERNAL_isPointSelection(selection)) {
-          $setBlocksType(selection, () => $createHeadingNode(headingSize));
-        }
+        $setBlocksType(selection, () => $createHeadingNode(headingSize));
       });
     }
   };
@@ -89,6 +80,7 @@ export default function BlockTypeDropdown({
       className="BlockTypeOptions"
       size="sm"
       kind="ghost"
+      menuAlignment="bottom-start"
     >
       {BLOCK_TYPES.map((key) => {
         return (

@@ -198,6 +198,7 @@ declare module '@carbon/react' {
     kind?: 'primary' | 'tertiary' | 'ghost';
     label: string;
     size?: 'sm' | 'md' | 'lg';
+    menuAlignment?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end' | 'bottom' | 'top';
   }
 
   declare function MenuButton(props: ForwardRefProps<HTMLElement, MenuButtonProps>): JSX.Element;
