@@ -26,18 +26,32 @@ import org.springframework.stereotype.Component;
 @DependsOn("databaseInfo")
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
+  public static final String SCHEMA_FOLDER_OPENSEARCH = "/schema/opensearch/create";
+  public static final String SCHEMA_FOLDER_ELASTICSEARCH = "/schema/elasticsearch/create";
+  private static final String SCHEMA_CREATE_INDEX_JSON_OPENSEARCH =
+      SCHEMA_FOLDER_OPENSEARCH + "/index/operate-%s.json";
+  private static final String SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH =
+      SCHEMA_FOLDER_ELASTICSEARCH + "/index/operate-%s.json";
+
   @Autowired protected OperateProperties operateProperties;
 
   @Override
   public String getFullQualifiedName() {
+    return String.format(
+        "%s-%s-%s_", operateProperties.getIndexPrefix(), getIndexName(), getVersion());
+  }
+
+  @Override
+  public String getAllVersionsIndexNameRegexPattern() {
+    return String.format("%s-%s-\\d.*", operateProperties.getIndexPrefix(), getIndexName());
+  }
+
+  @Override
+  public String getSchemaClasspathFilename() {
     if (DatabaseInfo.isElasticsearch()) {
-      return String.format(
-          "%s-%s-%s_",
-          operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
+      return String.format(SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH, getIndexName());
     } else {
-      return String.format(
-          "%s-%s-%s_",
-          operateProperties.getOpensearch().getIndexPrefix(), getIndexName(), getVersion());
+      return String.format(SCHEMA_CREATE_INDEX_JSON_OPENSEARCH, getIndexName());
     }
   }
 }

@@ -29,14 +29,32 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const FLOW_NODES = {
-  shipArticles: 'Ship Articles',
-  requestForPayment: 'Request for payment',
-  checkPayment: 'Check payment',
+const checkPayment = {
+  id: 'checkPayment',
+  name: 'Check payment',
+  type: 'serviceTask',
+};
+
+const requestForPayment = {
+  id: 'requestForPayment',
+  name: 'Request for payment',
+  type: 'serviceTask',
+};
+
+const shippingSubProcess = {
+  id: 'shippingSubProcess',
+  name: 'Shipping Sub Process',
+  type: 'subProcess',
+};
+
+const shipArticles = {
+  id: 'shipArticles',
+  name: 'Ship Articles',
+  type: 'userTask',
 };
 
 const Wrapper = ({children}: Props) => {
-  processXmlMigrationSourceStore.setProcessXml(open('orderProcess.bpmn'));
+  processXmlMigrationSourceStore.setProcessXml(open('instanceMigration.bpmn'));
   processInstanceMigrationStore.enable();
 
   useEffect(() => {
@@ -65,116 +83,88 @@ describe('MigrationView/BottomPanel', () => {
 
     expect(
       await screen.findByRole('cell', {
-        name: FLOW_NODES.requestForPayment,
+        name: requestForPayment.name,
       }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('cell', {name: FLOW_NODES.shipArticles}),
+      screen.getByRole('cell', {name: checkPayment.name}),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('cell', {name: FLOW_NODES.checkPayment}),
+      screen.getByRole('cell', {name: shipArticles.name}),
     ).toBeInTheDocument();
 
-    // expect table to have 1 header + 3 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(4);
-  });
-
-  it('should allow service task mapping', async () => {
-    mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
-
-    const {user} = render(<BottomPanel />, {wrapper: Wrapper});
-
-    const combobox = await screen.findByRole('combobox', {
-      name: new RegExp(
-        `target flow node for ${FLOW_NODES.requestForPayment}`,
-        'i',
-      ),
-    });
-
-    expect(combobox).toBeDisabled();
-
-    screen.getByRole('button', {name: /fetch target process/i}).click();
-    await waitFor(() => {
-      expect(combobox).toBeEnabled();
-    });
-
-    await user.selectOptions(combobox, FLOW_NODES.requestForPayment);
-    expect(combobox).toHaveValue('requestForPayment');
-
-    await user.selectOptions(combobox, '');
-    expect(combobox).toHaveValue('');
-  });
-
-  it('should allow user task mapping', async () => {
-    mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
-
-    const {user} = render(<BottomPanel />, {wrapper: Wrapper});
-
-    const combobox = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${FLOW_NODES.shipArticles}`, 'i'),
-    });
-
-    expect(combobox).toBeDisabled();
-
-    screen.getByRole('button', {name: /fetch target process/i}).click();
-    await waitFor(() => {
-      expect(combobox).toBeEnabled();
-    });
-
-    await user.selectOptions(combobox, FLOW_NODES.shipArticles);
-    expect(combobox).toHaveValue('shipArticles');
-
-    await user.selectOptions(combobox, '');
-    expect(combobox).toHaveValue('');
-  });
-
-  it('should not allow user task -> service task mapping', async () => {
-    mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
-
-    render(<BottomPanel />, {wrapper: Wrapper});
-
-    const combobox = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${FLOW_NODES.shipArticles}`, 'i'),
-    });
-
-    expect(combobox).toBeDisabled();
-
-    screen.getByRole('button', {name: /fetch target process/i}).click();
-
-    await waitFor(() => {
-      expect(combobox).toBeEnabled();
-    });
-
     expect(
-      within(combobox).getByRole('option', {name: FLOW_NODES.shipArticles}),
+      screen.getByRole('cell', {name: shippingSubProcess.name}),
     ).toBeInTheDocument();
-    expect(
-      within(combobox).queryByRole('option', {name: FLOW_NODES.checkPayment}),
-    ).not.toBeInTheDocument();
+
+    // expect table to have 1 header + 4 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(5);
   });
 
-  it('should not allow service task -> user task mapping', async () => {
-    mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
+  it.each([
+    {source: checkPayment, target: checkPayment},
+    {source: shipArticles, target: shipArticles},
+    {source: shippingSubProcess, target: shippingSubProcess},
+  ])(
+    'should allow $source.type -> $target.type mapping',
+    async ({source, target}) => {
+      mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
 
-    render(<BottomPanel />, {wrapper: Wrapper});
+      const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 
-    const combobox = await screen.findByRole('combobox', {
-      name: new RegExp(`target flow node for ${FLOW_NODES.checkPayment}`, 'i'),
-    });
+      const combobox = await screen.findByRole('combobox', {
+        name: new RegExp(`target flow node for ${source.name}`, 'i'),
+      });
 
-    screen.getByRole('button', {name: /fetch target process/i}).click();
+      expect(combobox).toBeDisabled();
 
-    await waitFor(() => {
-      expect(combobox).toBeEnabled();
-    });
+      screen.getByRole('button', {name: /fetch target process/i}).click();
+      await waitFor(() => {
+        expect(combobox).toBeEnabled();
+      });
 
-    expect(
-      within(combobox).getByRole('option', {name: FLOW_NODES.checkPayment}),
-    ).toBeInTheDocument();
-    expect(
-      within(combobox).queryByRole('option', {name: FLOW_NODES.shipArticles}),
-    ).not.toBeInTheDocument();
-  });
+      await user.selectOptions(combobox, target.name);
+      expect(combobox).toHaveValue(target.id);
+
+      await user.selectOptions(combobox, '');
+      expect(combobox).toHaveValue('');
+    },
+  );
+
+  it.each([
+    {source: checkPayment, target: shipArticles},
+    {source: checkPayment, target: shippingSubProcess},
+    {source: shipArticles, target: checkPayment},
+    {source: shipArticles, target: shippingSubProcess},
+    {source: shippingSubProcess, target: checkPayment},
+    {source: shippingSubProcess, target: shipArticles},
+  ])(
+    'should not allow $source.type -> $target.type mapping',
+    async ({source, target}) => {
+      mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
+
+      render(<BottomPanel />, {wrapper: Wrapper});
+
+      const combobox = await screen.findByRole('combobox', {
+        name: new RegExp(`target flow node for ${source.name}`, 'i'),
+      });
+
+      expect(combobox).toBeDisabled();
+
+      screen.getByRole('button', {name: /fetch target process/i}).click();
+
+      await waitFor(() => {
+        expect(combobox).toBeEnabled();
+      });
+
+      expect(
+        within(combobox).getByRole('option', {name: source.name}),
+      ).toBeInTheDocument();
+      expect(
+        within(combobox).queryByRole('option', {name: target.name}),
+      ).not.toBeInTheDocument();
+    },
+  );
 });

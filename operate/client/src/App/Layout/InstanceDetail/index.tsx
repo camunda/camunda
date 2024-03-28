@@ -19,7 +19,7 @@ import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
-import {Container} from './styled';
+import {Container, PanelContainer} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
 import {Loading} from '@carbon/react';
@@ -63,7 +63,7 @@ const InstanceDetail: React.FC<Props> = observer(
         {hasLoadingOverlay && <Loading data-testid="loading-overlay" />}
         {breadcrumb}
         {header}
-        <div ref={containerRef}>
+        <PanelContainer ref={containerRef}>
           <ResizablePanel
             panelId={`${type}-detail-vertical-panel`}
             direction={SplitDirection.Vertical}
@@ -72,7 +72,7 @@ const InstanceDetail: React.FC<Props> = observer(
             {topPanel}
             {bottomPanel}
           </ResizablePanel>
-        </div>
+        </PanelContainer>
         {rightPanel}
         {footer}
       </Container>

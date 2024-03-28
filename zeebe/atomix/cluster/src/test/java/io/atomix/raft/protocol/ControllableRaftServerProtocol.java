@@ -333,10 +333,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   @Override
   public void registerForceConfigureHandler(
-      final Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>> handler) {}
+      final Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>> handler) {
+    forceConfigureHandler = handler;
+  }
 
   @Override
-  public void unregisterForceConfigureHandler() {}
+  public void unregisterForceConfigureHandler() {
+    forceConfigureHandler = null;
+  }
 
   @Override
   public void registerJoinHandler(
