@@ -16,6 +16,8 @@ import {
   bulkDeleteAllItems,
 } from '../utils';
 
+import * as Report from './ProcessReport.elements.js';
+import * as Filter from './Filter.elements.js';
 import * as e from './Homepage.elements.js';
 import * as Common from './Common.elements.js';
 
@@ -258,4 +260,40 @@ test('create new dashboard from an empty state component', async (t) => {
   await bulkDeleteAllItems(t);
 
   await t.expect(e.emptyStateComponent.visible).ok();
+});
+
+test('create new KPI report', async (t) => {
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
+  await t.click(Common.submenuOption('Process KPI'));
+
+  await t.click(Common.kpiTemplateSelection);
+  await t.click(Common.carbonOption('Automation rate'));
+
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
+  await t
+    .resizeWindow(1000, 750)
+    .takeElementScreenshot(Common.modalContainer, 'img/process-kpi-step1.png')
+    .maximizeWindow();
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Common.kpiFilterButton.nth(0));
+
+  await t.click(Report.flowNode('approveInvoice'));
+  await t.click(Report.flowNode('reviewInvoice'));
+  await t.click(Report.flowNode('prepareBankTransfer'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Common.kpiFilterButton.nth(1));
+
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Common.menuOption('This...'));
+  await t.click(Filter.unitSelect);
+  await t.click(Common.menuOption('year'));
+  await t.click(Common.modalConfirmButton);
+  await t.takeElementScreenshot(Common.modalContainer, 'img/process-kpi-step2.png');
+
+  await t.click(Common.modalConfirmButton);
+  await t.expect(Common.editButton.visible).ok();
 });
