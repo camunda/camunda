@@ -9,79 +9,123 @@ package io.camunda.zeebe.engine.processing.scheduled;
 
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.util.AtomicUtil;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+/**
+ * The Due Date Checker is a special purpose checker (for due date related tasks) that doesn't
+ * execute periodically but can be scheduled to run at a specific due date, i.e. it can idle for
+ * extended periods of time and only runs when needed.
+ *
+ * <p>This class is thread safe and can be used concurrently. However, it cannot entirely prevent
+ * that multiple executions are scheduled. See the comment in {@link #execute(TaskResultBuilder)}
+ * for details.
+ */
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
-  private ScheduleDelayed scheduleService;
   private final boolean scheduleAsync;
+  private final long timerResolution;
+  private final Function<TaskResultBuilder, Long> visitor;
 
-  private boolean checkerRunning;
+  private ScheduleDelayed scheduleService;
+
+  /**
+   * Indicates whether the checker should reschedule itself. Controlled by the stream processor's
+   * lifecycle events, e.g. {@link #onPaused()} and {@link #onResumed()}.
+   */
   private boolean shouldRescheduleChecker;
 
-  private long nextDueDate = -1L;
-  private final long timerResolution;
-  private final Function<TaskResultBuilder, Long> nextDueDateSupplier;
-  private final TriggerEntitiesTask triggerEntitiesTask;
+  /**
+   * Keeps track of the next execution of the checker. Value can be null if there is no scheduled
+   * execution known.
+   */
+  private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(null);
 
+  /**
+   * @param timerResolution The resolution in ms for the timer
+   * @param scheduleAsync Whether to schedule the execution happens asynchronously or not
+   * @param visitor Function that runs the task and returns the next due date or -1 if there is none
+   */
   public DueDateChecker(
       final long timerResolution,
       final boolean scheduleAsync,
-      final Function<TaskResultBuilder, Long> nextDueDateFunction) {
+      final Function<TaskResultBuilder, Long> visitor) {
     this.timerResolution = timerResolution;
     this.scheduleAsync = scheduleAsync;
-    nextDueDateSupplier = nextDueDateFunction;
-    triggerEntitiesTask = new TriggerEntitiesTask();
+    this.visitor = visitor;
   }
 
-  public void schedule(final long dueDate) {
+  TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+    // There is a benign edge case where we are not supposed to set nextExecution to null here.
+    // If this execution was supposed to be cancelled because an earlier execution was scheduled
+    // instead, nextExecution would hold that earlier execution. We still overwrite it with null and
+    // thus forget that we planned an execution. The next time something is scheduled, we will
+    // observe the null value and thus decide to schedule something new without cancelling what's
+    // already scheduled. While we try to avoid this, we can't prevent it entirely anyway because
+    // cancellation of scheduled executions is best-effort and does not reliably prevent execution.
+    nextExecution.set(null);
 
-    // We schedule only one runnable for all timers.
-    // - The runnable is scheduled when the first timer is scheduled.
-    // - If a new timer is scheduled which should be triggered before the current runnable is
-    // executed then the runnable is canceled and re-scheduled with the new delay.
-    // - Otherwise, we don't need to cancel the runnable. It will be rescheduled when it is
-    // executed.
+    final long nextDueDate = visitor.apply(taskResultBuilder);
 
-    final Duration delay = calculateDelayForNextRun(dueDate);
-
-    if (shouldRescheduleChecker) {
-      if (!checkerRunning) {
-        scheduleService.runDelayed(delay, triggerEntitiesTask);
-        nextDueDate = dueDate;
-        checkerRunning = true;
-      } else if (nextDueDate - dueDate > timerResolution) {
-        scheduleService.runDelayed(delay, triggerEntitiesTask);
-        nextDueDate = dueDate;
-      }
+    // reschedule the runnable if there are timers left
+    if (nextDueDate > 0) {
+      schedule(nextDueDate);
     }
-  }
 
-  private void scheduleTriggerEntitiesTask() {
-    if (shouldRescheduleChecker) {
-      scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
-    } else {
-      checkerRunning = false;
-    }
+    return taskResultBuilder.build();
   }
 
   /**
-   * Calculates the delay for the next run so that it occurs at (or close to) due date. If due date
-   * is in the future, the delay will be precise. If due date is in the past, now or in the very
-   * near future, then a lower floor is applied to the delay. The lower floor is {@code
-   * timerResolution}. This is to prevent the checker from being immediately rescheduled and thus
-   * not giving any other tasks a chance to run.
+   * Schedules the next execution of the checker and stores it in {@link #nextExecution}.
    *
-   * @param dueDate due date for which a scheduling delay is calculated
-   * @return delay to hit the next due date; will be {@code >= timerResolution}
+   * <p>When called it guarantees that there is an execution scheduled at or before the provided due
+   * date within the {@link #timerResolution}.
+   *
+   * <p>If there is no execution scheduled, it always schedules a new one. If there is already an
+   * execution scheduled for a later time (within the timer resolution), that execution is cancelled
+   * and replaced by the new one. In all other cases, no new execution is scheduled.
+   *
+   * <p>It is guaranteed that the next execution is scheduled at least {@link #timerResolution} ms
+   * into the future. For example when the due date is in the past, now or in the very near future.
+   * This is to prevent the checker from being immediately rescheduled and thus not giving any other
+   * tasks a chance to run.
+   *
+   * <p>This method is thread safe and can be called concurrently. On concurrent scheduling, this
+   * execution is cancelled and rescheduled.
+   *
+   * @param dueDate The due date for the next execution
    */
-  private Duration calculateDelayForNextRun(final long dueDate) {
-    return Duration.ofMillis(Math.max(dueDate - ActorClock.currentTimeMillis(), timerResolution));
+  public void schedule(final long dueDate) {
+    if (!shouldRescheduleChecker) {
+      return;
+    }
+    final var replacedExecution =
+        AtomicUtil.replace(
+            nextExecution,
+            currentlyScheduled -> {
+              final var now = ActorClock.currentTimeMillis();
+              final var scheduleFor = now + Math.max(dueDate - now, timerResolution);
+              if (currentlyScheduled == null
+                  || currentlyScheduled.scheduledFor() - scheduleFor > timerResolution) {
+                final var delay = Duration.ofMillis(scheduleFor - now);
+                final var task = scheduleService.runDelayed(delay, this::execute);
+                return Optional.of(new NextExecution(scheduleFor, task));
+              }
+              return Optional.empty();
+            },
+            newlyScheduled -> newlyScheduled.task().cancel());
+
+    if (replacedExecution != null) {
+      replacedExecution.task().cancel();
+    }
   }
 
   @Override
@@ -94,46 +138,37 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     }
 
     shouldRescheduleChecker = true;
-    // check if timers are due after restart
-    scheduleTriggerEntitiesTask();
+    schedule(-1);
+  }
+
+  @Override
+  public void onClose() {
+    shouldRescheduleChecker = false;
+  }
+
+  @Override
+  public void onFailed() {
+    shouldRescheduleChecker = false;
   }
 
   @Override
   public void onPaused() {
     shouldRescheduleChecker = false;
-    nextDueDate = -1;
   }
 
   @Override
   public void onResumed() {
     shouldRescheduleChecker = true;
-    if (!checkerRunning) {
-      scheduleTriggerEntitiesTask();
-    }
+    schedule(-1);
   }
 
-  private final class TriggerEntitiesTask implements Task {
-
-    @Override
-    public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-      if (shouldRescheduleChecker) {
-        nextDueDate = nextDueDateSupplier.apply(taskResultBuilder);
-
-        // reschedule the runnable if there are timers left
-
-        if (nextDueDate > 0) {
-          final Duration delay = calculateDelayForNextRun(nextDueDate);
-          scheduleService.runDelayed(delay, this);
-          checkerRunning = true;
-        } else {
-          checkerRunning = false;
-        }
-      } else {
-        checkerRunning = false;
-      }
-      return taskResultBuilder.build();
-    }
-  }
+  /**
+   * Keeps track of the next execution of the checker.
+   *
+   * @param scheduledFor The deadline in ms for when this execution is scheduled.
+   * @param task The scheduled task for the next execution, can be used for canceling the task.
+   */
+  private record NextExecution(long scheduledFor, ScheduledTask task) {}
 
   /** Abstracts over async and sync scheduling methods of {@link ProcessingScheduleService}. */
   @FunctionalInterface
@@ -142,6 +177,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
      * Implemented by either {@link ProcessingScheduleService#runDelayed(Duration, Task)} or {@link
      * ProcessingScheduleService#runDelayedAsync(Duration, Task)}
      */
-    void runDelayed(final Duration delay, final Task task);
+    ScheduledTask runDelayed(final Duration delay, final Task task);
   }
 }
