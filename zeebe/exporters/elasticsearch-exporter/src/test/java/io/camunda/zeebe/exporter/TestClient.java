@@ -104,6 +104,15 @@ final class TestClient implements CloseableSilently {
     }
   }
 
+  void deleteIndices() {
+    try {
+      final var request = new Request("DELETE", config.index.prefix + "*");
+      restClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   ElasticsearchClient getEsClient() {
     return esClient;
   }
