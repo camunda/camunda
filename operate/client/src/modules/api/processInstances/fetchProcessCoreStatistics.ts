@@ -23,10 +23,15 @@ type CoreStatisticsDto = {
   withIncidents: number;
 };
 
-const fetchProcessCoreStatistics = async () => {
-  return requestAndParse<CoreStatisticsDto>({
-    url: '/api/process-instances/core-statistics',
-  });
+const fetchProcessCoreStatistics = async (
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<CoreStatisticsDto>(
+    {
+      url: '/api/process-instances/core-statistics',
+    },
+    options,
+  );
 };
 
 export {fetchProcessCoreStatistics};

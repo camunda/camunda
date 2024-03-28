@@ -34,10 +34,15 @@ type IncidentByErrorDto = {
   processes: ProcessDto[];
 };
 
-const fetchIncidentsByError = async () => {
-  return requestAndParse<IncidentByErrorDto[]>({
-    url: '/api/incidents/byError',
-  });
+const fetchIncidentsByError = async (
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<IncidentByErrorDto[]>(
+    {
+      url: '/api/incidents/byError',
+    },
+    options,
+  );
 };
 
 export {fetchIncidentsByError};

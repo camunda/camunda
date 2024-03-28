@@ -390,18 +390,21 @@ class Variables extends NetworkReconnectionHandler {
 
     this.isPollRequestRunning = true;
 
-    const response = await fetchVariables({
-      instanceId,
-      payload: {
-        scopeId: this.scopeId || instanceId,
-        pageSize:
-          items.length <= MAX_VARIABLES_PER_REQUEST
-            ? MAX_VARIABLES_PER_REQUEST
-            : items.length,
-        searchAfterOrEqual: this.getSortValues('initial'),
+    const response = await fetchVariables(
+      {
+        instanceId,
+        payload: {
+          scopeId: this.scopeId || instanceId,
+          pageSize:
+            items.length <= MAX_VARIABLES_PER_REQUEST
+              ? MAX_VARIABLES_PER_REQUEST
+              : items.length,
+          searchAfterOrEqual: this.getSortValues('initial'),
+        },
+        signal: this.pollingAbortController?.signal,
       },
-      signal: this.pollingAbortController?.signal,
-    });
+      {isPolling: true},
+    );
 
     if (this.intervalId !== null && response.isSuccess) {
       const variables = response.data;

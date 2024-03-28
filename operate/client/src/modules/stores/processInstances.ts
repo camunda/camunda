@@ -289,6 +289,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
         query: {active: true, running: true, incidents: true, processIds},
         pageSize: 0,
       },
+      options: {isPolling: true},
     });
 
     this.setRunningInstancesCount(
@@ -307,6 +308,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
               ? this.state.processInstances.length
               : MAX_INSTANCES_PER_REQUEST,
         },
+        options: {isPolling: true},
       }),
       this.fetchRunningInstancesCount(),
     ]);
@@ -404,10 +406,13 @@ class ProcessInstances extends NetworkReconnectionHandler {
     }
 
     this.isPollRequestRunning = true;
-    const response = await fetchProcessInstancesByIds({
-      ids: this.processInstanceIdsWithActiveOperations,
-      signal: this.pollingAbortController?.signal,
-    });
+    const response = await fetchProcessInstancesByIds(
+      {
+        ids: this.processInstanceIdsWithActiveOperations,
+        signal: this.pollingAbortController?.signal,
+      },
+      {isPolling: true},
+    );
 
     if (response.isSuccess) {
       if (this.intervalId !== null) {

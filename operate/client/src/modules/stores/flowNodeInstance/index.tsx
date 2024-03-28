@@ -132,7 +132,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     }
 
     this.isPollRequestRunning = true;
-    const response = await fetchFlowNodeInstances(queries);
+    const response = await fetchFlowNodeInstances(queries, {isPolling: true});
 
     if (response.isSuccess) {
       if (this.intervalId !== null) {

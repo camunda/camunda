@@ -16,7 +16,6 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
@@ -27,23 +26,26 @@ import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
+import io.camunda.operate.webapp.security.SessionRepository;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.util.StringUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken
     implements Serializable, TenantAwareAuthentication {
 
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
 
@@ -54,6 +56,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @JsonIgnore private List<IdentityAuthorization> authorizations;
   private String subject;
   private Date expires;
+
+  private Date refreshTokenExpiresAt;
 
   private List<OperateTenant> tenants;
 
@@ -80,17 +84,13 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private boolean hasRefreshTokenExpired() {
-    if (!StringUtils.hasText(tokens.getRefreshToken())) {
-      return true;
-    }
     try {
-      final DecodedJWT refreshToken =
-          getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
-      final Date refreshTokenExpiresAt = refreshToken.getExpiresAt();
       LOGGER.info("Refresh token will expire at {}", refreshTokenExpiresAt);
       return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
     } catch (final TokenDecodeException e) {
-      LOGGER.info("Refresh token is not a JWT and expire date can not be determined");
+      LOGGER.info(
+          "Refresh token is not a JWT and expire date can not be determined. Error message: {}",
+          e.getMessage());
       return false;
     }
   }
@@ -105,15 +105,15 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     if (hasExpired()) {
       LOGGER.info("Access token is expired");
       if (hasRefreshTokenExpired()) {
-        setAuthenticated(false);
         LOGGER.info("No refresh token available. Authentication is invalid.");
-        throw new InsufficientAuthenticationException(
-            "Access token and refresh token are expired.");
+        setAuthenticated(false);
+        getIdentity().authentication().revokeToken(tokens.getRefreshToken());
+        return false;
       } else {
         LOGGER.info("Get a new access token by using refresh token");
         try {
           renewAccessToken();
-        } catch (Exception e) {
+        } catch (final Exception e) {
           LOGGER.error("Renewing access token failed with exception", e);
           setAuthenticated(false);
         }
@@ -122,13 +122,51 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return super.isAuthenticated();
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final IdentityAuthentication that = (IdentityAuthentication) o;
+    return Objects.equals(tokens, that.tokens)
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(permissions, that.permissions)
+        && Objects.equals(authorizations, that.authorizations)
+        && Objects.equals(subject, that.subject)
+        && Objects.equals(expires, that.expires)
+        && Objects.equals(refreshTokenExpiresAt, that.refreshTokenExpiresAt)
+        && Objects.equals(tenants, that.tenants);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        tokens,
+        id,
+        name,
+        permissions,
+        authorizations,
+        subject,
+        expires,
+        refreshTokenExpiresAt,
+        tenants);
+  }
+
   public String getId() {
     return id;
   }
 
   public List<Permission> getPermissions() {
     final PermissionConverter permissionConverter = getPermissionConverter();
-    return permissions.stream().map(permissionConverter::convert).collect(Collectors.toList());
+    return permissions.stream().map(permissionConverter::convert).toList();
   }
 
   public IdentityAuthentication setPermissions(final List<String> permissions) {
@@ -164,8 +202,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
       try {
         authorizations =
             IdentityAuthorization.createFrom(
-                getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
-      } catch (RestException ex) {
+                getIdentity().authorizations().forToken(tokens.getAccessToken()));
+      } catch (final RestException ex) {
         LOGGER.warn(
             "Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(),
             ex);
@@ -183,13 +221,13 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         if (identityTenants != null) {
           tenants =
               identityTenants.stream()
-                  .map((t) -> new OperateTenant(t.getTenantId(), t.getName()))
-                  .collect(Collectors.toList());
+                  .map(t -> new OperateTenant(t.getTenantId(), t.getName()))
+                  .toList();
         } else {
           tenants = new ArrayList<>();
         }
 
-      } catch (RestException ex) {
+      } catch (final RestException ex) {
         LOGGER.warn("Unable to retrieve tenants from Identity. Error: " + ex.getMessage(), ex);
         tenants = new ArrayList<>();
       }
@@ -216,10 +254,29 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
     LOGGER.info("Access token will expire at {}", expires);
-    if (!hasExpired()) {
-      setAuthenticated(true);
+    if (!isPolling()) {
+      try {
+        refreshTokenExpiresAt =
+            getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
+      } catch (final TokenDecodeException e) {
+        LOGGER.error(
+            "Unable to decode refresh token {} with exception: {}",
+            this.tokens.getRefreshToken(),
+            e.getMessage());
+      }
+    }
+    setAuthenticated(!hasExpired());
+  }
+
+  private boolean isPolling() {
+    final ServletRequestAttributes requestAttributes =
+        (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+    if (requestAttributes != null) {
+      return Boolean.TRUE.equals(
+          Boolean.parseBoolean(
+              requestAttributes.getRequest().getHeader(SessionRepository.POLLING_HEADER)));
     } else {
-      setAuthenticated(false);
+      return false;
     }
   }
 
