@@ -137,7 +137,7 @@
     // Disable major and minor updates for maintenance branches
     {
       matchUpdateTypes: ["major", "minor"],
-      matchBaseBranches: ["/^maintenance/.*/"],
+      matchBaseBranches: ["/^maintenance\\/.*/", "/^release\\/.*/"],
       enabled: false,
     },
   ],
