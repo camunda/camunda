@@ -37,13 +37,11 @@ import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -60,7 +58,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 final class ElasticsearchExporterIT {
   @Container
-  private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
+  private static final ElasticsearchContainer CONTAINER =
+      TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
 
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
@@ -71,7 +70,6 @@ final class ElasticsearchExporterIT {
 
   private TestClient testClient;
   private ExporterTestContext exporterTestContext;
-  private int exportedRecordsCounter = 0;
 
   @BeforeEach
   public void beforeEach() {
@@ -94,6 +92,11 @@ final class ElasticsearchExporterIT {
   @AfterEach
   void afterEach() {
     CloseHelper.quietCloseAll(testClient);
+  }
+
+  @BeforeEach
+  void cleanup() {
+    testClient.deleteIndices();
   }
 
   @ParameterizedTest(name = "{0}")
@@ -215,15 +218,12 @@ final class ElasticsearchExporterIT {
 
   private boolean export(final Record<?> record) {
     exporter.export(record);
-    exportedRecordsCounter++;
     return true;
   }
 
   @Nested
-  @TestMethodOrder(OrderAnnotation.class)
   final class IndexSettingsTest {
     @Test
-    @Order(1)
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
       configureExporter(false);
@@ -256,7 +256,6 @@ final class ElasticsearchExporterIT {
     }
 
     @Test
-    @Order(2)
     void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
       // given
       configureExporter(true);
@@ -294,34 +293,20 @@ final class ElasticsearchExporterIT {
      * shards in a one node cluster
      */
     @Test
-    @Order(3)
     void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() {
       // given
       configureExporter(false);
       final var records = new ArrayList<Record<RecordValue>>();
-      final int limit = 498 - exportedRecordsCounter;
+      // using 498 here as we will export one more record after (1 main shard, 1 replica)
+      final int limit = 498;
       for (int i = 0; i < limit; i++) {
-        records.add(factory.generateRecord(ValueType.JOB));
-      }
-
-      // when
-      for (final var record : records) {
+        final var record = factory.generateRecord(ValueType.JOB);
+        records.add(record);
         export(record);
       }
-
-      // then
-      for (final var record : records) {
-        final var index = indexRouter.indexFor(record);
-        final var response = testClient.getIndexSettings(index);
-
-        assertIndexSettingsHasNoLifecyclePolicy(response);
-      }
-
-      /* Tests when retention is later enabled all indices should have lifecycle policy */
-      // given
+      // when
       configureExporter(true);
       final var record2 = factory.generateRecord(ValueType.JOB);
-
       // when
       await("New record is exported, and existing indices are updated")
           .atMost(Duration.ofSeconds(30))
