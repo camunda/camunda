@@ -19,7 +19,7 @@ public class PartitionProcessingState {
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
   private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private boolean isProcessingPaused;
-  private EXPORTER_STATE exporterState;
+  private ExporterState exporterState;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
 
@@ -71,18 +71,18 @@ public class PartitionProcessingState {
   }
 
   public boolean isExportingPaused() {
-    return exporterState.equals(EXPORTER_STATE.PAUSED);
+    return exporterState.equals(ExporterState.PAUSED);
   }
 
   public boolean isExportingSoftPaused() {
-    return exporterState.equals(EXPORTER_STATE.SOFT_PAUSED);
+    return exporterState.equals(ExporterState.SOFT_PAUSED);
   }
 
   @SuppressWarnings({"squid:S899"})
   /** Returns true if exporting is paused. This method overrides the effects of soft pause. */
   public boolean pauseExporting() {
     try {
-      setPersistedExporterState(EXPORTER_STATE.PAUSED);
+      setPersistedExporterState(ExporterState.PAUSED);
     } catch (final IOException e) {
       return false;
     }
@@ -92,7 +92,7 @@ public class PartitionProcessingState {
   /** Returns true if soft exporting is paused. This method overrides the effects of hard pause. */
   public boolean softPauseExporting() {
     try {
-      setPersistedExporterState(EXPORTER_STATE.SOFT_PAUSED);
+      setPersistedExporterState(ExporterState.SOFT_PAUSED);
     } catch (final IOException e) {
       return false;
     }
@@ -102,16 +102,16 @@ public class PartitionProcessingState {
   /** Returns true if exporting is resumed. This method resumes both soft and "hard" exporting. */
   public boolean resumeExporting() {
     try {
-      setPersistedExporterState(EXPORTER_STATE.EXPORTING);
+      setPersistedExporterState(ExporterState.EXPORTING);
     } catch (final IOException e) {
       return false;
     }
     return true;
   }
 
-  void setPersistedExporterState(final EXPORTER_STATE state) throws IOException {
+  void setPersistedExporterState(final ExporterState state) throws IOException {
     exporterState = state;
-    if (state.equals(EXPORTER_STATE.EXPORTING)) {
+    if (state.equals(ExporterState.EXPORTING)) {
       // since exporting is the default state, we can delete the file
       Files.deleteIfExists(
           getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
@@ -131,25 +131,25 @@ public class PartitionProcessingState {
   private void initExportingState() {
     try {
       if (!getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists()) {
-        setPersistedExporterState(EXPORTER_STATE.EXPORTING);
-        exporterState = EXPORTER_STATE.EXPORTING;
+        setPersistedExporterState(ExporterState.EXPORTING);
+        exporterState = ExporterState.EXPORTING;
       } else {
         final var state =
             Files.readString(
                 getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
         if (state == null || state.isEmpty() || state.isBlank()) {
           // Backwards compatibility. If the file exists, it is paused.
-          setPersistedExporterState(EXPORTER_STATE.PAUSED);
+          setPersistedExporterState(ExporterState.PAUSED);
         }
-        exporterState = EXPORTER_STATE.valueOf(state);
+        exporterState = ExporterState.valueOf(state);
       }
     } catch (final IOException e) {
       // exporting is the default state
-      exporterState = EXPORTER_STATE.EXPORTING;
+      exporterState = ExporterState.EXPORTING;
     }
   }
 
-  public enum EXPORTER_STATE {
+  public enum ExporterState {
     PAUSED,
     SOFT_PAUSED,
     EXPORTING;
