@@ -17,6 +17,10 @@ import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.De
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Phases;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Policy;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyResponse;
+import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest;
+import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest.Index;
+import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest.Lifecycle;
+import io.camunda.zeebe.exporter.dto.PutIndexSettingsResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
@@ -219,6 +223,20 @@ class ElasticsearchClient implements AutoCloseable {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           "Failed to put index lifecycle management policy", e);
+    }
+  }
+
+  public boolean bulkPutIndexLifecycleSettings(final String policyName) {
+    try {
+      final var request =
+          new Request(
+              "PUT", "/" + configuration.index.prefix + "*/_settings?allow_no_indices=true");
+      final var requestEntity = new PutIndexSettingsRequest(new Index(new Lifecycle(policyName)));
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+      final var response = sendRequest(request, PutIndexSettingsResponse.class);
+      return response.acknowledged();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to update indices lifecycle settings", e);
     }
   }
 
