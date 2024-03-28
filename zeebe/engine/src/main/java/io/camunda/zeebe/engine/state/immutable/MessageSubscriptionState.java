@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 
 public interface MessageSubscriptionState {
 
-  MessageSubscription get(long elementInstanceKey, DirectBuffer messageName);
+  MessageSubscription get(final long key, long elementInstanceKey, DirectBuffer messageName);
 
   /**
    * Visits the message subscriptions that match a given tenant, message name, and correlation key.

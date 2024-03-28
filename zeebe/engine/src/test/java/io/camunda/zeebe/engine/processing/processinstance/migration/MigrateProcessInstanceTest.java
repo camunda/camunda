@@ -33,6 +33,62 @@ public class MigrateProcessInstanceTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
+  public void shouldMigrateServiceTaskWithMessageBoundaryEvent() {
+    // given
+    final String processId1 = helper.getBpmnProcessId();
+    final String processId2 = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "process1.xml",
+                Bpmn.createExecutableProcess(processId1)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .boundaryEvent("message")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                "process2.xml",
+                Bpmn.createExecutableProcess(processId2)
+                    .startEvent()
+                    .serviceTask("B", a -> a.zeebeJobType("B"))
+                    .boundaryEvent("message")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long otherProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, processId2);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId1)
+            .withVariable("key", helper.getCorrelationValue())
+            .create();
+
+    // when
+    final var event =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(otherProcessDefinitionKey)
+            .addMappingInstruction("A", "B")
+            .migrate();
+
+    // then
+    assertThat(event)
+        .hasKey(processInstanceKey)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
+  }
+
+  @Test
   public void shouldWriteMigratedEventForProcessInstance() {
     // given
     final String processId1 = helper.getBpmnProcessId();

@@ -191,7 +191,7 @@ public class MigrateBoundaryEventTest {
                     .startEvent()
                     .userTask("B")
                     .boundaryEvent("boundary")
-                    .message(m -> m.name("message2").zeebeCorrelationKeyExpression("key"))
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
                     .endEvent()
                     .moveToActivity("B")
                     .endEvent()

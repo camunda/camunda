@@ -25,6 +25,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -36,15 +37,19 @@ public final class DbProcessMessageSubscriptionState
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   // (elementInstanceKey, tenant aware messageName) => ProcessMessageSubscription
+  private final DbLong subscriptionKey;
   private final DbLong elementInstanceKey;
 
   private final DbString tenantIdKey;
   private final DbString messageName;
   private final DbTenantAwareKey<DbString> tenantAwareMessageName;
   private final DbCompositeKey<DbLong, DbTenantAwareKey<DbString>> elementKeyAndMessageName;
+  private final DbCompositeKey<DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, DbLong>
+      elementKeyMessageNameAndSubscriptionKey;
   private final ProcessMessageSubscription processMessageSubscription;
   private final ColumnFamily<
-          DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, ProcessMessageSubscription>
+          DbCompositeKey<DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, DbLong>,
+          ProcessMessageSubscription>
       subscriptionColumnFamily;
 
   private final TransientPendingSubscriptionState transientState;
@@ -54,10 +59,13 @@ public final class DbProcessMessageSubscriptionState
       final TransactionContext transactionContext,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     elementInstanceKey = new DbLong();
+    subscriptionKey = new DbLong();
     tenantIdKey = new DbString();
     messageName = new DbString();
     tenantAwareMessageName = new DbTenantAwareKey<>(tenantIdKey, messageName, PlacementType.PREFIX);
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, tenantAwareMessageName);
+    elementKeyMessageNameAndSubscriptionKey =
+        new DbCompositeKey<>(elementKeyAndMessageName, subscriptionKey);
     processMessageSubscription = new ProcessMessageSubscription();
     transientState = transientProcessMessageSubscriptionState;
 
@@ -65,7 +73,7 @@ public final class DbProcessMessageSubscriptionState
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY,
             transactionContext,
-            elementKeyAndMessageName,
+            elementKeyMessageNameAndSubscriptionKey,
             processMessageSubscription);
   }
 
@@ -77,7 +85,10 @@ public final class DbProcessMessageSubscriptionState
             final var record = subscription.getRecord();
             transientState.add(
                 new PendingSubscription(
-                    record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
+                    subscription.getKey(),
+                    record.getElementInstanceKey(),
+                    record.getMessageName(),
+                    record.getTenantId()),
                 ActorClock.currentTimeMillis());
           }
         });
@@ -86,63 +97,70 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void put(final long key, final ProcessMessageSubscriptionRecord record) {
     wrapSubscriptionKeys(
-        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+        key, record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
 
     processMessageSubscription.reset();
     processMessageSubscription.setKey(key).setRecord(record);
 
-    subscriptionColumnFamily.insert(elementKeyAndMessageName, processMessageSubscription);
+    subscriptionColumnFamily.insert(
+        elementKeyMessageNameAndSubscriptionKey, processMessageSubscription);
 
     transientState.add(
         new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
+            key, record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
         ActorClock.currentTimeMillis());
   }
 
   @Override
-  public void updateToOpeningState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setOpening());
+  public void updateToOpeningState(final long key, final ProcessMessageSubscriptionRecord record) {
+    update(key, record, s -> s.setRecord(record).setOpening());
     transientState.update(
         new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
+            key, record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
         ActorClock.currentTimeMillis());
   }
 
   @Override
-  public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setOpened());
+  public void updateToOpenedState(final long key, final ProcessMessageSubscriptionRecord record) {
+    update(key, record, s -> s.setRecord(record).setOpened());
     transientState.remove(
         new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
+            key, record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   @Override
-  public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setClosing());
+  public void updateToClosingState(final long key, final ProcessMessageSubscriptionRecord record) {
+    update(key, record, s -> s.setRecord(record).setClosing());
     transientState.update(
         new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
+            key, record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
         ActorClock.currentTimeMillis());
   }
 
   @Override
   public boolean remove(
-      final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
+      final long key,
+      final long elementInstanceKey,
+      final DirectBuffer messageName,
+      final String tenantId) {
     final ProcessMessageSubscription subscription =
-        getSubscription(elementInstanceKey, messageName, tenantId);
+        getSubscription(key, elementInstanceKey, messageName, tenantId);
     final boolean found = subscription != null;
     if (found) {
-      remove(subscription);
+      remove(key, subscription);
     }
     return found;
   }
 
   @Override
   public ProcessMessageSubscription getSubscription(
-      final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
-    wrapSubscriptionKeys(elementInstanceKey, messageName, tenantId);
+      final long key,
+      final long elementInstanceKey,
+      final DirectBuffer messageName,
+      final String tenantId) {
+    wrapSubscriptionKeys(key, elementInstanceKey, messageName, tenantId);
 
-    return subscriptionColumnFamily.get(elementKeyAndMessageName);
+    return subscriptionColumnFamily.get(elementKeyMessageNameAndSubscriptionKey);
   }
 
   @Override
@@ -160,9 +178,18 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
-    wrapSubscriptionKeys(elementInstanceKey, messageName, tenantId);
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
+    tenantIdKey.wrapString(tenantId);
 
-    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
+    final AtomicBoolean found = new AtomicBoolean(false);
+    subscriptionColumnFamily.whileEqualPrefix(
+        elementKeyAndMessageName,
+        (compositeKey, subscription) -> {
+          found.set(true);
+        });
+
+    return found.get();
   }
 
   @Override
@@ -171,6 +198,7 @@ public final class DbProcessMessageSubscriptionState
     for (final var pendingSubscription : transientState.entriesBefore(deadline)) {
       final var subscription =
           getSubscription(
+              pendingSubscription.subscriptionKey(),
               pendingSubscription.elementInstanceKey(),
               BufferUtil.wrapString(pendingSubscription.messageName()),
               pendingSubscription.tenantId());
@@ -187,51 +215,61 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void onSent(final ProcessMessageSubscriptionRecord record, final long timestampMs) {
+  public void onSent(
+      final long key, final ProcessMessageSubscriptionRecord record, final long timestampMs) {
     transientState.update(
         new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
+            key, record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
         timestampMs);
   }
 
   private void update(
+      final long key,
       final ProcessMessageSubscriptionRecord record,
       final Consumer<ProcessMessageSubscription> modifier) {
     final ProcessMessageSubscription subscription =
         getSubscription(
-            record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+            key,
+            record.getElementInstanceKey(),
+            record.getMessageNameBuffer(),
+            record.getTenantId());
     if (subscription == null) {
       return;
     }
 
-    update(subscription, modifier);
+    update(key, subscription, modifier);
   }
 
   private void update(
+      final long key,
       final ProcessMessageSubscription subscription,
       final Consumer<ProcessMessageSubscription> modifier) {
     modifier.accept(subscription);
 
     final var record = subscription.getRecord();
     wrapSubscriptionKeys(
-        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
-    subscriptionColumnFamily.update(elementKeyAndMessageName, subscription);
+        key, record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+    subscriptionColumnFamily.update(elementKeyMessageNameAndSubscriptionKey, subscription);
   }
 
-  private void remove(final ProcessMessageSubscription subscription) {
+  private void remove(final long key, final ProcessMessageSubscription subscription) {
     final var record = subscription.getRecord();
     wrapSubscriptionKeys(
-        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+        key, record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
 
-    subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
+    subscriptionColumnFamily.deleteExisting(elementKeyMessageNameAndSubscriptionKey);
 
     transientState.remove(
         new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
+            key, record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   private void wrapSubscriptionKeys(
-      final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
+      final long key,
+      final long elementInstanceKey,
+      final DirectBuffer messageName,
+      final String tenantId) {
+    subscriptionKey.wrapLong(key);
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
     tenantIdKey.wrapString(tenantId);

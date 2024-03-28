@@ -94,6 +94,7 @@ public final class MessageSubscriptionRejectProcessor
         subscription.getMessageKey(),
         subscription.getVariablesBuffer(),
         subscription.getCorrelationKeyBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getMessageSubscriptionKey());
   }
 }

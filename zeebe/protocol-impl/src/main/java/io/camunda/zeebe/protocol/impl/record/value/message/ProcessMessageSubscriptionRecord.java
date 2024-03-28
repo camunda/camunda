@@ -39,6 +39,10 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty processMessageSubscriptionKeyProp =
+      new LongProperty("processMessageSubscriptionKey", -1L);
+  private final LongProperty messageSubscriptionKeyProp =
+      new LongProperty("messageSubscriptionKey", -1L);
 
   public ProcessMessageSubscriptionRecord() {
     super(11);
@@ -52,7 +56,9 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(elementIdProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(processMessageSubscriptionKeyProp)
+        .declareProperty(messageSubscriptionKeyProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -67,6 +73,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setCorrelationKey(record.getCorrelationKeyBuffer());
     setElementId(record.getElementIdBuffer());
     setTenantId(record.getTenantId());
+    setProcessMessageSubscriptionKey(record.getProcessMessageSubscriptionKey());
+    setMessageSubscriptionKey(record.getMessageSubscriptionKey());
   }
 
   @JsonIgnore
@@ -135,6 +143,22 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public long getProcessMessageSubscriptionKey() {
+    return processMessageSubscriptionKeyProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setProcessMessageSubscriptionKey(
+      final long processInstanceMessageSubscriptionKey) {
+    processMessageSubscriptionKeyProp.setValue(processInstanceMessageSubscriptionKey);
+    return this;
+  }
+
+  @Override
+  public long getMessageSubscriptionKey() {
+    return messageSubscriptionKeyProp.getValue();
+  }
+
+  @Override
   public String getMessageName() {
     return bufferAsString(messageNameProp.getValue());
   }
@@ -171,6 +195,12 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setMessageName(final DirectBuffer messageName) {
     messageNameProp.setValue(messageName);
+    return this;
+  }
+
+  public ProcessMessageSubscriptionRecord setMessageSubscriptionKey(
+      final long messageSubscriptionKey) {
+    messageSubscriptionKeyProp.setValue(messageSubscriptionKey);
     return this;
   }
 

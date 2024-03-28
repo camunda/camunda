@@ -299,10 +299,11 @@ public class DbMigrationState implements MutableMigrationState {
           final var messageName = elementKeyAndMessageName.second().getBuffer();
 
           final var messageSubscription =
-              messageSubscriptionState.get(elementInstanceKey, messageName);
+              messageSubscriptionState.get(1L, elementInstanceKey, messageName);
           if (messageSubscription != null) {
-            messageSubscriptionState.updateToCorrelatingState(messageSubscription.getRecord());
+            messageSubscriptionState.updateToCorrelatingState(1L, messageSubscription.getRecord());
             transientState.onSent(
+                1L,
                 elementInstanceKey,
                 BufferUtil.bufferAsString(messageName),
                 TenantOwned.DEFAULT_TENANT_IDENTIFIER,
@@ -327,7 +328,7 @@ public class DbMigrationState implements MutableMigrationState {
 
           final var processMessageSubscription =
               persistentState.getSubscription(
-                  elementInstanceKey, messageName, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+                  1L, elementInstanceKey, messageName, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
           if (processMessageSubscription != null) {
 
             final var record = processMessageSubscription.getRecord();
@@ -339,13 +340,15 @@ public class DbMigrationState implements MutableMigrationState {
             if (processMessageSubscription.isOpening()) {
               // explicit call to put(..). This has the desired side-effect that the subscription
               // is added to transient state
-              persistentState.updateToOpeningState(exclusiveCopy);
-              transientState.onSent(exclusiveCopy, sentTime);
+              // TODO - dummy key, no need to change here for actual implementation because we will
+              // create a mew column family
+              persistentState.updateToOpeningState(1L, exclusiveCopy);
+              transientState.onSent(1L, exclusiveCopy, sentTime);
             } else if (processMessageSubscription.isClosing()) {
               // explicit call to updateToClosingState(..). This has the desired side-effect that
               // the subscription is added to transient state
-              persistentState.updateToClosingState(exclusiveCopy);
-              transientState.onSent(exclusiveCopy, sentTime);
+              persistentState.updateToClosingState(1L, exclusiveCopy);
+              transientState.onSent(1L, exclusiveCopy, sentTime);
             }
           }
 

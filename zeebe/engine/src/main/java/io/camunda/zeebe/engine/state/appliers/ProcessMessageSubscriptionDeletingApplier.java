@@ -24,6 +24,6 @@ final class ProcessMessageSubscriptionDeletingApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-    state.updateToClosingState(value);
+    state.updateToClosingState(key, value);
   }
 }

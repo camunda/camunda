@@ -16,11 +16,11 @@ public interface MutableMessageSubscriptionState extends MessageSubscriptionStat
 
   void put(long key, MessageSubscriptionRecord record);
 
-  void updateToCorrelatingState(MessageSubscriptionRecord record);
+  void updateToCorrelatingState(final long key, MessageSubscriptionRecord record);
 
-  void updateToCorrelatedState(MessageSubscription subscription);
+  void updateToCorrelatedState(final long key, MessageSubscription subscription);
 
-  boolean remove(long elementInstanceKey, DirectBuffer messageName);
+  boolean remove(final long key, long elementInstanceKey, DirectBuffer messageName);
 
   void remove(MessageSubscription subscription);
 }

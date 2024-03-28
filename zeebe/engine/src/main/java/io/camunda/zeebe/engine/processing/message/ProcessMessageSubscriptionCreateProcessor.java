@@ -46,15 +46,14 @@ public final class ProcessMessageSubscriptionCreateProcessor
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
+            subscriptionRecord.getProcessMessageSubscriptionKey(),
             subscriptionRecord.getElementInstanceKey(),
             subscriptionRecord.getMessageNameBuffer(),
             subscriptionRecord.getTenantId());
 
     if (subscription != null && subscription.isOpening()) {
       stateWriter.appendFollowUpEvent(
-          subscription.getKey(),
-          ProcessMessageSubscriptionIntent.CREATED,
-          subscription.getRecord());
+          subscription.getKey(), ProcessMessageSubscriptionIntent.CREATED, subscriptionRecord);
 
     } else {
       rejectCommand(command, subscription);

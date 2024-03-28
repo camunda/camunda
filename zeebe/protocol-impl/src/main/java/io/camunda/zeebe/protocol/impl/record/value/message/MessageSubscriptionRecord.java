@@ -36,6 +36,11 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  private final LongProperty processMessageSubscriptionKeyProp =
+      new LongProperty("processMessageSubscriptionKey", -1L);
+  private final LongProperty messageSubscriptionKeyProp =
+      new LongProperty("messageSubscriptionKey", -1L);
+
   public MessageSubscriptionRecord() {
     super(9);
     declareProperty(processInstanceKeyProp)
@@ -46,7 +51,9 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(processMessageSubscriptionKeyProp)
+        .declareProperty(messageSubscriptionKeyProp);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -59,6 +66,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setVariables(record.getVariablesBuffer());
     setTenantId(record.getTenantId());
+    setProcessMessageSubscriptionKey(record.getProcessMessageSubscriptionKey());
+    setMessageSubscriptionKey(record.getMessageSubscriptionKey());
   }
 
   @JsonIgnore
@@ -111,6 +120,26 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return messageKeyProp.getValue();
   }
 
+  public MessageSubscriptionRecord setMessageKey(final long messageKey) {
+    messageKeyProp.setValue(messageKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessMessageSubscriptionKey() {
+    return processMessageSubscriptionKeyProp.getValue();
+  }
+
+  @Override
+  public long getMessageSubscriptionKey() {
+    return messageSubscriptionKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setMessageSubscriptionKey(final long messageSubscriptionKey) {
+    messageSubscriptionKeyProp.setValue(messageSubscriptionKey);
+    return this;
+  }
+
   @Override
   public boolean isInterrupting() {
     return interruptingProp.getValue();
@@ -121,8 +150,9 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public MessageSubscriptionRecord setMessageKey(final long messageKey) {
-    messageKeyProp.setValue(messageKey);
+  public MessageSubscriptionRecord setProcessMessageSubscriptionKey(
+      final long processMessageSubscriptionKey) {
+    processMessageSubscriptionKeyProp.setValue(processMessageSubscriptionKey);
     return this;
   }
 

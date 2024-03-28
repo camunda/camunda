@@ -61,6 +61,10 @@ public interface MessageSubscriptionRecordValue
    */
   long getMessageKey();
 
+  long getProcessMessageSubscriptionKey();
+
+  long getMessageSubscriptionKey();
+
   /**
    * @return {@code true} if the event tied to the subscription is interrupting. Otherwise, it
    *     returns {@code false} if the event is non-interrupting.

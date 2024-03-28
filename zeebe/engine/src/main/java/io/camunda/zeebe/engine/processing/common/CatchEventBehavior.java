@@ -307,7 +307,8 @@ public final class CatchEventBehavior {
         messageName,
         correlationKey,
         event.isInterrupting(),
-        context.getTenantId());
+        context.getTenantId(),
+        subscriptionKey);
   }
 
   private void subscribeToTimerEvents(
@@ -446,7 +447,9 @@ public final class CatchEventBehavior {
         processInstanceKey,
         elementInstanceKey,
         messageName,
-        subscription.getRecord().getTenantId());
+        subscription.getRecord().getTenantId(),
+        subscription.getKey(),
+        subscription.getRecord().getMessageSubscriptionKey());
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
@@ -454,9 +457,17 @@ public final class CatchEventBehavior {
       final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName,
-      final String tenantId) {
+      final String tenantId,
+      final long processMessageSubscriptionKey,
+      final long messageSubscriptionKey) {
     return subscriptionCommandSender.closeMessageSubscription(
-        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName, tenantId);
+        subscriptionPartitionId,
+        processInstanceKey,
+        elementInstanceKey,
+        messageName,
+        tenantId,
+        processMessageSubscriptionKey,
+        messageSubscriptionKey);
   }
 
   private boolean sendOpenMessageSubscription(
@@ -467,7 +478,8 @@ public final class CatchEventBehavior {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate,
-      final String tenantId) {
+      final String tenantId,
+      final long processMessageSubscriptionKey) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
         processInstanceKey,
@@ -476,7 +488,8 @@ public final class CatchEventBehavior {
         messageName,
         correlationKey,
         closeOnCorrelate,
-        tenantId);
+        tenantId,
+        processMessageSubscriptionKey);
   }
 
   public record CatchEvent(ExecutableCatchEvent element, DirectBuffer messageName) {

@@ -27,12 +27,13 @@ public final class MessageSubscriptionCorrelatedApplier
     // TODO (saig0): the record doesn't contain the sent time but it's required for cleaning (#6364)
     // - workaround: load the subscription from the state instead of using the record directly
     final var subscription =
-        messageSubscriptionState.get(value.getElementInstanceKey(), value.getMessageNameBuffer());
+        messageSubscriptionState.get(
+            key, value.getElementInstanceKey(), value.getMessageNameBuffer());
 
     if (value.isInterrupting()) {
       messageSubscriptionState.remove(subscription);
     } else {
-      messageSubscriptionState.updateToCorrelatedState(subscription);
+      messageSubscriptionState.updateToCorrelatedState(key, subscription);
     }
   }
 }

@@ -73,6 +73,7 @@ public final class ProcessMessageSubscriptionStateTest {
     // when
     final var subscription =
         state.getSubscription(
+            1L,
             record.getElementInstanceKey(),
             record.getMessageNameBuffer(),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -90,8 +91,8 @@ public final class ProcessMessageSubscriptionStateTest {
     state.put(1L, record);
 
     // when
-    state.remove(1L, record.getMessageNameBuffer(), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    state.remove(1L, record.getMessageNameBuffer(), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.remove(1L, 1L, record.getMessageNameBuffer(), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.remove(1L, 1L, record.getMessageNameBuffer(), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(
@@ -107,7 +108,7 @@ public final class ProcessMessageSubscriptionStateTest {
     state.put(2L, subscriptionRecord("messageName", "correlationKey", 2L));
 
     // when
-    state.remove(2L, wrapString("messageName"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.remove(1L, 2L, wrapString("messageName"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
     assertThat(
@@ -146,10 +147,11 @@ public final class ProcessMessageSubscriptionStateTest {
     state.put(1L, record);
 
     // when
-    state.remove(1L, record.getMessageNameBuffer(), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.remove(1L, 1L, record.getMessageNameBuffer(), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     final var subscription =
         state.getSubscription(
+            1L,
             record.getElementInstanceKey(),
             record.getMessageNameBuffer(),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);

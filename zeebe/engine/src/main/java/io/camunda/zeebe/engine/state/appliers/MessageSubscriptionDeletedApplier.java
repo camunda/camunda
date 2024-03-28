@@ -25,6 +25,6 @@ public final class MessageSubscriptionDeletedApplier
   @Override
   public void applyState(final long key, final MessageSubscriptionRecord value) {
 
-    subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
+    subscriptionState.remove(key, value.getElementInstanceKey(), value.getMessageNameBuffer());
   }
 }

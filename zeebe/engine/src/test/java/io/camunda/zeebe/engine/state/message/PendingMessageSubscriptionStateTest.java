@@ -45,13 +45,13 @@ public final class PendingMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.onSent(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(1L, subscription1);
+    transientState.onSent(1L, subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
-    persistentState.updateToCorrelatingState(subscription2);
-    transientState.onSent(subscription2, 3_000);
+    persistentState.updateToCorrelatingState(1L, subscription2);
+    transientState.onSent(1L, subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -65,13 +65,13 @@ public final class PendingMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.onSent(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(1L, subscription1);
+    transientState.onSent(1L, subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
-    persistentState.updateToCorrelatingState(subscription2);
-    transientState.onSent(subscription2, 3_000);
+    persistentState.updateToCorrelatingState(1L, subscription2);
+    transientState.onSent(1L, subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -85,13 +85,13 @@ public final class PendingMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.onSent(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(1L, subscription1);
+    transientState.onSent(1L, subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
-    persistentState.updateToCorrelatingState(subscription2);
-    transientState.onSent(subscription2, 2_000);
+    persistentState.updateToCorrelatingState(1L, subscription2);
+    transientState.onSent(1L, subscription2, 2_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -105,8 +105,8 @@ public final class PendingMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.onSent(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(1L, subscription1);
+    transientState.onSent(1L, subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
@@ -125,11 +125,11 @@ public final class PendingMessageSubscriptionStateTest {
     persistentState.put(1L, record);
 
     final var subscription =
-        persistentState.get(record.getElementInstanceKey(), record.getMessageNameBuffer());
+        persistentState.get(1L, record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     // when
-    persistentState.updateToCorrelatingState(subscription.getRecord());
-    transientState.onSent(subscription.getRecord(), 1_000);
+    persistentState.updateToCorrelatingState(1L, subscription.getRecord());
+    transientState.onSent(1L, subscription.getRecord(), 1_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -138,7 +138,7 @@ public final class PendingMessageSubscriptionStateTest {
     assertThat(keys).hasSize(1).contains(1L);
 
     // and
-    transientState.onSent(subscription.getRecord(), 1_500);
+    transientState.onSent(1L, subscription.getRecord(), 1_500);
 
     keys.clear();
     transientState.visitPending(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
@@ -154,19 +154,19 @@ public final class PendingMessageSubscriptionStateTest {
 
     assertThat(
             persistentState
-                .get(subscription.getElementInstanceKey(), subscription.getMessageNameBuffer())
+                .get(1L, subscription.getElementInstanceKey(), subscription.getMessageNameBuffer())
                 .isCorrelating())
         .isFalse();
 
     // when
     subscription.setVariables(MsgPackUtil.asMsgPack("{\"foo\":\"bar\"}")).setMessageKey(5L);
-    persistentState.updateToCorrelatingState(subscription);
-    transientState.onSent(subscription, 1_000);
+    persistentState.updateToCorrelatingState(1L, subscription);
+    transientState.onSent(1L, subscription, 1_000);
 
     // then
     assertThat(
             persistentState
-                .get(subscription.getElementInstanceKey(), subscription.getMessageNameBuffer())
+                .get(1L, subscription.getElementInstanceKey(), subscription.getMessageNameBuffer())
                 .isCorrelating())
         .isTrue();
 
@@ -196,11 +196,11 @@ public final class PendingMessageSubscriptionStateTest {
     // given
     final var subscription = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription);
-    persistentState.updateToCorrelatingState(subscription);
-    transientState.onSent(subscription, 1_000);
+    persistentState.updateToCorrelatingState(1L, subscription);
+    transientState.onSent(1L, subscription, 1_000);
 
     // when
-    persistentState.remove(1L, subscription.getMessageNameBuffer());
+    persistentState.remove(1L, 1L, subscription.getMessageNameBuffer());
 
     // then
     final List<Long> keys = new ArrayList<>();

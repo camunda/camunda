@@ -50,6 +50,10 @@ public interface ProcessMessageSubscriptionRecordValue
    */
   long getMessageKey();
 
+  long getProcessMessageSubscriptionKey();
+
+  long getMessageSubscriptionKey();
+
   /**
    * @return the message name
    */

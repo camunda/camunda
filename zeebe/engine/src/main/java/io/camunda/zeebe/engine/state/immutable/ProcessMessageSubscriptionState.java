@@ -13,7 +13,7 @@ import org.agrona.DirectBuffer;
 public interface ProcessMessageSubscriptionState {
 
   ProcessMessageSubscription getSubscription(
-      long elementInstanceKey, DirectBuffer messageName, final String tenantId);
+      final long key, long elementInstanceKey, DirectBuffer messageName, final String tenantId);
 
   void visitElementSubscriptions(
       long elementInstanceKey, ProcessMessageSubscriptionVisitor visitor);

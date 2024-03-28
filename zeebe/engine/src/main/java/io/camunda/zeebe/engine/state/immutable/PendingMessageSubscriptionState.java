@@ -24,13 +24,16 @@ public interface PendingMessageSubscriptionState {
    * visited by {@link #visitPending(long, MessageSubscriptionVisitor)}.
    */
   void onSent(
+      final long key,
       final long elementInstance,
       final String messageName,
       final String tenantId,
       final long timestampMs);
 
-  default void onSent(final MessageSubscriptionRecord subscription, final long timestampMs) {
+  default void onSent(
+      final long key, final MessageSubscriptionRecord subscription, final long timestampMs) {
     onSent(
+        key,
         subscription.getElementInstanceKey(),
         subscription.getMessageName(),
         subscription.getTenantId(),

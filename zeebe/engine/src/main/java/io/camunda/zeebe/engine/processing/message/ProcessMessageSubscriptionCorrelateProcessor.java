@@ -81,7 +81,10 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
-            elementInstanceKey, record.getMessageNameBuffer(), record.getTenantId());
+            record.getProcessMessageSubscriptionKey(),
+            elementInstanceKey,
+            record.getMessageNameBuffer(),
+            record.getTenantId());
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);
@@ -104,7 +107,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         final ProcessMessageSubscriptionRecord subscriptionRecord = subscription.getRecord();
         record
             .setElementId(subscriptionRecord.getElementIdBuffer())
-            .setInterrupting(subscriptionRecord.isInterrupting());
+            .setInterrupting(subscriptionRecord.isInterrupting())
+            .setMessageSubscriptionKey(subscriptionRecord.getMessageSubscriptionKey());
 
         stateWriter.appendFollowUpEvent(
             subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
@@ -155,7 +159,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getElementInstanceKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageNameBuffer(),
-        subscription.getTenantId());
+        subscription.getTenantId(),
+        subscription.getMessageSubscriptionKey());
   }
 
   private void sendRejectionCommand(final ProcessMessageSubscriptionRecord subscription) {

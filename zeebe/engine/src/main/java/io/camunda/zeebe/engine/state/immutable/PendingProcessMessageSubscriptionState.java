@@ -29,5 +29,5 @@ public interface PendingProcessMessageSubscriptionState {
    * last time a command was sent out for a subscription. Freshly sent-out subscriptions are not
    * visited by {@link #visitPending(long, ProcessMessageSubscriptionVisitor)}.
    */
-  void onSent(ProcessMessageSubscriptionRecord record, long timestampMs);
+  void onSent(final long key, ProcessMessageSubscriptionRecord record, long timestampMs);
 }

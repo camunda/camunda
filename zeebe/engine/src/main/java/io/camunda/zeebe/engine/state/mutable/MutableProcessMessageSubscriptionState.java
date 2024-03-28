@@ -15,11 +15,12 @@ public interface MutableProcessMessageSubscriptionState extends ProcessMessageSu
 
   void put(final long key, ProcessMessageSubscriptionRecord record);
 
-  void updateToOpeningState(ProcessMessageSubscriptionRecord record);
+  void updateToOpeningState(final long key, ProcessMessageSubscriptionRecord record);
 
-  void updateToOpenedState(ProcessMessageSubscriptionRecord record);
+  void updateToOpenedState(final long key, ProcessMessageSubscriptionRecord record);
 
-  void updateToClosingState(ProcessMessageSubscriptionRecord record);
+  void updateToClosingState(final long key, ProcessMessageSubscriptionRecord record);
 
-  boolean remove(long elementInstanceKey, DirectBuffer messageName, final String tenantId);
+  boolean remove(
+      final long key, long elementInstanceKey, DirectBuffer messageName, final String tenantId);
 }

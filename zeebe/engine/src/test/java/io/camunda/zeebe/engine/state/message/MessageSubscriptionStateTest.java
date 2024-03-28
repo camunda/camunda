@@ -156,8 +156,8 @@ public final class MessageSubscriptionStateTest {
     state.put(1L, subscription);
 
     // when
-    state.remove(1L, subscription.getMessageNameBuffer());
-    state.remove(1L, subscription.getMessageNameBuffer());
+    state.remove(1L, 1L, subscription.getMessageNameBuffer());
+    state.remove(1L, 1L, subscription.getMessageNameBuffer());
 
     // then
     assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageNameBuffer()))
@@ -171,7 +171,7 @@ public final class MessageSubscriptionStateTest {
     state.put(2L, subscription("messageName", "correlationKey", 2L));
 
     // when
-    state.remove(2L, wrapString("messageName"));
+    state.remove(1L, 2L, wrapString("messageName"));
 
     // then
     final List<Long> keys = new ArrayList<>();

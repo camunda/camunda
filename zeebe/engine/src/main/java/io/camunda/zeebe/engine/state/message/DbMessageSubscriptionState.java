@@ -26,6 +26,8 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -36,11 +38,15 @@ public final class DbMessageSubscriptionState
 
   // (elementInstanceKey, messageName) => MessageSubscription
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
+  private final DbLong subscriptionKey;
   private final DbLong elementInstanceKey;
   private final DbString messageName;
   private final MessageSubscription messageSubscription;
   private final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, MessageSubscription>
+  private final DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbLong>
+      elementKeyMessageNameAndSubscriptionKey;
+  private final ColumnFamily<
+          DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbLong>, MessageSubscription>
       subscriptionColumnFamily;
 
   // (tenant aware messageName, correlationKey, elementInstanceKey) => \0
@@ -48,10 +54,15 @@ public final class DbMessageSubscriptionState
   private final DbString correlationKey;
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbString>>
       tenantAwareNameAndCorrelationKey;
-  private final DbCompositeKey<DbTenantAwareKey<DbCompositeKey<DbString, DbString>>, DbLong>
+  private final DbCompositeKey<
+          DbCompositeKey<DbTenantAwareKey<DbCompositeKey<DbString, DbString>>, DbLong>, DbLong>
       tenantAwareNameCorrelationAndElementInstanceKey;
+  private final DbCompositeKey<DbTenantAwareKey<DbCompositeKey<DbString, DbString>>, DbLong>
+      tenantAwareNameCorrelationAndElementInstanceKeySubKey;
   private final ColumnFamily<
-          DbCompositeKey<DbTenantAwareKey<DbCompositeKey<DbString, DbString>>, DbLong>, DbNil>
+          DbCompositeKey<
+              DbCompositeKey<DbTenantAwareKey<DbCompositeKey<DbString, DbString>>, DbLong>, DbLong>,
+          DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
   private final TransientPendingSubscriptionState transientState;
@@ -61,15 +72,18 @@ public final class DbMessageSubscriptionState
       final TransactionContext transactionContext,
       final TransientPendingSubscriptionState transientState) {
 
+    subscriptionKey = new DbLong();
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     messageSubscription = new MessageSubscription();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
+    elementKeyMessageNameAndSubscriptionKey =
+        new DbCompositeKey<>(elementKeyAndMessageName, subscriptionKey);
     subscriptionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_KEY,
             transactionContext,
-            elementKeyAndMessageName,
+            elementKeyMessageNameAndSubscriptionKey,
             messageSubscription);
 
     tenantIdKey = new DbString();
@@ -77,8 +91,11 @@ public final class DbMessageSubscriptionState
     tenantAwareNameAndCorrelationKey =
         new DbTenantAwareKey<>(
             tenantIdKey, new DbCompositeKey<>(messageName, correlationKey), PlacementType.PREFIX);
+    tenantAwareNameCorrelationAndElementInstanceKeySubKey =
+        new DbCompositeKey<>(tenantAwareNameAndCorrelationKey, subscriptionKey);
     tenantAwareNameCorrelationAndElementInstanceKey =
-        new DbCompositeKey<>(tenantAwareNameAndCorrelationKey, elementInstanceKey);
+        new DbCompositeKey<>(
+            tenantAwareNameCorrelationAndElementInstanceKeySubKey, elementInstanceKey);
     messageNameAndCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
@@ -95,17 +112,22 @@ public final class DbMessageSubscriptionState
           if (subscription.isCorrelating()) {
             transientState.add(
                 new PendingSubscription(
-                    elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()),
+                    subscription.getKey(),
+                    elementInstanceKey.getValue(),
+                    messageName.toString(),
+                    tenantIdKey.toString()),
                 ActorClock.currentTimeMillis());
           }
         });
   }
 
   @Override
-  public MessageSubscription get(final long elementInstanceKey, final DirectBuffer messageName) {
+  public MessageSubscription get(
+      final long key, final long elementInstanceKey, final DirectBuffer messageName) {
     this.messageName.wrapBuffer(messageName);
     this.elementInstanceKey.wrapLong(elementInstanceKey);
-    return subscriptionColumnFamily.get(elementKeyAndMessageName);
+    subscriptionKey.wrapLong(key);
+    return subscriptionColumnFamily.get(elementKeyMessageNameAndSubscriptionKey);
   }
 
   @Override
@@ -132,7 +154,15 @@ public final class DbMessageSubscriptionState
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
 
-    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
+    final AtomicBoolean found = new AtomicBoolean(false);
+
+    subscriptionColumnFamily.whileEqualPrefix(
+        elementKeyAndMessageName,
+        (compositeKey, messageSubscription) -> {
+          found.set(true);
+        });
+
+    return found.get();
   }
 
   @Override
@@ -140,10 +170,11 @@ public final class DbMessageSubscriptionState
     tenantIdKey.wrapString(record.getTenantId());
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
     messageName.wrapBuffer(record.getMessageNameBuffer());
+    subscriptionKey.wrapLong(key);
 
     messageSubscription.setKey(key).setRecord(record).setCorrelating(false);
 
-    subscriptionColumnFamily.insert(elementKeyAndMessageName, messageSubscription);
+    subscriptionColumnFamily.insert(elementKeyMessageNameAndSubscriptionKey, messageSubscription);
 
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     messageNameAndCorrelationKeyColumnFamily.insert(
@@ -151,7 +182,7 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void updateToCorrelatingState(final MessageSubscriptionRecord record) {
+  public void updateToCorrelatingState(final long key, final MessageSubscriptionRecord record) {
     final var messageKey = record.getMessageKey();
     var messageVariables = record.getVariablesBuffer();
     if (record == messageSubscription.getRecord()) {
@@ -159,7 +190,8 @@ public final class DbMessageSubscriptionState
       messageVariables = BufferUtil.cloneBuffer(record.getVariablesBuffer());
     }
 
-    final var subscription = get(record.getElementInstanceKey(), record.getMessageNameBuffer());
+    final var subscription =
+        get(key, record.getElementInstanceKey(), record.getMessageNameBuffer());
     if (subscription == null) {
       throw new IllegalStateException(
           String.format(
@@ -174,6 +206,7 @@ public final class DbMessageSubscriptionState
 
     transientState.update(
         new PendingSubscription(
+            key,
             subscription.getRecord().getElementInstanceKey(),
             subscription.getRecord().getMessageName(),
             subscription.getRecord().getTenantId()),
@@ -181,21 +214,23 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void updateToCorrelatedState(final MessageSubscription subscription) {
+  public void updateToCorrelatedState(final long key, final MessageSubscription subscription) {
     updateCorrelatingFlag(subscription, false);
     final var record = subscription.getRecord();
     transientState.remove(
         new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
+            key, record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   @Override
-  public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
+  public boolean remove(
+      final long key, final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
+    subscriptionKey.wrapLong(key);
 
     final MessageSubscription messageSubscription =
-        subscriptionColumnFamily.get(elementKeyAndMessageName);
+        subscriptionColumnFamily.get(elementKeyMessageNameAndSubscriptionKey);
 
     final boolean found = messageSubscription != null;
     if (found) {
@@ -206,18 +241,22 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void remove(final MessageSubscription subscription) {
-    subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
+    subscriptionColumnFamily.deleteExisting(elementKeyMessageNameAndSubscriptionKey);
 
     final var record = subscription.getRecord();
     tenantIdKey.wrapString(record.getTenantId());
     messageName.wrapBuffer(record.getMessageNameBuffer());
+    subscriptionKey.wrapLong(subscription.getKey());
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     messageNameAndCorrelationKeyColumnFamily.deleteExisting(
         tenantAwareNameCorrelationAndElementInstanceKey);
 
     transientState.remove(
         new PendingSubscription(
-            elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()));
+            subscriptionKey.getValue(),
+            elementInstanceKey.getValue(),
+            messageName.toString(),
+            tenantIdKey.toString()));
   }
 
   private void updateCorrelatingFlag(
@@ -225,24 +264,31 @@ public final class DbMessageSubscriptionState
     final var record = subscription.getRecord();
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
     messageName.wrapBuffer(record.getMessageNameBuffer());
+    subscriptionKey.wrapLong(subscription.getKey());
 
     subscription.setCorrelating(correlating);
-    subscriptionColumnFamily.update(elementKeyAndMessageName, subscription);
+    subscriptionColumnFamily.update(elementKeyMessageNameAndSubscriptionKey, subscription);
   }
 
   private Boolean visitMessageSubscription(
       final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName,
       final MessageSubscriptionVisitor visitor) {
-    final MessageSubscription messageSubscription =
-        subscriptionColumnFamily.get(elementKeyAndMessageName);
 
-    if (messageSubscription == null) {
+    final AtomicInteger visited = new AtomicInteger(0);
+    subscriptionColumnFamily.whileEqualPrefix(
+        elementKeyAndMessageName,
+        (compositeKey, messageSubscription) -> {
+          visitor.visit(messageSubscription);
+          visited.incrementAndGet();
+        });
+
+    if (visited.get() == 0) {
       throw new IllegalStateException(
           String.format(
               "Expected to find subscription with key %d and %s, but no subscription found",
               elementKeyAndMessageName.first().getValue(), elementKeyAndMessageName.second()));
     }
-    return visitor.visit(messageSubscription);
+    return visited.get() > 0;
   }
 
   @Override
@@ -250,6 +296,7 @@ public final class DbMessageSubscriptionState
     for (final var pendingSubscription : transientState.entriesBefore(deadline)) {
       final var subscription =
           get(
+              pendingSubscription.subscriptionKey(),
               pendingSubscription.elementInstanceKey(),
               BufferUtil.wrapString(pendingSubscription.messageName()));
 
@@ -268,11 +315,12 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void onSent(
+      final long key,
       final long elementInstanceKey,
       final String messageName,
       final String tenantId,
       final long timestampMs) {
     transientState.update(
-        new PendingSubscription(elementInstanceKey, messageName, tenantId), timestampMs);
+        new PendingSubscription(key, elementInstanceKey, messageName, tenantId), timestampMs);
   }
 }

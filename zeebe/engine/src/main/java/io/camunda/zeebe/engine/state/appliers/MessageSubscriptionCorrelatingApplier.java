@@ -28,7 +28,7 @@ public final class MessageSubscriptionCorrelatingApplier
 
   @Override
   public void applyState(final long key, final MessageSubscriptionRecord value) {
-    messageSubscriptionState.updateToCorrelatingState(value);
+    messageSubscriptionState.updateToCorrelatingState(key, value);
 
     // avoid correlating this message to one instance of this process again
     messageState.putMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());

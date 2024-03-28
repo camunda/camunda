@@ -103,7 +103,9 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getElementInstanceKey()),
             any(),
             anyBoolean(),
-            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            eq(subscription.getProcessMessageSubscriptionKey()),
+            eq(subscription.getMessageSubscriptionKey()));
   }
 
   @Test
@@ -231,7 +233,8 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             any(DirectBuffer.class),
-            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            eq(subscription.getProcessMessageSubscriptionKey()));
   }
 
   @Test
@@ -260,7 +263,8 @@ public final class MessageStreamProcessorTest {
             eq(messageKey),
             any(),
             any(),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            any());
   }
 
   @Test
@@ -300,7 +304,8 @@ public final class MessageStreamProcessorTest {
             eq(firstMessageKey),
             any(),
             any(),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            any());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -311,7 +316,8 @@ public final class MessageStreamProcessorTest {
             eq(lastMessageKey),
             any(),
             any(),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            any());
   }
 
   @Test
@@ -402,7 +408,8 @@ public final class MessageStreamProcessorTest {
             eq(messageKey),
             any(DirectBuffer.class),
             eq(firstSubscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            any());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -413,7 +420,8 @@ public final class MessageStreamProcessorTest {
             eq(messageKey),
             any(DirectBuffer.class),
             eq(secondSubscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            any());
   }
 
   private void assertAllMessagesReceived(final MessageSubscriptionRecord subscription) {
@@ -440,7 +448,8 @@ public final class MessageStreamProcessorTest {
             eq(firstMessageKey),
             any(),
             eq(subscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            any());
 
     verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -451,7 +460,8 @@ public final class MessageStreamProcessorTest {
             eq(lastMessageKey),
             any(),
             eq(subscription.getCorrelationKeyBuffer()),
-            eq(DEFAULT_TENANT));
+            eq(DEFAULT_TENANT),
+            any());
   }
 
   private MessageSubscriptionRecord messageSubscription() {

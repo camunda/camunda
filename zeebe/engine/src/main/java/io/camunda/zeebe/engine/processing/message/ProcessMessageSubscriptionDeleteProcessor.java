@@ -43,6 +43,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
 
     final var subscription =
         subscriptionState.getSubscription(
+            subscriptionRecord.getProcessMessageSubscriptionKey(),
             command.getValue().getElementInstanceKey(),
             subscriptionRecord.getMessageNameBuffer(),
             subscriptionRecord.getTenantId());

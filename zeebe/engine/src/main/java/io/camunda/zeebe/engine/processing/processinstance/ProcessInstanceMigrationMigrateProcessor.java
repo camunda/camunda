@@ -46,12 +46,10 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -291,7 +289,16 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition
             .getProcess()
             .getElementById(targetElementId, ExecutableActivity.class);
-    final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
+
+    catchEventBehavior.unsubscribeFromMessageEvents(
+        elementInstance.getKey(),
+        subscription -> {
+          final var catchEventId = subscription.getRecord().getElementId();
+          requireNoMappedCatchEventsInSource(
+              sourceElementIdToTargetElementId, catchEventId, processInstanceKey, elementId);
+          return true;
+        });
+
     catchEventBehavior
         .subscribeToEvents(
             context,
@@ -305,20 +312,12 @@ public class ProcessInstanceMigrationMigrateProcessor
                   processInstanceKey,
                   elementId,
                   targetElementId);
-              if (element.isMessage()) {
-                requireNoSubscriptionForMessage(
-                    elementInstance,
-                    catchEvent.messageName(),
-                    elementInstanceRecord.getTenantId(),
-                    targetCatchEventId);
-                subscribedMessageNames.add(catchEvent.messageName());
-              }
               return true;
             })
         .ifLeft(
             failure -> {
               throw new ProcessInstanceMigrationPreconditionFailedException(
-                      """
+                  """
                   Expected to migrate process instance '%s' \
                   but active element with id '%s' is mapped to element with id '%s' \
                   that must be subscribed to a message catch event. %s"""
@@ -326,19 +325,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                           processInstanceKey, elementId, targetElementId, failure.getMessage()),
                   RejectionType.INVALID_STATE);
             });
-
-    catchEventBehavior.unsubscribeFromMessageEvents(
-        elementInstance.getKey(),
-        subscription -> {
-          if (subscribedMessageNames.contains(subscription.getRecord().getMessageNameBuffer())) {
-            // We just subscribed to this message for this migration, we don't want to undo that
-            return false;
-          }
-          final var catchEventId = subscription.getRecord().getElementId();
-          requireNoMappedCatchEventsInSource(
-              sourceElementIdToTargetElementId, catchEventId, processInstanceKey, elementId);
-          return true;
-        });
   }
 
   private void appendIncidentMigratedEvent(
@@ -363,18 +349,6 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setProcessDefinitionKey(targetProcessDefinition.getKey())
             .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
             .setElementId(BufferUtil.wrapString(targetElementId)));
-  }
-
-  private void requireNoSubscriptionForMessage(
-      final ElementInstance elementInstance,
-      final DirectBuffer messageName,
-      final String tenantId,
-      final String targetCatchEventId) {
-    final boolean existSubscriptionForMessageName =
-        processMessageSubscriptionState.existSubscriptionForElementInstance(
-            elementInstance.getKey(), messageName, tenantId);
-    ProcessInstanceMigrationPreconditionChecker.requireNoSubscriptionForMessage(
-        existSubscriptionForMessageName, elementInstance, messageName, targetCatchEventId);
   }
 
   /**

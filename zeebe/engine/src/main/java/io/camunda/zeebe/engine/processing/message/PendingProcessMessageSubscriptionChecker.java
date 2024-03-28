@@ -90,7 +90,7 @@ public final class PendingProcessMessageSubscriptionChecker
     }
 
     final var sentTime = ActorClock.currentTimeMillis();
-    pendingState.onSent(subscription.getRecord(), sentTime);
+    pendingState.onSent(subscription.getKey(), subscription.getRecord(), sentTime);
 
     return true; // to continue visiting
   }

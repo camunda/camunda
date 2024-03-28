@@ -47,7 +47,7 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
 
     // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
     final var sentTime = ActorClock.currentTimeMillis();
-    state.onSent(record, sentTime);
+    state.onSent(subscription.getKey(), record, sentTime);
 
     return true; // to continue visiting
   }

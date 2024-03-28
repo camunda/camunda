@@ -52,7 +52,9 @@ public final class MessageSubscriptionDeleteProcessor
 
     final var messageSubscription =
         subscriptionState.get(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
+            subscriptionRecord.getMessageSubscriptionKey(),
+            subscriptionRecord.getElementInstanceKey(),
+            subscriptionRecord.getMessageNameBuffer());
 
     if (messageSubscription != null) {
       stateWriter.appendFollowUpEvent(
@@ -83,6 +85,7 @@ public final class MessageSubscriptionDeleteProcessor
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageNameBuffer(),
-        subscriptionRecord.getTenantId());
+        subscriptionRecord.getTenantId(),
+        subscriptionRecord.getProcessMessageSubscriptionKey());
   }
 }

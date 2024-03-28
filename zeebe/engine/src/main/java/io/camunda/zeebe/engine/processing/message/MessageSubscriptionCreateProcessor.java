@@ -16,11 +16,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class MessageSubscriptionCreateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -63,9 +61,10 @@ public final class MessageSubscriptionCreateProcessor
   public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
     subscriptionRecord = record.getValue();
 
-    if (subscriptionState.existSubscriptionForElementInstance(
+    // this check should be removed since we now allow multiple subscriptions for the same message
+    /*if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sendAcknowledgeCommand();
+      sendAcknowledgeCommand(subscriptionRecord.getMessageSubscriptionKey());
 
       rejectionWriter.appendRejection(
           record,
@@ -75,7 +74,7 @@ public final class MessageSubscriptionCreateProcessor
               subscriptionRecord.getElementInstanceKey(),
               BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
       return;
-    }
+    }*/
 
     handleNewSubscription(sideEffectWriter);
   }
@@ -83,6 +82,7 @@ public final class MessageSubscriptionCreateProcessor
   private void handleNewSubscription(final SideEffectWriter sideEffectWriter) {
 
     final var subscriptionKey = keyGenerator.nextKey();
+    subscriptionRecord.setMessageSubscriptionKey(subscriptionKey);
     stateWriter.appendFollowUpEvent(
         subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
 
@@ -100,6 +100,8 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.isInterrupting(),
-        subscriptionRecord.getTenantId());
+        subscriptionRecord.getTenantId(),
+        subscriptionRecord.getProcessMessageSubscriptionKey(),
+        subscriptionRecord.getMessageSubscriptionKey());
   }
 }

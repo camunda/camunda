@@ -28,7 +28,7 @@ public final class MessageSubscriptionRejectedApplier
 
   @Override
   public void applyState(final long key, final MessageSubscriptionRecord value) {
-    subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
+    subscriptionState.remove(key, value.getElementInstanceKey(), value.getMessageNameBuffer());
     messageState.removeMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());
   }
 }

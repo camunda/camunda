@@ -28,11 +28,12 @@ public final class ProcessMessageSubscriptionCorrelatedApplier
     final var eventScopeKey = value.getElementInstanceKey();
 
     if (value.isInterrupting()) {
-      subscriptionState.remove(eventScopeKey, value.getMessageNameBuffer(), value.getTenantId());
+      subscriptionState.remove(
+          key, eventScopeKey, value.getMessageNameBuffer(), value.getTenantId());
     } else {
       // if the message subscription is created and a matching message is buffered then it writes a
       // process message subscription CORRELATE instead of a CREATE command
-      subscriptionState.updateToOpenedState(value);
+      subscriptionState.updateToOpenedState(key, value);
     }
   }
 }

@@ -25,6 +25,6 @@ public final class ProcessMessageSubscriptionCreatedApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-    subscriptionState.updateToOpenedState(value);
+    subscriptionState.updateToOpenedState(key, value);
   }
 }

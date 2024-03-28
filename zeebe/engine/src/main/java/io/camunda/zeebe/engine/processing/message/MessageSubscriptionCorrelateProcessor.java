@@ -54,7 +54,10 @@ public final class MessageSubscriptionCorrelateProcessor
 
     final MessageSubscriptionRecord command = record.getValue();
     final MessageSubscription subscription =
-        subscriptionState.get(command.getElementInstanceKey(), command.getMessageNameBuffer());
+        subscriptionState.get(
+            command.getMessageSubscriptionKey(),
+            command.getElementInstanceKey(),
+            command.getMessageNameBuffer());
 
     if (subscription == null) {
       rejectCommand(record);

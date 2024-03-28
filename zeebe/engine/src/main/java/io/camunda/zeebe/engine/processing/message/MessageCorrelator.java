@@ -91,6 +91,7 @@ public final class MessageCorrelator {
         subscriptionRecord.getMessageKey(),
         subscriptionRecord.getVariablesBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
-        subscriptionRecord.getTenantId());
+        subscriptionRecord.getTenantId(),
+        subscriptionRecord.getProcessMessageSubscriptionKey());
   }
 }

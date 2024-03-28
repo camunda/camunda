@@ -42,6 +42,7 @@ public final class Subscriptions {
     newSubscription.setBpmnProcessId(cloneBuffer(subscription.getBpmnProcessIdBuffer()));
     newSubscription.processInstanceKey = subscription.getProcessInstanceKey();
     newSubscription.elementInstanceKey = subscription.getElementInstanceKey();
+    newSubscription.processMessageSubscriptionKey = subscription.getProcessMessageSubscriptionKey();
   }
 
   public void add(final MessageStartEventSubscriptionRecord subscription) {
@@ -82,6 +83,7 @@ public final class Subscriptions {
 
     private long processInstanceKey;
     private long elementInstanceKey;
+    private long processMessageSubscriptionKey;
     private boolean isStartEventSubscription;
 
     @Override
@@ -91,6 +93,7 @@ public final class Subscriptions {
 
       processInstanceKey = -1L;
       elementInstanceKey = -1L;
+      processMessageSubscriptionKey = -1L;
       isStartEventSubscription = false;
     }
 
@@ -110,6 +113,10 @@ public final class Subscriptions {
 
     public long getElementInstanceKey() {
       return elementInstanceKey;
+    }
+
+    public long getProcessMessageSubscriptionKey() {
+      return processMessageSubscriptionKey;
     }
   }
 }
