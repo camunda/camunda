@@ -6,17 +6,11 @@
  */
 
 import {Column, Grid, Link} from '@carbon/react';
-import {
-  Container,
-  Image,
-  ImageContainer,
-  NewUserTextContainer,
-  OldUserTextContainer,
-} from './styled';
 import CheckImage from 'modules/images/orange-check-mark.svg';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {Restricted} from 'modules/components/Restricted';
 import {useTasks} from 'modules/queries/useTasks';
+import styles from './styles.module.scss';
 
 const EmptyPage: React.FC = () => {
   const {isLoading: isLoadingTasks, data} = useTasks();
@@ -33,8 +27,9 @@ const EmptyPage: React.FC = () => {
   }
 
   return (
-    <Grid as={Container} condensed>
+    <Grid className={styles.container} condensed>
       <Column
+        className={styles.imageContainer}
         sm={1}
         md={{
           span: 2,
@@ -48,16 +43,15 @@ const EmptyPage: React.FC = () => {
           span: 1,
           offset: 5,
         }}
-        as={ImageContainer}
       >
-        <Image src={CheckImage} alt="" />
+        <img className={styles.image} src={CheckImage} alt="" />
       </Column>
       <Column
+        className={isOldUser ? styles.oldUserText : styles.newUserText}
         sm={3}
         md={5}
         lg={10}
         xlg={10}
-        as={isOldUser ? OldUserTextContainer : NewUserTextContainer}
       >
         {isOldUser ? (
           <Restricted

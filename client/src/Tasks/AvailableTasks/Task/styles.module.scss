@@ -1,0 +1,141 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+@use '@carbon/type';
+@use '@carbon/layout';
+
+$SPACING: var(--cds-spacing-05);
+$ENTRY_DEFAULT_BORDER_WIDTH: 1px;
+$ENTRY_SELECTED_BORDER_WIDTH: 4px;
+$ENTRY_FOCUSED_BORDER_WIDTH: 2px;
+
+.label {
+  @include type.type-style('label-01');
+  color: var(--cds-text-secondary);
+
+  &.labelPrimary {
+    color: var(--cds-text-primary);
+  }
+}
+
+.name {
+  @include type.type-style('body-short-02');
+  color: var(--cds-text-primary);
+}
+
+.flex {
+  min-height: layout.to-rem(20px);
+  display: flex;
+  overflow: hidden;
+
+  &.flexRow {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  &.flexColumn {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  & .clip {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.taskLink {
+  all: unset;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.stack {
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  cursor: pointer;
+  min-height: layout.to-rem(144px);
+
+  &.active .taskLink {
+    background-color: var(--cds-layer-selected);
+    border-left: $ENTRY_SELECTED_BORDER_WIDTH solid
+      var(--cds-border-interactive);
+    padding: $SPACING $SPACING $SPACING
+      calc($SPACING - $ENTRY_SELECTED_BORDER_WIDTH);
+  }
+
+  &.active:last-child .taskLink {
+    padding: $SPACING $SPACING $SPACING
+      calc($SPACING - $ENTRY_SELECTED_BORDER_WIDTH);
+  }
+
+  &.active + & .task-link:not(:focus) {
+    border-top: none;
+    padding: $SPACING;
+  }
+
+  &:not(.active) {
+    &:hover .task-link {
+      background-color: var(--cds-layer-hover);
+    }
+
+    &:last-child .taskLink {
+      border-bottom: $ENTRY_DEFAULT_BORDER_WIDTH solid
+        var(--cds-border-subtle-selected);
+      padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING;
+    }
+
+    & .taskLink {
+      border-top: $ENTRY_DEFAULT_BORDER_WIDTH solid
+        var(--cds-border-subtle-selected);
+      padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING $SPACING
+        $SPACING;
+    }
+  }
+
+  & .taskLink:focus {
+    border: none;
+    padding: $SPACING;
+    outline: $ENTRY_FOCUSED_BORDER_WIDTH solid var(--cds-focus);
+    outline-offset: -$ENTRY_FOCUSED_BORDER_WIDTH;
+  }
+
+  &:last-child .taskLink:focus {
+    padding: $SPACING;
+  }
+
+  &:first-child .taskLink {
+    border-top-color: transparent;
+  }
+}
+
+.taskSkeleton {
+  min-height: layout.to-rem(136px);
+  max-height: layout.to-rem(136px);
+
+  &:last-child > * {
+    border-bottom: $ENTRY_DEFAULT_BORDER_WIDTH solid
+      var(--cds-border-subtle-selected);
+    padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING;
+  }
+
+  & > * {
+    border-top: $ENTRY_DEFAULT_BORDER_WIDTH solid
+      var(--cds-border-subtle-selected);
+    padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING $SPACING
+      $SPACING;
+  }
+}
+
+.dateLabel {
+  padding: var(--cds-spacing-01) var(--cds-spacing-01);
+}

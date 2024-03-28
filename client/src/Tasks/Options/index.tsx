@@ -8,14 +8,14 @@
 import {observer} from 'mobx-react-lite';
 import {Toggle} from '@carbon/react';
 import {autoSelectNextTaskStore} from 'modules/stores/autoSelectFirstTask';
-import {Container} from './styled';
+import styles from './styles.module.scss';
 
 type Props = {
   onAutoSelectToggle?: (state: boolean) => void;
 };
 const Options: React.FC<Props> = observer(({onAutoSelectToggle}) => {
   return (
-    <Container aria-label="Options">
+    <section className={styles.container} aria-label="Options">
       <Toggle
         id="toggle-auto-select-task"
         data-testid="toggle-auto-select-task"
@@ -31,7 +31,7 @@ const Options: React.FC<Props> = observer(({onAutoSelectToggle}) => {
           onAutoSelectToggle?.(!state);
         }}
       />
-    </Container>
+    </section>
   );
 });
 

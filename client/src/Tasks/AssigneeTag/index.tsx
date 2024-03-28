@@ -6,14 +6,44 @@
  */
 
 import {CurrentUser} from 'modules/types';
-import {Tag} from './styled';
 import {CircleDash, UserAvatar, UserAvatarFilled} from '@carbon/react/icons';
+import {Tag as BaseTag} from '@carbon/react';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type Props = {
   currentUser: CurrentUser;
   assignee: string | null;
   isShortFormat?: boolean;
 };
+
+type AssigneeTagProps = {
+  $isHighlighted?: boolean;
+  $isAssigned?: boolean;
+};
+
+const Tag: React.FC<
+  React.ComponentProps<typeof BaseTag> & AssigneeTagProps
+> = ({
+  className = '',
+  children,
+  $isHighlighted,
+  $isAssigned,
+  size,
+  ...rest
+}) => (
+  <BaseTag
+    size={size}
+    {...rest}
+    className={cn(className, styles.tag, {
+      [styles.assigned]: $isAssigned,
+      [styles.highlighted]: $isHighlighted,
+      [styles.small]: size == 'sm',
+    })}
+  >
+    {children}
+  </BaseTag>
+);
 
 const AssigneeTag: React.FC<Props> = ({
   currentUser,
@@ -29,7 +59,6 @@ const AssigneeTag: React.FC<Props> = ({
       <Tag
         title="Task unassigned"
         size={isShortFormat ? 'sm' : 'md'}
-        $isSmall={isShortFormat}
         unselectable="off"
       >
         <CircleDash size={16} />
@@ -44,7 +73,6 @@ const AssigneeTag: React.FC<Props> = ({
         $isAssigned
         title="Task assigned to me"
         size={isShortFormat ? 'sm' : 'md'}
-        $isSmall={isShortFormat}
         unselectable="off"
       >
         <UserAvatarFilled size={16} />
@@ -57,7 +85,6 @@ const AssigneeTag: React.FC<Props> = ({
       $isAssigned
       title={`Task assigned to ${assignee}`}
       size={isShortFormat ? 'sm' : 'md'}
-      $isSmall={isShortFormat}
       unselectable="off"
     >
       <UserAvatar size={16} />

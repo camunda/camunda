@@ -4,17 +4,9 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
+@use '@carbon/layout';
 
-import {rem} from '@carbon/elements';
-import {
-  ModalFooter as BaseModalFooter,
-  Toggle as BaseToggle,
-  FormGroup as BaseFormGroup,
-  DatePicker as BaseDatePicker,
-} from '@carbon/react';
-import styled from 'styled-components';
-
-const ModalFooter = styled(BaseModalFooter)`
+.modalFooter {
   display: grid;
   grid-template-columns: 25% 25% 25% 25%;
 
@@ -29,9 +21,9 @@ const ModalFooter = styled(BaseModalFooter)`
   & > :nth-child(3) {
     grid-column-start: 4;
   }
-`;
+}
 
-const TwoColumnGrid = styled.div`
+.twoColumnGrid {
   width: 100%;
   display: grid;
   grid-template-columns: auto auto;
@@ -41,18 +33,18 @@ const TwoColumnGrid = styled.div`
 
   & > * {
     width: 100%;
-    max-width: ${rem(288)};
+    max-width: layout.to-rem(288px);
   }
 
-  & > .second-column {
+  & > .secondColumn {
     margin-right: calc(40px + var(--cds-spacing-03));
     justify-self: flex-end;
   }
-`;
+}
 
-const VariablesGrid = styled.div`
+.variableGrid {
   display: grid;
-  grid-template-columns: minmax(auto, ${rem(288)}) auto 40px;
+  grid-template-columns: minmax(auto, layout.to-rem(288px)) auto 40px;
   grid-column-gap: var(--cds-spacing-03);
   grid-row-gap: var(--cds-spacing-05);
   align-items: flex-end;
@@ -60,38 +52,28 @@ const VariablesGrid = styled.div`
   &:not(:empty) {
     margin-bottom: var(--cds-spacing-03);
   }
-`;
+}
 
-const Toggle = styled(BaseToggle)`
+.toggle {
   grid-column-start: span 2;
-`;
+}
 
-const VariableFormGroup = styled(BaseFormGroup)`
+.variableFormGroup {
   grid-column-start: span 2;
   max-width: unset;
-`;
+}
 
-const DateRangeFormGroup = styled(BaseFormGroup)`
+.dateRangeFormGroup {
   display: inline-flex;
-`;
+}
 
-const DatePicker = styled(BaseDatePicker)`
+.datePicker {
   &,
-  & input.cds--date-picker__input.flatpickr-input {
-    inline-size: ${rem(143.5)};
+  & :global(input.cds--date-picker__input.flatpickr-input) {
+    inline-size: layout.to-rem(143.5px);
   }
 
   &:first-of-type {
-    margin-inline-end: ${rem(1)};
+    margin-inline-end: layout.to-rem(1px);
   }
-`;
-
-export {
-  ModalFooter,
-  TwoColumnGrid,
-  VariablesGrid,
-  Toggle,
-  VariableFormGroup,
-  DateRangeFormGroup,
-  DatePicker,
-};
+}

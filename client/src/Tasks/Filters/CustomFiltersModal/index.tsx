@@ -5,40 +5,37 @@
  * except in compliance with the proprietary license.
  */
 
+import {Fragment, useRef, useState} from 'react';
 import {
   Button,
   ComposedModal,
+  DatePicker,
   DatePickerInput,
   ModalBody,
+  ModalFooter,
   ModalHeader,
   RadioButton,
   RadioButtonGroup,
   Select,
   SelectItem,
   TextInput,
-} from '@carbon/react';
-import {
-  ModalFooter,
-  TwoColumnGrid,
-  VariablesGrid,
   Toggle,
-  VariableFormGroup,
-  DateRangeFormGroup,
-  DatePicker,
-} from './styled';
-import {Fragment, useRef, useState} from 'react';
-import {Field, Form} from 'react-final-form';
-import {useMultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown';
-import {z} from 'zod';
-import {FieldArray} from 'react-final-form-arrays';
+  FormGroup,
+} from '@carbon/react';
 import {Close, Add} from '@carbon/react/icons';
+import {Field, Form} from 'react-final-form';
+import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
-import {ProcessesSelect} from './ProcessesSelect';
+import {z} from 'zod';
+import set from 'lodash/set';
 import {MultiTenancySelect} from 'modules/components/useMultiTenancyDropdown/MultiTenancySelect';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import set from 'lodash/set';
+import {useMultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown';
 import {customFiltersSchema} from 'modules/custom-filters/customFiltersSchema';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {ProcessesSelect} from './ProcessesSelect';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type FormValues = z.infer<typeof customFiltersSchema>;
 
@@ -111,7 +108,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
             <>
               <ModalHeader title="Apply filters" buttonOnClick={onClose} />
               <ModalBody hasForm>
-                <TwoColumnGrid as="form" onSubmit={handleSubmit}>
+                <form className={styles.twoColumnGrid} onSubmit={handleSubmit}>
                   <Field name="assignee">
                     {({input}) => (
                       <RadioButtonGroup
@@ -149,7 +146,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                         valueSelected={input.value}
                         defaultSelected="all"
                         orientation="vertical"
-                        className="second-column"
+                        className={styles.secondColumn}
                       >
                         <RadioButton labelText="All" value="all" />
                         <RadioButton labelText="Open" value="open" />
@@ -177,7 +174,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                               {...input}
                               id={input.name}
                               labelText="In a group"
-                              className="second-column"
+                              className={styles.secondColumn}
                               placeholder="Enter group name"
                               disabled={currentUser === undefined}
                             />
@@ -186,7 +183,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                               {...input}
                               id={input.name}
                               labelText="In a group"
-                              className="second-column"
+                              className={styles.secondColumn}
                             >
                               <SelectItem value="" text="" />
                               {groups.map((group) => (
@@ -219,7 +216,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                         <MultiTenancySelect
                           {...input}
                           id={input.name}
-                          className="second-column"
+                          className={styles.secondColumn}
                         />
                       )}
                     </Field>
@@ -227,6 +224,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
 
                   <Toggle
                     id="toggle-advanced-filters"
+                    className={styles.toggle}
                     size="sm"
                     labelText={label}
                     aria-label={label}
@@ -244,11 +242,15 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
 
                   {areAdvancedFiltersEnabled ? (
                     <>
-                      <DateRangeFormGroup legendText="Due date">
+                      <FormGroup
+                        className={styles.dateRangeFormGroup}
+                        legendText="Due date"
+                      >
                         <Field name="dueDateFrom">
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
                             >
@@ -265,6 +267,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
                             >
@@ -277,16 +280,20 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                             </DatePicker>
                           )}
                         </Field>
-                      </DateRangeFormGroup>
+                      </FormGroup>
 
-                      <DateRangeFormGroup
+                      <FormGroup
                         legendText="Follow up date"
-                        className="second-column"
+                        className={cn(
+                          styles.dateRangeFormGroup,
+                          styles.secondColumn,
+                        )}
                       >
                         <Field name="followUpDateFrom">
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
                             >
@@ -303,6 +310,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
                             >
@@ -315,7 +323,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                             </DatePicker>
                           )}
                         </Field>
-                      </DateRangeFormGroup>
+                      </FormGroup>
 
                       <Field name="taskId">
                         {({input}) => (
@@ -330,8 +338,11 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                       <FieldArray name="variables">
                         {({fields, meta: arrayMeta}) => (
                           <>
-                            <VariableFormGroup legendText="Task variables">
-                              <VariablesGrid>
+                            <FormGroup
+                              className={styles.variableFormGroup}
+                              legendText="Task variables"
+                            >
+                              <div className={styles.variableGrid}>
                                 {fields.map((name, index) => (
                                   <Fragment key={name}>
                                     <Field name={`${name}.name`}>
@@ -379,7 +390,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                                     />
                                   </Fragment>
                                 ))}
-                              </VariablesGrid>
+                              </div>
 
                               <Button
                                 type="button"
@@ -393,15 +404,15 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                               >
                                 Add variable
                               </Button>
-                            </VariableFormGroup>
+                            </FormGroup>
                           </>
                         )}
                       </FieldArray>
                     </>
                   ) : null}
-                </TwoColumnGrid>
+                </form>
               </ModalBody>
-              <ModalFooter>
+              <ModalFooter className={styles.modalFooter}>
                 <Button
                   kind="ghost"
                   onClick={() => {

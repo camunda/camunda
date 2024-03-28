@@ -10,15 +10,6 @@ import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {authenticationStore} from 'modules/stores/authentication';
 import {pages} from 'modules/routing';
-import {
-  Container,
-  CopyrightNotice,
-  Title,
-  Error,
-  Button,
-  LogoContainer,
-  FieldContainer,
-} from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 import {Disclaimer} from './Disclaimer';
 import {
@@ -28,10 +19,12 @@ import {
   Grid,
   Stack,
   InlineNotification,
+  Button,
 } from '@carbon/react';
 import {LoadingSpinner} from './LoadingSpinner';
 import {CamundaLogo} from 'modules/components/CamundaLogo';
 import {z} from 'zod';
+import styles from './styles.module.scss';
 
 const locationStateSchema = z.object({
   referrer: z.object({
@@ -57,7 +50,7 @@ const Login: React.FC = () => {
   const {handleLogin} = authenticationStore;
 
   return (
-    <Grid as={Container} condensed>
+    <Grid as="main" condensed className={styles.container}>
       <Form<FormValues>
         onSubmit={async ({username, password}) => {
           try {
@@ -123,13 +116,13 @@ const Login: React.FC = () => {
               onSubmit={handleSubmit}
             >
               <Stack>
-                <LogoContainer>
+                <div className={styles.logo}>
                   <CamundaLogo aria-label="Camunda logo" />
-                </LogoContainer>
-                <Title>Tasklist</Title>
+                </div>
+                <h1 className={styles.title}>Tasklist</h1>
               </Stack>
               <Stack gap={3}>
-                <Error>
+                <span className={styles.error}>
                   {submitError && (
                     <InlineNotification
                       title={submitError}
@@ -138,8 +131,8 @@ const Login: React.FC = () => {
                       role="alert"
                     />
                   )}
-                </Error>
-                <FieldContainer>
+                </span>
+                <div className={styles.field}>
                   <Field<FormValues['username']> name="username" type="text">
                     {({input, meta}) => (
                       <TextInput
@@ -154,8 +147,8 @@ const Login: React.FC = () => {
                       />
                     )}
                   </Field>
-                </FieldContainer>
-                <FieldContainer>
+                </div>
+                <div className={styles.field}>
                   <Field<FormValues['password']>
                     name="password"
                     type="password"
@@ -175,11 +168,12 @@ const Login: React.FC = () => {
                       />
                     )}
                   </Field>
-                </FieldContainer>
+                </div>
                 <Button
                   type="submit"
                   disabled={submitting}
                   renderIcon={submitting ? LoadingSpinner : undefined}
+                  className={styles.button}
                 >
                   {submitting ? 'Logging in' : 'Login'}
                 </Button>
@@ -189,7 +183,13 @@ const Login: React.FC = () => {
           );
         }}
       </Form>
-      <Column sm={4} md={8} lg={16} as={CopyrightNotice}>
+      <Column
+        sm={4}
+        md={8}
+        lg={16}
+        as="span"
+        className={styles.copyrightNotice}
+      >
         {getCurrentCopyrightNoticeText()}
       </Column>
     </Grid>

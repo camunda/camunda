@@ -1,0 +1,30 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+
+.tag {
+  margin: 0;
+  padding-left: var(--cds-spacing-02);
+  color: var(--cds-text-secondary);
+  background-color: transparent;
+
+  & > span {
+    display: inline-flex;
+    gap: var(--cds-spacing-02);
+  }
+
+  &.assigned {
+    color: var(--cds-text-primary);
+  }
+
+  &.highlighted {
+    background-color: var(--cds-layer-selected);
+  }
+
+  &.small {
+    padding-left: var(--cds-spacing-01);
+  }
+}

@@ -5,30 +5,28 @@
  * except in compliance with the proprietary license.
  */
 
+import {memo, useRef, useState} from 'react';
 import {Form, Field} from 'react-final-form';
 import {useSearchParams} from 'react-router-dom';
-import {
-  Container,
-  FormElement,
-  MenuItemWrapper,
-  MenuOptionsStyles,
-  SortItemContainer,
-} from './styled';
-import {taskFilters} from 'modules/constants/taskFilters';
-import {tracking} from 'modules/tracking';
 import {Button, Dropdown, OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark, Filter} from '@carbon/react/icons';
-import {memo, useRef, useState} from 'react';
+import {taskFilters} from 'modules/constants/taskFilters';
+import {tracking} from 'modules/tracking';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
-import {MENU_OPTIONS_STYLES_CLASSNAME} from './constants';
 import {IS_PROCESS_CUSTOM_FILTERS_ENABLED} from 'modules/featureFlags';
 import {CustomFiltersModal} from './CustomFiltersModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
 import difference from 'lodash/difference';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type FormValues = Pick<TaskFilters, 'filter' | 'sortBy'>;
+
+type Props = {
+  disabled: boolean;
+};
 
 const SORTING_OPTIONS: Record<TaskFilters['sortBy'], string> = {
   creation: 'Creation date',
@@ -65,10 +63,6 @@ const CUSTOM_FILTERS_PARAMS = [
   'taskVariables',
 ] as const;
 
-type Props = {
-  disabled: boolean;
-};
-
 const Filters: React.FC<Props> = memo(({disabled}) => {
   const {data: currentUser} = useCurrentUser();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -83,8 +77,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
   const customFilters = getStateLocally('customFilters')?.custom;
 
   return (
-    <Container aria-label="Filters">
-      <MenuOptionsStyles />
+    <section className={styles.container} aria-label="Filters">
       <Form<FormValues>
         onSubmit={(values) => {
           const customFilters = getStateLocally('customFilters')?.custom;
@@ -135,7 +128,12 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
       >
         {({handleSubmit, form}) => (
           <>
-            <FormElement onSubmit={handleSubmit}>
+            <form
+              className={cn(styles.form, {
+                [styles.customFilters]: IS_PROCESS_CUSTOM_FILTERS_ENABLED,
+              })}
+              onSubmit={handleSubmit}
+            >
               <Field<FormValues['filter']> name="filter">
                 {({input}) => (
                   <Dropdown<{id: TaskFilters['filter']; text: string}>
@@ -205,14 +203,14 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                     onFocus={input.onFocus}
                     onBlur={input.onBlur}
                     disabled={disabled}
-                    menuOptionsClass={MENU_OPTIONS_STYLES_CLASSNAME}
+                    menuOptionsClass="cds--custom-sorting-menu-options-wrapper"
                     align="bottom"
                   >
                     {sortOptionsOrder.map((id) => (
                       <OverflowMenuItem
                         key={id}
                         itemText={
-                          <SortItemContainer>
+                          <div className={styles.sortItem}>
                             <Checkmark
                               aria-label=""
                               size={20}
@@ -221,10 +219,10 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                                   input.value === id ? undefined : 'hidden',
                               }}
                             />
-                            <MenuItemWrapper>
+                            <span className={styles.menuItem}>
                               {SORTING_OPTIONS[id]}
-                            </MenuItemWrapper>
-                          </SortItemContainer>
+                            </span>
+                          </div>
                         }
                         onClick={() => {
                           input.onChange(id);
@@ -235,7 +233,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                   </OverflowMenu>
                 )}
               </Field>
-            </FormElement>
+            </form>
             {IS_PROCESS_CUSTOM_FILTERS_ENABLED ? (
               <CustomFiltersModal
                 isOpen={isCustomFiltersModalOpen}
@@ -252,7 +250,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
           </>
         )}
       </Form>
-    </Container>
+    </section>
   );
 });
 

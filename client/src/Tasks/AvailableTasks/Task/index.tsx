@@ -101,7 +101,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
     }, [location, position, filter, sortBy]);
 
     return (
-      <Container className={isActive ? 'active' : undefined}>
+      <Container $active={isActive}>
         <TaskLink
           to={{
             ...location,

@@ -5,7 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-const MENU_OPTIONS_STYLES_CLASSNAME =
-  'cds--custom-sorting-menu-options-wrapper';
-
-export {MENU_OPTIONS_STYLES_CLASSNAME};
+.container {
+  width: 100%;
+  padding: var(--cds-spacing-04) var(--cds-spacing-05);
+  border-bottom: 1px solid var(--cds-border-subtle);
+  border-top: 1px solid var(--cds-border-subtle);
+}

@@ -8,52 +8,68 @@
 /* istanbul ignore file */
 
 import {Search} from '@carbon/react/icons';
-import styled, {css} from 'styled-components';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
-const EmptyMessage = styled.div`
-  ${({theme}) => css`
-    width: 100%;
-    border: 1px solid var(--cds-border-subtle);
-    color: var(--cds-text-primary);
-    background-color: var(--cds-layer);
-    padding: ${theme.spacing05};
-    grid-template-columns: min-content 1fr;
-  `}
-`;
+const EmptyMessage: React.FC<React.ComponentProps<'div'>> = ({
+  className = '',
+  children,
+  ...rest
+}) => (
+  <div {...rest} className={cn(className, styles.emptyMessage)}>
+    {children}
+  </div>
+);
 
-const EmptyMessageText = styled.div`
-  grid-gap: 0;
-`;
+const EmptyMessageText: React.FC<React.ComponentProps<'div'>> = ({
+  className = '',
+  children,
+  ...rest
+}) => (
+  <div {...rest} className={cn(className, styles.emptyMessageText)}>
+    {children}
+  </div>
+);
 
-const ListContainer = styled.div`
-  overflow-y: auto;
-  width: 100%;
-  height: 100%;
-`;
+const ListContainer: React.FC<React.ComponentProps<'div'>> = ({
+  className = '',
+  children,
+  ...rest
+}) => (
+  <div {...rest} className={cn(className, styles.listContainer)}>
+    {children}
+  </div>
+);
 
 type ContainerProps = {
   $enablePadding: boolean;
 };
 
-const Container = styled.div<ContainerProps>`
-  ${({$enablePadding, theme}) => {
-    return css`
-      width: 100%;
-      height: 100%;
-      overflow-y: hidden;
+const Container: React.FC<React.ComponentProps<'div'> & ContainerProps> = ({
+  $enablePadding,
+  className = '',
+  children,
+  ...rest
+}) => (
+  <div
+    {...rest}
+    className={cn(className, styles.container, {
+      [styles.containerPadding]: $enablePadding,
+    })}
+  >
+    {children}
+  </div>
+);
 
-      ${$enablePadding
-        ? css`
-            padding: ${theme.spacing05};
-          `
-        : ''}
-    `;
-  }}
-`;
-
-const EmptyListIcon = styled(Search)`
-  color: var(--cds-icon-disabled);
-`;
+const EmptyListIcon: React.FC<React.ComponentProps<typeof Search>> = ({
+  className = '',
+  children,
+  ...rest
+}) => (
+  <Search {...rest} className={cn(className, styles.emptyListIcon)}>
+    {children}
+  </Search>
+);
 
 export {
   EmptyMessage,

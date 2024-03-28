@@ -194,6 +194,7 @@ declare module '@carbon/react' {
   export const Toggle: React.FC<{
     'aria-labelledby'?: string;
     id: string;
+    className?: string;
     labelA?: string;
     labelB?: string;
     labelText?: string;
