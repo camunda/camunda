@@ -13,6 +13,7 @@ import jakarta.servlet.DispatcherType;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.Security;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -23,6 +24,9 @@ import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesCons
 import org.camunda.optimize.service.util.configuration.security.ResponseHeadersConfiguration;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.websocket.StatusWebSocketServlet;
+import org.conscrypt.OpenSSLProvider;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -60,10 +64,13 @@ public class JettyConfig {
 
   @Bean
   public JettyServerCustomizer httpsJettyServerCustomizer() {
-    return server ->
-        server.addConnector(
-            initHttpsConnector(
-                configurationService, configurationService.getContainerHost(), server));
+    return server -> {
+      if (configurationService.getContainerHttp2Enabled()) {
+        server.addConnector(initHttp2Connector(server));
+      } else {
+        server.addConnector(initHttpsConnector(server));
+      }
+    };
   }
 
   // We use the @Order annotation to make sure that this is modified after the http connector
@@ -87,10 +94,10 @@ public class JettyConfig {
       optimizeWebServerFactoryCustomizer() {
     return factory -> {
       getContextPath().ifPresent(factory::setContextPath);
-      String host = configurationService.getContainerHost();
+      final String host = configurationService.getContainerHost();
       try {
         factory.setAddress(InetAddress.getByName(host));
-      } catch (UnknownHostException ex) {
+      } catch (final UnknownHostException ex) {
         throw new OptimizeConfigurationException("Invalid container host specified");
       }
       factory.setPort(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
@@ -100,13 +107,13 @@ public class JettyConfig {
   @Bean
   public ServletContextInitializer servletContextInitializer() {
     return servletContext -> {
-      ServletContextHandler servletContextHandler = getServletContextHandler(servletContext);
+      final ServletContextHandler servletContextHandler = getServletContextHandler(servletContext);
 
       addStaticResources(servletContextHandler);
       addGzipHandler(servletContextHandler);
       servletContextHandler.setErrorHandler(new NotFoundErrorHandler());
 
-      Server server = servletContextHandler.getServer();
+      final Server server = servletContextHandler.getServer();
       setUpRequestLogging(server);
     };
   }
@@ -116,16 +123,41 @@ public class JettyConfig {
     return new ServletRegistrationBean<>(new StatusWebSocketServlet(), STATUS_WEBSOCKET_PATH);
   }
 
-  private void setUpRequestLogging(Server server) {
-    final LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
-    loggingConfigurationReader.defineLogbackLoggingConfiguration();
-    server.setRequestLog(
-        new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
+  private ServerConnector initHttp2Connector(final Server server) {
+    final HttpConfiguration https = getHttpsConfiguration(configurationService);
+
+    final HttpConnectionFactory http11 = new HttpConnectionFactory(https);
+    final HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(https);
+    final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+    // If no ALPN support, use http/1.1 as a fallback. http2 will be preferred protocol still
+    alpn.setDefaultProtocol(http11.getProtocol());
+
+    final SslContextFactory.Server sslContextFactory = setupSslContextFactory(true);
+
+    final SslConnectionFactory tls =
+        new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+
+    final ServerConnector sslConnector = new ServerConnector(server, tls, alpn, http2, http11);
+    setPortAndHost(configurationService.getContainerHost(), sslConnector);
+    return sslConnector;
   }
 
-  private ServerConnector initHttpsConnector(
-      ConfigurationService configurationService, String host, Server server) {
-    HttpConfiguration https = new HttpConfiguration();
+  private ServerConnector initHttpsConnector(final Server server) {
+    final HttpConfiguration https = getHttpsConfiguration(configurationService);
+
+    final SslContextFactory.Server sslContextFactory = setupSslContextFactory(false);
+
+    final ServerConnector sslConnector =
+        new ServerConnector(
+            server,
+            new SslConnectionFactory(sslContextFactory, PROTOCOL),
+            new HttpConnectionFactory(https));
+    setPortAndHost(configurationService.getContainerHost(), sslConnector);
+    return sslConnector;
+  }
+
+  private HttpConfiguration getHttpsConfiguration(final ConfigurationService configurationService) {
+    final HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
     final SecureRequestCustomizer customizer =
         new SecureRequestCustomizer(
@@ -140,7 +172,24 @@ public class JettyConfig {
     https.addCustomizer(customizer);
     https.setSecureScheme("https");
     applyHeaderSizeConfiguration(https);
-    SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+
+    return https;
+  }
+
+  private void setUpRequestLogging(final Server server) {
+    final LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
+    loggingConfigurationReader.defineLogbackLoggingConfiguration();
+    server.setRequestLog(
+        new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
+  }
+
+  private void setPortAndHost(final String host, final ServerConnector sslConnector) {
+    sslConnector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
+    sslConnector.setHost(host);
+  }
+
+  private SslContextFactory.Server setupSslContextFactory(final boolean isHttp2) {
+    final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
     sslContextFactory.setKeyStorePath(configurationService.getContainerKeystoreLocation());
     sslContextFactory.setKeyStorePassword(configurationService.getContainerKeystorePassword());
     sslContextFactory.setKeyManagerPassword(configurationService.getContainerKeystorePassword());
@@ -148,18 +197,18 @@ public class JettyConfig {
     // see https://github.com/eclipse/jetty.project/issues/3049
     sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
 
-    ServerConnector sslConnector =
-        new ServerConnector(
-            server,
-            new SslConnectionFactory(sslContextFactory, PROTOCOL),
-            new HttpConnectionFactory(https));
-    sslConnector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
-    sslConnector.setHost(host);
-    return sslConnector;
+    if (isHttp2) {
+      // Configure the JDK with the Conscrypt provider.
+      Security.addProvider(new OpenSSLProvider());
+
+      sslContextFactory.setProvider("Conscrypt");
+    }
+
+    return sslContextFactory;
   }
 
-  public int getPort(String portType) {
-    String portProperty = environment.getProperty(portType);
+  public int getPort(final String portType) {
+    final String portProperty = environment.getProperty(portType);
     if (portProperty == null) {
       return portType.equals(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)
           ? configurationService.getContainerHttpsPort()
@@ -171,26 +220,26 @@ public class JettyConfig {
   public Optional<String> getContextPath() {
     // If the property is set by env var (the case when starting a new Optimize in ITs), this takes
     // precedence over config
-    Optional<String> contextPath = Optional.ofNullable(environment.getProperty(CONTEXT_PATH));
+    final Optional<String> contextPath = Optional.ofNullable(environment.getProperty(CONTEXT_PATH));
     if (contextPath.isEmpty()) {
       return configurationService.getContextPath();
     }
     return contextPath;
   }
 
-  private void applyHeaderSizeConfiguration(HttpConfiguration configuration) {
+  private void applyHeaderSizeConfiguration(final HttpConfiguration configuration) {
     configuration.setRequestHeaderSize(configurationService.getMaxRequestHeaderSizeInBytes());
     configuration.setResponseHeaderSize(configurationService.getMaxResponseHeaderSizeInBytes());
   }
 
-  private void addStaticResources(ServletContextHandler servletContextHandler) {
-    final URL webappURL = this.getClass().getClassLoader().getResource("webapp");
+  private void addStaticResources(final ServletContextHandler servletContextHandler) {
+    final URL webappURL = getClass().getClassLoader().getResource("webapp");
     if (webappURL != null) {
       servletContextHandler.setResourceBase(webappURL.toExternalForm());
     }
     final ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
     holderPwd.setInitParameter("dirAllowed", "false");
-    ServletHolder externalHome = new ServletHolder("external-home", DefaultServlet.class);
+    final ServletHolder externalHome = new ServletHolder("external-home", DefaultServlet.class);
     if (webappURL != null) {
       externalHome.setInitParameter("resourceBase", webappURL.toExternalForm());
     }
@@ -203,8 +252,8 @@ public class JettyConfig {
     servletContextHandler.addServlet(holderPwd, "/");
   }
 
-  private void addGzipHandler(ServletContextHandler context) {
-    GzipHandler gzipHandler = new GzipHandler();
+  private void addGzipHandler(final ServletContextHandler context) {
+    final GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setMinGzipSize(23);
     gzipHandler.setIncludedMimeTypes(COMPRESSED_MIME_TYPES);
     gzipHandler.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
