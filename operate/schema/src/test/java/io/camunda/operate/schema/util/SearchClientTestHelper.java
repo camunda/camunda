@@ -14,44 +14,13 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.qa.migration.v100;
+package io.camunda.operate.schema.util;
 
-import io.camunda.operate.qa.util.TestContext;
-import io.camunda.operate.qa.util.migration.AbstractTestFixture;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import java.util.Map;
 
-@Component
-public class TestFixture extends AbstractTestFixture {
+public interface SearchClientTestHelper {
 
-  public static final String VERSION = "1.0.0";
+  void setClientRetries(int retries);
 
-  @Autowired private BasicProcessDataGenerator basicProcessDataGenerator;
-
-  @Autowired private BigProcessDataGenerator bigProcessDataGenerator;
-
-  @Autowired private BigVariableDataGenerator bigVariableDataGenerator;
-
-  @Override
-  public void setup(TestContext testContext) {
-    super.setup(testContext);
-    startZeebeAndOperate();
-    generateData();
-    stopZeebeAndOperate(testContext);
-  }
-
-  @Override
-  public String getVersion() {
-    return VERSION;
-  }
-
-  private void generateData() {
-    try {
-      basicProcessDataGenerator.createData(testContext);
-      bigProcessDataGenerator.createData(testContext);
-      bigVariableDataGenerator.createData(testContext);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
+  void createDocument(String indexName, String id, Map<String, String> document);
 }

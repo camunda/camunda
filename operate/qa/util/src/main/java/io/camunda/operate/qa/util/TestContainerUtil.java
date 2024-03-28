@@ -63,12 +63,6 @@ import org.testcontainers.utility.MountableFile;
 public class TestContainerUtil {
 
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
-  // Note: This url should be "http://elasticsearch:9200" but changing it causes several ITs to
-  // break because
-  // the zeebe indices no longer get created in elasticsearch. Needs further investigation before
-  // changing.
-  public static final String ELS_DOCKER_TESTCONTAINER_URL =
-      "http://host.testcontainers.internal:9200";
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
   public static final String ELS_HOST = "localhost";
@@ -99,6 +93,16 @@ public class TestContainerUtil {
   private static final Integer OPERATE_HTTP_PORT = 8080;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
+  // There are two cases how we start containers:
+  // 1. We start both Elasticsearch and Zeebe as test containers. This way TestContext object stores
+  // the names and ports of running containers, and we configure Zeebe with that values.
+  // 2. Elasticsearch is started independently on the same "host" machine, but Zeebe is run from
+  // test containers and need to connect to that external Elasticsearch instance. We do this by
+  // using "Exposing host port" feature of test containers:
+  // https://java.testcontainers.org/features/networking/#exposing-host-ports-to-the-container
+  // Currently we consider that external Elastic is running on 9200 port.
+  private static final String ELS_DOCKER_TESTCONTAINER_URL_DEFAULT =
+      "http://host.testcontainers.internal:9200";
   private static final String ZEEBE = "zeebe";
   private static final String KEYCLOAK_ZEEBE_SECRET = "zecret";
   private static final String USER_MEMBER_TYPE = "USER";
@@ -396,15 +400,8 @@ public class TestContainerUtil {
     final String elsHost = testContext.getInternalElsHost();
     final Integer elsPort = testContext.getInternalElsPort();
     operateContainer
-        .withEnv(
-            "CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv(
-            "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL",
-            String.format("http://%s:%s", elsHost, elsPort))
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev");
 
     final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
@@ -414,6 +411,15 @@ public class TestContainerUtil {
     if (testContext.getZeebeIndexPrefix() != null) {
       operateContainer.withEnv(
           "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
+    }
+  }
+
+  private static String getElasticURL(final TestContext testContext) {
+    if (testContext.getInternalElsHost() != null) {
+      return String.format(
+          "http://%s:%s", testContext.getInternalElsHost(), testContext.getInternalElsPort());
+    } else {
+      return ELS_DOCKER_TESTCONTAINER_URL_DEFAULT;
     }
   }
 
@@ -494,12 +500,17 @@ public class TestContainerUtil {
       if ("SNAPSHOT".equals(version)) {
         broker.withImagePullPolicy(alwaysPull());
       }
+
+      // from 8.3.0 onwards, Zeebe is run with a non-root user in the container;
+      // this user cannot access a mounted volume that is owned by root
+      broker.withCreateContainerCmdModifier(cmd -> cmd.withUser("root"));
+
       broker
           .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
-          .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
+          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
           .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
           .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", ELS_DOCKER_TESTCONTAINER_URL)
+          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", getElasticURL(testContext))
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
           .withEnv(

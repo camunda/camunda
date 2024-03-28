@@ -28,7 +28,7 @@ import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
 import io.camunda.operate.qa.migration.util.EntityReader;
-import io.camunda.operate.qa.migration.v100.BigProcessDataGenerator;
+import io.camunda.operate.qa.migration.v110.BigProcessDataGenerator;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;

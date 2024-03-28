@@ -16,22 +16,29 @@
  */
 package io.camunda.operate.schema.elasticsearch;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.IndexMapping;
+import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchJSONUtil;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indexlifecycle.DeleteAction;
 import org.elasticsearch.client.indexlifecycle.LifecycleAction;
@@ -42,13 +49,13 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.cluster.metadata.ComponentTemplate;
 import org.elasticsearch.cluster.metadata.ComposableIndexTemplate;
 import org.elasticsearch.cluster.metadata.Template;
 import org.elasticsearch.common.compress.CompressedXContent;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -57,6 +64,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 
 @Conditional(ElasticsearchCondition.class)
 @Component("schemaManager")
@@ -67,10 +75,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
+
   @Autowired protected RetryElasticsearchClient retryElasticsearchClient;
   @Autowired protected OperateProperties operateProperties;
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
   @Autowired private List<TemplateDescriptor> templateDescriptors;
+  @Autowired private ObjectMapper objectMapper;
 
   @Override
   public void createSchema() {
@@ -153,6 +163,37 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     return operateProperties.getElasticsearch().getIndexPrefix();
   }
 
+  @Override
+  public Map<String, IndexMapping> getIndexMappings(String indexName) {
+    return retryElasticsearchClient.getIndexMappings(indexName);
+  }
+
+  @Override
+  public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
+    for (Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
+        newFields.entrySet()) {
+      if (indexNewFields.getKey() instanceof TemplateDescriptor) {
+        LOGGER.info(
+            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
+        final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
+        final PutComposableIndexTemplateRequest request =
+            prepareComposableTemplateRequest(templateDescriptor, null);
+        putIndexTemplate(request, true);
+      }
+      final PutMappingRequest request = new PutMappingRequest(indexNewFields.getKey().getAlias());
+      request.source(
+          "{\"properties\":"
+              + IndexMappingProperty.toJsonString(indexNewFields.getValue(), objectMapper)
+              + "}",
+          XContentType.JSON);
+      LOGGER.info(
+          String.format(
+              "Index alias: %s. New fields will be added: %s",
+              indexNewFields.getKey().getAlias(), indexNewFields.getValue()));
+      retryElasticsearchClient.putMapping(request);
+    }
+  }
+
   private String settingsTemplateName() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     return String.format("%s_template", elsConfig.getIndexPrefix());
@@ -182,7 +223,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         .build();
   }
 
-  private void createDefaults() {
+  @Override
+  public void createDefaults() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     final String settingsTemplate = settingsTemplateName();
     LOGGER.info(
@@ -230,10 +272,13 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void createIndex(final IndexDescriptor indexDescriptor) {
-    final String indexFilename =
-        String.format(
-            "/schema/elasticsearch/create/index/operate-%s.json", indexDescriptor.getIndexName());
-    final Map<String, Object> indexDescription = readJSONFileToMap(indexFilename);
+    createIndex(indexDescriptor, indexDescriptor.getSchemaClasspathFilename());
+  }
+
+  @Override
+  public void createIndex(final IndexDescriptor indexDescriptor, String indexClasspathResource) {
+    final Map<String, Object> indexDescription =
+        ElasticsearchJSONUtil.readJSONFileToMap(indexClasspathResource);
     createIndex(
         new CreateIndexRequest(indexDescriptor.getFullQualifiedName())
             .source(indexDescription)
@@ -243,17 +288,16 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
-    final Template template = getTemplateFrom(templateDescriptor);
-    final ComposableIndexTemplate composableTemplate =
-        new ComposableIndexTemplate.Builder()
-            .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
-            .template(template)
-            .componentTemplates(List.of(settingsTemplateName()))
-            .build();
-    putIndexTemplate(
-        new PutComposableIndexTemplateRequest()
-            .name(templateDescriptor.getTemplateName())
-            .indexTemplate(composableTemplate));
+    createTemplate(templateDescriptor, null);
+  }
+
+  @Override
+  public void createTemplate(
+      TemplateDescriptor templateDescriptor, String templateClasspathResource) {
+    final PutComposableIndexTemplateRequest request =
+        prepareComposableTemplateRequest(templateDescriptor, templateClasspathResource);
+    putIndexTemplate(request);
+
     // This is necessary, otherwise operate won't find indexes at startup
     final String indexName = templateDescriptor.getFullQualifiedName();
     final var createIndexRequest =
@@ -261,6 +305,27 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .aliases(Set.of(new Alias(templateDescriptor.getAlias()).writeIndex(false)))
             .settings(getIndexSettings(templateDescriptor.getIndexName()));
     createIndex(createIndexRequest, indexName);
+  }
+
+  private PutComposableIndexTemplateRequest prepareComposableTemplateRequest(
+      final TemplateDescriptor templateDescriptor, String templateClasspathResource) {
+    final String templateResourceName =
+        templateClasspathResource != null
+            ? templateClasspathResource
+            : templateDescriptor.getSchemaClasspathFilename();
+
+    final Template template = getTemplateFrom(templateDescriptor, templateResourceName);
+    final ComposableIndexTemplate composableTemplate =
+        new ComposableIndexTemplate.Builder()
+            .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
+            .template(template)
+            .componentTemplates(List.of(settingsTemplateName()))
+            .build();
+    final PutComposableIndexTemplateRequest request =
+        new PutComposableIndexTemplateRequest()
+            .name(templateDescriptor.getTemplateName())
+            .indexTemplate(composableTemplate);
+    return request;
   }
 
   private void overrideTemplateSettings(
@@ -276,13 +341,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     templateConfig.put("settings", settings);
   }
 
-  private Template getTemplateFrom(final TemplateDescriptor templateDescriptor) {
-    final String templateFilename =
-        String.format(
-            "/schema/elasticsearch/create/template/operate-%s.json",
-            templateDescriptor.getIndexName());
+  private Template getTemplateFrom(
+      final TemplateDescriptor templateDescriptor, String templateFilename) {
     // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
-    final Map<String, Object> templateConfig = readJSONFileToMap(templateFilename);
+    final Map<String, Object> templateConfig =
+        ElasticsearchJSONUtil.readJSONFileToMap(templateFilename);
     overrideTemplateSettings(templateConfig, templateDescriptor);
     final PutIndexTemplateRequest ptr =
         new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(templateConfig);
@@ -299,20 +362,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     }
   }
 
-  private Map<String, Object> readJSONFileToMap(final String filename) {
-    final Map<String, Object> result;
-    try (InputStream inputStream = ElasticsearchSchemaManager.class.getResourceAsStream(filename)) {
-      if (inputStream != null) {
-        result = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
-      } else {
-        throw new OperateRuntimeException("Failed to find " + filename + " in classpath ");
-      }
-    } catch (IOException e) {
-      throw new OperateRuntimeException("Failed to load file " + filename + " from classpath ", e);
-    }
-    return result;
-  }
-
   private void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
     final boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
     if (created) {
@@ -323,11 +372,44 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void putIndexTemplate(final PutComposableIndexTemplateRequest request) {
-    final boolean created = retryElasticsearchClient.createTemplate(request);
+    putIndexTemplate(request, false);
+  }
+
+  private void putIndexTemplate(
+      final PutComposableIndexTemplateRequest request, boolean overwrite) {
+    final boolean created = retryElasticsearchClient.createTemplate(request, overwrite);
     if (created) {
       LOGGER.debug("Template [{}] was successfully created", request.name());
     } else {
       LOGGER.debug("Template [{}] was NOT created", request.name());
+    }
+  }
+
+  public IndexMapping getExpectedIndexFields(final IndexDescriptor indexDescriptor) {
+    final InputStream description =
+        ElasticsearchSchemaManager.class.getResourceAsStream(
+            indexDescriptor.getSchemaClasspathFilename());
+    try {
+      final String currentVersionSchema =
+          StreamUtils.copyToString(description, StandardCharsets.UTF_8);
+      final TypeReference<HashMap<String, Object>> type = new TypeReference<>() {};
+      final Map<String, Object> properties =
+          (Map<String, Object>)
+              ((Map<String, Object>)
+                      objectMapper.readValue(currentVersionSchema, type).get("mappings"))
+                  .get("properties");
+      return new IndexMapping()
+          .setIndexName(indexDescriptor.getIndexName())
+          .setProperties(
+              properties.entrySet().stream()
+                  .map(
+                      entry ->
+                          new IndexMappingProperty()
+                              .setName(entry.getKey())
+                              .setTypeDefinition(entry.getValue()))
+                  .collect(Collectors.toSet()));
+    } catch (IOException e) {
+      throw new OperateRuntimeException(e);
     }
   }
 }

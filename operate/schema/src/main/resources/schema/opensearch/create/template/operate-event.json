@@ -7,6 +7,7 @@
 				"type": "date"
 			},
 			"metadata": {
+        "type": "object",
 				"properties": {
 					"jobRetries": {
 						"type": "integer"
@@ -15,6 +16,7 @@
 						"type": "keyword"
 					},
 					"jobCustomHeaders": {
+            "type": "object",
 						"enabled": false
 					},
 					"incidentErrorMessage": {
@@ -71,9 +73,24 @@
 			"key": {
 				"type": "long"
 			},
-            "tenantId": {
-              "type": "keyword"
-            }
+      "tenantId": {
+        "type": "keyword"
+      },
+      "position": {
+        "type": "long"
+      },
+      "positionIncident": {
+        "type": "long",
+        "index": false
+      },
+      "positionProcessMessageSubscription": {
+        "type": "long",
+        "index": false
+      },
+      "positionJob": {
+        "type": "long",
+        "index": false
+      }
 		}
 	}
 }
