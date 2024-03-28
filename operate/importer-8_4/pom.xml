@@ -11,6 +11,10 @@
 
   <name>Operate Importer 8.4</name>
 
+  <properties>
+    <version.zeebe>8.4.5</version.zeebe>
+  </properties>
+
   <dependencies>
 
     <dependency>
