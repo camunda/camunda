@@ -84,16 +84,12 @@ final class ElasticsearchExporterIT {
             .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
     exporter.configure(exporterTestContext);
     exporter.open(controller);
+    testClient.deleteIndices();
   }
 
   @AfterEach
   void afterEach() {
     CloseHelper.quietCloseAll(testClient);
-  }
-
-  @BeforeEach
-  void cleanup() {
-    testClient.deleteIndices();
   }
 
   @ParameterizedTest(name = "{0}")
