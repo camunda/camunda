@@ -348,6 +348,7 @@ jobs:
   codeql:
     name: CodeQL
     runs-on: [ self-hosted, linux, amd64, "16" ]
+    if:  github.event_name != 'merge_group' && github.actor != 'renovate[bot]' # we don't need to run codeql for renovate PR's and not in merge queues
     permissions:
       security-events: write
     steps:
