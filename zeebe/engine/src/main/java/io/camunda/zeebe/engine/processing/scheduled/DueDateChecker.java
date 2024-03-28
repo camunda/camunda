@@ -111,7 +111,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
             nextExecution,
             currentlyScheduled -> {
               final var now = ActorClock.currentTimeMillis();
-              final var scheduleFor = now + Math.max(dueDate - now, timerResolution);
+              final long scheduleFor =
+                  dueDate == -1 ? now : now + Math.max(dueDate - now, timerResolution);
               if (currentlyScheduled == null
                   || currentlyScheduled.scheduledFor() - scheduleFor > timerResolution) {
                 final var delay = Duration.ofMillis(scheduleFor - now);
