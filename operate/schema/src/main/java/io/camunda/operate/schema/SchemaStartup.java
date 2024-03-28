@@ -28,7 +28,6 @@ import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.migration.Migrator;
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
-import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
