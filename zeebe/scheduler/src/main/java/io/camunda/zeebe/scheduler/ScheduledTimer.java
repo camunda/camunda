@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.scheduler;
 
+@FunctionalInterface
 public interface ScheduledTimer {
   void cancel();
 }
