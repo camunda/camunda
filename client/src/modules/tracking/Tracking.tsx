@@ -20,7 +20,7 @@ declare const window: {
 
 let trackingEnabled = false;
 
-export function track(eventName: string, properties: {[key: string]: unknown}) {
+export function track(eventName: string, properties?: {[key: string]: unknown}) {
   if (trackingEnabled) {
     window.mixpanel.track(`optimize:${eventName}`, properties);
   }
