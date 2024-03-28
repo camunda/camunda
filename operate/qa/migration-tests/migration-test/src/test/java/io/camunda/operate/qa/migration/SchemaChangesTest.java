@@ -45,13 +45,14 @@ public class SchemaChangesTest extends AbstractMigrationTest {
         Arrays.asList(
             IndexChange.forVersionAndIndex("8.5", listViewTemplate.getDerivedIndexNamePattern())
                 .withAddedProperty("position", "long")
-                .withAddedProperty("positionIncident", "long")
-                .withAddedProperty("positionJob", "long"),
+                .withAddedProperty("positionIncident", Map.of("type", "long", "index", false))
+                .withAddedProperty("positionJob", Map.of("type", "long", "index", false)),
             IndexChange.forVersionAndIndex("8.5", eventTemplate.getDerivedIndexNamePattern())
                 .withAddedProperty("position", "long")
-                .withAddedProperty("positionIncident", "long")
-                .withAddedProperty("positionProcessMessageSubscription", "long")
-                .withAddedProperty("positionJob", "long"),
+                .withAddedProperty("positionIncident", Map.of("type", "long", "index", false))
+                .withAddedProperty(
+                    "positionProcessMessageSubscription", Map.of("type", "long", "index", false))
+                .withAddedProperty("positionJob", Map.of("type", "long", "index", false)),
             IndexChange.forVersionAndIndex("8.5", incidentTemplate.getDerivedIndexNamePattern())
                 .withAddedProperty("position", "long"),
             IndexChange.forVersionAndIndex("8.5", variableTemplate.getDerivedIndexNamePattern())
