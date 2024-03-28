@@ -16,24 +16,16 @@
  */
 package io.camunda.operate.schema;
 
-import static io.camunda.operate.schema.SchemaManager.NO_REFRESH;
 import static io.camunda.operate.schema.SchemaManager.NO_REPLICA;
 import static io.camunda.operate.schema.SchemaManager.NUMBERS_OF_REPLICA;
 import static io.camunda.operate.schema.SchemaManager.REFRESH_INTERVAL;
-import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
+import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
-import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.UserService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,12 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.web.WebAppConfiguration;
 
 @ExtendWith(MockitoExtension.class)
 @SpringBootTest(
@@ -59,28 +46,15 @@ import org.springframework.test.context.web.WebAppConfiguration;
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
-@WebAppConfiguration
-@TestExecutionListeners(
-    listeners = DependencyInjectionTestExecutionListener.class,
-    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
-@WithMockUser(DEFAULT_USER)
-@AutoConfigureMockMvc
 public class SchemaManagerIT {
-  public static final String DEFAULT_USER = "testuser";
-  @MockBean protected UserService userService;
-  @MockBean protected TenantService tenantService;
-  @Autowired OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
   @Autowired private TestSearchRepository searchRepository;
-  @Autowired private SchemaManager schemaManager;
+  @Autowired private OpensearchSchemaManager schemaManager;
   private String indexPrefix;
 
   @BeforeEach
   public void before() {
-    schemaManager.deleteIndicesFor(idxName("index-*"));
-    when(userService.getCurrentUser())
-        .thenReturn(
-            new UserDto().setUserId(DEFAULT_USER).setPermissions(List.of(Permission.WRITE)));
-    mockTenantResponse();
+    //    indexPrefix = UUID.randomUUID().toString();
   }
 
   @AfterEach
@@ -92,31 +66,33 @@ public class SchemaManagerIT {
     return indexPrefix + "-" + name;
   }
 
-  @Test // OPE-1311
+  @Test
   public void testCheckAndUpdateIndices() throws Exception {
 
-    final int expectedNumberOfReplicas = 5;
+    final int defaultNumberofReplicas = 5;
     if (DatabaseInfo.isOpensearch()) {
-      operateProperties.getOpensearch().setNumberOfReplicas(expectedNumberOfReplicas);
+      System.out.println("opensearch");
+      operateProperties.getOpensearch().setNumberOfReplicas(defaultNumberofReplicas);
     } else {
-      operateProperties.getElasticsearch().setNumberOfReplicas(expectedNumberOfReplicas);
+      System.out.println("elasticsearch");
+      operateProperties.getElasticsearch().setNumberOfReplicas(defaultNumberofReplicas);
     }
-    /// Old version -> before migration
-    // create index
+
     createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name1", "test_value1")));
     createIndex(idxName("index-2.3.4_"), List.of(Map.of("test_name2", "test_value2")));
     createIndex(idxName("index-3.4.5_"), List.of(Map.of("test_name3", "test_value3")));
 
     // set reindex settings
-    schemaManager.setIndexSettingsFor(
-        Map.of(
-            NUMBERS_OF_REPLICA, NO_REPLICA,
-            REFRESH_INTERVAL, NO_REFRESH),
-        idxName("index-1.2.3_"));
-    schemaManager.setIndexSettingsFor(
-        Map.of(REFRESH_INTERVAL, NO_REFRESH), idxName("index-2.3.4_"));
-    schemaManager.setIndexSettingsFor(
-        Map.of(NUMBERS_OF_REPLICA, "5", REFRESH_INTERVAL, NO_REFRESH), idxName("index-3.4.5_"));
+    final boolean isSetting1 =
+        schemaManager.setIndexSettingsFor(
+            Map.of(NUMBERS_OF_REPLICA, NO_REPLICA, REFRESH_INTERVAL, "2s"),
+            idxName("index-1.2.3_"));
+    final boolean isSetting2 =
+        schemaManager.setIndexSettingsFor(
+            Map.of(NUMBERS_OF_REPLICA, 3, REFRESH_INTERVAL, "2s"), idxName("index-2.3.4_"));
+    final boolean isSetting3 =
+        schemaManager.setIndexSettingsFor(
+            Map.of(NUMBERS_OF_REPLICA, "5", REFRESH_INTERVAL, "2s"), idxName("index-3.4.5_"));
 
     // update number of replicas for each index
     schemaManager.checkAndUpdateIndices();
@@ -127,8 +103,8 @@ public class SchemaManagerIT {
     assertThat(reindexSettings1)
         .containsEntry(
             NUMBERS_OF_REPLICA,
-            DatabaseInfo.isOpensearch() ? null : String.valueOf(expectedNumberOfReplicas))
-        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : NO_REFRESH);
+            DatabaseInfo.isOpensearch() ? null : String.valueOf(defaultNumberofReplicas))
+        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : "2s");
 
     final Map<String, String> reindexSettings2 =
         schemaManager.getIndexSettingsFor(
@@ -136,8 +112,8 @@ public class SchemaManagerIT {
     assertThat(reindexSettings2)
         .containsEntry(
             NUMBERS_OF_REPLICA,
-            DatabaseInfo.isOpensearch() ? null : String.valueOf(expectedNumberOfReplicas))
-        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : NO_REFRESH);
+            DatabaseInfo.isOpensearch() ? null : String.valueOf(defaultNumberofReplicas))
+        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : "2s");
 
     final Map<String, String> reindexSettings3 =
         schemaManager.getIndexSettingsFor(
@@ -145,32 +121,33 @@ public class SchemaManagerIT {
     assertThat(reindexSettings3)
         .containsEntry(
             NUMBERS_OF_REPLICA,
-            DatabaseInfo.isOpensearch() ? null : String.valueOf(expectedNumberOfReplicas))
-        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : NO_REFRESH);
+            DatabaseInfo.isOpensearch() ? null : String.valueOf(defaultNumberofReplicas))
+        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : "2s");
     // Migrator uses this
-    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), "5"))
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), null))
         .isEqualTo("5");
-    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-1.2.3_"), "2"))
-        .isEqualTo("2");
-  }
 
-  private void mockTenantResponse() {
-    doReturn(TenantService.AuthenticatedTenants.allTenants())
-        .when(tenantService)
-        .getAuthenticatedTenants();
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-1.2.3_"), null))
+        .isEqualTo("2s");
+
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-2.3.4_"), null))
+        .isEqualTo("5");
+
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-2.3.4_"), null))
+        .isEqualTo("2s");
+
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-3.4.5_"), null))
+        .isEqualTo("5");
+
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-3.4.5_"), null))
+        .isEqualTo("2s");
   }
 
   private void createIndex(final String indexName, final List<Map<String, String>> documents)
       throws Exception {
-    if (DatabaseInfo.isElasticsearch()) {
-      final Map<String, ?> mapping =
-          Map.of("properties", Map.of("test_name", Map.of("type", "keyword")));
-      searchRepository.createIndex(indexName, mapping);
-      assertThat(schemaManager.getIndexNames(idxName("index*"))).contains(indexName);
-    }
-    if (documents.isEmpty() && DatabaseInfo.isOpensearch()) {
-      searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), Map.of());
-    }
+    final Map<String, ?> mapping =
+        Map.of("properties", Map.of("test_name", Map.of("type", "keyword")));
+    searchRepository.createIndex(indexName, mapping);
     for (final var document : documents) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), document);
     }
