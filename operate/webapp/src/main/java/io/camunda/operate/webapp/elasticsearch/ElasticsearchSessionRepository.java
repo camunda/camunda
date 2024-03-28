@@ -202,16 +202,20 @@ public class ElasticsearchSessionRepository implements SessionRepository {
   }
 
   private Instant getInstantFor(final Object object) {
-    final var instantAsLong = (Long) object;
-    if (instantAsLong != null) {
+    if (object == null) {
+      return null;
+    }
+    if (object instanceof final Long instantAsLong) {
       return Instant.ofEpochMilli(instantAsLong);
     }
     return null;
   }
 
   private Duration getDurationFor(final Object object) {
-    final Integer durationAsInteger = (Integer) object;
-    if (durationAsInteger != null) {
+    if (object == null) {
+      return null;
+    }
+    if (object instanceof final Integer durationAsInteger) {
       return Duration.ofSeconds(durationAsInteger);
     }
     return null;
