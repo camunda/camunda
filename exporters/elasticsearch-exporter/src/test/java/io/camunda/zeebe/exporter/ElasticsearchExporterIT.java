@@ -32,13 +32,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import org.agrona.CloseHelper;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -53,6 +55,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * down, should be done elsewhere (e.g. {@link FaultToleranceIT}
  */
 @Testcontainers
+@TestInstance(Lifecycle.PER_CLASS)
 final class ElasticsearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -68,15 +71,17 @@ final class ElasticsearchExporterIT {
   private TestClient testClient;
   private ExporterTestContext exporterTestContext;
 
-  @BeforeEach
-  public void beforeEach() {
-    // as all tests use the same endpoint, we need a per-test unique prefix
-    config.index.prefix = UUID.randomUUID() + "-test-record";
+  @BeforeAll
+  public void beforeAll() {
     config.url = CONTAINER.getHttpHostAddress();
     config.index.setNumberOfShards(1);
     config.index.setNumberOfReplicas(1);
     config.index.createTemplate = true;
     config.bulk.size = 1; // force flushing on the first record
+    // here; enable all indexes that needed during the tests beforehand as they will be created once
+    TestSupport.provideValueTypes()
+        .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
+
     testClient = new TestClient(config, indexRouter);
 
     exporterTestContext =
@@ -84,12 +89,16 @@ final class ElasticsearchExporterIT {
             .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
     exporter.configure(exporterTestContext);
     exporter.open(controller);
-    testClient.deleteIndices();
   }
 
-  @AfterEach
-  void afterEach() {
+  @AfterAll
+  void afterAll() {
     CloseHelper.quietCloseAll(testClient);
+  }
+
+  @BeforeEach
+  void cleanup() {
+    testClient.deleteIndices();
   }
 
   @ParameterizedTest(name = "{0}")
@@ -97,7 +106,6 @@ final class ElasticsearchExporterIT {
   void shouldExportRecord(final ValueType valueType) {
     // given
     final var record = factory.generateRecord(valueType);
-    TestSupport.setIndexingForValueType(config.index, valueType, true);
 
     // when
     export(record);
@@ -128,7 +136,6 @@ final class ElasticsearchExporterIT {
             .build();
     final Record<JobRecordValue> record =
         factory.generateRecord(ValueType.JOB, builder -> builder.withValue(value));
-    config.index.job = true;
 
     // when
     export(record);
@@ -155,7 +162,6 @@ final class ElasticsearchExporterIT {
             .build();
     final Record<JobBatchRecordValue> record =
         factory.generateRecord(ValueType.JOB_BATCH, builder -> builder.withValue(value));
-    config.index.jobBatch = true;
 
     // when
     export(record);
@@ -176,7 +182,6 @@ final class ElasticsearchExporterIT {
     // given
     final var record = factory.generateRecord(valueType);
     final var expectedIndexTemplateName = indexRouter.indexPrefixForValueType(valueType);
-    TestSupport.setIndexingForValueType(config.index, valueType, true);
 
     // when - export a single record to enforce installing all index templatesWrapper
     export(record);
