@@ -26,7 +26,7 @@ describe('stores/processXml/processXml.list', () => {
   });
 
   it('should filter selectable flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
+    mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
 
     processXmlStore.fetchProcessXml('1');
     expect(processXmlStore.state.status).toBe('fetching');
@@ -34,6 +34,11 @@ describe('stores/processXml/processXml.list', () => {
 
     expect(
       processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
-    ).toEqual(['checkPayment', 'requestForPayment', 'shipArticles']);
+    ).toEqual([
+      'checkPayment',
+      'requestForPayment',
+      'shippingSubProcess',
+      'shipArticles',
+    ]);
   });
 });

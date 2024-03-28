@@ -36,4 +36,8 @@ const Container = styled.div<Props>`
   }}
 `;
 
-export {Container};
+const PanelContainer = styled.div`
+  overflow: auto;
+`;
+
+export {Container, PanelContainer};

@@ -40,6 +40,8 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    *
    * @param delay The delay to wait before executing the task
    * @param task The task to execute after the delay
+   * @implNote If the delay is short, cancellation via {@link ScheduledTask} may happen after
+   *     execution and have no effect.
    */
-  void runDelayedAsync(final Duration delay, final Task task);
+  ScheduledTask runDelayedAsync(final Duration delay, final Task task);
 }

@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncDocumentOperations;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncIndexOperations;
@@ -49,7 +50,8 @@ public class RichOpenSearchClient {
   public RichOpenSearchClient(
       BeanFactory beanFactory,
       OpenSearchClient openSearchClient,
-      OpenSearchAsyncClient openSearchAsyncClient) {
+      OpenSearchAsyncClient openSearchAsyncClient,
+      ObjectMapper objectMapper) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     async = new Async(openSearchAsyncClient);
@@ -57,7 +59,8 @@ public class RichOpenSearchClient {
         new OpenSearchBatchOperations(LOGGER, openSearchClient, beanFactory);
     openSearchClusterOperations = new OpenSearchClusterOperations(LOGGER, openSearchClient);
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);
-    openSearchIndexOperations = new OpenSearchIndexOperations(LOGGER, openSearchClient);
+    openSearchIndexOperations =
+        new OpenSearchIndexOperations(LOGGER, openSearchClient, objectMapper);
     openSearchPipelineOperations = new OpenSearchPipelineOperations(LOGGER, openSearchClient);
     openSearchSnapshotOperations = new OpenSearchSnapshotOperations(LOGGER, openSearchClient);
     openSearchTaskOperations = new OpenSearchTaskOperations(LOGGER, openSearchClient);

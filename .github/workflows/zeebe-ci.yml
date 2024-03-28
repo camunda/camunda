@@ -34,6 +34,8 @@ jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}"
     timeout-minutes: 20
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     runs-on: [ self-hosted, linux, amd64, "16" ]
     strategy:
       fail-fast: false
@@ -118,6 +120,7 @@ jobs:
         with:
           action: terminate
       - name: Analyze Test Runs
+        id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
         with:
@@ -131,6 +134,8 @@ jobs:
     name: Unit tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
       - name: Install and allow strace tests
@@ -162,6 +167,7 @@ jobs:
       - name: Normalize artifact name
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Analyze Test Runs
+        id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
         with:
@@ -491,6 +497,9 @@ jobs:
     name: Test summary
     if: always()
     runs-on: ubuntu-latest
+    outputs:
+      flakyUnitTests: ${{ needs.unit-tests.outputs.flakyTests }}
+      flakyIntegrationTests: ${{ needs.integration-tests.outputs.flakyTests }}
     needs:
       - integration-tests
       - unit-tests
@@ -653,12 +662,31 @@ jobs:
                     "type": "mrkdwn",
                     "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
                   }
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_INTEGRATION_TESTS }}"
+                  }
                 }
               ]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          FLAKY_UNIT_TESTS: ${{needs.test-summary.outputs.flakyUnitTests}}
+          FLAKY_INTEGRATION_TESTS: ${{needs.test-summary.outputs.flakyIntegrationTests}}
   auto-merge:
     # This workflow will auto merge a PR authored by backport-action or renovate[bot].
     # It runs only on open PRs ready for review.

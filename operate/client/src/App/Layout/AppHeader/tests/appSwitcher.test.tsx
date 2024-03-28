@@ -70,23 +70,27 @@ describe('App switcher', () => {
       }),
     );
 
-    expect(
-      await withinAppPanel.findByRole('link', {name: 'Console'}),
-    ).toHaveAttribute('href', 'https://link-to-console');
-    expect(withinAppPanel.getByRole('link', {name: 'Modeler'})).toHaveAttribute(
-      'href',
-      'https://link-to-modeler',
-    );
-    expect(
-      withinAppPanel.getByRole('link', {name: 'Tasklist'}),
-    ).toHaveAttribute('href', 'https://link-to-tasklist');
-    expect(withinAppPanel.getByRole('link', {name: 'Operate'})).toHaveAttribute(
-      'href',
-      '/',
-    );
-    expect(
-      withinAppPanel.getByRole('link', {name: 'Optimize'}),
-    ).toHaveAttribute('href', 'https://link-to-optimize');
+    const consoleLink = await withinAppPanel.findByRole('link', {
+      name: 'Console',
+    });
+    expect(consoleLink).toHaveAttribute('href', 'https://link-to-console');
+    expect(consoleLink).not.toHaveAttribute('target');
+
+    const modelerLink = withinAppPanel.getByRole('link', {name: 'Modeler'});
+    expect(modelerLink).toHaveAttribute('href', 'https://link-to-modeler');
+    expect(modelerLink).not.toHaveAttribute('target');
+
+    const tasklistLink = withinAppPanel.getByRole('link', {name: 'Tasklist'});
+    expect(tasklistLink).toHaveAttribute('href', 'https://link-to-tasklist');
+    expect(tasklistLink).not.toHaveAttribute('target');
+
+    const operateLink = withinAppPanel.getByRole('link', {name: 'Operate'});
+    expect(operateLink).toHaveAttribute('href', '/');
+    expect(operateLink).not.toHaveAttribute('target');
+
+    const optimizeLink = withinAppPanel.getByRole('link', {name: 'Optimize'});
+    expect(optimizeLink).toHaveAttribute('href', 'https://link-to-optimize');
+    expect(optimizeLink).not.toHaveAttribute('target');
   });
 
   it('should not render links for CCSM', async () => {

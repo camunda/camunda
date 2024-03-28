@@ -25,6 +25,7 @@ import {Dashboard} from './pages/Dashboard';
 import {ProcessInstance} from './pages/ProcessInstance';
 import {Decisions} from './pages/Decisions';
 import {MigrationView} from './pages/Processes/MigrationView';
+import {DecisionInstance} from './pages/DecisionInstance';
 
 type Fixture = {
   makeAxeBuilder: () => AxeBuilder;
@@ -53,6 +54,7 @@ const test = base.extend<
     dashboardPage: Dashboard;
     processInstancePage: ProcessInstance;
     decisionsPage: Decisions;
+    decisionInstancePage: DecisionInstance;
     commonPage: Common;
     migrationView: MigrationView;
   },
@@ -105,6 +107,9 @@ const test = base.extend<
   },
   decisionsPage: async ({page}, use) => {
     await use(new Decisions(page));
+  },
+  decisionInstancePage: async ({page}, use) => {
+    await use(new DecisionInstance(page));
   },
   commonPage: async ({page}, use) => {
     await use(new Common(page));

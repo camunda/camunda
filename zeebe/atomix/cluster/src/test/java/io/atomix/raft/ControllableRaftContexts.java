@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import static io.atomix.raft.impl.RaftContext.State.READY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -25,7 +26,6 @@ import static org.mockito.Mockito.withSettings;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
@@ -436,7 +436,7 @@ public final class ControllableRaftContexts {
 
   private void waitUntilMembersIsReadyIn(final RaftContext member, final int steps) {
     int iter = steps;
-    while (member.getState() != State.READY && iter-- > 0) {
+    while (member.getState() != READY && iter-- > 0) {
       runUntilDone();
       processAllMessage();
       tickHeartbeatTimeout();
@@ -445,7 +445,7 @@ public final class ControllableRaftContexts {
         .describedAs(
             "Member should be ready in %d steps, if there are no failures or timeouts"
                 .formatted(steps))
-        .isEqualTo(State.READY);
+        .isEqualTo(READY);
   }
 
   // ----------------------- Verifications -----------------------------
@@ -520,6 +520,10 @@ public final class ControllableRaftContexts {
   }
 
   boolean hasCommittedAllEntries() {
+    return hasCommittedAllEntries(raftServers);
+  }
+
+  boolean hasCommittedAllEntries(final Map<MemberId, RaftContext> raftServers) {
     return raftServers.values().stream()
         .allMatch(
             s -> {
@@ -532,20 +536,28 @@ public final class ControllableRaftContexts {
   }
 
   boolean hasReplicatedAllEntries() {
+    return hasReplicatedAllEntries(raftServers);
+  }
+
+  boolean hasReplicatedAllEntries(final Map<MemberId, RaftContext> raftMembers) {
     final boolean allReplicasHaveSameLastIndex =
-        raftServers.values().stream()
+        raftMembers.values().stream()
                 .map(RaftContext::getLog)
                 .map(RaftLog::getLastIndex)
                 .distinct()
                 .count()
             == 1;
     final boolean allReplicasHaveSameLastEntry =
-        raftServers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
+        raftMembers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
     // should check both to cover cases where one log is empty
     return allReplicasHaveSameLastIndex && allReplicasHaveSameLastEntry;
   }
 
-  public void assertAllEntriesCommittedAndReplicatedToAll() {
+  void assertAllEntriesCommittedAndReplicatedToAll() {
+    assertAllEntriesCommittedAndReplicatedToAll(raftServers);
+  }
+
+  void assertAllEntriesCommittedAndReplicatedToAll(final Map<MemberId, RaftContext> raftServers) {
     raftServers.forEach(
         (memberId, raftServer) -> {
           final var lastCommittedEntry = getLastCommittedEntry(raftServer);
@@ -556,7 +568,7 @@ public final class ControllableRaftContexts {
               .isEqualTo(lastUncommittedEntry);
         });
 
-    assertThat(hasReplicatedAllEntries())
+    assertThat(hasReplicatedAllEntries(raftServers))
         .describedAs("All entries are replicated to all followers")
         .isTrue();
   }
@@ -607,13 +619,15 @@ public final class ControllableRaftContexts {
   }
 
   public void assertAllMembersAreReady() {
-    raftServers
-        .values()
-        .forEach(
-            raft ->
-                assertThat(raft.getState())
-                    .describedAs("Raft %s must be ready".formatted(raft.getName()))
-                    .isEqualTo(State.READY));
+    assertThat(allMembersAreReady()).isTrue();
+  }
+
+  public boolean allMembersAreReady() {
+    return raftServers.values().stream()
+        .map(RaftContext::getState)
+        .filter(state -> !READY.equals(state))
+        .findAny()
+        .isEmpty();
   }
 
   public void assertNoJournalAppendErrors() {

@@ -1,0 +1,37 @@
+name: Zeebe Long Running Migrating Benchmark
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  fetch-release:
+    name: Fetch latest release
+    runs-on: ubuntu-latest
+    outputs:
+      release-tag: ${{ steps.fetch_release.outputs.release-tag }}
+    steps:
+      - name: Fetch latest release
+        id: fetch_release
+        run: |
+          echo "release-tag=$(curl -s https://api.github.com/repos/camunda/zeebe/releases/latest | jq -r '.tag_name')" >> $GITHUB_OUTPUT
+
+  update-long-running-migrating-benchmark:
+    name: Update Long Running Migrating Benchmark with mixed load
+    needs:
+      - fetch-release
+    uses: ./.github/workflows/zeebe-benchmark.yml
+    with:
+      name: release-rolling
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: refs/tags/${{ needs.fetch-release.outputs.release-tag }}
+      benchmark-load: >
+        --set starter.rate=5
+        --set worker.replicas=1
+        --set timer.replicas=1
+        --set timer.rate=5
+        --set publisher.replicas=1
+        --set publisher.rate=5
+        --set camunda-platform.elasticsearch.master.persistence.size=128Gi
+        --set camunda-platform.zeebe.retention.minimumAge=1d

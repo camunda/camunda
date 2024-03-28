@@ -32,7 +32,7 @@ import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
-import io.camunda.operate.qa.migration.v100.BasicProcessDataGenerator;
+import io.camunda.operate.qa.migration.v110.BasicProcessDataGenerator;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
