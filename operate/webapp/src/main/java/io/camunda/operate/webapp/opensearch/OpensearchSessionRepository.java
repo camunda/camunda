@@ -26,6 +26,7 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.security.OperateSession;
 import io.camunda.operate.webapp.security.SessionRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -36,7 +37,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
@@ -49,11 +49,24 @@ import org.springframework.stereotype.Component;
 public class OpensearchSessionRepository implements SessionRepository {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSessionRepository.class);
 
-  @Autowired private RichOpenSearchClient richOpenSearchClient;
+  private final RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private GenericConversionService conversionService;
+  private final GenericConversionService conversionService;
 
-  @Autowired private OperateWebSessionIndex operateWebSessionIndex;
+  private final OperateWebSessionIndex operateWebSessionIndex;
+
+  private final HttpServletRequest request;
+
+  public OpensearchSessionRepository(
+      final RichOpenSearchClient richOpenSearchClient,
+      final GenericConversionService conversionService,
+      final OperateWebSessionIndex operateWebSessionIndex,
+      final HttpServletRequest request) {
+    this.richOpenSearchClient = richOpenSearchClient;
+    this.conversionService = conversionService;
+    this.operateWebSessionIndex = operateWebSessionIndex;
+    this.request = request;
+  }
 
   @PostConstruct
   private void setUp() {
@@ -65,7 +78,7 @@ public class OpensearchSessionRepository implements SessionRepository {
     conversionService.addConverter(byte[].class, Object.class, new DeserializingConverter());
   }
 
-  private SessionEntity toSessionEntity(OperateSession session) {
+  private SessionEntity toSessionEntity(final OperateSession session) {
     final Map<String, String> attributes =
         session.getAttributeNames().stream()
             .collect(Collectors.toMap(identity(), name -> serialize(session.getAttribute(name))));
@@ -75,10 +88,11 @@ public class OpensearchSessionRepository implements SessionRepository {
         session.getCreationTime().toEpochMilli(),
         session.getLastAccessedTime().toEpochMilli(),
         session.getMaxInactiveInterval().getSeconds(),
-        attributes);
+        attributes,
+        session.isPolling());
   }
 
-  private String serialize(Object object) {
+  private String serialize(final Object object) {
     return new String(
         Base64.getEncoder()
             .encode(
@@ -89,7 +103,7 @@ public class OpensearchSessionRepository implements SessionRepository {
                         TypeDescriptor.valueOf(byte[].class))));
   }
 
-  private OperateSession toOperateSession(SessionEntity sessionEntity) {
+  private OperateSession toOperateSession(final SessionEntity sessionEntity) {
     final OperateSession session = new OperateSession(sessionEntity.id());
     session.setCreationTime(nullable(sessionEntity.creationTime, Instant::ofEpochMilli));
     session.setLastAccessedTime(nullable(sessionEntity.lastAccessedTime, Instant::ofEpochMilli));
@@ -102,16 +116,24 @@ public class OpensearchSessionRepository implements SessionRepository {
           .forEach((key, value) -> session.setAttribute(key, deserialize(value)));
     }
 
+    try {
+      if (request != null && request.getHeader(POLLING_HEADER) != null) {
+        session.setPolling(true);
+      }
+    } catch (final Exception e) {
+      LOGGER.debug(
+          "Expected Exception: is not possible to access request as currently this is not on a request context");
+    }
     return session;
   }
 
-  private Object deserialize(String s) {
+  private Object deserialize(final String s) {
     final byte[] bytes = Base64.getDecoder().decode(s.getBytes());
     return conversionService.convert(
         bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
   }
 
-  private <A, R> R nullable(final A a, Function<A, R> f) {
+  private <A, R> R nullable(final A a, final Function<A, R> f) {
     return a == null ? null : f.apply(a);
   }
 
@@ -130,7 +152,7 @@ public class OpensearchSessionRepository implements SessionRepository {
   }
 
   @Override
-  public void save(OperateSession session) {
+  public void save(final OperateSession session) {
     final var requestBuilder =
         indexRequestBuilder(operateWebSessionIndex.getFullQualifiedName())
             .id(session.getId())
@@ -146,13 +168,13 @@ public class OpensearchSessionRepository implements SessionRepository {
           .doc()
           .getWithRetries(operateWebSessionIndex.getFullQualifiedName(), id, SessionEntity.class)
           .map(this::toOperateSession);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return Optional.empty();
     }
   }
 
   @Override
-  public void deleteById(String id) {
+  public void deleteById(final String id) {
     richOpenSearchClient.doc().deleteWithRetries(operateWebSessionIndex.getFullQualifiedName(), id);
   }
 
@@ -161,5 +183,6 @@ public class OpensearchSessionRepository implements SessionRepository {
       Long creationTime,
       Long lastAccessedTime,
       Long maxInactiveIntervalInSeconds,
-      Map<String, String> attributes) {}
+      Map<String, String> attributes,
+      Boolean polling) {}
 }

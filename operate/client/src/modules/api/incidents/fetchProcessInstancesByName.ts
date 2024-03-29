@@ -36,10 +36,15 @@ type ProcessInstanceByNameDto = {
   processes: ProcessDto[];
 };
 
-const fetchProcessInstancesByName = async () => {
-  return requestAndParse<ProcessInstanceByNameDto[]>({
-    url: '/api/incidents/byProcess',
-  });
+const fetchProcessInstancesByName = async (
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<ProcessInstanceByNameDto[]>(
+    {
+      url: '/api/incidents/byProcess',
+    },
+    options,
+  );
 };
 
 export {fetchProcessInstancesByName};

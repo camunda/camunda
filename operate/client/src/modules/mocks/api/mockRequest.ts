@@ -16,13 +16,42 @@
  */
 
 import {mockServer} from 'modules/mock-server/node';
-import {DefaultBodyType, rest} from 'msw';
+import {DefaultBodyType, RestRequest, rest} from 'msw';
+
+const checkPollingHeader = ({
+  req,
+  expectPolling,
+}: {
+  req: RestRequest;
+  expectPolling?: boolean;
+}) => {
+  if (req.headers.get('x-is-polling') !== null && expectPolling === false) {
+    console.error(
+      'Assertion error: expected x-is-polling header not to be set',
+    );
+    throw new Error();
+  }
+  if (req.headers.get('x-is-polling') !== 'true' && expectPolling === true) {
+    console.error('Assertion error: expected x-is-polling header to be true');
+    throw new Error();
+  }
+};
 
 const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
   return {
-    withSuccess: (responseData: Type) => {
+    /**
+     * @param options.expectPolling - expect that
+     * - x-is-polling header is set if expectPolling is true
+     * - x-is-polling header is not set if expectPolling is false
+     *
+     * Otherwise an error will be thrown
+     */
+    withSuccess: (responseData: Type, options?: {expectPolling?: boolean}) => {
       mockServer.use(
-        rest.post(url, (_, res, ctx) => res.once(ctx.json(responseData))),
+        rest.post(url, (req, res, ctx) => {
+          checkPollingHeader({req, expectPolling: options?.expectPolling});
+          return res.once(ctx.json(responseData));
+        }),
       );
     },
     withServerError: (statusCode: number = 500) => {
@@ -30,7 +59,7 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
         rest.post(url, (_, res, ctx) =>
           res.once(
             ctx.status(statusCode),
-            ctx.json({error: 'an error occured'}),
+            ctx.json({error: 'an error occurred'}),
           ),
         ),
       );
@@ -41,7 +70,7 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
           res.once(
             ctx.delay(100),
             ctx.status(statusCode),
-            ctx.json({error: 'an error occured'}),
+            ctx.json({error: 'an error occurred'}),
           ),
         ),
       );
@@ -61,9 +90,19 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
 
 const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
   return {
-    withSuccess: (responseData: Type) => {
+    /**
+     * @param options.expectPolling - expect that
+     * - x-is-polling header is set if expectPolling is true
+     * - x-is-polling header is not set if expectPolling is false
+     *
+     * Otherwise an error will be thrown
+     */
+    withSuccess: (responseData: Type, options?: {expectPolling?: boolean}) => {
       mockServer.use(
-        rest.get(url, (_, res, ctx) => res.once(ctx.json(responseData))),
+        rest.get(url, (req, res, ctx) => {
+          checkPollingHeader({req, expectPolling: options?.expectPolling});
+          return res.once(ctx.json(responseData));
+        }),
       );
     },
     withServerError: (statusCode: number = 500) => {
@@ -71,7 +110,7 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
         rest.get(url, (_, res, ctx) =>
           res.once(
             ctx.status(statusCode),
-            ctx.json({error: 'an error occured'}),
+            ctx.json({error: 'an error occurred'}),
           ),
         ),
       );
@@ -82,7 +121,7 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
           res.once(
             ctx.delay(100),
             ctx.status(statusCode),
-            ctx.json({error: 'an error occured'}),
+            ctx.json({error: 'an error occurred'}),
           ),
         ),
       );
@@ -112,7 +151,7 @@ const mockDeleteRequest = function <Type extends DefaultBodyType>(url: string) {
         rest.delete(url, (_, res, ctx) =>
           res.once(
             ctx.status(statusCode),
-            ctx.json({error: 'an error occured'}),
+            ctx.json({error: 'an error occurred'}),
           ),
         ),
       );
@@ -140,7 +179,7 @@ const mockXmlGetRequest = (url: string) => {
     withServerError: (statusCode: number = 500) => {
       mockServer.use(
         rest.get(url, (_, res, ctx) =>
-          res.once(ctx.status(statusCode), ctx.text('an error occured')),
+          res.once(ctx.status(statusCode), ctx.text('an error occurred')),
         ),
       );
     },
@@ -157,4 +196,10 @@ const mockXmlGetRequest = (url: string) => {
   };
 };
 
-export {mockGetRequest, mockPostRequest, mockXmlGetRequest, mockDeleteRequest};
+export {
+  mockGetRequest,
+  mockPostRequest,
+  mockXmlGetRequest,
+  mockDeleteRequest,
+  checkPollingHeader,
+};

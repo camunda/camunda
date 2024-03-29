@@ -28,6 +28,7 @@ import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.webapp.security.OperateSession;
 import io.camunda.operate.webapp.security.SessionRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -39,7 +40,6 @@ import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
@@ -53,11 +53,24 @@ public class ElasticsearchSessionRepository implements SessionRepository {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchSessionRepository.class);
 
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+  private final RetryElasticsearchClient retryElasticsearchClient;
 
-  @Autowired private GenericConversionService conversionService;
+  private final GenericConversionService conversionService;
 
-  @Autowired private OperateWebSessionIndex operateWebSessionIndex;
+  private final OperateWebSessionIndex operateWebSessionIndex;
+
+  private final HttpServletRequest request;
+
+  public ElasticsearchSessionRepository(
+      final RetryElasticsearchClient retryElasticsearchClient,
+      final GenericConversionService conversionService,
+      final OperateWebSessionIndex operateWebSessionIndex,
+      final HttpServletRequest request) {
+    this.retryElasticsearchClient = retryElasticsearchClient;
+    this.conversionService = conversionService;
+    this.operateWebSessionIndex = operateWebSessionIndex;
+    this.request = request;
+  }
 
   @PostConstruct
   private void setUp() {
@@ -96,7 +109,7 @@ public class ElasticsearchSessionRepository implements SessionRepository {
   }
 
   @Override
-  public void save(OperateSession session) {
+  public void save(final OperateSession session) {
     retryElasticsearchClient.createOrUpdateDocument(
         operateWebSessionIndex.getFullQualifiedName(), session.getId(), sessionToDocument(session));
   }
@@ -109,28 +122,28 @@ public class ElasticsearchSessionRepository implements SessionRepository {
               retryElasticsearchClient.getDocument(
                   operateWebSessionIndex.getFullQualifiedName(), id));
       return maybeDocument.flatMap(this::documentToSession);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return Optional.empty();
     }
   }
 
   @Override
-  public void deleteById(String id) {
+  public void deleteById(final String id) {
     retryElasticsearchClient.deleteDocument(operateWebSessionIndex.getFullQualifiedName(), id);
   }
 
-  private byte[] serialize(Object object) {
+  private byte[] serialize(final Object object) {
     return (byte[])
         conversionService.convert(
             object, TypeDescriptor.valueOf(Object.class), TypeDescriptor.valueOf(byte[].class));
   }
 
-  private Object deserialize(byte[] bytes) {
+  private Object deserialize(final byte[] bytes) {
     return conversionService.convert(
         bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
   }
 
-  private Map<String, Object> sessionToDocument(OperateSession session) {
+  private Map<String, Object> sessionToDocument(final OperateSession session) {
     final Map<String, byte[]> attributes = new HashMap<>();
     session
         .getAttributeNames()
@@ -147,7 +160,7 @@ public class ElasticsearchSessionRepository implements SessionRepository {
     return (String) document.get(ID);
   }
 
-  private Optional<OperateSession> documentToSession(Map<String, Object> document) {
+  private Optional<OperateSession> documentToSession(final Map<String, Object> document) {
     try {
       final String sessionId = getSessionIdFrom(document);
       final OperateSession session = new OperateSession(sessionId);
@@ -155,6 +168,8 @@ public class ElasticsearchSessionRepository implements SessionRepository {
       session.setLastAccessedTime(getInstantFor(document.get(LAST_ACCESSED_TIME)));
       session.setMaxInactiveInterval(
           getDurationFor(document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS)));
+
+      setPollingFor(session);
 
       final Object attributesObject = document.get(ATTRIBUTES);
       if (attributesObject != null
@@ -168,9 +183,21 @@ public class ElasticsearchSessionRepository implements SessionRepository {
                         name, deserialize(Base64.getDecoder().decode(attributes.get(name)))));
       }
       return Optional.of(session);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Could not restore session.", e);
       return Optional.empty();
+    }
+  }
+
+  private void setPollingFor(final OperateSession session) {
+    try {
+      if (request != null && request.getHeader(POLLING_HEADER) != null) {
+        LOGGER.info("Set session polling to true");
+        session.setPolling(true);
+      }
+    } catch (final Exception e) {
+      LOGGER.debug(
+          "Expected Exception: is not possible to access request as currently this is not on a request context");
     }
   }
 
@@ -178,8 +205,8 @@ public class ElasticsearchSessionRepository implements SessionRepository {
     if (object == null) {
       return null;
     }
-    if (object instanceof Long) {
-      return Instant.ofEpochMilli((Long) object);
+    if (object instanceof final Long instantAsLong) {
+      return Instant.ofEpochMilli(instantAsLong);
     }
     return null;
   }
@@ -188,8 +215,8 @@ public class ElasticsearchSessionRepository implements SessionRepository {
     if (object == null) {
       return null;
     }
-    if (object instanceof Integer) {
-      return Duration.ofSeconds((Integer) object);
+    if (object instanceof final Integer durationAsInteger) {
+      return Duration.ofSeconds(durationAsInteger);
     }
     return null;
   }
