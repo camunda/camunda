@@ -63,6 +63,7 @@ public class ElasticsearchExporter implements Exporter {
     validate(configuration);
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
+    indexTemplatesCreated = false;
   }
 
   @Override
@@ -105,6 +106,8 @@ public class ElasticsearchExporter implements Exporter {
   public void export(final Record<?> record) {
     if (!indexTemplatesCreated) {
       createIndexTemplates();
+
+      updateRetentionPolicyForExistingIndices();
     }
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
@@ -325,6 +328,19 @@ public class ElasticsearchExporter implements Exporter {
       log.warn(
           "Failed to acknowledge the creation or update of the index template for value type {}",
           valueType);
+    }
+  }
+
+  private void updateRetentionPolicyForExistingIndices() {
+    final boolean acknowledged;
+    if (configuration.retention.isEnabled()) {
+      acknowledged = client.bulkPutIndexLifecycleSettings(configuration.retention.getPolicyName());
+    } else {
+      acknowledged = client.bulkPutIndexLifecycleSettings(null);
+    }
+
+    if (!acknowledged) {
+      log.warn("Failed to acknowledge the the update of retention policy for existing indices");
     }
   }
 
