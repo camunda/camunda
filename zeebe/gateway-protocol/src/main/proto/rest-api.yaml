@@ -381,3 +381,8 @@ components:
           type: string
           format: uri
           description: A URI identifying the origin of the problem.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
