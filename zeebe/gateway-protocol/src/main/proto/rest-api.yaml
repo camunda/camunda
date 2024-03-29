@@ -26,14 +26,18 @@ servers:
 paths:
   /topology:
     get:
-      summary: Get cluster topology.
+      tags:
+        - Cluster
+      summary: Get cluster topology
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
         '200':
           $ref: "#/components/responses/TopologyResponse"
   /user-tasks/{userTaskKey}/completion:
     post:
-      summary: Complete a user task.
+      tags:
+        - User task
+      summary: Complete a user task
       description: Completes a user task with the given key.
       parameters:
         - name: userTaskKey
@@ -67,7 +71,9 @@ paths:
           $ref: "#/components/responses/ProblemResponse"
   /user-tasks/{userTaskKey}/assignment:
     post:
-      summary: Assigns a user task.
+      tags:
+        - User task
+      summary: Assign a user task
       description: Assigns a user task with the given key to the given assignee.
       parameters:
         - name: userTaskKey
@@ -100,7 +106,9 @@ paths:
           $ref: "#/components/responses/ProblemResponse"
   /user-tasks/{userTaskKey}:
     patch:
-      summary: Update a user task.
+      tags:
+        - User task
+      summary: Update a user task
       description: Update a user task with the given key.
       parameters:
         - name: userTaskKey
@@ -133,7 +141,9 @@ paths:
           $ref: "#/components/responses/ProblemResponse"
   /user-tasks/{userTaskKey}/assignee:
     delete:
-      summary: Remove the assignee of a task.
+      tags:
+        - User task
+      summary: Unassign a user task
       description: Removes the assignee of a task with the given key.
       parameters:
         - name: userTaskKey
@@ -371,3 +381,8 @@ components:
           type: string
           format: uri
           description: A URI identifying the origin of the problem.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
