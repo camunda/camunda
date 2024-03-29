@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { MenuItemSelectable } from "@carbon/react"
-import { within } from "@storybook/testing-library"
-import { expect } from "@storybook/jest"
+import { within, expect } from "@storybook/test"
 
 import MenuButton from "./MenuButton"
 import { Calendar } from "@carbon/icons-react"
