@@ -26,6 +26,8 @@ servers:
 paths:
   /topology:
     get:
+      tags:
+        - Cluster
       summary: Get cluster topology
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
@@ -33,6 +35,8 @@ paths:
           $ref: "#/components/responses/TopologyResponse"
   /user-tasks/{userTaskKey}/completion:
     post:
+      tags:
+        - User task
       summary: Complete a user task
       description: Completes a user task with the given key.
       parameters:
@@ -67,6 +71,8 @@ paths:
           $ref: "#/components/responses/ProblemResponse"
   /user-tasks/{userTaskKey}/assignment:
     post:
+      tags:
+        - User task
       summary: Assign a user task
       description: Assigns a user task with the given key to the given assignee.
       parameters:
@@ -100,6 +106,8 @@ paths:
           $ref: "#/components/responses/ProblemResponse"
   /user-tasks/{userTaskKey}:
     patch:
+      tags:
+        - User task
       summary: Update a user task
       description: Update a user task with the given key.
       parameters:
@@ -133,6 +141,8 @@ paths:
           $ref: "#/components/responses/ProblemResponse"
   /user-tasks/{userTaskKey}/assignee:
     delete:
+      tags:
+        - User task
       summary: Unassign a user task
       description: Removes the assignee of a task with the given key.
       parameters:
