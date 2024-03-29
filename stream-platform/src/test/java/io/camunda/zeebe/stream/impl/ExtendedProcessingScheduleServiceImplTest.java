@@ -9,8 +9,10 @@ package io.camunda.zeebe.stream.impl;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
     final var sync = mock(SimpleProcessingScheduleService.class);
     final var async = mock(SimpleProcessingScheduleService.class);
     final var concurrencyControl = mock(ConcurrencyControl.class);
+    when(concurrencyControl.createFuture()).thenReturn(new CompletableActorFuture<>());
     doAnswer(
             invocation -> {
               final var runnable = (Runnable) invocation.getArgument(0);
