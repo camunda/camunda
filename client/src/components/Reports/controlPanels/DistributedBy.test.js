@@ -15,7 +15,9 @@ import {useUiConfig} from 'hooks';
 import DistributedBy from './DistributedBy';
 
 jest.mock('hooks', () => ({
-  useUiConfig: jest.fn().mockReturnValue(true),
+  useUiConfig: jest
+    .fn()
+    .mockReturnValue({optimizeProfile: 'platform', userTaskAssigneeAnalyticsEnabled: true}),
 }));
 
 jest.mock('services', () => {
@@ -176,7 +178,16 @@ it('should not fail if variables are null', () => {
 });
 
 it('should hide assignee option when assignee analytics are disabled', async () => {
-  useUiConfig.mockImplementation(() => false);
+  useUiConfig.mockImplementation(() => ({userTaskAssigneeAnalyticsEnabled: false}));
+  const node = shallow(<DistributedBy {...config} />);
+
+  await runAllEffects();
+
+  expect(node.find({value: 'assignee'})).not.toExist();
+});
+
+it('should hide candidate group option in C8 environment', async () => {
+  useUiConfig.mockImplementation(() => ({optimizeProfile: 'cloud'}));
   const node = shallow(<DistributedBy {...config} />);
 
   await runAllEffects();

@@ -17,7 +17,10 @@ import {useUiConfig} from 'hooks';
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
-  const isUserTaskAssigneeAnalyticsEnabled = useUiConfig('userTaskAssigneeAnalyticsEnabled');
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
+    'optimizeProfile',
+    'userTaskAssigneeAnalyticsEnabled'
+  );
 
   const reportType = type;
 
@@ -42,7 +45,8 @@ export default function GroupBy({type, report, onChange, variables}) {
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (isUserTaskAssigneeAnalyticsEnabled || key !== 'assignee')
+        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee') &&
+        (optimizeProfile === 'platform' ? true : key !== 'candidateGroup')
     )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {

@@ -32,7 +32,10 @@ export function AddFiltersButton({
   const [availableVariables, setAvailableVariables] = useState([]);
   const [allowCustomValues, setAllowCustomValues] = useState(false);
   const {mightFail} = useErrorHandling();
-  const isUserTaskAssigneeAnalyticsEnabled = useUiConfig('userTaskAssigneeAnalyticsEnabled');
+  const {optimizeProfile, userTaskAssigneeAnalyticsEnabled} = useUiConfig(
+    'optimizeProfile',
+    'userTaskAssigneeAnalyticsEnabled'
+  );
 
   const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
   const hasUnsavedReports = reports.some(({id, report}) => report && !id);
@@ -118,7 +121,7 @@ export function AddFiltersButton({
           onClick={() => saveAndContinue('variable')}
           label={t('dashboard.filter.types.variable')}
         />
-        {isUserTaskAssigneeAnalyticsEnabled && (
+        {userTaskAssigneeAnalyticsEnabled && (
           <MenuItem
             key="assignee"
             title={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
@@ -127,13 +130,15 @@ export function AddFiltersButton({
             label={t('common.filter.types.assignee')}
           />
         )}
-        <MenuItem
-          key="candidateGroup"
-          title={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
-          disabled={noReports}
-          onClick={() => saveAndContinue('candidateGroup')}
-          label={t('common.filter.types.candidateGroup')}
-        />
+        {optimizeProfile === 'platform' && (
+          <MenuItem
+            key="candidateGroup"
+            title={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
+            disabled={noReports}
+            onClick={() => saveAndContinue('candidateGroup')}
+            label={t('common.filter.types.candidateGroup')}
+          />
+        )}
       </MenuButton>
 
       {showModal === 'variable' && (
