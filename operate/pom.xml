@@ -122,7 +122,7 @@
     <version.commons-compress>1.26.1</version.commons-compress>
 
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
-    <version.checkstyle>10.14.2</version.checkstyle>
+    <version.checkstyle>10.15.0</version.checkstyle>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
     <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
