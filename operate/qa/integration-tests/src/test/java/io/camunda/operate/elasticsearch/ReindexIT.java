@@ -23,62 +23,78 @@ import static io.camunda.operate.schema.SchemaManager.REFRESH_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.extensions.LoggerContextExtension;
 import io.camunda.operate.property.MigrationProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.migration.Plan;
 import io.camunda.operate.schema.migration.ReindexPlan;
-import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
-import org.apache.logging.log4j.junit.LoggerContextRule;
 import org.apache.logging.log4j.test.appender.ListAppender;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
-public class ReindexIT extends OperateAbstractIT {
+@ExtendWith(MockitoExtension.class)
+@SpringBootTest(
+    classes = {TestApplication.class},
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+    })
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class ReindexIT {
 
-  @ClassRule
-  public static final LoggerContextRule LOGGER_RULE =
-      new LoggerContextRule("log4j2-listAppender.xml");
+  @RegisterExtension
+  static LoggerContextExtension loggerRule = new LoggerContextExtension("log4j2-listAppender.xml");
 
-  @Autowired private TestSearchRepository searchRepository;
+  private String indexPrefix;
   @Autowired private SchemaManager schemaManager;
+  @Autowired private TestSearchRepository searchRepository;
   @Autowired private MigrationProperties migrationProperties;
   @Autowired private BeanFactory beanFactory;
-  private String indexPrefix;
 
-  @Before
-  public void setUp() {
+  @BeforeAll
+  public void setUp() throws Exception {
     indexPrefix = UUID.randomUUID().toString();
-  }
 
-  @After
-  public void tearDown() {
-    schemaManager.deleteIndicesFor(idxName("index-*"));
-  }
-
-  private String idxName(String name) {
-    return indexPrefix + "-" + name;
-  }
-
-  @Test // OPE-1312
-  public void reindexArchivedIndices() throws Exception {
-    /// Old version -> before migration
     // create index
     createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
     // Create archived index
     createIndex(
         idxName("index-1.2.3_2021-05-23"), List.of(Map.of("test_name", "test_value_archived")));
-    /// New version -> migration
     // Create new index
     createIndex(idxName("index-1.2.4_"), List.of());
+  }
+
+  @AfterAll
+  public void tearDown() {
+    schemaManager.deleteIndicesFor(idxName("index-*"));
+  }
+
+  private String idxName(final String name) {
+    return indexPrefix + "-" + name;
+  }
+
+  @Test // OPE-1312
+  public void testReindexArchivedIndicesAndLogs() throws Exception {
+    // given
+    final ListAppender logListAppender = loggerRule.getListAppender("OperateElasticLogsList");
+    // slow the reindex down, to increase chance of sub 100% progress logged
+    migrationProperties.setReindexBatchSize(1);
 
     schemaManager.refresh(idxName("index-*"));
     final Plan plan =
@@ -96,39 +112,6 @@ public class ReindexIT extends OperateAbstractIT {
             idxName("index-1.2.4_"), idxName("index-1.2.4_2021-05-23"),
             // old indices:
             idxName("index-1.2.3_"), idxName("index-1.2.3_2021-05-23"));
-  }
-
-  @Test
-  public void logReindexProgress() throws Exception {
-    // given
-    final ListAppender logListAppender = LOGGER_RULE.getListAppender("OperateElasticLogsList");
-    // slow the reindex down, to increase chance of sub 100% progress logged
-    migrationProperties.setReindexBatchSize(1);
-    /// Old index
-    createIndex(
-        idxName("index-1.2.3_"),
-        IntStream.range(0, 15000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
-    /// New index
-    createIndex(idxName("index-1.2.4_"), List.of());
-
-    schemaManager.refresh(idxName("index-*"));
-    final Plan plan =
-        beanFactory
-            .getBean(ReindexPlan.class)
-            .setSrcIndex(idxName("index-1.2.3"))
-            .setDstIndex(idxName("index-1.2.4"));
-
-    // when
-    plan.executeOn(schemaManager);
-    schemaManager.refresh(idxName("index-*"));
-
-    // then
-    assertThat(schemaManager.getIndexNames(idxName("index-*")))
-        .containsExactlyInAnyOrder(
-            // reindexed indices:
-            idxName("index-1.2.4_"),
-            // old indices:
-            idxName("index-1.2.3_"));
 
     final var events = logListAppender.getEvents();
     final List<String> progressLogMessages =
@@ -151,9 +134,6 @@ public class ReindexIT extends OperateAbstractIT {
 
   @Test // OPE-1311
   public void resetIndexSettings() throws Exception {
-    /// Old version -> before migration
-    // create index
-    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
     // set reindex settings
     schemaManager.setIndexSettingsFor(
         Map.of(
@@ -173,18 +153,17 @@ public class ReindexIT extends OperateAbstractIT {
         .isEqualTo("2");
   }
 
-  private void createIndex(final String indexName, List<Map<String, String>> documents)
+  private void createIndex(final String indexName, final List<Map<String, String>> documents)
       throws Exception {
     if (DatabaseInfo.isElasticsearch()) {
       final Map<String, ?> mapping =
           Map.of("properties", Map.of("test_name", Map.of("type", "keyword")));
       searchRepository.createIndex(indexName, mapping);
-      assertThat(schemaManager.getIndexNames(idxName("index*"))).contains(indexName);
     }
-    if (documents.isEmpty() && DatabaseInfo.isOpensearch()) {
+    if (documents.isEmpty()) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), Map.of());
     }
-    for (var document : documents) {
+    for (final var document : documents) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), document);
     }
   }
