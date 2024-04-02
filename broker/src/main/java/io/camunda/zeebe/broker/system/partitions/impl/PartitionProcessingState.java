@@ -135,7 +135,8 @@ public class PartitionProcessingState {
                 getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
         if (state == null || state.isEmpty() || state.isBlank()) {
           // Backwards compatibility. If the file exists, it is paused.
-          setPersistedExporterState(ExporterState.PAUSED);
+          exporterState = ExporterState.PAUSED;
+          return;
         }
         exporterState = ExporterState.valueOf(state);
       }
