@@ -21,7 +21,7 @@ public final class JacksonConfig {
   @Primary
   public Jackson2ObjectMapperBuilder restObjectMapper() {
     return new Jackson2ObjectMapperBuilder()
-        .serializationInclusion(Include.NON_NULL)
+        .serializationInclusion(Include.NON_EMPTY)
         // required for consistent parsing between the client and the REST API
         .modules(new JavaTimeModule(), new Jdk8Module());
   }

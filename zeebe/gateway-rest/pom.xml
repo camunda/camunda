@@ -240,7 +240,7 @@
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
               <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
