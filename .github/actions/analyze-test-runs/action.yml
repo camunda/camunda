@@ -33,6 +33,7 @@ runs:
     env:
       BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
     run: |
+      set -eoux
       if [ ! -s "$BUILD_OUTPUT_FILE_PATH" ]; then
         echo "::error::Build output file does not exist or is empty!"
         exit 1
