@@ -227,6 +227,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
         {
           id: '2251799813686256',
@@ -249,6 +250,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
       ]),
     );
@@ -287,6 +289,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
         {
           id: '2251799813686256',
@@ -309,6 +312,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
       ]),
     );
@@ -347,6 +351,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
         {
           id: '2251799813686256',
@@ -369,6 +374,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
       ]),
     );
@@ -405,6 +411,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
         {
           id: '2251799813686256',
@@ -427,6 +434,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
       ]),
     );
@@ -463,6 +471,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
         {
           id: '2251799813686256',
@@ -485,6 +494,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
       ]),
     );
@@ -523,6 +533,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
         {
           id: '2251799813686256',
@@ -545,6 +556,7 @@ test.describe('tasks page', () => {
           processInstanceKey: '4503599627371064',
           candidateGroups: null,
           candidateUsers: null,
+          context: null,
         },
       ]),
     );
@@ -582,6 +594,7 @@ test.describe('tasks page', () => {
             completionDate: null,
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
+            context: null,
           },
         ],
         NON_FORM_TASK,
@@ -621,6 +634,7 @@ test.describe('tasks page', () => {
             completionDate: null,
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
+            context: null,
           },
         ],
         {
@@ -664,6 +678,7 @@ test.describe('tasks page', () => {
             completionDate: null,
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
+            context: null,
           },
         ],
         {
@@ -706,6 +721,7 @@ test.describe('tasks page', () => {
             completionDate: null,
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
+            context: null,
           },
         ],
         {
@@ -750,6 +766,7 @@ test.describe('tasks page', () => {
             completionDate: null,
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
+            context: null,
           },
         ],
         {
@@ -795,6 +812,7 @@ test.describe('tasks page', () => {
             processInstanceKey: '4503599627371425',
             candidateGroups: null,
             candidateUsers: null,
+            context: null,
           },
         ],
         {
@@ -839,6 +857,7 @@ test.describe('tasks page', () => {
             processInstanceKey: '4503599627371425',
             candidateGroups: null,
             candidateUsers: null,
+            context: null,
           },
         ],
         {
@@ -861,6 +880,7 @@ test.describe('tasks page', () => {
     const NON_FORM_TASK_WITH_TENANT = {
       ...NON_FORM_TASK,
       tenantId: MOCK_TENANTS[0].id,
+      context: null,
     };
 
     await page.route('**/client-config.js', (route) =>

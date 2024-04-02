@@ -19,6 +19,15 @@ $ENTRY_FOCUSED_BORDER_WIDTH: 2px;
   &.labelPrimary {
     color: var(--cds-text-primary);
   }
+
+  &.contextWrap {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+  }
 }
 
 .name {

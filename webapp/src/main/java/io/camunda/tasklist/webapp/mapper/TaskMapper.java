@@ -16,6 +16,8 @@ import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,41 +25,66 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskMapper {
 
+  public static final String TASK_DESCRIPTION = "taskContextDisplayName";
+
   @Autowired private ProcessCache processCache;
 
-  public TaskSearchResponse toTaskSearchResponse(TaskDTO taskDTO) {
-    return new TaskSearchResponse()
-        .setId(taskDTO.getId())
-        .setName(this.getName(taskDTO))
-        .setTaskDefinitionId(taskDTO.getFlowNodeBpmnId())
-        .setProcessName(this.getProcessName(taskDTO))
-        .setCreationDate(taskDTO.getCreationTime())
-        .setCompletionDate(taskDTO.getCompletionTime())
-        .setAssignee(taskDTO.getAssignee())
-        .setTaskState(taskDTO.getTaskState())
-        .setSortValues(taskDTO.getSortValues())
-        .setIsFirst(taskDTO.getIsFirst())
-        .setFormKey(taskDTO.getFormKey())
-        .setFormId(taskDTO.getFormId())
-        .setFormVersion(taskDTO.getFormVersion())
-        .setIsFormEmbedded(taskDTO.getIsFormEmbedded())
-        .setProcessDefinitionKey(taskDTO.getProcessDefinitionId())
-        .setProcessInstanceKey(taskDTO.getProcessInstanceId())
-        .setTenantId(taskDTO.getTenantId())
-        .setDueDate(taskDTO.getDueDate())
-        .setFollowUpDate(taskDTO.getFollowUpDate())
-        .setCandidateGroups(taskDTO.getCandidateGroups())
-        .setCandidateUsers(taskDTO.getCandidateUsers())
-        .setVariables(
-            taskDTO.getVariables() != null
-                ? Stream.of(taskDTO.getVariables())
-                    .map(this::toVariableSearchResponse)
-                    .toArray(VariableSearchResponse[]::new)
-                : null)
-        .setImplementation(taskDTO.getImplementation());
+  public TaskSearchResponse toTaskSearchResponse(final TaskDTO taskDTO) {
+    final TaskSearchResponse response =
+        new TaskSearchResponse()
+            .setId(taskDTO.getId())
+            .setName(getName(taskDTO))
+            .setTaskDefinitionId(taskDTO.getFlowNodeBpmnId())
+            .setProcessName(getProcessName(taskDTO))
+            .setCreationDate(taskDTO.getCreationTime())
+            .setCompletionDate(taskDTO.getCompletionTime())
+            .setAssignee(taskDTO.getAssignee())
+            .setTaskState(taskDTO.getTaskState())
+            .setSortValues(taskDTO.getSortValues())
+            .setIsFirst(taskDTO.getIsFirst())
+            .setFormKey(taskDTO.getFormKey())
+            .setFormId(taskDTO.getFormId())
+            .setFormVersion(taskDTO.getFormVersion())
+            .setIsFormEmbedded(taskDTO.getIsFormEmbedded())
+            .setProcessDefinitionKey(taskDTO.getProcessDefinitionId())
+            .setProcessInstanceKey(taskDTO.getProcessInstanceId())
+            .setTenantId(taskDTO.getTenantId())
+            .setDueDate(taskDTO.getDueDate())
+            .setFollowUpDate(taskDTO.getFollowUpDate())
+            .setCandidateGroups(taskDTO.getCandidateGroups())
+            .setCandidateUsers(taskDTO.getCandidateUsers())
+            .setImplementation(taskDTO.getImplementation());
+
+    if (taskDTO.getVariables() != null) {
+      final VariableSearchResponse[] allVariables =
+          Stream.of(taskDTO.getVariables())
+              .map(this::toVariableSearchResponse)
+              .toArray(VariableSearchResponse[]::new);
+
+      final VariableSearchResponse[] filteredVariables =
+          Arrays.stream(allVariables)
+              .filter(variable -> !variable.getName().equals(TASK_DESCRIPTION))
+              .toArray(VariableSearchResponse[]::new);
+
+      String taskDescriptions =
+          Arrays.stream(allVariables)
+              .filter(variable -> variable.getName().equals(TASK_DESCRIPTION))
+              .map(VariableSearchResponse::getValue)
+              .map(value -> value.replaceAll("\"", "")) // Remove quotes for FE
+              .collect(Collectors.joining());
+
+      if (taskDescriptions.isEmpty()) {
+        taskDescriptions = null;
+      }
+
+      response.setVariables(filteredVariables);
+      response.setContext(taskDescriptions);
+    }
+
+    return response;
   }
 
-  private VariableSearchResponse toVariableSearchResponse(VariableDTO variableDTO) {
+  private VariableSearchResponse toVariableSearchResponse(final VariableDTO variableDTO) {
     return new VariableSearchResponse()
         .setId(variableDTO.getId())
         .setName(variableDTO.getName())
@@ -74,12 +101,12 @@ public class TaskMapper {
         .setPreviewValue(variableDTO.getPreviewValue());
   }
 
-  public TaskResponse toTaskResponse(TaskDTO taskDTO) {
+  public TaskResponse toTaskResponse(final TaskDTO taskDTO) {
     return new TaskResponse()
         .setId(taskDTO.getId())
-        .setName(this.getName(taskDTO))
+        .setName(getName(taskDTO))
         .setTaskDefinitionId(taskDTO.getFlowNodeBpmnId())
-        .setProcessName(this.getProcessName(taskDTO))
+        .setProcessName(getProcessName(taskDTO))
         .setCreationDate(taskDTO.getCreationTime())
         .setCompletionDate(taskDTO.getCompletionTime())
         .setAssignee(taskDTO.getAssignee())
@@ -98,7 +125,7 @@ public class TaskMapper {
         .setImplementation(taskDTO.getImplementation());
   }
 
-  public TaskQueryDTO toTaskQuery(TaskSearchRequest searchRequest) {
+  public TaskQueryDTO toTaskQuery(final TaskSearchRequest searchRequest) {
     return new TaskQueryDTO()
         .setState(searchRequest.getState())
         .setAssigned(searchRequest.getAssigned())
@@ -124,13 +151,13 @@ public class TaskMapper {
         .setImplementation(searchRequest.getImplementation());
   }
 
-  public String getName(TaskDTO task) {
+  public String getName(final TaskDTO task) {
     return defaultIfNull(
         processCache.getTaskName(task.getProcessDefinitionId(), task.getFlowNodeBpmnId()),
         task.getFlowNodeBpmnId());
   }
 
-  public String getProcessName(TaskDTO task) {
+  public String getProcessName(final TaskDTO task) {
     return defaultIfNull(
         processCache.getProcessName(task.getProcessDefinitionId()), task.getBpmnProcessId());
   }

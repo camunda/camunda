@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -110,7 +111,73 @@ class TaskControllerTest {
               .setSearchAfter(new String[] {"123", "456"});
       final var searchQuery = mock(TaskQueryDTO.class);
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
+      when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
+          .thenReturn(List.of(providedTask));
+      when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+      // Then
+      assertThat(result).singleElement().isEqualTo(taskResponse);
+    }
+
+    @Test
+    void searchTaskWithContextVariable() throws Exception {
+      // Given
+      final var providedTask =
+          new TaskDTO()
+              .setId("111111")
+              .setFlowNodeBpmnId("Register the passenger")
+              .setBpmnProcessId("Flight registration")
+              .setAssignee("demo")
+              .setCreationTime("2023-02-20T18:37:19.214+0000")
+              .setTaskState(TaskState.CREATED)
+              .setSortValues(new String[] {"123", "456"})
+              .setVariables(
+                  new VariableDTO[] {
+                    new VariableDTO()
+                        .setId("varA_id")
+                        .setName(TASK_DESCRIPTION)
+                        .setPreviewValue("\"Hi, I am a context variable\"")
+                        .setValue("\"Hi, I am a context variable\"")
+                        .setIsValueTruncated(true)
+                  });
+      final var taskResponse =
+          new TaskSearchResponse()
+              .setId("111111")
+              .setName("Register the passenger")
+              .setProcessName("Flight registration")
+              .setAssignee("demo")
+              .setCreationDate("2023-02-20T18:37:19.214+0000")
+              .setTaskState(TaskState.CREATED)
+              .setSortValues(new String[] {"123", "456"})
+              .setContext("Hi, I am a context variable");
+      final var searchRequest =
+          new TaskSearchRequest()
+              .setPageSize(20)
+              .setState(TaskState.CREATED)
+              .setAssigned(true)
+              .setSearchAfter(new String[] {"123", "456"});
+      final var searchQuery = mock(TaskQueryDTO.class);
+      when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+      when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
+          .thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
       // When
@@ -186,7 +253,7 @@ class TaskControllerTest {
                   });
       final var searchQuery = mock(TaskQueryDTO.class);
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, Set.of("varA"), true))
+      when(taskService.getTasks(searchQuery, Set.of("varA", TASK_DESCRIPTION), true))
           .thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
@@ -224,7 +291,7 @@ class TaskControllerTest {
               .setSearchAfterOrEqual(new String[] {"456"});
       final var searchQuery = mock(TaskQueryDTO.class);
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptySet(), false))
+      when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
           .thenThrow(
               new InvalidRequestException(
                   "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request."));
@@ -265,7 +332,8 @@ class TaskControllerTest {
       final var searchRequest = new TaskSearchRequest().setPageSize(50);
       final var searchQuery = new TaskQueryDTO().setPageSize(50);
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
+      when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
+          .thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
       // When
@@ -970,7 +1038,7 @@ class TaskControllerTest {
         when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
         when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-        when(taskService.getTasks(searchQuery, emptySet(), false))
+        when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
             .thenReturn(List.of(providedTask));
         when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
@@ -1032,7 +1100,7 @@ class TaskControllerTest {
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-        when(taskService.getTasks(searchQuery, emptySet(), false))
+        when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
             .thenReturn(List.of(providedTask));
         when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
@@ -1094,7 +1162,7 @@ class TaskControllerTest {
         when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
         when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-        when(taskService.getTasks(searchQuery, emptySet(), false))
+        when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
             .thenReturn(List.of(providedTask));
         when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
@@ -1759,7 +1827,7 @@ class TaskControllerTest {
     private static final String ERROR_MSG =
         "This operation is not supported using Tasklist V1 API. Please use the latest API. For more information, refer to the documentation: https://docs.camunda.tasklist";
 
-    private String taskId = "taskId";
+    private final String taskId = "taskId";
 
     @BeforeEach
     public void setUp() {

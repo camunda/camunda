@@ -27,6 +27,7 @@ type Props = {
   taskId: TaskType['id'];
   name: TaskType['name'];
   processName: TaskType['processName'];
+  context: TaskType['context'];
   assignee: TaskType['assignee'];
   creationDate: TaskType['creationDate'];
   followUpDate: TaskType['followUpDate'];
@@ -42,6 +43,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
       taskId,
       name,
       processName,
+      context,
       assignee,
       creationDate,
       followUpDate,
@@ -123,6 +125,21 @@ const Task = React.forwardRef<HTMLElement, Props>(
               <BodyCompact $variant="02">{name}</BodyCompact>
               <Label $variant="secondary">{processName}</Label>
             </Row>
+
+            {context === null ? null : (
+              <Row>
+                <Label
+                  $variant="secondary"
+                  $shouldWrap
+                  title={context.replace(/\\n/g, '\n')}
+                >
+                  {context.split('\\n').map((line, index) => (
+                    <div key={index}>{line}</div>
+                  ))}
+                </Label>
+              </Row>
+            )}
+
             <Row>
               <Label $variant="secondary">
                 <AssigneeTag currentUser={currentUser} assignee={assignee} />

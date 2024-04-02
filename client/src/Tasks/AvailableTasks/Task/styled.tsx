@@ -5,8 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-/* istanbul ignore file */
-
 import {Stack as BaseStack} from '@carbon/react';
 import {NavLink} from 'react-router-dom';
 import styles from './styles.module.scss';
@@ -15,18 +13,21 @@ import {forwardRef} from 'react';
 
 type LabelProps = {
   $variant: 'primary' | 'secondary';
+  $shouldWrap?: boolean;
 };
 
 const Label: React.FC<React.ComponentProps<'span'> & LabelProps> = ({
   className = '',
   children,
   $variant,
+  $shouldWrap,
   ...rest
 }) => (
   <span
     {...rest}
     className={cn(className, styles.label, {
       [styles.labelPrimary]: $variant === 'primary',
+      [styles.contextWrap]: $shouldWrap,
     })}
   >
     {children}

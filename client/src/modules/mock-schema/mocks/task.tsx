@@ -41,6 +41,7 @@ const unassignedTask = (
   candidateGroups: ['accounting candidate'],
   candidateUsers: ['jane candidate'],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const unassignedTaskWithForm = (
@@ -67,6 +68,7 @@ const unassignedTaskWithForm = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const unassignedTaskWithFormDeployed = (
@@ -93,6 +95,7 @@ const unassignedTaskWithFormDeployed = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const completedTask = (
@@ -119,6 +122,7 @@ const completedTask = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const completedTaskWithForm = (
@@ -145,6 +149,7 @@ const completedTaskWithForm = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const completedTaskWithFormDeployed = (
@@ -171,6 +176,7 @@ const completedTaskWithFormDeployed = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const assignedTask = (
@@ -197,6 +203,7 @@ const assignedTask = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const assignedTaskWithForm = (
@@ -223,6 +230,7 @@ const assignedTaskWithForm = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 const assignedTaskWithFormDeployed = (
@@ -249,6 +257,7 @@ const assignedTaskWithFormDeployed = (
   candidateGroups: [],
   candidateUsers: [],
   tenantId: DEFAULT_TENANT_ID,
+  context: 'My Task',
 });
 
 export {

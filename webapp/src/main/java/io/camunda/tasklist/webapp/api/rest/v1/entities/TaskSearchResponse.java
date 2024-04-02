@@ -103,13 +103,16 @@ public class TaskSearchResponse {
                   "An array of the task's variables. Only variables specified in `TaskSearchRequest.includeVariables` are returned. Note that a variable's draft value is not returned in `TaskSearchResponse`."))
   private VariableSearchResponse[] variables;
 
+  @Schema(description = "The context variable (from modeler) of the task.")
+  private String context;
+
   private TaskImplementation implementation;
 
   public String getId() {
     return id;
   }
 
-  public TaskSearchResponse setId(String id) {
+  public TaskSearchResponse setId(final String id) {
     this.id = id;
     return this;
   }
@@ -118,7 +121,7 @@ public class TaskSearchResponse {
     return name;
   }
 
-  public TaskSearchResponse setName(String name) {
+  public TaskSearchResponse setName(final String name) {
     this.name = name;
     return this;
   }
@@ -127,7 +130,7 @@ public class TaskSearchResponse {
     return taskDefinitionId;
   }
 
-  public TaskSearchResponse setTaskDefinitionId(String taskDefinitionId) {
+  public TaskSearchResponse setTaskDefinitionId(final String taskDefinitionId) {
     this.taskDefinitionId = taskDefinitionId;
     return this;
   }
@@ -136,7 +139,7 @@ public class TaskSearchResponse {
     return processName;
   }
 
-  public TaskSearchResponse setProcessName(String processName) {
+  public TaskSearchResponse setProcessName(final String processName) {
     this.processName = processName;
     return this;
   }
@@ -145,7 +148,7 @@ public class TaskSearchResponse {
     return creationDate;
   }
 
-  public TaskSearchResponse setCreationDate(String creationDate) {
+  public TaskSearchResponse setCreationDate(final String creationDate) {
     this.creationDate = creationDate;
     return this;
   }
@@ -154,7 +157,7 @@ public class TaskSearchResponse {
     return completionDate;
   }
 
-  public TaskSearchResponse setCompletionDate(String completionDate) {
+  public TaskSearchResponse setCompletionDate(final String completionDate) {
     this.completionDate = completionDate;
     return this;
   }
@@ -163,7 +166,7 @@ public class TaskSearchResponse {
     return assignee;
   }
 
-  public TaskSearchResponse setAssignee(String assignee) {
+  public TaskSearchResponse setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -172,7 +175,7 @@ public class TaskSearchResponse {
     return taskState;
   }
 
-  public TaskSearchResponse setTaskState(TaskState taskState) {
+  public TaskSearchResponse setTaskState(final TaskState taskState) {
     this.taskState = taskState;
     return this;
   }
@@ -181,7 +184,7 @@ public class TaskSearchResponse {
     return sortValues;
   }
 
-  public TaskSearchResponse setSortValues(String[] sortValues) {
+  public TaskSearchResponse setSortValues(final String[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -190,7 +193,7 @@ public class TaskSearchResponse {
     return isFirst;
   }
 
-  public TaskSearchResponse setIsFirst(boolean first) {
+  public TaskSearchResponse setIsFirst(final boolean first) {
     isFirst = first;
     return this;
   }
@@ -199,7 +202,7 @@ public class TaskSearchResponse {
     return formKey;
   }
 
-  public TaskSearchResponse setFormKey(String formKey) {
+  public TaskSearchResponse setFormKey(final String formKey) {
     this.formKey = formKey;
     return this;
   }
@@ -208,7 +211,7 @@ public class TaskSearchResponse {
     return formId;
   }
 
-  public TaskSearchResponse setFormId(String formId) {
+  public TaskSearchResponse setFormId(final String formId) {
     this.formId = formId;
     return this;
   }
@@ -217,7 +220,7 @@ public class TaskSearchResponse {
     return formVersion;
   }
 
-  public TaskSearchResponse setFormVersion(Long formVersion) {
+  public TaskSearchResponse setFormVersion(final Long formVersion) {
     this.formVersion = formVersion;
     return this;
   }
@@ -226,7 +229,7 @@ public class TaskSearchResponse {
     return isFormEmbedded;
   }
 
-  public TaskSearchResponse setIsFormEmbedded(Boolean isFormEmbedded) {
+  public TaskSearchResponse setIsFormEmbedded(final Boolean isFormEmbedded) {
     this.isFormEmbedded = isFormEmbedded;
     return this;
   }
@@ -235,7 +238,7 @@ public class TaskSearchResponse {
     return processDefinitionKey;
   }
 
-  public TaskSearchResponse setProcessDefinitionKey(String processDefinitionKey) {
+  public TaskSearchResponse setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -244,7 +247,7 @@ public class TaskSearchResponse {
     return processInstanceKey;
   }
 
-  public TaskSearchResponse setProcessInstanceKey(String processInstanceKey) {
+  public TaskSearchResponse setProcessInstanceKey(final String processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -253,7 +256,7 @@ public class TaskSearchResponse {
     return tenantId;
   }
 
-  public TaskSearchResponse setTenantId(String tenantId) {
+  public TaskSearchResponse setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -262,7 +265,7 @@ public class TaskSearchResponse {
     return dueDate;
   }
 
-  public TaskSearchResponse setDueDate(OffsetDateTime dueDate) {
+  public TaskSearchResponse setDueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -271,7 +274,7 @@ public class TaskSearchResponse {
     return followUpDate;
   }
 
-  public TaskSearchResponse setFollowUpDate(OffsetDateTime followUpDate) {
+  public TaskSearchResponse setFollowUpDate(final OffsetDateTime followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -280,7 +283,7 @@ public class TaskSearchResponse {
     return candidateGroups;
   }
 
-  public TaskSearchResponse setCandidateGroups(String[] candidateGroups) {
+  public TaskSearchResponse setCandidateGroups(final String[] candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -289,7 +292,7 @@ public class TaskSearchResponse {
     return candidateUsers;
   }
 
-  public TaskSearchResponse setCandidateUsers(String[] candidateUsers) {
+  public TaskSearchResponse setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -298,7 +301,7 @@ public class TaskSearchResponse {
     return variables;
   }
 
-  public TaskSearchResponse setVariables(VariableSearchResponse[] variables) {
+  public TaskSearchResponse setVariables(final VariableSearchResponse[] variables) {
     this.variables = variables;
     return this;
   }
@@ -307,43 +310,18 @@ public class TaskSearchResponse {
     return implementation;
   }
 
-  public TaskSearchResponse setImplementation(TaskImplementation implementation) {
+  public TaskSearchResponse setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
     return this;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final TaskSearchResponse that = (TaskSearchResponse) o;
-    return isFirst == that.isFirst
-        && implementation == that.implementation
-        && Objects.equals(id, that.id)
-        && Objects.equals(name, that.name)
-        && Objects.equals(taskDefinitionId, that.taskDefinitionId)
-        && Objects.equals(processName, that.processName)
-        && Objects.equals(creationDate, that.creationDate)
-        && Objects.equals(completionDate, that.completionDate)
-        && Objects.equals(assignee, that.assignee)
-        && taskState == that.taskState
-        && Arrays.equals(sortValues, that.sortValues)
-        && Objects.equals(formKey, that.formKey)
-        && Objects.equals(formId, that.formId)
-        && Objects.equals(formVersion, that.formVersion)
-        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
-        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
-        && Objects.equals(processInstanceKey, that.processInstanceKey)
-        && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(dueDate, that.dueDate)
-        && Objects.equals(followUpDate, that.followUpDate)
-        && Arrays.equals(candidateGroups, that.candidateGroups)
-        && Arrays.equals(candidateUsers, that.candidateUsers)
-        && Arrays.equals(variables, that.variables);
+  public String getContext() {
+    return context;
+  }
+
+  public TaskSearchResponse setContext(final String context) {
+    this.context = context;
+    return this;
   }
 
   @Override
@@ -368,12 +346,48 @@ public class TaskSearchResponse {
             tenantId,
             dueDate,
             followUpDate,
-            implementation);
+            implementation,
+            context);
     result = 31 * result + Arrays.hashCode(sortValues);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(variables);
     return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TaskSearchResponse that = (TaskSearchResponse) o;
+    return isFirst == that.isFirst
+        && implementation == that.implementation
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(taskDefinitionId, that.taskDefinitionId)
+        && Objects.equals(processName, that.processName)
+        && Objects.equals(creationDate, that.creationDate)
+        && Objects.equals(completionDate, that.completionDate)
+        && Objects.equals(assignee, that.assignee)
+        && Objects.equals(context, that.context)
+        && taskState == that.taskState
+        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.equals(formKey, that.formKey)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(formVersion, that.formVersion)
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(dueDate, that.dueDate)
+        && Objects.equals(followUpDate, that.followUpDate)
+        && Arrays.equals(candidateGroups, that.candidateGroups)
+        && Arrays.equals(candidateUsers, that.candidateUsers)
+        && Arrays.equals(variables, that.variables);
   }
 
   @Override
@@ -402,6 +416,7 @@ public class TaskSearchResponse {
         .add("candidateGroups=" + Arrays.toString(candidateGroups))
         .add("candidateUsers=" + Arrays.toString(candidateUsers))
         .add("variables=" + Arrays.toString(variables))
+        .add("taskContext='" + context + "'")
         .toString();
   }
 }

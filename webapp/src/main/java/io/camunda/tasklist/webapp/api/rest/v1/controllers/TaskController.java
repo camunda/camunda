@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.tasklist.entities.TaskImplementation;
@@ -40,6 +41,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -68,7 +70,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskController extends ApiErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskController.class);
-
   private static final String ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED =
       "This operation is not supported using Tasklist V1 API. Please use the latest API. For more information, refer to the documentation: %s";
   private static final String USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR =
@@ -122,20 +123,31 @@ public class TaskController extends ApiErrorController {
       }
     }
 
-    final Map<String, Boolean> variableNamesToReturnFullValue;
-    if (searchRequest != null && searchRequest.getIncludeVariables() != null) {
-      variableNamesToReturnFullValue =
-          Arrays.stream(searchRequest.getIncludeVariables())
-              .collect(
-                  Collectors.toMap(
-                      IncludeVariable::getName, IncludeVariable::isAlwaysReturnFullValue));
-    } else {
-      variableNamesToReturnFullValue = Collections.emptyMap();
-    }
+    // TODO  This is a temporary solution to include the taskDescription in the contextVariables
+    // In the future we may have more than one context variable, so we add dynamically here
+    final Map<String, Boolean> contextVariables = Map.of(TASK_DESCRIPTION, false);
+
+    final Map<String, Boolean> variableNamesToReturnFullValue = new HashMap<>();
+
+    variableNamesToReturnFullValue.put(TASK_DESCRIPTION, false);
+
+    variableNamesToReturnFullValue.putAll(
+        Optional.ofNullable(searchRequest)
+            .map(TaskSearchRequest::getIncludeVariables)
+            .map(
+                variables ->
+                    Arrays.stream(variables)
+                        .collect(
+                            Collectors.toMap(
+                                IncludeVariable::getName,
+                                IncludeVariable::isAlwaysReturnFullValue)))
+            .orElse(Collections.emptyMap()));
 
     final Set<String> includeVariableNames = variableNamesToReturnFullValue.keySet();
+
     final boolean fetchFullValuesFromDB =
-        variableNamesToReturnFullValue.values().stream().anyMatch(Boolean::booleanValue);
+        variableNamesToReturnFullValue.entrySet().stream().anyMatch(Map.Entry::getValue);
+
     final var tasks =
         taskService.getTasks(query, includeVariableNames, fetchFullValuesFromDB).stream()
             .map(taskMapper::toTaskSearchResponse)

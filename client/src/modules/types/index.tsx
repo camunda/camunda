@@ -68,6 +68,7 @@ type Task = {
   candidateGroups: string[];
   candidateUsers: string[];
   tenantId: string | '<default>';
+  context: string | null;
 };
 
 type Form = {

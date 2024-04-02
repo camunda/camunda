@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
+import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +63,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   private TasklistTester createTask(
-      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances) {
+      final String bpmnProcessId, final String flowNodeBpmnId, final int numberOfInstances) {
     return tester
         .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
         .then()
@@ -73,7 +74,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .taskIsCreated(flowNodeBpmnId);
   }
 
-  private TasklistTester createTask(String bpmnProcessId, String flowNodeBpmnId, String payload) {
+  private TasklistTester createTask(
+      final String bpmnProcessId, final String flowNodeBpmnId, final String payload) {
     return tester
         .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
         .then()
@@ -85,7 +87,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   private TasklistTester createTaskWithCandidateGroup(
-      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances, String candidateGroup) {
+      final String bpmnProcessId,
+      final String flowNodeBpmnId,
+      final int numberOfInstances,
+      final String candidateGroup) {
     return tester
         .createAndDeploySimpleProcessWithCandidateGroup(
             bpmnProcessId, flowNodeBpmnId, candidateGroup)
@@ -98,7 +103,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   private TasklistTester createTaskWithCandidateUser(
-      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances, String candidateUser) {
+      final String bpmnProcessId,
+      final String flowNodeBpmnId,
+      final int numberOfInstances,
+      final String candidateUser) {
     return tester
         .createAndDeploySimpleProcessWithCandidateUser(bpmnProcessId, flowNodeBpmnId, candidateUser)
         .then()
@@ -110,7 +118,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   private TasklistTester createTaskWithAssignee(
-      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances, String assignee) {
+      final String bpmnProcessId,
+      final String flowNodeBpmnId,
+      final int numberOfInstances,
+      final String assignee) {
     return tester
         .createAndDeploySimpleProcessWithAssignee(bpmnProcessId, flowNodeBpmnId, assignee)
         .then()
@@ -313,7 +324,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "simpleTestProcess";
       final String flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
       final var taskId =
-          createTask(bpmnProcessId, flowNodeBpmnId, "{\"var1\": 111, \"var2\": 22.2}").getTaskId();
+          createTask(
+                  bpmnProcessId, flowNodeBpmnId, "{\"var1\": 111, \"var2\": 22.2, \"var2\": 22.2}")
+              .getTaskId();
 
       // when
       final var result =
@@ -489,6 +502,28 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extracting("name", "value")
           .containsExactlyInAnyOrder(
               tuple("a", "1"), tuple("c", "3"), tuple("a", "1"), tuple("c", "3"));
+    }
+
+    @Test
+    public void searchTasksShouldReturnContextVariable() {
+      // given
+      final String bpmnProcessId = "simpleTestProcess";
+      final String flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
+      createTask(bpmnProcessId, flowNodeBpmnId, 1)
+          .claimAndCompleteHumanTask(
+              flowNodeBpmnId, TASK_DESCRIPTION, "\"Context\"", "b", "2", "c", "3");
+
+      // when
+      final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
+
+      // then
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .hasSize(1)
+          .extracting("context")
+          .containsExactlyInAnyOrder("Context");
     }
 
     @Test

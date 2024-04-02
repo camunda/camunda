@@ -33,6 +33,7 @@ const tasks: Task[] = [
     candidateGroups: [],
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
+    context: 'My Task',
   },
   {
     id: '1',
@@ -56,6 +57,7 @@ const tasks: Task[] = [
     candidateGroups: [],
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
+    context: 'My Task',
   },
   {
     id: '2',
@@ -79,6 +81,7 @@ const tasks: Task[] = [
     candidateGroups: [],
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
+    context: 'My Task',
   },
 ];
 
@@ -121,6 +124,7 @@ const generateTask = (id: string, name?: string): Task => {
     candidateGroups: [],
     candidateUsers: [],
     tenantId: DEFAULT_TENANT_ID,
+    context: 'My Task',
   };
 };
 
