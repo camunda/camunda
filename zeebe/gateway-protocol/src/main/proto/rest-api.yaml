@@ -1,4 +1,4 @@
-openapi: "3.1.0"
+openapi: "3.0.3"
 info:
   title: Zeebe REST API
   version: "0.1"
@@ -63,12 +63,18 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The user task with the given key cannot be completed.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}/assignment:
     post:
       tags:
@@ -98,12 +104,18 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The assignment of the user task with the given key cannot be completed.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}:
     patch:
       tags:
@@ -133,12 +145,18 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The user task with the given key cannot be updated.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}/assignee:
     delete:
       tags:
@@ -162,12 +180,18 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The user task with the given key cannot be unassigned.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
 components:
   responses:
@@ -263,10 +287,10 @@ components:
       type: object
       properties:
         variables:
+          additionalProperties: true
           description: The variables to complete the user task with.
           type: object
           nullable: true
-          $ref: "#/components/schemas/Variables"
         action:
           description: >
             A custom action value that will be accessible from user task events resulting
@@ -298,6 +322,8 @@ components:
       type: object
       properties:
         changeset:
+          allOf:
+            - $ref: "#/components/schemas/Changeset"
           description: |
             JSON object with changed task attribute values.
 
@@ -316,7 +342,6 @@ components:
             This ensures correct event emission for assignee changes.
           type: object
           nullable: true
-          $ref: "#/components/schemas/Changeset"
         action:
           description: >
             A custom action value that will be accessible from user task events resulting
