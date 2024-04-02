@@ -120,12 +120,12 @@ public class PartitionProcessingState {
 
     final File persistedExporterPauseState =
         getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
-    persistedExporterPauseState.createNewFile();
     Files.writeString(
         persistedExporterPauseState.toPath(),
         state.name(),
         StandardCharsets.UTF_8,
-        StandardOpenOption.DSYNC);
+        StandardOpenOption.DSYNC,
+        StandardOpenOption.CREATE);
   }
 
   private void initExportingState() {
