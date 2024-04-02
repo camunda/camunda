@@ -18,8 +18,6 @@ import {HttpResponse, http} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {storeStateLocally} from 'modules/utils/localStorage';
 
-vi.mock('modules/featureFlags');
-
 const createWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter

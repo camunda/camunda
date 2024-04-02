@@ -13,7 +13,6 @@ import {SortAscending, Checkmark, Filter} from '@carbon/react/icons';
 import {taskFilters} from 'modules/constants/taskFilters';
 import {tracking} from 'modules/tracking';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
-import {IS_PROCESS_CUSTOM_FILTERS_ENABLED} from 'modules/featureFlags';
 import {CustomFiltersModal} from './CustomFiltersModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
@@ -129,9 +128,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
         {({handleSubmit, form}) => (
           <>
             <form
-              className={cn(styles.form, {
-                [styles.customFilters]: IS_PROCESS_CUSTOM_FILTERS_ENABLED,
-              })}
+              className={cn(styles.form, styles.customFilters)}
               onSubmit={handleSubmit}
             >
               <Field<FormValues['filter']> name="filter">
@@ -182,17 +179,15 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                   />
                 )}
               </Field>
-              {IS_PROCESS_CUSTOM_FILTERS_ENABLED ? (
-                <Button
-                  hasIconOnly
-                  iconDescription={CUSTOM_FILTER_ITEM.text}
-                  renderIcon={Filter}
-                  kind="ghost"
-                  size="md"
-                  onClick={() => setIsCustomFiltersModalOpen(true)}
-                  tooltipPosition="bottom"
-                />
-              ) : null}
+              <Button
+                hasIconOnly
+                iconDescription={CUSTOM_FILTER_ITEM.text}
+                renderIcon={Filter}
+                kind="ghost"
+                size="md"
+                onClick={() => setIsCustomFiltersModalOpen(true)}
+                tooltipPosition="bottom"
+              />
               <Field<FormValues['sortBy']> name="sortBy">
                 {({input}) => (
                   <OverflowMenu
@@ -234,19 +229,17 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                 )}
               </Field>
             </form>
-            {IS_PROCESS_CUSTOM_FILTERS_ENABLED ? (
-              <CustomFiltersModal
-                isOpen={isCustomFiltersModalOpen}
-                onClose={() => {
-                  setIsCustomFiltersModalOpen(false);
-                }}
-                onApply={() => {
-                  setIsCustomFiltersModalOpen(false);
-                  form.change('filter', 'custom');
-                  form.submit();
-                }}
-              />
-            ) : null}
+            <CustomFiltersModal
+              isOpen={isCustomFiltersModalOpen}
+              onClose={() => {
+                setIsCustomFiltersModalOpen(false);
+              }}
+              onApply={() => {
+                setIsCustomFiltersModalOpen(false);
+                form.change('filter', 'custom');
+                form.submit();
+              }}
+            />
           </>
         )}
       </Form>

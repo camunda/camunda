@@ -8,6 +8,7 @@
 import {TaskFilters} from 'modules/hooks/useTaskFilters';
 import {TasksSearchBody} from 'modules/types';
 import {getStateLocally} from './localStorage';
+import {formatRFC3339} from 'date-fns';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
@@ -122,27 +123,27 @@ function convertFiltersToQueryVariables(
 
   if (filters.dueDateFrom !== undefined) {
     updatedFilters.dueDate = {
-      from: filters.dueDateFrom.toISOString(),
+      from: formatRFC3339(filters.dueDateFrom),
     };
   }
 
   if (filters.dueDateTo !== undefined) {
     updatedFilters.dueDate = {
       ...updatedFilters.dueDate,
-      to: filters.dueDateTo.toISOString(),
+      to: formatRFC3339(filters.dueDateTo),
     };
   }
 
   if (filters.followUpDateFrom !== undefined) {
     updatedFilters.followUpDate = {
-      from: filters.followUpDateFrom.toISOString(),
+      from: formatRFC3339(filters.followUpDateFrom),
     };
   }
 
   if (filters.followUpDateTo !== undefined) {
     updatedFilters.followUpDate = {
       ...updatedFilters.followUpDate,
-      to: filters.followUpDateTo.toISOString(),
+      to: formatRFC3339(filters.followUpDateTo),
     };
   }
 

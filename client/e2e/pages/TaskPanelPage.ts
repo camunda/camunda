@@ -23,13 +23,17 @@ class TaskPanelPage {
   }
 
   async filterBy(
-    option: 'All open' | 'Unassigned' | 'Assigned to me' | 'Completed',
+    option:
+      | 'All open'
+      | 'Unassigned'
+      | 'Assigned to me'
+      | 'Completed'
+      | 'Custom',
   ) {
     await this.filterOptions.click();
-    await this.page
-      .getByRole('option', {name: option})
-      .getByText(option)
-      .click();
+    await this.page.getByRole('option', {name: option}).click({
+      force: true,
+    });
   }
 
   async scrollToLastTask(name: string) {

@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {formatRFC3339} from 'date-fns';
 import {customFiltersSchema} from './customFiltersSchema';
 import {z} from 'zod';
 
@@ -33,16 +34,15 @@ function prepareCustomFiltersParams(
     case 'all':
       break;
     case 'unassigned':
-      params.assigned = JSON.stringify(false);
+      params.assigned = 'false';
       break;
     case 'me':
-      params.assigned = JSON.stringify(true);
+      params.assigned = 'true';
       params.assignee = user;
       break;
     case 'user-and-group':
-      params.assigned = JSON.stringify(true);
-
       if (body.assignedTo !== undefined) {
+        params.assigned = 'true';
         params.assignee = body.assignedTo;
       }
 
@@ -66,19 +66,19 @@ function prepareCustomFiltersParams(
   }
 
   if (dueDateFrom !== undefined) {
-    params.dueDateFrom = dueDateFrom.toISOString();
+    params.dueDateFrom = formatRFC3339(dueDateFrom);
   }
 
   if (dueDateTo !== undefined) {
-    params.dueDateTo = dueDateTo.toISOString();
+    params.dueDateTo = formatRFC3339(dueDateTo);
   }
 
   if (followUpDateFrom !== undefined) {
-    params.followUpDateFrom = followUpDateFrom.toISOString();
+    params.followUpDateFrom = formatRFC3339(followUpDateFrom);
   }
 
   if (followUpDateTo !== undefined) {
-    params.followUpDateTo = followUpDateTo.toISOString();
+    params.followUpDateTo = formatRFC3339(followUpDateTo);
   }
 
   if (taskId !== undefined) {

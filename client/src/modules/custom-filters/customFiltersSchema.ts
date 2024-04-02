@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {isValidJSON} from 'modules/utils/isValidJSON';
 import {z} from 'zod';
 
 const customFiltersSchema = z.object({
@@ -26,7 +27,15 @@ const customFiltersSchema = z.object({
       z
         .object({
           name: z.string().trim().optional(),
-          value: z.string().trim().optional(),
+          value: z
+            .string()
+            .trim()
+            .transform((value) =>
+              isValidJSON(value)
+                ? JSON.stringify(JSON.parse(value), null, 0)
+                : value,
+            )
+            .optional(),
         })
         .superRefine(({name = '', value = ''}, ctx) => {
           const message = 'You must fill both name and value';

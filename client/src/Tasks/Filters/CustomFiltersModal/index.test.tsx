@@ -290,7 +290,7 @@ describe('<CustomFiltersModal />', () => {
         variables: [
           {
             name: 'variable-0',
-            value: 'value-0',
+            value: '"value-0"',
           },
         ],
       },
@@ -338,7 +338,7 @@ describe('<CustomFiltersModal />', () => {
     ).toHaveValue('variable-0');
     expect(
       within(variablesGroup).getByRole('textbox', {name: /value/i}),
-    ).toHaveValue('value-0');
+    ).toHaveValue('"value-0"');
   });
 
   it('should submit filters', async () => {
@@ -355,7 +355,7 @@ describe('<CustomFiltersModal />', () => {
       variables: [
         {
           name: 'variable-0',
-          value: 'value-0',
+          value: '"value-0"',
         },
       ],
     } as const;
@@ -399,7 +399,7 @@ describe('<CustomFiltersModal />', () => {
     await user.type(screen.getByRole('textbox', {name: /task id/i}), 'task-0');
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     await user.type(screen.getByRole('textbox', {name: /name/i}), 'variable-0');
-    await user.type(screen.getByRole('textbox', {name: /value/i}), 'value-0');
+    await user.type(screen.getByRole('textbox', {name: /value/i}), '"value-0"');
 
     await user.click(screen.getByRole('button', {name: /apply/i}));
 

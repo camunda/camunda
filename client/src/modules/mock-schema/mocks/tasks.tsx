@@ -8,6 +8,7 @@
 import {Task} from 'modules/types';
 import {currentUser} from './current-user';
 import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
+import {formatRFC3339} from 'date-fns';
 
 const tasks: Task[] = [
   {
@@ -15,7 +16,7 @@ const tasks: Task[] = [
     name: 'name',
     processName: 'processName',
     creationDate: '2024-05-28 10:11:12',
-    completionDate: new Date().toISOString(),
+    completionDate: formatRFC3339(new Date()),
     assignee: currentUser.userId,
     taskState: 'CREATED',
     sortValues: ['0', '1'],
@@ -38,7 +39,7 @@ const tasks: Task[] = [
     name: 'name',
     processName: 'processName',
     creationDate: '2024-05-29 13:14:15',
-    completionDate: new Date().toISOString(),
+    completionDate: formatRFC3339(new Date()),
     assignee: 'mustermann',
     taskState: 'CREATED',
     sortValues: ['1', '2'],
@@ -61,7 +62,7 @@ const tasks: Task[] = [
     name: 'name',
     processName: 'processName',
     creationDate: '2024-05-30 16:17:18',
-    completionDate: new Date().toISOString(),
+    completionDate: formatRFC3339(new Date()),
     assignee: null,
     taskState: 'CREATED',
     sortValues: ['2', '3'],

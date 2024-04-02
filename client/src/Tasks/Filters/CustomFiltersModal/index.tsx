@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Fragment, useRef, useState} from 'react';
+import {Fragment} from 'react';
 import {
   Button,
   ComposedModal,
@@ -53,6 +53,14 @@ const ADVANCED_FILTERS: Array<keyof FormValues> = [
   'variables',
 ];
 
+function getDateValue(date: Date[]): Date | undefined {
+  if (date.length !== 1) {
+    return undefined;
+  }
+
+  return date[0];
+}
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -60,51 +68,55 @@ type Props = {
 };
 
 const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
-  const initialValues = useRef<FormValues>(
-    getStateLocally('customFilters')?.custom ?? DEFAULT_FORM_VALUES,
-  );
-  const [areAdvancedFiltersEnabled, setAreAdvancedFiltersEnabled] = useState(
-    ADVANCED_FILTERS.some((key) => initialValues.current?.[key] !== undefined),
-  );
+  const initialValues =
+    getStateLocally('customFilters')?.custom ?? DEFAULT_FORM_VALUES;
   const label = 'Advanced filters';
   const {isMultiTenancyVisible} = useMultiTenancyDropdown();
   const {data: currentUser} = useCurrentUser();
   const groups = currentUser?.groups ?? [];
 
   return (
-    <Form<FormValues>
-      onSubmit={(values) => {
-        const result = customFiltersSchema.safeParse(values);
-
-        if (result.success) {
-          storeStateLocally('customFilters', {custom: result.data});
-          initialValues.current = result.data;
-          onApply(result.data);
-
-          return;
-        }
-
-        return result.error.flatten(({path, message}) => {
-          const [firstPath] = path;
-
-          if (firstPath !== 'variables') {
-            return message;
-          }
-
-          return set({}, path[path.length - 1], message);
-        }).fieldErrors;
-      }}
-      initialValues={initialValues.current}
-      mutators={{...arrayMutators}}
+    <ComposedModal
+      open={isOpen}
+      preventCloseOnClickOutside
+      size="md"
+      onClose={onClose}
     >
-      {({handleSubmit, form, values}) => (
-        <ComposedModal
-          open={isOpen}
-          preventCloseOnClickOutside
-          size="md"
-          onClose={onClose}
+      {isOpen ? (
+        <Form<
+          FormValues & {
+            areAdvancedFiltersEnabled: boolean;
+          }
         >
-          {isOpen ? (
+          onSubmit={({areAdvancedFiltersEnabled: _, ...values}) => {
+            const result = customFiltersSchema.safeParse(values);
+
+            if (result.success) {
+              storeStateLocally('customFilters', {custom: result.data});
+              onApply(result.data);
+
+              return;
+            }
+
+            return result.error.flatten(({path, message}) => {
+              const [firstPath] = path;
+
+              if (firstPath !== 'variables') {
+                return message;
+              }
+
+              return set({}, path[path.length - 1], message);
+            }).fieldErrors;
+          }}
+          initialValues={{
+            ...initialValues,
+            areAdvancedFiltersEnabled: ADVANCED_FILTERS.some(
+              (key) => initialValues?.[key] !== undefined,
+            ),
+          }}
+          mutators={{...arrayMutators}}
+        >
+          {({handleSubmit, form, values}) => (
             <>
               <ModalHeader title="Apply filters" buttonOnClick={onClose} />
               <ModalBody hasForm>
@@ -216,31 +228,31 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                         <MultiTenancySelect
                           {...input}
                           id={input.name}
+                          labelText="Tenant"
                           className={styles.secondColumn}
                         />
                       )}
                     </Field>
                   ) : null}
 
-                  <Toggle
-                    id="toggle-advanced-filters"
-                    className={styles.toggle}
-                    size="sm"
-                    labelText={label}
-                    aria-label={label}
-                    hideLabel
-                    labelA="Hidden"
-                    labelB="Visible"
-                    toggled={areAdvancedFiltersEnabled}
-                    onToggle={(isToggled) => {
-                      ADVANCED_FILTERS.forEach((key) => {
-                        form.change(key, undefined);
-                      });
-                      setAreAdvancedFiltersEnabled(isToggled);
-                    }}
-                  />
+                  <Field name="areAdvancedFiltersEnabled">
+                    {({input}) => (
+                      <Toggle
+                        id="toggle-advanced-filters"
+                        className={styles.toggle}
+                        size="sm"
+                        labelText={label}
+                        aria-label={label}
+                        hideLabel
+                        labelA="Hidden"
+                        labelB="Visible"
+                        toggled={input.checked}
+                        onToggle={input.onChange}
+                      />
+                    )}
+                  </Field>
 
-                  {areAdvancedFiltersEnabled ? (
+                  {values.areAdvancedFiltersEnabled ? (
                     <>
                       <FormGroup
                         className={styles.dateRangeFormGroup}
@@ -250,6 +262,9 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              onChange={(dates) => {
+                                input.onChange(getDateValue(dates));
+                              }}
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
@@ -267,6 +282,9 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              onChange={(dates) => {
+                                input.onChange(getDateValue(dates));
+                              }}
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
@@ -293,6 +311,9 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              onChange={(dates) => {
+                                input.onChange(getDateValue(dates));
+                              }}
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
@@ -310,6 +331,9 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                           {({input}) => (
                             <DatePicker
                               {...input}
+                              onChange={(dates) => {
+                                input.onChange(getDateValue(dates));
+                              }}
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat="d/m/y"
@@ -416,9 +440,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                 <Button
                   kind="ghost"
                   onClick={() => {
-                    setAreAdvancedFiltersEnabled(false);
                     form.reset(DEFAULT_FORM_VALUES);
-                    initialValues.current = DEFAULT_FORM_VALUES;
                   }}
                   type="button"
                 >
@@ -432,10 +454,10 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                 </Button>
               </ModalFooter>
             </>
-          ) : null}
-        </ComposedModal>
-      )}
-    </Form>
+          )}
+        </Form>
+      ) : null}
+    </ComposedModal>
   );
 };
 
