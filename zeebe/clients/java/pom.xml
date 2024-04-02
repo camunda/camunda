@@ -40,6 +40,16 @@
     </dependency>
 
     <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
@@ -72,11 +82,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.openapitools</groupId>
-      <artifactId>jackson-databind-nullable</artifactId>
     </dependency>
 
     <dependency>
@@ -221,6 +226,7 @@
       <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest</artifactId>
@@ -231,6 +237,7 @@
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
+
     <dependency>
       <groupId>net.jcip</groupId>
       <artifactId>jcip-annotations</artifactId>
@@ -281,11 +288,12 @@
               <generatorName>java</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
+              <typeMappings>OffsetDateTime=String</typeMappings>
               <generateApis>false</generateApis>
               <generateApiTests>false</generateApiTests>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
-              <generateModelDocumentation>true</generateModelDocumentation>
+              <generateModelDocumentation>false</generateModelDocumentation>
               <generateModelTests>false</generateModelTests>
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
@@ -294,6 +302,8 @@
                 <documentationProvider>none</documentationProvider>
                 <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
                 <library>apache-httpclient</library>
+                <java8>true</java8>
+                <openApiNullable>false</openApiNullable>
                 <serializationLibrary>jackson</serializationLibrary>
                 <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
               </configOptions>

@@ -25,12 +25,11 @@ import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset;
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandStep1 {
 
@@ -75,26 +74,26 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
   @Override
   public UpdateUserTaskCommandStep1 dueDate(final String dueDate) {
     ArgumentUtil.ensureNotNull("dueDate", dueDate);
-    getChangesetEnsureInitialized().dueDate(OffsetDateTime.parse(dueDate));
+    getChangesetEnsureInitialized().dueDate(dueDate);
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 clearDueDate() {
-    getChangesetEnsureInitialized().setDueDate_JsonNullable(JsonNullable.undefined());
+    getChangesetEnsureInitialized().setDueDate("");
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 followUpDate(final String followUpDate) {
     ArgumentUtil.ensureNotNull("followUpDate", followUpDate);
-    getChangesetEnsureInitialized().followUpDate(OffsetDateTime.parse(followUpDate));
+    getChangesetEnsureInitialized().followUpDate(followUpDate);
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 clearFollowUpDate() {
-    getChangesetEnsureInitialized().setFollowUpDate_JsonNullable(JsonNullable.undefined());
+    getChangesetEnsureInitialized().followUpDate("");
     return this;
   }
 
@@ -114,7 +113,7 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
 
   @Override
   public UpdateUserTaskCommandStep1 clearCandidateGroups() {
-    getChangesetEnsureInitialized().setCandidateGroups_JsonNullable(JsonNullable.undefined());
+    getChangesetEnsureInitialized().setCandidateGroups(Collections.emptyList());
     return this;
   }
 
@@ -134,7 +133,7 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
 
   @Override
   public UpdateUserTaskCommandStep1 clearCandidateUsers() {
-    getChangesetEnsureInitialized().setCandidateUsers_JsonNullable(JsonNullable.undefined());
+    getChangesetEnsureInitialized().candidateUsers(Collections.emptyList());
     return this;
   }
 
