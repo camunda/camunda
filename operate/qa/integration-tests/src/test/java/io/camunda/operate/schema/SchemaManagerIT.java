@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
@@ -49,12 +48,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class SchemaManagerIT {
   @Autowired private OperateProperties operateProperties;
   @Autowired private TestSearchRepository searchRepository;
-  @Autowired private OpensearchSchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
   private String indexPrefix;
 
   @BeforeEach
   public void before() {
     //    indexPrefix = UUID.randomUUID().toString();
+    indexPrefix = "test";
+    schemaManager.deleteIndicesFor(idxName("index-*"));
   }
 
   @AfterEach
@@ -101,45 +102,39 @@ public class SchemaManagerIT {
         schemaManager.getIndexSettingsFor(
             idxName("index-1.2.3_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings1)
-        .containsEntry(
-            NUMBERS_OF_REPLICA,
-            DatabaseInfo.isOpensearch() ? null : String.valueOf(defaultNumberofReplicas))
-        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : "2s");
+        .containsEntry(NUMBERS_OF_REPLICA, String.valueOf(defaultNumberofReplicas))
+        .containsEntry(REFRESH_INTERVAL, "2s");
 
     final Map<String, String> reindexSettings2 =
         schemaManager.getIndexSettingsFor(
             idxName("index-2.3.4_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings2)
-        .containsEntry(
-            NUMBERS_OF_REPLICA,
-            DatabaseInfo.isOpensearch() ? null : String.valueOf(defaultNumberofReplicas))
-        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : "2s");
+        .containsEntry(NUMBERS_OF_REPLICA, String.valueOf(defaultNumberofReplicas))
+        .containsEntry(REFRESH_INTERVAL, "2s");
 
     final Map<String, String> reindexSettings3 =
         schemaManager.getIndexSettingsFor(
             idxName("index-3.4.5_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings3)
-        .containsEntry(
-            NUMBERS_OF_REPLICA,
-            DatabaseInfo.isOpensearch() ? null : String.valueOf(defaultNumberofReplicas))
-        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : "2s");
-    // Migrator uses this
-    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), null))
+        .containsEntry(NUMBERS_OF_REPLICA, String.valueOf(defaultNumberofReplicas))
+        .containsEntry(REFRESH_INTERVAL, "2s");
+
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), "2"))
         .isEqualTo("5");
 
-    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-1.2.3_"), null))
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-1.2.3_"), "1s"))
         .isEqualTo("2s");
 
-    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-2.3.4_"), null))
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-2.3.4_"), "2"))
         .isEqualTo("5");
 
-    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-2.3.4_"), null))
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-2.3.4_"), "1s"))
         .isEqualTo("2s");
 
-    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-3.4.5_"), null))
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-3.4.5_"), "2"))
         .isEqualTo("5");
 
-    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-3.4.5_"), null))
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-3.4.5_"), "1s"))
         .isEqualTo("2s");
   }
 
