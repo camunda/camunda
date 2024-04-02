@@ -65,6 +65,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/RaftTest.java
+=======
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
+>>>>>>> 6dd2e604 (test: intercept request for deterministic test):zeebe/atomix/cluster/src/test/java/io/atomix/raft/RaftTest.java
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
@@ -456,7 +461,12 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/RaftTest.java
     Mockito.clearInvocations(followerServer);
+=======
+    followerServer.interceptRequest(
+        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
+>>>>>>> 6dd2e604 (test: intercept request for deterministic test):zeebe/atomix/cluster/src/test/java/io/atomix/raft/RaftTest.java
     protocolFactory.partition(followerId);
 
     // then
@@ -477,7 +487,12 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
+<<<<<<< HEAD:atomix/cluster/src/test/java/io/atomix/raft/RaftTest.java
     Mockito.clearInvocations(followerServer);
+=======
+    followerServer.interceptRequest(
+        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
+>>>>>>> 6dd2e604 (test: intercept request for deterministic test):zeebe/atomix/cluster/src/test/java/io/atomix/raft/RaftTest.java
     protocolFactory.partition(followerId);
     verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
     Mockito.clearInvocations(followerServer);
