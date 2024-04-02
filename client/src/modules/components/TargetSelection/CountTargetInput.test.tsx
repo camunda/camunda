@@ -59,3 +59,9 @@ it('should invoke the onChange prop on button click', async () => {
 
   expect(spy).toHaveBeenCalledWith('isBelow', false);
 });
+
+it('should hide baseline if specified', async () => {
+  const node = shallow(<CountTargetInput {...validProps} hideBaseLine />);
+
+  expect(node.find('TextInput').at(1)).not.toExist();
+});

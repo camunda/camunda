@@ -10,6 +10,7 @@ import {ComboBox, Stack, Tile, Button, Layer, FormLabel, TextAreaSkeleton} from 
 import {CheckmarkFilled, CircleDash} from '@carbon/icons-react';
 import {useHistory, useLocation} from 'react-router-dom';
 import update from 'immutability-helper';
+import classnames from 'classnames';
 
 import {DefinitionSelection, TargetSelection, ReportRenderer} from 'components';
 import {t} from 'translation';
@@ -26,6 +27,8 @@ import {automationRate, throughput} from './templates';
 import {MultiStepModal} from './MultiStepModal';
 
 import './KpiCreationModal.scss';
+
+const DEFINITION_IDENTIFIER = 'definition';
 
 interface KpiCreationModalProps {
   onClose: () => void;
@@ -87,6 +90,8 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
   }
 
   const FilterModal = getFilterModal(openedFilter?.type);
+  const allFiltersDefined =
+    evaluatedReport?.data.filter.length === selectedKpi?.uiConfig.filters.length;
 
   return (
     <MultiStepModal
@@ -168,7 +173,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                     },
                     definitions: [
                       {
-                        identifier: 'definition',
+                        identifier: DEFINITION_IDENTIFIER,
                         ...definition,
                       },
                     ],
@@ -195,9 +200,12 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                         })
                       );
                     }}
+                    hideBaseLine
                   />
                   <Layer>
-                    <FormLabel>{t('common.filter.label')}</FormLabel>
+                    <FormLabel className={classnames({'text-mandatory': !allFiltersDefined})}>
+                      {t('report.kpiTemplates.mandatoryFilters')}
+                    </FormLabel>
                     <Stack gap={4}>
                       {selectedKpi?.uiConfig.filters.map((filter, idx) => {
                         const existingFilter = getFilter(filter);
@@ -212,7 +220,9 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                             ) : (
                               <CircleDash size="20" />
                             )}
-                            {filter.label}
+                            <span className={classnames({'text-mandatory': !existingFilter})}>
+                              {filter.label}
+                            </span>
                             <Button
                               size="sm"
                               kind="tertiary"
@@ -241,8 +251,10 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                   )}
                   {openedFilter && (
                     <FilterModal
+                      modalTitle={openedFilter.description}
+                      className={openedFilter.type + 'KpiModal'}
                       definitions={evaluatedReport?.data.definitions}
-                      filterData={getFilter()}
+                      filterData={{...openedFilter, appliedTo: [DEFINITION_IDENTIFIER]}}
                       addFilter={(newFilter) => {
                         if (!newFilter) {
                           return;
@@ -275,10 +287,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
             primary: {
               label: t('report.kpiTemplates.create'),
               kind: 'primary',
-              disabled:
-                !definition.key ||
-                !selectedKpi ||
-                evaluatedReport?.data.filter.length !== selectedKpi.uiConfig.filters.length,
+              disabled: !definition.key || !selectedKpi || !allFiltersDefined,
               onClick: async () => {
                 await mightFail(
                   createEntity('report/process/single', evaluatedReport),

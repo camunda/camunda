@@ -7,6 +7,7 @@
 
 import {useState} from 'react';
 import {Button, Form, InlineNotification, Stack} from '@carbon/react';
+import classnames from 'classnames';
 
 import {t} from 'translation';
 import {Modal, DateRangeInput} from 'components';
@@ -30,6 +31,10 @@ export default function DateFilter({
   definitions,
   addFilter,
   close,
+  className,
+  modalTitle = t('common.filter.modalHeader', {
+    type: t(`common.filter.types.${filterType}`),
+  }),
 }: FilterProps<Partial<Filter>>) {
   const [filterState, setFilterState] = useState<DateFilterState>(() => {
     let initialData = {};
@@ -75,12 +80,14 @@ export default function DateFilter({
   const {type, unit, customNum, startDate, endDate, applyTo} = filterState;
 
   return (
-    <Modal size="sm" open onClose={close} isOverflowVisible className="DateFilter">
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
-          type: t(`common.filter.types.${filterType}`),
-        })}
-      </Modal.Header>
+    <Modal
+      size="sm"
+      open
+      onClose={close}
+      isOverflowVisible
+      className={classnames('DateFilter', className)}
+    >
+      <Modal.Header>{modalTitle}</Modal.Header>
       <Modal.Content>
         <Stack gap={6}>
           <FilterDefinitionSelection

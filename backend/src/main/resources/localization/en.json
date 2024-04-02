@@ -399,7 +399,12 @@
       "throughput": "Throughput time",
       "throughput-description": "The throughput time indicates how long a process on the happy path needs in average to end",
       "throughput-filter1": "Select the end events that indicate a fully automated process",
-      "throughput-filter2": "Select the timeframe for which to evaluate throughput"
+      "throughput-filter2": "Select the timeframe for which to evaluate throughput",
+      "mandatoryFilters": "Mandatory Filters",
+      "filters": {
+        "nodeSelection": "Select end event",
+        "endDate": "Select timeframe"
+      }
     },
     "instanceCount": {
       "appliedFilters": "Applied filters",

@@ -21,12 +21,14 @@ interface DurationTargetInputProps {
   target: {value: string | number; unit: string; isBelow?: boolean};
   disabled?: boolean;
   onChange: (type: string, subType: string, value: boolean | string) => void;
+  hideBaseLine?: boolean;
 }
 
 export default function DurationTargetInput({
   baseline,
   target,
   disabled,
+  hideBaseLine,
   onChange,
 }: DurationTargetInputProps) {
   const baselineInvalid = !isNonNegativeNumber(baseline.value);
@@ -80,29 +82,31 @@ export default function DurationTargetInput({
           {selectionOptions()}
         </CarbonSelect>
       </Stack>
-      <Stack gap={4} orientation="horizontal">
-        <TextInput
-          id="baselineValueInput"
-          labelText={t('report.config.goal.baseline')}
-          type="number"
-          min="0"
-          value={baseline.value}
-          disabled={disabled}
-          invalid={baselineInvalid}
-          invalidText={t('report.config.goal.invalidInput')}
-          onChange={(evt) => onChange('baseline', 'value', evt.target.value)}
-        />
-        <CarbonSelect
-          labelText={t('common.units')}
-          size="md"
-          id="baselineUnitSelector"
-          value={baseline.unit}
-          disabled={disabled}
-          onChange={(value) => onChange('baseline', 'unit', value)}
-        >
-          {selectionOptions()}
-        </CarbonSelect>
-      </Stack>
+      {!hideBaseLine && (
+        <Stack gap={4} orientation="horizontal">
+          <TextInput
+            id="baselineValueInput"
+            labelText={t('report.config.goal.baseline')}
+            type="number"
+            min="0"
+            value={baseline.value}
+            disabled={disabled}
+            invalid={baselineInvalid}
+            invalidText={t('report.config.goal.invalidInput')}
+            onChange={(evt) => onChange('baseline', 'value', evt.target.value)}
+          />
+          <CarbonSelect
+            labelText={t('common.units')}
+            size="md"
+            id="baselineUnitSelector"
+            value={baseline.unit}
+            disabled={disabled}
+            onChange={(value) => onChange('baseline', 'unit', value)}
+          >
+            {selectionOptions()}
+          </CarbonSelect>
+        </Stack>
+      )}
     </Stack>
   );
 }

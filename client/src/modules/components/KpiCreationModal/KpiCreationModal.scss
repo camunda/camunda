@@ -21,4 +21,22 @@
       max-width: 400px;
     }
   }
+
+  .text-mandatory {
+    color: var(--cds-text-error, #da1e28);
+  }
+}
+
+.instanceEndDateKpiModal {
+  .cds--inline-notification,
+  .tip {
+    display: none;
+  }
+}
+
+.executedFlowNodesKpiModal {
+  .modalContent p,
+  .diagramActions {
+    display: none;
+  }
 }

@@ -30,13 +30,17 @@ export default function throughput(): KpiTemplate {
     uiConfig: {
       filters: [
         {
-          label: t('report.kpiTemplates.throughput-filter1').toString(),
+          label: t('report.kpiTemplates.filters.nodeSelection').toString(),
+          description: t('report.kpiTemplates.throughput-filter1').toString(),
           type: 'executedFlowNodes',
-          data: {},
+          data: {
+            values: [],
+          },
           filterLevel: 'view',
         },
         {
-          label: t('report.kpiTemplates.throughput-filter2').toString(),
+          label: t('report.kpiTemplates.filters.endDate').toString(),
+          description: t('report.kpiTemplates.throughput-filter2').toString(),
           type: 'instanceEndDate',
           data: {},
           filterLevel: 'instance',

@@ -27,13 +27,17 @@ export default function automationRate(): KpiTemplate {
     uiConfig: {
       filters: [
         {
-          label: t('report.kpiTemplates.automationRate-filter1').toString(),
+          label: t('report.kpiTemplates.filters.nodeSelection').toString(),
+          description: t('report.kpiTemplates.automationRate-filter1').toString(),
           type: 'executedFlowNodes',
-          data: {},
+          data: {
+            values: [],
+          },
           filterLevel: 'view',
         },
         {
-          label: t('report.kpiTemplates.automationRate-filter1').toString(),
+          label: t('report.kpiTemplates.filters.endDate').toString(),
+          description: t('report.kpiTemplates.automationRate-filter2').toString(),
           type: 'instanceEndDate',
           data: {},
           filterLevel: 'instance',
