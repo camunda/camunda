@@ -18,7 +18,9 @@ package io.camunda.zeebe.client.impl.response;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class TopologyImpl implements Topology {
@@ -42,11 +44,16 @@ public final class TopologyImpl implements Topology {
 
   public TopologyImpl(final io.camunda.zeebe.client.protocol.rest.TopologyResponse httpResponse) {
     brokers =
-        httpResponse.getBrokers().stream().map(BrokerInfoImpl::new).collect(Collectors.toList());
-    clusterSize = httpResponse.getClusterSize();
-    partitionsCount = httpResponse.getPartitionsCount();
-    replicationFactor = httpResponse.getReplicationFactor();
-    gatewayVersion = httpResponse.getGatewayVersion();
+        Optional.ofNullable(httpResponse.getBrokers()).orElse(Collections.emptyList()).stream()
+            .map(BrokerInfoImpl::new)
+            .collect(Collectors.toList());
+    clusterSize = httpResponse.getClusterSize() == null ? 0 : httpResponse.getClusterSize();
+    partitionsCount =
+        httpResponse.getPartitionsCount() == null ? 0 : httpResponse.getPartitionsCount();
+    replicationFactor =
+        httpResponse.getReplicationFactor() == null ? 0 : httpResponse.getReplicationFactor();
+    gatewayVersion =
+        httpResponse.getGatewayVersion() == null ? "" : httpResponse.getGatewayVersion();
   }
 
   @Override
