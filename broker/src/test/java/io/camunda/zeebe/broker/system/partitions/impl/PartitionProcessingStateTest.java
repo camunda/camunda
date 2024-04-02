@@ -7,71 +7,48 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState.ExporterState;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class PartitionProcessingStateTest {
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
   private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
-  private static final String TEST_DIR = "src/test/resources";
-  private static final Path PATH_TO_EXPORTER_STATE =
-      new File(TEST_DIR + PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath();
-  private static final Path PATH_TO_PROCESSOR_STATE =
-      new File(TEST_DIR + PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath();
+  private static @TempDir Path TEST_DIR;
   private static final RaftPartition MOCK_RAFT_PARTITION =
       mock(RaftPartition.class, RETURNS_DEEP_STUBS);
 
-  private static final File PROCESSOR_STATE_FILE = mock(File.class);
-  private static final File EXPORTER_STATE_FILE = mock(File.class);
-
   @BeforeAll
   static void setUp() {
-    when(MOCK_RAFT_PARTITION
-            .dataDirectory()
-            .toPath()
-            .resolve(PERSISTED_PAUSE_STATE_FILENAME)
-            .toFile())
-        .thenReturn(PROCESSOR_STATE_FILE);
-    when(MOCK_RAFT_PARTITION
-            .dataDirectory()
-            .toPath()
-            .resolve(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME)
-            .toFile())
-        .thenReturn(EXPORTER_STATE_FILE);
-    when(PROCESSOR_STATE_FILE.toPath()).thenReturn(PATH_TO_PROCESSOR_STATE);
-    when(EXPORTER_STATE_FILE.toPath()).thenReturn(PATH_TO_EXPORTER_STATE);
-  }
-
-  @AfterAll
-  static void afterAll() {
-    PATH_TO_EXPORTER_STATE.toFile().delete();
-    PATH_TO_PROCESSOR_STATE.toFile().delete();
+    when(MOCK_RAFT_PARTITION.dataDirectory().toPath()).thenReturn(TEST_DIR);
   }
 
   @Test
   void shouldPauseAndResumeProcessing() throws IOException {
-    // given
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
-    when(PROCESSOR_STATE_FILE.exists()).thenReturn(true);
-    partitionProcessingState.pauseProcessing();
-
-    assertTrue(partitionProcessingState.isProcessingPaused());
 
     // when
-    when(PROCESSOR_STATE_FILE.exists()).thenReturn(false);
-    partitionProcessingState.resumeProcessing();
+    partitionProcessingState.pauseProcessing();
 
     // then
+    // assert that file exists
+    assertTrue(partitionProcessingState.isProcessingPaused());
+
+    partitionProcessingState.resumeProcessing();
+
+    // assert that file does not exist
     assertFalse(partitionProcessingState.isProcessingPaused());
   }
 
@@ -81,13 +58,17 @@ class PartitionProcessingStateTest {
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
     partitionProcessingState.pauseExporting();
 
-    assertTrue(partitionProcessingState.isExportingPaused());
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be paused.")
+        .isEqualTo(ExporterState.PAUSED);
 
     // when
     partitionProcessingState.resumeExporting();
 
     // then
-    assertFalse(partitionProcessingState.isExportingPaused());
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be resumed.")
+        .isEqualTo(ExporterState.EXPORTING);
   }
 
   @Test
@@ -96,13 +77,17 @@ class PartitionProcessingStateTest {
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
     partitionProcessingState.softPauseExporting();
 
-    assertTrue(partitionProcessingState.isExportingSoftPaused());
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be soft paused.")
+        .isEqualTo(ExporterState.SOFT_PAUSED);
 
     // when
     partitionProcessingState.resumeExporting();
 
     // then
-    assertFalse(partitionProcessingState.isExportingSoftPaused());
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be resumed.")
+        .isEqualTo(ExporterState.EXPORTING);
   }
 
   @Test
@@ -112,16 +97,22 @@ class PartitionProcessingStateTest {
 
     partitionProcessingState.pauseExporting();
 
-    assertTrue(partitionProcessingState.isExportingPaused());
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be paused.")
+        .isEqualTo(ExporterState.PAUSED);
 
     // we overwrite the pause state
     partitionProcessingState.softPauseExporting();
 
-    assertTrue(partitionProcessingState.isExportingSoftPaused());
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be soft paused.")
+        .isEqualTo(ExporterState.SOFT_PAUSED);
 
     // then we resume again
     partitionProcessingState.resumeExporting();
 
-    assertFalse(partitionProcessingState.isExportingPaused());
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be resumed.")
+        .isEqualTo(ExporterState.EXPORTING);
   }
 }
