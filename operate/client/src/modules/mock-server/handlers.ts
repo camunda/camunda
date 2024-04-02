@@ -19,8 +19,10 @@ import {RequestHandler, rest} from 'msw';
 import {
   IS_BATCH_MOVE_MODIFICATION_ENABLED,
   IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED,
+  IS_INSTANCE_LIST_OPERATION_ERROR_ENABLED,
 } from 'modules/feature-flags';
 import {mockBatchStatus} from 'modules/mocks/mockBatchStatus';
+import {mockProcessInstances} from 'modules/mocks/mockProcessInstances';
 
 const batchOperationHandlers = IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED
   ? [
@@ -39,6 +41,52 @@ const batchOperationHandlers = IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED
     ]
   : [];
 
-const handlers: RequestHandler[] = [...batchOperationHandlers];
+const batchModificationHandlers = IS_BATCH_MOVE_MODIFICATION_ENABLED
+  ? [
+      rest.post(
+        '/api/process-instances/batch-operation',
+        async (req, res, ctx) => {
+          const request = await req.json();
+
+          if (request.operationType !== 'MODIFY_PROCESS_INSTANCE') {
+            return req.passthrough();
+          }
+
+          return res(
+            ctx.json({
+              id: '0b10e52c-a13c-424a-b83a-057ae99c64af',
+              name: null,
+              type: 'MOVE_TOKEN',
+              startDate: '2023-11-16T09:45:05.427+0100',
+              endDate: null,
+              username: 'demo',
+              instancesCount: 1,
+              operationsTotalCount: 1,
+              operationsFinishedCount: 0,
+            }),
+          );
+        },
+      ),
+    ]
+  : [];
+
+const processInstancesHandlers = IS_INSTANCE_LIST_OPERATION_ERROR_ENABLED
+  ? [
+      rest.post('api/process-instances', async (req, res, ctx) => {
+        const originalResponse = await ctx.fetch(req);
+        let originalResponseData = await originalResponse.json();
+
+        originalResponseData.processInstances.unshift(...mockProcessInstances);
+
+        return res(ctx.json(originalResponseData));
+      }),
+    ]
+  : [];
+
+const handlers: RequestHandler[] = [
+  ...batchOperationHandlers,
+  ...batchModificationHandlers,
+  ...processInstancesHandlers,
+];
 
 export {handlers};
