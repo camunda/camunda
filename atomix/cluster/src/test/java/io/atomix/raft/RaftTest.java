@@ -18,13 +18,11 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Maps;
 import io.atomix.cluster.ClusterMembershipService;
@@ -35,6 +33,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.primitive.TestMember;
+import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
@@ -65,17 +64,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -453,10 +454,12 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> followers = getFollowers(servers);
     final RaftServer follower = followers.get(0);
     final MemberId followerId = follower.getContext().getCluster().getLocalMember().memberId();
+    final var pollCount = new LongAdder();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
-    Mockito.clearInvocations(followerServer);
+    followerServer.interceptRequest(
+        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
     protocolFactory.partition(followerId);
 
     // then
@@ -465,7 +468,7 @@ public class RaftTest extends ConcurrentTestCase {
     final var timeout = follower.getContext().getElectionTimeout().multipliedBy(4).toMillis();
 
     // should send poll requests to 2 nodes
-    verify(followerServer, timeout(timeout).atLeast(2)).poll(any(), any());
+    Awaitility.await().timeout(Duration.ofMillis(timeout)).untilAdder(pollCount, greaterThan(2L));
   }
 
   @Test
@@ -474,17 +477,19 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> followers = getFollowers(servers);
     final MemberId followerId =
         followers.get(0).getContext().getCluster().getLocalMember().memberId();
+    final var pollCount = new LongAdder();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
-    Mockito.clearInvocations(followerServer);
+    followerServer.interceptRequest(
+        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
     protocolFactory.partition(followerId);
-    verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
-    Mockito.clearInvocations(followerServer);
+    Awaitility.await().timeout(Duration.ofSeconds(5)).untilAdder(pollCount, greaterThan(2L));
+    pollCount.reset();
 
     // then
     // no response for previous poll requests, so send them again
-    verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
+    Awaitility.await().timeout(Duration.ofSeconds(5)).untilAdder(pollCount, greaterThan(2L));
   }
 
   @Test
