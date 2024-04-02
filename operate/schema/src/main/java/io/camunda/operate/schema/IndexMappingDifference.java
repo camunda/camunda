@@ -16,9 +16,11 @@
  */
 package io.camunda.operate.schema;
 
+import static io.camunda.operate.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
+
 import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,38 +82,6 @@ public class IndexMappingDifference {
     return this;
   }
 
-  public static IndexMappingDifference from(final MapDifference<String, Object> difference) {
-    return new IndexMappingDifference()
-        .setEqual(difference.areEqual())
-        .setEntriesOnlyOnLeft(
-            difference.entriesOnlyOnLeft().entrySet().stream()
-                .map(p -> createIndexMapping(p))
-                .collect(Collectors.toSet()))
-        .setEntriesOnlyOnRight(
-            difference.entriesOnlyOnRight().entrySet().stream()
-                .map(p -> createIndexMapping(p))
-                .collect(Collectors.toSet()))
-        .setEntriesInCommon(
-            difference.entriesInCommon().entrySet().stream()
-                .map(p -> createIndexMapping(p))
-                .collect(Collectors.toSet()))
-        .setEntriesDiffering(
-            difference.entriesDiffering().entrySet().stream()
-                .map(
-                    entry ->
-                        new PropertyDifference()
-                            .setName(entry.getKey())
-                            .setLeftValue(
-                                new IndexMappingProperty()
-                                    .setName(entry.getKey())
-                                    .setTypeDefinition(entry.getValue().leftValue()))
-                            .setRightValue(
-                                new IndexMappingProperty()
-                                    .setName(entry.getKey())
-                                    .setTypeDefinition(entry.getValue().rightValue())))
-                .collect(Collectors.toSet()));
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -150,11 +120,73 @@ public class IndexMappingDifference {
         + '}';
   }
 
-  public static IndexMappingProperty createIndexMapping(
-      final Entry<String, Object> propertiesMapEntry) {
-    return new IndexMappingProperty()
-        .setName(propertiesMapEntry.getKey())
-        .setTypeDefinition(propertiesMapEntry.getValue());
+  public static class IndexMappingDifferenceBuilder {
+    private boolean ignoreDynamicDifferences;
+    private IndexMapping left;
+    private IndexMapping right;
+
+    public static IndexMappingDifferenceBuilder builder() {
+      return new IndexMappingDifferenceBuilder();
+    }
+
+    public IndexMappingDifferenceBuilder setLeft(final IndexMapping left) {
+      this.left = left;
+      return this;
+    }
+
+    public IndexMappingDifferenceBuilder setRight(final IndexMapping right) {
+      this.right = right;
+      return this;
+    }
+
+    public IndexMappingDifferenceBuilder setIgnoreDynamicDifferences(
+        final boolean ignoreDynamicDifferences) {
+      this.ignoreDynamicDifferences = ignoreDynamicDifferences;
+      return this;
+    }
+
+    public IndexMappingDifference build() {
+      final MapDifference<String, Object> difference = Maps.difference(left.toMap(), right.toMap());
+      final IndexMappingDifference diff =
+          new IndexMappingDifference()
+              .setEqual(difference.areEqual())
+              .setEntriesOnlyOnLeft(
+                  difference.entriesOnlyOnLeft().entrySet().stream()
+                      .map(p -> createIndexMappingProperty(p))
+                      .collect(Collectors.toSet()))
+              .setEntriesOnlyOnRight(
+                  difference.entriesOnlyOnRight().entrySet().stream()
+                      .map(p -> createIndexMappingProperty(p))
+                      .collect(Collectors.toSet()))
+              .setEntriesInCommon(
+                  difference.entriesInCommon().entrySet().stream()
+                      .map(p -> createIndexMappingProperty(p))
+                      .collect(Collectors.toSet()));
+
+      if (ignoreDynamicDifferences
+          && (Boolean.parseBoolean(left.getDynamic())
+              || Boolean.parseBoolean(right.getDynamic()))) {
+        diff.setEntriesDiffering(Set.of());
+      } else {
+        diff.setEntriesDiffering(
+            difference.entriesDiffering().entrySet().stream()
+                .map(
+                    entry ->
+                        new PropertyDifference()
+                            .setName(entry.getKey())
+                            .setLeftValue(
+                                new IndexMappingProperty()
+                                    .setName(entry.getKey())
+                                    .setTypeDefinition(entry.getValue().leftValue()))
+                            .setRightValue(
+                                new IndexMappingProperty()
+                                    .setName(entry.getKey())
+                                    .setTypeDefinition(entry.getValue().rightValue())))
+                .collect(Collectors.toSet()));
+      }
+
+      return diff;
+    }
   }
 
   public static class PropertyDifference {

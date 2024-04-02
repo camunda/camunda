@@ -29,12 +29,13 @@ public class ElasticsearchClientTestHelper implements SearchClientTestHelper {
   @Autowired public RetryElasticsearchClient elasticsearchClient;
 
   @Override
-  public void setClientRetries(int retries) {
+  public void setClientRetries(final int retries) {
     elasticsearchClient.setNumberOfRetries(retries);
   }
 
   @Override
-  public void createDocument(String indexName, String id, Map<String, String> document) {
+  public void createDocument(
+      final String indexName, final String id, final Map<String, Object> document) {
     elasticsearchClient.createOrUpdateDocument(indexName, id, document);
   }
 }

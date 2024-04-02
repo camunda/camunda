@@ -18,10 +18,9 @@ package io.camunda.operate.schema;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,6 +28,8 @@ import java.util.stream.Collectors;
 public class IndexMapping {
 
   private String indexName;
+
+  private String dynamic;
 
   private Set<IndexMappingProperty> properties;
 
@@ -38,6 +39,19 @@ public class IndexMapping {
 
   public IndexMapping setIndexName(final String indexName) {
     this.indexName = indexName;
+    return this;
+  }
+
+  public String getDynamic() {
+    // Opensearch changes the capitalization of this field on some query results, change to
+    // lowercase for consistency
+    return dynamic == null ? null : dynamic.toLowerCase();
+  }
+
+  public IndexMapping setDynamic(final String dynamic) {
+    // Opensearch changes the capitalization of this field on some query results, change to
+    // lowercase for consistency
+    this.dynamic = dynamic == null ? null : dynamic.toLowerCase();
     return this;
   }
 
@@ -57,14 +71,9 @@ public class IndexMapping {
                 IndexMappingProperty::getName, IndexMappingProperty::getTypeDefinition));
   }
 
-  public IndexMappingDifference difference(final IndexMapping right) {
-    final MapDifference<String, Object> difference = Maps.difference(toMap(), right.toMap());
-    return IndexMappingDifference.from(difference);
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(indexName, properties);
+    return Objects.hash(indexName, dynamic, properties);
   }
 
   @Override
@@ -76,12 +85,23 @@ public class IndexMapping {
       return false;
     }
     final IndexMapping that = (IndexMapping) o;
-    return Objects.equals(indexName, that.indexName) && Objects.equals(properties, that.properties);
+    return Objects.equals(indexName, that.indexName)
+        && Objects.equals(dynamic, that.dynamic)
+        && Objects.equals(properties, that.properties);
   }
 
   @Override
   public String toString() {
-    return "IndexMapping{" + "indexName='" + indexName + '\'' + ", properties=" + properties + '}';
+    return "IndexMapping{"
+        + "indexName='"
+        + indexName
+        + '\''
+        + ", dynamic='"
+        + dynamic
+        + '\''
+        + ", properties="
+        + properties
+        + '}';
   }
 
   public static class IndexMappingProperty {
@@ -118,6 +138,13 @@ public class IndexMapping {
       } catch (final JsonProcessingException e) {
         throw new OperateRuntimeException(e);
       }
+    }
+
+    public static IndexMappingProperty createIndexMappingProperty(
+        final Entry<String, Object> propertiesMapEntry) {
+      return new IndexMappingProperty()
+          .setName(propertiesMapEntry.getKey())
+          .setTypeDefinition(propertiesMapEntry.getValue());
     }
 
     @Override

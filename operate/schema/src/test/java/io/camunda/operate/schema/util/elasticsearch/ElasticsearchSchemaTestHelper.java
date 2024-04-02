@@ -16,7 +16,7 @@
  */
 package io.camunda.operate.schema.util.elasticsearch;
 
-import static io.camunda.operate.schema.IndexMappingDifference.createIndexMapping;
+import static io.camunda.operate.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,7 +98,7 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
           .setIndexName(templateName)
           .setProperties(
               mappingMetadata.entrySet().stream()
-                  .map(p -> createIndexMapping(p))
+                  .map(p -> createIndexMappingProperty(p))
                   .collect(Collectors.toSet()));
     } catch (final ElasticsearchException e) {
       if (e.status().equals(RestStatus.NOT_FOUND)) {

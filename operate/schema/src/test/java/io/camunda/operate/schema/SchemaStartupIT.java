@@ -106,12 +106,14 @@ public class SchemaStartupIT extends AbstractSchemaIT {
     // the index should have been updated
     final String indexName = testIndex.getFullQualifiedName();
     final Map<String, IndexMapping> indexMappings = schemaManager.getIndexMappings(indexName);
+
     assertThat(indexMappings)
         .containsExactly(
             entry(
                 indexName,
                 new IndexMapping()
                     .setIndexName(indexName)
+                    .setDynamic("strict")
                     .setProperties(
                         Set.of(
                             new IndexMappingProperty()

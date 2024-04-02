@@ -215,11 +215,20 @@ public class IndexSchemaValidator {
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.getExpectedIndexFields(indexDescriptor);
+
     IndexMappingDifference difference = null;
     // compare every index in group
     for (final Map.Entry<String, IndexMapping> singleIndexMapping : indexMappingsGroup.entrySet()) {
+      // Defer to the builder to exclude fields that would normally be detected as "changed" if
+      // either the actual or expected is dynamic. This is done so that when data is inserted
+      // that adds subfields dynamically (such as when an object is inserted), it does not get
+      // picked up by validation and cause a false failure
       final IndexMappingDifference currentDifference =
-          indexMappingMustBe.difference(singleIndexMapping.getValue());
+          new IndexMappingDifference.IndexMappingDifferenceBuilder()
+              .setIgnoreDynamicDifferences(true)
+              .setLeft(indexMappingMustBe)
+              .setRight(singleIndexMapping.getValue())
+              .build();
       if (!currentDifference.isEqual()) {
         if (difference == null) {
           difference = currentDifference;
