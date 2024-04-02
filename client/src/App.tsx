@@ -24,10 +24,12 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
 import {tracking} from 'modules/tracking';
+import {OSNotifications} from 'OSNotifications';
 
 const Wrapper: React.FC = () => {
   return (
     <>
+      <OSNotifications />
       <SessionWatcher />
       <TrackPagination />
       <Outlet />

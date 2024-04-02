@@ -20,16 +20,34 @@ const TASK_OPENED_REF = zod.object({
   sorting: zod.enum(['creation', 'follow-up', 'due', 'completion']),
 });
 
-type TaskOpenedRef = zod.infer<typeof TASK_OPENED_REF>;
+const TASK_EMPTY_PAGE_OPENED_REF = zod.object({
+  by: zod.enum(['os-notification']),
+});
 
-function encodeRefTag<T extends object>(data: T): string {
+type TaskOpenedRef = zod.infer<typeof TASK_OPENED_REF>;
+type TaskEmptyPageOpenedRef = zod.infer<typeof TASK_EMPTY_PAGE_OPENED_REF>;
+
+const TASK_OPENED_PREFIX = 'task-opened';
+const TASK_EMPTY_PAGE_OPENED_PREFIX = 'task-empty-page-opened';
+
+function encodeRefTagData<T extends object>(data: T): string {
   return btoa(JSON.stringify(data));
 }
 
-function decodeRefTag<T>(str: string | null, schema: ZodSchema<T>): T | null {
-  if (!str) return null;
+function decodeRefTagData<T>(
+  str: string | null,
+  prefix: string,
+  schema: ZodSchema<T>,
+): T | null {
+  if (!str) {
+    return null;
+  }
+  if (!str.startsWith(`${prefix}:`)) {
+    return null;
+  }
+  const jsonString = str.slice(prefix.length + 1);
   try {
-    const json = JSON.parse(atob(str));
+    const json = JSON.parse(atob(jsonString));
     const parsed = schema.safeParse(json);
     if (parsed.success) {
       return parsed.data;
@@ -42,11 +60,30 @@ function decodeRefTag<T>(str: string | null, schema: ZodSchema<T>): T | null {
 }
 
 function encodeTaskOpenedRef(data: TaskOpenedRef): string {
-  return encodeRefTag(data);
+  return `${TASK_OPENED_PREFIX}:${encodeRefTagData(data)}`;
+}
+
+function encodeTaskEmptyPageRef(data: TaskEmptyPageOpenedRef): string {
+  return `${TASK_EMPTY_PAGE_OPENED_PREFIX}:${encodeRefTagData(data)}`;
 }
 
 function decodeTaskOpenedRef(str: string | null): TaskOpenedRef | null {
-  return decodeRefTag(str, TASK_OPENED_REF);
+  return decodeRefTagData(str, TASK_OPENED_PREFIX, TASK_OPENED_REF);
 }
 
-export {encodeTaskOpenedRef, decodeTaskOpenedRef};
+function decodeTaskEmptyPageRef(
+  str: string | null,
+): TaskEmptyPageOpenedRef | null {
+  return decodeRefTagData(
+    str,
+    TASK_EMPTY_PAGE_OPENED_PREFIX,
+    TASK_EMPTY_PAGE_OPENED_REF,
+  );
+}
+
+export {
+  encodeTaskOpenedRef,
+  decodeTaskOpenedRef,
+  encodeTaskEmptyPageRef,
+  decodeTaskEmptyPageRef,
+};

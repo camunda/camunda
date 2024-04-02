@@ -40,7 +40,8 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
 }
 
 const Task: React.FC = observer(() => {
-  const {data, refetch: refetchAllTasks} = useTasks();
+  const filters = useTaskFilters();
+  const {data, refetch: refetchAllTasks} = useTasks(filters);
   const tasks = data?.pages.flat() ?? [];
   const hasRemainingTasks = tasks.length > 0;
   const {id} = useTaskDetailsParams();
@@ -53,7 +54,6 @@ const Task: React.FC = observer(() => {
   });
   const {data: currentUser} = useCurrentUser();
   const {mutateAsync: completeTask} = useCompleteTask();
-  const {filter} = useTaskFilters();
   const {formKey, processDefinitionKey, formId, id: taskId} = task ?? {id};
   const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
@@ -87,7 +87,7 @@ const Task: React.FC = observer(() => {
       eventName: 'task-completed',
       isCamundaForm: formKey ? isCamundaForms(formKey) : false,
       hasRemainingTasks,
-      filter,
+      filter: filters.filter,
       customFilters: Object.keys(customFilters ?? {}),
       customFilterVariableCount: customFilters?.variables?.length ?? 0,
     });

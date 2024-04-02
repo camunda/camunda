@@ -9,7 +9,6 @@ import {tracking} from 'modules/tracking';
 
 async function requestPermission() {
   const permission = await Notification.requestPermission();
-  // TODO: Start polling for notifications
 
   tracking.track({
     eventName: 'os-notification-permission-requested',

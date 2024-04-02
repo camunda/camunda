@@ -29,7 +29,8 @@ type Events =
         | 'public-start-form-load-failed'
         | 'public-start-form-submitted'
         | 'public-start-form-submission-failed'
-        | 'public-start-form-invalid-form-schema';
+        | 'public-start-form-invalid-form-schema'
+        | 'os-notification-opted-out';
     }
   | {
       eventName: 'task-opened';
@@ -37,6 +38,10 @@ type Events =
       position?: number;
       filter?: TaskFilters['filter'];
       sorting?: TaskFilters['sortBy'];
+    }
+  | {
+      eventName: 'task-empty-page-opened';
+      by?: 'os-notification';
     }
   | {
       eventName: 'task-completed';

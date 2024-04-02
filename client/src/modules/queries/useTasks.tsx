@@ -7,6 +7,7 @@
 
 import {
   InfiniteData,
+  UseInfiniteQueryOptions,
   useInfiniteQuery,
   useQueryClient,
 } from '@tanstack/react-query';
@@ -14,7 +15,7 @@ import {api} from 'modules/api';
 import {RequestError, request} from 'modules/request';
 import {Task} from 'modules/types';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {useTaskFilters} from 'modules/hooks/useTaskFilters';
+import {TaskFilters} from 'modules/hooks/useTaskFilters';
 import chunk from 'lodash/chunk';
 import {useCurrentUser} from './useCurrentUser';
 
@@ -37,9 +38,17 @@ function getQueryKey(keys: unknown[]) {
   return ['tasks', ...keys];
 }
 
-function useTasks() {
+function useTasks(
+  filters: TaskFilters,
+  options?: Partial<
+    Pick<
+      UseInfiniteQueryOptions<Task[], RequestError | Error>,
+      'refetchInterval'
+    >
+  >,
+) {
+  const {refetchInterval} = options ?? {};
   const {data: currentUser} = useCurrentUser();
-  const filters = useTaskFilters();
   const payload = getQueryVariables(filters, {
     assignee: currentUser?.userId,
     pageSize: MAX_TASKS_PER_REQUEST,
@@ -59,7 +68,7 @@ function useTasks() {
       throw error ?? new Error('Could not fetch tasks');
     },
     keepPreviousData: true,
-    refetchInterval: POLLING_INTERVAL,
+    refetchInterval: refetchInterval ?? POLLING_INTERVAL,
     getNextPageParam: (lastPage) => {
       if (lastPage.length < MAX_TASKS_PER_REQUEST) {
         return undefined;

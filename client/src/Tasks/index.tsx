@@ -20,8 +20,8 @@ import {pages} from 'modules/routing';
 
 function useAutoSelectNextTaskSideEffects() {
   const {enabled} = autoSelectNextTaskStore;
-  const {isLoading, isFetching, data} = useTasks();
-  const {filter, sortBy} = useTaskFilters();
+  const filters = useTaskFilters();
+  const {isLoading, isFetching, data} = useTasks(filters);
   const location = useLocation();
   const tasks = useMemo(() => data?.pages[0] ?? [], [data?.pages]);
 
@@ -30,11 +30,11 @@ function useAutoSelectNextTaskSideEffects() {
   // We cannot call `navigate` during a render, we need to defer this with useEffect
 
   // If the filters change, pick the first task when we finish fetching...
-  const filters = [filter, sortBy].join(' ');
-  const [previousFilters, setPreviousFilters] = useState<string>(filters);
+  const filtersKey = JSON.stringify(filters);
+  const [previousFilters, setPreviousFilters] = useState<string>(filtersKey);
   useEffect(() => {
-    if (previousFilters !== filters && !isFetching) {
-      setPreviousFilters(filters);
+    if (previousFilters !== filtersKey && !isFetching) {
+      setPreviousFilters(filtersKey);
       if (
         enabled &&
         tasks.length > 0 &&
@@ -46,6 +46,7 @@ function useAutoSelectNextTaskSideEffects() {
   }, [
     enabled,
     filters,
+    filtersKey,
     goToTask,
     isFetching,
     location.pathname,
@@ -73,13 +74,14 @@ function useAutoSelectNextTaskSideEffects() {
 }
 
 const Tasks: React.FC = observer(() => {
+  const filters = useTaskFilters();
   const {
     fetchPreviousTasks,
     fetchNextTasks,
     isInitialLoading,
     isLoading,
     data,
-  } = useTasks();
+  } = useTasks(filters);
   const tasks = data?.pages.flat() ?? [];
 
   useAutoSelectNextTaskSideEffects();

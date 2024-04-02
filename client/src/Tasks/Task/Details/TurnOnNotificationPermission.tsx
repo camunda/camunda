@@ -6,17 +6,12 @@
  */
 
 import {ActionableNotification} from '@carbon/react';
-import {IS_OS_NOTIFICATIONS_ENABLED} from 'modules/featureFlags';
 import {requestPermission} from 'modules/os-notifications/requestPermission';
 import {useState} from 'react';
 
 const TurnOnNotificationPermission: React.FC = () => {
   const [enabled, setEnabled] = useState(true);
-  if (
-    !IS_OS_NOTIFICATIONS_ENABLED ||
-    !enabled ||
-    Notification.permission !== 'default'
-  ) {
+  if (!(enabled && Notification.permission === 'default')) {
     return null;
   }
   return (

@@ -10,13 +10,34 @@ import CheckImage from 'modules/images/orange-check-mark.svg';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {Restricted} from 'modules/components/Restricted';
 import {useTasks} from 'modules/queries/useTasks';
+import {useTaskFilters} from 'modules/hooks/useTaskFilters';
+import {useEffect} from 'react';
+import {decodeTaskEmptyPageRef} from 'modules/utils/reftags';
+import {useSearchParams} from 'react-router-dom';
+import {tracking} from 'modules/tracking';
 import styles from './styles.module.scss';
 
 const EmptyPage: React.FC = () => {
-  const {isLoading: isLoadingTasks, data} = useTasks();
+  const filters = useTaskFilters();
+  const {isLoading: isLoadingTasks, data} = useTasks(filters);
   const tasks = data?.pages.flat() ?? [];
   const hasNoTasks = tasks.length === 0;
   const isOldUser = getStateLocally('hasCompletedTask') === true;
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref !== null) {
+      searchParams.delete('ref');
+      setSearchParams(searchParams, {replace: true});
+    }
+
+    const taskEmptyPageOpenedRef = decodeTaskEmptyPageRef(ref);
+    tracking.track({
+      eventName: 'task-empty-page-opened',
+      ...(taskEmptyPageOpenedRef ?? {}),
+    });
+  }, [searchParams, setSearchParams]);
 
   if (isLoadingTasks) {
     return <span data-testid="loading-state" />;
