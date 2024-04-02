@@ -65,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
@@ -457,7 +458,8 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
-    followerServer.interceptRequest(PollRequest.class, r -> pollCount.increment());
+    followerServer.interceptRequest(
+        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
     protocolFactory.partition(followerId);
 
     // then
@@ -479,7 +481,8 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
-    followerServer.interceptRequest(PollRequest.class, r -> pollCount.increment());
+    followerServer.interceptRequest(
+        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
     protocolFactory.partition(followerId);
     Awaitility.await().timeout(Duration.ofSeconds(5)).untilAdder(pollCount, greaterThan(2L));
     pollCount.reset();
