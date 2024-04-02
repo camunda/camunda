@@ -43,11 +43,15 @@ type Events =
       isCamundaForm: boolean;
       hasRemainingTasks: boolean;
       filter: TaskFilters['filter'];
+      customFilters: string[];
+      customFilterVariableCount: number;
     }
   | {
       eventName: 'tasks-filtered';
       filter: TaskFilters['filter'];
       sorting: TaskFilters['sortBy'];
+      customFilters: string[];
+      customFilterVariableCount: number;
     }
   | {
       eventName: 'navigation';

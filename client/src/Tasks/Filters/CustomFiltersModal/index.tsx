@@ -26,18 +26,20 @@ import {Close, Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
-import {z} from 'zod';
 import set from 'lodash/set';
 import {MultiTenancySelect} from 'modules/components/useMultiTenancyDropdown/MultiTenancySelect';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useMultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown';
-import {customFiltersSchema} from 'modules/custom-filters/customFiltersSchema';
+import {
+  type CustomFilters,
+  customFiltersSchema,
+} from 'modules/custom-filters/customFiltersSchema';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {ProcessesSelect} from './ProcessesSelect';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 
-type FormValues = z.infer<typeof customFiltersSchema>;
+type FormValues = CustomFilters;
 
 const DEFAULT_FORM_VALUES: FormValues = {
   assignee: 'all',

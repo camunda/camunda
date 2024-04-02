@@ -65,4 +65,7 @@ const customFiltersSchema = z.object({
     .optional(),
 });
 
+type CustomFilters = z.infer<typeof customFiltersSchema>;
+
 export {customFiltersSchema};
+export type {CustomFilters};

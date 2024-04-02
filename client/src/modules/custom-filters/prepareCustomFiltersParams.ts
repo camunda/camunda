@@ -6,11 +6,10 @@
  */
 
 import {formatRFC3339} from 'date-fns';
-import {customFiltersSchema} from './customFiltersSchema';
-import {z} from 'zod';
+import type {CustomFilters} from './customFiltersSchema';
 
 function prepareCustomFiltersParams(
-  body: z.infer<typeof customFiltersSchema>,
+  body: CustomFilters,
   user: string,
 ): Record<string, string> {
   const {

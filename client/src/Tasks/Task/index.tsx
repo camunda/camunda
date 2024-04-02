@@ -17,7 +17,7 @@ import {Task as TaskType, Variable} from 'modules/types';
 import {FormJS} from './FormJS';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
-import {storeStateLocally} from 'modules/utils/localStorage';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {DetailsSkeleton} from './Details/DetailsSkeleton';
 import {useTask} from 'modules/queries/useTask';
@@ -81,11 +81,15 @@ const Task: React.FC = observer(() => {
       variables,
     });
 
+    const customFilters = getStateLocally('customFilters')?.custom;
+
     tracking.track({
       eventName: 'task-completed',
       isCamundaForm: formKey ? isCamundaForms(formKey) : false,
       hasRemainingTasks,
       filter,
+      customFilters: Object.keys(customFilters ?? {}),
+      customFilterVariableCount: customFilters?.variables?.length ?? 0,
     });
 
     notificationsStore.displayNotification({

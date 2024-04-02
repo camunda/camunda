@@ -119,6 +119,8 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
             eventName: 'tasks-filtered',
             filter: values.filter,
             sorting: values.sortBy,
+            customFilters: Object.keys(customFilters ?? {}),
+            customFilterVariableCount: customFilters?.variables?.length ?? 0,
           });
 
           setSearchParams(updatedParams);
