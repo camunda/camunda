@@ -217,7 +217,7 @@ final class OpensearchExporterIT {
   }
 
   /**
-   * policy change is an asynchronous background process in opensearch, that's why I use awaits
+   * policy change is an asynchronous background process in opensearch, that's why we use awaits
    * before asserts to reduce flakey results
    */
   @Nested
@@ -308,12 +308,6 @@ final class OpensearchExporterIT {
               });
     }
 
-    /**
-     * Default timeout for elasticsearch `PUT /<target>/_settings` is 30 seconds.
-     *
-     * <p>500 records each has a shard and a replica means 1000 shards, which is the maximum open
-     * shards in a one node cluster
-     */
     @Test
     void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() {
       // given
