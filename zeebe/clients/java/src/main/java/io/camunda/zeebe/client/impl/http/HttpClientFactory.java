@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
@@ -66,7 +65,7 @@ public class HttpClientFactory {
 
   private static final String REST_API_PATH = "/v1";
   private static final ObjectMapper JSON_MAPPER =
-      new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
+      new ObjectMapper().registerModules(new Jdk8Module());
 
   private final ZeebeClientConfiguration config;
 
