@@ -30,12 +30,15 @@ public class QueryValidator<T> {
   public static final int MAX_QUERY_SIZE = 1000;
   private List<String> fields;
 
-  public void validate(final Query<T> query, Class<T> queriedClass) throws ValidationException {
+  public void validate(final Query<T> query, final Class<T> queriedClass)
+      throws ValidationException {
     validate(query, queriedClass, null);
   }
 
   public void validate(
-      final Query<T> query, Class<T> queriedClass, CustomQueryValidator<T> customValidator) {
+      final Query<T> query,
+      final Class<T> queriedClass,
+      final CustomQueryValidator<T> customValidator) {
     retrieveFieldsFor(queriedClass);
     validateSorting(query.getSort(), fields);
     validatePaging(query);
@@ -71,7 +74,7 @@ public class QueryValidator<T> {
     }
   }
 
-  protected void validateSorting(final List<Sort> sortSpecs, List<String> fields) {
+  protected void validateSorting(final List<Sort> sortSpecs, final List<String> fields) {
     if (sortSpecs == null || sortSpecs.isEmpty()) {
       return;
     }
