@@ -50,6 +50,7 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
+import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,10 +63,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
@@ -459,8 +460,13 @@ public class RaftTest extends ConcurrentTestCase {
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
     followerServer.interceptRequest(
-        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
-    protocolFactory.partition(followerId);
+        PollRequest.class,
+        r -> {
+          pollCount.increment();
+          return CompletableFuture.failedFuture(new ConnectException());
+        });
+    // Disconnect one way so that follower do not receive any messages from the leader.
+    protocolFactory.blockMessagesTo(followerId);
 
     // then
     // With priority election enabled the lowest priority node can wait upto 3 * electionTimeout
@@ -481,9 +487,14 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
+    // Disconnect one way so that follower do not receive any messages from the leader.
+    protocolFactory.blockMessagesTo(followerId);
     followerServer.interceptRequest(
-        PollRequest.class, (Consumer<PollRequest>) r -> pollCount.increment());
-    protocolFactory.partition(followerId);
+        PollRequest.class,
+        r -> {
+          pollCount.increment();
+          return CompletableFuture.failedFuture(new TimeoutException());
+        });
     Awaitility.await().timeout(Duration.ofSeconds(5)).untilAdder(pollCount, greaterThan(2L));
     pollCount.reset();
 
