@@ -10,6 +10,7 @@
 import {Search} from '@carbon/react/icons';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {forwardRef} from 'react';
 
 const EmptyMessage: React.FC<React.ComponentProps<'div'>> = ({
   className = '',
@@ -31,14 +32,12 @@ const EmptyMessageText: React.FC<React.ComponentProps<'div'>> = ({
   </div>
 );
 
-const ListContainer: React.FC<React.ComponentProps<'div'>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <div {...rest} className={cn(className, styles.listContainer)}>
-    {children}
-  </div>
+const ListContainer: React.FC<React.ComponentProps<'div'>> = forwardRef(
+  ({className = '', children, ...rest}, ref) => (
+    <div {...rest} className={cn(className, styles.listContainer)} ref={ref}>
+      {children}
+    </div>
+  ),
 );
 
 type ContainerProps = {

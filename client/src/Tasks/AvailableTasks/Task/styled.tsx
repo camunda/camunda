@@ -11,6 +11,7 @@ import {Stack as BaseStack} from '@carbon/react';
 import {NavLink} from 'react-router-dom';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {forwardRef} from 'react';
 
 type LabelProps = {
   $variant: 'primary' | 'secondary';
@@ -64,14 +65,12 @@ const TaskLink: React.FC<React.ComponentProps<typeof NavLink>> = ({
   </NavLink>
 );
 
-const Stack: React.FC<React.ComponentProps<typeof BaseStack>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <BaseStack {...rest} className={cn(className, styles.stack)}>
-    {children}
-  </BaseStack>
+const Stack: React.FC<React.ComponentProps<typeof BaseStack>> = forwardRef(
+  ({className = '', children, ...rest}, ref) => (
+    <BaseStack {...rest} className={cn(className, styles.stack)} ref={ref}>
+      {children}
+    </BaseStack>
+  ),
 );
 
 const Container: React.FC<
