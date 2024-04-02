@@ -8,10 +8,12 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.exporter.opensearch.dto.AddPolicyRequest;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.IndexPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
@@ -247,6 +249,30 @@ public class OpensearchClient implements AutoCloseable {
       return response.policy() != null;
     } catch (final IOException e) {
       throw new OpensearchExporterException("Failed to put index state management policy", e);
+    }
+  }
+
+  public boolean bulkAddISMPolicyToAllZeebeIndices() {
+    try {
+      final var request =
+          new Request("POST", "_plugins/_ism/add/" + configuration.index.prefix + "*");
+      final var requestEntity = new AddPolicyRequest(configuration.retention.getPolicyName());
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+      final var response = sendRequest(request, IndexPolicyResponse.class);
+      return !response.failures();
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to add policy to indices", e);
+    }
+  }
+
+  public boolean bulkRemoveISMPolicyToAllZeebeIndices() {
+    try {
+      final var request =
+          new Request("POST", "_plugins/_ism/remove/" + configuration.index.prefix + "*");
+      final var response = sendRequest(request, IndexPolicyResponse.class);
+      return !response.failures();
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to add policy to indices", e);
     }
   }
 
