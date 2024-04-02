@@ -26,13 +26,13 @@ import org.junit.jupiter.api.io.TempDir;
 class PartitionProcessingStateTest {
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
   private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
-  private static @TempDir Path TEST_DIR;
+  private static @TempDir Path testDir;
   private static final RaftPartition MOCK_RAFT_PARTITION =
       mock(RaftPartition.class, RETURNS_DEEP_STUBS);
 
   @BeforeAll
   static void setUp() {
-    when(MOCK_RAFT_PARTITION.dataDirectory().toPath()).thenReturn(TEST_DIR);
+    when(MOCK_RAFT_PARTITION.dataDirectory().toPath()).thenReturn(testDir);
   }
 
   @Test
@@ -114,5 +114,27 @@ class PartitionProcessingStateTest {
     assertThat(partitionProcessingState.getExporterState())
         .describedAs("Exporting must be resumed.")
         .isEqualTo(ExporterState.EXPORTING);
+  }
+
+  @Test
+  void shouldAssureBackwardCompatibility() throws IOException {
+    // Before the functionality to soft pause the exporter, the previous implementation did not
+    // have the exporter state saved onto to the file. It determined the exporter state based on
+    // the existence of the file (if it exists, then the exporter is paused).
+    // see the changes in: https://github.com/camunda/zeebe/pull/16869
+
+    // Create an empty file for pauseState
+    final File persistedExporterPauseState =
+        testDir.resolve(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toFile();
+
+    persistedExporterPauseState.createNewFile();
+    assertThat(persistedExporterPauseState).describedAs("Exporter State file exists.").exists();
+
+    // Then initialize Partition ProcessingState
+    final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+
+    assertThat(partitionProcessingState.getExporterState())
+        .describedAs("Exporting must be paused.")
+        .isEqualTo(ExporterState.PAUSED);
   }
 }
