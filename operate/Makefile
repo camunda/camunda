@@ -46,14 +46,15 @@ env-sso-up:
 
 .PHONY: env-identity-up
 env-identity-up:
-	@docker-compose -f ./config/docker-compose.identity.yml up -d identity elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=false \
+	@docker-compose -f ./operate/config/docker-compose.identity.yml up -d identity elasticsearch zeebe \
+	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
 	   CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
        CAMUNDA_IDENTITY_CLIENT_ID=operate \
        CAMUNDA_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
        CAMUNDA_IDENTITY_AUDIENCE=operate-api \
-       CAMUNDA_OPERATE_PERSISTENT_SESSIONS_ENABLED=true \
+       CAMUNDA_OPERATE_PERSISTENT_SESSIONS_ENABLED=false \
+       SERVER_SERVLET_CONTEXT_PATH=/operate \
        SERVER_PORT=8081 \
 	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
 

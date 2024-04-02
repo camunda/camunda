@@ -72,7 +72,9 @@ describe('stores/processInstancesByName', () => {
   ];
 
   beforeEach(() => {
-    mockFetchProcessInstancesByName().withSuccess(mockInstancesByProcess);
+    mockFetchProcessInstancesByName().withSuccess(mockInstancesByProcess, {
+      expectPolling: false,
+    });
   });
 
   afterEach(() => {
@@ -92,6 +94,9 @@ describe('stores/processInstancesByName', () => {
   });
 
   it('should start polling on init', async () => {
+    mockFetchProcessInstancesByName().withSuccess(mockInstancesByProcess, {
+      expectPolling: true,
+    });
     jest.useFakeTimers();
     processInstancesByNameStore.init();
     await waitFor(() =>
@@ -102,7 +107,7 @@ describe('stores/processInstancesByName', () => {
       mockInstancesByProcess,
     );
 
-    mockFetchProcessInstancesByName().withSuccess([]);
+    mockFetchProcessInstancesByName().withSuccess([], {expectPolling: true});
 
     jest.runOnlyPendingTimers();
 

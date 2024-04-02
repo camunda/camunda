@@ -147,7 +147,7 @@ class Incidents extends NetworkReconnectionHandler {
 
   handlePolling = async (id: string) => {
     this.isPollRequestRunning = true;
-    const response = await fetchProcessInstanceIncidents(id);
+    const response = await fetchProcessInstanceIncidents(id, {isPolling: true});
 
     if (this.intervalId !== null && response.isSuccess) {
       this.setIncidents(response.data);

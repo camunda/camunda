@@ -26,21 +26,27 @@ type VariablePayload = {
   searchBeforeOrEqual?: ReadonlyArray<string>;
 };
 
-const fetchVariables = async ({
-  instanceId,
-  payload,
-  signal,
-}: {
-  instanceId: ProcessInstanceEntity['id'];
-  payload: VariablePayload;
-  signal?: AbortSignal;
-}) => {
-  return requestAndParse<VariableEntity[]>({
-    url: `/api/process-instances/${instanceId}/variables`,
-    method: 'POST',
-    body: payload,
+const fetchVariables = async (
+  {
+    instanceId,
+    payload,
     signal,
-  });
+  }: {
+    instanceId: ProcessInstanceEntity['id'];
+    payload: VariablePayload;
+    signal?: AbortSignal;
+  },
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
+  return requestAndParse<VariableEntity[]>(
+    {
+      url: `/api/process-instances/${instanceId}/variables`,
+      method: 'POST',
+      body: payload,
+      signal,
+    },
+    options,
+  );
 };
 
 export {fetchVariables};

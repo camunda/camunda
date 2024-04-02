@@ -27,10 +27,14 @@ type ProcessInstanceDetailStatisticsDto = {
 
 const fetchProcessInstanceDetailStatistics = async (
   processInstanceId: ProcessInstanceEntity['id'],
+  options?: Parameters<typeof requestAndParse>[1],
 ) => {
-  return requestAndParse<ProcessInstanceDetailStatisticsDto[]>({
-    url: `/api/process-instances/${processInstanceId}/statistics`,
-  });
+  return requestAndParse<ProcessInstanceDetailStatisticsDto[]>(
+    {
+      url: `/api/process-instances/${processInstanceId}/statistics`,
+    },
+    options,
+  );
 };
 
 export {fetchProcessInstanceDetailStatistics};

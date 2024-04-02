@@ -71,7 +71,9 @@ describe('stores/incidentsByError', () => {
   ];
 
   beforeEach(() => {
-    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError, {
+      expectPolling: false,
+    });
   });
 
   afterEach(() => {
@@ -91,6 +93,9 @@ describe('stores/incidentsByError', () => {
   });
 
   it('should start polling on init', async () => {
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError, {
+      expectPolling: true,
+    });
     jest.useFakeTimers();
     incidentsByErrorStore.init();
     await waitFor(() =>
@@ -99,7 +104,7 @@ describe('stores/incidentsByError', () => {
 
     expect(incidentsByErrorStore.state.incidents).toEqual(mockIncidentsByError);
 
-    mockFetchIncidentsByError().withSuccess([]);
+    mockFetchIncidentsByError().withSuccess([], {expectPolling: true});
 
     jest.runOnlyPendingTimers();
 

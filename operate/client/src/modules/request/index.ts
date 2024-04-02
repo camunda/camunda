@@ -56,12 +56,23 @@ async function request({url, method, body, headers, signal}: RequestParams) {
 
 async function requestAndParse<T>(
   params: RequestParams,
-  options?: {onFailure?: () => void; onException?: () => void},
+  options?: {
+    onFailure?: () => void;
+    onException?: () => void;
+    isPolling?: boolean;
+  },
 ) {
   const {url} = params;
 
+  const extendedParams = {
+    ...params,
+    headers: {...params.headers, 'x-is-polling': 'true'},
+  };
+
   try {
-    const response = await request(params);
+    const response = await request(
+      options?.isPolling ? extendedParams : params,
+    );
 
     if (!response.ok) {
       options?.onFailure?.();
