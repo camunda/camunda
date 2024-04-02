@@ -98,6 +98,10 @@
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
+    },
+    {
+      "matchFileNames": ["operate.Dockerfile"],
+      "enabled": false
     }
   ],
   "dockerfile": {
