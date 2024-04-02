@@ -298,7 +298,7 @@
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
               <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)</additionalModelTypeAnnotations>
                 <documentationProvider>none</documentationProvider>
                 <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
                 <library>apache-httpclient</library>
