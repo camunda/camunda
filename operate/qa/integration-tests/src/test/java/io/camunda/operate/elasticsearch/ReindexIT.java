@@ -34,6 +34,7 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.test.appender.ListAppender;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -72,7 +73,9 @@ public class ReindexIT {
     indexPrefix = UUID.randomUUID().toString();
 
     // create index
-    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
+    createIndex(
+        idxName("index-1.2.3_"),
+        IntStream.range(0, 15000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
     // Create archived index
     createIndex(
         idxName("index-1.2.3_2021-05-23"), List.of(Map.of("test_name", "test_value_archived")));
