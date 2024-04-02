@@ -10,6 +10,8 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -102,9 +104,14 @@ public abstract class TasklistZeebeExtension
     this.prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
     LOGGER.info("Using Zeebe container with indexPrefix={}", prefix);
     setZeebeIndexesPrefix(prefix);
+    final Integer zeebeRestPort = zeebeContainer.getMappedPort(8080);
+
     client =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+            .restAddress(
+                getURIFromString(
+                    String.format("http://%s:%s", zeebeContainer.getExternalHost(), zeebeRestPort)))
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
@@ -119,13 +126,25 @@ public abstract class TasklistZeebeExtension
     final String indexPrefix = TestUtil.createRandomString(10);
     LOGGER.info(
         "************ Starting Zeebe:{}, indexPrefix={} ************", zeebeVersion, indexPrefix);
-    return new ZeebeContainer(DockerImageName.parse("camunda/zeebe").withTag(zeebeVersion))
-        .withEnv(getDatabaseEnvironmentVariables(indexPrefix))
-        .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
-        .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
-        .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
-        .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
-        .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2");
+    final ZeebeContainer zContainer =
+        new ZeebeContainer(DockerImageName.parse("camunda/zeebe").withTag(zeebeVersion))
+            .withEnv(getDatabaseEnvironmentVariables(indexPrefix))
+            .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
+            .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
+            .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
+            .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
+            .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
+            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+    zContainer.addExposedPort(8080);
+    return zContainer;
+  }
+
+  private static URI getURIFromString(final String uri) {
+    try {
+      return new URI(uri);
+    } catch (final URISyntaxException e) {
+      throw new IllegalArgumentException("Failed to parse URI string", e);
+    }
   }
 
   protected abstract Map<String, String> getDatabaseEnvironmentVariables(String indexPrefix);

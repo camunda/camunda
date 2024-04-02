@@ -126,9 +126,11 @@ services:
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE=zeebe-api
       - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://identity:8084
+      - ZEEBE_BROKER_GATEWAY_ENABLE=true
     ports:
       - 26500:26500
       - 8000:8000
+      - 8083:8080
     restart: always
     networks:
       - identity-network
@@ -179,6 +181,7 @@ services:
     environment:
       - SERVER_PORT=8082
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
       - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
       - SPRING_PROFILES_ACTIVE=identity-auth,dev,dev-data
@@ -189,8 +192,8 @@ services:
       - CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
       - CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://keycloak:8080/auth/realms/camunda-platform
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
       - CAMUNDA_TASKLIST_MULTITENANCY_ENABLED=true
       - ZEEBE_CLIENT_ID=zeebe

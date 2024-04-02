@@ -10,7 +10,9 @@ import static io.camunda.tasklist.util.TestCheck.TASK_IS_CANCELED_BY_FLOW_NODE_B
 import static io.camunda.tasklist.util.TestCheck.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static java.util.Comparator.comparing;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +24,9 @@ import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.assertions.CustomAssertions;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
@@ -1127,6 +1131,111 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
           .hasApplicationJsonContentType()
           .extractingListContent(objectMapper, TaskSearchResponse.class)
           .hasSize(numberOfTasks);
+    }
+  }
+
+  @Nested
+  class ZeebeApiTests {
+    @Test
+    public void shouldAssignUserTask() {
+      final String user = "demo";
+
+      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+
+      zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(user).send().join();
+
+      tester.waitUntil().taskIsAssigned(taskId);
+
+      final var result =
+          mockMvcHelper.doRequest(get(TasklistURIs.TASKS_URL_V1.concat("/{taskId}"), taskId));
+
+      CustomAssertions.assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getName()).isEqualTo(ELEMENT_ID);
+                assertThat(task.getProcessName()).isEqualTo(BPMN_PROCESS_ID);
+                assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+                assertThat(task.getAssignee()).isEqualTo(user);
+              });
+    }
+
+    @Test
+    public void shouldUpdateUserTask() {
+      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final List<String> candidateGroups = new ArrayList<>();
+      candidateGroups.add("candidateGroupA");
+      candidateGroups.add("candidateGroupB");
+
+      final List<String> candidateUsers = new ArrayList<>();
+      candidateUsers.add("candidateUserA");
+      candidateUsers.add("candidateUserB");
+
+      final String dueDate = "2024-03-08T18:41:31+00:00";
+      final String followUpDate = "2024-03-08T18:41:31+00:00";
+
+      zeebeClient
+          .newUserTaskUpdateCommand(Long.valueOf(taskId))
+          .candidateUsers(candidateUsers)
+          .action("action")
+          .candidateGroups(candidateGroups)
+          .dueDate(dueDate)
+          .followUpDate(followUpDate)
+          .send()
+          .join();
+
+      tester.waitUntil().taskHasCandidateUsers(ELEMENT_ID);
+
+      final var result =
+          mockMvcHelper.doRequest(get(TasklistURIs.TASKS_URL_V1.concat("/{taskId}"), taskId));
+
+      CustomAssertions.assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getName()).isEqualTo(ELEMENT_ID);
+                assertThat(task.getProcessName()).isEqualTo(BPMN_PROCESS_ID);
+                assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+                assertThat(task.getCandidateGroups()).containsAll(candidateGroups);
+                assertThat(task.getCandidateUsers()).containsAll(candidateUsers);
+                assertThat(task.getDueDate()).isEqualTo(dueDate);
+                assertThat(task.getFollowUpDate()).isEqualTo(followUpDate);
+              });
+    }
+
+    @Test
+    public void shouldCompleteUserTaskWithVariables() {
+      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final Map<String, Object> variables = new HashMap<>();
+      variables.put("varA", "value Var A");
+      variables.put("varB", 123);
+      variables.put("varC", 123L);
+
+      zeebeClient
+          .newUserTaskCompleteCommand(Long.parseLong(taskId))
+          .variables(variables)
+          .send()
+          .join();
+
+      tester.waitUntil().taskIsCompleted(ELEMENT_ID);
+
+      final var result =
+          mockMvcHelper.doRequest(
+              post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId));
+
+      CustomAssertions.assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, VariableSearchResponse.class)
+          .extracting("name", "value")
+          .containsExactlyInAnyOrder(
+              tuple("varA", "value Var A"), tuple("varB", "123"), tuple("varC", "123"));
     }
   }
 }

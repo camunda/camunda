@@ -29,6 +29,8 @@ public interface TaskStore {
    */
   TaskEntity persistTaskCompletion(final TaskEntity taskBefore);
 
+  TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore);
+
   TaskEntity persistTaskClaim(TaskEntity taskBefore, String assignee);
 
   TaskEntity persistTaskUnclaim(TaskEntity task);

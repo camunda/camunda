@@ -25,6 +25,7 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
@@ -42,7 +43,12 @@ import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +99,6 @@ class TaskServiceTest {
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(List.of(providedTask));
 
     // When
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
     final var result = instance.getTasks(taskQuery);
 
     // Then
@@ -186,7 +191,6 @@ class TaskServiceTest {
                         .setIsValueTruncated(true))));
 
     // When
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
     final var result = instance.getTasks(taskQuery, Set.of("varA"), false);
 
     // Then
@@ -207,7 +211,6 @@ class TaskServiceTest {
             new TaskDTO().setId("456").setTaskState(TaskState.COMPLETED));
 
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(providedTasks);
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
     // When
     final var result = instance.getTasks(taskQuery, emptySet(), false);
 
@@ -292,6 +295,7 @@ class TaskServiceTest {
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.JOB_WORKER);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
@@ -378,6 +382,7 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.JOB_WORKER);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var unassignedTask = new TaskEntity().setId(taskId).setState(TaskState.CREATED);
     when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
@@ -416,7 +421,7 @@ class TaskServiceTest {
     when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
     final var mockedZeebeFuture = mock(ZeebeFuture.class);
     when(mockedJobCommandStep2.send()).thenReturn(mockedZeebeFuture);
-
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.JOB_WORKER);
     // When
     final var result = instance.completeTask(taskId, variables, true);
 
@@ -425,5 +430,147 @@ class TaskServiceTest {
     verify(variableService).persistTaskVariables(taskId, variables, true);
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
+  }
+
+  @Test
+  void completeZeebeUserTask() {
+    // Given
+    final var taskId = "123";
+    final var variables = List.of(new VariableInputDTO().setName("a").setValue("1"));
+    final Map<String, Object> variablesMap = Map.of("a", 1);
+
+    final var mockedUser = mock(UserDTO.class);
+    when(userReader.getCurrentUser()).thenReturn(mockedUser);
+    final var taskBefore = mock(TaskEntity.class);
+    when(taskStore.getTask(taskId)).thenReturn(taskBefore);
+    final var completedTask =
+        new TaskEntity()
+            .setId(taskId)
+            .setState(TaskState.COMPLETED)
+            .setAssignee("demo")
+            .setCompletionTime(OffsetDateTime.now());
+    when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+
+    // mock zeebe command
+    final var mockedJobCommandStep1 = mock(CompleteUserTaskCommandStep1.class);
+    when(zeebeClient.newUserTaskCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
+    final var mockedJobCommandStep2 = mock(CompleteUserTaskCommandStep1.class);
+    when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
+    final var mockedZeebeFuture = mock(ZeebeFuture.class);
+    when(mockedJobCommandStep2.send()).thenReturn(mockedZeebeFuture);
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
+    // When
+    final var result = instance.completeTask(taskId, variables, true);
+
+    // Then
+    verify(taskValidator).validateCanComplete(taskBefore);
+    verify(variableService).persistTaskVariables(taskId, variables, true);
+    verify(variableService).deleteDraftTaskVariables(taskId);
+    assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
+  }
+
+  @Test
+  void unassignZeebeUserTask() {
+    // Given
+    final var taskId = 123L;
+    final var taskBefore = mock(TaskEntity.class);
+
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
+    when(taskBefore.getKey()).thenReturn(taskId);
+    when(taskStore.getTask(String.valueOf(taskId))).thenReturn(taskBefore);
+    final var unassignedTask = new TaskEntity().setAssignee(null);
+    when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
+        .thenReturn(mock(UnassignUserTaskCommandStep1.class));
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
+        .thenReturn(mock(ZeebeFuture.class));
+    final var result = instance.unassignTask(String.valueOf(taskId));
+
+    // Then
+    verify(taskValidator).validateCanUnassign(taskBefore);
+    assertThat(result).isEqualTo(TaskDTO.createFrom(unassignedTask, objectMapper));
+  }
+
+  @Test
+  void unassignZeebeUserTaskException() {
+    // Given
+    final var taskId = 123L;
+    final var taskBefore = mock(TaskEntity.class);
+
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
+    when(taskBefore.getKey()).thenReturn(taskId);
+    when(taskStore.getTask(String.valueOf(taskId))).thenReturn(taskBefore);
+    final var unassignedTask = new TaskEntity().setAssignee(null);
+    when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
+        .thenReturn(mock(UnassignUserTaskCommandStep1.class));
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
+        .thenThrow(new ClientException("reason for error"));
+
+    // Then
+    assertThatThrownBy(() -> instance.unassignTask(String.valueOf(taskId)))
+        .isInstanceOf(TasklistRuntimeException.class)
+        .hasMessage("reason for error");
+  }
+
+  @Test
+  void assignZeebeUserTaskException() {
+    // Given
+    final var taskId = "123";
+    final var taskBefore = mock(TaskEntity.class);
+    final var user = mock(UserDTO.class);
+    final var problemDetail = new ProblemDetail();
+    final var providedAssignee = "expectedAssignee";
+    final var providedAllowOverrideAssignment = false;
+
+    problemDetail.setDetail("detail");
+
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
+    when(taskStore.getTask(taskId)).thenReturn(taskBefore);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    when(user.getUserId()).thenReturn(providedAssignee);
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
+        .thenReturn(mock(AssignUserTaskCommandStep1.class));
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
+        .thenReturn(mock(AssignUserTaskCommandStep1.class));
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
+        .thenThrow(new ClientException("reason for error"));
+
+    // Then
+    assertThatThrownBy(
+            () -> instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment))
+        .isInstanceOf(TasklistRuntimeException.class)
+        .hasMessage("reason for error");
+  }
+
+  @ParameterizedTest
+  @MethodSource("assignTaskTestData")
+  void assignZeebeUserTask(
+      Boolean providedAllowOverrideAssignment,
+      boolean expectedAllowOverrideAssignment,
+      String providedAssignee,
+      UserDTO user,
+      String expectedAssignee) {
+    // Given
+    final var taskId = "123";
+    final var taskBefore = mock(TaskEntity.class);
+
+    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
+    when(taskStore.getTask(taskId)).thenReturn(taskBefore);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
+    when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
+        .thenReturn(mock(AssignUserTaskCommandStep1.class));
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
+        .thenReturn(mock(AssignUserTaskCommandStep1.class));
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
+        .thenReturn(mock(ZeebeFuture.class));
+    final var result =
+        instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);
+
+    // Then
+    verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
+    assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
   }
 }

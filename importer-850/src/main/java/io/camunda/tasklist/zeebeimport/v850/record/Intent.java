@@ -44,6 +44,7 @@ public enum Intent implements io.camunda.zeebe.protocol.record.intent.Intent {
   // FORM, PROCESS
   DELETED,
   RECURRED_AFTER_BACKOFF,
+  ASSIGNED,
   UNKNOWN;
 
   private final short value = 0;

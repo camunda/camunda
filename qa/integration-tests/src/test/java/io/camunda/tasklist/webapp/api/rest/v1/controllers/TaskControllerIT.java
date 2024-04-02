@@ -12,26 +12,17 @@ import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.IncludeVariable;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
@@ -743,6 +734,49 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
   @Nested
   class AssignAndUnassignTaskTests {
+
+    @Test
+    public void unassignZeebeUserTask() {
+      final int numberOfTasks = 1;
+      final String bpmnProcessId = "testProcess";
+      final String flowNodeBpmnId = "taskA";
+      final String taskId =
+          tester.createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, numberOfTasks).getTaskId();
+      final var result =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId));
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isEqualTo(DEFAULT_USER_ID);
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      final var resultUnassign =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign"), taskId));
+
+      // then
+      assertThat(resultUnassign)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isNull();
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK));
+              });
+    }
+
     @Test
     public void assignTaskByNonApiUser() {
       // given
@@ -1042,6 +1076,70 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extracting("name", "value", "previewValue", "isValueTruncated")
           .containsExactlyInAnyOrder(
               tuple("var_0", "0", "0", false),
+              tuple("var_1", "11111111111", "11111111111", false),
+              tuple("var_2", "222222", "222222", false),
+              tuple("var_a", "225", "225", false),
+              tuple("var_b", "779", "779", false));
+    }
+
+    @Test
+    public void completeZeebeUserTaskWithVariables() throws Exception {
+      // given
+      final String bpmnProcessId = "simpleTestProcess";
+      final String flowNodeBpmnId = "taskE_".concat(UUID.randomUUID().toString());
+
+      final var taskId =
+          tester.createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, "demo", 1).getTaskId();
+
+      final var saveVariablesRequest =
+          new SaveVariablesRequest()
+              .setVariables(
+                  List.of(
+                      new VariableInputDTO().setName("var_2").setValue("222222"),
+                      new VariableInputDTO().setName("var_b").setValue("779"),
+                      new VariableInputDTO().setName("var_a").setValue("114")));
+
+      // when
+      final var persistDraftVariablesResult =
+          mockMvcHelper.doRequest(
+              post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables"), taskId),
+              saveVariablesRequest);
+
+      // then
+      assertThat(persistDraftVariablesResult).hasHttpStatus(HttpStatus.NO_CONTENT);
+
+      final var completeRequest =
+          new TaskCompleteRequest()
+              .setVariables(
+                  List.of(
+                      new VariableInputDTO().setName("var_a").setValue("225"),
+                      new VariableInputDTO().setName("var_1").setValue("11111111111")));
+
+      // when
+      final var result =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId),
+              completeRequest);
+      final var taskVariables = tester.getTaskVariables();
+
+      // then
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isEqualTo(DEFAULT_USER_ID);
+                assertThat(task.getTaskState()).isEqualTo(TaskState.COMPLETED);
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNotNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      assertThat(taskVariables)
+          .extracting("name", "value", "previewValue", "isValueTruncated")
+          .containsExactlyInAnyOrder(
               tuple("var_1", "11111111111", "11111111111", false),
               tuple("var_2", "222222", "222222", false),
               tuple("var_a", "225", "225", false),

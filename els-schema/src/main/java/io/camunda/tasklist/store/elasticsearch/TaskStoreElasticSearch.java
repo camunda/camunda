@@ -586,6 +586,42 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   @Override
+  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
+    final SearchHit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit =
+          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, null);
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(taskTemplate.getFullQualifiedName())
+              .id(taskBeforeSearchHit.getId())
+              .doc(jsonMap)
+              .setRefreshPolicy(WAIT_UNTIL)
+              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
+              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
+      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+    } catch (Exception e) {
+      LOGGER.error("Error when trying to rollback Task to CREATED state: {}", e.getMessage());
+    }
+    return completedTask;
+  }
+
+  @Override
   public TaskEntity persistTaskClaim(TaskEntity taskBefore, String assignee) {
 
     updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));

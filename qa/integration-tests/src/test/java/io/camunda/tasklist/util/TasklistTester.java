@@ -6,17 +6,7 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_CANCELED_CHECK;
-import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
-import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DELETED_CHECK;
-import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
-import static io.camunda.tasklist.util.TestCheck.TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.TestCheck.TASK_IS_ASSIGNED_CHECK;
-import static io.camunda.tasklist.util.TestCheck.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.TestCheck.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.TestCheck.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
-import static io.camunda.tasklist.util.TestCheck.TASK_VARIABLE_EXISTS_CHECK;
-import static io.camunda.tasklist.util.TestCheck.VARIABLES_EXIST_CHECK;
+import static io.camunda.tasklist.util.TestCheck.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -90,6 +80,10 @@ public class TasklistTester {
   private TestCheck taskIsCreatedCheck;
 
   @Autowired
+  @Qualifier(TASK_HAS_CANDIDATE_USERS)
+  private TestCheck taskHasCandidateUsers;
+
+  @Autowired
   @Qualifier(TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck tasksAreCreatedCheck;
 
@@ -155,6 +149,26 @@ public class TasklistTester {
             .startEvent("start")
             .userTask(flowNodeBpmnId)
             .endEvent()
+            .done();
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    return this;
+  }
+
+  public TasklistTester createAndDeploySimpleProcessZeebeUserTask(
+      String processId, String flowNodeBpmnId) {
+    return createAndDeploySimpleProcessZeebeUserTask(processId, flowNodeBpmnId, null);
+  }
+
+  public TasklistTester createAndDeploySimpleProcessZeebeUserTask(
+      String processId, String flowNodeBpmnId, String assignee) {
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .userTask(flowNodeBpmnId)
+            .zeebeAssignee(assignee)
+            .zeebeUserTask()
+            .endEvent("end")
             .done();
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
@@ -539,6 +553,29 @@ public class TasklistTester {
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
+  }
+
+  public TasklistTester taskHasCandidateUsers(String flowNodeBpmnId) {
+    databaseTestExtension.processAllRecordsAndWait(
+        taskHasCandidateUsers, processInstanceId, flowNodeBpmnId);
+    // update taskId
+    resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+    return this;
+  }
+
+  public TasklistTester createZeebeUserTask(
+      String bpmnProcessId, String flowNodeBpmnId, String assignee, int numberOfInstances) {
+    return createAndDeploySimpleProcessZeebeUserTask(bpmnProcessId, flowNodeBpmnId, assignee)
+        .processIsDeployed()
+        .then()
+        .startProcessInstances(bpmnProcessId, numberOfInstances)
+        .then()
+        .taskIsCreated(flowNodeBpmnId);
+  }
+
+  public TasklistTester createZeebeUserTask(
+      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances) {
+    return createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, null, numberOfInstances);
   }
 
   public TasklistTester tasksAreCreated(String flowNodeBpmnId, int taskCount) {

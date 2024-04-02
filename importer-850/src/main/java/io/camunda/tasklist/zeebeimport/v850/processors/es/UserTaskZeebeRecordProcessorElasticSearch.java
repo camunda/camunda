@@ -11,19 +11,23 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.zeebeimport.v850.processors.common.UserTaskRecordToTaskEntityMapper;
-import io.camunda.tasklist.zeebeimport.v850.record.Intent;
+import io.camunda.tasklist.zeebeimport.v850.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,21 +45,35 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
+  @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
+
+  @Autowired private TaskVariableTemplate variableIndex;
+
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 
   public void processUserTaskRecord(Record<UserTaskRecordValue> record, BulkRequest bulkRequest)
       throws PersistenceException {
+
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
-      bulkRequest.add(getTaskQuery(taskEntity.get(), (Intent) record.getIntent()));
+      bulkRequest.add(getTaskQuery(taskEntity.get(), record));
+
+      // Variables
+      if (!record.getValue().getVariables().isEmpty()) {
+        final List<TaskVariableEntity> variables =
+            userTaskRecordToVariableEntityMapper.mapVariables(record);
+        for (TaskVariableEntity variable : variables) {
+          bulkRequest.add(getVariableQuery(variable));
+        }
+      }
     }
     // else skip task
   }
 
-  private UpdateRequest getTaskQuery(TaskEntity entity, Intent intent) throws PersistenceException {
+  private UpdateRequest getTaskQuery(TaskEntity entity, Record record) throws PersistenceException {
     try {
       final Map<String, Object> updateFields =
-          userTaskRecordToTaskEntityMapper.getUpdateFieldsMap(entity, intent);
+          userTaskRecordToTaskEntityMapper.getUpdateFieldsMap(entity, record);
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -71,6 +89,33 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     } catch (IOException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
+          e);
+    }
+  }
+
+  private UpdateRequest getVariableQuery(TaskVariableEntity variable) throws PersistenceException {
+    try {
+      LOGGER.debug("Variable instance for list view: id {}", variable.getId());
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(
+          TaskVariableTemplate.VALUE,
+          objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getValue())));
+      updateFields.put(
+          TaskVariableTemplate.FULL_VALUE,
+          objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getFullValue())));
+      updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
+
+      return new UpdateRequest()
+          .index(variableIndex.getFullQualifiedName())
+          .id(variable.getId())
+          .upsert(objectMapper.writeValueAsString(variable), XContentType.JSON)
+          .doc(updateFields)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
+    } catch (IOException e) {
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to upsert variable instance [%s]  for list view",
+              variable.getId()),
           e);
     }
   }

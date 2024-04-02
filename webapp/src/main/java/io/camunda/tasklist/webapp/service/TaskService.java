@@ -6,12 +6,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.tasklist.Metrics.COUNTER_NAME_CLAIMED_TASKS;
-import static io.camunda.tasklist.Metrics.COUNTER_NAME_COMPLETED_TASKS;
-import static io.camunda.tasklist.Metrics.TAG_KEY_BPMN_PROCESS_ID;
-import static io.camunda.tasklist.Metrics.TAG_KEY_FLOW_NODE_ID;
-import static io.camunda.tasklist.Metrics.TAG_KEY_ORGANIZATION_ID;
-import static io.camunda.tasklist.Metrics.TAG_KEY_USER_ID;
+import static io.camunda.tasklist.Metrics.*;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
@@ -26,25 +21,17 @@ import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.graphql.entity.*;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -93,11 +80,6 @@ public class TaskService {
           String.format(
               "Invalid implementation, the valid values are %s and %s",
               TaskImplementation.ZEEBE_USER_TASK, TaskImplementation.JOB_WORKER));
-    }
-
-    final UserDTO currentUser = getCurrentUser();
-    if (!currentUser.isApiUser()) {
-      query.setImplementation(TaskImplementation.JOB_WORKER);
     }
 
     final List<TaskSearchView> tasks = taskStore.getTasks(query.toTaskQuery());
@@ -156,8 +138,21 @@ public class TaskService {
     taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
     final String taskAssignee = determineTaskAssignee(assignee);
-    final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
 
+    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
+      try {
+        final AssignUserTaskResponse assigneeResponse =
+            zeebeClient
+                .newUserTaskAssignCommand(Long.parseLong(taskId))
+                .assignee(taskAssignee)
+                .send()
+                .join();
+      } catch (ClientException exception) {
+        throw new TasklistRuntimeException(exception.getMessage());
+      }
+    }
+
+    final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     updateClaimedMetric(claimedTask);
     return TaskDTO.createFrom(claimedTask, objectMapper);
   }
@@ -182,20 +177,38 @@ public class TaskService {
       final TaskEntity task = taskStore.getTask(taskId);
       taskValidator.validateCanComplete(task);
 
-      // complete
-      CompleteJobCommandStep1 completeJobCommand =
-          zeebeClient.newCompleteCommand(Long.parseLong(taskId));
-      completeJobCommand = completeJobCommand.variables(variablesMap);
-      completeJobCommand.send().join();
+      try {
+        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
+          // complete
+          CompleteJobCommandStep1 completeJobCommand =
+              zeebeClient.newCompleteCommand(Long.parseLong(taskId));
+          completeJobCommand = completeJobCommand.variables(variablesMap);
+          completeJobCommand.send().join();
+        } else {
+          zeebeClient
+              .newUserTaskCompleteCommand(Long.parseLong(taskId))
+              .variables(variablesMap)
+              .send()
+              .join();
+        }
+      } catch (ClientException exception) {
+        throw new TasklistRuntimeException(exception.getMessage());
+      }
 
       // persist completion and variables
-      LOGGER.info("Start variable persistence: {}", taskId);
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
-      variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
-      deleteDraftTaskVariablesSafely(taskId);
-      updateCompletedMetric(completedTaskEntity);
-
-      LOGGER.info("Task with ID {} completed successfully.", taskId);
+      try {
+        LOGGER.info("Start variable persistence: {}", taskId);
+        variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+        deleteDraftTaskVariablesSafely(taskId);
+        updateCompletedMetric(completedTaskEntity);
+        LOGGER.info("Task with ID {} completed successfully.", taskId);
+      } catch (Exception e) {
+        LOGGER.error(
+            "Task with key {} was COMPLETED but error happened after completion: {}.",
+            taskId,
+            e.getMessage());
+      }
 
       return TaskDTO.createFrom(completedTaskEntity, objectMapper);
     } catch (HttpServerErrorException e) { // Track only internal server errors
@@ -235,8 +248,16 @@ public class TaskService {
   public TaskDTO unassignTask(String taskId) {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
-
-    return TaskDTO.createFrom(taskStore.persistTaskUnclaim(taskBefore), objectMapper);
+    final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
+    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
+      try {
+        zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
+      } catch (ClientException exception) {
+        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
+        throw new TasklistRuntimeException(exception.getMessage());
+      }
+    }
+    return TaskDTO.createFrom(taskEntity, objectMapper);
   }
 
   private UserDTO getCurrentUser() {

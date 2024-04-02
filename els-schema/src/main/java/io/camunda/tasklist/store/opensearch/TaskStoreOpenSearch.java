@@ -719,6 +719,42 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   @Override
+  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
+    final Hit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit = this.getTaskRawResponse(taskBefore.getId());
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
+      updateRequest
+          .index(taskTemplate.getFullQualifiedName())
+          .id(taskBeforeSearchHit.id())
+          .doc(jsonMap)
+          .refresh(Refresh.WaitFor)
+          .ifSeqNo(taskBeforeSearchHit.seqNo())
+          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
+      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
+    } catch (Exception e) {
+      // we're OK with not updating the task here, it will be marked as completed within import
+      LOGGER.error(e.getMessage(), e);
+    }
+    return completedTask;
+  }
+
+  @Override
   public TaskEntity persistTaskClaim(TaskEntity taskBefore, String assignee) {
 
     updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));

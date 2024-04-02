@@ -123,6 +123,32 @@ public class OpenSearchChecks {
     };
   }
 
+  @Bean(name = TASK_HAS_CANDIDATE_USERS)
+  public TestCheck getTaskHasCandidateUsers() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return TASK_HAS_CANDIDATE_USERS;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(2);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String.class);
+        final String processInstanceKey = (String) objects[0];
+        final String flowNodeBpmnId = (String) objects[1];
+        try {
+          final String taskId = (String) objects[0];
+          final TaskEntity taskEntity = openSearchHelper.getTask(taskId);
+          return taskEntity.getCandidateGroups().length > 0;
+        } catch (NotFoundApiException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
   /** Checks whether the task for given args[0] taskId (String) exists and is assigned. */
   @Bean(name = TASK_IS_ASSIGNED_CHECK)
   public TestCheck getTaskIsAssignedCheck() {

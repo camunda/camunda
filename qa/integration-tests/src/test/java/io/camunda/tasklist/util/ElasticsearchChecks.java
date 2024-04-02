@@ -175,6 +175,33 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = TASK_HAS_CANDIDATE_USERS)
+  public TestCheck getTaskHasCandidateUsers() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return TASK_HAS_CANDIDATE_USERS;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(2);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String.class);
+        final String processInstanceKey = (String) objects[0];
+        final String flowNodeBpmnId = (String) objects[1];
+        try {
+          final List<TaskEntity> taskEntity =
+              elasticsearchHelper.getTask(processInstanceKey, flowNodeBpmnId);
+          return taskEntity.stream().map(TaskEntity::getCandidateUsers).anyMatch(e -> e != null);
+
+        } catch (NotFoundApiException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
   /**
    * Checks whether the tasks for given args[0] flowNodeBpmnId (String) exist and are in state
    * CREATED.

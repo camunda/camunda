@@ -19,6 +19,7 @@ public interface TestCheck extends Predicate<Object[]> {
   String TASK_IS_CREATED_CHECK = "taskIsCreatedCheck";
   String TASK_IS_ASSIGNED_CHECK = "taskIsAssignedCheck";
 
+  String TASK_HAS_CANDIDATE_USERS = "taskHasCandidateUsers";
   String TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK = "taskIsCreatedByFlowNodeBpmnIdCheck";
   String TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK = "tasksAreCreatedByFlowNodeBpmnIdCheck";
   String TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK = "taskIsCanceledByFlowNodeBpmnIdCheck";

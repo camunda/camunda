@@ -48,6 +48,26 @@ env-identity-up:
 		SERVER_PORT=8082 \
 		mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
 
+.PHONY: env-identity-up
+env-identity-os-up:
+	@docker-compose -f ./config/docker-compose.identity.yml up -d identity opensearch zeebe-opensearch
+	@mvn install -DskipTests=true -Dskip.fe.build=false
+	@CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
+		CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
+		CAMUNDA_IDENTITY_BASE_URL=http://localhost:8084 \
+		CAMUNDA_IDENTITY_CLIENT_ID=tasklist \
+		CAMUNDA_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
+		CAMUNDA_IDENTITY_AUDIENCE=tasklist-api \
+		CAMUNDA_TASKLIST_PERSISTENTSESSIONSENABLED=true \
+		CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true \
+    CAMUNDA_TASKLIST_DATABASE=opensearch \
+    CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=localhost:26500 \
+    CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://localhost:8083 \
+    CAMUNDA_TASKLIST_OPENSEARCH_URL=http://localhost:9205 \
+    CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL=http://localhost:9205 \
+		SERVER_PORT=8082 \
+		mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
+
 .PHONY: env-identity-mt-up
 env-identity-mt-up:
 	@docker-compose -f ./config/docker-compose.identity.mt.yml up -d identity elasticsearch zeebe

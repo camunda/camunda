@@ -29,7 +29,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>8.5.0-alpha2</version.zeebe>
+    <version.zeebe>8.5.0-RC2</version.zeebe>
     <version.identity>8.5.0-alpha2</version.identity>
     <version.elasticsearch>7.17.17</version.elasticsearch>
     <version.elasticsearch-client>8.10.4</version.elasticsearch-client>
@@ -633,7 +633,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>${version.zeebe}</version>
+              <version>8.5.0-alpha2</version>
             </dependency>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
@@ -665,9 +665,9 @@
                 <style>GOOGLE</style>
               </googleJavaFormat>
             </java>
-			<!-- While other files are generally placed in a special directory, markdown 
-				files are not. To make sure all markdown files are formatted, we need to 
-				rely on the **/*.md pattern. This pattern will match all *.md files in all 
+			<!-- While other files are generally placed in a special directory, markdown
+				files are not. To make sure all markdown files are formatted, we need to
+				rely on the **/*.md pattern. This pattern will match all *.md files in all
 				subdirectories (also in all submodules). -->
 			<markdown>
 			  <includes>

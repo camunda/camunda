@@ -32,8 +32,13 @@ public class UserTaskRecordToTaskEntityMapper {
       LoggerFactory.getLogger(UserTaskRecordToTaskEntityMapper.class);
 
   private static final Set<Intent> SUPPORTED_INTENTS =
-      EnumSet.of(Intent.CREATED, Intent.COMPLETED, Intent.CANCELED, Intent.MIGRATED);
-
+      EnumSet.of(
+          Intent.CREATED,
+          Intent.COMPLETED,
+          Intent.CANCELED,
+          Intent.MIGRATED,
+          Intent.ASSIGNED,
+          Intent.UPDATED);
   private final FormStore formStore;
 
   private final ObjectMapper objectMapper;
@@ -50,6 +55,7 @@ public class UserTaskRecordToTaskEntityMapper {
       LOGGER.debug("Unsupported intent={}. Skipping it", intent);
       return Optional.empty();
     }
+
     final UserTaskRecordValue recordValue = record.getValue();
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
@@ -138,8 +144,10 @@ public class UserTaskRecordToTaskEntityMapper {
     return Optional.of(entity);
   }
 
-  public Map<String, Object> getUpdateFieldsMap(TaskEntity entity, Intent intent) {
+  public Map<String, Object> getUpdateFieldsMap(
+      TaskEntity entity, Record<UserTaskRecordValue> record) {
     final Map<String, Object> updateFields = new HashMap<>();
+    final Intent intent = (Intent) record.getIntent();
     if (entity.getState() != null) {
       updateFields.put(TaskTemplate.STATE, entity.getState());
     }
@@ -152,6 +160,28 @@ public class UserTaskRecordToTaskEntityMapper {
       case COMPLETED, CANCELED -> {
         updateFields.put(TaskTemplate.STATE, entity.getState());
         updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+      }
+      case ASSIGNED -> {
+        updateFields.put(TaskTemplate.ASSIGNEE, entity.getAssignee());
+      }
+      case UPDATED -> {
+        final UserTaskRecordValue recordValue = record.getValue();
+        final List<String> changedAttributes = recordValue.getChangedAttributes();
+        for (String attribute : changedAttributes) {
+          switch (attribute) {
+            case "candidateGroupsList" ->
+                updateFields.put(TaskTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
+            case "candidateUsersList" ->
+                updateFields.put(TaskTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
+            case "dueDate" -> updateFields.put(TaskTemplate.DUE_DATE, entity.getDueDate());
+            case "followUpDate" ->
+                updateFields.put(TaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
+            default -> {
+              LOGGER.warn(
+                  "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);
+            }
+          }
+        }
       }
       default -> {}
         // TODO handle update of other fields in https://github.com/camunda/tasklist/issues/4306

@@ -71,10 +71,13 @@ services:
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
+      - ZEEBE_BROKER_GATEWAY_ENABLE=true
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
-      - 8000:8000
+      - 9600:9600
+      - 8083:8080
     depends_on:
       - elasticsearch
     networks:
@@ -91,10 +94,12 @@ services:
       - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
       - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL=http://opensearch:9200
       - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_BROKER_GATEWAY_ENABLE=true
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
       - 8000:8000
+      - 8083:8080
     depends_on:
       - opensearch
     networks:
@@ -115,6 +120,7 @@ services:
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
       - camunda.tasklist.database=opensearch
+      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
     volumes:
       - ./distro/src/main/config/application.yml:/app/resources/application.yaml
       - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
@@ -134,6 +140,7 @@ services:
       - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
+      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
       #- server.servlet.context-path=/tasklist/
       - spring.profiles.active=dev,dev-data,auth
       - graphql.playground.enabled=true
@@ -176,10 +183,12 @@ services:
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_BROKER_GATEWAY_ENABLE=true
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26503:26503
       - 8001:8000
+      - 8083:8080
     networks:
       - zeebe_network
     restart: always
