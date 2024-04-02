@@ -64,7 +64,7 @@ public class ReindexIT extends OperateAbstractIT {
     schemaManager.deleteIndicesFor(idxName("index-*"));
   }
 
-  private String idxName(final String name) {
+  private String idxName(String name) {
     return indexPrefix + "-" + name;
   }
 
@@ -72,12 +72,7 @@ public class ReindexIT extends OperateAbstractIT {
   public void reindexArchivedIndices() throws Exception {
     /// Old version -> before migration
     // create index
-    final ListAppender logListAppender = LOGGER_RULE.getListAppender("OperateElasticLogsList");
-    // slow the reindex down, to increase chance of sub 100% progress logged
-    migrationProperties.setReindexBatchSize(1);
-    createIndex(
-        idxName("index-1.2.3_"),
-        IntStream.range(0, 15000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
+    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
     // Create archived index
     createIndex(
         idxName("index-1.2.3_2021-05-23"), List.of(Map.of("test_name", "test_value_archived")));
@@ -101,6 +96,39 @@ public class ReindexIT extends OperateAbstractIT {
             idxName("index-1.2.4_"), idxName("index-1.2.4_2021-05-23"),
             // old indices:
             idxName("index-1.2.3_"), idxName("index-1.2.3_2021-05-23"));
+  }
+
+  @Test
+  public void logReindexProgress() throws Exception {
+    // given
+    final ListAppender logListAppender = LOGGER_RULE.getListAppender("OperateElasticLogsList");
+    // slow the reindex down, to increase chance of sub 100% progress logged
+    migrationProperties.setReindexBatchSize(1);
+    /// Old index
+    createIndex(
+        idxName("index-1.2.3_"),
+        IntStream.range(0, 15000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
+    /// New index
+    createIndex(idxName("index-1.2.4_"), List.of());
+
+    schemaManager.refresh(idxName("index-*"));
+    final Plan plan =
+        beanFactory
+            .getBean(ReindexPlan.class)
+            .setSrcIndex(idxName("index-1.2.3"))
+            .setDstIndex(idxName("index-1.2.4"));
+
+    // when
+    plan.executeOn(schemaManager);
+    schemaManager.refresh(idxName("index-*"));
+
+    // then
+    assertThat(schemaManager.getIndexNames(idxName("index-*")))
+        .containsExactlyInAnyOrder(
+            // reindexed indices:
+            idxName("index-1.2.4_"),
+            // old indices:
+            idxName("index-1.2.3_"));
 
     final var events = logListAppender.getEvents();
     final List<String> progressLogMessages =
@@ -145,7 +173,7 @@ public class ReindexIT extends OperateAbstractIT {
         .isEqualTo("2");
   }
 
-  private void createIndex(final String indexName, final List<Map<String, String>> documents)
+  private void createIndex(final String indexName, List<Map<String, String>> documents)
       throws Exception {
     if (DatabaseInfo.isElasticsearch()) {
       final Map<String, ?> mapping =
@@ -156,7 +184,7 @@ public class ReindexIT extends OperateAbstractIT {
     if (documents.isEmpty() && DatabaseInfo.isOpensearch()) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), Map.of());
     }
-    for (final var document : documents) {
+    for (var document : documents) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), document);
     }
   }
