@@ -59,11 +59,13 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 
 public class HttpClientFactory {
 
   private static final String REST_API_PATH = "/v1";
-  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final ObjectMapper JSON_MAPPER =
+      new ObjectMapper().registerModule(new JsonNullableModule());
 
   private final ZeebeClientConfiguration config;
 

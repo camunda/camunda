@@ -38,10 +38,12 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 
 @WireMockTest
 public final class TopologyRequestRestTest {
-  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final ObjectMapper JSON_MAPPER =
+      new ObjectMapper().registerModule(new JsonNullableModule());
 
   private ZeebeClient client;
 
