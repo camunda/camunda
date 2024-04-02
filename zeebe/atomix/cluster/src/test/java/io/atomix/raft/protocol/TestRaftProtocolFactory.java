@@ -44,6 +44,15 @@ public class TestRaftProtocolFactory {
     servers.keySet().forEach(other -> partition(target, other));
   }
 
+  /**
+   * One way network partition
+   *
+   * @param target
+   */
+  public void blockMessagesTo(final MemberId target) {
+    servers.keySet().forEach(other -> servers.get(other).disconnect(target));
+  }
+
   /** Disconnect two members */
   private void partition(final MemberId first, final MemberId second) {
     servers.get(first).disconnect(second);
