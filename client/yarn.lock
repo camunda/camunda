@@ -302,17 +302,17 @@
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/elements@11.42.1":
-  version "11.42.1"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.42.1.tgz#2f21bbd4bf93a4ce5cac6636a7534e7d95ca6e27"
-  integrity sha512-Ad2y+O/qcAdmmRcY+Zv3gDUWqwht1UYkDwi+VyzH3+EKnpSHZa4pDTogUOIa2QNRF7rG+LrwkbgNgkd7cRQgKQ==
+"@carbon/elements@11.43.0":
+  version "11.43.0"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.43.0.tgz#e7a9c3c1b90e561667a2428eb89f78d1040b0849"
+  integrity sha512-Jj4roaOgHw1OtywI0SMhyQiXfoZ+NTVsOsRLZUFmVngLaT7RqZba8Z0oOhsIm10IRSQUJkDop3JHUGiMaMlyRA==
   dependencies:
     "@carbon/colors" "^11.21.0"
     "@carbon/grid" "^11.22.0"
-    "@carbon/icons" "^11.38.0"
+    "@carbon/icons" "^11.39.0"
     "@carbon/layout" "^11.21.0"
     "@carbon/motion" "^11.17.0"
-    "@carbon/themes" "^11.33.1"
+    "@carbon/themes" "^11.34.0"
     "@carbon/type" "^11.26.0"
     "@ibm/telemetry-js" "^1.2.1"
 
@@ -347,10 +347,10 @@
     "@ibm/telemetry-js" "^1.2.1"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.38.0":
-  version "11.38.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.38.0.tgz#5ad1d7a135098dd5e265dc8629238d6af7474166"
-  integrity sha512-8ZL+7UyE01/MQxq6frmcty7t86pLV0z9wXLo9PC14nsk3eSs0Zbh5aw2PUv7scD4eNDVbEGg8UI7LUqCO3as9Q==
+"@carbon/icons@^11.39.0":
+  version "11.39.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.39.0.tgz#80ef167946dd8166a262ae334156d91ea011a442"
+  integrity sha512-GejjOZj9LlyMaQ0I/cRRAN8HVFbI/HBKEOik+EBDLlGUEkhH1Ls3t5/rnBMuUNQ3BzFOkWslpcXAVxE4DFb2rg==
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
@@ -412,7 +412,7 @@
     "@ibm/plex" "6.0.0-next.6"
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/themes@^11.33.1", "@carbon/themes@^11.34.0":
+"@carbon/themes@^11.34.0":
   version "11.34.0"
   resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.34.0.tgz#c6888176915014690494eaed4a3dd7aea7c9fb25"
   integrity sha512-Dxf5zgk3iuV/MmD4lu2hyScbQmesjE6fol04HPYJeAGtHud2mN+/Ti7H4W3mEcDukIosFNDXKNR39is9+lDTxA==
