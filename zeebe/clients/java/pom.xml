@@ -264,6 +264,7 @@
           </ignoredNonTestScopedDependencies>
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
+            <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
           </ignoredDependencies>
         </configuration>
       </plugin>
