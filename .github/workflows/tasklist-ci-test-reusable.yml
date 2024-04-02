@@ -87,7 +87,7 @@ jobs:
 
       # Reports: publish test metrics results
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.15.1
+        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
         if: ${{ (success() || failure()) }}
         with:
           files: |
