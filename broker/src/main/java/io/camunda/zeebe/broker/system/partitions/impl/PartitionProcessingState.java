@@ -70,12 +70,8 @@ public class PartitionProcessingState {
     return isDiskSpaceAvailable() && !isProcessingPaused();
   }
 
-  public boolean isExportingPaused() {
-    return exporterState.equals(ExporterState.PAUSED);
-  }
-
-  public boolean isExportingSoftPaused() {
-    return exporterState.equals(ExporterState.SOFT_PAUSED);
+  public ExporterState getExporterState() {
+    return exporterState;
   }
 
   @SuppressWarnings({"squid:S899"})
