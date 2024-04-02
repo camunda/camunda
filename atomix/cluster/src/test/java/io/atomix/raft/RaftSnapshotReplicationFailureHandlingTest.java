@@ -60,7 +60,7 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     // Time out request after sending a request. This simulates the behaviour that the receiver has
     // processed the request, but the request timeout out at the sender.
     leaderProtocol.interceptResponse(
-        InstallResponse.class, new TimingOutInterceptor(numberOfChunks - 1));
+        InstallResponse.class, new TimingOutResponseInterceptor(numberOfChunks - 1));
 
     // when
     reconnectFollowerAndAwaitSnapshot();
@@ -133,11 +133,12 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     raftRule.appendEntry();
   }
 
-  private static class TimingOutInterceptor implements ResponseInterceptor<InstallResponse> {
+  private static class TimingOutResponseInterceptor
+      implements ResponseInterceptor<InstallResponse> {
     private int count = 0;
     private final int timeoutAtRequest;
 
-    public TimingOutInterceptor(final int timeoutAtRequest) {
+    public TimingOutResponseInterceptor(final int timeoutAtRequest) {
       this.timeoutAtRequest = timeoutAtRequest;
     }
 
