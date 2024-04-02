@@ -23,30 +23,45 @@ import static io.camunda.operate.schema.SchemaManager.REFRESH_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.extensions.LoggerContextExtension;
 import io.camunda.operate.property.MigrationProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.migration.Plan;
 import io.camunda.operate.schema.migration.ReindexPlan;
 import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.junit.LoggerContextRule;
 import org.apache.logging.log4j.test.appender.ListAppender;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@ExtendWith(MockitoExtension.class)
+@SpringBootTest(
+    classes = {TestApplication.class},
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+    })
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReindexIT extends OperateAbstractIT {
 
-  @ClassRule
-  public static final LoggerContextRule LOGGER_RULE =
-      new LoggerContextRule("log4j2-listAppender.xml");
+  @RegisterExtension
+  static LoggerContextExtension loggerRule = new LoggerContextExtension("log4j2-listAppender.xml");
 
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private SchemaManager schemaManager;
@@ -54,17 +69,17 @@ public class ReindexIT extends OperateAbstractIT {
   @Autowired private BeanFactory beanFactory;
   private String indexPrefix;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     indexPrefix = UUID.randomUUID().toString();
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     schemaManager.deleteIndicesFor(idxName("index-*"));
   }
 
-  private String idxName(String name) {
+  private String idxName(final String name) {
     return indexPrefix + "-" + name;
   }
 
@@ -101,7 +116,7 @@ public class ReindexIT extends OperateAbstractIT {
   @Test
   public void logReindexProgress() throws Exception {
     // given
-    final ListAppender logListAppender = LOGGER_RULE.getListAppender("OperateElasticLogsList");
+    final ListAppender logListAppender = loggerRule.getListAppender("OperateElasticLogsList");
     // slow the reindex down, to increase chance of sub 100% progress logged
     migrationProperties.setReindexBatchSize(1);
     /// Old index
@@ -173,7 +188,7 @@ public class ReindexIT extends OperateAbstractIT {
         .isEqualTo("2");
   }
 
-  private void createIndex(final String indexName, List<Map<String, String>> documents)
+  private void createIndex(final String indexName, final List<Map<String, String>> documents)
       throws Exception {
     if (DatabaseInfo.isElasticsearch()) {
       final Map<String, ?> mapping =
@@ -184,7 +199,7 @@ public class ReindexIT extends OperateAbstractIT {
     if (documents.isEmpty() && DatabaseInfo.isOpensearch()) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), Map.of());
     }
-    for (var document : documents) {
+    for (final var document : documents) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), document);
     }
   }
