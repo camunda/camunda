@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -40,7 +41,10 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
   private final Set<MemberId> partitions = Sets.newCopyOnWriteArraySet();
-  private final Map<Class<?>, Consumer<?>> interceptors = new ConcurrentHashMap<>();
+  private final Map<
+          Class<?>,
+          BiFunction<?, TestRaftServerProtocol, CompletableFuture<TestRaftServerProtocol>>>
+      interceptors = new ConcurrentHashMap<>();
   private final Map<MemberId, TestRaftServerProtocol> servers;
   private final Map<Class<?>, ResponseInterceptor<?>> responseInterceptors =
       new ConcurrentHashMap<>();
@@ -69,8 +73,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public CompletableFuture<ConfigureResponse> configure(
       final MemberId memberId, final ConfigureRequest request) {
-    intercept(request, ConfigureRequest.class);
     return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, ConfigureRequest.class))
         .thenCompose(listener -> listener.configure(request))
         .thenCompose(response -> transformResponse(response, ConfigureResponse.class))
         .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -79,8 +83,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final MemberId memberId, final ReconfigureRequest request) {
-    intercept(request, ReconfigureRequest.class);
     return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, ReconfigureRequest.class))
         .thenCompose(listener -> listener.reconfigure(request))
         .thenCompose(response -> transformResponse(response, ReconfigureResponse.class))
         .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -89,8 +93,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
-    intercept(request, InstallRequest.class);
     return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, InstallRequest.class))
         .thenCompose(listener -> listener.install(request))
         .thenCompose(response -> transformResponse(response, InstallResponse.class))
         .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -99,8 +103,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public CompletableFuture<TransferResponse> transfer(
       final MemberId memberId, final TransferRequest request) {
-    intercept(request, TransferRequest.class);
     return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, TransferRequest.class))
         .thenCompose(listener -> listener.transfer(request))
         .thenCompose(response -> transformResponse(response, TransferResponse.class))
         .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -108,8 +112,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
 
   @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
-    intercept(request, PollRequest.class);
     return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, PollRequest.class))
         .thenCompose(listener -> listener.poll(request))
         .thenCompose(response -> transformResponse(response, PollResponse.class))
         .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -117,8 +121,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
 
   @Override
   public CompletableFuture<VoteResponse> vote(final MemberId memberId, final VoteRequest request) {
-    intercept(request, VoteRequest.class);
     return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, VoteRequest.class))
         .thenCompose(listener -> listener.vote(request))
         .thenCompose(response -> transformResponse(response, VoteResponse.class))
         .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -127,8 +131,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
-    intercept(request, AppendRequest.class);
     return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, AppendRequest.class))
         .thenCompose(listener -> listener.append(request))
         .thenCompose(response -> transformResponse(response, AppendResponse.class))
         .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -238,8 +242,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
 
   CompletableFuture<PollResponse> poll(final PollRequest request) {
     if (pollHandler != null) {
-      intercept(request, PollRequest.class);
-      return pollHandler.apply(request);
+      return intercept(null, request, PollRequest.class)
+          .thenCompose(ignore -> pollHandler.apply(request));
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }
@@ -255,8 +259,8 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
 
   CompletableFuture<InstallResponse> install(final InstallRequest request) {
     if (installHandler != null) {
-      intercept(request, InstallRequest.class);
-      return installHandler.apply(request);
+      return intercept(null, request, InstallRequest.class)
+          .thenCompose(ignore -> installHandler.apply(request));
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }
@@ -278,8 +282,29 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
     }
   }
 
+  /** interceptor is called before sending the request to the receiver */
   public <T> void interceptRequest(final Class<T> requestType, final Consumer<T> interceptor) {
-    interceptors.put(requestType, interceptor);
+    interceptors.put(
+        requestType,
+        (request, listener) -> {
+          interceptor.accept((T) request);
+          return CompletableFuture.completedFuture(listener);
+        });
+  }
+
+  /**
+   * interceptor is called before sending the request to the receiver. If the interceptor returns a
+   * failed future, the request is not processed by the receiver. Otherwise, request will be
+   * forwarded to the receiver.
+   */
+  public <T> void interceptRequest(
+      final Class<T> requestType, final Function<T, CompletableFuture<Void>> interceptor) {
+    interceptors.put(
+        requestType,
+        (request, listener) ->
+            interceptor
+                .apply((T) request)
+                .thenCompose(ignore -> CompletableFuture.completedFuture(listener)));
   }
 
   public <T extends RaftResponse> void interceptResponse(
@@ -298,11 +323,15 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   }
 
   @SuppressWarnings("unchecked")
-  private <T> void intercept(final T request, final Class<T> requestType) {
-    final var interceptor = (Consumer<T>) interceptors.get(requestType);
+  private <T> CompletableFuture<TestRaftServerProtocol> intercept(
+      final TestRaftServerProtocol listener, final T request, final Class<T> requestType) {
+    final var interceptor =
+        (BiFunction<T, TestRaftServerProtocol, CompletableFuture<TestRaftServerProtocol>>)
+            interceptors.get(requestType);
     if (interceptor != null) {
-      interceptor.accept(request);
+      return interceptor.apply(request, listener);
     }
+    return CompletableFuture.completedFuture(listener);
   }
 
   @FunctionalInterface
