@@ -15,30 +15,14 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {RequestHandler, rest} from 'msw';
-import {
-  IS_BATCH_MOVE_MODIFICATION_ENABLED,
-  IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED,
-} from 'modules/feature-flags';
-import {mockBatchStatus} from 'modules/mocks/mockBatchStatus';
+const mockBatchStatus = [
+  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //delete instance
+  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
+  {completedOperationsCount: 0, failedOperationsCount: 10, instancesCount: 10}, //all fail
+  {completedOperationsCount: 10, failedOperationsCount: 0, instancesCount: 10}, //all success
+  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
+  {completedOperationsCount: 0, failedOperationsCount: 1, instancesCount: 1}, // single fail
+  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //single success
+];
 
-const batchOperationHandlers = IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED
-  ? [
-      rest.post('api/batch-operations', async (req, res, ctx) => {
-        const originalResponse = await ctx.fetch(req);
-        let originalResponseData = await originalResponse.json();
-        originalResponseData = originalResponseData.map(
-          (r: any, index: number) => ({
-            ...r,
-            ...(mockBatchStatus[index] || mockBatchStatus.at(-1)),
-          }),
-        );
-
-        return res(ctx.json(originalResponseData));
-      }),
-    ]
-  : [];
-
-const handlers: RequestHandler[] = [...batchOperationHandlers];
-
-export {handlers};
+export {mockBatchStatus};
