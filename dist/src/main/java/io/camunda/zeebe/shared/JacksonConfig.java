@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.shared;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -21,8 +19,7 @@ public final class JacksonConfig {
   @Primary
   public Jackson2ObjectMapperBuilder restObjectMapper() {
     return new Jackson2ObjectMapperBuilder()
-        .serializationInclusion(Include.NON_EMPTY)
         // required for consistent parsing between the client and the REST API
-        .modules(new JavaTimeModule(), new Jdk8Module());
+        .modules(new Jdk8Module());
   }
 }

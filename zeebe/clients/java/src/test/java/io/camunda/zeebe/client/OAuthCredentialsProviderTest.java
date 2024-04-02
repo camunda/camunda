@@ -24,7 +24,6 @@ import static org.mockito.Mockito.spy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
@@ -81,7 +80,7 @@ import org.junit.jupiter.api.io.TempDir;
 @WireMockTest
 public final class OAuthCredentialsProviderTest {
   private static final ObjectMapper JSON_MAPPER =
-      new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
+      new ObjectMapper().registerModules(new Jdk8Module());
   private static final Key<String> AUTH_KEY =
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
   private static final ZonedDateTime EXPIRY =
@@ -326,7 +325,7 @@ public final class OAuthCredentialsProviderTest {
                             () -> {
                               try {
                                 provider.applyCredentials(applier);
-                              } catch (IOException e) {
+                              } catch (final IOException e) {
                                 throw new UncheckedIOException(e);
                               }
                             }))
