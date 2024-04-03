@@ -189,7 +189,7 @@ public final class ProcessingStateMachine {
     final int partitionId = context.getLogStream().getPartitionId();
     typedCommand = new TypedRecordImpl(partitionId);
 
-    metrics = new StreamProcessorMetrics(partitionId);
+    metrics = new StreamProcessorMetrics(partitionId, context.getStreamProcessorPhase());
     streamProcessorListener = context.getStreamProcessorListener();
 
     processingMetrics = new ProcessingMetrics(Integer.toString(partitionId));

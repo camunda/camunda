@@ -128,7 +128,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     actorName = buildActorName("StreamProcessor", partitionId);
-    metrics = new StreamProcessorMetrics(partitionId);
+    metrics =
+        new StreamProcessorMetrics(partitionId, streamProcessorContext.getStreamProcessorPhase());
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
 
@@ -542,6 +543,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     shouldProcess = false;
     streamProcessorContext.streamProcessorPhase(Phase.PAUSED);
+    metrics.setStreamProcessorPaused();
   }
 
   public void resumeProcessing() {
@@ -549,7 +551,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         () -> {
           if (!shouldProcess) {
             shouldProcess = true;
-
+            metrics.setStreamProcessorActive();
             if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
               streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
               actor.submit(replayStateMachine::replayNextEvent);
