@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
+import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.None;
+import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.Scheduled;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -46,7 +48,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    * Keeps track of the next execution of the checker. Value can be null if there is no scheduled
    * execution known.
    */
-  private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(null);
+  private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(new None());
 
   /**
    * @param timerResolution The resolution in ms for the timer
@@ -63,14 +65,14 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    // There is a benign edge case where we are not supposed to set nextExecution to null here.
+    // There is a benign edge case where we are not supposed to set nextExecution to None here.
     // If this execution was supposed to be cancelled because an earlier execution was scheduled
-    // instead, nextExecution would hold that earlier execution. We still overwrite it with null and
+    // instead, nextExecution would hold that earlier execution. We still overwrite it with None and
     // thus forget that we planned an execution. The next time something is scheduled, we will
-    // observe the null value and thus decide to schedule something new without cancelling what's
+    // observe the None value and thus decide to schedule something new without cancelling what's
     // already scheduled. While we try to avoid this, we can't prevent it entirely anyway because
     // cancellation of scheduled executions is best-effort and does not reliably prevent execution.
-    nextExecution.set(null);
+    nextExecution.set(new None());
 
     final long nextDueDate = visitor.apply(taskResultBuilder);
 
@@ -109,22 +111,21 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     final var replacedExecution =
         AtomicUtil.replace(
             nextExecution,
-            currentlyScheduled -> {
+            currentlyPlanned -> {
               final var now = ActorClock.currentTimeMillis();
-              final long scheduleFor =
-                  dueDate == -1 ? now : now + Math.max(dueDate - now, timerResolution);
-              if (currentlyScheduled == null
-                  || currentlyScheduled.scheduledFor() - scheduleFor > timerResolution) {
+              final long scheduleFor = now + Math.max(dueDate - now, timerResolution);
+              if (!(currentlyPlanned instanceof final Scheduled currentlyScheduled)
+                  || (currentlyScheduled.scheduledFor() - scheduleFor > timerResolution)) {
                 final var delay = Duration.ofMillis(scheduleFor - now);
                 final var task = scheduleService.runDelayed(delay, this::execute);
-                return Optional.of(new NextExecution(scheduleFor, task));
+                return Optional.of(new Scheduled(scheduleFor, task));
               }
               return Optional.empty();
             },
-            newlyScheduled -> newlyScheduled.task().cancel());
+            NextExecution::cancel);
 
     if (replacedExecution != null) {
-      replacedExecution.task().cancel();
+      replacedExecution.cancel();
     }
   }
 
@@ -163,14 +164,6 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   /**
-   * Keeps track of the next execution of the checker.
-   *
-   * @param scheduledFor The deadline in ms for when this execution is scheduled.
-   * @param task The scheduled task for the next execution, can be used for canceling the task.
-   */
-  private record NextExecution(long scheduledFor, ScheduledTask task) {}
-
-  /**
    * Abstracts over async and sync scheduling methods of {@link
    * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService}.
    */
@@ -184,5 +177,30 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
      * Task)}
      */
     ScheduledTask runDelayed(final Duration delay, final Task task);
+  }
+
+  interface NextExecution {
+    void cancel();
+
+    /** Sentinel value to signal that nothing is scheduled. */
+    record None() implements NextExecution {
+
+      @Override
+      public void cancel() {}
+    }
+
+    /**
+     * Keeps track of the next execution of the checker.
+     *
+     * @param scheduledFor The deadline in ms for when this execution is scheduled.
+     * @param task The scheduled task for the next execution, can be used for canceling the task.
+     */
+    record Scheduled(long scheduledFor, ScheduledTask task) implements NextExecution {
+
+      @Override
+      public void cancel() {
+        task.cancel();
+      }
+    }
   }
 }
