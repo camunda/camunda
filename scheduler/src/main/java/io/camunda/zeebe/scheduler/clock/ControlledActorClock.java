@@ -14,6 +14,7 @@ import java.time.Instant;
 public final class ControlledActorClock implements ActorClock {
   private volatile long currentTime;
   private volatile long currentOffset;
+  private volatile long updatedTime;
 
   public ControlledActorClock() {
     reset();
@@ -34,6 +35,7 @@ public final class ControlledActorClock implements ActorClock {
   public void reset() {
     currentTime = -1;
     currentOffset = 0;
+    updatedTime = System.currentTimeMillis();
   }
 
   public Instant getCurrentTime() {
@@ -54,16 +56,17 @@ public final class ControlledActorClock implements ActorClock {
 
   @Override
   public boolean update() {
+    if (usesPointInTime()) {
+      updatedTime = currentTime;
+    } else {
+      updatedTime = System.currentTimeMillis() + currentOffset;
+    }
     return true;
   }
 
   @Override
   public long getTimeMillis() {
-    if (usesPointInTime()) {
-      return currentTime;
-    } else {
-      return System.currentTimeMillis() + currentOffset;
-    }
+    return updatedTime;
   }
 
   @Override
