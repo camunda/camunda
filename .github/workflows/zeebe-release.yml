@@ -37,7 +37,6 @@ jobs:
   release:
     name: Maven & Go Release
     runs-on: gcp-core-16-release
-    timeout-minutes: 60
     outputs:
       releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}
