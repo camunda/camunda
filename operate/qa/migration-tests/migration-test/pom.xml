@@ -11,10 +11,6 @@
 
   <name>Operate QA Migration Tests</name>
 
-  <properties>
-    <license.header>${project.baseUri}/../../../../license/license-header</license.header>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -168,12 +164,6 @@
       </testResource>
     </testResources>
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

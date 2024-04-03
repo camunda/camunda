@@ -11,11 +11,6 @@
 
   <name>Operate QA Query Performace Tests</name>
 
-  <properties>
-    <plugin.version.license>3.0</plugin.version.license>
-    <license.header>${project.baseUri}/../../../license/license-header</license.header>
-  </properties>
-
   <dependencies>
 
     <dependency>
@@ -141,13 +136,6 @@
     </testResources>
 
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

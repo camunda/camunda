@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
-  <name>Operate Parent</name>
-  <artifactId>operate-parent</artifactId>
-  <version>8.5.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
@@ -15,6 +8,11 @@
     <version>8.5.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
+  <artifactId>operate-parent</artifactId>
+  <version>8.5.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Operate Parent</name>
 
   <modules>
     <module>client</module>
@@ -41,7 +39,7 @@
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
 
-    <license.header>${project.baseUri}/../../license/license-header</license.header>
+    <license.header>${maven.multiModuleProjectDirectory}/license/license-header</license.header>
 
     <skip.fe.build>false</skip.fe.build>
     <skipSurefire>false</skipSurefire>
@@ -60,7 +58,6 @@
           <artifactId>frontend-maven-plugin</artifactId>
           <version>1.15.0</version>
         </plugin>
-
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -150,10 +147,10 @@
           <executions>
             <execution>
               <id>add-license</id>
-              <phase>compile</phase>
               <goals>
                 <goal>format</goal>
               </goals>
+              <phase>compile</phase>
             </execution>
           </executions>
         </plugin>
@@ -181,7 +178,7 @@
                 <exclude>**/target/**/*.md</exclude>
                 <exclude>**/node_modules/**/*.md</exclude>
               </excludes>
-              <flexmark/>
+              <flexmark></flexmark>
             </markdown>
           </configuration>
           <dependencies>
@@ -192,7 +189,6 @@
             </dependency>
           </dependencies>
         </plugin>
-
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -310,7 +306,6 @@
       </build>
     </profile>
 
-
     <!-- profile to perform strict validation checks -->
     <profile>
       <id>checkFormat</id>
@@ -339,6 +334,5 @@
     </profile>
 
   </profiles>
-
 
 </project>

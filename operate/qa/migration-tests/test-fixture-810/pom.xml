@@ -11,9 +11,6 @@
 
   <name>Operate QA Migration Tests - Test Fixture 8.1.0</name>
 
-  <properties>
-    <license.header>${project.baseUri}/../../../../license/license-header</license.header>
-  </properties>
   <dependencies>
 
     <dependency>
@@ -57,17 +54,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
-  <build>
-    <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
-    </plugins>
-  </build>
 
   <profiles>
     <profile>

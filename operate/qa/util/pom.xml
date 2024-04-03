@@ -9,11 +9,6 @@
   <artifactId>operate-qa-util</artifactId>
 
   <name>Operate QA Util</name>
-
-  <properties>
-    <license.header>${project.baseUri}/../../../license/license-header</license.header>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -134,30 +129,6 @@
 
   <build>
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <configuration>
-          <header>${license.header}</header>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-        </configuration>
-        <executions>
-          <execution>
-            <id>add-license</id>
-            <goals>
-              <goal>format</goal>
-            </goals>
-            <phase>compile</phase>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

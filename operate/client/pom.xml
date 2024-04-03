@@ -8,12 +8,18 @@
     <version>8.5.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-
-  <name>Operate Webjar</name>
   <artifactId>operate-webjar</artifactId>
   <packaging>jar</packaging>
 
+  <name>Operate Webjar</name>
+
   <build>
+    <resources>
+      <resource>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources</targetPath>
+        <directory>build</directory>
+      </resource>
+    </resources>
 
     <plugins>
 
@@ -75,13 +81,6 @@
       </plugin>
 
     </plugins>
-
-    <resources>
-      <resource>
-        <directory>build</directory>
-        <targetPath>${project.build.outputDirectory}/META-INF/resources</targetPath>
-      </resource>
-    </resources>
 
   </build>
 

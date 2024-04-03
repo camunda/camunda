@@ -11,10 +11,6 @@
 
   <name>Operate QA Data Generator</name>
 
-  <properties>
-    <license.header>${project.baseUri}/../../../license/license-header</license.header>
-  </properties>
-
   <dependencies>
 
     <dependency>
@@ -84,12 +80,6 @@
   <build>
 
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

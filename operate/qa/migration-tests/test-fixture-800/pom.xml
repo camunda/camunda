@@ -11,10 +11,6 @@
 
   <name>Operate QA Migration Tests - Test Fixture 8.0.0</name>
 
-  <properties>
-    <license.header>${project.baseUri}/../../../../license/license-header</license.header>
-  </properties>
-
   <dependencies>
 
     <dependency>
@@ -71,18 +67,6 @@
     </dependency>
 
   </dependencies>
-
-  <build>
-    <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
-    </plugins>
-  </build>
 
   <profiles>
     <profile>
