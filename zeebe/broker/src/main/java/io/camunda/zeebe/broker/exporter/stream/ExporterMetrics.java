@@ -13,37 +13,42 @@ import io.prometheus.client.Gauge;
 
 public final class ExporterMetrics {
 
+  private static final String LABEL_NAME_PARTITION = "partition";
+  private static final String LABEL_NAME_EXPORTER = "exporter";
+  private static final String LABEL_NAME_ACTION = "action";
+  private static final String LABEL_NAME_VALUE_TYPE = "valueType";
+  private static final String NAMESPACE_ZEEBE = "zeebe";
   private static final Counter EXPORTER_EVENTS =
       Counter.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE_ZEEBE)
           .name("exporter_events_total")
           .help("Number of events processed by exporter")
-          .labelNames("action", "partition", "valueType")
+          .labelNames(LABEL_NAME_ACTION, LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE)
           .register();
 
   private static final Gauge LAST_EXPORTED_POSITION =
       Gauge.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE_ZEEBE)
           .name("exporter_last_exported_position")
           .help("The last exported position by exporter and partition.")
-          .labelNames("exporter", "partition")
+          .labelNames(LABEL_NAME_EXPORTER, LABEL_NAME_PARTITION)
           .register();
 
   private static final Gauge LAST_UPDATED_EXPORTED_POSITION =
       Gauge.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE_ZEEBE)
           .name("exporter_last_updated_exported_position")
           .help("The last exported position which was also updated/committed by the exporter.")
-          .labelNames("exporter", "partition")
+          .labelNames(LABEL_NAME_EXPORTER, LABEL_NAME_PARTITION)
           .register();
 
   private static final Gauge EXPORTER_PHASE =
       Gauge.build()
-          .namespace("zeebe")
+          .namespace(NAMESPACE_ZEEBE)
           .name("exporter_state")
           .help(
               "Describes the phase of the exporter, namely if it is exporting, paused or soft paused.")
-          .labelNames("partition")
+          .labelNames(LABEL_NAME_PARTITION)
           .register();
   private final String partitionIdLabel;
 
