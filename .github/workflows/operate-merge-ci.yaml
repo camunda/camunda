@@ -17,7 +17,7 @@ jobs:
     # Used by the merge queue to check all jobs.
     # New test jobs must be added to the `needs` lists!
     # This name is hard-coded in the branch rules; remember to update that if this name changes
-    name: Test summary
+    name: Operate CI test summary
     if: always()
     runs-on: ubuntu-latest
     needs:
