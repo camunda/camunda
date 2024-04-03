@@ -719,6 +719,14 @@
       </dependency>
 
       <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>${version.spring-boot}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
