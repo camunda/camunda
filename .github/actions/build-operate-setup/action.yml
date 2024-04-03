@@ -8,7 +8,7 @@ inputs:
     description: "The version of Java to be used to build the service"
     required: false
     type: number
-    default: 17
+    default: 21
   nexusUsername:
     required: true
     type: string
