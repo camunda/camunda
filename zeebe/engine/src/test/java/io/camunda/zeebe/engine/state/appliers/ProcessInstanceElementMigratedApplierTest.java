@@ -12,11 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,11 +31,13 @@ public class ProcessInstanceElementMigratedApplierTest {
   private MutableProcessingState processingState;
 
   private MutableElementInstanceState elementInstanceState;
+  private MutableProcessState processState;
   private ProcessInstanceElementMigratedApplier processInstanceElementMigratedApplier;
 
   @BeforeEach
   public void setup() {
     elementInstanceState = processingState.getElementInstanceState();
+    processState = processingState.getProcessState();
     processInstanceElementMigratedApplier =
         new ProcessInstanceElementMigratedApplier(elementInstanceState);
   }
@@ -48,7 +53,10 @@ public class ProcessInstanceElementMigratedApplierTest {
             .setElementId("process")
             .setBpmnElementType(BpmnElementType.PROCESS)
             .setProcessInstanceKey(2L);
+    processState.putProcess(
+        processInstance.getProcessDefinitionKey(), createProcessRecord(processInstance));
     elementInstanceState.createInstance(
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         new ElementInstance(
             processInstance.getProcessInstanceKey(),
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
@@ -62,6 +70,9 @@ public class ProcessInstanceElementMigratedApplierTest {
         .setVersion(2)
         .setBpmnProcessId("another_process")
         .setElementId("another_process");
+    processState.putProcess(
+        migratedProcessInstance.getProcessDefinitionKey(),
+        createProcessRecord(migratedProcessInstance));
     processInstanceElementMigratedApplier.applyState(
         processInstance.getProcessInstanceKey(), migratedProcessInstance);
 
@@ -83,12 +94,13 @@ public class ProcessInstanceElementMigratedApplierTest {
 
     assertThat(
             elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+                migratedProcessInstance.getTenantId(),
                 migratedProcessInstance.getProcessDefinitionKey()))
         .describedAs("Expect that the instance is migrated to the target process definition")
         .containsExactly(migratedProcessInstance.getProcessInstanceKey());
     assertThat(
             elementInstanceState.getProcessInstanceKeysByDefinitionKey(
-                processInstance.getProcessDefinitionKey()))
+                migratedProcessInstance.getTenantId(), processInstance.getProcessDefinitionKey()))
         .describedAs("Expect that there are no instances of the old process definition")
         .isEmpty();
   }
@@ -106,6 +118,7 @@ public class ProcessInstanceElementMigratedApplierTest {
             .setBpmnElementType(BpmnElementType.SERVICE_TASK)
             .setProcessInstanceKey(2L);
     elementInstanceState.createInstance(
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         new ElementInstance(serviceTaskKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, serviceTask));
 
     // when
@@ -123,5 +136,14 @@ public class ProcessInstanceElementMigratedApplierTest {
     assertThat(elementInstanceState.getInstance(serviceTaskKey).getValue())
         .describedAs("Expect that the flow scope key is updated")
         .hasFlowScopeKey(migratedServiceTask.getFlowScopeKey());
+  }
+
+  private ProcessRecord createProcessRecord(final ProcessInstanceRecord record) {
+    final var processRecord = new ProcessRecord();
+    processRecord.setBpmnProcessId(record.getBpmnProcessId());
+    processRecord.setKey(record.getProcessDefinitionKey());
+    processRecord.setVersion(record.getVersion());
+    processRecord.setResourceName("resourceName");
+    return processRecord;
   }
 }

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -296,7 +297,7 @@ public final class ElementInstanceStateTest {
     // when
     final List<Long> processInstanceKeys =
         elementInstanceState.getProcessInstanceKeysByDefinitionKey(
-            processInstanceRecord.getProcessDefinitionKey());
+            processInstanceRecord.getTenantId(), processInstanceRecord.getProcessDefinitionKey());
 
     // then
     Assertions.assertThat(processInstanceKeys).hasSize(1);
@@ -324,7 +325,8 @@ public final class ElementInstanceStateTest {
 
     // when
     final List<Long> processInstanceKeys =
-        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processDefinitionKey);
 
     // then
     Assertions.assertThat(processInstanceKeys).hasSize(2);
@@ -352,7 +354,8 @@ public final class ElementInstanceStateTest {
 
     // when
     final List<Long> processInstanceKeys =
-        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processDefinitionKey);
 
     // then
     Assertions.assertThat(processInstanceKeys).hasSize(1);
@@ -373,7 +376,8 @@ public final class ElementInstanceStateTest {
 
     // when
     final List<Long> processInstanceKeys =
-        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processDefinitionKey);
 
     // then
     Assertions.assertThat(processInstanceKeys).isEmpty();
@@ -396,11 +400,14 @@ public final class ElementInstanceStateTest {
 
     // then
     final List<Long> processInstanceKeys =
-        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processDefinitionKey);
     Assertions.assertThat(processInstanceKeys).isEmpty();
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(
-            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
+            processInstanceRecord.getTenantId(),
+            processInstanceRecord.getProcessDefinitionKey(),
+            Collections.emptyList());
     assertThat(hasRunningInstances).isFalse();
   }
 
@@ -462,7 +469,9 @@ public final class ElementInstanceStateTest {
     // when
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(
-            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
+            processInstanceRecord.getTenantId(),
+            processInstanceRecord.getProcessDefinitionKey(),
+            Collections.emptyList());
 
     // then
     Assertions.assertThat(hasRunningInstances).isTrue();
@@ -477,7 +486,9 @@ public final class ElementInstanceStateTest {
     // when
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(
-            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
+            processInstanceRecord.getTenantId(),
+            processInstanceRecord.getProcessDefinitionKey(),
+            Collections.emptyList());
 
     // then
     Assertions.assertThat(hasRunningInstances).isFalse();
@@ -495,6 +506,7 @@ public final class ElementInstanceStateTest {
     // when
     final var hasRunningInstances =
         elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getTenantId(),
             processInstanceRecord.getProcessDefinitionKey(),
             Collections.singletonList(processInstanceKey));
 
@@ -597,12 +609,12 @@ public final class ElementInstanceStateTest {
       final long processInstanceKey,
       final ProcessInstanceRecord processInstanceRecord,
       final ProcessInstanceIntent instanceIntent) {
-    createProcessInstance(processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord);
+    createProcessDefinition(processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord);
     return elementInstanceState.newInstance(
         processInstanceKey, processInstanceRecord, instanceIntent);
   }
 
-  private void createProcessInstance(final long key, final ProcessInstanceRecord record) {
+  private void createProcessDefinition(final long key, final ProcessInstanceRecord record) {
     stateRule.getProcessingState().getProcessState().putProcess(key, createProcessRecord(record));
   }
 

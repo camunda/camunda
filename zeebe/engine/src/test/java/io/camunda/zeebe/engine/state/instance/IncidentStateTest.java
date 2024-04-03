@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -186,6 +187,7 @@ public final class IncidentStateTest {
 
   public IncidentRecord createProcessInstanceIncident() {
     elementInstanceState.createInstance(
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         new ElementInstance(
             1234, ProcessInstanceIntent.ELEMENT_ACTIVATED, new ProcessInstanceRecord()));
 

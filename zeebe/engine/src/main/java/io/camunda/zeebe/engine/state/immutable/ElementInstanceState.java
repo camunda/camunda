@@ -54,17 +54,21 @@ public interface ElementInstanceState {
    *
    * <p>Caution: This will also return the keys of banned process instances!
    *
+   * @param tenantId the tenant identifier
    * @param processDefinitionKey the key of the process definition
    * @return a list of process instance keys
    */
-  List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey);
+  List<Long> getProcessInstanceKeysByDefinitionKey(
+      final String tenantId, final long processDefinitionKey);
 
   /**
    * Verifies if there are active process instances for a given process definition
    *
+   * @param tenantId the tenant identifier
    * @param processDefinitionKey the key of the process definition
    * @param bannedInstances a list of banned process instance keys
    * @return a boolean indicating if there are running instances
    */
-  boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
+  boolean hasActiveProcessInstances(
+      final String tenantId, long processDefinitionKey, final List<Long> bannedInstances);
 }

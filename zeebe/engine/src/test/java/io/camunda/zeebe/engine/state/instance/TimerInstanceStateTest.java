@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -217,6 +218,7 @@ public final class TimerInstanceStateTest {
         .getProcessingState()
         .getElementInstanceState()
         .createInstance(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER,
             new ElementInstance(
                 key, ProcessInstanceIntent.ELEMENT_ACTIVATED, new ProcessInstanceRecord()));
   }

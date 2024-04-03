@@ -24,7 +24,7 @@ public interface MutableElementInstanceState extends ElementInstanceState {
 
   void removeInstance(long key);
 
-  void createInstance(ElementInstance instance);
+  void createInstance(String tenantId, ElementInstance instance);
 
   void updateInstance(ElementInstance scopeInstance);
 
@@ -67,10 +67,12 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    * <p>This makes it possible to query for all process instances of a specific process definition
    * using {@link ElementInstanceState#getProcessInstanceKeysByDefinitionKey(long)}.
    *
+   * @param tenantId the tenant identifier
    * @param processInstanceKey the key of the process instance to insert the reference for
    * @param processDefinitionKey the key of the process definition to insert the reference for
    */
-  void insertProcessInstanceKeyByDefinitionKey(long processInstanceKey, long processDefinitionKey);
+  void insertProcessInstanceKeyByDefinitionKey(
+      String tenantId, long processInstanceKey, long processDefinitionKey);
 
   /**
    * Deletes the reference between process instance key and process definition key.
@@ -78,8 +80,10 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    * <p>This makes it possible to query for all process instances of a specific process definition
    * using {@link ElementInstanceState#getProcessInstanceKeysByDefinitionKey(long)}.
    *
+   * @param tenantId the tenant identifier
    * @param processInstanceKey the key of the process instance to delete the reference for
    * @param processDefinitionKey the key of the process definition to delete the reference for
    */
-  void deleteProcessInstanceKeyByDefinitionKey(long processInstanceKey, long processDefinitionKey);
+  void deleteProcessInstanceKeyByDefinitionKey(
+      String tenantId, long processInstanceKey, long processDefinitionKey);
 }

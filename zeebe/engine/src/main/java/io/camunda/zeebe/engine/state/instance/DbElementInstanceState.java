@@ -17,6 +17,8 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -63,12 +65,15 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   private final MutableVariableState variableState;
 
-  private final DbForeignKey<DbLong> processDefinitionKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong>
+  private final DbLong processDefinitionKey;
+  private final DbString tenantIdKey;
+  private final DbTenantAwareKey<DbLong> tenantAwareProcessDefinitionKey;
+  private final DbForeignKey<DbTenantAwareKey<DbLong>> fkProcessDefinitionKey;
+  private final DbCompositeKey<DbForeignKey<DbTenantAwareKey<DbLong>>, DbLong>
       processInstanceKeyByProcessDefinitionKey;
 
   /** [process definition key | process instance key] => [Nil] */
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, DbNil>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbTenantAwareKey<DbLong>>, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
 
   public DbElementInstanceState(
@@ -122,14 +127,18 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             numberOfTakenSequenceFlowsKey,
             numberOfTakenSequenceFlows);
 
-    processDefinitionKey =
-        new DbForeignKey<>(
-            new DbLong(),
-            ZbColumnFamilies.PROCESS_CACHE,
-            MatchType.Full,
-            (k) -> k.getValue() == -1);
+    //    tenantAwareDecisionKey =
+    //        new DbTenantAwareKey<>(tenantIdKey, dbDecisionKey, PlacementType.PREFIX);
+    //    fkDecision = new DbForeignKey<>(tenantAwareDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
+
+    tenantIdKey = new DbString();
+    processDefinitionKey = new DbLong();
+    tenantAwareProcessDefinitionKey =
+        new DbTenantAwareKey<>(tenantIdKey, processDefinitionKey, PlacementType.PREFIX);
+    fkProcessDefinitionKey =
+        new DbForeignKey<>(tenantAwareProcessDefinitionKey, ZbColumnFamilies.PROCESS_CACHE);
     processInstanceKeyByProcessDefinitionKey =
-        new DbCompositeKey<>(processDefinitionKey, elementInstanceKey);
+        new DbCompositeKey<>(fkProcessDefinitionKey, elementInstanceKey);
     processInstanceKeyByProcessDefinitionKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
@@ -158,7 +167,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       instance = new ElementInstance(key, parent, state, value);
       updateInstance(parent);
     }
-    createInstance(instance);
+    createInstance(value.getTenantId(), instance);
 
     return instance;
   }
@@ -180,7 +189,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
-      processDefinitionKey.inner().wrapLong(recordValue.getProcessDefinitionKey());
+      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
           processInstanceKeyByProcessDefinitionKey);
     }
@@ -199,7 +208,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void createInstance(final ElementInstance instance) {
+  public void createInstance(final String tenantId, final ElementInstance instance) {
     elementInstanceKey.wrapLong(instance.getKey());
     parentKey.inner().wrapLong(instance.getParentKey());
 
@@ -209,7 +218,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
-      processDefinitionKey.inner().wrapLong(recordValue.getProcessDefinitionKey());
+      tenantIdKey.wrapString(tenantId);
+      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
           processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
     }
@@ -279,7 +289,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public void insertProcessInstanceKeyByDefinitionKey(
-      final long processInstanceKey, final long processDefinitionKey) {
+      final String tenantId, final long processInstanceKey, final long processDefinitionKey) {
+    tenantIdKey.wrapString(tenantId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     elementInstanceKey.wrapLong(processInstanceKey);
     processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
@@ -288,7 +299,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public void deleteProcessInstanceKeyByDefinitionKey(
-      final long processInstanceKey, final long processDefinitionKey) {
+      final String tenantId, final long processInstanceKey, final long processDefinitionKey) {
+    tenantIdKey.wrapString(tenantId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     elementInstanceKey.wrapLong(processInstanceKey);
     processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
@@ -368,12 +380,14 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
+  public List<Long> getProcessInstanceKeysByDefinitionKey(
+      final String tenantId, final long processDefinitionKey) {
     final List<Long> processInstanceKeys = new ArrayList<>();
-    this.processDefinitionKey.inner().wrapLong(processDefinitionKey);
+    tenantIdKey.wrapString(tenantId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
-        this.processDefinitionKey,
+        fkProcessDefinitionKey,
         (key, value) -> {
           final DbLong processInstanceKey = key.second();
           processInstanceKeys.add(processInstanceKey.getValue());
@@ -383,12 +397,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public boolean hasActiveProcessInstances(
-      final long processDefinitionKey, final List<Long> bannedInstances) {
-    this.processDefinitionKey.inner().wrapLong(processDefinitionKey);
+      final String tenantId, final long processDefinitionKey, final List<Long> bannedInstances) {
+    tenantIdKey.wrapString(tenantId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
     final AtomicBoolean hasActiveInstances = new AtomicBoolean(false);
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
-        this.processDefinitionKey,
+        fkProcessDefinitionKey,
         (key, value) -> {
           // A banned instance should not be considered as active
           if (bannedInstances.contains(key.second().getValue())) {

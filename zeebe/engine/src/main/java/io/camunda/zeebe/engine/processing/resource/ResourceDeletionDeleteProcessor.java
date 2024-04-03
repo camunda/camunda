@@ -239,7 +239,8 @@ public class ResourceDeletionDeleteProcessor
 
     final var bannedInstances = bannedInstanceState.getBannedProcessInstanceKeys();
     final var hasRunningInstances =
-        elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
+        elementInstanceState.hasActiveProcessInstances(
+            process.getTenantId(), process.getKey(), bannedInstances);
 
     if (!hasRunningInstances) {
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
