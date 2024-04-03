@@ -19,36 +19,40 @@ import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState.E
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class PartitionProcessingStateTest {
-  private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
-  private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
-  private static @TempDir Path testDir;
   private static final RaftPartition MOCK_RAFT_PARTITION =
       mock(RaftPartition.class, RETURNS_DEEP_STUBS);
+  private static final String PERSISTED_PROCESSOR_PAUSE_STATE_FILENAME = ".processorPaused";
+  private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
+  @TempDir private Path testDir;
 
-  @BeforeAll
-  static void setUp() {
+  @BeforeEach
+  void setUp() {
     when(MOCK_RAFT_PARTITION.dataDirectory().toPath()).thenReturn(testDir);
   }
 
   @Test
   void shouldPauseAndResumeProcessing() throws IOException {
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    final File persistedProcessorPauseState =
+        testDir.resolve(PERSISTED_PROCESSOR_PAUSE_STATE_FILENAME).toFile();
 
     // when
     partitionProcessingState.pauseProcessing();
 
     // then
-    // assert that file exists
+    assertThat(persistedProcessorPauseState).describedAs("Processor State file exists.").exists();
     assertTrue(partitionProcessingState.isProcessingPaused());
 
     partitionProcessingState.resumeProcessing();
 
-    // assert that file does not exist
+    assertThat(persistedProcessorPauseState)
+        .describedAs("Processor State file does not exist.")
+        .doesNotExist();
     assertFalse(partitionProcessingState.isProcessingPaused());
   }
 
@@ -127,11 +131,12 @@ class PartitionProcessingStateTest {
     final File persistedExporterPauseState =
         testDir.resolve(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toFile();
 
+    // when
     persistedExporterPauseState.createNewFile();
-    assertThat(persistedExporterPauseState).describedAs("Exporter State file exists.").exists();
 
-    // Then initialize Partition ProcessingState
+    // then
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
+    // the exporter state should be paused
 
     assertThat(partitionProcessingState.getExporterState())
         .describedAs("Exporting must be paused.")
