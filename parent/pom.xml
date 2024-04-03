@@ -144,6 +144,42 @@
     <version.jna-platform>5.14.0</version.jna-platform>
     <version.msal4j>1.15.0</version.msal4j>
 
+    <version.commons-io>2.16.0</version.commons-io>
+    <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
+    <version.unboundid-ldapsdk>6.0.11</version.unboundid-ldapsdk>
+    <version.parsson>1.1.5</version.parsson>
+    <version.springdoc>2.2.0</version.springdoc>
+    <version.jakarta.json>2.0.1</version.jakarta.json>
+    <version.node>v20.8.0</version.node>
+    <version.yarn>v1.22.10</version.yarn>
+    <version.log4j.testjar>2.19.0</version.log4j.testjar>
+    <version.aws-java-sdk>1.12.690</version.aws-java-sdk>
+    <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
+    <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
+    <postgres-test-container.version>1.17.6</postgres-test-container.version>
+    <version.elasticsearch7>7.17.19</version.elasticsearch7>
+    <version.lucene>8.11.3</version.lucene>
+    <version.android-json>0.0.20131108.vaadin1</version.android-json>
+    <version.hdr-histogram>2.1.12</version.hdr-histogram>
+    <version.joda-time>2.12.7</version.joda-time>
+    <version.commons-collections4>4.4</version.commons-collections4>
+
+    <!-- Auth0 Dependencies -->
+    <!-- If any of the following version changes, -->
+    <!-- please check if they are compatible with "mvc-auth-commons" -->
+    <version.auth0>1.44.2</version.auth0>
+    <version.auth0.commons>1.11.0</version.auth0.commons>
+    <version.auth0.jwt>4.4.0</version.auth0.jwt>
+    <version.okio-jvm>3.9.0</version.okio-jvm>
+    <version.jwks-rsa>0.22.1</version.jwks-rsa>
+    <version.guava.annotations>r03</version.guava.annotations>
+    <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
+    <version.keycloak>23.0.4</version.keycloak>
+    <version.jna>5.14.0</version.jna>
+
+<!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
+<!--    <mockito.version>5.5.0</mockito.version>-->
+
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
@@ -1280,7 +1316,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.16.0</version>
+        <version>${version.commons-io}</version>
       </dependency>
 
       <!-- between log4j2 and commons-compress (from testcontainers) -->
