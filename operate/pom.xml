@@ -33,6 +33,11 @@
   </modules>
 
   <properties>
+
+    <!-- release parent settings -->
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-operate-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-operate/</nexus.release.repository>
+
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.21.0</plugin.version.google-java-format>
 
@@ -1040,15 +1045,5 @@
 
   </profiles>
 
-  <distributionManagement>
-    <snapshotRepository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-operate-snapshots/</url>
-    </snapshotRepository>
-    <repository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-operate/</url>
-    </repository>
-  </distributionManagement>
 
 </project>
