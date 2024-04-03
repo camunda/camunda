@@ -16,7 +16,6 @@ import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
 import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.util.VersionUtil;
-import java.util.ArrayList;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -39,14 +38,14 @@ public final class TopologyController {
 
     final String gatewayVersion = VersionUtil.getVersion();
     if (gatewayVersion != null && !gatewayVersion.isBlank()) {
-      response.setGatewayVersion(gatewayVersion);
+      response.gatewayVersion(gatewayVersion);
     }
 
-    final ArrayList<BrokerInfo> brokers = new ArrayList<>();
     if (topology != null) {
-      response.setClusterSize(topology.getClusterSize());
-      response.setPartitionsCount(topology.getPartitionsCount());
-      response.setReplicationFactor(topology.getReplicationFactor());
+      response
+          .clusterSize(topology.getClusterSize())
+          .partitionsCount(topology.getPartitionsCount())
+          .replicationFactor(topology.getReplicationFactor());
 
       topology
           .getBrokers()
@@ -56,10 +55,9 @@ public final class TopologyController {
                 addBrokerInfo(brokerInfo, brokerId, topology);
                 addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
 
-                brokers.add(brokerInfo);
+                response.addBrokersItem(brokerInfo);
               });
     }
-    response.setBrokers(brokers);
 
     return response;
   }

@@ -93,6 +93,27 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   }
 
   @Override
+  public ActorFuture<Void> softPauseExporting() {
+    final ActorFuture<Void> completed = concurrencyControl.createFuture();
+    concurrencyControl.run(
+        () -> {
+          try {
+            final var softPauseStatePersisted = adminControl.softPauseExporting();
+
+            if (adminControl.getExporterDirector() != null && softPauseStatePersisted) {
+              adminControl.getExporterDirector().softPauseExporting().onComplete(completed);
+            } else {
+              completed.complete(null);
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not soft pause exporting", e);
+            completed.completeExceptionally(e);
+          }
+        });
+    return completed;
+  }
+
+  @Override
   public ActorFuture<Void> resumeExporting() {
     final ActorFuture<Void> completed = concurrencyControl.createFuture();
     concurrencyControl.run(

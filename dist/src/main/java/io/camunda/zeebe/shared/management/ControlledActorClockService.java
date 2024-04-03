@@ -50,4 +50,9 @@ public final class ControlledActorClockService implements ActorClockService, Mut
   public void resetTime() {
     clock.reset();
   }
+
+  @Override
+  public void update() {
+    clock.update();
+  }
 }

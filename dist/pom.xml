@@ -258,15 +258,14 @@
     </dependency>
 
     <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations</artifactId>
     </dependency>
-
-    <!--
-      the following are only used in tests, but we cannot scope them as tests as they're transitive
-      dependencies required at runtime by other modules; if we scope them as tests here, they will
-      be omitted from the resulting artifact, causing ClassNotFoundException errors at runtime
-      -->
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>

@@ -74,7 +74,7 @@
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.5.0-RC2</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
-    <version.identity>8.5.0-RC1</version.identity>
+    <version.identity>8.5.0</version.identity>
     <version.parsson>1.1.5</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
@@ -83,7 +83,7 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.awssdk>2.25.22</version.awssdk>
+    <version.awssdk>2.25.23</version.awssdk>
     <version.aws-java-sdk>1.12.690</version.aws-java-sdk>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <version.grpc>1.62.2</version.grpc>
@@ -127,7 +127,7 @@
     <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
     <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
-    <version.commons-io>2.15.1</version.commons-io>
+    <version.commons-io>2.16.0</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>6.0.11</version.unboundid-ldapsdk>
   </properties>
@@ -641,7 +641,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
         </plugin>
 
         <plugin>

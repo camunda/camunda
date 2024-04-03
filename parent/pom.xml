@@ -62,7 +62,7 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.5.0-RC1</version.identity>
+    <version.identity>8.5.0</version.identity>
     <version.jackson>2.17.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.jna>5.14.0</version.jna>
@@ -124,7 +124,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.35.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.22</version.awssdk>
+    <version.awssdk>2.25.23</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -157,7 +157,7 @@
     <plugin.version.exec>3.2.0</plugin.version.exec>
     <plugin.version.failsafe>3.2.5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
-    <plugin.version.jacoco>0.8.11</plugin.version.jacoco>
+    <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
     <plugin.version.maven-jar>3.3.0</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
