@@ -84,9 +84,6 @@ public class IndexSchemaValidatorIT extends AbstractSchemaIT {
   }
 
   @Test
-  public void shouldValidateDynamicIndex() {}
-
-  @Test
   public void shouldValidateDynamicIndexWithAddedProperty() {
     // Create a dynamic index and insert data
     schemaManager.createIndex(
