@@ -32,7 +32,7 @@ export class BranchAnalysis extends React.Component {
         processDefinitionVersions: [],
         identifier: 'definition',
         tenantIds: [],
-        filter: [],
+        filters: [],
       },
       data: null,
       hoveredControl: null,
@@ -61,7 +61,7 @@ export class BranchAnalysis extends React.Component {
           updateSelection={this.updateSelection}
           xml={xml}
         />
-        {config.filter && incompatibleFilters(config.filter) && (
+        {config.filters && incompatibleFilters(config.filters) && (
           <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
         )}
         <div className="content">
@@ -95,7 +95,7 @@ export class BranchAnalysis extends React.Component {
       prevConfig.processDefinitionKey !== config.processDefinitionKey ||
       !equal(prevConfig.processDefinitionVersions, config.processDefinitionVersions);
     const tenantsChanged = !equal(prevConfig.tenantIds, config.tenantIds);
-    const filterChanged = !equal(prevConfig.filter, config.filter);
+    const filterChanged = !equal(prevConfig.filters, config.filters);
 
     if (procDefConfigured && (procDefChanged || tenantsChanged || filterChanged)) {
       this.setState({
@@ -104,7 +104,7 @@ export class BranchAnalysis extends React.Component {
           config.processDefinitionVersions,
           config.tenantIds,
           config.identifier,
-          config.filter
+          config.filters
         ),
       });
     }

@@ -1,68 +1,9 @@
 @use '@carbon/styles/scss/spacing' as *;
 
-.BranchControlPanel {
-  background-color: var(--cds-layer);
-  padding: $spacing-04;
-  margin-bottom: 1em;
-
-  .list {
-    margin-top: -$spacing-04;
-
-    .item {
-      display: inline;
-      position: relative;
-      padding-right: $spacing-06;
-      list-style-position: inside;
-
-      &.summary {
-        .DefinitionSelection {
-          width: 220px;
-          display: inline-block;
-          margin: $spacing-04 $spacing-04 0 $spacing-04;
-
-          .buttonWrapper {
-            line-height: 30px;
-          }
-        }
-      }
-
-      .config {
-        cursor: default;
-        display: inline-block;
-        margin: $spacing-04 $spacing-04 0 $spacing-04;
-      }
-    }
-  }
-
-  .Filter {
-    .filterHeader {
-      position: relative;
-      display: inline-flex;
-      margin: $spacing-04 $spacing-04 0 0;
-
-      .dropdownLabel {
-        margin-right: $spacing-04;
-        flex-grow: 1;
-      }
-
-      .explanation {
-        display: none;
-      }
-    }
-
-    .emptyMessage,
-    .linkingTip {
-      display: none;
-    }
-
-    .FilterList {
-      display: inline;
-
-      > .listItem {
-        display: inline-flex;
-        width: auto;
-        margin-right: $spacing-04;
-      }
-    }
+.ControlPanel {
+  .config {
+    cursor: default;
+    display: inline-block;
+    margin-inline: $spacing-04;
   }
 }

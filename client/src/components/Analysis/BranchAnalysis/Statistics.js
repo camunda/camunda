@@ -123,7 +123,7 @@ export default class Statistics extends React.Component {
     const selectionChanged =
       (prevProps.gateway !== this.props.gateway ||
         prevProps.endEvent !== this.props.endEvent ||
-        prevProps.config.filter !== this.props.config.filter) &&
+        prevProps.config.filters !== this.props.config.filters) &&
       this.props.gateway &&
       this.props.endEvent;
 
@@ -188,7 +188,7 @@ export default class Statistics extends React.Component {
                 this.props.config.processDefinitionKey,
                 this.props.config.processDefinitionVersions,
                 this.props.config.tenantIds,
-                this.props.config.filter,
+                this.props.config.filters,
                 this.props.gateway.id,
                 this.props.endEvent.id
               ),
