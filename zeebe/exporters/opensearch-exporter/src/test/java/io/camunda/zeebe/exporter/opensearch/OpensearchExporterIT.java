@@ -280,7 +280,7 @@ final class OpensearchExporterIT {
 
   /**
    * policy change is an asynchronous background process in opensearch, that's why we use awaits
-   * before asserts to reduce flakey results
+   * before asserts to reduce flaky results
    */
   @Nested
   final class IndexSettingsTest {
@@ -296,6 +296,7 @@ final class OpensearchExporterIT {
       // then
       final var index1 = indexRouter.indexFor(record1);
       await()
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(
               () -> {
                 final var index1Policy = testClient.explainIndex(index1);
@@ -313,12 +314,14 @@ final class OpensearchExporterIT {
       // then
       final var index2 = indexRouter.indexFor(record2);
       await()
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(
               () -> {
                 final var index2Policy = testClient.explainIndex(index2);
                 assertHasISMPolicy(index2Policy);
               });
       await()
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(
               () -> {
                 final var index1PolicyNew = testClient.explainIndex(index1);
@@ -338,6 +341,7 @@ final class OpensearchExporterIT {
       // then
       final var index1 = indexRouter.indexFor(record1);
       await()
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(
               () -> {
                 final var indexPolicy1 = testClient.explainIndex(index1);
@@ -363,6 +367,7 @@ final class OpensearchExporterIT {
                 assertHasNoISMPolicy(response2);
               });
       await()
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(
               () -> {
                 final var index1PolicyNew = testClient.explainIndex(index1);
@@ -394,6 +399,7 @@ final class OpensearchExporterIT {
       // then
       final var index2 = indexRouter.indexFor(record2);
       await()
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(
               () -> {
                 final var index2Policy = testClient.explainIndex(index2);
