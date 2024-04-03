@@ -1051,14 +1051,4 @@
     </repository>
   </distributionManagement>
 
-  <issueManagement>
-    <system>Jira</system>
-    <url>https://app.camunda.com/jira/browse/OPE/</url>
-  </issueManagement>
-
-  <organization>
-    <name>Camunda Services GmbH</name>
-    <url>http://www.camunda.com</url>
-  </organization>
-
 </project>
