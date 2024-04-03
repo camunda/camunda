@@ -2,7 +2,9 @@ name: Operate Backend
 on:
   push:
     branches:
-      - main
+      - 'main'
+      - 'stable/**'
+      - 'release/**'
     paths-ignore:
       - ".github/workflows/zeebe-*"
       - "operate/client/**"
