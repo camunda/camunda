@@ -73,7 +73,7 @@ public class TaskMapper {
               .map(value -> value.replaceAll("\"", "")) // Remove quotes for FE
               .collect(Collectors.joining());
 
-      if (taskDescriptions.isEmpty()) {
+      if (taskDescriptions.isEmpty() || "null".equals(taskDescriptions)) {
         taskDescriptions = null;
       }
 
