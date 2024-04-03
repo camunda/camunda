@@ -101,7 +101,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter);
 
-    final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
+    final ExporterDirector director = new ExporterDirector(exporterCtx, context.getExporterPhase());
 
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
 
