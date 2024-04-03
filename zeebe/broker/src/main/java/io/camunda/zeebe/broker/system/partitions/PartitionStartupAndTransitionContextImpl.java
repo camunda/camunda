@@ -25,7 +25,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState.ExporterState;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
@@ -263,7 +262,7 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public boolean shouldExport() {
-    return !partitionProcessingState.getExporterState().equals(ExporterState.PAUSED);
+    return !partitionProcessingState.isExportingPaused();
   }
 
   @Override
