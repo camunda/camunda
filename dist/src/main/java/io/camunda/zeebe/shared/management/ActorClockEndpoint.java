@@ -134,7 +134,9 @@ public class ActorClockEndpoint {
           "Expected to pin the clock to the given time, but it is immutable", 403);
     }
 
-    clock.get().pinTime(Instant.ofEpochMilli(epochMilli));
+    final var mutableClock = clock.get();
+    mutableClock.pinTime(Instant.ofEpochMilli(epochMilli));
+    mutableClock.update();
     return getCurrentClock();
   }
 
@@ -151,7 +153,9 @@ public class ActorClockEndpoint {
     }
 
     final var offset = Duration.of(offsetMilli, ChronoUnit.MILLIS);
-    clock.get().addTime(offset);
+    final var mutableClock = clock.get();
+    mutableClock.addTime(offset);
+    mutableClock.update();
     return getCurrentClock();
   }
 
