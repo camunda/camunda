@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.test.appender.ListAppender;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,12 +68,23 @@ public class ReindexIT {
   @Autowired private BeanFactory beanFactory;
   private String indexPrefix;
 
-  @BeforeEach
-  public void setUp() {
+  @BeforeAll
+  public void setUp() throws Exception {
     indexPrefix = UUID.randomUUID().toString();
+    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
+    // Create archived index
+    createIndex(
+        idxName("index-1.2.3_2021-05-23"), List.of(Map.of("test_name", "test_value_archived")));
+    /// New version -> migration
+    // Create new index
+    createIndex(idxName("index-1.2.4_"), List.of());
+
+    createIndex(
+        idxName("index-1.2.5_"),
+        IntStream.range(0, 15000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
   }
 
-  @AfterEach
+  @AfterAll
   public void tearDown() {
     schemaManager.deleteIndicesFor(idxName("index-*"));
   }
@@ -86,13 +97,6 @@ public class ReindexIT {
   public void reindexArchivedIndices() throws Exception {
     /// Old version -> before migration
     // create index
-    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
-    // Create archived index
-    createIndex(
-        idxName("index-1.2.3_2021-05-23"), List.of(Map.of("test_name", "test_value_archived")));
-    /// New version -> migration
-    // Create new index
-    createIndex(idxName("index-1.2.4_"), List.of());
 
     schemaManager.refresh(idxName("index-*"));
     final Plan plan =
@@ -107,9 +111,12 @@ public class ReindexIT {
     assertThat(schemaManager.getIndexNames(idxName("index-*")))
         .containsExactlyInAnyOrder(
             // reindexed indices:
-            idxName("index-1.2.4_"), idxName("index-1.2.4_2021-05-23"),
+            idxName("index-1.2.4_"),
+            idxName("index-1.2.4_2021-05-23"),
             // old indices:
-            idxName("index-1.2.3_"), idxName("index-1.2.3_2021-05-23"));
+            idxName("index-1.2.3_"),
+            idxName("index-1.2.5_"),
+            idxName("index-1.2.3_2021-05-23"));
   }
 
   @Test
@@ -119,11 +126,8 @@ public class ReindexIT {
     // slow the reindex down, to increase chance of sub 100% progress logged
     migrationProperties.setReindexBatchSize(1);
     /// Old index
-    createIndex(
-        idxName("index-1.2.3_"),
-        IntStream.range(0, 15000).mapToObj(i -> Map.of("test_name", "test_value" + i)).toList());
+
     /// New index
-    createIndex(idxName("index-1.2.4_"), List.of());
 
     schemaManager.refresh(idxName("index-*"));
     final Plan plan =
@@ -141,6 +145,9 @@ public class ReindexIT {
         .containsExactlyInAnyOrder(
             // reindexed indices:
             idxName("index-1.2.4_"),
+            idxName("index-1.2.3_2021-05-23"),
+            idxName("index-1.2.4_2021-05-23"),
+            idxName("index-1.2.5_"),
             // old indices:
             idxName("index-1.2.3_"));
 
@@ -167,7 +174,6 @@ public class ReindexIT {
   public void resetIndexSettings() throws Exception {
     /// Old version -> before migration
     // create index
-    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name", "test_value")));
     // set reindex settings
     schemaManager.setIndexSettingsFor(
         Map.of(
