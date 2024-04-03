@@ -151,6 +151,18 @@
       <name>Camunda Identity Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
     </repository>
+
+    <repository>
+      <id>elasticsearch</id>
+      <name>Elasticsearch Repository</name>
+      <url>https://artifacts.elastic.co/maven/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
   </repositories>
 
   <build>
