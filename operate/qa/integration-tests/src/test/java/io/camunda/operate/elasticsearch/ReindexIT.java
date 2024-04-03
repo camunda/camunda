@@ -29,7 +29,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.migration.Plan;
 import io.camunda.operate.schema.migration.ReindexPlan;
-import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
@@ -58,7 +57,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ReindexIT extends OperateAbstractIT {
+public class ReindexIT {
 
   @RegisterExtension
   static LoggerContextExtension loggerRule = new LoggerContextExtension("log4j2-listAppender.xml");
