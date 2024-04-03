@@ -87,11 +87,6 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-webflux</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
 
@@ -112,8 +107,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.openapitools</groupId>
-      <artifactId>jackson-databind-nullable</artifactId>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
     </dependency>
 
     <dependency>
@@ -136,6 +131,12 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webflux</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -234,7 +235,7 @@
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
-              <generateModelDocumentation>true</generateModelDocumentation>
+              <generateModelDocumentation>false</generateModelDocumentation>
               <generateModelTests>false</generateModelTests>
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
@@ -242,6 +243,8 @@
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
                 <library>spring-boot</library>
+                <jdk8>true</jdk8>
+                <openApiNullable>false</openApiNullable>
               </configOptions>
             </configuration>
           </execution>
@@ -253,9 +256,10 @@
         <configuration>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
-            <!-- Needed for the OpenAPI model generation -->
+            <!-- Needed to run tests -->
             <dependency>org.springframework.boot:spring-boot-starter-webflux</dependency>
-            <dependency>org.openapitools:jackson-databind-nullable</dependency>
+            <!-- Used for OpenAPI generation -->
+            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
