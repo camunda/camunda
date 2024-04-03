@@ -33,18 +33,42 @@ public final class ExporterMetrics {
       Gauge.build()
           .namespace("zeebe")
           .name("exporter_last_updated_exported_position")
-          .help("The last exported position which was also updated/commited by the exporter.")
+          .help("The last exported position which was also updated/committed by the exporter.")
           .labelNames("exporter", "partition")
           .register();
 
+  private static final Gauge EXPORTER_PHASE =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("exporter_state")
+          .help(
+              "Describes the phase of the exporter, namely if it is exporting, paused or soft paused.")
+          .labelNames("partition")
+          .register();
   private final String partitionIdLabel;
 
-  public ExporterMetrics(final int partitionId) {
+  private final Gauge.Child exporterPhase;
+
+  public ExporterMetrics(final int partitionId, final ExporterPhase phase) {
     partitionIdLabel = String.valueOf(partitionId);
+    exporterPhase = EXPORTER_PHASE.labels(partitionIdLabel);
+    initializeExporterState(phase);
   }
 
   private void event(final String action, final ValueType valueType) {
     EXPORTER_EVENTS.labels(action, partitionIdLabel, valueType.name()).inc();
+  }
+
+  public void setExporterActive() {
+    exporterPhase.set(0);
+  }
+
+  public void setExporterPaused() {
+    exporterPhase.set(1);
+  }
+
+  public void setExporterSoftPaused() {
+    exporterPhase.set(2);
   }
 
   public void eventExported(final ValueType valueType) {
@@ -61,5 +85,19 @@ public final class ExporterMetrics {
 
   public void setLastExportedPosition(final String exporter, final long position) {
     LAST_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
+  }
+
+  void initializeExporterState(final ExporterPhase state) {
+    switch (state) {
+      case PAUSED:
+        setExporterPaused();
+        break;
+      case SOFT_PAUSED:
+        setExporterSoftPaused();
+        break;
+      default:
+        setExporterActive();
+        break;
+    }
   }
 }
