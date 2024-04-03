@@ -25,6 +25,7 @@ const MOCK_TASK = {
   followUpDate: null,
   candidateGroups: null,
   candidateUsers: null,
+  context: null,
 };
 
 test.describe('form-js integration', () => {

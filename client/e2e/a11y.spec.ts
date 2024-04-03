@@ -34,6 +34,7 @@ const MOCK_TASK = {
   candidateGroups: null,
   candidateUsers: null,
   tenantId: MOCK_TENANT.id,
+  context: null,
 };
 
 test.describe('a11y', () => {
