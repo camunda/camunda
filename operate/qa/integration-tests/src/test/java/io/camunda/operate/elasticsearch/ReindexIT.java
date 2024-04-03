@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.test.appender.ListAppender;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,12 +68,12 @@ public class ReindexIT {
   @Autowired private BeanFactory beanFactory;
   private String indexPrefix;
 
-  @BeforeEach
+  @BeforeAll
   public void setUp() {
     indexPrefix = UUID.randomUUID().toString();
   }
 
-  @AfterEach
+  @AfterAll
   public void tearDown() {
     schemaManager.deleteIndicesFor(idxName("index-*"));
   }
