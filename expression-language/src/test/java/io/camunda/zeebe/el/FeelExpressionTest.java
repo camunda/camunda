@@ -167,6 +167,7 @@ public class FeelExpressionTest {
     final var localDateTime = LocalDateTime.parse("2020-09-21T07:20:00");
     final var now = localDateTime.atZone(ZoneId.systemDefault());
     clock.setCurrentTime(now.toInstant());
+    clock.update();
 
     final var evaluationResult = evaluateExpression("now()", EMPTY_CONTEXT);
 
@@ -179,6 +180,7 @@ public class FeelExpressionTest {
     final var localDateTime = LocalDateTime.parse("2020-09-21T07:20:00");
     final var now = localDateTime.atZone(ZoneId.systemDefault());
     clock.setCurrentTime(now.toInstant());
+    clock.update();
 
     final var evaluationResult = evaluateExpression("string(today())", EMPTY_CONTEXT);
 
