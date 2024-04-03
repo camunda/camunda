@@ -17,6 +17,8 @@ public interface PartitionAdminAccess {
 
   ActorFuture<Void> pauseExporting();
 
+  ActorFuture<Void> softPauseExporting();
+
   ActorFuture<Void> resumeExporting();
 
   ActorFuture<Void> pauseProcessing();

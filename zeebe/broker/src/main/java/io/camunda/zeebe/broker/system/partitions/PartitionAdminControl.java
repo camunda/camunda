@@ -34,5 +34,7 @@ public interface PartitionAdminControl {
 
   boolean pauseExporting() throws IOException;
 
+  boolean softPauseExporting() throws IOException;
+
   boolean resumeExporting() throws IOException;
 }

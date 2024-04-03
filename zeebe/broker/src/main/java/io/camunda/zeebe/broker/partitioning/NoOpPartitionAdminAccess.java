@@ -35,6 +35,12 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
   }
 
   @Override
+  public ActorFuture<Void> softPauseExporting() {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
   public ActorFuture<Void> resumeExporting() {
     logCall();
     return CompletableActorFuture.completed(null);
