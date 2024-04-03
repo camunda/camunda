@@ -1,6 +1,15 @@
 name: Operate a11y tests
 on:
   push:
+    branches:
+      - 'main'
+      - 'stable/**'
+    paths-ignore:
+      - '.github/workflows/zeebe-*'
+      - 'dist/**'
+      - 'zeebe/**'
+      - 'spring-boot-starter-camunda-sdk/**'
+  pull_request:
     paths-ignore:
       - '.github/workflows/zeebe-*'
       - 'dist/**'
