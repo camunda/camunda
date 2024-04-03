@@ -21,7 +21,9 @@ import {
   TableCell as BaseTableCell,
   TableHead as BaseTableHead,
   DataTableSkeleton as BaseDataTableSkeleton,
-  TableRow as BaseTableRow,
+  TableExpandRow as BaseTableExpandRow,
+  TableRow as BaseTableHeadRow,
+  TableExpandedRow as BaseTableExpandedRow,
 } from '@carbon/react';
 
 type ContainerProps = {
@@ -43,10 +45,91 @@ const Container = styled.div<ContainerProps>`
   }}
 `;
 
+type TableExpandRowProps = {
+  $isClickable?: boolean;
+};
+
+const TableExpandRow = styled(BaseTableExpandRow)<TableExpandRowProps>`
+  // remove extra top border except for first row
+  &:not(:first-child) td {
+    border-block-start: none !important;
+  }
+
+  // hide expand button on non-error rows
+  &:not(.errorRow) {
+    .cds--table-expand__button {
+      visibility: hidden;
+    }
+  }
+
+  // add success border
+  &.successRow {
+    box-shadow: inset 3px 0 0 var(--cds-support-success);
+  }
+
+  ${({$isClickable}) => {
+    return css`
+      ${$isClickable && `cursor: pointer;`}
+    `;
+  }}
+`;
+
+const TableExpandedRow = styled(BaseTableExpandedRow)`
+  box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+
+  td {
+    border-block-start: none !important;
+  }
+
+  &:hover td {
+    box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+  }
+`;
+
 const TableContainer = styled(BaseTableContainer)`
   height: 100%;
   .cds--data-table-content {
     overflow-x: inherit;
+  }
+
+  tr.errorRow {
+    // show button to expand on error row
+    .cds--table-expand__button {
+      visibility: visible;
+    }
+
+    // add parent error border (opened and closed)
+    box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+
+    // remove unwanted lines and borders on parent (opened)
+    &.cds--expandable-row td {
+      box-shadow: none;
+      border-block-end: none !important;
+    }
+
+    // add parent error border (opened) on child hover
+    &.cds--expandable-row--hover td {
+      &:first-child {
+        box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+      }
+    }
+
+    &:hover {
+      // HOVER - add parent error border (opened and closed)
+      td.cds--table-expand {
+        box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+      }
+
+      // HOVER - remove unwanted borders
+      &.cds--expandable-row td {
+        border-block-end: none !important;
+      }
+
+      // HOVER - add child error border
+      + ${TableExpandedRow} td {
+        box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
+      }
+    }
   }
 `;
 
@@ -85,10 +168,7 @@ const DataTableSkeleton = styled(BaseDataTableSkeleton)`
   }
 `;
 
-type TableRowProps = {
-  $isClickable?: boolean;
-};
-const TableRow = styled(BaseTableRow)<TableRowProps>`
+const TableHeadRow = styled(BaseTableHeadRow)<{$isClickable?: boolean}>`
   ${({$isClickable}) => {
     return css`
       ${$isClickable && `cursor: pointer;`}
@@ -103,5 +183,7 @@ export {
   TableHead,
   EmptyMessageContainer,
   DataTableSkeleton,
-  TableRow,
+  TableHeadRow,
+  TableExpandRow,
+  TableExpandedRow,
 };
