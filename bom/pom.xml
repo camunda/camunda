@@ -153,15 +153,15 @@
     </repository>
 
     <repository>
-      <id>elasticsearch</id>
-      <name>Elasticsearch Repository</name>
-      <url>https://artifacts.elastic.co/maven/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
+      <id>elasticsearch</id>
+      <name>Elasticsearch Repository</name>
+      <url>https://artifacts.elastic.co/maven/</url>
     </repository>
   </repositories>
 

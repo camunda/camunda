@@ -177,8 +177,8 @@
     <version.keycloak>23.0.4</version.keycloak>
     <version.jna>5.14.0</version.jna>
 
-<!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
-<!--    <mockito.version>5.5.0</mockito.version>-->
+    <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
+    <!--    <mockito.version>5.5.0</mockito.version>-->
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -1611,7 +1611,6 @@
         <version>${version.lucene}</version>
       </dependency>
 
-
       <dependency>
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-join</artifactId>
@@ -1708,7 +1707,6 @@
         <artifactId>keycloak-core</artifactId>
         <version>${version.keycloak}</version>
       </dependency>
-
 
       <!-- Auth0 and it's direct dependencies -->
       <dependency>
