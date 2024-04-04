@@ -159,6 +159,33 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(countBackoffRecords()).isEqualTo(1);
   }
 
+  @Test
+  public void shouldRemoveFailedJobFromBackoffColumn() {
+    // given
+    final MutableJobState jobState = processingState.getJobState();
+    final JobRecord record = createJobRecord(1000);
+    jobState.create(jobKey.getValue(), record);
+    jobState.fail(jobKey.getValue(), record);
+    backoffKey.wrapLong(record.getRecurringTime());
+    jobState.updateJobRetries(jobKey.getValue(), 0);
+
+    jobKey.wrapLong(2);
+    final JobRecord backoffRecord = createJobRecord(2000);
+    jobState.create(jobKey.getValue(), backoffRecord);
+    jobState.fail(jobKey.getValue(), backoffRecord);
+    backoffKey.wrapLong(backoffRecord.getRecurringTime());
+
+    // when
+    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
+    jobBackoffRestoreMigration.runMigration(processingState);
+
+    // then
+    assertThat(backoffColumnFamily.isEmpty()).isFalse();
+    assertThat(backoffColumnFamily.count()).isEqualTo(1);
+    backoffKey.wrapLong(record.getRecurringTime());
+    assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
+  }
+
   private static JobRecord createJobRecord(final long retryBackoff) {
     return new JobRecord()
         .setType("test")
