@@ -85,7 +85,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -155,7 +155,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -213,7 +213,7 @@ jobs:
         id: build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
@@ -254,7 +254,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
