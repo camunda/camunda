@@ -20,6 +20,9 @@ public interface BrokerAdminService {
   /** Request a partition to pause exporting */
   void pauseExporting();
 
+  /** Request a partition to soft pause exporting */
+  void softPauseExporting();
+
   /** Request a partition to resume exporting */
   void resumeExporting();
 
