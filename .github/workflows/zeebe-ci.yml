@@ -48,21 +48,21 @@ jobs:
         include:
           - group: modules
             name: "Module Integration Tests"
-            maven-modules: "'!zeebe/qa/integration-tests,!zeebe/qa/update-tests'"
+            maven-modules: "'!qa/integration-tests,!qa/update-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             tcc-enabled: 'false'
             tcc-concurrency: 1
           - group: qa-integration
             name: "QA Integration Tests"
-            maven-modules: "zeebe/qa/integration-tests"
+            maven-modules: "qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             tcc-enabled: ${{ vars.TCC_ENABLED }}
             tcc-concurrency: 1
           - group: qa-update
             name: "QA Update Tests"
-            maven-modules: "zeebe/qa/update-tests"
+            maven-modules: "qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             tcc-enabled: ${{ vars.TCC_ENABLED }}
@@ -232,7 +232,7 @@ jobs:
         run: >
           ./mvnw -B --no-snapshot-updates
           -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
-          -pl zeebe/qa/integration-tests
+          -pl qa/integration-tests
           -P smoke-test,extract-flaky-tests
           -D excludedGroups=$EXCLUDED_TEST_GROUPS
           -f zeebe
