@@ -243,8 +243,15 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
                       .setName(entry.getKey())
                       .setTypeDefinition(indexMappingAsMap));
             }
+            final String dynamic =
+                indexMapping.getValue().mappings().dynamic() == null
+                    ? null
+                    : indexMapping.getValue().mappings().dynamic().name();
             final IndexMapping mapping =
-                new IndexMapping().setIndexName(indexMapping.getKey()).setProperties(properties);
+                new IndexMapping()
+                    .setIndexName(indexMapping.getKey())
+                    .setDynamic(dynamic)
+                    .setProperties(properties);
             mappings.put(indexMapping.getKey(), mapping);
           }
           return mappings;
