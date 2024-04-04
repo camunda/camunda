@@ -50,7 +50,15 @@
   align-items: flex-end;
 
   &:not(:empty) {
-    margin-bottom: var(--cds-spacing-03);
+    margin-bottom: var(--cds-spacing-05);
+  }
+
+  & .variableGridItem {
+    align-self: flex-start;
+  }
+
+  & .variableGridRemove {
+    align-self: center;
   }
 }
 

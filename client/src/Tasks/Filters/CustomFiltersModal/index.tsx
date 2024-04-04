@@ -376,6 +376,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                                         <TextInput
                                           {...input}
                                           id={input.name}
+                                          className={styles.variableGridItem}
                                           labelText="Name"
                                           autoFocus={
                                             index === (fields.length ?? 1) - 1
@@ -394,6 +395,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                                         <TextInput
                                           {...input}
                                           id={input.name}
+                                          className={styles.variableGridItem}
                                           labelText="Value"
                                           invalid={
                                             meta.submitError !== undefined &&
@@ -406,6 +408,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
 
                                     <Button
                                       type="button"
+                                      className={styles.variableGridRemove}
                                       hasIconOnly
                                       iconDescription="Remove variable"
                                       renderIcon={Close}
