@@ -30,6 +30,7 @@ import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.util.SchemaTestHelper;
+import io.camunda.operate.schema.util.TestDynamicIndex;
 import io.camunda.operate.schema.util.TestIndex;
 import io.camunda.operate.schema.util.TestTemplate;
 import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelper;
@@ -49,6 +50,7 @@ import org.springframework.test.context.ContextConfiguration;
       IndexSchemaValidator.class,
       TestIndex.class,
       TestTemplate.class,
+      TestDynamicIndex.class,
       ElasticsearchSchemaManager.class,
       ElasticsearchConnector.class,
       ElasticsearchTaskStore.class,
@@ -68,6 +70,7 @@ public class IndexSchemaValidatorIT extends AbstractSchemaIT {
   @Autowired public SchemaTestHelper schemaHelper;
 
   @Autowired public TestIndex testIndex;
+  @Autowired public TestDynamicIndex testDynamicIndex;
   @Autowired public TestTemplate testTemplate;
 
   @BeforeEach
@@ -78,6 +81,62 @@ public class IndexSchemaValidatorIT extends AbstractSchemaIT {
   @AfterEach
   public void dropSchema() {
     schemaHelper.dropSchema();
+  }
+
+  @Test
+  public void shouldValidateDynamicIndexWithAddedProperty() {
+    // Create a dynamic index and insert data
+    schemaManager.createIndex(
+        testDynamicIndex,
+        "/schema/elasticsearch/create/index/operate-testdynamicindex-property-removed.json");
+    final Map<String, Object> subDocument =
+        Map.of(
+            "requestedUrl",
+            "test",
+            "SPRING_SECURITY_CONTEXT",
+            "test",
+            "SPRING_SECURITY_SAVED_REQUEST",
+            "test");
+    final Map<String, Object> document = Map.of("propA", "test", "propC", subDocument);
+    clientTestHelper.createDocument(testDynamicIndex.getFullQualifiedName(), "1", document);
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // Only property B shows up in the diff, and no exception is thrown due to the data adding
+    // fields dynamically in propC
+    assertThat(indexDiff)
+        .containsExactly(
+            entry(
+                testDynamicIndex,
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("propB")
+                        .setTypeDefinition(Map.of("type", "text")))));
+  }
+
+  @Test
+  public void shouldValidateDynamicIndexWithDataAddingFields() {
+    // Create a dynamic index and insert data
+    schemaManager.createIndex(
+        testDynamicIndex, "/schema/elasticsearch/create/index/operate-testdynamicindex.json");
+    final Map<String, Object> subDocument =
+        Map.of(
+            "requestedUrl",
+            "test",
+            "SPRING_SECURITY_CONTEXT",
+            "test",
+            "SPRING_SECURITY_SAVED_REQUEST",
+            "test");
+    final Map<String, Object> document =
+        Map.of("propA", "test", "propB", "test", "propC", subDocument);
+    clientTestHelper.createDocument(testDynamicIndex.getFullQualifiedName(), "1", document);
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // No diff should show and no exception thrown due to fields dynamically added from propC data
+    assertThat(indexDiff).isEmpty();
   }
 
   @Test
