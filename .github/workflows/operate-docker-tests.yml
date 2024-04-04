@@ -89,7 +89,7 @@ jobs:
           tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
           file: operate.Dockerfile
       - name: Run Docker tests
-        run: mvn -pl operate/qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: mvn -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-operate-test-artifacts
