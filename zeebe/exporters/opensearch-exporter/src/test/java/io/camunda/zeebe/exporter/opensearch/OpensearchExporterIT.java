@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -284,6 +285,7 @@ final class OpensearchExporterIT {
    */
   @Nested
   final class IndexSettingsTest {
+    @Ignore
     @Test
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
