@@ -72,7 +72,7 @@
     <netty.version>4.1.100.Final</netty.version>
 
     <!-- Library versions not provided by spring boot -->
-    <version.zeebe>8.5.0-RC2</version.zeebe>
+    <version.zeebe>8.5.0</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
     <version.identity>8.5.0</version.identity>
     <version.parsson>1.1.5</version.parsson>
