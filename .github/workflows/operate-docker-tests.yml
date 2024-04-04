@@ -2,6 +2,16 @@
 name: Operate Tests
 on:
   push:
+    branches:
+      - 'main'
+      - 'stable/**'
+      - 'release/**'
+    paths-ignore:
+      - '.github/workflows/zeebe-*'
+      - 'dist/**'
+      - 'zeebe/**'
+      - 'spring-boot-starter-camunda-sdk/**'
+  pull_request:
     paths-ignore:
       - '.github/workflows/zeebe-*'
       - 'dist/**'

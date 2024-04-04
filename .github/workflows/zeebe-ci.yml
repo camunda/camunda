@@ -21,6 +21,10 @@ on:
   workflow_dispatch: { }
   workflow_call: { }
 
+concurrency:
+  cancel-in-progress: true
+  group: "${{ github.workflow }}-${{ github.ref }}"
+
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
@@ -345,46 +349,6 @@ jobs:
       - name: Run Go tests
         working-directory: clients/go
         run: go test -mod=vendor -v ./...
-  codeql:
-    name: CodeQL
-    runs-on: [ self-hosted, linux, amd64, "16" ]
-    permissions:
-      security-events: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-          queries: +security-and-quality
-      - uses: ./.github/actions/build-zeebe
-        with:
-          maven-extra-args: -T1C
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          upload: False
-          output: sarif-results
-      - name: Remove results for generated code
-        uses: advanced-security/filter-sarif@main
-        with:
-          patterns: |
-            +**/*.java
-            -**/generated-sources/**/*.java
-            -**/generated-test-sources/**/*.java
-          input: sarif-results/java.sarif
-          output: sarif-results/java.sarif
-      - name: Upload CodeQL Results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: sarif-results/java.sarif
   go-lint:
     name: Go linting
     runs-on: ubuntu-latest
@@ -507,7 +471,6 @@ jobs:
       - property-tests
       - performance-tests
       - go-client
-      - codeql
       - java-checks
       - go-lint
       - go-apidiff
