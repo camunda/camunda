@@ -93,6 +93,7 @@
             <excludes>
               <exclude>**/target/**/*.md</exclude>
               <exclude>clients/go/vendor/**/*.md</exclude>
+              <exclude>**/node_modules/**/*.md</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>
