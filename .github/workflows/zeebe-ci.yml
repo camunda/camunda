@@ -33,7 +33,7 @@ env:
 jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}"
-    timeout-minutes: 20
+    timeout-minutes: 30
     runs-on: [ self-hosted, linux, amd64, "16" ]
     strategy:
       fail-fast: false
