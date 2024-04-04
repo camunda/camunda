@@ -71,6 +71,11 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   @Override
+  public void softPauseExporting() {
+    actor.call(this::softPauseExportingOnAllPartitions);
+  }
+
+  @Override
   public void resumeExporting() {
     LOG.info("Resuming exporting on all partitions.");
     actor.call(() -> adminAccess.resumeExporting());
@@ -233,6 +238,11 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   private ActorFuture<Void> takeSnapshotOnAllPartitions() {
     LOG.info("Triggering Snapshots on all partitions.");
     return adminAccess.takeSnapshot();
+  }
+
+  private ActorFuture<Void> softPauseExportingOnAllPartitions() {
+    LOG.info("Soft Pausing exporting on all partitions.");
+    return adminAccess.softPauseExporting();
   }
 
   private ActorFuture<Void> pauseExportingOnAllPartitions() {
