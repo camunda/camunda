@@ -60,6 +60,11 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   @Override
+  public void softPauseExporting() {
+    actor.call(this::softPauseExportingOnAllPartitions);
+  }
+
+  @Override
   public void resumeExporting() {
     actor.call(this::resumeExportingOnAllPartitions);
   }
@@ -225,6 +230,14 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionManager.getZeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::takeSnapshot)
+        .collect(new ActorFutureCollector<>(actor));
+  }
+
+  private ActorFuture<List<Void>> softPauseExportingOnAllPartitions() {
+    LOG.info("Soft Pausing exporting on all partitions.");
+    return partitionManager.getZeebePartitions().stream()
+        .map(ZeebePartition::getAdminAccess)
+        .map(PartitionAdminAccess::softPauseExporting)
         .collect(new ActorFutureCollector<>(actor));
   }
 

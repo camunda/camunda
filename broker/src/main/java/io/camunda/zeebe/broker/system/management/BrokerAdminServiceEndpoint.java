@@ -31,6 +31,7 @@ public class BrokerAdminServiceEndpoint {
     operations.put("takeSnapshot", this::takeSnapshot);
     operations.put("prepareUpgrade", this::prepareUpgrade);
     operations.put("pauseExporting", this::pauseExporting);
+    operations.put("softPauseExporting", this::softPauseExporting);
     operations.put("resumeExporting", this::resumeExporting);
   }
 
@@ -57,6 +58,11 @@ public class BrokerAdminServiceEndpoint {
 
   private Map<Integer, PartitionStatus> pauseExporting() {
     springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseExporting);
+    return partitionStatus();
+  }
+
+  private Map<Integer, PartitionStatus> softPauseExporting() {
+    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::softPauseExporting);
     return partitionStatus();
   }
 
