@@ -1,4 +1,92 @@
 # v8.5.0
+## 🚀 New Features
+* implementation mvp context variable ([#4717](https://github.com/camunda/tasklist/issues/4717))
+* Zeebe API on Tasklist OOTB ([#4728](https://github.com/camunda/tasklist/issues/4728))
+* Enable custom filters ([#4766](https://github.com/camunda/tasklist/issues/4766))
+* notify the user when they are not using tasklist that they have open, assigned tasks ([#4600](https://github.com/camunda/tasklist/issues/4600))
+* Integrate custom filters with backend ([#4690](https://github.com/camunda/tasklist/issues/4690))
+* conditional logic for due, followup and completion dates on task tiles ([#4740](https://github.com/camunda/tasklist/issues/4740))
+* scroll to the first invalid field on form submission ([#4598](https://github.com/camunda/tasklist/issues/4598))
+* indicate task completion on a tile and detail view ([#4711](https://github.com/camunda/tasklist/issues/4711))
+* adding support for changes in number_of_replicas for ES/OS ([#4697](https://github.com/camunda/tasklist/issues/4697))
+* adding get token to internal api ([#4696](https://github.com/camunda/tasklist/issues/4696))
+* add introductory header and contrasting colors to process page ([#4643](https://github.com/camunda/tasklist/issues/4643))
+* Tasklist to open other apps in the same page ([#4692](https://github.com/camunda/tasklist/issues/4692))
+* indicate assignees on a task tile and task details view ([#4646](https://github.com/camunda/tasklist/issues/4646))
+* Add group select ([#4658](https://github.com/camunda/tasklist/issues/4658))
+* when submitting a form, a warning will show if any part of it is invalid ([#4515](https://github.com/camunda/tasklist/issues/4515))
+* a notification shows to enable OS level notifications ([#4552](https://github.com/camunda/tasklist/issues/4552))
+
+## 💊 Bugfixes
+* **styles**: custom filter variable grid should line up with flex-start ([#4809](https://github.com/camunda/tasklist/issues/4809))
+* context variable - ignore null values coming from modeler on FE rendering.  ([#4807](https://github.com/camunda/tasklist/issues/4807))
+* Prevent OS notification check to run on public page ([#4804](https://github.com/camunda/tasklist/issues/4804))
+* Add missing forward ref ([#4795](https://github.com/camunda/tasklist/issues/4795))
+* **auto-select**: do not try to load the task that was just completed ([#4722](https://github.com/camunda/tasklist/issues/4722))
+* racing condition for deployments with forms and tasks at the same time ([#4714](https://github.com/camunda/tasklist/issues/4714))
+* Tasklist returns empty schema for an embedded form ([#4703](https://github.com/camunda/tasklist/issues/4703))
+* Fix lint-staged ([#4664](https://github.com/camunda/tasklist/issues/4664))
+* **eslint**: ignore test results ([#4674](https://github.com/camunda/tasklist/issues/4674))
+* use the right alpine:3.19.1 digest ([#4667](https://github.com/camunda/tasklist/issues/4667))
+
+## 🧹 Chore
+* bump deps for v8.5.0 release ([#4824](https://github.com/camunda/tasklist/issues/4824))
+* update CHANGELOG.md
+* Update screenshot of form-js integration test
+* Add context to mock data
+* **deps**: update typescript-eslint monorepo to v7.5.0 (master) ([#4749](https://github.com/camunda/tasklist/issues/4749))
+* **deps**: update dependency @carbon/elements to v11.43.0 (master) ([#4786](https://github.com/camunda/tasklist/issues/4786))
+* **deps**: update dependency @carbon/react to v1.54.0 (master) ([#4787](https://github.com/camunda/tasklist/issues/4787))
+* **deps**: update enricomi/publish-unit-test-result-action action to v2.16.1 (master) ([#4788](https://github.com/camunda/tasklist/issues/4788))
+* **deps**: update actions/add-to-project digest to 2e5cc85 (master) ([#4784](https://github.com/camunda/tasklist/issues/4784))
+* **deps**: update all non-major dependencies (master) ([#4785](https://github.com/camunda/tasklist/issues/4785))
+* Add tracking for custom filters ([#4781](https://github.com/camunda/tasklist/issues/4781))
+* **deps**: update dependency @types/node to v20.12.2 (master) ([#4799](https://github.com/camunda/tasklist/issues/4799))
+* Update Browserlist DB
+* **styles**: move styles to SASS ([#4726](https://github.com/camunda/tasklist/issues/4726))
+* **deps**: update dependency date-fns to v3.6.0 (master) ([#4747](https://github.com/camunda/tasklist/issues/4747))
+* set action.destructive_requires_name to false for E2E ES ([#4763](https://github.com/camunda/tasklist/issues/4763))
+* Mark flaky test as slow
+* bump springboot to 3.2.4 ([#4757](https://github.com/camunda/tasklist/issues/4757))
+* **deps**: update dependency axe-core to v4.9.0 (master) ([#4770](https://github.com/camunda/tasklist/issues/4770))
+* **deps**: update all non-major dependencies (master) ([#4767](https://github.com/camunda/tasklist/issues/4767))
+* **deps**: update dependency @bpmn-io/form-js-viewer to v1.8.1 (master) ([#4769](https://github.com/camunda/tasklist/issues/4769))
+* **deps**: update dependency @bpmn-io/form-js-carbon-styles to v1.8.1 (master) ([#4768](https://github.com/camunda/tasklist/issues/4768))
+* **deps**: update all non-major dependencies (master) ([#4754](https://github.com/camunda/tasklist/issues/4754))
+* **deps**: update vitest monorepo to v1.4.0 (master) ([#4750](https://github.com/camunda/tasklist/issues/4750))
+* **deps**: update dependency vite to v5.2.6 (master) ([#4748](https://github.com/camunda/tasklist/issues/4748))
+* **deps**: update dependency @carbon/react to v1.53.1 (master) ([#4709](https://github.com/camunda/tasklist/issues/4709))
+* **deps**: update actions/add-to-project digest to fd6d5b1 (master) ([#4751](https://github.com/camunda/tasklist/issues/4751))
+* **deps**: update stefanzweifel/git-auto-commit-action digest to b0f4d47 (master) ([#4753](https://github.com/camunda/tasklist/issues/4753))
+* **deps**: update dependency @carbon/elements to v11.42.1 (master) ([#4708](https://github.com/camunda/tasklist/issues/4708))
+* **deps**: update dependency sass to v1.72.0 (master) ([#4710](https://github.com/camunda/tasklist/issues/4710))
+* Remove coverage from pre-commit hook ([#4712](https://github.com/camunda/tasklist/issues/4712))
+* Update Browserlist DB
+* Update Browserlist DB
+* **deps**: update actions/checkout digest to cd7d8d6 (master) ([#4706](https://github.com/camunda/tasklist/issues/4706))
+* **deps**: update all non-major dependencies (master) ([#4707](https://github.com/camunda/tasklist/issues/4707))
+* Remove unused dep
+* Fix icon type def
+* **deps**: update all non-major dependencies (master) ([#4693](https://github.com/camunda/tasklist/issues/4693))
+* **deps**: update dependency typescript to v5.4.2 (master) ([#4684](https://github.com/camunda/tasklist/issues/4684))
+* **deps**: update dependency date-fns to v3.4.0 (master) ([#4682](https://github.com/camunda/tasklist/issues/4682))
+* **deps**: update dependency @types/lodash to v4.17.0 (master) ([#4681](https://github.com/camunda/tasklist/issues/4681))
+* **deps**: update dependency monaco-editor to v0.47.0 (master) ([#4683](https://github.com/camunda/tasklist/issues/4683))
+* **deps**: update helm release camunda-platform to v9.3.0 (master) ([#4685](https://github.com/camunda/tasklist/issues/4685))
+* **deps**: update typescript-eslint monorepo to v7.2.0 (master) ([#4686](https://github.com/camunda/tasklist/issues/4686))
+* **deps**: update actions/checkout digest to 8410ad0 (master) ([#4678](https://github.com/camunda/tasklist/issues/4678))
+* **deps**: update all non-major dependencies (master) ([#4680](https://github.com/camunda/tasklist/issues/4680))
+* use currentUser.isApiUser for Zeebe user teaks operations checks ([#4663](https://github.com/camunda/tasklist/issues/4663))
+* exclude md formatting in client ([#4673](https://github.com/camunda/tasklist/issues/4673))
+* prefix GHA workflows to avoid collisions ([#4604](https://github.com/camunda/tasklist/issues/4604))
+* skip spotless formatter plugin for client ([#4665](https://github.com/camunda/tasklist/issues/4665))
+* Remove creation date ([#4657](https://github.com/camunda/tasklist/issues/4657))
+* Create multitenancy select ([#4656](https://github.com/camunda/tasklist/issues/4656))
+* **style**: switch from fmt to spotless to apply code style ([#4582](https://github.com/camunda/tasklist/issues/4582))
+* Fix form-js visual regression integration
+* Update Browserlist DB
+* update CHANGELOG.md
+# v8.5.0
 No changes
 # v8.5.0-alpha2
 
