@@ -29,8 +29,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>8.5.0-RC2</version.zeebe>
-    <version.identity>8.5.0-alpha2</version.identity>
+    <version.zeebe>8.5.0</version.zeebe>
+    <version.identity>8.5.0</version.identity>
     <version.elasticsearch>7.17.17</version.elasticsearch>
     <version.elasticsearch-client>8.10.4</version.elasticsearch-client>
     <version.opensearch>2.8.0</version.opensearch>
@@ -633,7 +633,7 @@
             <dependency>
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
-              <version>8.5.0-alpha2</version>
+              <version>${version.zeebe}</version>
             </dependency>
             <dependency>
               <groupId>com.puppycrawl.tools</groupId>
