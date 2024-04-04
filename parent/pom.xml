@@ -717,10 +717,18 @@
         <artifactId>spring-boot-starter-json</artifactId>
         <version>${version.spring-boot}</version>
       </dependency>
-
+      <!-- 
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
+        <version>${version.spring-boot}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency> -->
+      <dependency>
+        <!-- Import dependency management from Spring Boot -->
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
         <version>${version.spring-boot}</version>
         <type>pom</type>
         <scope>import</scope>
