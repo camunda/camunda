@@ -13,6 +13,10 @@ on:
   workflow_dispatch: { }
   workflow_call: { }
 
+concurrency:
+  cancel-in-progress: true
+  group: "${{ github.workflow }}-${{ github.ref }}"
+
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
