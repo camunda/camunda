@@ -116,6 +116,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.maven-modules }}
+          -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Terminate TCC
@@ -166,6 +167,7 @@ jobs:
           -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
+          -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
@@ -233,6 +235,7 @@ jobs:
           -pl zeebe/qa/integration-tests
           -P smoke-test,extract-flaky-tests
           -D excludedGroups=$EXCLUDED_TEST_GROUPS
+          -f zeebe
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
@@ -263,6 +266,7 @@ jobs:
           -P parallel-tests,include-random-tests
           -D junitThreadCount=16
           -D skipChecks
+          -f zeebe
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -302,6 +306,7 @@ jobs:
           -P include-performance-tests
           -D skipChecks
           -T1C
+          -f zeebe
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
         env:

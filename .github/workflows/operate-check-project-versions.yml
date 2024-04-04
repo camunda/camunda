@@ -33,7 +33,7 @@ jobs:
           RELEASE_VERSION: ${{ inputs.releaseVersion }}
           BRANCH_NAME: ${{ inputs.branchName }}
         run: |
-          IDENTITY_VERSION=$(mvn -pl operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
+          IDENTITY_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
 
           if [[ $IDENTITY_VERSION != $RELEASE_VERSION ]]; then
             echo "Please update Identity versions!"
