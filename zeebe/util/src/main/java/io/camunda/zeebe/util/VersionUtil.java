@@ -17,6 +17,7 @@ public final class VersionUtil {
 
   public static final Logger LOG = Loggers.FILE_LOGGER;
 
+  public static final String VERSION_OVERRIDE_ENV_NAME = "ZEEBE_VERSION_OVERRIDE";
   private static final String VERSION_PROPERTIES_PATH = "/zeebe-util.properties";
   private static final String VERSION_PROPERTY_NAME = "zeebe.version";
   private static final String LAST_VERSION_PROPERTY_NAME = "zeebe.last.version";
@@ -32,19 +33,23 @@ public final class VersionUtil {
    * @return the current version or 'development' if none can be determined.
    */
   public static String getVersion() {
-    if (version == null) {
-      // read version from file
-      version = readProperty(VERSION_PROPERTY_NAME);
-      if (version == null) {
-        LOG.warn("Version is not found in version file.");
-        version = VersionUtil.class.getPackage().getImplementationVersion();
-      }
-
-      if (version == null) {
-        version = VERSION_DEV;
-      }
+    if (version != null) {
+      return version;
     }
-
+    final var foundVersion =
+        Optional.ofNullable(System.getenv(VERSION_OVERRIDE_ENV_NAME))
+            .or(() -> Optional.ofNullable(readProperty(VERSION_PROPERTY_NAME)))
+            .or(
+                () ->
+                    Optional.ofNullable(VersionUtil.class.getPackage().getImplementationVersion()));
+    if (foundVersion.isPresent()) {
+      version = foundVersion.get();
+    } else {
+      LOG.warn(
+          "Version is not found in env, version file or package, using '%s' instead"
+              .formatted(VERSION_DEV));
+      version = VERSION_DEV;
+    }
     return version;
   }
 
