@@ -153,7 +153,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
   private void trimStrongReferencesIfNecessary() {
     // trim the strong ref queue if necessary:
     while (strongReferences.size() > retentionSize) {
-      strongReferences.poll();
+      strongReferences.remove();
     }
   }
 
