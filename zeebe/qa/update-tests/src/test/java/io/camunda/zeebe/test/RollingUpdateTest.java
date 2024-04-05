@@ -287,10 +287,18 @@ final class RollingUpdateTest {
     if ("CURRENT".equals(version)) {
       broker.setDockerImageName(
           ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
+      broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, currentVersion());
     } else {
       broker.setDockerImageName(
           DockerImageName.parse("camunda/zeebe").withTag(version).asCanonicalNameString());
     }
+  }
+
+  private String currentVersion() {
+    // Act as if the current in-development version were released already.
+    // Otherwise, updates will be rejected because we don't allow upgrading to
+    // pre-release versions.
+    return VersionUtil.getVersion().replace("-SNAPSHOT", "");
   }
 
   private ProcessInstanceEvent createProcessInstance(final ZeebeClient client) {
@@ -327,9 +335,7 @@ final class RollingUpdateTest {
               assertThat(brokerInfo.getVersion())
                   .as("the broker's version")
                   .isEqualTo(
-                      "CURRENT".equals(expectedVersion)
-                          ? VersionUtil.getVersion()
-                          : expectedVersion);
+                      "CURRENT".equals(expectedVersion) ? currentVersion() : expectedVersion);
             });
   }
 
