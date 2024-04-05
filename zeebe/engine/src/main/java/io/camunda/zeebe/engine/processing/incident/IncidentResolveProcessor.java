@@ -101,9 +101,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
     getFailedCommand(incident)
         .ifRightOrLeft(
-            failedCommand -> {
-              bpmnStreamProcessor.processRecord(failedCommand);
-            },
+            bpmnStreamProcessor::processRecord,
             failure -> {
               final var message =
                   String.format(
