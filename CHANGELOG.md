@@ -1,5 +1,7 @@
 # v8.5.0
+
 ## 🚀 New Features
+
 * implementation mvp context variable ([#4717](https://github.com/camunda/tasklist/issues/4717))
 * Zeebe API on Tasklist OOTB ([#4728](https://github.com/camunda/tasklist/issues/4728))
 * Enable custom filters ([#4766](https://github.com/camunda/tasklist/issues/4766))
@@ -18,6 +20,7 @@
 * a notification shows to enable OS level notifications ([#4552](https://github.com/camunda/tasklist/issues/4552))
 
 ## 💊 Bugfixes
+
 * **styles**: custom filter variable grid should line up with flex-start ([#4809](https://github.com/camunda/tasklist/issues/4809))
 * context variable - ignore null values coming from modeler on FE rendering.  ([#4807](https://github.com/camunda/tasklist/issues/4807))
 * Prevent OS notification check to run on public page ([#4804](https://github.com/camunda/tasklist/issues/4804))
@@ -30,6 +33,7 @@
 * use the right alpine:3.19.1 digest ([#4667](https://github.com/camunda/tasklist/issues/4667))
 
 ## 🧹 Chore
+
 * bump deps for v8.5.0 release ([#4824](https://github.com/camunda/tasklist/issues/4824))
 * update CHANGELOG.md
 * Update screenshot of form-js integration test
@@ -86,8 +90,11 @@
 * Fix form-js visual regression integration
 * Update Browserlist DB
 * update CHANGELOG.md
+
 # v8.5.0
+
 No changes
+
 # v8.5.0-alpha2
 
 ## 🧹 Chore
