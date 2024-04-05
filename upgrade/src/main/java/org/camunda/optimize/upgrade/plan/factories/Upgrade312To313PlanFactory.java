@@ -45,10 +45,10 @@ public class Upgrade312To313PlanFactory implements UpgradePlanFactory {
       if (StringUtils.isBlank(
           upgradeExecutionDependencies
               .configurationService()
-              .getOnboarding()
-              .getProperties()
-              .getClusterId())) {
-        // self managed
+              .getAuthConfiguration()
+              .getCloudAuthConfiguration()
+              .getClientId())) {
+        // self-managed
         optimizeProfile = OptimizeProfile.CCSM;
       } else {
         // saas

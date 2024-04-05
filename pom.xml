@@ -4,12 +4,12 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.14.0-SNAPSHOT</version>
+  <version>3.13.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.13.0</project.previousVersion>
+    <project.previousVersion>3.12.0</project.previousVersion>
 
     <camunda.engine.version>7.19.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.19.0-ee</camunda.maven.artifacts.version>

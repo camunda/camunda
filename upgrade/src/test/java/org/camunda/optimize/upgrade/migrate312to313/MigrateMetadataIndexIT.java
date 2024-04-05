@@ -38,10 +38,13 @@ public class MigrateMetadataIndexIT extends AbstractUpgrade313IT {
   @ParameterizedTest
   @ValueSource(strings = {""})
   @NullSource
-  public void addMetadataOptimizeProfileFieldForC8SelfManaged(final String testClusterId) {
+  public void addMetadataOptimizeProfileFieldForC8SelfManaged(final String testClientId) {
     // given
     executeBulk("steps/3.13/metadata/position-based-import-data.json");
-    configurationService.getOnboarding().getProperties().setClusterId(testClusterId);
+    configurationService
+        .getAuthConfiguration()
+        .getCloudAuthConfiguration()
+        .setClientId(testClientId);
 
     // when
     performUpgrade();
@@ -57,6 +60,10 @@ public class MigrateMetadataIndexIT extends AbstractUpgrade313IT {
   public void addMetadataOptimizeProfileFieldForC8Cloud() {
     // given
     executeBulk("steps/3.13/metadata/position-based-import-data.json");
+    configurationService
+        .getAuthConfiguration()
+        .getCloudAuthConfiguration()
+        .setClientId("aClientId");
 
     // when
     performUpgrade();
