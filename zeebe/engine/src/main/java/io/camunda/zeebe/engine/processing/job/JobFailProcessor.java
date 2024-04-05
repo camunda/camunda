@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
@@ -157,9 +158,14 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       incidentErrorMessage = jobErrorMessage;
     }
 
+    final ErrorType errorType =
+        value.getJobKind() == JobKind.EXECUTION_LISTENER
+            ? ErrorType.EXECUTION_LISTENER_NO_RETRIES
+            : ErrorType.JOB_NO_RETRIES;
+
     incidentEvent.reset();
     incidentEvent
-        .setErrorType(ErrorType.JOB_NO_RETRIES)
+        .setErrorType(errorType)
         .setErrorMessage(incidentErrorMessage)
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
