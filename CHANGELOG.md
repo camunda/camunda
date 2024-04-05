@@ -91,10 +91,6 @@
 * Update Browserlist DB
 * update CHANGELOG.md
 
-# v8.5.0
-
-No changes
-
 # v8.5.0-alpha2
 
 ## 🧹 Chore

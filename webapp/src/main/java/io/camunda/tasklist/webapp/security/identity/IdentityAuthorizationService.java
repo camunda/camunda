@@ -79,9 +79,6 @@ public class IdentityAuthorizationService {
           .verifyToken(accessToken, organization)
           .getUserDetails()
           .getGroups();
-    } else if (authentication instanceof JwtAuthenticationToken) {
-      accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
-      return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     }
 
     // Fallback groups if authentication type is unrecognized or access token is null
@@ -90,7 +87,7 @@ public class IdentityAuthorizationService {
     return defaultGroups;
   }
 
-  public boolean isAllowedToStartProcess(String processDefinitionKey) {
+  public boolean isAllowedToStartProcess(final String processDefinitionKey) {
     return !Collections.disjoint(
         getProcessDefinitionsFromAuthorization(),
         Set.of(IdentityProperties.ALL_RESOURCES, processDefinitionKey));
