@@ -76,14 +76,9 @@ public final class StreamProcessorMetrics {
   private final String partitionIdLabel;
   private final Gauge.Child processorState;
 
-  public StreamProcessorMetrics(final int partitionId, final Phase streamProcessorPhase) {
+  public StreamProcessorMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
     processorState = PROCESSOR_STATE.labels(partitionIdLabel);
-    if (streamProcessorPhase.equals(Phase.PAUSED)) {
-      setStreamProcessorPaused();
-    } else {
-      setStreamProcessorActive();
-    }
   }
 
   public void setStreamProcessorActive() {
@@ -137,5 +132,24 @@ public final class StreamProcessorMetrics {
 
   public void setLastProcessedPosition(final long position) {
     LAST_PROCESSED_POSITION.labels(partitionIdLabel).set(position);
+  }
+
+  public void initializeProcessorPhase(final Phase phase) {
+    switch (phase) {
+      case INITIAL:
+        setStreamProcessorInitial();
+        break;
+      case REPLAY:
+        setStreamProcessorReplay();
+        break;
+      case PROCESSING:
+        setStreamProcessorProcessing();
+        break;
+      case PAUSED:
+        setStreamProcessorPaused();
+        break;
+      default:
+        setStreamProcessorFailed();
+    }
   }
 }

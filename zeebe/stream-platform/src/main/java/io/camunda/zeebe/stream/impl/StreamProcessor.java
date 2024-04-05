@@ -128,8 +128,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     actorName = buildActorName("StreamProcessor", partitionId);
-    metrics =
-        new StreamProcessorMetrics(partitionId, streamProcessorContext.getStreamProcessorPhase());
+    metrics = new StreamProcessorMetrics(partitionId);
+    metrics.initializeProcessorPhase(streamProcessorContext.getStreamProcessorPhase());
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
 
