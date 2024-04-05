@@ -54,10 +54,9 @@ public final class ExporterMetrics {
 
   private final Gauge.Child exporterPhase;
 
-  public ExporterMetrics(final int partitionId, final ExporterPhase phase) {
+  public ExporterMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
     exporterPhase = EXPORTER_PHASE.labels(partitionIdLabel);
-    initializeExporterState(phase);
   }
 
   private void event(final String action, final ValueType valueType) {
@@ -92,7 +91,7 @@ public final class ExporterMetrics {
     LAST_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
   }
 
-  void initializeExporterState(final ExporterPhase state) {
+  public void initializeExporterState(final ExporterPhase state) {
     switch (state) {
       case PAUSED:
         setExporterPaused();

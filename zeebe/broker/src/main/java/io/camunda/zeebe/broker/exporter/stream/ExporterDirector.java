@@ -94,7 +94,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         context.getDescriptors().stream()
             .map(descriptor -> new ExporterContainer(descriptor, partitionId))
             .collect(Collectors.toList());
-    metrics = new ExporterMetrics(partitionId, exporterPhase);
+    metrics = new ExporterMetrics(partitionId);
+    metrics.initializeExporterState(exporterPhase);
     recordExporter = new RecordExporter(metrics, containers, partitionId);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     recordWrapStrategy = new EndlessRetryStrategy(actor);
