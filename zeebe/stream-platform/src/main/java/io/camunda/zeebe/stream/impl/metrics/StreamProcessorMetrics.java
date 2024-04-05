@@ -81,12 +81,24 @@ public final class StreamProcessorMetrics {
     processorState = PROCESSOR_STATE.labels(partitionIdLabel);
   }
 
-  public void setStreamProcessorActive() {
+  public void setStreamProcessorInitial() {
     processorState.set(0);
   }
 
-  public void setStreamProcessorPaused() {
+  public void setStreamProcessorReplay() {
     processorState.set(1);
+  }
+
+  public void setStreamProcessorProcessing() {
+    processorState.set(2);
+  }
+
+  public void setStreamProcessorFailed() {
+    processorState.set(3);
+  }
+
+  public void setStreamProcessorPaused() {
+    processorState.set(4);
   }
 
   private void event(final String action) {
