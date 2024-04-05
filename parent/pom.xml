@@ -717,14 +717,20 @@
         <artifactId>spring-boot-starter-json</artifactId>
         <version>${version.spring-boot}</version>
       </dependency>
-      <!-- 
+
+      <!--
+           In order resolve dependency issues with wiremock and spring-boot-dependencies
+           make sure this is declared before spring boot dependencies.
+      -->
+
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>${version.spring-boot}</version>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>11.0.20</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency> -->
+      </dependency>
+
       <dependency>
         <!-- Import dependency management from Spring Boot -->
         <groupId>org.springframework.boot</groupId>
