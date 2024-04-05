@@ -25,16 +25,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/camunda/zeebe/clients/go/v8/internal/embedded"
-	"google.golang.org/grpc/credentials/insecure"
-
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/camunda/zeebe/clients/go/v8/internal/embedded"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/worker"
