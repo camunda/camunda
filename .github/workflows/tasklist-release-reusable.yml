@@ -187,6 +187,9 @@ jobs:
           done
 
       # Upload: Upload Docker Image
+      - name: Set DOCKER_FILE_NAME env variable
+        run: |
+          echo "DOCKER_FILE_NAME=$(if [ -f tasklist.Dockerfile ]; then echo tasklist.Dockerfile; else echo Dockerfile; fi)" >> $GITHUB_ENV
       - name: Login to docker hub
         if: ${{ inputs.dryRun == false }}
         uses: docker/login-action@v3
@@ -207,7 +210,9 @@ jobs:
         uses: ./.github/actions/build-tasklist-docker
         with:
           tags: ${{ steps.meta.outputs.tags }}
+          dockerfile: ${{ env.DOCKER_FILE_NAME }}
           push: true
+
 
       #########################################################################
       # Notify: send Slack notification of release failure

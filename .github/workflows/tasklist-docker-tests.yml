@@ -28,6 +28,7 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           ignore: DL3018 # redundant when pinning the base image
+          dockerfile: tasklist.Dockerfile
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@a727ce205a9e187cf179d30796762854cac9c231
@@ -75,6 +76,7 @@ jobs:
           cache-from: type=gha,ignore-error=true
           cache-to: type=gha,mode=max,ignore-error=true
           no-cache-filters: build,distball,dist
+          file: tasklist.Dockerfile
       - name: Run Docker tests
         run: mvn -f qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report

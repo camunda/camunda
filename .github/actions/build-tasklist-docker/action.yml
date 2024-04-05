@@ -19,6 +19,10 @@ inputs:
     description: 'Comma separated-list of platforms to build the image for; defaults to linux/amd64,linux/arm64'
     required: false
     default: 'linux/arm64,linux/amd64'
+  dockerfile:
+    description: 'The used dockerfile name'
+    required: false
+    default: 'tasklist.Dockerfile'
 
 outputs:
   date:
@@ -63,3 +67,4 @@ runs:
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
           VERSION=${{ steps.pom-info.outputs.project_version }}
         target: app
+        file: ${{ inputs.dockerfile }}
