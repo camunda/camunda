@@ -72,7 +72,7 @@ jobs:
       # Tests: run backup and restore tests
       - name: Run backup and restore tests
         run: |
-          mvn -B -f qa/backup-restore-tests -DtasklistDatabase=${{ inputs.database }} -P -docker,-skipTests verify
+          mvn -B -f tasklist/qa/backup-restore-tests -DtasklistDatabase=${{ inputs.database }} -P -docker,-skipTests verify
 
       # Reports: publish test results
       - name: Publish Test Results

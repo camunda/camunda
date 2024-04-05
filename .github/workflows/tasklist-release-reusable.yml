@@ -166,7 +166,7 @@ jobs:
           ARTIFACT="camunda-tasklist"
           ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
 
-          cd target/checkout/distro/target
+          cd target/checkout/tasklist-distro/target
 
           # create checksums
           sha1sum ${ARTIFACT}-${{ env.RELEASE_VERSION }}.tar.gz > ${ARTIFACT}-${{ env.RELEASE_VERSION }}.tar.gz.sha1sum

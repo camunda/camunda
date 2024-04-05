@@ -1,5 +1,5 @@
 ---
-name: Tasklist Tests
+name: Tasklist Docker Tests
 on: push
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
@@ -78,7 +78,7 @@ jobs:
           no-cache-filters: build,distball,dist
           file: tasklist.Dockerfile
       - name: Run Docker tests
-        run: mvn -f qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: mvn -f tasklist/qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-tasklist-test-artifacts

@@ -15,22 +15,22 @@ jobs:
         with:
           node-version: "20"
           cache: "yarn"
-          cache-dependency-path: client/yarn.lock
+          cache-dependency-path: tasklist/client/yarn.lock
       - name: Install node dependencies
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: yarn
       - name: Build frontend
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: yarn build
       - name: Start server
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: yarn start:visual-regression &
       - name: Run A11y tests
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: yarn playwright a11y
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Playwright report
-          path: client/playwright-report/
+          path: tasklist/client/playwright-report/
           retention-days: 30

@@ -69,7 +69,7 @@ jobs:
       # Tests: run migration tests
       - name: Run migration tests
         run: |
-          mvn -B -f qa/migration-tests -DskipTests=false verify
+          mvn -B -f tasklist/qa/migration-tests -DskipTests=false verify
 
       # Reports: publish test results
       - name: Publish Test Results

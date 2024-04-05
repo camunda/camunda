@@ -4,12 +4,12 @@ on:
     branches:
       - master
     paths-ignore:
-      - 'client/**'
+      - 'tasklist/client/**'
       - '.ci/**'
       - '.husky/**'
   pull_request:
     paths-ignore:
-      - 'client/**'
+      - 'tasklist/client/**'
       - '.ci/**'
       - '.husky/**'
 jobs:

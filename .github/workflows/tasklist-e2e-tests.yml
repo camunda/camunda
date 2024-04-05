@@ -55,18 +55,18 @@ jobs:
       - name: Setup yarn
         run: npm install -g yarn
       - name: Install node dependencies
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: yarn install
       - name: Add Yarn binaries to Path
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: |
           echo "$(yarn bin)" >> $GITHUB_PATH
           echo "$(yarn global bin)" >> $GITHUB_PATH
       - name: Install Playwright
         run: yarn exec playwright install -- --with-deps chromium
-        working-directory: ./client
+        working-directory: ./tasklist/client
       - name: Build frontend
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: yarn build
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -92,20 +92,20 @@ jobs:
       - name: Build backend
         run: mvn clean install -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Tasklist
-        run: mvn -q -B spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616"
+        run: mvn -q -B spring-boot:start -f tasklist/webapp/pom.xml -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616"
       - name: Python setup
         if: always()
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - name: Run tests
-        working-directory: ./client
+        working-directory: ./tasklist/client
         run: yarn run test:e2e:ci
         env:
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
       - name: Publish test results to TestRail
         if: always()
-        working-directory: ./client
+        working-directory: ./tasklist/client
         env:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
           TESTRAIL_USERNAME: ${{ secrets.TESTRAIL_QA_EMAIL }}
@@ -124,5 +124,5 @@ jobs:
         if: always()
         with:
           name: Playwright report
-          path: client/playwright-report/
+          path: tasklist/client/playwright-report/
           retention-days: 30

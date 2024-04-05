@@ -9,7 +9,7 @@ FROM ${BASE_IMAGE} as prepare
 WORKDIR /tmp/tasklist
 
 # download tasklist
-COPY distro/target/camunda-tasklist-*.tar.gz tasklist.tar.gz
+COPY tasklist-distro/target/camunda-tasklist-*.tar.gz tasklist.tar.gz
 RUN tar xzvf tasklist.tar.gz --strip 1 && \
     rm tasklist.tar.gz
 

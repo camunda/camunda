@@ -37,4 +37,7 @@ target/
 dependency-reduced-pom.xml
 
 # client JUnit style test results 
-client/jest-test-results.xml
+**/client/jest-test-results.xml
+
+# client node_modules when switching back and forth from subfolder structure
+**/client/node_modules
