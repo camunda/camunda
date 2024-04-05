@@ -40,6 +40,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.DockerClientFactory;
@@ -53,6 +55,7 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
+@Execution(ExecutionMode.CONCURRENT)
 final class RollingUpdateTest {
 
   private static final BpmnModelInstance PROCESS =
