@@ -119,12 +119,7 @@ public class ElasticSearchSchemaManager
     } else {
       updateAllMappingsAndDynamicSettings(esClient);
     }
-    if (mappings.stream().anyMatch(MetadataIndexES.class::isInstance)) {
-      metadataService.initMetadataIfMissing(esClient);
-    } else {
-      // TODO - This call should be removed after 3.13, it is only used in upgrading 3.12 -> 3.13
-      metadataService.initMetadataV3IfMissing(esClient);
-    }
+    metadataService.initMetadataIfMissing(esClient);
   }
 
   @Override
