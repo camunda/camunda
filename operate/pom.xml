@@ -98,7 +98,7 @@
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <version.lucene>8.11.3</version.lucene>
     <version.error-prone>2.25.0</version.error-prone>
-    <version.guava>33.0.0-jre</version.guava>
+    <version.guava>33.1.0-jre</version.guava>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
