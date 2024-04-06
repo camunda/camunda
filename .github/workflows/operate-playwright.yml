@@ -28,7 +28,7 @@ jobs:
   test:
     runs-on: gcp-core-2-default
     container:
-      image: mcr.microsoft.com/playwright:v1.39.0
+      image: mcr.microsoft.com/playwright:v1.43.0
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
