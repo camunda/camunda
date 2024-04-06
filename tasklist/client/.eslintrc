@@ -8,14 +8,14 @@
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended",
-    "plugin:camunda-licensed/commercial",
     "plugin:prettier/recommended",
     "plugin:testing-library/react"
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": [
     "react-refresh",
-    "testing-library"
+    "testing-library",
+    "license-header"
   ],
   "rules": {
     "react-refresh/only-export-components": [
@@ -38,6 +38,7 @@
         "varsIgnorePattern": "^_",
         "ignoreRestSiblings": true
       }
-    ]
+    ],
+    "license-header/header": [ "error", "./resources/license-header.js" ]
   }
 }
