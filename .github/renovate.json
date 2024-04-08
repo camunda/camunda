@@ -109,6 +109,10 @@
     {
       "matchFileNames": ["operate.Dockerfile"],
       "enabled": false
+    },
+    {
+      "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "playwright"
     }
   ],
   "dockerfile": {
