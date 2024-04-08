@@ -12,5 +12,7 @@ import java.util.concurrent.CompletableFuture;
 public interface ExportingControlApi {
   CompletableFuture<Void> pauseExporting();
 
+  CompletableFuture<Void> softPauseExporting();
+
   CompletableFuture<Void> resumeExporting();
 }
