@@ -99,7 +99,7 @@ If you report a bug, please help speed up problem diagnosis by
 providing as much information as possible. Ideally, that would include a small
 [sample project][sample] that reproduces the problem.
 
-If you have a general usage question please ask on the [forum](http://forum.camunda.io/).
+If you have a general usage question please ask on the [forum].
 
 ## GitHub Issue Guidelines
 
