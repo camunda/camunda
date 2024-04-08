@@ -47,6 +47,13 @@ public interface ExportingActuator {
   /**
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
+  @RequestLine("POST /softPause")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  void softPause();
+
+  /**
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
   @RequestLine("POST /resume")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void resume();
