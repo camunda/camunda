@@ -200,7 +200,6 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
-    <plugin.version.scala>4.8.1</plugin.version.scala>
     <plugin.version.shade>3.5.2</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.4.0</plugin.version.spotbugs>
@@ -2087,35 +2086,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>${plugin.version.resources}</version>
-        </plugin>
-
-        <!-- Scala Plugin -->
-        <plugin>
-          <groupId>net.alchim31.maven</groupId>
-          <artifactId>scala-maven-plugin</artifactId>
-          <version>${plugin.version.scala}</version>
-          <configuration>
-            <scalaVersion>${version.scala}</scalaVersion>
-            <source>${version.java}</source>
-            <target>${version.java}</target>
-          </configuration>
-          <executions>
-            <execution>
-              <id>scala-compile-first</id>
-              <goals>
-                <goal>add-source</goal>
-                <goal>compile</goal>
-              </goals>
-              <phase>process-resources</phase>
-            </execution>
-            <execution>
-              <id>scala-test-compile</id>
-              <goals>
-                <goal>testCompile</goal>
-              </goals>
-              <phase>process-test-resources</phase>
-            </execution>
-          </executions>
         </plugin>
 
         <!--This plugin's configuration is used to store Eclipse m2e settings
