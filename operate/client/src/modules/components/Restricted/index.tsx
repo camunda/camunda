@@ -44,8 +44,8 @@ const Restricted: React.FC<Props> = observer(
 
     const {scopes, permissions} = resourceBasedRestrictions;
 
-    const hasResourceBasedPermission = scopes.some(
-      (permission) => permissions?.includes(permission),
+    const hasResourceBasedPermission = scopes.some((permission) =>
+      permissions?.includes(permission),
     );
 
     if (!hasResourceBasedPermission) {
