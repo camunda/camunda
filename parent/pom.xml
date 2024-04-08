@@ -65,7 +65,6 @@
     <version.identity>8.5.0</version.identity>
     <version.jackson>2.17.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.jna>5.14.0</version.jna>
     <version.junit>5.10.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.23.1</version.log4j>
@@ -154,7 +153,6 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
     <version.aws-java-sdk>1.12.690</version.aws-java-sdk>
-    <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <version.elasticsearch7>7.17.19</version.elasticsearch7>
@@ -163,6 +161,7 @@
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
+    <version.jetty>11.0.20</version.jetty>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
@@ -726,7 +725,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
-        <version>11.0.20</version>
+        <version>${version.jetty}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
