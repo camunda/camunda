@@ -15,20 +15,21 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {InlineLink} from './styled';
+import {useEffect, useState} from 'react';
+import capitalize from 'lodash/capitalize';
+import {observer} from 'mobx-react-lite';
+import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
+import {Link} from '@carbon/react';
+import {ArrowRight} from '@carbon/react/icons';
+import {C3Navigation} from '@camunda/camunda-composite-components';
 import {TermsConditionsModal} from 'modules/components/TermsConditionsModal';
 import {pages} from 'modules/routing';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
-import {C3Navigation} from '@camunda/camunda-composite-components';
-import {Link, matchPath, useLocation} from 'react-router-dom';
-import {useEffect, useState} from 'react';
-import capitalize from 'lodash/capitalize';
-import {ArrowRight} from '@carbon/react/icons';
 import {themeStore} from 'modules/stores/theme';
-import {observer} from 'mobx-react-lite';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally} from 'modules/utils/localStorage';
+import styles from './styles.module.scss';
 
 const orderedApps = [
   'console',
@@ -101,7 +102,7 @@ const Header: React.FC = observer(() => {
             },
           },
         }}
-        forwardRef={Link}
+        forwardRef={RouterLink}
         navbar={{
           elements: [
             {
@@ -148,7 +149,8 @@ const Header: React.FC = observer(() => {
                         <div>
                           Non-Production License. If you would like information
                           on production usage, please refer to our{' '}
-                          <InlineLink
+                          <Link
+                            className={styles.inlineLink}
                             href="#"
                             onClick={(event) => {
                               event.preventDefault();
@@ -156,15 +158,16 @@ const Header: React.FC = observer(() => {
                             }}
                           >
                             terms & conditions page
-                          </InlineLink>{' '}
+                          </Link>{' '}
                           or{' '}
-                          <InlineLink
+                          <Link
+                            className={styles.inlineLink}
                             href="https://camunda.com/contact/"
                             target="_blank"
                             inline
                           >
                             contact sales
-                          </InlineLink>
+                          </Link>
                           .
                         </div>
                       ),
