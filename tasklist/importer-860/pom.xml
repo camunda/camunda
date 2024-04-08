@@ -8,12 +8,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Tasklist Importer 850</name>
-  <artifactId>tasklist-importer-850</artifactId>
-
-  <properties>
-    <version.zeebe>8.5.0</version.zeebe>
-  </properties>
+  <name>Tasklist Importer 860</name>
+  <artifactId>tasklist-importer-860</artifactId>
 
   <dependencies>
 
@@ -66,7 +62,7 @@
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v850</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v860</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

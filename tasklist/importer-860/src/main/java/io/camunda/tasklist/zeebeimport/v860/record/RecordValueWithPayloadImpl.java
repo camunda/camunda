@@ -14,52 +14,49 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.util.apps.idempotency;
+package io.camunda.tasklist.zeebeimport.v860.record;
 
-import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v860.processors.os.OpenSearchBulkProcessor;
-import java.util.HashSet;
-import java.util.Set;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import java.util.Map;
+import java.util.Objects;
 
-/**
- * Let's mock OpenSearchBulkProcessor, so that it persists the data successfully, but throw an
- * exception after that. This will cause the data to be imported twice.
- */
-@Configuration
-@Conditional(OpenSearchCondition.class)
-public class ZeebeImportIdempotencyOpenSearchTestConfig {
+public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordValueWithVariables {
 
-  @Bean
-  @Primary
-  public CustomOpenSearchBulkProcessor openSearchBulkProcessor() {
-    return new CustomOpenSearchBulkProcessor();
+  private Map<String, Object> variables;
+
+  public RecordValueWithPayloadImpl() {}
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return variables;
   }
 
-  public static class CustomOpenSearchBulkProcessor extends OpenSearchBulkProcessor {
+  public void setVariables(final Map<String, Object> variables) {
+    this.variables = variables;
+  }
 
-    private final Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("toJson operation is not supported");
+  }
 
-    @Override
-    public void performImport(final ImportBatch importBatchOpenSearch) throws PersistenceException {
-      super.performImport(importBatchOpenSearch);
-      final ImportValueType importValueType = importBatchOpenSearch.getImportValueType();
-      if (!alreadyFailedTypes.contains(importValueType)) {
-        alreadyFailedTypes.add(importValueType);
-        throw new PersistenceException(
-            String.format(
-                "Fake exception when saving data of type %s to OpenSearch", importValueType));
-      }
+  @Override
+  public int hashCode() {
+    return variables != null ? variables.hashCode() : 0;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
     }
 
-    public void cancelAttempts() {
-      alreadyFailedTypes.clear();
-    }
+    final RecordValueWithPayloadImpl that = (RecordValueWithPayloadImpl) o;
+
+    return Objects.equals(variables, that.variables);
   }
 }

@@ -14,52 +14,58 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.util.apps.idempotency;
+package io.camunda.tasklist.zeebeimport.v860.record;
 
-import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v860.processors.os.OpenSearchBulkProcessor;
-import java.util.HashSet;
-import java.util.Set;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+public enum Intent implements io.camunda.zeebe.protocol.record.intent.Intent {
+  CREATING,
+  CREATED,
 
-/**
- * Let's mock OpenSearchBulkProcessor, so that it persists the data successfully, but throw an
- * exception after that. This will cause the data to be imported twice.
- */
-@Configuration
-@Conditional(OpenSearchCondition.class)
-public class ZeebeImportIdempotencyOpenSearchTestConfig {
+  RESOLVED,
 
-  @Bean
-  @Primary
-  public CustomOpenSearchBulkProcessor openSearchBulkProcessor() {
-    return new CustomOpenSearchBulkProcessor();
+  SEQUENCE_FLOW_TAKEN,
+
+  ELEMENT_ACTIVATING,
+  ELEMENT_ACTIVATED,
+  ELEMENT_COMPLETING,
+  ELEMENT_COMPLETED,
+  ELEMENT_TERMINATING,
+  ELEMENT_TERMINATED,
+
+  PAYLOAD_UPDATED,
+
+  // JOB
+  ACTIVATED,
+
+  COMPLETED,
+
+  MIGRATED,
+
+  TIMED_OUT,
+
+  FAILED,
+
+  RETRIES_UPDATED,
+
+  CANCELED,
+
+  // VARIABLE
+  UPDATED,
+
+  // FORM, PROCESS
+  DELETED,
+  RECURRED_AFTER_BACKOFF,
+  ASSIGNED,
+  UNKNOWN;
+
+  private final short value = 0;
+
+  @Override
+  public short value() {
+    return value;
   }
 
-  public static class CustomOpenSearchBulkProcessor extends OpenSearchBulkProcessor {
-
-    private final Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
-
-    @Override
-    public void performImport(final ImportBatch importBatchOpenSearch) throws PersistenceException {
-      super.performImport(importBatchOpenSearch);
-      final ImportValueType importValueType = importBatchOpenSearch.getImportValueType();
-      if (!alreadyFailedTypes.contains(importValueType)) {
-        alreadyFailedTypes.add(importValueType);
-        throw new PersistenceException(
-            String.format(
-                "Fake exception when saving data of type %s to OpenSearch", importValueType));
-      }
-    }
-
-    public void cancelAttempts() {
-      alreadyFailedTypes.clear();
-    }
+  @Override
+  public boolean isEvent() {
+    return false;
   }
 }

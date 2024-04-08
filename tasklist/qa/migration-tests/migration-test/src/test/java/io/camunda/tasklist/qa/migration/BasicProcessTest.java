@@ -25,7 +25,7 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
-import io.camunda.tasklist.qa.migration.v800.BasicProcessDataGenerator;
+import io.camunda.tasklist.qa.migration.v810.BasicProcessDataGenerator;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 
 public class BasicProcessTest extends AbstractMigrationTest {
 
-  private String bpmnProcessId = BasicProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
+  private final String bpmnProcessId = BasicProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
   private Set<String> taskIds;
 
   @BeforeEach
@@ -52,7 +52,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
       searchRequest.source().query(termQuery(BPMN_PROCESS_ID, bpmnProcessId));
       try {
         taskIds = ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
       assertThat(taskIds).hasSize(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT);

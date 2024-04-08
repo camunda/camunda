@@ -16,9 +16,9 @@
  */
 package io.camunda.tasklist.qa.migration;
 
-import static io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator.BIG_VAR_NAME;
-import static io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator.SMALL_VAR_NAME;
-import static io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator.SMALL_VAR_VALUE;
+import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator.BIG_VAR_NAME;
+import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator.SMALL_VAR_NAME;
+import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator.SMALL_VAR_VALUE;
 import static io.camunda.tasklist.schema.indices.VariableIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.schema.templates.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
@@ -29,7 +29,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.property.ImportProperties;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
-import io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator;
+import io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator;
 import io.camunda.tasklist.qa.util.VariablesUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 
 public class BigVariableProcessTest extends AbstractMigrationTest {
 
-  private String bpmnProcessId = BigVariableProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
+  private final String bpmnProcessId = BigVariableProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
   private Set<String> taskIds;
   private List<String> processInstanceIds;
   private String processId;
@@ -65,7 +65,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
       searchRequest.source().query(termQuery(BPMN_PROCESS_ID, bpmnProcessId));
       try {
         taskIds = ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
       assertThat(taskIds).hasSize(1);
@@ -80,7 +80,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
       try {
         processInstanceIds =
             ElasticsearchUtil.scrollFieldToList(searchRequest, PROCESS_INSTANCE_ID, esClient);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
     }
@@ -108,7 +108,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
             VariableEntity.class);
     assertThat(vars.size()).isEqualTo(2);
     boolean found = false;
-    for (VariableEntity var : vars) {
+    for (final VariableEntity var : vars) {
       if (var.getName().equals(BIG_VAR_NAME)) {
         found = true;
         assertThat(var.getValue().length())

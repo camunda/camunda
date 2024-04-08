@@ -20,7 +20,7 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v840.processors.es.BulkProcessorElasticSearch;
+import io.camunda.tasklist.zeebeimport.v860.processors.es.BulkProcessorElasticSearch;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Primary;
 @Conditional(ElasticSearchCondition.class)
 public class ZeebeImportIdempotencyElasticSearchTestConfig {
 
-  @Bean("io.camunda.tasklist.zeebeimport.v830.processors.es.ElasticsearchBulkProcessor")
+  @Bean
   @Primary
   public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
     return new CustomElasticsearchBulkProcessor();
@@ -44,10 +44,11 @@ public class ZeebeImportIdempotencyElasticSearchTestConfig {
 
   public static class CustomElasticsearchBulkProcessor extends BulkProcessorElasticSearch {
 
-    private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
+    private final Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
-    public void performImport(ImportBatch importBatchElasticSearch) throws PersistenceException {
+    public void performImport(final ImportBatch importBatchElasticSearch)
+        throws PersistenceException {
       super.performImport(importBatchElasticSearch);
       final ImportValueType importValueType = importBatchElasticSearch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {

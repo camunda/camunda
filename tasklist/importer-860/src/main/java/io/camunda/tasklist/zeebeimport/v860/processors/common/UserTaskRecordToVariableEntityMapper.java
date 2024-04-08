@@ -14,52 +14,60 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.util.apps.idempotency;
+package io.camunda.tasklist.zeebeimport.v860.processors.common;
 
-import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v860.processors.os.OpenSearchBulkProcessor;
-import java.util.HashSet;
-import java.util.Set;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.zeebeimport.v860.record.Intent;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-/**
- * Let's mock OpenSearchBulkProcessor, so that it persists the data successfully, but throw an
- * exception after that. This will cause the data to be imported twice.
- */
-@Configuration
-@Conditional(OpenSearchCondition.class)
-public class ZeebeImportIdempotencyOpenSearchTestConfig {
+@Component
+public class UserTaskRecordToVariableEntityMapper {
 
-  @Bean
-  @Primary
-  public CustomOpenSearchBulkProcessor openSearchBulkProcessor() {
-    return new CustomOpenSearchBulkProcessor();
-  }
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(UserTaskRecordToTaskEntityMapper.class);
 
-  public static class CustomOpenSearchBulkProcessor extends OpenSearchBulkProcessor {
+  @Autowired private TasklistProperties tasklistProperties;
 
-    private final Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
+  public List<TaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record) {
+    final List<TaskVariableEntity> variables = new ArrayList<>();
 
-    @Override
-    public void performImport(final ImportBatch importBatchOpenSearch) throws PersistenceException {
-      super.performImport(importBatchOpenSearch);
-      final ImportValueType importValueType = importBatchOpenSearch.getImportValueType();
-      if (!alreadyFailedTypes.contains(importValueType)) {
-        alreadyFailedTypes.add(importValueType);
-        throw new PersistenceException(
-            String.format(
-                "Fake exception when saving data of type %s to OpenSearch", importValueType));
+    if (record.getIntent().equals(Intent.COMPLETED)) {
+      final UserTaskRecordValue recordValue = record.getValue();
+
+      final Map<String, Object> variablesMap = recordValue.getVariables();
+      for (final Map.Entry<String, Object> varMap : variablesMap.entrySet()) {
+        final String varValue = String.valueOf(varMap.getValue());
+
+        final TaskVariableEntity variableEntity = new TaskVariableEntity();
+        variableEntity.setId(
+            TaskVariableEntity.getIdBy(
+                String.valueOf(recordValue.getUserTaskKey()), varMap.getKey()));
+        variableEntity.setName(varMap.getKey());
+        variableEntity.setTaskId(String.valueOf(recordValue.getUserTaskKey()));
+        variableEntity.setValue(String.valueOf(varMap.getValue()));
+        variableEntity.setPartitionId(record.getPartitionId());
+        variableEntity.setTenantId(recordValue.getTenantId());
+        variableEntity.setFullValue(varValue);
+        if (varValue.length() > tasklistProperties.getImporter().getVariableSizeThreshold()) {
+          // store preview
+          variableEntity.setValue(
+              varValue.substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
+          variableEntity.setIsPreview(true);
+        } else {
+          variableEntity.setValue(varValue);
+        }
+        variables.add(variableEntity);
       }
     }
-
-    public void cancelAttempts() {
-      alreadyFailedTypes.clear();
-    }
+    return variables;
   }
 }
