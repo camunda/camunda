@@ -333,7 +333,7 @@ unacceptable behavior as soon as possible.
 [issues]: https://github.com/camunda/zeebe/issues
 [forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
-[clients/java]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fjava
-[clients/go]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fgo
+[clients/java]: https://github.com/camunda/zeebe/labels/scope%2Fclients-java
+[clients/go]: https://github.com/camunda/zeebe/labels/scope%2Fclients-go
 [changelog generation]: https://github.com/zeebe-io/zeebe-changelog
 
