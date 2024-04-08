@@ -14,69 +14,69 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.zeebeimport;
+package io.camunda.operate.util.j5templates;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
-public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
+@Component
+public class MockMvcManager {
+  private final MockMvc mockMvc;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private IncidentTemplate incidentTemplate;
+  private final MediaType jsonContentType =
+      new MediaType(MediaType.APPLICATION_JSON.getType(), MediaType.APPLICATION_JSON.getSubtype());
 
-  @Test
-  public void shouldImportMigratedIncident() throws IOException {
+  public MockMvcManager(
+      final WebApplicationContext webAppContext, final ObjectMapper objectMapper) {
+    mockMvc = MockMvcBuilders.webAppContextSetup(webAppContext).build();
+    this.objectMapper = objectMapper;
+  }
 
-    // given
-    final String bpmnSource = "double-task-incident.bpmn";
-    final String bpmnTarget = "double-task.bpmn";
-    final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
-    final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
-    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
-    // when
-    final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
-    operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
+  public MvcResult postRequest(
+      final String url, final Object dtoRequest, final Integer expectedStatus) throws Exception {
+    final MockHttpServletRequestBuilder ope =
+        post(url).content(objectMapper.writeValueAsString(dtoRequest)).contentType(jsonContentType);
 
-    final MigrationPlan migrationPlan =
-        new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
-    List.of("taskA", "taskB")
-        .forEach(
-            item ->
-                migrationPlan
-                    .getMappingInstructions()
-                    .add(new MigrationPlanBuilderImpl.MappingInstruction(item + "Incident", item)));
-    zeebeClient
-        .newMigrateProcessInstanceCommand(processInstanceKey)
-        .migrationPlan(migrationPlan)
-        .send()
-        .join();
+    if (expectedStatus != null) {
+      return mockMvc.perform(ope).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
+    } else {
+      return mockMvc.perform(ope).andReturn();
+    }
+  }
 
-    operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
-    final List<IncidentEntity> incidents =
-        testSearchRepository.searchTerm(
-            incidentTemplate.getAlias(),
-            IncidentTemplate.PROCESS_INSTANCE_KEY,
-            processInstanceKey,
-            IncidentEntity.class,
-            1);
+  public MvcResult getRequestShouldFailWithException(
+      final String requestUrl, final Class<? extends Exception> exceptionClass) throws Exception {
+    final MockHttpServletRequestBuilder request = get(requestUrl).accept(jsonContentType);
 
-    // then
-    assertThat(incidents.size()).isEqualTo(1);
-    assertThat(incidents.get(0).getState()).isEqualTo(IncidentState.ACTIVE);
-    assertThat(incidents.get(0).getBpmnProcessId()).isEqualTo("doubleTask");
-    assertThat(incidents.get(0).getProcessDefinitionKey()).isEqualTo(processDefinitionKeyTarget);
-    assertThat(incidents.get(0).getFlowNodeId()).isEqualTo("taskA");
+    return mockMvc
+        .perform(request)
+        .andExpect(status().is4xxClientError())
+        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
+        .andReturn();
+  }
+
+  public MvcResult postRequestShouldFailWithException(
+      final String requestUrl, final Class<? extends Exception> exceptionClass) throws Exception {
+    final MockHttpServletRequestBuilder request =
+        post(requestUrl).content("{}").contentType(jsonContentType).accept(jsonContentType);
+
+    return mockMvc
+        .perform(request)
+        .andExpect(status().is4xxClientError())
+        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
+        .andReturn();
   }
 }
