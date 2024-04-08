@@ -197,6 +197,17 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
                         .get(0)
                         .getVersion())
             .afterUpgrade(this::assertDeploymentWithIncrementedVersion)
+            .done(),
+        scenario()
+            .name("compensation")
+            .deployProcess(compensationProcess())
+            .createInstance()
+            .beforeUpgrade(state -> handleCompensation(state, "A", "A"))
+            .afterUpgrade(
+                (state, processKey, key) -> {
+                  handleCompensation(state, "Undo-A", "Undo-A");
+                  assertProcessIsCompleted(state);
+                })
             .done());
   }
 
@@ -392,6 +403,36 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
             .send()
             .join();
     assertThat(deploymentEvent.getProcesses().get(0).getVersion()).isEqualTo(previousVersion + 1);
+  }
+
+  private BpmnModelInstance compensationProcess() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask(
+            "A",
+            task ->
+                task.zeebeJobType("A")
+                    .boundaryEvent()
+                    .compensation(
+                        compensation -> compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+        .endEvent()
+        .compensateEventDefinition()
+        .done();
+  }
+
+  private long handleCompensation(
+      final ContainerState state, final String elemenId, final String jobType) {
+    awaitElementInState(state, elemenId, "CREATED");
+    final ActivateJobsResponse jobsResponse =
+        state.client().newActivateJobsCommand().jobType(jobType).maxJobsToActivate(1).send().join();
+    awaitElementInState(state, elemenId, "ACTIVATED");
+    final var jobKey = jobsResponse.getJobs().getFirst().getKey();
+    state.client().newCompleteCommand(jobKey).send().join();
+    return jobKey;
+  }
+
+  private void assertProcessIsCompleted(final ContainerState state) {
+    state.hasElementInState(PROCESS_ID, "COMPLETED");
   }
 
   private TestCaseBuilder scenario() {

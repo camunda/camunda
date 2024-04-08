@@ -6,7 +6,8 @@
   "commitMessagePrefix": "deps:",
   "baseBranches": [
     "main",
-    "/^stable\\/8\\..*/"
+    "/^stable\\/8\\..*/",
+    "stable/operate-8.5"
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
@@ -20,9 +21,19 @@
       "helm-camunda-io": "https://helm.camunda.io"
     }
   },
+  "vulnerabilityAlerts": {
+    "labels": ["area/security"],
+    "enabled": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "matchBaseBranches": ["/^stable\\/8\\..*/"],
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/",
+        "stable/operate-8.5"
+      ],
       "matchUpdateTypes": [
         "minor",
         "major"
@@ -98,6 +109,14 @@
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
+    },
+    {
+      "matchFileNames": ["operate.Dockerfile"],
+      "enabled": false
+    },
+    {
+      "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "playwright"
     }
   ],
   "dockerfile": {

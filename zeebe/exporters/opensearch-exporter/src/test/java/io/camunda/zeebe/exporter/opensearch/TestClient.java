@@ -13,6 +13,7 @@ import static io.camunda.zeebe.exporter.opensearch.OpensearchClient.ISM_INITIAL_
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
 import org.opensearch.client.Request;
@@ -165,6 +167,36 @@ final class TestClient implements CloseableSilently {
     return new PutIndexStateManagementPolicyRequest(policy);
   }
 
+  public Optional<IndexISMPolicyDto> explainIndex(final String index) {
+    try {
+      final var request = new Request("GET", "_plugins/_ism/explain/" + index);
+      final var response = restClient.performRequest(request);
+      final TypeReference<Map<String, Object>> mapTypeReference = new TypeReference<>() {};
+      final Map<String, Object> output =
+          MAPPER.readValue(response.getEntity().getContent(), mapTypeReference);
+      final var policy =
+          output.values().stream()
+              .filter(Map.class::isInstance)
+              .map(v -> (Map<String, String>) v)
+              .findFirst();
+
+      return policy
+          .map(p -> p.get("index.opendistro.index_state_management.policy_id"))
+          .map(IndexISMPolicyDto::new);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  void deleteIndices() {
+    try {
+      final var request = new Request("DELETE", config.index.prefix + "*?expand_wildcards=all");
+      restClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   record IndexTemplatesDto(@JsonProperty("index_templates") List<IndexTemplateWrapper> wrappers) {
     record IndexTemplateWrapper(String name, @JsonProperty("index_template") Template template) {}
   }
@@ -174,6 +206,8 @@ final class TestClient implements CloseableSilently {
     record ComponentTemplateWrapper(
         String name, @JsonProperty("component_template") Template template) {}
   }
+
+  record IndexISMPolicyDto(String policyId) {}
 
   @JsonInclude(Include.NON_EMPTY)
   private record PutUserRequest(

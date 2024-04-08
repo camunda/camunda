@@ -37,7 +37,6 @@ jobs:
   release:
     name: Maven & Go Release
     runs-on: gcp-core-16-release
-    timeout-minutes: 60
     outputs:
       releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}
@@ -107,7 +106,7 @@ jobs:
       - name: Build Go Client & Zeebe
         uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |

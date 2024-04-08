@@ -135,7 +135,7 @@ public class ExecutionListenerJobTest {
             .getFirst();
     Assertions.assertThat(incident.getValue())
         .hasProcessInstanceKey(processInstanceKey)
-        .hasErrorType(ErrorType.JOB_NO_RETRIES)
+        .hasErrorType(ErrorType.EXECUTION_LISTENER_NO_RETRIES)
         .hasErrorMessage("No more retries left.");
 
     // resolve incident & complete EL[start] job
@@ -180,7 +180,7 @@ public class ExecutionListenerJobTest {
             .getFirst();
     Assertions.assertThat(incident.getValue())
         .hasProcessInstanceKey(processInstanceKey)
-        .hasErrorType(ErrorType.JOB_NO_RETRIES)
+        .hasErrorType(ErrorType.EXECUTION_LISTENER_NO_RETRIES)
         .hasErrorMessage("No more retries left.");
 
     // and: resolve incident & complete 2nd EL[end] job
@@ -743,6 +743,47 @@ public class ExecutionListenerJobTest {
     completeRecreatedJobWithType(processInstanceKey, END_EL_TYPE + "_2");
     verifyJobCreationThenComplete(
         processInstanceKey, 6, END_EL_TYPE + "_3", JobKind.EXECUTION_LISTENER);
+  }
+
+  @Test
+  public void shouldCreateUnhandledErrorEventIncidentAfterThrowingErrorFromExecutionListenerJob() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                t ->
+                    t.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeStartExecutionListener(START_EL_TYPE)
+                        .zeebeEndExecutionListener(END_EL_TYPE))
+            .boundaryEvent("errorBoundary", b -> b.error("err"))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(START_EL_TYPE)
+        .withErrorCode("err")
+        .throwError();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
+        .hasErrorMessage(
+            "Expected to throw an error event with the code 'err', but it was not caught. No error events are available in the scope.");
   }
 
   private static void completeRecreatedJobWithType(

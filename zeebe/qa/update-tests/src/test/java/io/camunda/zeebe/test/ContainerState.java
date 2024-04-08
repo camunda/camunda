@@ -70,6 +70,7 @@ final class ContainerState implements CloseableResource {
   private boolean withRemoteDebugging;
 
   private String withUser;
+  private String withVersionOverride;
 
   ZeebeClient client() {
     return client;
@@ -91,6 +92,9 @@ final class ContainerState implements CloseableResource {
     // the root of the data volume (in particular it creates a new `.topology.meta` file)
     // TODO remove after 8.4 release
     withUser("1001:0");
+
+    withVersionOverride(VersionUtil.getVersion().replace("-SNAPSHOT", ""));
+
     return broker(CURRENT_VERSION);
   }
 
@@ -106,6 +110,11 @@ final class ContainerState implements CloseableResource {
 
   ContainerState withUser(final String user) {
     withUser = user;
+    return this;
+  }
+
+  ContainerState withVersionOverride(final String version) {
+    withVersionOverride = version;
     return this;
   }
 
@@ -150,6 +159,10 @@ final class ContainerState implements CloseableResource {
     if (!Strings.isEmpty(withUser)) {
       broker.withCreateContainerCmdModifier(
           createContainerCmd -> createContainerCmd.withUser(withUser));
+    }
+
+    if (!Strings.isEmpty(withVersionOverride)) {
+      broker.withEnv(VersionUtil.VERSION_OVERRIDE_ENV_NAME, withVersionOverride);
     }
 
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());

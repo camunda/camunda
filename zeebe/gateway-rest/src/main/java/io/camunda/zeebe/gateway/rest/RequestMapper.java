@@ -11,10 +11,10 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequestChangeset;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskUpdateRequest;
@@ -38,16 +38,13 @@ import org.springframework.web.server.ServerWebExchange;
 
 public class RequestMapper {
 
-  // TODO: create proper multi-tenancy handling, e.g. via HTTP filter
-  public static final String TENANT_CTX_KEY = "io.camunda.zeebe.broker.rest.tenantIds";
-
   private static final String ERROR_MESSAGE_EMPTY_ASSIGNEE = "No assignee provided";
   private static final String ERROR_MESSAGE_DATE_PARSING =
       "The provided %s '%s' cannot be parsed as a date according to RFC 3339, section 5.6.";
   private static final String ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET =
       """
-      No update data provided. Provide at least an \"action\" or a non-null value \
-      for a supported attribute in the \"changeset\".""";
+      No update data provided. Provide at least an "action" or a non-null value \
+      for a supported attribute in the "changeset".""";
 
   public static Either<ProblemDetail, BrokerUserTaskCompletionRequest> toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest,
@@ -147,7 +144,7 @@ public class RequestMapper {
       violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
     }
     if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
-      final Changeset changeset = updateRequest.getChangeset();
+      final UserTaskUpdateRequestChangeset changeset = updateRequest.getChangeset();
       validateDate(changeset.getDueDate(), "due date", violations);
       validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
     }
@@ -170,7 +167,7 @@ public class RequestMapper {
     }
   }
 
-  private static boolean isEmpty(final Changeset changeset) {
+  private static boolean isEmpty(final UserTaskUpdateRequestChangeset changeset) {
     return changeset == null
         || (changeset.getFollowUpDate() == null
             && changeset.getDueDate() == null
@@ -195,7 +192,7 @@ public class RequestMapper {
     if (updateRequest == null || updateRequest.getChangeset() == null) {
       return record;
     }
-    final Changeset changeset = updateRequest.getChangeset();
+    final UserTaskUpdateRequestChangeset changeset = updateRequest.getChangeset();
     if (changeset.getCandidateGroups() != null) {
       record.setCandidateGroupsList(changeset.getCandidateGroups()).setCandidateGroupsChanged();
     }

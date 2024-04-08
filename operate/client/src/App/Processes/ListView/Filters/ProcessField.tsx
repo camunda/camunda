@@ -60,8 +60,9 @@ const ProcessField: React.FC = observer(() => {
             form.change('flowNodeId', undefined);
 
             if (isMultiTenancyEnabled) {
-              const tenant = processes.find(({id}) => id === selectedItem?.id)
-                ?.tenantId;
+              const tenant = processes.find(
+                ({id}) => id === selectedItem?.id,
+              )?.tenantId;
 
               if (tenant !== undefined) {
                 form.change('tenant', tenant);

@@ -34,7 +34,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: ${{ (github.event_name == 'pull_request' && (startsWith(inputs.branch, 'fe-') || startsWith(inputs.branch, 'renovate/fe-'))) && 'ubuntu-latest' || 'gcp-core-16-default' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && (startsWith(inputs.branch, 'fe-') || (startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')))) && 'ubuntu-latest' || 'gcp-core-16-default' }}
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -83,7 +83,7 @@ jobs:
       # Build: maven artifacts and Docker images
       - name: Build Maven
         run: |
-          mvn -f operate clean deploy -P -docker -DskipTests=true -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          mvn clean deploy -B -T1C -P -docker -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging

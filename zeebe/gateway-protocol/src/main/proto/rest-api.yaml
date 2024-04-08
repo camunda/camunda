@@ -1,4 +1,4 @@
-openapi: "3.1.0"
+openapi: "3.0.3"
 info:
   title: Zeebe REST API
   version: "0.1"
@@ -26,14 +26,18 @@ servers:
 paths:
   /topology:
     get:
-      summary: Get cluster topology.
+      tags:
+        - Cluster
+      summary: Get cluster topology
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
         '200':
           $ref: "#/components/responses/TopologyResponse"
   /user-tasks/{userTaskKey}/completion:
     post:
-      summary: Complete a user task.
+      tags:
+        - User task
+      summary: Complete a user task
       description: Completes a user task with the given key.
       parameters:
         - name: userTaskKey
@@ -59,15 +63,23 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The user task with the given key cannot be completed.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}/assignment:
     post:
-      summary: Assigns a user task.
+      tags:
+        - User task
+      summary: Assign a user task
       description: Assigns a user task with the given key to the given assignee.
       parameters:
         - name: userTaskKey
@@ -92,15 +104,23 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The assignment of the user task with the given key cannot be completed.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}:
     patch:
-      summary: Update a user task.
+      tags:
+        - User task
+      summary: Update a user task
       description: Update a user task with the given key.
       parameters:
         - name: userTaskKey
@@ -125,15 +145,23 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The user task with the given key cannot be updated.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}/assignee:
     delete:
-      summary: Remove the assignee of a task.
+      tags:
+        - User task
+      summary: Unassign a user task
       description: Removes the assignee of a task with the given key.
       parameters:
         - name: userTaskKey
@@ -152,12 +180,18 @@ paths:
           description: >
             The user task with the given key is in the wrong state currently.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The user task with the given key cannot be unassigned.
             More details are provided in the response body.
-          $ref: "#/components/responses/ProblemResponse"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
 components:
   responses:
@@ -253,10 +287,10 @@ components:
       type: object
       properties:
         variables:
+          additionalProperties: true
           description: The variables to complete the user task with.
           type: object
           nullable: true
-          $ref: "#/components/schemas/Variables"
         action:
           description: >
             A custom action value that will be accessible from user task events resulting
@@ -288,6 +322,8 @@ components:
       type: object
       properties:
         changeset:
+          allOf:
+            - $ref: "#/components/schemas/Changeset"
           description: |
             JSON object with changed task attribute values.
 
@@ -306,7 +342,6 @@ components:
             This ensures correct event emission for assignee changes.
           type: object
           nullable: true
-          $ref: "#/components/schemas/Changeset"
         action:
           description: >
             A custom action value that will be accessible from user task events resulting
@@ -371,3 +406,8 @@ components:
           type: string
           format: uri
           description: A URI identifying the origin of the problem.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -13,10 +13,10 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequestChangeset;
 import io.camunda.zeebe.gateway.rest.TopologyControllerTest.TestTopologyApplication;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
@@ -212,7 +212,7 @@ public class UserTaskControllerTest {
     final var request =
         new UserTaskUpdateRequest()
             .changeset(
-                new Changeset()
+                new UserTaskUpdateRequestChangeset()
                     .addCandidateGroupsItem("foo")
                     .addCandidateUsersItem("bar")
                     .dueDate(TEST_TIME)
@@ -252,7 +252,10 @@ public class UserTaskControllerTest {
     // given
     final var request =
         new UserTaskUpdateRequest()
-            .changeset(new Changeset().addCandidateGroupsItem("foo").followUpDate(TEST_TIME));
+            .changeset(
+                new UserTaskUpdateRequestChangeset()
+                    .addCandidateGroupsItem("foo")
+                    .followUpDate(TEST_TIME));
 
     // when / then
     webClient
@@ -315,7 +318,8 @@ public class UserTaskControllerTest {
     // given
     final var request =
         new UserTaskUpdateRequest()
-            .changeset(new Changeset().candidateGroups(List.of()).followUpDate(""));
+            .changeset(
+                new UserTaskUpdateRequestChangeset().candidateGroups(List.of()).followUpDate(""));
 
     // when / then
     webClient
@@ -378,7 +382,7 @@ public class UserTaskControllerTest {
         new UserTaskUpdateRequest()
             .action("customAction")
             .changeset(
-                new Changeset()
+                new UserTaskUpdateRequestChangeset()
                     .addCandidateGroupsItem("foo")
                     .addCandidateUsersItem("bar")
                     .dueDate(TEST_TIME)
@@ -444,7 +448,8 @@ public class UserTaskControllerTest {
   @Test
   public void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedDueDate() {
     // given
-    final var request = new UserTaskUpdateRequest().changeset(new Changeset().dueDate("foo"));
+    final var request =
+        new UserTaskUpdateRequest().changeset(new UserTaskUpdateRequestChangeset().dueDate("foo"));
 
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
@@ -474,7 +479,9 @@ public class UserTaskControllerTest {
   @Test
   public void shouldYieldBadRequestWhenUpdateTaskWithMalformedFollowUpDate() {
     // given
-    final var request = new UserTaskUpdateRequest().changeset(new Changeset().followUpDate("foo"));
+    final var request =
+        new UserTaskUpdateRequest()
+            .changeset(new UserTaskUpdateRequestChangeset().followUpDate("foo"));
 
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
@@ -505,7 +512,8 @@ public class UserTaskControllerTest {
   public void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedFollowUpAndDueDate() {
     // given
     final var request =
-        new UserTaskUpdateRequest().changeset(new Changeset().dueDate("bar").followUpDate("foo"));
+        new UserTaskUpdateRequest()
+            .changeset(new UserTaskUpdateRequestChangeset().dueDate("bar").followUpDate("foo"));
 
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
@@ -536,9 +544,7 @@ public class UserTaskControllerTest {
   @Test
   public void shouldYieldBadRequestWhenUpdateTaskWithUntrackedChanges() {
     // given
-    final var request =
-        new UserTaskUpdateRequest()
-            .changeset(new Changeset().putAdditionalProperty("elementInstanceKey", 123456L));
+    final var request = new UserTaskUpdateRequest().changeset(new UserTaskUpdateRequestChangeset());
 
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(

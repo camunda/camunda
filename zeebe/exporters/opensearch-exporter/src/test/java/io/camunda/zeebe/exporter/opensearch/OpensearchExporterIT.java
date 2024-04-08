@@ -8,25 +8,33 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
+import io.camunda.zeebe.exporter.opensearch.TestClient.IndexISMPolicyDto;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -48,7 +56,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @TestInstance(Lifecycle.PER_CLASS)
 final class OpensearchExporterIT {
   @Container
-  private static final OpensearchContainer CONTAINER = TestSupport.createDefaultContainer();
+  private static final OpensearchContainer<?> CONTAINER =
+      TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -57,6 +66,7 @@ final class OpensearchExporterIT {
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
 
   private TestClient testClient;
+  private ExporterTestContext exporterTestContext;
 
   @BeforeAll
   public void beforeAll() {
@@ -72,15 +82,21 @@ final class OpensearchExporterIT {
 
     testClient = new TestClient(config, indexRouter);
 
-    exporter.configure(
+    exporterTestContext =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("opensearch", config)));
+            .setConfiguration(new ExporterTestConfiguration<>("opensearch", config));
+    exporter.configure(exporterTestContext);
     exporter.open(controller);
   }
 
   @AfterAll
   void afterAll() {
     CloseHelper.quietCloseAll(testClient);
+  }
+
+  @BeforeEach
+  void cleanup() {
+    testClient.deleteIndices();
   }
 
   @ParameterizedTest(name = "{0}")
@@ -90,7 +106,7 @@ final class OpensearchExporterIT {
     final var record = factory.generateRecord(valueType);
 
     // when
-    exporter.export(record);
+    export(record);
 
     // then
     final var response = testClient.getExportedDocumentFor(record);
@@ -120,7 +136,7 @@ final class OpensearchExporterIT {
         factory.generateRecord(ValueType.JOB, builder -> builder.withValue(value));
 
     // when
-    exporter.export(record);
+    export(record);
 
     // then
     final var response = testClient.getExportedDocumentFor(record);
@@ -146,7 +162,7 @@ final class OpensearchExporterIT {
         factory.generateRecord(ValueType.JOB_BATCH, builder -> builder.withValue(value));
 
     // when
-    exporter.export(record);
+    export(record);
 
     // then
     final var response = testClient.getExportedDocumentFor(record);
@@ -166,7 +182,7 @@ final class OpensearchExporterIT {
     final var expectedIndexTemplateName = indexRouter.indexPrefixForValueType(valueType);
 
     // when - export a single record to enforce installing all index templatesWrapper
-    exporter.export(record);
+    export(record);
 
     // then
     final var template = testClient.getIndexTemplate(valueType);
@@ -184,7 +200,7 @@ final class OpensearchExporterIT {
     final var record = factory.generateRecord();
 
     // when - export a single record to enforce installing all index templatesWrapper
-    exporter.export(record);
+    export(record);
 
     // then
     final var template = testClient.getComponentTemplate();
@@ -202,7 +218,7 @@ final class OpensearchExporterIT {
     final var record = factory.generateRecord();
 
     // when - export a single record to enforce creating the policy
-    exporter.export(record);
+    export(record);
 
     // then
     final var policy = testClient.getIndexStateManagementPolicy().policy();
@@ -248,12 +264,174 @@ final class OpensearchExporterIT {
     final var record = factory.generateRecord();
 
     // when - export a single record to enforce creating the policy
-    exporter.export(record);
+    export(record);
 
     // then
     final var updatedPolicy = testClient.getIndexStateManagementPolicy().policy();
     final String updatedMinimumAge =
         updatedPolicy.states().getFirst().transitions().getFirst().conditions().minIndexAge();
     assertThat(updatedMinimumAge).isEqualTo(config.retention.getMinimumAge());
+  }
+
+  private boolean export(final Record<?> record) {
+    exporter.export(record);
+    return true;
+  }
+
+  /**
+   * policy change is an asynchronous background process in opensearch, that's why we use awaits
+   * before asserts to reduce flaky results
+   */
+  @Nested
+  final class IndexSettingsTest {
+    @Test
+    void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
+      // given
+      configureExporter(false);
+      final var record1 = factory.generateRecord(ValueType.JOB);
+
+      // when
+      export(record1);
+
+      // then
+      final var index1 = indexRouter.indexFor(record1);
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var index1Policy = testClient.explainIndex(index1);
+                assertHasNoISMPolicy(index1Policy);
+              });
+
+      /* Tests when retention is later enabled all indices should have lifecycle policy */
+      // given
+      configureExporter(true);
+      final var record2 = factory.generateRecord(ValueType.JOB);
+
+      // when
+      export(record2);
+
+      // then
+      final var index2 = indexRouter.indexFor(record2);
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var index2Policy = testClient.explainIndex(index2);
+                assertHasISMPolicy(index2Policy);
+              });
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var index1PolicyNew = testClient.explainIndex(index1);
+                assertHasISMPolicy(index1PolicyNew);
+              });
+    }
+
+    @Test
+    void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
+      // given
+      configureExporter(true);
+      final var record1 = factory.generateRecord(ValueType.JOB);
+
+      // when
+      export(record1);
+
+      // then
+      final var index1 = indexRouter.indexFor(record1);
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var indexPolicy1 = testClient.explainIndex(index1);
+                assertHasISMPolicy(indexPolicy1);
+              });
+
+      /* Tests when retention is later disabled all indices should not have a lifecycle policy */
+      // given
+      configureExporter(false);
+      final var record2 = factory.generateRecord(ValueType.JOB);
+
+      // when
+      export(record2);
+
+      // then
+      final var index2 = indexRouter.indexFor(record2);
+
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var response2 = testClient.explainIndex(index2);
+                assertHasNoISMPolicy(response2);
+              });
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var index1PolicyNew = testClient.explainIndex(index1);
+                assertHasNoISMPolicy(index1PolicyNew);
+              });
+    }
+
+    @Test
+    void shouldNotTimeoutWhenUpdatingLifecyclePolicyForExistingIndices() {
+      // given
+      configureExporter(false);
+      final var records = new ArrayList<Record<RecordValue>>();
+      // using 498 here as we will export one more record after (1 main shard, 1 replica)
+      final int limit = 498;
+      for (int i = 0; i < limit; i++) {
+        final var record = factory.generateRecord(ValueType.JOB);
+        records.add(record);
+        export(record);
+      }
+
+      // when
+      configureExporter(true);
+      final var record2 = factory.generateRecord(ValueType.JOB);
+
+      await("New record is exported, and existing indices are updated")
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> export(record2));
+
+      // then
+      final var index2 = indexRouter.indexFor(record2);
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var index2Policy = testClient.explainIndex(index2);
+                assertHasISMPolicy(index2Policy);
+              });
+
+      for (final var record : records) {
+        final var index = indexRouter.indexFor(record);
+        final var response = testClient.explainIndex(index);
+
+        assertHasISMPolicy(response);
+      }
+    }
+
+    private void configureExporter(final boolean retentionEnabled) {
+      config.retention.setEnabled(retentionEnabled);
+      exporter.configure(exporterTestContext);
+    }
+
+    private void assertHasISMPolicy(final Optional<IndexISMPolicyDto> indexSettings) {
+      assertThat(indexSettings)
+          .as("should have found the index")
+          .isPresent()
+          .get()
+          .extracting(IndexISMPolicyDto::policyId)
+          .as("should have lifecycle config")
+          .isNotNull()
+          .isEqualTo(config.retention.getPolicyName());
+    }
+
+    private static void assertHasNoISMPolicy(final Optional<IndexISMPolicyDto> policy) {
+      assertThat(policy).as("ISM policy should not be configured").isEmpty();
+    }
   }
 }

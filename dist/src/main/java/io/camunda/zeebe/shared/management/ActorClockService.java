@@ -49,5 +49,7 @@ public interface ActorClockService {
 
     /** Resets the clock to use the system time */
     void resetTime();
+
+    void update();
   }
 }

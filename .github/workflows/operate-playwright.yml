@@ -2,11 +2,21 @@
 name: Operate Visual regression tests
 on:
   push:
+    branches:
+      - "main"
+      - "stable/**"
+      - "release/**"
     paths-ignore:
-      - '.github/workflows/zeebe-*'
-      - 'dist/**'
-      - 'zeebe/**'
-      - 'spring-boot-starter-camunda-sdk/**'
+      - ".github/workflows/zeebe-*"
+      - "dist/**"
+      - "zeebe/**"
+      - "spring-boot-starter-camunda-sdk/**"
+  pull_request:
+    paths-ignore:
+      - ".github/workflows/zeebe-*"
+      - "dist/**"
+      - "zeebe/**"
+      - "spring-boot-starter-camunda-sdk/**"
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -18,7 +28,7 @@ jobs:
   test:
     runs-on: gcp-core-2-default
     container:
-      image: mcr.microsoft.com/playwright:v1.39.0
+      image: mcr.microsoft.com/playwright:v1.43.0
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4

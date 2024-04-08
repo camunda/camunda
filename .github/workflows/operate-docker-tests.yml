@@ -2,6 +2,16 @@
 name: Operate Tests
 on:
   push:
+    branches:
+      - 'main'
+      - 'stable/**'
+      - 'release/**'
+    paths-ignore:
+      - '.github/workflows/zeebe-*'
+      - 'dist/**'
+      - 'zeebe/**'
+      - 'spring-boot-starter-camunda-sdk/**'
+  pull_request:
     paths-ignore:
       - '.github/workflows/zeebe-*'
       - 'dist/**'
@@ -48,7 +58,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "adopt"
-          java-version: "17"
+          java-version: "21"
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4.5
         with:
@@ -66,7 +76,7 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn -f operate clean install -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -B -T1C -DskipChecks -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -79,7 +89,7 @@ jobs:
           tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
           file: operate.Dockerfile
       - name: Run Docker tests
-        run: mvn -f operate/qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: mvn -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-operate-test-artifacts

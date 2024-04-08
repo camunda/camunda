@@ -192,8 +192,8 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
   };
 
   hasPermission = (scopes: ResourceBasedPermissionDto[]) => {
-    return scopes.some(
-      (permission) => this.getPermissions()?.includes(permission),
+    return scopes.some((permission) =>
+      this.getPermissions()?.includes(permission),
     );
   };
 

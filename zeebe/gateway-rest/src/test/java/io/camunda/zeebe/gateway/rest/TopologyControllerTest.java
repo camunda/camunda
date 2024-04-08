@@ -81,7 +81,7 @@ public class TopologyControllerTest {
   void shouldReturnEmptyTopology() {
     // given
     final var version = VersionUtil.getVersion();
-    final var expectedResponse = new TopologyResponse().brokers(List.of()).gatewayVersion(version);
+    final var expectedResponse = new TopologyResponse().gatewayVersion(version);
     Mockito.when(brokerClient.getTopologyManager().getTopology()).thenReturn(null);
 
     // when / then

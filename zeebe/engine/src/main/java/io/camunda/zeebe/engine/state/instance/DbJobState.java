@@ -24,14 +24,13 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.LongHashSet;
 import org.slf4j.Logger;
 
 public final class DbJobState implements JobState, MutableJobState {
@@ -280,15 +279,33 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void restoreBackoff() {
-    final var failedKeys = getFailedJobKeys();
-
-    failedKeys.removeAll(getBackoffJobKey());
-    failedKeys.forEach(
-        key -> {
-          jobKey.wrapLong(key);
+    final var jobsWithBackoff = new LongHashSet();
+    backoffColumnFamily.forEach(
+        (key, value) -> {
           final var jobRecord = jobsColumnFamily.get(jobKey);
-          if (isValidForRestore(jobRecord)) {
-            addJobBackoff(key, jobRecord.getRecord().getRecurringTime());
+          if (jobRecord == null
+              || jobRecord.getRecord().getRetries() <= 0
+              || jobRecord.getRecord().getRetryBackoff() <= 0) {
+            backoffColumnFamily.deleteExisting(key);
+          } else {
+            jobsWithBackoff.add(jobKey.getValue());
+          }
+        });
+
+    statesJobColumnFamily.forEach(
+        value -> {
+          if (!State.FAILED.equals(value.getState())) {
+            return;
+          }
+          if (jobsWithBackoff.contains(jobKey.getValue())) {
+            return;
+          }
+          final var jobRecord = jobsColumnFamily.get(jobKey);
+          final var backoff = jobRecord.getRecord().getRecurringTime();
+          final var retries = jobRecord.getRecord().getRetries();
+          if (backoff > 0 && retries > 0) {
+            backoffKey.wrapLong(backoff);
+            backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
           }
         });
   }
@@ -538,31 +555,5 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
     return (List<String>) authorizations.get(Authorization.AUTHORIZED_TENANTS);
-  }
-
-  private Set<Long> getFailedJobKeys() {
-    final Set<Long> failedJobKeys = new HashSet<>();
-    statesJobColumnFamily.forEach(
-        (key, value) -> {
-          if ((State.FAILED).equals(value.getState())) {
-            failedJobKeys.add(key.inner().getValue());
-          }
-        });
-    return failedJobKeys;
-  }
-
-  private Set<Long> getBackoffJobKey() {
-    final Set<Long> backoffJobKeys = new HashSet<>();
-    backoffColumnFamily.forEach(
-        (key, value) -> backoffJobKeys.add(key.second().inner().getValue()));
-    return backoffJobKeys;
-  }
-
-  private boolean isValidForRestore(final JobRecordValue jobRecord) {
-    if (jobRecord == null) {
-      return false;
-    }
-    final var job = jobRecord.getRecord();
-    return job.getRecurringTime() > -1 && job.getRetries() > 0;
   }
 }

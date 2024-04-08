@@ -189,20 +189,24 @@ public class IndexSchemaValidator {
           String.format(
               "Index fields differ from expected. Index name: %s. Difference: %s.",
               indexDescriptor.getIndexName(), difference));
+
       if (!difference.getEntriesDiffering().isEmpty()) {
-        final String errorMsg =
-            String.format(
-                "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
-                indexDescriptor.getIndexName(), difference.getEntriesDiffering());
-        LOGGER.error(errorMsg);
-        throw new OperateRuntimeException(errorMsg);
-      } else if (!difference.getEntriesOnlyOnRight().isEmpty()) {
+        // This call will throw an exception unless the index is dynamic, in which case
+        // field differences will be ignored. In the case of a dynamic index, we still want
+        // to collect any new fields, so we should continue to the next checks instead of making
+        // this part of the if/else block
+        validateFieldsDifferBetweenIndices(difference, indexDescriptor);
+      }
+
+      if (!difference.getEntriesOnlyOnRight().isEmpty()) {
         final String message =
             String.format(
                 "Index name: %s. Field deletion is requested, will be ignored. Fields: %s",
                 indexDescriptor.getIndexName(), difference.getEntriesOnlyOnRight());
         LOGGER.info(message);
+
       } else if (!difference.getEntriesOnlyOnLeft().isEmpty()) {
+        // Collect the new fields
         newFields.put(indexDescriptor, difference.getEntriesOnlyOnLeft());
       }
     } else {
@@ -215,15 +219,22 @@ public class IndexSchemaValidator {
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.getExpectedIndexFields(indexDescriptor);
+
     IndexMappingDifference difference = null;
     // compare every index in group
     for (final Map.Entry<String, IndexMapping> singleIndexMapping : indexMappingsGroup.entrySet()) {
       final IndexMappingDifference currentDifference =
-          indexMappingMustBe.difference(singleIndexMapping.getValue());
+          new IndexMappingDifference.IndexMappingDifferenceBuilder()
+              .setLeft(indexMappingMustBe)
+              .setRight(singleIndexMapping.getValue())
+              .build();
       if (!currentDifference.isEqual()) {
         if (difference == null) {
           difference = currentDifference;
-        } else if (!difference.equals(currentDifference)) {
+          // If there is a difference between the template and the existing runtime/data indices,
+          // all those indices should have the same difference. Compare based only on the
+          // differences (exclude the IndexMapping fields in the comparison)
+        } else if (!difference.checkEqualityForDifferences(currentDifference)) {
           throw new OperateRuntimeException(
               "Ambiguous schema update. First bring runtime and date indices to one schema. Difference 1: "
                   + difference
@@ -247,5 +258,38 @@ public class IndexSchemaValidator {
     return Maps.filterEntries(
         indexMappings,
         e -> e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
+  }
+
+  private boolean indexIsDynamic(final IndexMapping mapping) {
+    if (mapping == null) {
+      return false;
+    }
+    if (mapping.getDynamic() == null) {
+      return true;
+    }
+
+    return Boolean.parseBoolean(mapping.getDynamic());
+  }
+
+  private void validateFieldsDifferBetweenIndices(
+      final IndexMappingDifference difference, final IndexDescriptor indexDescriptor) {
+    if (indexIsDynamic(difference.getLeftIndexMapping())) {
+      LOGGER.debug(
+          String.format(
+              "Left index name: %s is dynamic, ignoring changes found: %s",
+              indexDescriptor.getIndexName(), difference.getEntriesDiffering()));
+    } else if (indexIsDynamic(difference.getRightIndexMapping())) {
+      LOGGER.debug(
+          String.format(
+              "Right index name: %s is dynamic, ignoring changes found: %s",
+              indexDescriptor.getIndexName(), difference.getEntriesDiffering()));
+    } else {
+      final String errorMsg =
+          String.format(
+              "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
+              indexDescriptor.getIndexName(), difference.getEntriesDiffering());
+      LOGGER.error(errorMsg);
+      throw new OperateRuntimeException(errorMsg);
+    }
   }
 }

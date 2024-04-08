@@ -24,8 +24,9 @@ final class ControlledActorClockEndpointTest {
   private final InstanceOfAssertFactory<Response, ObjectAssert<Response>> responseType =
       new InstanceOfAssertFactory<>(Response.class, Assertions::assertThat);
 
+  private final ControlledActorClock actorClock = new ControlledActorClock();
   private final ActorClockEndpoint endpoint =
-      new ActorClockEndpoint(new ControlledActorClockService(new ControlledActorClock()));
+      new ActorClockEndpoint(new ControlledActorClockService(actorClock));
 
   @BeforeEach
   public void resetClock() {
@@ -90,6 +91,7 @@ final class ControlledActorClockEndpointTest {
 
     // when
     Thread.sleep(100);
+    actorClock.update();
     final var secondResponse = endpoint.getCurrentClock();
     assertThat(secondResponse.getBody()).isNotNull();
     final var secondMillis = secondResponse.getBody().epochMilli();

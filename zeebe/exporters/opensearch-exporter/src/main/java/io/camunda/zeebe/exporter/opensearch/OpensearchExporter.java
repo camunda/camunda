@@ -49,6 +49,7 @@ public class OpensearchExporter implements Exporter {
     validate(configuration);
 
     context.setFilter(new OpensearchRecordFilter(configuration));
+    indexTemplatesCreated = false;
   }
 
   @Override
@@ -91,6 +92,8 @@ public class OpensearchExporter implements Exporter {
   public void export(final Record<?> record) {
     if (!indexTemplatesCreated) {
       createIndexTemplates();
+
+      updateRetentionPolicyForExistingIndices();
     }
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
@@ -331,6 +334,19 @@ public class OpensearchExporter implements Exporter {
       log.warn(
           "Failed to acknowledge the creation or update of the index template for value type {}",
           valueType);
+    }
+  }
+
+  private void updateRetentionPolicyForExistingIndices() {
+    final boolean successful;
+    if (configuration.retention.isEnabled()) {
+      successful = client.bulkAddISMPolicyToAllZeebeIndices();
+    } else {
+      successful = client.bulkRemoveISMPolicyToAllZeebeIndices();
+    }
+
+    if (!successful) {
+      log.warn("Failed to acknowledge the the update of retention policy for existing indices");
     }
   }
 

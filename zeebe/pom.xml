@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.6.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>zeebe-root</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Zeebe Root</name>
+
+  <modules>
+    <module>atomix</module>
+    <module>auth</module>
+    <module>broker</module>
+    <module>broker-client</module>
+    <module>protocol-test-util</module>
+    <module>protocol</module>
+    <module>bpmn-model</module>
+    <module>logstreams</module>
+    <module>stream-platform</module>
+    <module>engine</module>
+    <module>transport</module>
+    <module>util</module>
+    <module>test-util</module>
+    <module>msgpack-core</module>
+    <module>msgpack-value</module>
+    <module>gateway-protocol</module>
+    <module>gateway-protocol-impl</module>
+    <module>gateway</module>
+    <module>gateway-rest</module>
+    <module>clients/java</module>
+    <module>clients/zeebe-client-spring</module>
+    <module>exporter-api</module>
+    <module>exporter-test</module>
+    <module>protocol-asserts</module>
+    <module>exporters/elasticsearch-exporter</module>
+    <module>exporters/opensearch-exporter</module>
+    <module>protocol-impl</module>
+    <module>protocol-jackson</module>
+    <module>zb-db</module>
+    <module>expression-language</module>
+    <module>feel</module>
+    <module>dmn</module>
+    <module>snapshot</module>
+    <module>journal</module>
+    <module>qa</module>
+    <module>benchmarks/project</module>
+    <module>scheduler</module>
+    <module>backup</module>
+    <module>backup-stores/testkit</module>
+    <module>backup-stores/s3</module>
+    <module>backup-stores/gcs</module>
+    <module>backup-stores/azure</module>
+    <module>backup-stores/common</module>
+    <module>restore</module>
+    <module>topology</module>
+  </modules>
+</project>

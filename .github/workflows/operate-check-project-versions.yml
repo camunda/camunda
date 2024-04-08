@@ -21,8 +21,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: refs/heads/${{ inputs.branch }}
-          fetch-depth: 0  
-            
+          fetch-depth: 0
+
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4.5
         with:
@@ -33,17 +33,14 @@ jobs:
           RELEASE_VERSION: ${{ inputs.releaseVersion }}
           BRANCH_NAME: ${{ inputs.branchName }}
         run: |
-          ZEEBE_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
           IDENTITY_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
 
-          if [[ $ZEEBE_VERSION != $RELEASE_VERSION || $IDENTITY_VERSION != $RELEASE_VERSION ]]; then
-            echo "Please update Zeebe and Identity versions!"
-            echo "Current Zeebe version: $ZEEBE_VERSION"
+          if [[ $IDENTITY_VERSION != $RELEASE_VERSION ]]; then
+            echo "Please update Identity versions!"
             echo "Current Identity version: $IDENTITY_VERSION"
             echo "Both should be updated to: $RELEASE_VERSION"
 
             exit 1
           fi
 
-
-          echo "Zeebe and Identity versions are correct!"
+          echo "Identity versions are correct!"

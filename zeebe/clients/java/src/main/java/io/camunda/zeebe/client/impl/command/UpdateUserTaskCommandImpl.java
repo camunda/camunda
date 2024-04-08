@@ -22,8 +22,8 @@ import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.UpdateUserTaskResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.Changeset;
 import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,77 +74,73 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
   @Override
   public UpdateUserTaskCommandStep1 dueDate(final String dueDate) {
     ArgumentUtil.ensureNotNull("dueDate", dueDate);
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_DUE_DATE, dueDate);
+    getChangesetEnsureInitialized().dueDate(dueDate);
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 clearDueDate() {
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_DUE_DATE, "");
+    getChangesetEnsureInitialized().setDueDate("");
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 followUpDate(final String followUpDate) {
     ArgumentUtil.ensureNotNull("followUpDate", followUpDate);
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_FOLLOW_UP_DATE, followUpDate);
+    getChangesetEnsureInitialized().followUpDate(followUpDate);
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 clearFollowUpDate() {
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_FOLLOW_UP_DATE, "");
+    getChangesetEnsureInitialized().followUpDate("");
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 candidateGroups(final List<String> candidateGroups) {
     ArgumentUtil.ensureNotNull("candidateGroups", candidateGroups);
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_CANDIDATE_GROUPS, candidateGroups);
+    getChangesetEnsureInitialized().candidateGroups(candidateGroups);
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 candidateGroups(final String... candidateGroups) {
     ArgumentUtil.ensureNotNull("candidateGroups", candidateGroups);
-    getChangesetEnsureInitialized()
-        .put(Changeset.JSON_PROPERTY_CANDIDATE_GROUPS, Arrays.asList(candidateGroups));
+    getChangesetEnsureInitialized().candidateGroups(Arrays.asList(candidateGroups));
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 clearCandidateGroups() {
-    getChangesetEnsureInitialized()
-        .put(Changeset.JSON_PROPERTY_CANDIDATE_GROUPS, Collections.emptyList());
+    getChangesetEnsureInitialized().setCandidateGroups(Collections.emptyList());
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 candidateUsers(final List<String> candidateUsers) {
     ArgumentUtil.ensureNotNull("candidateUsers", candidateUsers);
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_CANDIDATE_USERS, candidateUsers);
+    getChangesetEnsureInitialized().candidateUsers(candidateUsers);
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 candidateUsers(final String... candidateUsers) {
     ArgumentUtil.ensureNotNull("candidateUsers", candidateUsers);
-    getChangesetEnsureInitialized()
-        .put(Changeset.JSON_PROPERTY_CANDIDATE_USERS, Arrays.asList(candidateUsers));
+    getChangesetEnsureInitialized().candidateUsers(Arrays.asList(candidateUsers));
     return this;
   }
 
   @Override
   public UpdateUserTaskCommandStep1 clearCandidateUsers() {
-    getChangesetEnsureInitialized()
-        .put(Changeset.JSON_PROPERTY_CANDIDATE_USERS, Collections.emptyList());
+    getChangesetEnsureInitialized().candidateUsers(Collections.emptyList());
     return this;
   }
 
-  private Changeset getChangesetEnsureInitialized() {
-    Changeset changeset = request.getChangeset();
+  private UserTaskUpdateRequestChangeset getChangesetEnsureInitialized() {
+    UserTaskUpdateRequestChangeset changeset = request.getChangeset();
     if (changeset == null) {
-      changeset = new Changeset();
+      changeset = new UserTaskUpdateRequestChangeset();
       request.setChangeset(changeset);
     }
     return changeset;

@@ -33,6 +33,7 @@ runs:
     env:
       BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
     run: |
+      set -eoux
       if [ ! -s "$BUILD_OUTPUT_FILE_PATH" ]; then
         echo "::error::Build output file does not exist or is empty!"
         exit 1
@@ -50,7 +51,7 @@ runs:
         # To cover cases where we use parameterized tests like
         # [WARNING]  io.camunda.zeebe.engine.state.BanInstanceTest.shouldBanInstance[PROCESS_MESSAGE_SUBSCRIPTION DELETE should ban instance true]
         # We grep the WARNING line and set the first argument to an empty string
-        flakyTests=$(grep "\[WARNING\] io.camunda" ${irOutputFile} | awk '{$1=""; print $0}')
+        flakyTests=$(grep -E "\[WARNING\] [a-z]+\." ${irOutputFile} | awk '{$1=""; print $0}')
 
         # To support multi-line string in output we have to work with EOF delimiter
         # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
