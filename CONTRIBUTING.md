@@ -330,8 +330,8 @@ This project adheres to the [Camunda Code of Conduct](https://camunda.com/events
 By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/)
 unacceptable behavior as soon as possible.
 
-[issues]: https://github.com/zeebe-io/zeebe/issues
-[forum]: https://forum.zeebe.io/
+[issues]: https://github.com/camunda/zeebe/issues
+[forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 [clients/java]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fjava
 [clients/go]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fgo
