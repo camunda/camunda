@@ -32,4 +32,8 @@ public interface Command<T, R extends ReportDefinitionDto<?>> {
       final ReportEvaluationContext<R> reportEvaluationContext) {
     return Optional.empty();
   }
+
+  default boolean isAssigneeReport() {
+    return false;
+  }
 }

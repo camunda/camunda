@@ -10,4 +10,24 @@
   .cds--side-nav__items li {
     list-style: none;
   }
+
+  .nonProductionTooltip button {
+    border-bottom: none;
+    color: inherit;
+  }
+
+  .tooltipTrigger {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    outline: inherit;
+    font: inherit;
+    display: inline-block;
+    inline-size: 100%;
+
+    &.active {
+      background: none;
+    }
+  }
 }

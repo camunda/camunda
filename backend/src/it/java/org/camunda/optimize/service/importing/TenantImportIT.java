@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.dto.optimize.TenantDto;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+
+import java.util.List;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 @Tag(OPENSEARCH_PASSING)
 public class TenantImportIT extends AbstractImportIT {
@@ -30,19 +29,22 @@ public class TenantImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class))
-      .singleElement()
-      .satisfies(tenant -> assertThat(tenant)
-        .extracting(TenantDto::getId, TenantDto::getName, TenantDto::getEngine)
-        .containsExactly(tenantId, tenantName, DEFAULT_ENGINE_ALIAS));
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                TENANT_INDEX_NAME, TenantDto.class))
+        .singleElement()
+        .satisfies(
+            tenant ->
+                assertThat(tenant)
+                    .extracting(TenantDto::getId, TenantDto::getName, TenantDto::getEngine)
+                    .containsExactly(tenantId, tenantName, DEFAULT_ENGINE_ALIAS));
   }
 
   @Test
   public void doNotImportTenantsThatAreExcludedInTheConfiguration() {
     // given
     String tenant1 = "tenantExcluded";
-    embeddedOptimizeExtension.getDefaultEngineConfiguration()
-      .setExcludedTenants(List.of(tenant1));
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setExcludedTenants(List.of(tenant1));
     embeddedOptimizeExtension.reloadConfiguration();
     engineIntegrationExtension.createTenant(tenant1);
     engineIntegrationExtension.createTenant("tenant2");
@@ -52,12 +54,13 @@ public class TenantImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<TenantDto> storedDefinitions = databaseIntegrationTestExtension
-      .getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class);
+    final List<TenantDto> storedDefinitions =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            TENANT_INDEX_NAME, TenantDto.class);
     assertThat(storedDefinitions)
-      .hasSize(2)
-      .extracting(TenantDto::getId)
-      .isEqualTo(List.of("tenant2", "tenant3"));
+        .hasSize(2)
+        .extracting(TenantDto::getId)
+        .isEqualTo(List.of("tenant2", "tenant3"));
   }
 
   @Test
@@ -72,7 +75,8 @@ public class TenantImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(TENANT_INDEX_NAME)).isEqualTo(3L);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(TENANT_INDEX_NAME))
+        .isEqualTo(3L);
   }
 
   @Test
@@ -91,11 +95,15 @@ public class TenantImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class))
-      .singleElement()
-      .satisfies(tenant -> assertThat(tenant)
-        .extracting(TenantDto::getId, TenantDto::getName)
-        .containsExactly(tenantId, newTenantName));
+    assertThat(
+            databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+                TENANT_INDEX_NAME, TenantDto.class))
+        .singleElement()
+        .satisfies(
+            tenant ->
+                assertThat(tenant)
+                    .extracting(TenantDto::getId, TenantDto::getName)
+                    .containsExactly(tenantId, newTenantName));
   }
 
   @Test
@@ -113,8 +121,11 @@ public class TenantImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(embeddedOptimizeExtension.getIndexHandlerRegistry()
-                 .getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS).getImportIndex()).isEqualTo(2L);
+    assertThat(
+            embeddedOptimizeExtension
+                .getIndexHandlerRegistry()
+                .getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS)
+                .getImportIndex())
+        .isEqualTo(2L);
   }
-
 }

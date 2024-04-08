@@ -5,23 +5,25 @@
  */
 package org.camunda.optimize.service.db.es.report.process.combined;
 
+import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION;
+
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
-
-import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION;
 
 public class CombinedUserTaskFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
 
   @Override
-  protected void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMillis) {
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
+  protected void startInstanceAndModifyRelevantDurations(
+      final String definitionId, final int durationInMillis) {
+    final ProcessInstanceEngineDto processInstance =
+        engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), durationInMillis);
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(
+        processInstance.getId(), durationInMillis);
   }
 
   @Override
   protected ProcessReportDataType getReportDataType() {
     return USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION;
   }
-
 }

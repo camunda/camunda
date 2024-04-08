@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.rest.pub;
 
-import org.camunda.optimize.AbstractPlatformIT;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+
+import jakarta.ws.rs.core.Response;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 @Tag(OPENSEARCH_PASSING)
 public class PublicApiDashboardDeletionIT extends AbstractPlatformIT {
@@ -30,7 +29,8 @@ public class PublicApiDashboardDeletionIT extends AbstractPlatformIT {
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DASHBOARD_INDEX_NAME)).isEqualTo(0);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DASHBOARD_INDEX_NAME))
+        .isEqualTo(0);
   }
 
   @Test
@@ -46,7 +46,9 @@ public class PublicApiDashboardDeletionIT extends AbstractPlatformIT {
   }
 
   private void setAccessToken() {
-    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(ACCESS_TOKEN);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOptimizeApiConfiguration()
+        .setAccessToken(ACCESS_TOKEN);
   }
-
 }

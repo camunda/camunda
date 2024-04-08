@@ -6,17 +6,22 @@
 package org.camunda.optimize.service.db.repository.es;
 
 import static java.lang.String.format;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -28,32 +33,43 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
+import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -198,6 +214,129 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
                 FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete.toArray()),
             ScoreMode.None);
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(esClient, updateItem, script, query, index);
+  }
+
+  @Override
+  public boolean processDefinitionHasStartedInstances(final String processDefinitionKey) {
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(boolQuery().filter(existsQuery(ProcessInstanceIndex.START_DATE)))
+            .size(1)
+            .fetchSource(PROCESS_INSTANCE_ID, null);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
+            .source(searchSourceBuilder);
+    final SearchResponse response;
+    try {
+      response = esClient.search(searchRequest);
+      return response.getHits().getHits().length > 0;
+    } catch (ElasticsearchStatusException e) {
+      // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
+      // return false
+      return false;
+    } catch (IOException e2) {
+      // If this exception is thrown, sth went wrong with ElasticSearch, so returning false and
+      // logging it
+      log.warn(
+          "Error with ElasticSearch thrown while querying for started process instances, returning false! The "
+              + "error was: "
+              + e2.getMessage());
+      return false;
+    }
+  }
+
+  @Override
+  public PageResultDto<String> getNextPageOfProcessInstanceIds(
+      final PageResultDto<String> previousPage,
+      final Supplier<PageResultDto<String>> firstPageFetchFunction) {
+    if (previousPage.isLastPage()) {
+      return new PageResultDto<>(previousPage.getLimit());
+    }
+    try {
+      return ElasticsearchReaderUtil.retrieveNextScrollResultsPage(
+          previousPage.getPagingState(),
+          String.class,
+          searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID),
+          esClient,
+          configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
+          previousPage.getLimit());
+    } catch (ElasticsearchStatusException e) {
+      if (RestStatus.NOT_FOUND.equals(e.status())) {
+        // this error occurs when the scroll id expired in the meantime, thus just restart it
+        return firstPageFetchFunction.get();
+      }
+      throw e;
+    }
+  }
+
+  @Override
+  public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+      final String processDefinitionKey, final OffsetDateTime endDate, final Integer limit) {
+    return getFirstPageOfProcessInstanceIdsForFilter(
+        processDefinitionKey,
+        boolQuery()
+            .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)))
+            .filter(
+                nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None)),
+        limit);
+  }
+
+  @Override
+  public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatEndedBefore(
+      final String processDefinitionKey, final OffsetDateTime endDate, final Integer limit) {
+    return getFirstPageOfProcessInstanceIdsForFilter(
+        processDefinitionKey,
+        boolQuery().filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate))),
+        limit);
+  }
+
+  private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(
+      final String processDefinitionKey, final BoolQueryBuilder filterQuery, final Integer limit) {
+    final PageResultDto<String> result = new PageResultDto<>(limit);
+    final Integer resolvedLimit = Optional.ofNullable(limit).orElse(MAX_RESPONSE_SIZE_LIMIT);
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(filterQuery)
+            .fetchSource(PROCESS_INSTANCE_ID, null)
+            // size of each scroll page, needs to be capped to max size of elasticsearch
+            .size(
+                resolvedLimit <= MAX_RESPONSE_SIZE_LIMIT ? resolvedLimit : MAX_RESPONSE_SIZE_LIMIT);
+
+    final SearchRequest scrollSearchRequest =
+        new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
+
+    try {
+      final SearchResponse response = esClient.search(scrollSearchRequest);
+      result
+          .getEntities()
+          .addAll(
+              ElasticsearchReaderUtil.mapHits(
+                  response.getHits(),
+                  resolvedLimit,
+                  String.class,
+                  searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID)));
+      result.setPagingState(response.getScrollId());
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not obtain process instance ids.", e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+            "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
+            getProcessInstanceIndexAliasName(processDefinitionKey));
+        result.setPagingState(null);
+        return result;
+      }
+      throw e;
+    }
+
+    return result;
   }
 
   private <T> void doImportBulkRequestWithList(

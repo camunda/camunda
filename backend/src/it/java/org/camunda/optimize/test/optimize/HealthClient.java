@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.test.optimize;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.OptimizeRequestExecutor;
-
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.OptimizeRequestExecutor;
 
 @AllArgsConstructor
 public class HealthClient {
@@ -17,10 +16,7 @@ public class HealthClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public Response getReadiness() {
-    return getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetReadinessRequest()
-      .execute();
+    return getRequestExecutor().withoutAuthentication().buildGetReadinessRequest().execute();
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

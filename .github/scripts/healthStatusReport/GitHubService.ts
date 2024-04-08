@@ -19,7 +19,7 @@ export class GitHubService {
     const releaseBranchesREfs = await this.fetchRefs(refPrefix);
     const releaseBranches = releaseBranchesREfs
       .map((branch) =>
-        matchRegex(branch.ref, new RegExp(`refs\/heads\/(${refPrefix}\/d+.d+.*)`)),
+        matchRegex(branch.ref, new RegExp(`refs\/heads\/(${refPrefix}\/\\d+.\\d+.*)`)),
       )
       .filter((name): name is string => name !== undefined);
     return releaseBranches;

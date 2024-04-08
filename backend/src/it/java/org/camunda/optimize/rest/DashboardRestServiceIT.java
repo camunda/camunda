@@ -5,7 +5,20 @@
  */
 package org.camunda.optimize.rest;
 
+import static jakarta.ws.rs.HttpMethod.DELETE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+import static org.mockserver.model.HttpRequest.request;
+
 import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Collections;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -18,20 +31,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
-
-import java.time.OffsetDateTime;
-import java.util.Collections;
-
-import static jakarta.ws.rs.HttpMethod.DELETE;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.mockserver.model.HttpRequest.request;
 
 @Tag(OPENSEARCH_PASSING)
 public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
@@ -76,9 +75,11 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, null)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCopyDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, null)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -91,9 +92,12 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, collectionId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCopyDashboardRequest(
+                ManagementDashboardService.MANAGEMENT_DASHBOARD_ID, collectionId)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -108,10 +112,12 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     final String testDashboardCopyName = "This is my new report copy! ;-)";
 
     // when
-    IdResponseDto copyId = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .addSingleQueryParam("name", testDashboardCopyName)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+    IdResponseDto copyId =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCopyDashboardRequest(dashboardId)
+            .addSingleQueryParam("name", testDashboardCopyName)
+            .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
@@ -123,11 +129,12 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void getDashboardWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetDashboardRequest("asdf")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildGetDashboardRequest("asdf")
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -158,11 +165,12 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
 
     // when
-    DashboardDefinitionRestDto returnedDashboard = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDashboardRequest(dashboardId)
-      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    DashboardDefinitionRestDto returnedDashboard =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetDashboardRequest(dashboardId)
+            .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+            .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(returnedDashboard).isNotNull();
@@ -175,10 +183,11 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void getDashboardForNonExistingIdThrowsError() {
     // when
-    String response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDashboardRequest("fooid")
-      .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
+    String response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetDashboardRequest("fooid")
+            .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertThat(response).containsSequence("Dashboard does not exist!");
@@ -187,11 +196,12 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void deleteDashboardWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildDeleteDashboardRequest("1124")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildDeleteDashboardRequest("1124")
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -203,10 +213,8 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     String id = dashboardClient.createEmptyDashboard(null);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardRequest(id)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildDeleteDashboardRequest(id).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -218,10 +226,11 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteDashboardRequest(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -230,10 +239,11 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void deleteNonExistingDashboard() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardRequest("nonExistingId")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteDashboardRequest("nonExistingId")
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -261,12 +271,13 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     final String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/" + dashboardId)
-      .withMethod(DELETE);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/" + dashboardId)
+            .withMethod(DELETE);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     final String shareId = dashboardClient.createDashboardShareForDashboard(dashboardId);
 
@@ -275,9 +286,9 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
     // when
     embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardRequest(dashboardId)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        .getRequestExecutor()
+        .buildDeleteDashboardRequest(dashboardId)
+        .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
@@ -292,21 +303,22 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
     final String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
     final String shareId = dashboardClient.createDashboardShareForDashboard(dashboardId);
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + DASHBOARD_SHARE_INDEX_NAME + "/_doc/" + shareId)
-      .withMethod(DELETE);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*-" + DASHBOARD_SHARE_INDEX_NAME + "/_doc/" + shareId)
+            .withMethod(DELETE);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // then
     assertThat(documentShareExists(shareId)).isTrue();
 
     // when
     embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardRequest(dashboardId)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        .getRequestExecutor()
+        .buildDeleteDashboardRequest(dashboardId)
+        .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
@@ -316,14 +328,14 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
   @SneakyThrows
   private boolean documentShareExists(final String shareId) {
-    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_SHARE_INDEX_NAME, DashboardShareRestDto.class)
-      .stream()
-      .anyMatch(dashboardShare -> dashboardShare.getId().equals(shareId));
+    return databaseIntegrationTestExtension
+        .getAllDocumentsOfIndexAs(DASHBOARD_SHARE_INDEX_NAME, DashboardShareRestDto.class)
+        .stream()
+        .anyMatch(dashboardShare -> dashboardShare.getId().equals(shareId));
   }
 
   private void createEmptyReportToDashboard(final String dashboardId) {
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(null);
     dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
   }
-
 }

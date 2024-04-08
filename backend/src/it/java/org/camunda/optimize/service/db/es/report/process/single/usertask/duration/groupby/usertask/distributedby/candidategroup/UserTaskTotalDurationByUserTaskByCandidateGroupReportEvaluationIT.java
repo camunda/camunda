@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.usertask.duration.groupby.usertask.distributedby.candidategroup;
 
+import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -19,13 +23,8 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
-import static org.junit.jupiter.api.Assertions.fail;
-
 public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
-  extends AbstractUserTaskDurationByUserTaskByCandidateGroupReportEvaluationIT {
+    extends AbstractUserTaskDurationByUserTaskByCandidateGroupReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -33,56 +32,59 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                final String userTaskKey,
-                                final Double durationInMs) {
+  protected void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto,
+      final String userTaskKey,
+      final Double durationInMs) {
     changeUserTaskTotalDuration(processInstanceDto, userTaskKey, durationInMs);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
+  protected void changeDuration(
+      final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
     changeUserTaskTotalDuration(processInstanceDto, durationInMs);
   }
 
   @Override
-  protected ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersions(versions)
-      .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
-      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP)
-      .build();
+  protected ProcessReportDataDto createReport(
+      final String processDefinitionKey, final List<String> versions) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersions(versions)
+        .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
+        .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP)
+        .build();
   }
 
-
   @Override
-  protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
-                                                              final List<ProcessFilterDto<?>> processFilter,
-                                                              final long expectedInstanceCount) {
-    if (isSingleFilterOfType(processFilter, RunningFlowNodesOnlyFilterDto.class) ||
-      isSingleFilterOfType(processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
+  protected void assertEvaluateReportWithFlowNodeStatusFilter(
+      final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
+      final List<ProcessFilterDto<?>> processFilter,
+      final long expectedInstanceCount) {
+    if (isSingleFilterOfType(processFilter, RunningFlowNodesOnlyFilterDto.class)
+        || isSingleFilterOfType(processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(expectedInstanceCount)
-        .processInstanceCountWithoutFilters(2L)
-        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+          .processInstanceCount(expectedInstanceCount)
+          .processInstanceCountWithoutFilters(2L)
+          .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
-            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
           .groupByContains(USER_TASK_2)
-            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
-        .doAssert(result);
-        // @formatter:on
-    } else if (isSingleFilterOfType(processFilter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 700., FIRST_CANDIDATE_GROUP_NAME)
+          .doAssert(result);
+      // @formatter:on
+    } else if (isSingleFilterOfType(
+        processFilter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(expectedInstanceCount)
-        .processInstanceCountWithoutFilters(2L)
-        .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+          .processInstanceCount(expectedInstanceCount)
+          .processInstanceCountWithoutFilters(2L)
+          .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
-            .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 100., FIRST_CANDIDATE_GROUP_NAME)
-        .doAssert(result);
-        // @formatter:on
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 100., FIRST_CANDIDATE_GROUP_NAME)
+          .doAssert(result);
+      // @formatter:on
     } else {
       fail("No assertions for execution state: " + processFilter);
     }

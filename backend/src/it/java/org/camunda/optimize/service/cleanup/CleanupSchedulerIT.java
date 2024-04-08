@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,11 +18,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class CleanupSchedulerIT extends AbstractPlatformIT {
@@ -31,18 +30,22 @@ public class CleanupSchedulerIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("atLeastOneEnabledScenarios")
-  public void verifyCleanupScheduledWhenAtLeastOneCleanupEnabled(final CleanupTestConfiguration configuration) {
+  public void verifyCleanupScheduledWhenAtLeastOneCleanupEnabled(
+      final CleanupTestConfiguration configuration) {
     // given
     assertThat(getCleanupServiceConfiguration().isEnabled()).isFalse();
     assertThat(getCleanupScheduler().isScheduledToRun()).isFalse();
 
     // when
-    getCleanupServiceConfiguration().getProcessDataCleanupConfiguration()
-      .setEnabled(configuration.processCleanupEnabled);
-    getCleanupServiceConfiguration().getDecisionCleanupConfiguration()
-      .setEnabled(configuration.decisionCleanupEnabled);
-    getCleanupServiceConfiguration().getIngestedEventCleanupConfiguration()
-      .setEnabled(configuration.ingestedEventCleanupEnabled);
+    getCleanupServiceConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setEnabled(configuration.processCleanupEnabled);
+    getCleanupServiceConfiguration()
+        .getDecisionCleanupConfiguration()
+        .setEnabled(configuration.decisionCleanupEnabled);
+    getCleanupServiceConfiguration()
+        .getIngestedEventCleanupConfiguration()
+        .setEnabled(configuration.ingestedEventCleanupEnabled);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
@@ -52,22 +55,31 @@ public class CleanupSchedulerIT extends AbstractPlatformIT {
 
   public static Stream<CleanupTestConfiguration> atLeastOneEnabledScenarios() {
     return Stream.of(
-      CleanupTestConfiguration.builder()
-        .processCleanupEnabled(true).decisionCleanupEnabled(false).ingestedEventCleanupEnabled(false)
-        .build(),
-      CleanupTestConfiguration.builder()
-        .processCleanupEnabled(false).decisionCleanupEnabled(true).ingestedEventCleanupEnabled(false)
-        .build(),
-      CleanupTestConfiguration.builder()
-        .processCleanupEnabled(false).decisionCleanupEnabled(false).ingestedEventCleanupEnabled(true)
-        .build(),
-      CleanupTestConfiguration.builder()
-        .processCleanupEnabled(false).decisionCleanupEnabled(true).ingestedEventCleanupEnabled(true)
-        .build(),
-      CleanupTestConfiguration.builder()
-        .processCleanupEnabled(true).decisionCleanupEnabled(true).ingestedEventCleanupEnabled(true)
-        .build()
-    );
+        CleanupTestConfiguration.builder()
+            .processCleanupEnabled(true)
+            .decisionCleanupEnabled(false)
+            .ingestedEventCleanupEnabled(false)
+            .build(),
+        CleanupTestConfiguration.builder()
+            .processCleanupEnabled(false)
+            .decisionCleanupEnabled(true)
+            .ingestedEventCleanupEnabled(false)
+            .build(),
+        CleanupTestConfiguration.builder()
+            .processCleanupEnabled(false)
+            .decisionCleanupEnabled(false)
+            .ingestedEventCleanupEnabled(true)
+            .build(),
+        CleanupTestConfiguration.builder()
+            .processCleanupEnabled(false)
+            .decisionCleanupEnabled(true)
+            .ingestedEventCleanupEnabled(true)
+            .build(),
+        CleanupTestConfiguration.builder()
+            .processCleanupEnabled(true)
+            .decisionCleanupEnabled(true)
+            .ingestedEventCleanupEnabled(true)
+            .build());
   }
 
   @Test

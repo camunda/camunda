@@ -5,8 +5,16 @@
  */
 package org.camunda.optimize.service.metrics;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.OptimizeMetrics.PARTITION_ID_TAG;
+import static org.camunda.optimize.OptimizeMetrics.RECORD_TYPE_TAG;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
+
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.Statistic;
+import jakarta.ws.rs.core.Response;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
@@ -14,15 +22,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import jakarta.ws.rs.core.Response;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.OptimizeMetrics.PARTITION_ID_TAG;
-import static org.camunda.optimize.OptimizeMetrics.RECORD_TYPE_TAG;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 
 @Disabled("Disabled due to issues with actuator config, to be fixed with OPT-7141")
 public class ZeebeMetricsIT extends AbstractCCSMIT {
@@ -36,11 +35,12 @@ public class ZeebeMetricsIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // when
-    MetricResponseDto response = requester.get()
-      .execute(MetricResponseDto.class, Response.Status.OK.getStatusCode());
+    MetricResponseDto response =
+        requester.get().execute(MetricResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Stream<String> actualTags = response.getAvailableTags().stream().map(MetricResponseDto.TagDto::getTag);
+    Stream<String> actualTags =
+        response.getAvailableTags().stream().map(MetricResponseDto.TagDto::getTag);
     assertThat(actualTags).contains(RECORD_TYPE_TAG, PARTITION_ID_TAG);
 
     validateResults(response);
@@ -56,12 +56,15 @@ public class ZeebeMetricsIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // when
-    MetricResponseDto response = requester.get()
-      .addSingleQueryParam("tag", RECORD_TYPE_TAG + ":" + ValueType.PROCESS_INSTANCE)
-      .execute(MetricResponseDto.class, Response.Status.OK.getStatusCode());
+    MetricResponseDto response =
+        requester
+            .get()
+            .addSingleQueryParam("tag", RECORD_TYPE_TAG + ":" + ValueType.PROCESS_INSTANCE)
+            .execute(MetricResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Stream<String> actualTags = response.getAvailableTags().stream().map(MetricResponseDto.TagDto::getTag);
+    Stream<String> actualTags =
+        response.getAvailableTags().stream().map(MetricResponseDto.TagDto::getTag);
     assertThat(actualTags).contains(PARTITION_ID_TAG);
 
     validateResults(response);
@@ -82,25 +85,33 @@ public class ZeebeMetricsIT extends AbstractCCSMIT {
     assertThat(statistic.getValue()).isGreaterThan(0L).isLessThan(totalTime);
   }
 
-  private MetricResponseDto.StatisticDto getStatistic(MetricResponseDto response, Statistic statistic) {
-    return response.getMeasurements()
-      .stream()
-      .filter(m -> m.getStatistic().equals(statistic))
-      .findFirst()
-      .orElseThrow(() -> new OptimizeIntegrationTestException("The response from actuator doesn't contain the requested metric"));
+  private MetricResponseDto.StatisticDto getStatistic(
+      MetricResponseDto response, Statistic statistic) {
+    return response.getMeasurements().stream()
+        .filter(m -> m.getStatistic().equals(statistic))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new OptimizeIntegrationTestException(
+                    "The response from actuator doesn't contain the requested metric"));
   }
 
   private static Stream<Supplier<OptimizeRequestExecutor>> metricRequesters() {
     return Stream.of(
-      () -> embeddedOptimizeExtension.getRequestExecutor()
-        .setActuatorWebTarget()
-        .buildIndexingTimeMetricRequest(),
-      () -> embeddedOptimizeExtension.getRequestExecutor()
-        .setActuatorWebTarget()
-        .buildPageFetchTimeMetricRequest(),
-      () -> embeddedOptimizeExtension.getRequestExecutor()
-        .setActuatorWebTarget()
-        .buildOverallImportTimeMetricRequest()
-    );
+        () ->
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .setActuatorWebTarget()
+                .buildIndexingTimeMetricRequest(),
+        () ->
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .setActuatorWebTarget()
+                .buildPageFetchTimeMetricRequest(),
+        () ->
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .setActuatorWebTarget()
+                .buildOverallImportTimeMetricRequest());
   }
 }

@@ -5,18 +5,17 @@
  */
 package org.camunda.optimize.service.db.es.filter.process;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 public class AbstractDurationFilterIT extends AbstractFilterIT {
 
@@ -24,21 +23,18 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
   }
 
-  private void adjustProcessInstanceDates(String processInstanceId,
-                                          OffsetDateTime startDate,
-                                          long daysToShift,
-                                          long durationInSec) {
+  private void adjustProcessInstanceDates(
+      String processInstanceId, OffsetDateTime startDate, long daysToShift, long durationInSec) {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(
-      processInstanceId,
-      shiftedStartDate.plusSeconds(durationInSec)
-    );
+        processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
   }
 
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(getSimpleBpmnDiagram(), variables);
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(
+      Map<String, Object> variables) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+        getSimpleBpmnDiagram(), variables);
   }
 
   protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) {
@@ -49,13 +45,18 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
     return processInstance;
   }
 
-  protected void assertResult(ProcessInstanceEngineDto processInstance,
-                              AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult) {
+  protected void assertResult(
+      ProcessInstanceEngineDto processInstance,
+      AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>
+          evaluationResult) {
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
-    assertThat(resultDataDto.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
-    assertThat(resultDataDto.getDefinitionVersions()).containsExactly(processInstance.getProcessDefinitionVersion());
+    assertThat(resultDataDto.getProcessDefinitionKey())
+        .isEqualTo(processInstance.getProcessDefinitionKey());
+    assertThat(resultDataDto.getDefinitionVersions())
+        .containsExactly(processInstance.getProcessDefinitionVersion());
     assertThat(resultDataDto.getView()).isNotNull();
-    final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getFirstMeasureData();
+    final List<RawDataProcessInstanceDto> resultData =
+        evaluationResult.getResult().getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(1);
     final RawDataProcessInstanceDto rawDataProcessInstanceDto = resultData.get(0);

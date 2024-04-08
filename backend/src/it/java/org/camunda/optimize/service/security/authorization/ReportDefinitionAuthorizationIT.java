@@ -5,7 +5,24 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
+import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
 import jakarta.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -28,45 +45,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
-import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
 @Tag(OPENSEARCH_PASSING)
 public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_KEY = "aprocess";
   private static final String DECISION_KEY = "aDecision";
 
-  private static final Stream<Integer> definitionType() {
+  private static Stream<Integer> definitionType() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void evaluateUnauthorizedStoredReport(int definitionResourceType) {
+  public void evaluateUnauthorizedStoredReport(final int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType);
+    final String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -74,7 +74,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void evaluateUnauthorizedTenantsStoredReport(int definitionResourceType) {
+  public void evaluateUnauthorizedTenantsStoredReport(final int definitionResourceType) {
     // given
     final String tenantId = "tenant1";
     engineIntegrationExtension.createTenant(tenantId);
@@ -83,10 +83,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType, Arrays.asList(tenantId));
+    final String reportId =
+        createReportForDefinition(definitionResourceType, Arrays.asList(tenantId));
 
     // when
-    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -94,7 +96,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void evaluatePartiallyUnauthorizedTenantsStoredReport(int definitionResourceType) {
+  public void evaluatePartiallyUnauthorizedTenantsStoredReport(final int definitionResourceType) {
     // given
     final String tenantId1 = "tenant1";
     engineIntegrationExtension.createTenant(tenantId1);
@@ -103,22 +105,24 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType, Arrays.asList(tenantId1, tenantId2));
+    final String reportId =
+        createReportForDefinition(definitionResourceType, Arrays.asList(tenantId1, tenantId2));
 
     // when
-    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void evaluateAllTenantsAuthorizedStoredReport(int definitionResourceType) {
+  public void evaluateAllTenantsAuthorizedStoredReport(final int definitionResourceType) {
     // given
     final String tenantId1 = "tenant1";
     engineIntegrationExtension.createTenant(tenantId1);
@@ -127,16 +131,19 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
-    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+        KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinitionAsUser(
-      definitionResourceType, Arrays.asList(tenantId1, tenantId2), KERMIT_USER, KERMIT_USER
-    );
+    final String reportId =
+        createReportForDefinitionAsUser(
+            definitionResourceType, Arrays.asList(tenantId1, tenantId2), KERMIT_USER, KERMIT_USER);
 
     // when
-    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -144,15 +151,16 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void deleteUnauthorizedStoredReport(int definitionResourceType) {
+  public void deleteUnauthorizedStoredReport(final int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType);
+    final String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -160,18 +168,17 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void evaluateUnauthorizedOnTheFlyReport(int definitionResourceType) {
+  public void evaluateUnauthorizedOnTheFlyReport(final int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
     // when
-    ReportDefinitionDto<SingleReportDataDto> definition = constructReportWithDefinition(definitionResourceType);
-    Response response = reportClient.evaluateReportAsUserAndReturnResponse(
-      definition.getData(),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+    final ReportDefinitionDto<SingleReportDataDto> definition =
+        constructReportWithDefinition(definitionResourceType);
+    final Response response =
+        reportClient.evaluateReportAsUserAndReturnResponse(
+            definition.getData(), KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -179,21 +186,22 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void updateUnauthorizedReport(int definitionResourceType) {
+  public void updateUnauthorizedReport(final int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType);
+    final String reportId = createReportForDefinition(definitionResourceType);
 
-    ReportDefinitionDto updatedReport = createReportUpdate(definitionResourceType);
+    final ReportDefinitionDto updatedReport = createReportUpdate(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildUpdateSingleReportRequest(reportId, updatedReport)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .buildUpdateSingleReportRequest(reportId, updatedReport)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -201,19 +209,20 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void getUnauthorizedReport(int definitionResourceType) {
+  public void getUnauthorizedReport(final int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType);
+    final String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetReportRequest(reportId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .buildGetReportRequest(reportId)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -221,21 +230,22 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void shareUnauthorizedReport(int definitionResourceType) {
+  public void shareUnauthorizedReport(final int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType);
-    ReportShareRestDto reportShareDto = new ReportShareRestDto();
+    final String reportId = createReportForDefinition(definitionResourceType);
+    final ReportShareRestDto reportShareDto = new ReportShareRestDto();
     reportShareDto.setReportId(reportId);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildShareReportRequest(reportShareDto)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildShareReportRequest(reportShareDto)
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -243,28 +253,27 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void newPrivateReportsCanOnlyBeAccessedByOwner(int definitionResourceType) {
+  public void newPrivateReportsCanOnlyBeAccessedByOwner(final int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createNewReport(definitionResourceType);
+    final String reportId = createNewReport(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportRequest(reportId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReportRequest(reportId).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
-    Response otherUserResponse = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportRequest(reportId)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    final Response otherUserResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetReportRequest(reportId)
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .execute();
 
     // then
     assertThat(otherUserResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -278,27 +287,25 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployAndStartSimpleProcessDefinition(authorizedProcessDefinitionKey);
     authorizationClient.grantSingleResourceAuthorizationForKermit(
-      authorizedProcessDefinitionKey,
-      RESOURCE_TYPE_PROCESS_DEFINITION
-    );
+        authorizedProcessDefinitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
     importAllEngineEntitiesFromScratch();
 
-    String authorizedReportId = createNewSingleMapReportAsUser(
-      authorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER
-    );
-    String notAuthorizedReportId = createNewSingleMapReportAsUser(
-      notAuthorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER
-    );
+    final String authorizedReportId =
+        createNewSingleMapReportAsUser(authorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER);
+    final String notAuthorizedReportId =
+        createNewSingleMapReportAsUser(notAuthorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER);
 
     // when
-    CombinedReportDataDto combinedReport = createCombinedReportData(authorizedReportId, notAuthorizedReportId);
+    final CombinedReportDataDto combinedReport =
+        createCombinedReportData(authorizedReportId, notAuthorizedReportId);
 
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -309,18 +316,20 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
-    String unauthorizedReportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String unauthorizedReportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
     final String combinedReportId =
-      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.emptyList());
+        reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.emptyList());
 
     // when
-    final CombinedReportDefinitionRequestDto combinedReportUpdate = new CombinedReportDefinitionRequestDto();
+    final CombinedReportDefinitionRequestDto combinedReportUpdate =
+        new CombinedReportDefinitionRequestDto();
     combinedReportUpdate.getData().getReportIds().add(unauthorizedReportId);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate, true)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate, true)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -331,18 +340,21 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
-    String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
     final String combinedReportId =
-      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
+        reportClient.createCombinedReport(
+            PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
 
     // when
-    final CombinedReportDefinitionRequestDto combinedReportUpdate = new CombinedReportDefinitionRequestDto();
+    final CombinedReportDefinitionRequestDto combinedReportUpdate =
+        new CombinedReportDefinitionRequestDto();
     combinedReportUpdate.getData().setReports(Collections.emptyList());
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate, true)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate, true)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -353,16 +365,18 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
-    String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
     final String combinedReportId =
-      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
+        reportClient.createCombinedReport(
+            PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetReportRequest(combinedReportId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .buildGetReportRequest(combinedReportId)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -373,12 +387,14 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
-    String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
     final String combinedReportId =
-      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
+        reportClient.createCombinedReport(
+            PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
 
     // when
-    Response response = reportClient.deleteReport(combinedReportId, true, KERMIT_USER, KERMIT_USER);
+    final Response response =
+        reportClient.deleteReport(combinedReportId, true, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -390,11 +406,9 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
 
-    SingleProcessReportDefinitionRequestDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
-      null,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
+        reportClient.createSingleProcessReportDefinitionDto(
+            null, PROCESS_KEY, Collections.emptyList());
 
     reportClient.createSingleProcessReportAsUser(reportDefinitionDto, KERMIT_USER, KERMIT_USER);
   }
@@ -404,19 +418,15 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   public void getUnauthorizedEventProcessReport() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
-    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
+    updateEventProcessRoles(
+        PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportRequest(reportId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReportRequest(reportId).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -426,18 +436,13 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   public void getEventProcessReport() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportRequest(reportId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReportRequest(reportId).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -448,19 +453,18 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   public void evaluateUnauthorizedEventProcessReport() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
-    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
+    updateEventProcessRoles(
+        PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -472,12 +476,9 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
 
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
 
     // when
     reportClient.evaluateNumberReportById(reportId);
@@ -488,20 +489,19 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   public void updateUnauthorizedEventProcessReport() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
-    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
+    updateEventProcessRoles(
+        PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
-    ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateSingleReportRequest(reportId, updatedReport)
-      .execute();
+    final ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateSingleReportRequest(reportId, updatedReport)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -511,16 +511,13 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   public void updateEventProcessReport() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
 
     // when
-    ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
-    Response response = reportClient.updateSingleProcessReport(reportId, updatedReport);
+    final ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final Response response = reportClient.updateSingleProcessReport(reportId, updatedReport);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -531,19 +528,15 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   public void deleteUnauthorizedEventProcessReport() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
-    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
+    updateEventProcessRoles(
+        PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportRequest(reportId)
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildDeleteReportRequest(reportId).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -554,15 +547,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
 
-    String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      PROCESS_KEY,
-      Collections.emptyList()
-    );
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, PROCESS_KEY, Collections.emptyList());
 
     // when
-    Response response = reportClient.deleteReport(reportId, false);
+    final Response response = reportClient.deleteReport(reportId, false);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -572,23 +562,24 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
   }
 
-  private String createNewSingleMapReportAsUser(final String processDefinitionKey,
-                                                final String user,
-                                                final String password) {
-    String singleReportId = createNewReportAsUser(RESOURCE_TYPE_PROCESS_DEFINITION, user, password);
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-      .build();
-    SingleProcessReportDefinitionRequestDto definitionDto = new SingleProcessReportDefinitionRequestDto();
+  private String createNewSingleMapReportAsUser(
+      final String processDefinitionKey, final String user, final String password) {
+    final String singleReportId =
+        createNewReportAsUser(RESOURCE_TYPE_PROCESS_DEFINITION, user, password);
+    final ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+            .build();
+    final SingleProcessReportDefinitionRequestDto definitionDto =
+        new SingleProcessReportDefinitionRequestDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReportAsUser(singleReportId, definitionDto, user, password);
     return singleReportId;
   }
 
-  private void deployStartAndImportDefinition(int definitionResourceType) {
+  private void deployStartAndImportDefinition(final int definitionResourceType) {
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         deployAndStartSimpleProcessDefinition(PROCESS_KEY);
@@ -597,38 +588,41 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
         deployAndStartSimpleDecisionDefinition(DECISION_KEY);
         break;
       default:
-        throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
+        throw new IllegalStateException(
+            "Uncovered definitionResourceType: " + definitionResourceType);
     }
 
     importAllEngineEntitiesFromScratch();
   }
 
-  private void deployAndStartSimpleProcessDefinition(String processKey) {
+  private void deployAndStartSimpleProcessDefinition(final String processKey) {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processKey));
   }
 
-  private void deployAndStartSimpleDecisionDefinition(String decisionKey) {
+  private void deployAndStartSimpleDecisionDefinition(final String decisionKey) {
     engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey));
   }
 
-  private ReportDefinitionDto createReportUpdate(int definitionResourceType) {
+  private ReportDefinitionDto createReportUpdate(final int definitionResourceType) {
     switch (definitionResourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        ProcessReportDataDto processReportData = new ProcessReportDataDto();
+        final ProcessReportDataDto processReportData = new ProcessReportDataDto();
         processReportData.setProcessDefinitionKey("procdef");
         processReportData.setProcessDefinitionVersion("123");
         processReportData.setFilter(Collections.emptyList());
-        SingleProcessReportDefinitionRequestDto processReport = new SingleProcessReportDefinitionRequestDto();
+        final SingleProcessReportDefinitionRequestDto processReport =
+            new SingleProcessReportDefinitionRequestDto();
         processReport.setData(processReportData);
         processReport.setName("MyReport");
         return processReport;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        DecisionReportDataDto decisionReportData = new DecisionReportDataDto();
+        final DecisionReportDataDto decisionReportData = new DecisionReportDataDto();
         decisionReportData.setDecisionDefinitionKey("Decisionef");
         decisionReportData.setDecisionDefinitionVersion("123");
         decisionReportData.setFilter(Collections.emptyList());
-        SingleDecisionReportDefinitionRequestDto decisionReport = new SingleDecisionReportDefinitionRequestDto();
+        final SingleDecisionReportDefinitionRequestDto decisionReport =
+            new SingleDecisionReportDefinitionRequestDto();
         decisionReport.setData(decisionReportData);
         decisionReport.setName("MyReport");
         return decisionReport;
@@ -640,89 +634,93 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   }
 
   private String createReportForDefinition(final int resourceType, final List<String> tenantIds) {
-    return createReportForDefinitionAsUser(resourceType, tenantIds, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    return createReportForDefinitionAsUser(
+        resourceType, tenantIds, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  private String createReportForDefinitionAsUser(final int resourceType,
-                                                 final List<String> tenantIds,
-                                                 final String user,
-                                                 final String password) {
-    String id = createNewReportAsUser(resourceType, user, password);
-    ReportDefinitionDto definition = constructReportWithDefinition(resourceType, tenantIds);
+  private String createReportForDefinitionAsUser(
+      final int resourceType,
+      final List<String> tenantIds,
+      final String user,
+      final String password) {
+    final String id = createNewReportAsUser(resourceType, user, password);
+    final ReportDefinitionDto definition = constructReportWithDefinition(resourceType, tenantIds);
     updateReportAsUser(id, definition, user, password);
     return id;
   }
 
-  private String createNewReport(int resourceType) {
+  private String createNewReport(final int resourceType) {
     return createNewReportAsUser(resourceType, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  private String createNewReportAsUser(int resourceType, final String user, final String password) {
+  private String createNewReportAsUser(
+      final int resourceType, final String user, final String password) {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         return reportClient.createSingleProcessReportAsUser(
-          new SingleProcessReportDefinitionRequestDto(),
-          user,
-          password
-        );
+            new SingleProcessReportDefinitionRequestDto(), user, password);
       case RESOURCE_TYPE_DECISION_DEFINITION:
         return reportClient.createNewDecisionReportAsUser(
-          new SingleDecisionReportDefinitionRequestDto(),
-          user,
-          password
-        );
+            new SingleDecisionReportDefinitionRequestDto(), user, password);
     }
   }
 
-  private void updateReportAsUser(String id, ReportDefinitionDto updatedReport, final String user,
-                                  final String password) {
-    Response response = getUpdateReportResponse(id, updatedReport, user, password);
+  private void updateReportAsUser(
+      final String id,
+      final ReportDefinitionDto updatedReport,
+      final String user,
+      final String password) {
+    final Response response = getUpdateReportResponse(id, updatedReport, user, password);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  private ReportDefinitionDto constructReportWithDefinition(int resourceType) {
-    return constructReportWithDefinition(resourceType, getDefinitionKey(resourceType), Collections.emptyList());
+  private ReportDefinitionDto constructReportWithDefinition(final int resourceType) {
+    return constructReportWithDefinition(
+        resourceType, getDefinitionKey(resourceType), Collections.emptyList());
   }
 
-  private ReportDefinitionDto constructReportWithDefinition(final int resourceType, final List<String> tenantIds) {
+  private ReportDefinitionDto constructReportWithDefinition(
+      final int resourceType, final List<String> tenantIds) {
     return constructReportWithDefinition(resourceType, getDefinitionKey(resourceType), tenantIds);
   }
 
-  private ReportDefinitionDto constructReportWithDefinition(final int resourceType, final String definitionKey,
-                                                            final List<String> tenantIds) {
+  private ReportDefinitionDto constructReportWithDefinition(
+      final int resourceType, final String definitionKey, final List<String> tenantIds) {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        SingleProcessReportDefinitionRequestDto processReportDefinitionDto =
-          new SingleProcessReportDefinitionRequestDto();
-        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(definitionKey)
-          .setProcessDefinitionVersion("1")
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
+        final SingleProcessReportDefinitionRequestDto processReportDefinitionDto =
+            new SingleProcessReportDefinitionRequestDto();
+        final ProcessReportDataDto processReportDataDto =
+            TemplatedProcessReportDataBuilder.createReportData()
+                .setProcessDefinitionKey(definitionKey)
+                .setProcessDefinitionVersion("1")
+                .setReportDataType(ProcessReportDataType.RAW_DATA)
+                .build();
         processReportDataDto.setTenantIds(tenantIds);
         processReportDefinitionDto.setData(processReportDataDto);
         return processReportDefinitionDto;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        SingleDecisionReportDefinitionRequestDto decisionReportDefinitionDto =
-          new SingleDecisionReportDefinitionRequestDto();
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder.create()
-          .setDecisionDefinitionKey(getDefinitionKey(resourceType))
-          .setDecisionDefinitionVersion("1")
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
+        final SingleDecisionReportDefinitionRequestDto decisionReportDefinitionDto =
+            new SingleDecisionReportDefinitionRequestDto();
+        final DecisionReportDataDto decisionReportDataDto =
+            DecisionReportDataBuilder.create()
+                .setDecisionDefinitionKey(getDefinitionKey(resourceType))
+                .setDecisionDefinitionVersion("1")
+                .setReportDataType(DecisionReportDataType.RAW_DATA)
+                .build();
         decisionReportDataDto.setTenantIds(tenantIds);
         decisionReportDefinitionDto.setData(decisionReportDataDto);
         return decisionReportDefinitionDto;
     }
   }
 
-  private Response getUpdateReportResponse(final String id,
-                                           final ReportDefinitionDto updatedReport,
-                                           final String user,
-                                           final String password) {
+  private Response getUpdateReportResponse(
+      final String id,
+      final ReportDefinitionDto updatedReport,
+      final String user,
+      final String password) {
     switch (updatedReport.getReportType()) {
       default:
       case PROCESS:
@@ -732,8 +730,8 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     }
   }
 
-  private void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {
+  private void updateEventProcessRoles(
+      final String eventProcessId, final List<IdentityDto> identityDtos) {
     databaseIntegrationTestExtension.updateEventProcessRoles(eventProcessId, identityDtos);
   }
-
 }

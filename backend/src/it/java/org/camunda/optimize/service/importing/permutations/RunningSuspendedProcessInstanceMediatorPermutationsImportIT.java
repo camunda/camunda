@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.service.importing.permutations;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
+
 import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -19,14 +25,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
-
-public class RunningSuspendedProcessInstanceMediatorPermutationsImportIT extends AbstractImportMediatorPermutationsIT {
+public class RunningSuspendedProcessInstanceMediatorPermutationsImportIT
+    extends AbstractImportMediatorPermutationsIT {
 
   @BeforeAll
   public static void given() {
@@ -35,56 +35,60 @@ public class RunningSuspendedProcessInstanceMediatorPermutationsImportIT extends
     engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceDto.getId());
   }
 
-  @ParameterizedTest(name =
-    "Running Activities of a suspended process instance are fully imported with mediator order {0}"
-  )
+  @ParameterizedTest(
+      name =
+          "Running Activities of a suspended process instance are fully imported with mediator order {0}")
   @MethodSource("runningActivityRelatedMediators")
-  public void runningSuspendedInstanceIsFullyImported(final List<Class<? extends ImportMediator>> mediatorOrder) {
+  public void runningSuspendedInstanceIsFullyImported(
+      final List<Class<? extends ImportMediator>> mediatorOrder) {
     // when
     performOrderedImport(mediatorOrder);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .hasSize(1)
-      .singleElement()
-      .satisfies(persistedProcessInstanceDto -> {
-        // general instance sanity check
-        assertThat(persistedProcessInstanceDto.getStartDate()).isNotNull();
-        assertThat(persistedProcessInstanceDto.getEndDate()).isNull();
-        assertThat(persistedProcessInstanceDto.getState()).isEqualTo(SUSPENDED_STATE);
-        assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
-          // only the running activity is imported
-          .hasSize(1)
-          .allSatisfy(activity -> assertThat(activity.getStartDate()).isNotNull())
-          .extracting(FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getTotalDurationInMs)
-          .singleElement()
-          .isEqualTo(tuple(null, null));
-        assertThat(persistedProcessInstanceDto.getUserTasks())
-          .hasSize(1)
-          .singleElement()
-          .satisfies(userTask -> {
-            assertThat(userTask.getStartDate()).isNotNull();
-            assertThat(userTask.getEndDate()).isNull();
-            assertThat(userTask.getIdleDurationInMs()).isNull();
-            assertThat(userTask.getWorkDurationInMs()).isNull();
-          });
-      });
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            persistedProcessInstanceDto -> {
+              // general instance sanity check
+              assertThat(persistedProcessInstanceDto.getStartDate()).isNotNull();
+              assertThat(persistedProcessInstanceDto.getEndDate()).isNull();
+              assertThat(persistedProcessInstanceDto.getState()).isEqualTo(SUSPENDED_STATE);
+              assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
+                  // only the running activity is imported
+                  .hasSize(1)
+                  .allSatisfy(activity -> assertThat(activity.getStartDate()).isNotNull())
+                  .extracting(
+                      FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getTotalDurationInMs)
+                  .singleElement()
+                  .isEqualTo(tuple(null, null));
+              assertThat(persistedProcessInstanceDto.getUserTasks())
+                  .hasSize(1)
+                  .singleElement()
+                  .satisfies(
+                      userTask -> {
+                        assertThat(userTask.getStartDate()).isNotNull();
+                        assertThat(userTask.getEndDate()).isNull();
+                        assertThat(userTask.getIdleDurationInMs()).isNull();
+                        assertThat(userTask.getWorkDurationInMs()).isNull();
+                      });
+            });
 
     final List<CamundaActivityEventDto> allStoredCamundaActivityEventsForDefinition =
-      databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(TEST_PROCESS);
+        databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(
+            TEST_PROCESS);
     // the process instance start and the single running user task event
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(2);
   }
 
   private static Stream<List<Class<? extends ImportMediator>>> runningActivityRelatedMediators() {
-    return getMediatorPermutationsStream(ImmutableList.of(
-      RunningActivityInstanceEngineImportMediator.class,
-      RunningUserTaskInstanceEngineImportMediator.class,
-      RunningProcessInstanceEngineImportMediator.class,
-      VariableUpdateEngineImportMediator.class,
-      UserOperationLogEngineImportMediator.class
-    ));
+    return getMediatorPermutationsStream(
+        ImmutableList.of(
+            RunningActivityInstanceEngineImportMediator.class,
+            RunningUserTaskInstanceEngineImportMediator.class,
+            RunningProcessInstanceEngineImportMediator.class,
+            VariableUpdateEngineImportMediator.class,
+            UserOperationLogEngineImportMediator.class));
   }
-
 }

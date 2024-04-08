@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.flownode.frequency.groupby.date.distributedby.none;
 
+import java.time.OffsetDateTime;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import java.time.OffsetDateTime;
-import java.util.Map;
-
 public class FlowNodeFrequencyByFlowNodeEndDateReportEvaluationIT
-  extends FlowNodeFrequencyByFlowNodeDateReportEvaluationIT {
+    extends FlowNodeFrequencyByFlowNodeDateReportEvaluationIT {
 
   protected ProcessGroupByType getGroupByType() {
     return ProcessGroupByType.END_DATE;
@@ -29,9 +28,11 @@ public class FlowNodeFrequencyByFlowNodeEndDateReportEvaluationIT
   }
 
   @SneakyThrows
-  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance, final String modelElementId,
-                                        final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), modelElementId, dateToChangeTo);
+  protected void changeModelElementDate(
+      final ProcessInstanceEngineDto processInstance,
+      final String modelElementId,
+      final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeFlowNodeEndDate(
+        processInstance.getId(), modelElementId, dateToChangeTo);
   }
-
 }

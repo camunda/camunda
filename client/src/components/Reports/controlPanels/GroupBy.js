@@ -12,10 +12,16 @@ import {Close} from '@carbon/icons-react';
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 import {CarbonSelect} from 'components';
+import {useUiConfig} from 'hooks';
 
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
+    'optimizeProfile',
+    'userTaskAssigneeAnalyticsEnabled'
+  );
+
   const reportType = type;
 
   if (!report.view) {
@@ -35,7 +41,13 @@ export default function GroupBy({type, report, onChange, variables}) {
   }
 
   const options = groups
-    .filter(({visible, key}) => visible(report) && key !== 'none')
+    .filter(
+      ({visible, key}) =>
+        visible(report) &&
+        key !== 'none' &&
+        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee') &&
+        (optimizeProfile === 'platform' ? true : key !== 'candidateGroup')
+    )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
         return (

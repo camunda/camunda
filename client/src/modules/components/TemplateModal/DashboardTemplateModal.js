@@ -9,6 +9,7 @@ import React, {useState, useEffect} from 'react';
 
 import {t} from 'translation';
 import {useDocs} from 'hooks';
+import {getMaxNumDataSourcesForReport} from 'config';
 
 import TemplateModal from './TemplateModal';
 import {
@@ -27,11 +28,13 @@ export default function DashboardTemplateModal({
   trackingEventName,
 }) {
   const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
+  const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const {generateDocsLink} = useDocs();
 
   useEffect(() => {
     (async () => {
       setOptimizeProfileLoaded(true);
+      setReportDataSourceLimit(await getMaxNumDataSourcesForReport());
     })();
   }, []);
 
@@ -71,7 +74,11 @@ export default function DashboardTemplateModal({
       trackingEventName={trackingEventName}
       blankSlate={
         <ol>
-          <li>{t('templates.blankSlate.selectProcess')}</li>
+          <li>
+            {t('templates.blankSlate.selectProcess', {
+              maxNumProcesses: reportDataSourceLimit,
+            })}
+          </li>
           <li>{t('templates.blankSlate.selectTemplate')}</li>
           <li>{t('templates.blankSlate.review')}</li>
           <li>{t('templates.blankSlate.refine')}</li>

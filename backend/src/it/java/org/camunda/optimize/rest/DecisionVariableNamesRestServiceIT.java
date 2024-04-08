@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModelNoInputAndOutputLabels;
+
+import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
@@ -13,14 +20,6 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResp
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import jakarta.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.DmnModels.createDefaultDmnModelNoInputAndOutputLabels;
 
 public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
 
@@ -31,13 +30,17 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
   @MethodSource("getInputOutputArgs")
   public void getVariableNamesWithoutAuthentication(String inputOutput) {
     // given
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
-    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request =
+        generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request, false)
-      .withoutAuthentication()
-      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+    List<DecisionVariableNameResponseDto> responseList =
+        getExecutor(inputOutput, request, false)
+            .withoutAuthentication()
+            .executeAndReturnList(
+                DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList).isNotEmpty();
@@ -47,12 +50,16 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
   @MethodSource("getInputOutputArgs")
   public void getVariableNamesWithAuthentication(String inputOutput) {
     // given
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
-    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request =
+        generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = getExecutor(inputOutput, request, true)
-      .executeAndReturnList(DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+    List<DecisionVariableNameResponseDto> responseList =
+        getExecutor(inputOutput, request, true)
+            .executeAndReturnList(
+                DecisionVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList).isNotEmpty();
@@ -62,13 +69,14 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionKeyQueryParamThrowsError(String inputOutput) {
     // given
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
-    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request =
+        generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
     request.setDecisionDefinitionKey(null);
 
     // when
-    Response response = getExecutor(inputOutput, request)
-      .execute();
+    Response response = getExecutor(inputOutput, request).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -78,13 +86,14 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionVersionQueryParamDoesNotThrowError(String inputOutput) {
     // given
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
-    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request =
+        generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
     request.setDecisionDefinitionVersions(null);
 
     // when
-    Response response = getExecutor(inputOutput, request)
-      .execute();
+    Response response = getExecutor(inputOutput, request).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -94,11 +103,13 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
   public void missingDecisionDefinitionInputVariableNameGetsReplacedById() {
     // given
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      deployDefinitionWithoutInputAndOutputLabelsAndStartInstance();
-    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+        deployDefinitionWithoutInputAndOutputLabelsAndStartInstance();
+    DecisionVariableNameRequestDto request =
+        generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = variablesClient.getDecisionInputVariableNames(request);
+    List<DecisionVariableNameResponseDto> responseList =
+        variablesClient.getDecisionInputVariableNames(request);
 
     // then
     assertThat(responseList).isNotEmpty();
@@ -110,11 +121,13 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
   public void missingDecisionDefinitionOutputVariableNameGetsReplacedById() {
     // given
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      deployDefinitionWithoutInputAndOutputLabelsAndStartInstance();
-    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+        deployDefinitionWithoutInputAndOutputLabelsAndStartInstance();
+    DecisionVariableNameRequestDto request =
+        generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List<DecisionVariableNameResponseDto> responseList = variablesClient.getDecisionOutputVariableNames(request);
+    List<DecisionVariableNameResponseDto> responseList =
+        variablesClient.getDecisionOutputVariableNames(request);
 
     // then
     assertThat(responseList).isNotEmpty();
@@ -122,7 +135,8 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
     assertThat(responseList.get(1).getName()).isEqualTo(responseList.get(1).getId());
   }
 
-  private DecisionVariableNameRequestDto generateDefaultVariableNameRequest(final DecisionDefinitionEngineDto definition) {
+  private DecisionVariableNameRequestDto generateDefaultVariableNameRequest(
+      final DecisionDefinitionEngineDto definition) {
     DecisionVariableNameRequestDto requestDto = new DecisionVariableNameRequestDto();
     requestDto.setDecisionDefinitionKey(definition.getKey());
     requestDto.setDecisionDefinitionVersion(definition.getVersionAsString());
@@ -131,22 +145,24 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
 
   private DecisionDefinitionEngineDto deployDefinitionAndStartInstance() {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      engineIntegrationExtension.deployAndStartDecisionDefinition();
+        engineIntegrationExtension.deployAndStartDecisionDefinition();
     importAllEngineEntitiesFromScratch();
     return decisionDefinitionEngineDto;
   }
 
-  private DecisionDefinitionEngineDto deployDefinitionWithoutInputAndOutputLabelsAndStartInstance() {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
-      createDefaultDmnModelNoInputAndOutputLabels()
-    );
+  private DecisionDefinitionEngineDto
+      deployDefinitionWithoutInputAndOutputLabelsAndStartInstance() {
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        engineIntegrationExtension.deployDecisionDefinition(
+            createDefaultDmnModelNoInputAndOutputLabels());
     engineIntegrationExtension.startDecisionInstance(
-      decisionDefinitionEngineDto.getId(),
-      new HashMap<>() {{
-        put("amount", 200);
-        put("invoiceCategory", "Misc");
-      }}
-    );
+        decisionDefinitionEngineDto.getId(),
+        new HashMap<>() {
+          {
+            put("amount", 200);
+            put("invoiceCategory", "Misc");
+          }
+        });
     importAllEngineEntitiesFromScratch();
     return decisionDefinitionEngineDto;
   }
@@ -155,24 +171,26 @@ public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
     return Stream.of(TEST_VARIANT_INPUTS, TEST_VARIANT_OUTPUTS);
   }
 
-  private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableNameRequestDto requestDto) {
+  private OptimizeRequestExecutor getExecutor(
+      String inputsOrOutputs, DecisionVariableNameRequestDto requestDto) {
     return getExecutor(inputsOrOutputs, requestDto, true);
   }
 
-  private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableNameRequestDto requestDto,
-                                              boolean authenticationEnabled) {
+  private OptimizeRequestExecutor getExecutor(
+      String inputsOrOutputs,
+      DecisionVariableNameRequestDto requestDto,
+      boolean authenticationEnabled) {
     switch (inputsOrOutputs) {
       case TEST_VARIANT_INPUTS:
         return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .buildDecisionInputVariableNamesRequest(requestDto, authenticationEnabled);
+            .getRequestExecutor()
+            .buildDecisionInputVariableNamesRequest(requestDto, authenticationEnabled);
       case TEST_VARIANT_OUTPUTS:
         return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .buildDecisionOutputVariableNamesRequest(requestDto, authenticationEnabled);
+            .getRequestExecutor()
+            .buildDecisionOutputVariableNamesRequest(requestDto, authenticationEnabled);
       default:
         throw new RuntimeException("unsupported type " + inputsOrOutputs);
     }
   }
-
 }

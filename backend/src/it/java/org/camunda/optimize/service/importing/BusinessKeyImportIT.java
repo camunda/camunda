@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static jakarta.ws.rs.HttpMethod.POST;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.StringBody.subString;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,15 +23,6 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
-
-import java.util.List;
-
-import static jakarta.ws.rs.HttpMethod.POST;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.StringBody.subString;
 
 @Tag(OPENSEARCH_PASSING)
 public class BusinessKeyImportIT extends AbstractImportIT {
@@ -45,10 +44,9 @@ public class BusinessKeyImportIT extends AbstractImportIT {
 
     // then
     assertThat(getAllStoredBusinessKeys())
-      .containsExactlyInAnyOrder(
-        new BusinessKeyDto(completedProcess.getId(), completedProcess.getBusinessKey()),
-        new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey())
-      );
+        .containsExactlyInAnyOrder(
+            new BusinessKeyDto(completedProcess.getId(), completedProcess.getBusinessKey()),
+            new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey()));
 
     // when running process is completed and import run again
     engineIntegrationExtension.finishAllRunningUserTasks(completedProcess.getId());
@@ -56,15 +54,15 @@ public class BusinessKeyImportIT extends AbstractImportIT {
 
     // then keys are still correct
     assertThat(getAllStoredBusinessKeys())
-      .containsExactlyInAnyOrder(
-        new BusinessKeyDto(completedProcess.getId(), completedProcess.getBusinessKey()),
-        new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey())
-      );
+        .containsExactlyInAnyOrder(
+            new BusinessKeyDto(completedProcess.getId(), completedProcess.getBusinessKey()),
+            new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey()));
   }
 
   @Test
-  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures() throws
-                                                                                                      JsonProcessingException {
+  public void
+      importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures()
+          throws JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
 
@@ -74,26 +72,36 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // when updates to DB fail
     ProcessInstanceEngineDto runningProcess = deployAndStartUserTaskProcess();
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest businessKeyImportMatcher = request()
-      .withPath("/_bulk")
-      .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
-        .getIndexNameService()
-        .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
+    final HttpRequest businessKeyImportMatcher =
+        request()
+            .withPath("/_bulk")
+            .withMethod(POST)
+            .withBody(
+                subString(
+                    "\"_index\":\""
+                        + embeddedOptimizeExtension
+                            .getOptimizeDatabaseClient()
+                            .getIndexNameService()
+                            .getIndexPrefix()
+                        + "-"
+                        + BUSINESS_KEY_INDEX_NAME
+                        + "\""));
     dbMockServer
-      .when(businessKeyImportMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(businessKeyImportMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
     importAllEngineEntitiesFromLastIndex();
 
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
-      .containsExactlyInAnyOrder(new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey()));
+        .containsExactlyInAnyOrder(
+            new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey()));
     dbMockServer.verify(businessKeyImportMatcher);
   }
 
   @Test
-  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures() throws
-                                                                                                        JsonProcessingException {
+  public void
+      importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures()
+          throws JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
 
@@ -105,20 +113,28 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks(process.getId());
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest businessKeyImportMatcher = request()
-      .withPath("/_bulk")
-      .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
-        .getIndexNameService()
-        .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
+    final HttpRequest businessKeyImportMatcher =
+        request()
+            .withPath("/_bulk")
+            .withMethod(POST)
+            .withBody(
+                subString(
+                    "\"_index\":\""
+                        + embeddedOptimizeExtension
+                            .getOptimizeDatabaseClient()
+                            .getIndexNameService()
+                            .getIndexPrefix()
+                        + "-"
+                        + BUSINESS_KEY_INDEX_NAME
+                        + "\""));
     dbMockServer
-      .when(businessKeyImportMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(businessKeyImportMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
     importAllEngineEntitiesFromLastIndex();
 
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
-      .containsExactlyInAnyOrder(new BusinessKeyDto(process.getId(), process.getBusinessKey()));
+        .containsExactlyInAnyOrder(new BusinessKeyDto(process.getId(), process.getBusinessKey()));
     dbMockServer.verify(businessKeyImportMatcher);
   }
 
@@ -140,7 +156,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   }
 
   private List<BusinessKeyDto> getAllStoredBusinessKeys() {
-    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(BUSINESS_KEY_INDEX_NAME, BusinessKeyDto.class);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        BUSINESS_KEY_INDEX_NAME, BusinessKeyDto.class);
   }
-
 }

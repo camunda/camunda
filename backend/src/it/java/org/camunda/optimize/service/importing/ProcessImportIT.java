@@ -5,49 +5,6 @@
  */
 package org.camunda.optimize.service.importing;
 
-import io.github.netmikey.logunit.api.LogCapturer;
-import jakarta.ws.rs.core.Response;
-import org.awaitility.Awaitility;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.test.it.extension.ErrorResponseMock;
-import org.camunda.optimize.util.SuppressionConstants;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.matchers.Times;
-import org.mockserver.model.HttpError;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-import org.mockserver.verify.VerificationTimes;
-
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
 import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,18 +23,60 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
+import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import org.awaitility.Awaitility;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.util.SuppressionConstants;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
+import org.mockserver.verify.VerificationTimes;
+
 @Tag(OPENSEARCH_PASSING)
 public class ProcessImportIT extends AbstractImportIT {
 
   private static final Set<String> PROCESS_INSTANCE_NULLABLE_FIELDS =
-    Collections.singleton(ProcessInstanceIndex.TENANT_ID);
+      Collections.singleton(ProcessInstanceIndex.TENANT_ID);
   private static final Set<String> PROCESS_DEFINITION_NULLABLE_FIELDS =
-    Collections.singleton(ProcessDefinitionIndex.TENANT_ID);
+      Collections.singleton(ProcessDefinitionIndex.TENANT_ID);
 
   @RegisterExtension
   @Order(5)
   protected final LogCapturer logCapturer =
-    LogCapturer.create().captureForType(ProcessDefinitionFetcher.class);
+      LogCapturer.create().captureForType(ProcessDefinitionFetcher.class);
 
   @BeforeEach
   public void cleanUpExistingProcessInstanceIndices() {
@@ -88,8 +87,11 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void importCanBeDisabled() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
-      .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getConfiguredEngines()
+        .values()
+        .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
@@ -100,12 +102,19 @@ public class ProcessImportIT extends AbstractImportIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()).hasSizeGreaterThan(0);
-    embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()
-      .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class, 0);
+    assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers())
+        .hasSizeGreaterThan(0);
+    embeddedOptimizeExtension
+        .getImportSchedulerManager()
+        .getEngineImportSchedulers()
+        .forEach(
+            engineImportScheduler ->
+                assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
+        PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class, 0);
     assertThat(indexExist(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, DecisionDefinitionOptimizeDto.class, 0);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
+        DECISION_DEFINITION_INDEX_NAME, DecisionDefinitionOptimizeDto.class, 0);
     assertThat(indexExist(DECISION_INSTANCE_MULTI_ALIAS)).isFalse();
   }
 
@@ -121,16 +130,23 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then both instance indices exist
-    assertThat(indicesExist(Arrays.asList(
-      new ProcessInstanceIndexES(key1),
-      new ProcessInstanceIndexES(key2)
-    ))).isTrue();
+    assertThat(
+            indicesExist(
+                Arrays.asList(new ProcessInstanceIndexES(key1), new ProcessInstanceIndexES(key2))))
+        .isTrue();
 
     // there is one instance in each index
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getProcessInstanceIndexAliasName(key1))).isEqualTo(1L);
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getProcessInstanceIndexAliasName(key2))).isEqualTo(1L);
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(
+                getProcessInstanceIndexAliasName(key1)))
+        .isEqualTo(1L);
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(
+                getProcessInstanceIndexAliasName(key2)))
+        .isEqualTo(1L);
     // both instances can be found via the multi alias
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)).isEqualTo(2L);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
+        .isEqualTo(2L);
   }
 
   @Test
@@ -138,7 +154,7 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     final String key = "processKey";
     final ProcessDefinitionEngineDto definition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(key));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(key));
     engineIntegrationExtension.startProcessInstance(definition.getId());
     importAllEngineEntitiesFromScratch();
     engineIntegrationExtension.startProcessInstance(definition.getId());
@@ -147,7 +163,10 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then there are two instances in one process index
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getProcessInstanceIndexAliasName(key))).isEqualTo(2L);
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(
+                getProcessInstanceIndexAliasName(key)))
+        .isEqualTo(2L);
   }
 
   @Test
@@ -155,7 +174,7 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     final String key = "processKey";
     final ProcessDefinitionEngineDto definition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(key));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(key));
     engineIntegrationExtension.startProcessInstance(definition.getId());
     engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricProcessInstances();
 
@@ -163,11 +182,12 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances =
+        databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances)
-      .singleElement()
-      .extracting(ProcessInstanceDto::getProcessDefinitionKey)
-      .isEqualTo(key);
+        .singleElement()
+        .extracting(ProcessInstanceDto::getProcessDefinitionKey)
+        .isEqualTo(key);
   }
 
   @Test
@@ -180,10 +200,9 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllData(
-      PROCESS_DEFINITION_INDEX_NAME,
-      ProcessDefinitionOptimizeDto.class,
-      PROCESS_DEFINITION_NULLABLE_FIELDS
-    );
+        PROCESS_DEFINITION_INDEX_NAME,
+        ProcessDefinitionOptimizeDto.class,
+        PROCESS_DEFINITION_NULLABLE_FIELDS);
   }
 
   @Test
@@ -197,8 +216,8 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-      .singleElement()
-      .satisfies(def -> assertThat(def.getTenantId()).isEqualTo(tenantId));
+        .singleElement()
+        .satisfies(def -> assertThat(def.getTenantId()).isEqualTo(tenantId));
   }
 
   @Test
@@ -213,8 +232,8 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-      .singleElement()
-      .satisfies(def -> assertThat(def.getTenantId()).isEqualTo(tenantId));
+        .singleElement()
+        .satisfies(def -> assertThat(def.getTenantId()).isEqualTo(tenantId));
   }
 
   @Test
@@ -222,7 +241,10 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
+    embeddedOptimizeExtension
+        .getDefaultEngineConfiguration()
+        .getDefaultTenant()
+        .setId(defaultTenantId);
     deployProcessDefinitionWithTenant(expectedTenantId);
 
     // when
@@ -230,8 +252,8 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-      .singleElement()
-      .satisfies(def -> assertThat(def.getTenantId()).isEqualTo(expectedTenantId));
+        .singleElement()
+        .satisfies(def -> assertThat(def.getTenantId()).isEqualTo(expectedTenantId));
   }
 
   @Test
@@ -243,20 +265,22 @@ public class ProcessImportIT extends AbstractImportIT {
     deployProcessDefinitionWithTenant(excludedTenantId1);
     deployProcessDefinitionWithTenant(excludedTenantId2);
     deployProcessDefinitionWithTenant(randomTenantId);
-    embeddedOptimizeExtension.getDefaultEngineConfiguration()
-      .setExcludedTenants(List.of(excludedTenantId2, excludedTenantId1));
+    embeddedOptimizeExtension
+        .getDefaultEngineConfiguration()
+        .setExcludedTenants(List.of(excludedTenantId2, excludedTenantId1));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessDefinitionOptimizeDto> storedDefinitions = databaseIntegrationTestExtension
-      .getAllDocumentsOfIndexAs(PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
+    final List<ProcessDefinitionOptimizeDto> storedDefinitions =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(storedDefinitions)
-      .hasSize(1)
-      .extracting(DefinitionOptimizeResponseDto::getTenantId)
-      .isEqualTo(List.of(randomTenantId));
+        .hasSize(1)
+        .extracting(DefinitionOptimizeResponseDto::getTenantId)
+        .isEqualTo(List.of(randomTenantId));
   }
 
   @Test
@@ -269,16 +293,15 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllData(
-      PROCESS_INSTANCE_MULTI_ALIAS,
-      ProcessInstanceDto.class,
-      PROCESS_INSTANCE_NULLABLE_FIELDS
-    );
+        PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class, PROCESS_INSTANCE_NULLABLE_FIELDS);
   }
 
   @Test
   public void importsAllDefinitionsEvenIfTotalAmountIsAboveMaxPageSize() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionMaxPageSize(1);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setEngineImportProcessDefinitionMaxPageSize(1);
     deploySimpleProcess();
     deploySimpleProcess();
     deploySimpleProcess();
@@ -308,8 +331,8 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(instance -> assertThat(instance.getTenantId()).isEqualTo(tenantId));
+        .singleElement()
+        .satisfies(instance -> assertThat(instance.getTenantId()).isEqualTo(tenantId));
   }
 
   @Test
@@ -324,8 +347,8 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(instance -> assertThat(instance.getTenantId()).isEqualTo(tenantId));
+        .singleElement()
+        .satisfies(instance -> assertThat(instance.getTenantId()).isEqualTo(tenantId));
   }
 
   @Test
@@ -333,7 +356,10 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
+    embeddedOptimizeExtension
+        .getDefaultEngineConfiguration()
+        .getDefaultTenant()
+        .setId(defaultTenantId);
     deployAndStartSimpleServiceTaskWithTenant(expectedTenantId);
 
     // when
@@ -341,8 +367,8 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(instance -> assertThat(instance.getTenantId()).isEqualTo(expectedTenantId));
+        .singleElement()
+        .satisfies(instance -> assertThat(instance.getTenantId()).isEqualTo(expectedTenantId));
   }
 
   @Test
@@ -350,7 +376,7 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTaskProcess();
     final OffsetDateTime firstInstanceEndTime =
-      engineIntegrationExtension.getHistoricProcessInstance(instance1.getId()).getEndTime();
+        engineIntegrationExtension.getHistoricProcessInstance(instance1.getId()).getEndTime();
 
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
@@ -362,10 +388,15 @@ public class ProcessImportIT extends AbstractImportIT {
     final ScheduledExecutorService importExecutor = Executors.newSingleThreadScheduledExecutor();
     try {
       // make any new instance data bulk requests fail
-      final HttpRequest bulkIndexRequest = request()
-        .withPath("/_bulk")
-        .withMethod(POST)
-        .withBody(subString("\"_index\":\"" + getInstanceIndexAlias(instance2.getProcessDefinitionKey()) + "\""));
+      final HttpRequest bulkIndexRequest =
+          request()
+              .withPath("/_bulk")
+              .withMethod(POST)
+              .withBody(
+                  subString(
+                      "\"_index\":\""
+                          + getInstanceIndexAlias(instance2.getProcessDefinitionKey())
+                          + "\""));
       dbMockServer.when(bulkIndexRequest).error(HttpError.error().withDropConnection(true));
 
       // when
@@ -373,9 +404,10 @@ public class ProcessImportIT extends AbstractImportIT {
       importExecutor.execute(this::importAllEngineEntitiesFromLastIndex);
 
       // and wait for the request to hit elastic (and fail)
-      Awaitility.await().ignoreExceptions()
-        .timeout(10, TimeUnit.SECONDS)
-        .untilAsserted(() -> dbMockServer.verify(bulkIndexRequest, VerificationTimes.atLeast(1)));
+      Awaitility.await()
+          .ignoreExceptions()
+          .timeout(10, TimeUnit.SECONDS)
+          .untilAsserted(() -> dbMockServer.verify(bulkIndexRequest, VerificationTimes.atLeast(1)));
 
       // and the import index is explicitly updated in elastic
       embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
@@ -392,7 +424,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
       // then the new instance should be available
       final OffsetDateTime secondInstanceEndTime =
-        engineIntegrationExtension.getHistoricProcessInstance(instance2.getId()).getEndTime();
+          engineIntegrationExtension.getHistoricProcessInstance(instance2.getId()).getEndTime();
       assertThat(secondInstanceEndTime).isAfter(firstInstanceEndTime);
 
       // when the import index is explicitly updated in elastic
@@ -409,9 +441,9 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   private String getInstanceIndexAlias(final String processDefinitionKey) {
-    return embeddedOptimizeExtension.getIndexNameService().getOptimizeIndexAliasForIndex(
-      getProcessInstanceIndexAliasName(processDefinitionKey)
-    );
+    return embeddedOptimizeExtension
+        .getIndexNameService()
+        .getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(processDefinitionKey));
   }
 
   @Test
@@ -424,10 +456,10 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .allSatisfy(instance -> assertThat(instance.getState()).isEqualTo(EXTERNALLY_TERMINATED_STATE));
+        .allSatisfy(
+            instance -> assertThat(instance.getState()).isEqualTo(EXTERNALLY_TERMINATED_STATE));
   }
 
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   @Test
   public void runningProcessesIndexedAfterFinish() {
     // given
@@ -436,10 +468,11 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .allSatisfy(instance -> {
-        assertThat(instance.getEndDate()).isNull();
-        assertThat(instance.getFlowNodeInstances()).hasSize(2);
-      });
+        .allSatisfy(
+            instance -> {
+              assertThat(instance.getEndDate()).isNull();
+              assertThat(instance.getFlowNodeInstances()).hasSize(2);
+            });
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -447,8 +480,11 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances())
-        .allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getFlowNodeInstances())
+                    .allSatisfy(
+                        flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
   }
 
   @Test
@@ -463,21 +499,22 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllDataWithCount(
-      PROCESS_INSTANCE_MULTI_ALIAS,
-      ProcessInstanceDto.class,
-      4,
-      PROCESS_INSTANCE_NULLABLE_FIELDS
-    );
+        PROCESS_INSTANCE_MULTI_ALIAS,
+        ProcessInstanceDto.class,
+        4,
+        PROCESS_INSTANCE_NULLABLE_FIELDS);
   }
 
   @ParameterizedTest
   @MethodSource("engineErrors")
-  public void definitionImportWorksEvenIfDeploymentRequestFails(ErrorResponseMock errorResponseMock) {
+  public void definitionImportWorksEvenIfDeploymentRequestFails(
+      ErrorResponseMock errorResponseMock) {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
-      .withMethod(GET);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+            .withMethod(GET);
     errorResponseMock.mock(requestMatcher, Times.once(), engineMockServer);
 
     // when
@@ -486,18 +523,21 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
-    List<ProcessDefinitionOptimizeDto> processDefinitions = definitionClient.getAllProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> processDefinitions =
+        definitionClient.getAllProcessDefinitions();
     assertThat(processDefinitions).hasSize(1);
   }
 
   @ParameterizedTest
   @MethodSource("engineAuthorizationErrors")
-  public void definitionImportMissingAuthorizationLogsMessage(final ErrorResponseMock authorizationError) {
+  public void definitionImportMissingAuthorizationLogsMessage(
+      final ErrorResponseMock authorizationError) {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
-      .withMethod(GET);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+            .withMethod(GET);
     authorizationError.mock(requestMatcher, Times.once(), engineMockServer);
 
     // when
@@ -506,20 +546,25 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then the second request will have succeeded
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
-    logCapturer.assertContains(String.format(
-      "Error during fetching of entities. Please check the connection with [%s]!" +
-        " Make sure all required engine authorizations exist", DEFAULT_ENGINE_ALIAS));
+    logCapturer.assertContains(
+        String.format(
+            "Error during fetching of entities. Please check the connection with [%s]!"
+                + " Make sure all required engine authorizations exist",
+            DEFAULT_ENGINE_ALIAS));
   }
 
   @Test
   public void definitionImportBadAuthorizationLogsMessage() {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
-      .withMethod(GET);
-    engineMockServer.when(requestMatcher, Times.once())
-      .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()));
+    final HttpRequest requestMatcher =
+        request()
+            .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
+            .withMethod(GET);
+    engineMockServer
+        .when(requestMatcher, Times.once())
+        .respond(
+            HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()));
 
     // when
     deployAndStartSimpleServiceTaskProcess();
@@ -527,9 +572,11 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then the second request will have succeeded
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
-    logCapturer.assertContains(String.format(
-      "Error during fetching of entities. Please check the connection with [%s]!" +
-        " Make sure you have configured an authorized user", DEFAULT_ENGINE_ALIAS));
+    logCapturer.assertContains(
+        String.format(
+            "Error during fetching of entities. Please check the connection with [%s]!"
+                + " Make sure you have configured an authorized user",
+            DEFAULT_ENGINE_ALIAS));
   }
 
   @SuppressWarnings(SuppressionConstants.UNUSED)
@@ -539,52 +586,62 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @ParameterizedTest
   @MethodSource("tenants")
-  public void processDefinitionMarkedAsDeletedIfNewDefinitionIdButSameKeyVersionTenant(String tenantId) {
+  public void processDefinitionMarkedAsDeletedIfNewDefinitionIdButSameKeyVersionTenant(
+      String tenantId) {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto originalDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, tenantId);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, tenantId);
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(allProcessDefinitions).singleElement()
-      .satisfies(definition -> {
-        assertThat(definition.getId()).isEqualTo(originalDefinition.getId());
-        assertThat(definition.isDeleted()).isFalse();
-      });
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions)
+        .singleElement()
+        .satisfies(
+            definition -> {
+              assertThat(definition.getId()).isEqualTo(originalDefinition.getId());
+              assertThat(definition.isDeleted()).isFalse();
+            });
 
-    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    // when the original definition is deleted and a new one deployed with the same key, version and
+    // tenant
     engineIntegrationExtension.deleteProcessDefinition(originalDefinition.getId());
     final ProcessDefinitionEngineDto newDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-        processModel,
-        tenantId
-      );
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, tenantId);
     importAllEngineEntitiesFromLastIndex();
 
     // then the original definition is marked as deleted
     final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(updatedDefinitions).hasSize(2)
-      .allSatisfy(definition -> {
-        assertThat(definition.getKey()).isEqualTo(originalDefinition.getKey());
-        assertThat(definition.getVersion()).isEqualTo(originalDefinition.getVersionAsString());
-        assertThat(definition.getTenantId()).isEqualTo(tenantId);
-      })
-      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(originalDefinition.getId(), true),
-        tuple(newDefinition.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions)
+        .hasSize(2)
+        .allSatisfy(
+            definition -> {
+              assertThat(definition.getKey()).isEqualTo(originalDefinition.getKey());
+              assertThat(definition.getVersion())
+                  .isEqualTo(originalDefinition.getVersionAsString());
+              assertThat(definition.getTenantId()).isEqualTo(tenantId);
+            })
+        .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(originalDefinition.getId(), true), tuple(newDefinition.getId(), false));
     // and the definition cache includes the deleted and new definition
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                originalDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                newDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -592,74 +649,105 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto firstDeletedDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            processModel, DEFAULT_TENANT);
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessDefinitionOptimizeDto> firstDefinitionImported =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(firstDefinitionImported).singleElement()
-      .satisfies(definition -> {
-        assertThat(definition.getId()).isEqualTo(firstDeletedDefinition.getId());
-        assertThat(definition.isDeleted()).isFalse();
-      });
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(firstDefinitionImported)
+        .singleElement()
+        .satisfies(
+            definition -> {
+              assertThat(definition.getId()).isEqualTo(firstDeletedDefinition.getId());
+              assertThat(definition.isDeleted()).isFalse();
+            });
 
-    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    // when the original definition is deleted and a new one deployed with the same key, version and
+    // tenant
     engineIntegrationExtension.deleteProcessDefinition(firstDeletedDefinition.getId());
     final ProcessDefinitionEngineDto secondDeletedDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            processModel, DEFAULT_TENANT);
     importAllEngineEntitiesFromLastIndex();
 
     // then the original definition is marked as deleted
     final List<ProcessDefinitionOptimizeDto> firstTwoDefinitionsImported =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(firstTwoDefinitionsImported).hasSize(2)
-      .allSatisfy(definition -> {
-        assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
-        assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
-        assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
-      })
-      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(firstDeletedDefinition.getId(), true),
-        tuple(secondDeletedDefinition.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(firstTwoDefinitionsImported)
+        .hasSize(2)
+        .allSatisfy(
+            definition -> {
+              assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
+              assertThat(definition.getVersion())
+                  .isEqualTo(firstDeletedDefinition.getVersionAsString());
+              assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
+            })
+        .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(firstDeletedDefinition.getId(), true),
+            tuple(secondDeletedDefinition.getId(), false));
     // and the definition cache includes the deleted and new definition
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(firstDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(secondDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                firstDeletedDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                secondDeletedDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
 
-    // when the second definition is deleted and a new one deployed with the same key, version and tenant
+    // when the second definition is deleted and a new one deployed with the same key, version and
+    // tenant
     engineIntegrationExtension.deleteProcessDefinition(secondDeletedDefinition.getId());
     final ProcessDefinitionEngineDto nonDeletedDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            processModel, DEFAULT_TENANT);
     importAllEngineEntitiesFromLastIndex();
 
     // then the first two definitions are marked as deleted
     final List<ProcessDefinitionOptimizeDto> allDefinitionsImported =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(allDefinitionsImported).hasSize(3)
-      .allSatisfy(definition -> {
-        assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
-        assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
-        assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
-      })
-      .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(firstDeletedDefinition.getId(), true),
-        tuple(secondDeletedDefinition.getId(), true),
-        tuple(nonDeletedDefinition.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allDefinitionsImported)
+        .hasSize(3)
+        .allSatisfy(
+            definition -> {
+              assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
+              assertThat(definition.getVersion())
+                  .isEqualTo(firstDeletedDefinition.getVersionAsString());
+              assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
+            })
+        .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(firstDeletedDefinition.getId(), true),
+            tuple(secondDeletedDefinition.getId(), true),
+            tuple(nonDeletedDefinition.getId(), false));
     // and the definition cache includes correct deletion states
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(firstDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(secondDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(nonDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                firstDeletedDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                secondDeletedDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                nonDeletedDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -667,46 +755,61 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto originalDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            processModel, DEFAULT_TENANT);
     final ProcessDefinitionEngineDto originalDefinitionWithTenant =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, "someTenant");
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, "someTenant");
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(allProcessDefinitions).hasSize(2)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(originalDefinition.getId(), false),
-        tuple(originalDefinitionWithTenant.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions)
+        .hasSize(2)
+        .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(originalDefinition.getId(), false),
+            tuple(originalDefinitionWithTenant.getId(), false));
 
-    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    // when the original definition is deleted and a new one deployed with the same key, version and
+    // tenant
     engineIntegrationExtension.deleteProcessDefinition(originalDefinition.getId());
     final ProcessDefinitionEngineDto newDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     importAllEngineEntitiesFromLastIndex();
 
-    // then the original definition is marked as deleted, the new one exists and the one with tenant is unaffected
+    // then the original definition is marked as deleted, the new one exists and the one with tenant
+    // is unaffected
     final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(updatedDefinitions).hasSize(3)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(originalDefinition.getId(), true),
-        tuple(originalDefinitionWithTenant.getId(), false),
-        tuple(newDefinition.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions)
+        .hasSize(3)
+        .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(originalDefinition.getId(), true),
+            tuple(originalDefinitionWithTenant.getId(), false),
+            tuple(newDefinition.getId(), false));
     // and the definition cache includes the deleted and new definition
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionWithTenant.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                originalDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                originalDefinitionWithTenant.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                newDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -714,46 +817,59 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto originalDefinitionV1 =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     final ProcessDefinitionEngineDto originalDefinitionV2 =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(allProcessDefinitions).hasSize(2)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(originalDefinitionV1.getId(), false),
-        tuple(originalDefinitionV2.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions)
+        .hasSize(2)
+        .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(originalDefinitionV1.getId(), false), tuple(originalDefinitionV2.getId(), false));
 
-    // when the v2 definition is deleted and a new one deployed with the same key, version and tenant
+    // when the v2 definition is deleted and a new one deployed with the same key, version and
+    // tenant
     engineIntegrationExtension.deleteProcessDefinition(originalDefinitionV2.getId());
     final ProcessDefinitionEngineDto newDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     importAllEngineEntitiesFromLastIndex();
 
-    // then the original definition is unaffected, the original v2 is marked as deleted, and the new one exists
+    // then the original definition is unaffected, the original v2 is marked as deleted, and the new
+    // one exists
     final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(updatedDefinitions).hasSize(3)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(originalDefinitionV1.getId(), false),
-        tuple(originalDefinitionV2.getId(), true),
-        tuple(newDefinition.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions)
+        .hasSize(3)
+        .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(originalDefinitionV1.getId(), false),
+            tuple(originalDefinitionV2.getId(), true),
+            tuple(newDefinition.getId(), false));
     // and the definition cache includes the deleted and new definition
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionV1.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionV2.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                originalDefinitionV1.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                originalDefinitionV2.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                newDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -761,46 +877,61 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto originalDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     final ProcessDefinitionEngineDto originalDefinitionWithOtherKey =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram("otherKey"));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getSimpleBpmnDiagram("otherKey"));
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(allProcessDefinitions).hasSize(2)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(originalDefinition.getId(), false),
-        tuple(originalDefinitionWithOtherKey.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions)
+        .hasSize(2)
+        .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(originalDefinition.getId(), false),
+            tuple(originalDefinitionWithOtherKey.getId(), false));
 
-    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    // when the original definition is deleted and a new one deployed with the same key, version and
+    // tenant
     engineIntegrationExtension.deleteProcessDefinition(originalDefinition.getId());
     final ProcessDefinitionEngineDto newDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     importAllEngineEntitiesFromLastIndex();
 
-    // then the original definition is marked as deleted, the other key is unaffected, and the new one exists
+    // then the original definition is marked as deleted, the other key is unaffected, and the new
+    // one exists
     final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(updatedDefinitions).hasSize(3)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
-      .containsExactlyInAnyOrder(
-        tuple(originalDefinition.getId(), true),
-        tuple(originalDefinitionWithOtherKey.getId(), false),
-        tuple(newDefinition.getId(), false)
-      );
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions)
+        .hasSize(3)
+        .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
+        .containsExactlyInAnyOrder(
+            tuple(originalDefinition.getId(), true),
+            tuple(originalDefinitionWithOtherKey.getId(), false),
+            tuple(newDefinition.getId(), false));
     // and the definition cache includes the deleted and new definition
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionWithOtherKey.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
-    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                originalDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                originalDefinitionWithOtherKey.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
+    assertThat(
+            embeddedOptimizeExtension.getProcessDefinitionFromResolverService(
+                newDefinition.getId()))
+        .isPresent()
+        .get()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -808,31 +939,34 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto originalDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     final ProcessDefinitionEngineDto newDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     engineDatabaseExtension.changeVersionOfProcessDefinitionWithDeploymentId(
-      newDefinition.getVersionAsString(),
-      originalDefinition.getDeploymentId()
-    );
+        newDefinition.getVersionAsString(), originalDefinition.getDeploymentId());
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
-    assertThat(allProcessDefinitions).hasSize(2)
-      .extracting(ProcessDefinitionOptimizeDto::isDeleted)
-      .containsExactlyInAnyOrder(true, false);
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions)
+        .hasSize(2)
+        .extracting(ProcessDefinitionOptimizeDto::isDeleted)
+        .containsExactlyInAnyOrder(true, false);
   }
 
   @Test
   public void doNotSkipProcessInstancesWithSameEndTime() {
     // given
-    int originalMaxPageSize = embeddedOptimizeExtension.getConfigurationService()
-      .getEngineImportProcessInstanceMaxPageSize();
-    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(2);
+    int originalMaxPageSize =
+        embeddedOptimizeExtension
+            .getConfigurationService()
+            .getEngineImportProcessInstanceMaxPageSize();
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setEngineImportProcessInstanceMaxPageSize(2);
     startTwoProcessInstancesWithSameEndTime();
     startTwoProcessInstancesWithSameEndTime();
 
@@ -842,12 +976,13 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     assertAllEntriesInElasticsearchHaveAllDataWithCount(
-      PROCESS_INSTANCE_MULTI_ALIAS,
-      ProcessInstanceDto.class,
-      4,
-      PROCESS_INSTANCE_NULLABLE_FIELDS
-    );
-    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
+        PROCESS_INSTANCE_MULTI_ALIAS,
+        ProcessInstanceDto.class,
+        4,
+        PROCESS_INSTANCE_NULLABLE_FIELDS);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
   }
 
   private void createStartAndCancelUserTaskProcess() {
@@ -859,7 +994,7 @@ public class ProcessImportIT extends AbstractImportIT {
     OffsetDateTime endTime = OffsetDateTime.now();
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto secondProcInst =
-      engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
+        engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
     Map<String, OffsetDateTime> procInstEndDateUpdates = new HashMap<>();
     procInstEndDateUpdates.put(firstProcInst.getId(), endTime);
     procInstEndDateUpdates.put(secondProcInst.getId(), endTime);
@@ -872,7 +1007,8 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithTenant(String tenantId) {
-    final ProcessDefinitionEngineDto processDefinitionEngineDto = deployProcessDefinitionWithTenant(tenantId);
+    final ProcessDefinitionEngineDto processDefinitionEngineDto =
+        deployProcessDefinitionWithTenant(tenantId);
     return engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
   }
 
@@ -880,12 +1016,12 @@ public class ProcessImportIT extends AbstractImportIT {
     return createImportAndDeleteTwoProcessInstancesWithVariables(new HashMap<>());
   }
 
-  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
-    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
-      firstProcInst.getDefinitionId(),
-      variables
-    );
+  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(
+      Map<String, Object> variables) {
+    ProcessInstanceEngineDto firstProcInst =
+        deployAndStartSimpleServiceProcessTaskWithVariables(variables);
+    ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
     engineIntegrationExtension.deleteHistoricProcessInstance(firstProcInst.getId());
     engineIntegrationExtension.deleteHistoricProcessInstance(secondProcInst.getId());
@@ -903,14 +1039,12 @@ public class ProcessImportIT extends AbstractImportIT {
 
   private OffsetDateTime getLastProcessInstanceImportTimestamp() {
     return databaseIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
-      PROCESS_INSTANCE_MULTI_ALIAS,
-      EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS
-    );
+        PROCESS_INSTANCE_MULTI_ALIAS, EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS);
   }
 
   protected boolean indexExist(final String indexName) {
-    return embeddedOptimizeExtension.getDatabaseSchemaManager()
-      .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexName);
+    return embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexName);
   }
-
 }

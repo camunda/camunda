@@ -5,16 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
-import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 
 import jakarta.ws.rs.core.Response;
 import java.io.BufferedReader;
@@ -25,15 +19,20 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.junit.jupiter.api.Test;
 
 public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
 
-  private static final String DIAGRAM = "org/camunda/optimize/service/db/es/reader/gateway_process.bpmn";
+  private static final String DIAGRAM =
+      "org/camunda/optimize/service/db/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
   private static final String PROCESS_DEFINITION_ID = "procDef1";
   private static final String PROCESS_DEFINITION_KEY = "procDef";
@@ -48,11 +47,12 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getCorrelationWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessDefinitionCorrelation(new BranchAnalysisRequestDto())
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessDefinitionCorrelation(new BranchAnalysisRequestDto())
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -70,60 +70,52 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
     branchAnalysisRequestDto.setGateway(GATEWAY_ACTIVITY);
     branchAnalysisRequestDto.setEnd(END_ACTIVITY);
 
-    BranchAnalysisResponseDto response = analysisClient.getProcessDefinitionCorrelation(branchAnalysisRequestDto);
+    BranchAnalysisResponseDto response =
+        analysisClient.getProcessDefinitionCorrelation(branchAnalysisRequestDto);
 
     // then
-    assertThat(response)
-      .isNotNull()
-      .extracting(BranchAnalysisResponseDto::getTotal)
-      .isEqualTo(2L);
+    assertThat(response).isNotNull().extracting(BranchAnalysisResponseDto::getTotal).isEqualTo(2L);
   }
 
   private void setupFullInstanceFlow() throws IOException {
-    final ProcessDefinitionOptimizeDto processDefinitionXmlDto = ProcessDefinitionOptimizeDto.builder()
-      .id(PROCESS_DEFINITION_ID)
-      .key(PROCESS_DEFINITION_KEY)
-      .version(PROCESS_DEFINITION_VERSION_1)
-      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
-      .bpmn20Xml(readDiagram())
-      .build();
+    final ProcessDefinitionOptimizeDto processDefinitionXmlDto =
+        ProcessDefinitionOptimizeDto.builder()
+            .id(PROCESS_DEFINITION_ID)
+            .key(PROCESS_DEFINITION_KEY)
+            .version(PROCESS_DEFINITION_VERSION_1)
+            .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
+            .bpmn20Xml(readDiagram())
+            .build();
     databaseIntegrationTestExtension.addEntryToDatabase(
-      PROCESS_DEFINITION_INDEX_NAME,
-      PROCESS_DEFINITION_ID,
-      processDefinitionXmlDto
-    );
+        PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
 
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
     databaseIntegrationTestExtension.addEntryToDatabase(
-      PROCESS_DEFINITION_INDEX_NAME,
-      PROCESS_DEFINITION_ID_2,
-      processDefinitionXmlDto
-    );
+        PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
-    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
-      .processDefinitionId(PROCESS_DEFINITION_ID)
-      .processDefinitionKey(PROCESS_DEFINITION_KEY)
-      .processDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
-      .processInstanceId(PROCESS_INSTANCE_ID)
-      .startDate(OffsetDateTime.now())
-      .endDate(OffsetDateTime.now())
-      .flowNodeInstances(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
-      .build();
-    embeddedOptimizeExtension.getDatabaseSchemaManager()
-      .createIndexIfMissing(
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
-        new ProcessInstanceIndexES(PROCESS_DEFINITION_KEY)
-      );
+    final ProcessInstanceDto procInst =
+        ProcessInstanceDto.builder()
+            .processDefinitionId(PROCESS_DEFINITION_ID)
+            .processDefinitionKey(PROCESS_DEFINITION_KEY)
+            .processDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
+            .processInstanceId(PROCESS_INSTANCE_ID)
+            .startDate(OffsetDateTime.now())
+            .endDate(OffsetDateTime.now())
+            .flowNodeInstances(createEventList(new String[] {GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
+            .build();
+    embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .createIndexIfMissing(
+            databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
+            new ProcessInstanceIndexES(PROCESS_DEFINITION_KEY));
     databaseIntegrationTestExtension.addEntryToDatabase(
-      getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);
+        getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);
 
-    procInst.setFlowNodeInstances(
-      createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
-    );
+    procInst.setFlowNodeInstances(createEventList(new String[] {GATEWAY_ACTIVITY, END_ACTIVITY}));
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
     databaseIntegrationTestExtension.addEntryToDatabase(
-      getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID_2, procInst);
+        getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID_2, procInst);
   }
 
   private List<FlowNodeInstanceDto> createEventList(String[] activityIds) {
@@ -137,7 +129,10 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
   }
 
   private String readDiagram() throws IOException {
-    return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(BranchAnalysisRestServiceIT.DIAGRAM));
+    return read(
+        Thread.currentThread()
+            .getContextClassLoader()
+            .getResourceAsStream(BranchAnalysisRestServiceIT.DIAGRAM));
   }
 
   private static String read(InputStream input) throws IOException {
@@ -145,5 +140,4 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
       return buffer.lines().collect(Collectors.joining("\n"));
     }
   }
-
 }

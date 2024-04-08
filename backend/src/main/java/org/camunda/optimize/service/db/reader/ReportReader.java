@@ -57,4 +57,6 @@ public interface ReportReader {
   List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReport(String simpleReportId);
 
   long getReportCount(final ReportType reportType);
+
+  long getUserTaskReportCount();
 }

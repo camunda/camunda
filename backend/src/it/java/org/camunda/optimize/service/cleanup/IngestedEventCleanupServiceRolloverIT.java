@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class IngestedEventCleanupServiceRolloverIT extends AbstractCleanupIT {
 
@@ -33,17 +32,20 @@ public class IngestedEventCleanupServiceRolloverIT extends AbstractCleanupIT {
     getIngestedEventCleanupConfiguration().setEnabled(true);
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
     final List<CloudEventRequestDto> eventsToCleanupIngestedBeforeRollover =
-      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+        ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeepIngestedBeforeRollover =
-      ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
+        ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
 
-    embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEventIndexRolloverConfiguration()
+        .setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
 
     final List<CloudEventRequestDto> eventsToCleanupIngestedAfterRollover =
-      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+        ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeepIngestedAfterRollover =
-      ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
+        ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
@@ -52,17 +54,19 @@ public class IngestedEventCleanupServiceRolloverIT extends AbstractCleanupIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllStoredExternalEvents())
-      .extracting(EventDto::getId)
-      .containsExactlyInAnyOrderElementsOf(
-        Stream.concat(eventsToKeepIngestedBeforeRollover.stream(), eventsToKeepIngestedAfterRollover.stream())
-          .map(CloudEventRequestDto::getId).collect(Collectors.toSet())
-      );
+        .extracting(EventDto::getId)
+        .containsExactlyInAnyOrderElementsOf(
+            Stream.concat(
+                    eventsToKeepIngestedBeforeRollover.stream(),
+                    eventsToKeepIngestedAfterRollover.stream())
+                .map(CloudEventRequestDto::getId)
+                .collect(Collectors.toSet()));
   }
 
   private IngestedEventCleanupConfiguration getIngestedEventCleanupConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getIngestedEventCleanupConfiguration();
+    return embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCleanupServiceConfiguration()
+        .getIngestedEventCleanupConfiguration();
   }
-
 }

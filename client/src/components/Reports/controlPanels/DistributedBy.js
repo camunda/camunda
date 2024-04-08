@@ -12,8 +12,14 @@ import {Button} from '@carbon/react';
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 import {CarbonSelect} from 'components';
+import {useUiConfig} from 'hooks';
 
 export default function DistributedBy({report, onChange, variables}) {
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
+    'optimizeProfile',
+    'userTaskAssigneeAnalyticsEnabled'
+  );
+
   if (!report.groupBy) {
     return null;
   }
@@ -23,7 +29,13 @@ export default function DistributedBy({report, onChange, variables}) {
   const hasDistribution = selectedOption.key !== 'none';
 
   const options = distributions
-    .filter(({visible, key}) => visible(report) && key !== 'none')
+    .filter(
+      ({visible, key}) =>
+        visible(report) &&
+        key !== 'none' &&
+        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee') &&
+        (optimizeProfile === 'platform' ? true : key !== 'candidateGroup')
+    )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
         return (

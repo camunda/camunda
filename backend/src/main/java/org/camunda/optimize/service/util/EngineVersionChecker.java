@@ -32,6 +32,7 @@ public class EngineVersionChecker {
   static {
     supportedEngines.add("7.19.0");
     supportedEngines.add("7.20.0");
+    supportedEngines.add("7.21.0");
   }
 
   public static void checkEngineVersionSupport(
@@ -40,7 +41,7 @@ public class EngineVersionChecker {
     try {
       response =
           engineClient.target(engineRestPath + EngineConstants.VERSION_ENDPOINT).request().get();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error(ERROR_CONNECTION_REFUSED, e);
       throw new OptimizeRuntimeException(ERROR_CONNECTION_REFUSED, e);
     }
@@ -71,13 +72,14 @@ public class EngineVersionChecker {
     }
   }
 
-  public static boolean isVersionSupported(String currentVersion, List<String> supportedVersions) {
+  public static boolean isVersionSupported(
+      final String currentVersion, final List<String> supportedVersions) {
     if (Version.isAlphaVersion(currentVersion)) {
       log.warn("You are using a development version of the engine");
     }
 
-    String plainVersion = Version.stripToPlainVersion(currentVersion);
-    String currentMajorAndMinor = Version.getMajorAndMinor(currentVersion);
+    final String plainVersion = Version.stripToPlainVersion(currentVersion);
+    final String currentMajorAndMinor = Version.getMajorAndMinor(currentVersion);
     return supportedVersions.stream()
         .filter(v -> currentMajorAndMinor.equals(Version.getMajorAndMinor(v)))
         .findFirst()
@@ -89,9 +91,9 @@ public class EngineVersionChecker {
   }
 
   private static boolean isCurrentBiggerThanSupported(
-      String currentVersion, List<String> supportedVersions) {
-    boolean match;
-    Comparator<String> versionComparator =
+      final String currentVersion, final List<String> supportedVersions) {
+    final boolean match;
+    final Comparator<String> versionComparator =
         (String a, String b) ->
             Integer.parseInt(Version.getMajorVersionFrom(a))
                         - Integer.parseInt(Version.getMajorVersionFrom(b))
@@ -103,16 +105,17 @@ public class EngineVersionChecker {
 
     supportedEngines.sort(versionComparator);
 
-    String biggestVersion = supportedVersions.get(0);
+    final String biggestVersion = supportedVersions.get(0);
     match = versionComparator.compare(currentVersion, biggestVersion) > 0;
     return match;
   }
 
-  private static String buildUnsupportedEngineErrorMessage(String engineVersion) {
-    StringBuilder message = new StringBuilder("Engine version is not supported by Optimize.\n");
+  private static String buildUnsupportedEngineErrorMessage(final String engineVersion) {
+    final StringBuilder message =
+        new StringBuilder("Engine version is not supported by Optimize.\n");
 
     message.append("Current version of Optimize supports following engine versions:\n");
-    for (String version : supportedEngines) {
+    for (final String version : supportedEngines) {
       message.append(version).append("+\n");
     }
 

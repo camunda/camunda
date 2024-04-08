@@ -5,51 +5,51 @@
  */
 package org.camunda.optimize.service.db.es.filter.process;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
-
+@Tag(OPENSEARCH_PASSING)
 public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
   public void mixedCanceledInstancesOnlyFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
     engineIntegrationExtension.externallyTerminateProcessInstance(firstProcInst.getId());
     engineDatabaseExtension.changeProcessInstanceState(
-      secondProcInst.getId(),
-      INTERNALLY_TERMINATED_STATE
-    );
-
+        secondProcInst.getId(), INTERNALLY_TERMINATED_STATE);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
-      .getResult()
-      .getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData =
+        reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
     assertThat(resultData).hasSize(2);
-    List<String> resultProcDefIds = resultData
-      .stream()
-      .map(RawDataProcessInstanceDto::getProcessInstanceId)
-      .collect(Collectors.toList());
+    List<String> resultProcDefIds =
+        resultData.stream()
+            .map(RawDataProcessInstanceDto::getProcessInstanceId)
+            .collect(Collectors.toList());
 
     assertThat(resultProcDefIds).contains(firstProcInst.getId());
     assertThat(resultProcDefIds).contains(secondProcInst.getId());
@@ -59,34 +59,31 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
   public void internallyTerminatedCanceledInstancesOnlyFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
     engineDatabaseExtension.changeProcessInstanceState(
-      firstProcInst.getId(),
-      INTERNALLY_TERMINATED_STATE
-    );
+        firstProcInst.getId(), INTERNALLY_TERMINATED_STATE);
     engineDatabaseExtension.changeProcessInstanceState(
-      secondProcInst.getId(),
-      INTERNALLY_TERMINATED_STATE
-    );
+        secondProcInst.getId(), INTERNALLY_TERMINATED_STATE);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
-      .getResult()
-      .getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData =
+        reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
     assertThat(resultData).hasSize(2);
-    List<String> resultProcDefIds = resultData
-      .stream()
-      .map(RawDataProcessInstanceDto::getProcessInstanceId)
-      .collect(Collectors.toList());
+    List<String> resultProcDefIds =
+        resultData.stream()
+            .map(RawDataProcessInstanceDto::getProcessInstanceId)
+            .collect(Collectors.toList());
 
     assertThat(resultProcDefIds).contains(firstProcInst.getId());
     assertThat(resultProcDefIds).contains(secondProcInst.getId());
@@ -96,8 +93,10 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
   public void externallyTerminatedCanceledInstncesOnlyFilter() {
     // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
     engineIntegrationExtension.externallyTerminateProcessInstance(firstProcInst.getId());
@@ -108,19 +107,17 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
-      .getResult()
-      .getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData =
+        reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
 
     // then
     assertThat(resultData).hasSize(2);
-    List<String> resultProcDefIds = resultData
-      .stream()
-      .map(RawDataProcessInstanceDto::getProcessInstanceId)
-      .collect(Collectors.toList());
+    List<String> resultProcDefIds =
+        resultData.stream()
+            .map(RawDataProcessInstanceDto::getProcessInstanceId)
+            .collect(Collectors.toList());
 
     assertThat(resultProcDefIds).contains(firstProcInst.getId());
     assertThat(resultProcDefIds).contains(secondProcInst.getId());
   }
-
 }

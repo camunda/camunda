@@ -11,8 +11,6 @@ import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.M
 import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.OPERATE;
 import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.OPTIMIZE;
 import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.TASKLIST;
-import static org.camunda.optimize.rest.constants.RestConstants.HTTPS_PREFIX;
-import static org.camunda.optimize.rest.constants.RestConstants.HTTP_PREFIX;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -23,10 +21,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -43,6 +38,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaasClusterClient extends AbstractCCSaaSClient {
+
+  private static final String GET_CLUSTERS_TEMPLATE = GET_ORGS_TEMPLATE + "/clusters";
   private Map<AppName, String> webappsLinks;
   private static final Set<AppName> REQUIRED_WEBAPPS_LINKS =
       Set.of(CONSOLE, OPERATE, OPTIMIZE, MODELER, TASKLIST);
@@ -61,17 +58,17 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
     return webappsLinks;
   }
 
-  private Map<AppName, String> retrieveWebappsLinks(String accessToken) {
+  private Map<AppName, String> retrieveWebappsLinks(final String accessToken) {
     try {
       log.info("Fetching cluster metadata.");
       final HttpGet request =
           new HttpGet(
               String.format(
                   GET_CLUSTERS_TEMPLATE,
-                  String.format(CONSOLE_ROOTURL_TEMPLATE, retrieveDomainOfRunningInstance()),
+                  configurationService.getUiConfiguration().getConsoleUrl(),
                   getCloudAuthConfiguration().getOrganizationId()));
       final ClusterMetadata[] metadataForAllClusters;
-      try (CloseableHttpResponse response = performRequest(request, accessToken)) {
+      try (final CloseableHttpResponse response = performRequest(request, accessToken)) {
         if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
           throw new OptimizeRuntimeException(
               String.format(
@@ -83,7 +80,7 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
             objectMapper.readValue(response.getEntity().getContent(), ClusterMetadata[].class);
       }
       if (metadataForAllClusters != null) {
-        String currentClusterId = getCloudAuthConfiguration().getClusterId();
+        final String currentClusterId = getCloudAuthConfiguration().getClusterId();
         return Arrays.stream(metadataForAllClusters)
             .filter(cm -> cm.getUuid().equals(currentClusterId))
             .findFirst()
@@ -97,21 +94,14 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
       } else {
         throw new OptimizeRuntimeException("Could not fetch Cluster metadata");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem fetching cluster metadata.", e);
     }
   }
 
   private Map<AppName, String> mapToWebappsLinks(final Map<AppName, String> urls) {
-    // add console and modeler URL if not already present
-    final String organizationId = getCloudAuthConfiguration().getOrganizationId();
-    final String domain = retrieveDomainOfRunningInstance();
-    final String clusterId = getCloudAuthConfiguration().getClusterId();
-    urls.computeIfAbsent(
-        MODELER, key -> String.format(MODELER_URL_TEMPLATE, domain, organizationId));
-    urls.computeIfAbsent(
-        CONSOLE, key -> String.format(CONSOLE_URL_TEMPLATE, domain, organizationId, clusterId));
-
+    urls.put(CONSOLE, configurationService.getUiConfiguration().getConsoleUrl());
+    urls.put(MODELER, configurationService.getUiConfiguration().getModelerUrl());
     // remove any webapps URL the UI does not require
     return urls.entrySet().stream()
         // Null entries can happen if there is an App that is not present in the AppName Enum
@@ -123,54 +113,10 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private String retrieveDomainOfRunningInstance() {
-    String rootUrl =
-        configurationService
-            .getContainerAccessUrl()
-            .orElseGet(
-                () -> {
-                  Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-                  String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-                  Integer port =
-                      containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-                  return httpPrefix
-                      + configurationService.getContainerHost()
-                      + ":"
-                      + port
-                      + configurationService.getContextPath().orElse("");
-                });
-    // Strip the URL and get only the main part
-    // The full URL looks like this, for example:
-    // https://bru-2.optimize.dev.ultrawombat.com/ff488019-8082-411e-8abc-46f8597cd7d3/
-    Pattern urlPattern = Pattern.compile("^(?:https?://)?(?:[^@/\\n]+@)?(?:www\\.)?([^:/?\\n]+)");
-    Matcher matcher = urlPattern.matcher(rootUrl);
-    if (matcher.find()) {
-      // The pureUrl should look like this, for example: bru-2.optimize.dev.ultrawombat.com
-      String pureUrl = matcher.group();
-      Pattern domainPattern = Pattern.compile("(?<=" + OPTIMIZE + ").*");
-      Matcher domainMatcher = domainPattern.matcher(pureUrl);
-      if (domainMatcher.find()) {
-        // The domain, if found, should therefore look something like this: .dev.ultrawombat.com
-        return domainMatcher.group();
-      } else {
-        log.warn(
-            "The processed URL cannot be parsed: {}. Using the fallback domain {}",
-            pureUrl,
-            DEFAULT_DOMAIN_WHEN_ERROR_OCCURS);
-        return DEFAULT_DOMAIN_WHEN_ERROR_OCCURS;
-      }
-    } else {
-      log.warn(
-          "The following domain URL cannot be parsed: {}. Using the fallback domain {}",
-          rootUrl,
-          DEFAULT_DOMAIN_WHEN_ERROR_OCCURS);
-      return DEFAULT_DOMAIN_WHEN_ERROR_OCCURS;
-    }
-  }
-
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
   private static class ClusterMetadata implements Serializable {
+
     private String uuid;
     private Map<AppName, String> urls = new EnumMap<>(AppName.class);
   }

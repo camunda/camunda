@@ -23,16 +23,16 @@ public class ExternalEventWriterOS implements ExternalEventWriter {
 
   @Override
   public void upsertEvents(final List<EventDto> eventDtos) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteEventsOlderThan(final OffsetDateTime timestamp) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteEventsWithIdsIn(final List<String> eventIdsToDelete) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

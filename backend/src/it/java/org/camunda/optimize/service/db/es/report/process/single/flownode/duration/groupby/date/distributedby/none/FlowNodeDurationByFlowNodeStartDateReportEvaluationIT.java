@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.flownode.duration.groupby.date.distributedby.none;
 
+import java.time.OffsetDateTime;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import java.time.OffsetDateTime;
-import java.util.Map;
-
 public class FlowNodeDurationByFlowNodeStartDateReportEvaluationIT
-  extends FlowNodeDurationByFlowNodeDateReportEvaluationIT {
+    extends FlowNodeDurationByFlowNodeDateReportEvaluationIT {
 
   @Override
   protected ProcessGroupByType getGroupByType() {
@@ -31,9 +30,11 @@ public class FlowNodeDurationByFlowNodeStartDateReportEvaluationIT
   }
 
   @Override
-  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
-                                        final String modelElementId,
-                                        final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), modelElementId, dateToChangeTo);
+  protected void changeModelElementDate(
+      final ProcessInstanceEngineDto processInstance,
+      final String modelElementId,
+      final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeFlowNodeStartDate(
+        processInstance.getId(), modelElementId, dateToChangeTo);
   }
 }

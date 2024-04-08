@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.usertask.frequency.groupby.candidategroup.distributedby.process;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_CANDIDATE_BY_PROCESS;
+import static org.camunda.optimize.util.BpmnModels.getFourUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -25,17 +34,8 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
-import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_CANDIDATE_BY_PROCESS;
-import static org.camunda.optimize.util.BpmnModels.getFourUserTaskDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-
-public class UserTaskFrequencyByCandidateGroupByProcessReportEvaluationIT extends AbstractPlatformIT {
+public class UserTaskFrequencyByCandidateGroupByProcessReportEvaluationIT
+    extends AbstractPlatformIT {
 
   private static final String FIRST_CANDIDATE_GROUP_ID = "firstGroup";
   private static final String FIRST_CANDIDATE_GROUP_NAME = "first";
@@ -52,112 +52,121 @@ public class UserTaskFrequencyByCandidateGroupByProcessReportEvaluationIT extend
   public void reportEvaluationWithSingleProcessDefinitionSource() {
     // given
     final ProcessDefinitionEngineDto process = deployFourUserTasksDefinition("process");
-    final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(process.getId());
+    final ProcessInstanceEngineDto instance =
+        engineIntegrationExtension.startProcessInstance(process.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(instance);
     importAllEngineEntitiesFromScratch();
     final String processDisplayName = "processDisplayName";
     final String processIdentifier = IdGenerator.getNextId();
     ReportDataDefinitionDto definition =
-      new ReportDataDefinitionDto(processIdentifier, process.getKey(), processDisplayName);
+        new ReportDataDefinitionDto(processIdentifier, process.getKey(), processDisplayName);
 
     // when
     final ProcessReportDataDto reportData = createReport(Collections.singletonList(definition));
-    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>
+        evaluationResponse = reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportDataDto resultReportDataDto =
+        evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(process.getKey());
-    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(definition.getVersions().get(0));
+    assertThat(resultReportDataDto.getDefinitionVersions())
+        .containsExactly(definition.getVersions().get(0));
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
-    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.CANDIDATE_GROUP);
+    assertThat(resultReportDataDto.getGroupBy().getType())
+        .isEqualTo(ProcessGroupByType.CANDIDATE_GROUP);
     assertThat(resultReportDataDto.getGroupBy().getValue()).isNull();
-    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.PROCESS);
+    assertThat(resultReportDataDto.getDistributedBy().getType())
+        .isEqualTo(DistributedByType.PROCESS);
 
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getMeasures()).hasSize(1)
-      .extracting(MeasureResponseDto::getData)
-      .containsExactly(List.of(
-        createHyperMapResult(
-          FIRST_CANDIDATE_GROUP_ID,
-          FIRST_CANDIDATE_GROUP_NAME,
-          new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)
-        ),
-        createHyperMapResult(
-          SECOND_CANDIDATE_GROUP_ID,
-          SECOND_CANDIDATE_GROUP_NAME,
-          new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)
-        )
-      ));
+    assertThat(result.getMeasures())
+        .hasSize(1)
+        .extracting(MeasureResponseDto::getData)
+        .containsExactly(
+            List.of(
+                createHyperMapResult(
+                    FIRST_CANDIDATE_GROUP_ID,
+                    FIRST_CANDIDATE_GROUP_NAME,
+                    new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)),
+                createHyperMapResult(
+                    SECOND_CANDIDATE_GROUP_ID,
+                    SECOND_CANDIDATE_GROUP_NAME,
+                    new MapResultEntryDto(processIdentifier, 2.0, processDisplayName))));
   }
 
   @Test
   public void reportEvaluationWithSingleProcessDefinitionSourceWithUnassignedUser() {
     // given
     final ProcessDefinitionEngineDto process = deployFourUserTasksDefinition("process");
-    final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(process.getId());
+    final ProcessInstanceEngineDto instance =
+        engineIntegrationExtension.startProcessInstance(process.getId());
     finishUserTask1AWithFirstAndLeaveTask2BUnassigned(instance);
     importAllEngineEntitiesFromScratch();
     final String processDisplayName = "processDisplayName";
     final String processIdentifier = IdGenerator.getNextId();
     ReportDataDefinitionDto definition =
-      new ReportDataDefinitionDto(processIdentifier, process.getKey(), processDisplayName);
+        new ReportDataDefinitionDto(processIdentifier, process.getKey(), processDisplayName);
 
     // when
     final ProcessReportDataDto reportData = createReport(Collections.singletonList(definition));
-    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>
+        evaluationResponse = reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getMeasures()).hasSize(1)
-      .extracting(MeasureResponseDto::getData)
-      .containsExactly(List.of(
-        createHyperMapResult(
-          FIRST_CANDIDATE_GROUP_ID,
-          FIRST_CANDIDATE_GROUP_NAME,
-          new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)
-        ),
-        createHyperMapResult(
-          DISTRIBUTE_BY_IDENTITY_MISSING_KEY,
-          getLocalizedUnassignedLabel(),
-          new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)
-        )
-      ));
+    assertThat(result.getMeasures())
+        .hasSize(1)
+        .extracting(MeasureResponseDto::getData)
+        .containsExactly(
+            List.of(
+                createHyperMapResult(
+                    FIRST_CANDIDATE_GROUP_ID,
+                    FIRST_CANDIDATE_GROUP_NAME,
+                    new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)),
+                createHyperMapResult(
+                    DISTRIBUTE_BY_IDENTITY_MISSING_KEY,
+                    getLocalizedUnassignedLabel(),
+                    new MapResultEntryDto(processIdentifier, 2.0, processDisplayName))));
   }
 
   @Test
   public void reportEvaluationWithSingleProcessDefinitionSourceWithAllInstancesRemovedByFilter() {
     // given
     final ProcessDefinitionEngineDto process = deployFourUserTasksDefinition("first");
-    final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(process.getId());
+    final ProcessInstanceEngineDto instance =
+        engineIntegrationExtension.startProcessInstance(process.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(instance);
     importAllEngineEntitiesFromScratch();
     final String processDisplayName = "processDisplayName";
     final String processIdentifier = IdGenerator.getNextId();
     ReportDataDefinitionDto definition =
-      new ReportDataDefinitionDto(processIdentifier, process.getKey(), processDisplayName);
+        new ReportDataDefinitionDto(processIdentifier, process.getKey(), processDisplayName);
 
     // when
     final ProcessReportDataDto reportData = createReport(Collections.singletonList(definition));
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>
+        evaluationResponse = reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
-    assertThat(result.getMeasures()).hasSize(1)
-      .extracting(MeasureResponseDto::getData)
-      .containsExactly(Collections.emptyList());
+    assertThat(result.getMeasures())
+        .hasSize(1)
+        .extracting(MeasureResponseDto::getData)
+        .containsExactly(Collections.emptyList());
   }
 
   @Test
@@ -165,10 +174,10 @@ public class UserTaskFrequencyByCandidateGroupByProcessReportEvaluationIT extend
     // given
     final ProcessDefinitionEngineDto firstProcess = deployFourUserTasksDefinition("first");
     final ProcessInstanceEngineDto firstInstance =
-      engineIntegrationExtension.startProcessInstance(firstProcess.getId());
+        engineIntegrationExtension.startProcessInstance(firstProcess.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(firstInstance);
     final ProcessInstanceEngineDto secondInstance =
-      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("second"));
+        engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("second"));
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(secondInstance.getId());
     importAllEngineEntitiesFromScratch();
@@ -177,45 +186,48 @@ public class UserTaskFrequencyByCandidateGroupByProcessReportEvaluationIT extend
     final String firstIdentifier = "first";
     final String secondIdentifier = "second";
     ReportDataDefinitionDto firstDefinition =
-      new ReportDataDefinitionDto(firstIdentifier, firstProcess.getKey(), firstDisplayName);
+        new ReportDataDefinitionDto(firstIdentifier, firstProcess.getKey(), firstDisplayName);
     ReportDataDefinitionDto secondDefinition =
-      new ReportDataDefinitionDto(secondIdentifier, secondInstance.getProcessDefinitionKey(), secondDisplayName);
+        new ReportDataDefinitionDto(
+            secondIdentifier, secondInstance.getProcessDefinitionKey(), secondDisplayName);
 
     // when
-    final ProcessReportDataDto reportData = createReport(List.of(firstDefinition, secondDefinition));
-    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
+    final ProcessReportDataDto reportData =
+        createReport(List.of(firstDefinition, secondDefinition));
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>
+        evaluationResponse = reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
-    assertThat(result.getMeasures()).hasSize(1)
-      .extracting(MeasureResponseDto::getData)
-      .containsExactly(List.of(
-        createHyperMapResult(
-          FIRST_CANDIDATE_GROUP_ID,
-          FIRST_CANDIDATE_GROUP_NAME,
-          new MapResultEntryDto(firstIdentifier, 2.0, firstDisplayName),
-          new MapResultEntryDto(secondIdentifier, 1.0, secondDisplayName)
-        ),
-        createHyperMapResult(
-          SECOND_CANDIDATE_GROUP_ID,
-          SECOND_CANDIDATE_GROUP_NAME,
-          new MapResultEntryDto(firstIdentifier, 2.0, firstDisplayName),
-          new MapResultEntryDto(secondIdentifier, null, secondDisplayName)
-        )
-      ));
+    assertThat(result.getMeasures())
+        .hasSize(1)
+        .extracting(MeasureResponseDto::getData)
+        .containsExactly(
+            List.of(
+                createHyperMapResult(
+                    FIRST_CANDIDATE_GROUP_ID,
+                    FIRST_CANDIDATE_GROUP_NAME,
+                    new MapResultEntryDto(firstIdentifier, 2.0, firstDisplayName),
+                    new MapResultEntryDto(secondIdentifier, 1.0, secondDisplayName)),
+                createHyperMapResult(
+                    SECOND_CANDIDATE_GROUP_ID,
+                    SECOND_CANDIDATE_GROUP_NAME,
+                    new MapResultEntryDto(firstIdentifier, 2.0, firstDisplayName),
+                    new MapResultEntryDto(secondIdentifier, null, secondDisplayName))));
   }
 
   @Test
   public void reportEvaluationWithMultipleProcessDefinitionSourcesAndOverlappingInstances() {
     // given
     final ProcessDefinitionEngineDto v1Process = deployFourUserTasksDefinition("definition");
-    final ProcessInstanceEngineDto v1Instance = engineIntegrationExtension.startProcessInstance(v1Process.getId());
+    final ProcessInstanceEngineDto v1Instance =
+        engineIntegrationExtension.startProcessInstance(v1Process.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(v1Instance);
     final ProcessInstanceEngineDto v2Instance =
-      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("definition"));
+        engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("definition"));
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(v2Instance.getId());
     importAllEngineEntitiesFromScratch();
@@ -224,44 +236,48 @@ public class UserTaskFrequencyByCandidateGroupByProcessReportEvaluationIT extend
     final String v1Identifier = "v1Identifier";
     final String allVersionsIdentifier = "allIdentifier";
     ReportDataDefinitionDto v1definition =
-      new ReportDataDefinitionDto(v1Identifier, v1Process.getKey(), v1displayName);
+        new ReportDataDefinitionDto(v1Identifier, v1Process.getKey(), v1displayName);
     v1definition.setVersion("1");
-    ReportDataDefinitionDto allVersionsDefinition = new ReportDataDefinitionDto(
-      allVersionsIdentifier, v2Instance.getProcessDefinitionKey(), allVersionsDisplayName);
+    ReportDataDefinitionDto allVersionsDefinition =
+        new ReportDataDefinitionDto(
+            allVersionsIdentifier, v2Instance.getProcessDefinitionKey(), allVersionsDisplayName);
     allVersionsDefinition.setVersion(ALL_VERSIONS);
 
     // when
-    final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
-    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
-      reportClient.evaluateHyperMapReport(reportData);
+    final ProcessReportDataDto reportData =
+        createReport(List.of(v1definition, allVersionsDefinition));
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>
+        evaluationResponse = reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
-    assertThat(result.getMeasures()).hasSize(1)
-      .extracting(MeasureResponseDto::getData)
-      .containsExactly(List.of(
-        createHyperMapResult(
-          FIRST_CANDIDATE_GROUP_ID,
-          FIRST_CANDIDATE_GROUP_NAME,
-          new MapResultEntryDto(allVersionsIdentifier, 3.0, allVersionsDisplayName),
-          new MapResultEntryDto(v1Identifier, 2.0, v1displayName)
-        ),
-        createHyperMapResult(
-          SECOND_CANDIDATE_GROUP_ID,
-          SECOND_CANDIDATE_GROUP_NAME,
-          new MapResultEntryDto(allVersionsIdentifier, 2.0, allVersionsDisplayName),
-          new MapResultEntryDto(v1Identifier, 2.0, v1displayName)
-        )
-      ));
+    assertThat(result.getMeasures())
+        .hasSize(1)
+        .extracting(MeasureResponseDto::getData)
+        .containsExactly(
+            List.of(
+                createHyperMapResult(
+                    FIRST_CANDIDATE_GROUP_ID,
+                    FIRST_CANDIDATE_GROUP_NAME,
+                    new MapResultEntryDto(allVersionsIdentifier, 3.0, allVersionsDisplayName),
+                    new MapResultEntryDto(v1Identifier, 2.0, v1displayName)),
+                createHyperMapResult(
+                    SECOND_CANDIDATE_GROUP_ID,
+                    SECOND_CANDIDATE_GROUP_NAME,
+                    new MapResultEntryDto(allVersionsIdentifier, 2.0, allVersionsDisplayName),
+                    new MapResultEntryDto(v1Identifier, 2.0, v1displayName))));
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition(final String aProcessName) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getFourUserTaskDiagram(aProcessName));
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getFourUserTaskDiagram(aProcessName));
   }
 
-  private void finishUserTask1AWithFirstAndTaskB2WithSecondGroup(final ProcessInstanceEngineDto processInstanceDto) {
+  private void finishUserTask1AWithFirstAndTaskB2WithSecondGroup(
+      final ProcessInstanceEngineDto processInstanceDto) {
     // finish user task 1 and A with first group
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
@@ -270,29 +286,30 @@ public class UserTaskFrequencyByCandidateGroupByProcessReportEvaluationIT extend
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
   }
 
-  private void finishUserTask1AWithFirstAndLeaveTask2BUnassigned(final ProcessInstanceEngineDto processInstanceDto) {
+  private void finishUserTask1AWithFirstAndLeaveTask2BUnassigned(
+      final ProcessInstanceEngineDto processInstanceDto) {
     // finish user task 1 and A with first group
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
   }
 
-  private HyperMapResultEntryDto createHyperMapResult(final String key,
-                                                      final String label,
-                                                      final MapResultEntryDto... results) {
+  private HyperMapResultEntryDto createHyperMapResult(
+      final String key, final String label, final MapResultEntryDto... results) {
     return new HyperMapResultEntryDto(key, List.of(results), label);
   }
 
   private ProcessReportDataDto createReport(final List<ReportDataDefinitionDto> definitionDtos) {
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(USER_TASK_FREQ_GROUP_BY_CANDIDATE_BY_PROCESS)
-      .build();
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(USER_TASK_FREQ_GROUP_BY_CANDIDATE_BY_PROCESS)
+            .build();
     reportData.setDefinitions(definitionDtos);
     return reportData;
   }
 
   private String getLocalizedUnassignedLabel() {
-    return embeddedOptimizeExtension.getLocalizationService()
-      .getDefaultLocaleMessageForMissingAssigneeLabel();
+    return embeddedOptimizeExtension
+        .getLocalizationService()
+        .getDefaultLocaleMessageForMissingAssigneeLabel();
   }
-
 }

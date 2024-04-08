@@ -5,25 +5,25 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+
+import jakarta.ws.rs.core.Response;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
-
 public class BackupRestServiceIT extends AbstractPlatformIT {
-  private final static Long VALID_BACKUP_ID = 123L;
+  private static final Long VALID_BACKUP_ID = 123L;
 
   @ParameterizedTest
   @MethodSource("backupApiRequestExecutorSuppliers")
-  public void backupApiNotAvailableWhenNotInCCSM(final Supplier<OptimizeRequestExecutor> backupApiRequestExecutorSuppliers) {
+  public void backupApiNotAvailableWhenNotInCCSM(
+      final Supplier<OptimizeRequestExecutor> backupApiRequestExecutorSuppliers) {
     // when
     final Response response = backupApiRequestExecutorSuppliers.get().execute();
 
@@ -34,9 +34,17 @@ public class BackupRestServiceIT extends AbstractPlatformIT {
   @SuppressWarnings(UNUSED)
   private static Stream<Supplier<OptimizeRequestExecutor>> backupApiRequestExecutorSuppliers() {
     return Stream.of(
-      () -> embeddedOptimizeExtension.getRequestExecutor().buildTriggerBackupRequest(new BackupRequestDto(VALID_BACKUP_ID)),
-      () -> embeddedOptimizeExtension.getRequestExecutor().buildGetBackupStateRequest(VALID_BACKUP_ID),
-      () -> embeddedOptimizeExtension.getRequestExecutor().buildDeleteBackupRequest(VALID_BACKUP_ID)
-    );
+        () ->
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .buildTriggerBackupRequest(new BackupRequestDto(VALID_BACKUP_ID)),
+        () ->
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .buildGetBackupStateRequest(VALID_BACKUP_ID),
+        () ->
+            embeddedOptimizeExtension
+                .getRequestExecutor()
+                .buildDeleteBackupRequest(VALID_BACKUP_ID));
   }
 }

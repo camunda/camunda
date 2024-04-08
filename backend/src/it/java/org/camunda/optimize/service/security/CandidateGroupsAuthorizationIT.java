@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithCandidateGroup;
+
+import java.util.Arrays;
+import java.util.Collections;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -14,15 +22,6 @@ import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroup
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithCandidateGroup;
 
 @Tag(OPENSEARCH_PASSING)
 public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
@@ -35,25 +34,26 @@ public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
 
     engineIntegrationExtension.createGroup("candidateGroupId", "candidateGroupName");
     final ProcessInstanceEngineDto instance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithCandidateGroup("candidateGroupId"));
+        engineIntegrationExtension.deployAndStartProcess(
+            getUserTaskDiagramWithCandidateGroup("candidateGroupId"));
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
-      collectionId,
-      instance.getProcessDefinitionKey(),
-      DefinitionType.PROCESS,
-      Collections.singletonList(null)
-    );
-    final String reportId = reportClient.createAndStoreProcessReport(collectionId, instance.getProcessDefinitionKey());
+        collectionId,
+        instance.getProcessDefinitionKey(),
+        DefinitionType.PROCESS,
+        Collections.singletonList(null));
+    final String reportId =
+        reportClient.createAndStoreProcessReport(collectionId, instance.getProcessDefinitionKey());
     importAllEngineEntitiesFromScratch();
 
     // when
-    final IdentitySearchResultResponseDto searchResponse = candidateGroupClient.searchForCandidateGroupsAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      AssigneeCandidateGroupReportSearchRequestDto.builder()
-        .reportIds(Collections.singletonList(reportId))
-        .build()
-    );
+    final IdentitySearchResultResponseDto searchResponse =
+        candidateGroupClient.searchForCandidateGroupsAsUser(
+            KERMIT_USER,
+            KERMIT_USER,
+            AssigneeCandidateGroupReportSearchRequestDto.builder()
+                .reportIds(Collections.singletonList(reportId))
+                .build());
 
     // then
     assertThat(searchResponse.getResult()).isEmpty();
@@ -65,22 +65,21 @@ public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     engineIntegrationExtension.createGroup("candidateGroupId", "candidateGroupName");
     final ProcessInstanceEngineDto instance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithCandidateGroup("candidateGroupId"));
-    final String reportId = reportClient.createSingleProcessReportAsUser(
-      instance.getProcessDefinitionKey(),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+        engineIntegrationExtension.deployAndStartProcess(
+            getUserTaskDiagramWithCandidateGroup("candidateGroupId"));
+    final String reportId =
+        reportClient.createSingleProcessReportAsUser(
+            instance.getProcessDefinitionKey(), KERMIT_USER, KERMIT_USER);
     importAllEngineEntitiesFromScratch();
 
     // when
-    final IdentitySearchResultResponseDto searchResponse = candidateGroupClient.searchForCandidateGroupsAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      AssigneeCandidateGroupReportSearchRequestDto.builder()
-        .reportIds(Collections.singletonList(reportId))
-        .build()
-    );
+    final IdentitySearchResultResponseDto searchResponse =
+        candidateGroupClient.searchForCandidateGroupsAsUser(
+            KERMIT_USER,
+            KERMIT_USER,
+            AssigneeCandidateGroupReportSearchRequestDto.builder()
+                .reportIds(Collections.singletonList(reportId))
+                .build());
 
     // then
     assertThat(searchResponse.getResult()).isEmpty();
@@ -92,62 +91,50 @@ public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationForKermit(
-      "authorizedDef",
-      RESOURCE_TYPE_PROCESS_DEFINITION
-    );
+        "authorizedDef", RESOURCE_TYPE_PROCESS_DEFINITION);
     engineIntegrationExtension.createGroup("candidateGroupId", "candidateGroupName");
     engineIntegrationExtension.createGroup("otherCandidateGroupId", "otherCandidateGroupName");
 
     final ProcessInstanceEngineDto authDefInstance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithCandidateGroup(
-        "authorizedDef",
-        "candidateGroupId"
-      ));
+        engineIntegrationExtension.deployAndStartProcess(
+            getUserTaskDiagramWithCandidateGroup("authorizedDef", "candidateGroupId"));
     final ProcessInstanceEngineDto noAuthDefInstance =
-      engineIntegrationExtension.deployAndStartProcess(getUserTaskDiagramWithCandidateGroup(
-        "unauthorizedDef",
-        "otherCandidateGroupId"
-      ));
+        engineIntegrationExtension.deployAndStartProcess(
+            getUserTaskDiagramWithCandidateGroup("unauthorizedDef", "otherCandidateGroupId"));
 
-    final String authorizedReportId = reportClient.createSingleProcessReportAsUser(
-      authDefInstance.getProcessDefinitionKey(),
-      KERMIT_USER,
-      KERMIT_USER
-    );
-    final String unauthorizedReportId = reportClient.createSingleProcessReportAsUser(
-      noAuthDefInstance.getProcessDefinitionKey(),
-      KERMIT_USER,
-      KERMIT_USER
-    );
+    final String authorizedReportId =
+        reportClient.createSingleProcessReportAsUser(
+            authDefInstance.getProcessDefinitionKey(), KERMIT_USER, KERMIT_USER);
+    final String unauthorizedReportId =
+        reportClient.createSingleProcessReportAsUser(
+            noAuthDefInstance.getProcessDefinitionKey(), KERMIT_USER, KERMIT_USER);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final IdentitySearchResultResponseDto searchResponse = candidateGroupClient.searchForCandidateGroupsAsUser(
-      KERMIT_USER,
-      KERMIT_USER,
-      AssigneeCandidateGroupReportSearchRequestDto.builder()
-        .reportIds(Arrays.asList(authorizedReportId, unauthorizedReportId))
-        .build()
-    );
+    final IdentitySearchResultResponseDto searchResponse =
+        candidateGroupClient.searchForCandidateGroupsAsUser(
+            KERMIT_USER,
+            KERMIT_USER,
+            AssigneeCandidateGroupReportSearchRequestDto.builder()
+                .reportIds(Arrays.asList(authorizedReportId, unauthorizedReportId))
+                .build());
 
     // then
     assertThat(searchResponse.getResult())
-      .singleElement()
-      .isEqualTo(
-        new GroupDto("candidateGroupId", "candidateGroupName")
-      );
+        .singleElement()
+        .isEqualTo(new GroupDto("candidateGroupId", "candidateGroupName"));
   }
 
   private void startSimpleUserTaskProcessWithCandidateGroup() {
     engineIntegrationExtension.deployAndStartProcess(
-      Bpmn.createExecutableProcess("aProcess")
-        .startEvent()
-        .userTask().camundaCandidateGroups("marketing")
-        .userTask().camundaCandidateGroups("sales")
-        .endEvent()
-        .done()
-    );
+        Bpmn.createExecutableProcess("aProcess")
+            .startEvent()
+            .userTask()
+            .camundaCandidateGroups("marketing")
+            .userTask()
+            .camundaCandidateGroups("sales")
+            .endEvent()
+            .done());
   }
-
 }

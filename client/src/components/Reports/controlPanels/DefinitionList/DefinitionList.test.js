@@ -17,6 +17,7 @@ import {loadTenants} from './service';
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
   areTenantsAvailable: jest.fn().mockReturnValue(true),
+  getMaxNumDataSourcesForReport: jest.fn().mockReturnValue(10),
 }));
 
 jest.mock('hooks', () => ({
@@ -111,7 +112,7 @@ it('should allow copying definitions', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should not allow copy if limit of 10 definitions is reached', () => {
+it('should not allow copy if limit of 10 definitions is reached', async () => {
   const node = shallow(
     <DefinitionList
       {...props}
@@ -124,6 +125,8 @@ it('should not allow copy if limit of 10 definitions is reached', () => {
       })}
     />
   );
+  await runAllEffects();
+  await flushPromises();
 
   expect(node.find({iconDescription: 'Copy'})).not.toExist();
 });

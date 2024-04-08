@@ -66,7 +66,7 @@ public interface QueryDSL {
   }
 
   static <A> Query gt(String field, A gt) {
-    return RangeQuery.of(q -> q.field(field).gte(json(gt))).toQuery();
+    return RangeQuery.of(q -> q.field(field).gt(json(gt))).toQuery();
   }
 
   static <A> Query gteLte(String field, A gte, A lte) {
@@ -188,6 +188,10 @@ public interface QueryDSL {
 
   static SourceConfig sourceExclude(String... fields) {
     return sourceExclude(List.of(fields));
+  }
+
+  static SourceConfig sourceExcluded() {
+    return SourceConfig.of(s -> s.fetch(false));
   }
 
   static SourceConfig sourceExclude(List<String> fields) {

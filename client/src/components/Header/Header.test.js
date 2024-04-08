@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 
 import {track} from 'tracking';
-import {getOptimizeProfile, isEnterpriseMode} from 'config';
+import {getOptimizeDatabase, getOptimizeProfile, isEnterpriseMode} from 'config';
 
 import {isEventBasedProcessEnabled} from './service';
 import {Header} from './Header';
@@ -31,6 +31,7 @@ jest.mock('config', () => ({
   }),
   getOnboardingConfig: jest.fn().mockReturnValue({orgId: 'orgId'}),
   getNotificationsUrl: jest.fn().mockReturnValue('notificationsUrl'),
+  getOptimizeDatabase: jest.fn().mockReturnValue('elasticsearch'),
 }));
 
 jest.mock('hooks', () => ({
@@ -202,4 +203,16 @@ it('should display the notifications component in cloud mode', async () => {
     isOpen: false,
     key: 'notifications',
   });
+});
+
+it('should display a warning if optimize is running in opensearch mode', async () => {
+  getOptimizeDatabase.mockReturnValueOnce('opensearch');
+  const node = shallow(<Header {...props} />);
+
+  await runLastEffect();
+  await node.update();
+
+  const tags = node.find(C3Navigation).prop('navbar').tags;
+
+  expect(tags[0].key).toBe('opensearchWarning');
 });

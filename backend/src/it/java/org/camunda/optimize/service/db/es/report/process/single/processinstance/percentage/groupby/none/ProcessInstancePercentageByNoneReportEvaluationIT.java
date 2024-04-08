@@ -5,6 +5,16 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.percentage.groupby.none;
 
+import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_PER_GROUP_BY_NONE;
+
+import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -16,25 +26,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.es.report.process.AbstractProcessDefinitionIT;
-
-import org.camunda.optimize.test.util.DateCreationFreezer;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_PER_GROUP_BY_NONE;
 
 public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -47,20 +45,22 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
     AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getProcessDefinitionKey())
+        .isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions())
-      .containsExactly(processInstanceDto.getProcessDefinitionVersion());
+        .containsExactly(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getEntity())
+        .isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.PERCENTAGE);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
@@ -80,8 +80,9 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
 
     // when
     ProcessReportDataDto reportData =
-      createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+        createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(3L);
@@ -95,8 +96,10 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        createReport(definition.getKey(), definition.getVersionAsString());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isZero();
@@ -112,11 +115,10 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      engineDto.getProcessDefinitionKey(),
-      engineDto.getProcessDefinitionVersion()
-    );
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -129,16 +131,16 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = newArrayList(tenantId1);
-    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
-      newArrayList(null, tenantId1, tenantId2)
-    );
+    final String processKey =
+        deployAndStartMultiTenantSimpleServiceTaskProcess(newArrayList(null, tenantId1, tenantId2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -156,9 +158,10 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
 
     // when
     ProcessReportDataDto reportData =
-      createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
+        createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
     reportData.setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList());
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -171,32 +174,36 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     // given
     final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now.minusDays(1));
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+        processInstance.getId(), now.minusDays(1));
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId(), Map.of("varName", "varVal"));
+    engineIntegrationExtension.startProcessInstance(
+        processInstance.getDefinitionId(), Map.of("varName", "varVal"));
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
     reportData.setFilter(
-      ProcessFilterBuilder.filter()
-        .fixedInstanceStartDate()
-        .start(now.minusMinutes(10))
-        .end(null)
-        .add()
-        .variable()
-        .name("varName")
-        .stringType()
-        .values(Collections.singletonList("varVal"))
-        .operator(IN)
-        .add()
-        .buildList());
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+        ProcessFilterBuilder.filter()
+            .fixedInstanceStartDate()
+            .start(now.minusMinutes(10))
+            .end(null)
+            .add()
+            .variable()
+            .name("varName")
+            .stringType()
+            .values(Collections.singletonList("varVal"))
+            .operator(IN)
+            .add()
+            .buildList());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
     final Integer storedInstanceCount =
-      databaseIntegrationTestExtension.getDocumentCountOf(ProcessInstanceIndex.constructIndexName(processInstance.getProcessDefinitionKey()));
+        databaseIntegrationTestExtension.getDocumentCountOf(
+            ProcessInstanceIndex.constructIndexName(processInstance.getProcessDefinitionKey()));
 
     // then all three instance have been imported
     assertThat(storedInstanceCount).isEqualTo(3);
@@ -210,7 +217,8 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
 
   @ParameterizedTest
   @MethodSource("viewLevelFilters")
-  public void viewLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  public void viewLevelFiltersOnlyAppliedToInstances(
+      final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -219,9 +227,10 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
+        createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
     reportData.getFilter().addAll(filtersToApply);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isZero();
@@ -229,12 +238,10 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     assertThat(result.getFirstMeasureData()).isEqualTo(0.);
   }
 
-
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ProcessReportDataDto dataDto =
-      createReport(PROCESS_DEFINITION_KEY, "1");
+    ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperties((ViewProperty) null);
 
     // when
@@ -247,8 +254,7 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto =
-      createReport(PROCESS_DEFINITION_KEY, "1");
+    ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     // when
@@ -258,13 +264,12 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
-      .build();
+  private ProcessReportDataDto createReport(
+      String processDefinitionKey, String processDefinitionVersion) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+        .build();
   }
-
 }

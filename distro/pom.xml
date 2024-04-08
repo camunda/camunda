@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.13.0</version>
+    <version>3.14.0</version>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>
@@ -104,7 +104,7 @@
               <failIfNoMatch>false</failIfNoMatch>
             </configuration>
           </execution>
-          <!-- Remove -SNAPSHOT from docs version if it exists -->
+          <!-- Remove -SNAPSHOT, -rcX, and -alphaX from docs version if it exists -->
           <execution>
             <id>regex-property3</id>
             <goals>
@@ -113,7 +113,21 @@
             <configuration>
               <name>docs.version</name>
               <value>${docs.version}</value>
-              <regex>-SNAPSHOT</regex>
+              <regex>-SNAPSHOT|-rc\d|-alpha\d</regex>
+              <failIfNoMatch>false</failIfNoMatch>
+            </configuration>
+          </execution>
+          <!--Only use .0 suffix-->
+          <execution>
+            <id>regex-property4</id>
+            <goals>
+              <goal>regex-property</goal>
+            </goals>
+            <configuration>
+              <name>docs.version</name>
+              <value>${docs.version}</value>
+              <regex>.\d+$</regex>
+              <replacement>.0</replacement>
               <failIfNoMatch>false</failIfNoMatch>
             </configuration>
           </execution>

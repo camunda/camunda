@@ -40,17 +40,11 @@ public interface UserTaskIdentityService {
         .toList();
   }
 
-  default IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
+  IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
       final String terms,
       final Collection<String> identityIds,
       final IdentityType identityType,
-      final int resultLimit) {
-    return new IdentitySearchResultResponseDto(
-        identityIds.stream()
-            .map(id -> IdentityType.USER == identityType ? new UserDto(id) : new GroupDto(id))
-            .map(IdentityWithMetadataResponseDto.class::cast)
-            .toList());
-  }
+      final int resultLimit);
 
   Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
       final String id, final IdentityType type);

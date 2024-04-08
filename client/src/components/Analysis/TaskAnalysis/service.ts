@@ -64,3 +64,23 @@ export function getOutlierSummary(count: number, relation: number): string {
     percentage: Math.round(relation * 100),
   }).toString();
 }
+
+export function shouldUseLogharitmicScale(
+  data: AnalysisDurationChartEntry[],
+  maxDifference: number
+): boolean {
+  const {min, max} = data.reduce(
+    (range, {value, outlier}) => {
+      if (outlier && value !== 0) {
+        // we search for lowest count of instances in outliers
+        range.min = Math.min(range.min, value);
+      } else if (!outlier) {
+        //  we search for highest count of instances in non-outliers
+        range.max = Math.max(range.max, value);
+      }
+      return range;
+    },
+    {min: 1, max: 0}
+  );
+  return max / min > maxDifference;
+}

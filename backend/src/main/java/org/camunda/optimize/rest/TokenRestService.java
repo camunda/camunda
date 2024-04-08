@@ -8,8 +8,6 @@ package org.camunda.optimize.rest;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
@@ -28,7 +26,7 @@ public class TokenRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public TokenDto getCurrentToken(@Context final ContainerRequestContext requestContext) {
+  public TokenDto getCurrentToken() {
     return cloudSaasMetaInfoService
         .map(
             saasMetaInfoService ->

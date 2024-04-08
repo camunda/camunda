@@ -5,8 +5,27 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.OPEN;
+import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.RESOLVED;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static org.camunda.optimize.util.ZeebeBpmnModels.CATCH_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createIncidentProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
+
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
@@ -20,40 +39,11 @@ import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
-
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.OPEN;
-import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.RESOLVED;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
-import static org.camunda.optimize.util.ZeebeBpmnModels.CATCH_EVENT;
-import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createIncidentProcess;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
@@ -61,7 +51,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   public void importZeebeIncidentData_openFailTaskIncident() {
     // given
     final ProcessInstanceEvent deployedInstance =
-      deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
     zeebeExtension.failTask(SERVICE_TASK);
 
     // when
@@ -70,36 +60,39 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(savedInstance -> {
-        assertThat(savedInstance.getProcessInstanceId())
-          .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
-        assertThat(savedInstance.getProcessDefinitionId())
-          .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
-        assertThat(savedInstance.getProcessDefinitionVersion())
-          .isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
-        assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
-        assertThat(savedInstance.getBusinessKey()).isNull();
-        assertThat(savedInstance.getFlowNodeInstances()).isNotEmpty();
-        assertThat(savedInstance.getVariables()).isEmpty();
-        assertThat(savedInstance.getStartDate()).isNotNull();
-        assertThat(savedInstance.getEndDate()).isNull();
-        assertThat(savedInstance.getDuration()).isNull();
-        assertThat(savedInstance.getIncidents()).isNotEmpty()
-          .hasSize(1)
-          .containsExactly(
-            createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)
-          );
-      });
+        .singleElement()
+        .satisfies(
+            savedInstance -> {
+              assertThat(savedInstance.getProcessInstanceId())
+                  .isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
+              assertThat(savedInstance.getProcessDefinitionId())
+                  .isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
+              assertThat(savedInstance.getProcessDefinitionKey())
+                  .isEqualTo(deployedInstance.getBpmnProcessId());
+              assertThat(savedInstance.getProcessDefinitionVersion())
+                  .isEqualTo(String.valueOf(deployedInstance.getVersion()));
+              assertThat(savedInstance.getDataSource().getName())
+                  .isEqualTo(getConfiguredZeebeName());
+              assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
+              assertThat(savedInstance.getBusinessKey()).isNull();
+              assertThat(savedInstance.getFlowNodeInstances()).isNotEmpty();
+              assertThat(savedInstance.getVariables()).isEmpty();
+              assertThat(savedInstance.getStartDate()).isNotNull();
+              assertThat(savedInstance.getEndDate()).isNull();
+              assertThat(savedInstance.getDuration()).isNull();
+              assertThat(savedInstance.getIncidents())
+                  .isNotEmpty()
+                  .hasSize(1)
+                  .containsExactly(
+                      createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN));
+            });
   }
 
   @Test
   public void importZeebeIncidentData_throwErrorIncident() {
     // given
     final ProcessInstanceEvent deployedInstance =
-      deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
     zeebeExtension.throwErrorIncident(SERVICE_TASK);
 
     // when
@@ -108,19 +101,21 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
-        .hasSize(1)
-        .containsExactly(
-          createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)
-        ));
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getIncidents())
+                    .isNotEmpty()
+                    .hasSize(1)
+                    .containsExactly(
+                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)));
   }
 
   @Test
   public void importZeebeIncidentData_missingVariableIncident() {
     // given
     final ProcessInstanceEvent deployedInstance =
-      deployAndStartInstanceForProcess(createIncidentProcess("someProcess"));
+        deployAndStartInstanceForProcess(createIncidentProcess("someProcess"));
 
     // when
     waitUntilIncidentRecordWithProcessIdExported("someProcess");
@@ -128,19 +123,21 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
-        .hasSize(1)
-        .containsExactly(
-          createIncident(savedInstance, deployedInstance, CATCH_EVENT, OPEN)
-        ));
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getIncidents())
+                    .isNotEmpty()
+                    .hasSize(1)
+                    .containsExactly(
+                        createIncident(savedInstance, deployedInstance, CATCH_EVENT, OPEN)));
   }
 
   @Test
   public void importZeebeIncidentData_importResolvedIncidentInSameBatch() {
     // given
     final ProcessInstanceEvent deployedInstance =
-      deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
     zeebeExtension.throwErrorIncident(SERVICE_TASK);
     waitUntilIncidentRecordWithProcessIdExported("someProcess");
     resolveIncident();
@@ -151,18 +148,20 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
-        .containsExactly(
-          createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
-        ));
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getIncidents())
+                    .isNotEmpty()
+                    .containsExactly(
+                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)));
   }
 
   @Test
   public void importZeebeIncidentData_importResolvedIncidentInDifferentBatches() {
     // given
     final ProcessInstanceEvent deployedInstance =
-      deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
     zeebeExtension.throwErrorIncident(SERVICE_TASK);
     waitUntilIncidentRecordWithProcessIdExported("someProcess");
 
@@ -171,11 +170,13 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
-        .containsExactly(
-          createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)
-        ));
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getIncidents())
+                    .isNotEmpty()
+                    .containsExactly(
+                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, OPEN)));
 
     // when
     resolveIncident();
@@ -184,14 +185,17 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .singleElement()
-      .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
-        .containsExactly(
-          createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
-        ));
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getIncidents())
+                    .isNotEmpty()
+                    .containsExactly(
+                        createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)));
   }
 
-  // Test backwards compatibility for default tenantID applied when importing records pre multi tenancy introduction
+  // Test backwards compatibility for default tenantID applied when importing records pre multi
+  // tenancy introduction
   @DisabledIf("isZeebeVersionWithMultiTenancy")
   @Test
   public void importZeebeIncidentData_defaultTenantIdForRecordsWithoutTenantId() {
@@ -205,10 +209,10 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .flatExtracting(ProcessInstanceDto::getIncidents)
-      .extracting(IncidentDto::getTenantId)
-      .singleElement()
-      .isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
+        .flatExtracting(ProcessInstanceDto::getIncidents)
+        .extracting(IncidentDto::getTenantId)
+        .singleElement()
+        .isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
   }
 
   @EnabledIf("isZeebeVersionWithMultiTenancy")
@@ -226,109 +230,103 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-      .flatExtracting(ProcessInstanceDto::getIncidents)
-      .extracting(IncidentDto::getTenantId)
-      .singleElement()
-      .isEqualTo(expectedTenantId);
+        .flatExtracting(ProcessInstanceDto::getIncidents)
+        .extracting(IncidentDto::getTenantId)
+        .singleElement()
+        .isEqualTo(expectedTenantId);
   }
 
   private void waitUntilIncidentRecordWithProcessIdExported(final String processId) {
     waitUntilIncidentRecordsWithProcessIdExported(1, processId);
   }
 
-  private BoolQueryBuilder getQueryForIncidentEvents() {
-    return boolQuery().must(termsQuery(
-      ZeebeProcessInstanceRecordDto.Fields.intent,
-      IncidentIntent.CREATED.name(),
-      IncidentIntent.RESOLVED.name()
-    ));
+  private TermsQueryContainer getQueryForIncidentEvents() {
+    TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(
+        ZeebeProcessInstanceRecordDto.Fields.intent,
+        List.of(IncidentIntent.CREATED.name(), IncidentIntent.RESOLVED.name()));
+    return query;
   }
 
-  private IncidentDto createIncident(final ProcessInstanceDto processInstanceDto,
-                                     final ProcessInstanceEvent deployedInstance,
-                                     final String activityId, final IncidentStatus incidentStatus) {
+  private IncidentDto createIncident(
+      final ProcessInstanceDto processInstanceDto,
+      final ProcessInstanceEvent deployedInstance,
+      final String activityId,
+      final IncidentStatus incidentStatus) {
     final Map<IncidentIntent, List<ZeebeIncidentRecordDto>> incidentsForRecordByIntent =
-      getZeebeExportedIncidentEventsByElementId().entrySet()
-        .stream()
-        .flatMap(entry -> entry.getValue().stream())
-        .collect(Collectors.groupingBy(ZeebeRecordDto::getIntent));
-    final ZeebeIncidentRecordDto createdRecord = incidentsForRecordByIntent.get(IncidentIntent.CREATED).get(0);
+        getZeebeExportedIncidentEventsByElementId().entrySet().stream()
+            .flatMap(entry -> entry.getValue().stream())
+            .collect(Collectors.groupingBy(ZeebeRecordDto::getIntent));
+    final ZeebeIncidentRecordDto createdRecord =
+        incidentsForRecordByIntent.get(IncidentIntent.CREATED).get(0);
     final ZeebeIncidentRecordDto resolvedRecord =
-      Optional.ofNullable(incidentsForRecordByIntent.get(IncidentIntent.RESOLVED))
-        .map(incidentRecords -> incidentRecords.get(0))
-        .orElse(null);
+        Optional.ofNullable(incidentsForRecordByIntent.get(IncidentIntent.RESOLVED))
+            .map(incidentRecords -> incidentRecords.get(0))
+            .orElse(null);
     final IncidentDto incident = new IncidentDto();
     incident.setId(String.valueOf(createdRecord.getKey()));
     incident.setDefinitionKey(deployedInstance.getBpmnProcessId());
     incident.setDefinitionVersion(String.valueOf(deployedInstance.getVersion()));
     incident.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
     incident.setProcessInstanceId(null);
-    incident.setActivityId(String.valueOf(getFlowNodeIdFromProcessInstanceForActivity(
-      processInstanceDto,
-      activityId
-    )));
-    incident.setIncidentType(IncidentType.valueOfId(createdRecord.getValue().getErrorType().toString()));
+    incident.setActivityId(
+        String.valueOf(
+            getFlowNodeIdFromProcessInstanceForActivity(processInstanceDto, activityId)));
+    incident.setIncidentType(
+        IncidentType.valueOfId(createdRecord.getValue().getErrorType().toString()));
     incident.setIncidentMessage(createdRecord.getValue().getErrorMessage());
     incident.setIncidentStatus(incidentStatus);
-    final OffsetDateTime createTime = OffsetDateTime.ofInstant(
-      Instant.ofEpochMilli(createdRecord.getTimestamp()), ZoneId.systemDefault());
+    final OffsetDateTime createTime =
+        OffsetDateTime.ofInstant(
+            Instant.ofEpochMilli(createdRecord.getTimestamp()), ZoneId.systemDefault());
     incident.setCreateTime(createTime);
-    final OffsetDateTime endTime = Optional.ofNullable(resolvedRecord)
-      .map(record -> OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneId.systemDefault()))
-      .orElse(null);
+    final OffsetDateTime endTime =
+        Optional.ofNullable(resolvedRecord)
+            .map(
+                record ->
+                    OffsetDateTime.ofInstant(
+                        Instant.ofEpochMilli(record.getTimestamp()), ZoneId.systemDefault()))
+            .orElse(null);
     incident.setEndTime(endTime);
-    Optional.ofNullable(endTime).ifPresent(end -> incident.setDurationInMs(createTime.until(end, ChronoUnit.MILLIS)));
+    Optional.ofNullable(endTime)
+        .ifPresent(end -> incident.setDurationInMs(createTime.until(end, ChronoUnit.MILLIS)));
     return incident;
   }
 
   @SneakyThrows
   private Map<Long, List<ZeebeIncidentRecordDto>> getZeebeExportedIncidentEventsByElementId() {
     final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient =
-      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(expectedIndex)
-      .source(new SearchSourceBuilder()
-                .query(getQueryForIncidentEvents())
-                .trackTotalHits(true)
-                .size(100));
-    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
-    return ElasticsearchReaderUtil.mapHits(
-        searchResponse.getHits(),
-        ZeebeIncidentRecordDto.class,
-        embeddedOptimizeExtension.getObjectMapper()
-      ).stream()
-      .collect(Collectors.groupingBy(event -> event.getValue().getElementInstanceKey()));
+        zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
+    return databaseIntegrationTestExtension
+        .getZeebeExportedRecordsByQuery(
+            expectedIndex, getQueryForIncidentEvents(), ZeebeIncidentRecordDto.class)
+        .stream()
+        .collect(Collectors.groupingBy(event -> event.getValue().getElementInstanceKey()));
   }
 
   private void resolveIncident() {
     final ZeebeIncidentRecordDto exportedIncident =
-      getZeebeExportedIncidentEventsByElementId().values()
-        .stream()
-        .flatMap(Collection::stream)
-        .findFirst().orElseThrow(() -> new OptimizeIntegrationTestException("Cannot find any exported incidents"));
+        getZeebeExportedIncidentEventsByElementId().values().stream()
+            .flatMap(Collection::stream)
+            .findFirst()
+            .orElseThrow(
+                () -> new OptimizeIntegrationTestException("Cannot find any exported incidents"));
     zeebeExtension.resolveIncident(exportedIncident.getKey());
   }
 
-  private String getFlowNodeIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
-                                                             final String activityId) {
+  private String getFlowNodeIdFromProcessInstanceForActivity(
+      final ProcessInstanceDto processInstanceDto, final String activityId) {
     return getPropertyIdFromProcessInstanceForActivity(
-      processInstanceDto,
-      activityId,
-      FlowNodeInstanceDto::getFlowNodeId
-    );
+        processInstanceDto, activityId, FlowNodeInstanceDto::getFlowNodeId);
   }
 
-  private void waitUntilIncidentRecordsWithProcessIdExported(final long minRecordCount, final String processId) {
+  private void waitUntilIncidentRecordsWithProcessIdExported(
+      final long minRecordCount, final String processId) {
     final TermsQueryContainer query = new TermsQueryContainer();
-    query.addTermQuery(ZeebeIncidentRecordDto.Fields.value + "." + ZeebeIncidentDataDto.Fields.bpmnProcessId,
-                       processId);
+    query.addTermQuery(
+        ZeebeIncidentRecordDto.Fields.value + "." + ZeebeIncidentDataDto.Fields.bpmnProcessId,
+        processId);
     waitUntilRecordMatchingQueryExported(
-      minRecordCount,
-      DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME,
-      query
-    );
+        minRecordCount, DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME, query);
   }
-
 }

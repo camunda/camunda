@@ -6,7 +6,6 @@
  */
 
 export {Button} from './Button';
-export {ButtonGroup} from './ButtonGroup';
 export {Tabs} from './Tabs';
 export {Message} from './Message';
 export {MessageBox} from './MessageBox';
@@ -27,9 +26,6 @@ export {EntityDescription} from './EntityDescription';
 export {EntityNameForm} from './EntityNameForm';
 export {LoadingIndicator} from './LoadingIndicator';
 export {DocsLink} from './DocsLink';
-export {Typeahead, MultiSelect} from './Typeahead';
-export {Tag} from './Tag';
-export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
 export {UserTypeahead} from './UserTypeahead';
 export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
 export {DMNDiagram} from './DMNDiagram';
@@ -39,16 +35,21 @@ export {Table} from './Table';
 export {TargetValueBadge} from './TargetValueBadge';
 export {DatePicker} from './DatePicker';
 export {DateRangeInput} from './DateRangeInput';
-export {SearchInput} from './SearchInput';
 export {Checklist} from './Checklist';
 export {DurationChart} from './DurationChart';
 export {ColorPicker} from './ColorPicker';
-export {Badge} from './Badge';
 export {Popover} from './Popover';
 export {TenantInfo} from './TenantInfo';
 export {VersionPopover, TenantPopover} from './DefinitionSelection';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ShareEntity} from './ShareEntity';
+export {ErrorPage} from './ErrorPage';
+export {ErrorBoundary} from './ErrorBoundary';
+export {TargetSelection} from './TargetSelection';
+// @ts-ignore
+export {DefinitionSelection} from './DefinitionSelection';
+// @ts-ignore
+export {ReportRenderer} from './ReportRenderer';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

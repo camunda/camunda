@@ -34,11 +34,21 @@ public class DashboardRestMapper {
 
   public void prepareRestResponse(
       final DashboardDefinitionRestDto dashboardDefinitionDto, final String locale) {
-    resolveOwnerAndModifierNames(dashboardDefinitionDto);
+    prepareRestResponse(dashboardDefinitionDto, locale, false);
+  }
+
+  public void prepareRestResponse(
+      final DashboardDefinitionRestDto dashboardDefinitionDto,
+      final String locale,
+      final boolean skipNameResolution) {
+    if (!skipNameResolution) {
+      resolveOwnerAndModifierNames(dashboardDefinitionDto);
+    }
     localizeDashboard(dashboardDefinitionDto, locale);
   }
 
-  private void resolveOwnerAndModifierNames(DashboardDefinitionRestDto dashboardDefinitionDto) {
+  private void resolveOwnerAndModifierNames(
+      final DashboardDefinitionRestDto dashboardDefinitionDto) {
     Optional.ofNullable(dashboardDefinitionDto.getOwner())
         .flatMap(identityService::getIdentityNameById)
         .ifPresent(dashboardDefinitionDto::setOwner);
@@ -90,8 +100,9 @@ public class DashboardRestMapper {
             });
   }
 
-  private void localizeTextFromTile(Map<String, Object> textTileConfiguration, String locale) {
-    String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
+  private void localizeTextFromTile(
+      final Map<String, Object> textTileConfiguration, final String locale) {
+    final String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
     Optional.ofNullable(
             localizationService.getLocalizationForInstantPreviewDashboardCode(locale, textContent))
         .ifPresent(localizedText -> textTileConfiguration.put(TEXT_FIELD, localizedText));

@@ -5,9 +5,6 @@
       <set>
         <option value="activate" />
         <option value="activateOnShortcut" />
-        <option value="organizeImports" />
-        <option value="reformat" />
-        <option value="rearrange" />
         <option value="fieldCanBeFinal" />
         <option value="localCanBeFinal" />
         <option value="localCanBeFinalExceptImplicit" />

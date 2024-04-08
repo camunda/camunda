@@ -8,6 +8,7 @@
 import {useEffect, useState} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 import {Button, ButtonSet, Loading} from '@carbon/react';
+import classnames from 'classnames';
 
 import {Modal, BPMNDiagram, ClickBehavior, RegistryElement, ModdleElement} from 'components';
 import {loadProcessDefinitionXml} from 'services';
@@ -20,21 +21,17 @@ import {FilterProps} from '../types';
 
 import './NodeSelection.scss';
 
-interface NodeSelectionProps
-  extends FilterProps<{
-    values?: string[];
-    operator?: string;
-  }> {
-  filterLevel: 'view';
-  filterType: 'executedFlowNodes';
-}
-
 export default function NodeSelection({
   filterData,
   definitions,
   close,
   addFilter,
-}: NodeSelectionProps) {
+  modalTitle = t('common.filter.types.flowNodeSelection'),
+  className,
+}: FilterProps<{
+  values?: string[];
+  operator?: string;
+}>) {
   const [allFlowNodes, setAllFlowNodes] = useState<string[]>([]);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
@@ -106,7 +103,7 @@ export default function NodeSelection({
         selectionPercentage < 50
           ? {operator: 'in', values: selectedNodes}
           : {operator: 'not in', values: deselectedFlowNodes},
-      appliedTo: [applyTo?.identifier],
+      appliedTo: applyTo ? [applyTo.identifier] : [],
     });
   };
 
@@ -119,8 +116,8 @@ export default function NodeSelection({
   };
 
   return (
-    <Modal open onClose={close} className="NodeSelection" size="lg">
-      <Modal.Header>{t('common.filter.types.flowNodeSelection')}</Modal.Header>
+    <Modal open onClose={close} className={classnames('NodeSelection', className)} size="lg">
+      <Modal.Header>{modalTitle}</Modal.Header>
       <Modal.Content className="modalContent">
         <FilterSingleDefinitionSelection
           availableDefinitions={definitions}

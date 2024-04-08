@@ -8,23 +8,26 @@ inputs:
   project_name:
     description: "Project name to allow running the same file multiple times"
     required: true
+  additional_flags:
+    description: "Additional flags to pass to the compose command"
+    required: false
 runs:
   using: composite
   steps:
-  - name: Run ${{ inputs.project_name }} compose
-    uses: isbang/compose-action@178aeba5c9dbeed89ffffbb3e6548ec08e9839cf # v1.5.1
-    with:
-      compose-file: |
-        ${{ inputs.compose_file }}
-      compose-flags: "--project-name ${{ inputs.project_name }}"
-  - name: Short sleep to let it startup
-    shell: bash
-    run: sleep 3
-  - name: Check if service is healthy
-    shell: bash
-    run: |
-      ${{ github.action_path }}/healthy.sh
-    env:
-      FILE: ${{ inputs.compose_file }}
-      TIMEOUT: "300"
-      COMPOSE_FLAGS: "--project-name ${{ inputs.project_name }}"
+    - name: Run ${{ inputs.project_name }} compose
+      uses: hoverkraft-tech/compose-action@178aeba5c9dbeed89ffffbb3e6548ec08e9839cf # v1.5.1
+      with:
+        compose-file: |
+          ${{ inputs.compose_file }}
+        compose-flags: "--project-name ${{ inputs.project_name }} ${{ inputs.additional_flags }}"
+    - name: Short sleep to let it startup
+      shell: bash
+      run: sleep 3
+    - name: Check if service is healthy
+      shell: bash
+      run: |
+        ${{ github.action_path }}/healthy.sh
+      env:
+        FILE: ${{ inputs.compose_file }}
+        TIMEOUT: "300"
+        COMPOSE_FLAGS: "--project-name ${{ inputs.project_name }}"

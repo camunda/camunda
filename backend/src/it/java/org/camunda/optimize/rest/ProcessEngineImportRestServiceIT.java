@@ -5,16 +5,18 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
+@Tag(OPENSEARCH_PASSING)
 public class ProcessEngineImportRestServiceIT extends AbstractPlatformIT {
 
   private static final String PROCESS_ID = "aProcessId";
@@ -28,15 +30,16 @@ public class ProcessEngineImportRestServiceIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetProcessDefinitionsRequest()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessDefinitionOptimizeDto> definitions =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .executeAndReturnList(
+                ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
     // then
     assertThat(definitions).isNotNull().hasSize(1);
     assertThat(definitions.get(0).getId()).isNotNull();
     assertThat(definitions.get(0).getKey()).isEqualTo(PROCESS_ID);
     assertThat(definitions.get(0).getVersion()).isNotEqualTo("0");
   }
-
 }

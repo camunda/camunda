@@ -6,9 +6,7 @@
 package org.camunda.optimize.service.metadata;
 
 import com.vdurmont.semver4j.Semver;
-
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class Version {
@@ -19,9 +17,9 @@ public final class Version {
 
   public static String stripToPlainVersion(final String rawVersion) {
     return Arrays.stream(rawVersion.split("[^0-9]"))
-      .limit(3)
-      .filter(part -> part.chars().allMatch(Character::isDigit))
-      .collect(Collectors.joining("."));
+        .limit(3)
+        .filter(part -> part.chars().allMatch(Character::isDigit))
+        .collect(Collectors.joining("."));
   }
 
   public static final String getMajorVersionFrom(final String plainVersion) {
@@ -43,7 +41,7 @@ public final class Version {
 
   public static boolean isAlphaVersion(final String version) {
     return Arrays.stream(asSemver(version).getSuffixTokens())
-      .anyMatch(value -> value.contains("alpha"));
+        .anyMatch(value -> value.contains("alpha"));
   }
 
   private static Semver asSemver(final String plainVersion) {

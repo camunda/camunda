@@ -5,9 +5,23 @@
  */
 package org.camunda.optimize.service.db.es.retrieval.variable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -17,25 +31,10 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
-import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.service.util.VariableHelper;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 
 public class ProcessVariableNameIT extends AbstractVariableIT {
 
@@ -53,13 +52,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse)
-      .hasSize(4)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var1", "var2", "var3", "var4");
+        .hasSize(4)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1", "var2", "var3", "var4");
   }
 
   @Test
@@ -83,15 +83,18 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(Arrays.asList(
-      new ProcessVariableNameRequestDto(key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS),
-      new ProcessVariableNameRequestDto(key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS)
-    ));
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(
+            Arrays.asList(
+                new ProcessVariableNameRequestDto(
+                    key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS),
+                new ProcessVariableNameRequestDto(
+                    key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS)));
 
     // then
     assertThat(variableResponse)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var1", "var2", "var3", "var4");
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1", "var2", "var3", "var4");
   }
 
   @Test
@@ -100,10 +103,9 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = Lists.newArrayList(tenantId1);
-    String processDefinition = deployAndStartMultiTenantUserTaskProcess(
-      "someVariableName",
-      Lists.newArrayList(null, tenantId1, tenantId2)
-    );
+    String processDefinition =
+        deployAndStartMultiTenantUserTaskProcess(
+            "someVariableName", Lists.newArrayList(null, tenantId1, tenantId2));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -111,8 +113,8 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     variableNameRequestDto.setProcessDefinitionKey(processDefinition);
     variableNameRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
     variableNameRequestDto.setTenantIds(selectedTenants);
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient
-      .getProcessVariableNames(variableNameRequestDto);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(variableNameRequestDto);
 
     // then
     assertThat(variableResponse).hasSize(selectedTenants.size());
@@ -137,23 +139,26 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNames(
-        processDefinition.getKey(),
-        ImmutableList.of(processDefinition.getVersionAsString(), processDefinition3.getVersionAsString())
-      );
+        variablesClient.getProcessVariableNames(
+            processDefinition.getKey(),
+            ImmutableList.of(
+                processDefinition.getVersionAsString(), processDefinition3.getVersionAsString()));
 
     // then
     assertThat(variableResponse)
-      .hasSize(3)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var1", "var3", "var4");
+        .hasSize(3)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1", "var3", "var4");
   }
 
   @Test
   public void getVariableNames_worksDespiteBucketLimitExceeded() {
     // given
     final int bucketLimit = 2;
-    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getElasticSearchConfiguration()
+        .setAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -166,13 +171,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse)
-      .hasSize(4)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var1", "var2", "var3", "var4");
+        .hasSize(4)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1", "var2", "var3", "var4");
   }
 
   @Test
@@ -180,13 +186,12 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
-    IntStream.range(0, 15).forEach(
-      i -> variables.put("var" + i, "value" + i)
-    );
+    IntStream.range(0, 15).forEach(i -> variables.put("var" + i, "value" + i));
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse).hasSize(15);
@@ -207,16 +212,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(
-      processDefinition.getKey(),
-      ALL_VERSIONS
-    );
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition.getKey(), ALL_VERSIONS);
 
     // then
     assertThat(variableResponse)
-      .hasSize(4)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var1", "var2", "var3", "var4");
+        .hasSize(4)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1", "var2", "var3", "var4");
   }
 
   @Test
@@ -234,16 +237,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(
-      processDefinition.getKey(),
-      LATEST_VERSION
-    );
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition.getKey(), LATEST_VERSION);
 
     // then
     assertThat(variableResponse)
-      .hasSize(1)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var4");
+        .hasSize(1)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var4");
   }
 
   @Test
@@ -262,7 +263,8 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     // when
     final ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(variableRequestDto);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(variableRequestDto);
 
     // then
     assertThat(variableResponse).isEmpty();
@@ -281,7 +283,8 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition2, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse).hasSize(1);
@@ -303,13 +306,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse)
-      .hasSize(3)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("a", "b", "c");
+        .hasSize(3)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("a", "b", "c");
   }
 
   @Test
@@ -322,13 +326,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse)
-      .hasSize(1)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var1");
+        .hasSize(1)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1");
   }
 
   @Test
@@ -342,13 +347,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse)
-      .hasSize(2)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var", "var");
+        .hasSize(2)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var", "var");
   }
 
   @Test
@@ -370,7 +376,8 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse).hasSize(variables.size());
@@ -396,19 +403,23 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesForDef = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesForDef =
+        variablesClient.getProcessVariableNames(processDefinition);
     List<ProcessVariableNameResponseDto> variablesForReports =
-      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
+        variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
 
-    // then only the flattened property variable is included in the result, not the raw Object variable
+    // then only the flattened property variable is included in the result, not the raw Object
+    // variable
     assertThat(variablesForDef)
-      .singleElement()
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly("objectVar.name", STRING);
+        .singleElement()
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactly("objectVar.name", STRING);
     assertThat(variablesForReports)
-      .singleElement()
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly("objectVar.name", STRING);
+        .singleElement()
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactly("objectVar.name", STRING);
   }
 
   @Test
@@ -424,17 +435,17 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
+        variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
 
     // then
     assertThat(variableResponse)
-      .hasSize(3)
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly(
-        Tuple.tuple("var1", STRING),
-        Tuple.tuple("var2", VariableType.LONG),
-        Tuple.tuple("var3", VariableType.DOUBLE)
-      );
+        .hasSize(3)
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactly(
+            Tuple.tuple("var1", STRING),
+            Tuple.tuple("var2", VariableType.LONG),
+            Tuple.tuple("var3", VariableType.DOUBLE));
   }
 
   @Test
@@ -457,29 +468,32 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     importAllEngineEntitiesFromScratch();
 
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .definitions(List.of(
-        new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
-      ))
-      .build();
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .definitions(
+                List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)))
+            .build();
     final String reportId = reportClient.createSingleProcessReport(reportData);
 
     // when
     final List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
+        variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
 
     // then
     assertThat(variableResponse)
-      .extracting(ProcessVariableNameResponseDto::getName)
-      .containsExactly("var1", "var2", "var3", "var4");
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1", "var2", "var3", "var4");
   }
 
   @Test
   public void getVariableNamesForReport_correctDespiteBucketLimitExceeded() {
     // given
     final int bucketLimit = 2;
-    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getElasticSearchConfiguration()
+        .setAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -491,17 +505,17 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
+        variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
 
     // then
     assertThat(variableResponse)
-      .hasSize(3)
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly(
-        Tuple.tuple("var1", STRING),
-        Tuple.tuple("var2", VariableType.LONG),
-        Tuple.tuple("var3", VariableType.DOUBLE)
-      );
+        .hasSize(3)
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactly(
+            Tuple.tuple("var1", STRING),
+            Tuple.tuple("var2", VariableType.LONG),
+            Tuple.tuple("var3", VariableType.DOUBLE));
   }
 
   @Test
@@ -510,9 +524,12 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     final String reportId = reportClient.createEmptySingleProcessReport();
 
     // when
-    List<ProcessVariableNameResponseDto> variableResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildProcessVariableNamesForReportsRequest(Collections.singletonList(reportId))
-      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessVariableNameResponseDto> variableResponse =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessVariableNamesForReportsRequest(Collections.singletonList(reportId))
+            .executeAndReturnList(
+                ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(variableResponse).isEmpty();
@@ -534,13 +551,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Arrays.asList(reportId1, reportId2));
+        variablesClient.getProcessVariableNamesForReportIds(Arrays.asList(reportId1, reportId2));
 
     // then
     assertThat(variableResponse)
-      .hasSize(1)
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly(Tuple.tuple("var1", STRING));
+        .hasSize(1)
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactly(Tuple.tuple("var1", STRING));
   }
 
   @Test
@@ -560,16 +578,15 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Arrays.asList(reportId1, reportId2));
+        variablesClient.getProcessVariableNamesForReportIds(Arrays.asList(reportId1, reportId2));
 
     // then
     assertThat(variableResponse)
-      .hasSize(2)
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", STRING),
-        Tuple.tuple("var1", VariableType.LONG)
-      );
+        .hasSize(2)
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("var1", STRING), Tuple.tuple("var1", VariableType.LONG));
   }
 
   @Test
@@ -587,20 +604,21 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition2, variables);
     final String reportId2 = createSingleReport(processDefinition2);
 
-    final String combinedReportId = reportClient.createCombinedReport(null, Arrays.asList(reportId1, reportId2));
+    final String combinedReportId =
+        reportClient.createCombinedReport(null, Arrays.asList(reportId1, reportId2));
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(combinedReportId));
+        variablesClient.getProcessVariableNamesForReportIds(
+            Collections.singletonList(combinedReportId));
 
     // then
     assertThat(variableResponse)
-      .hasSize(2)
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", STRING),
-        Tuple.tuple("var2", VariableType.LONG)
-      );
+        .hasSize(2)
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("var1", STRING), Tuple.tuple("var2", VariableType.LONG));
   }
 
   @Test
@@ -613,7 +631,8 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition();
     startInstanceAndImportEngineEntities(processDefinition2, ImmutableMap.of("var2", 5L));
     final String reportId2 = createSingleReport(processDefinition2);
-    final String combinedReportId = reportClient.createCombinedReport(null, Arrays.asList(reportId1, reportId2));
+    final String combinedReportId =
+        reportClient.createCombinedReport(null, Arrays.asList(reportId1, reportId2));
 
     ProcessDefinitionEngineDto processDefinition3 = deploySimpleProcessDefinition();
     startInstanceAndImportEngineEntities(processDefinition3, ImmutableMap.of("var3", 1.5));
@@ -621,17 +640,18 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Arrays.asList(combinedReportId, reportId3));
+        variablesClient.getProcessVariableNamesForReportIds(
+            Arrays.asList(combinedReportId, reportId3));
 
     // then
     assertThat(variableResponse)
-      .hasSize(3)
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", STRING),
-        Tuple.tuple("var2", VariableType.LONG),
-        Tuple.tuple("var3", VariableType.DOUBLE)
-      );
+        .hasSize(3)
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("var1", STRING),
+            Tuple.tuple("var2", VariableType.LONG),
+            Tuple.tuple("var3", VariableType.DOUBLE));
   }
 
   @Test
@@ -643,22 +663,23 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
     final String reportId1 = createSingleReport(processDefinition);
 
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = startDecisionInstanceAndImportEngineEntities(
-      ImmutableMap.of("var2", 5L)
-    );
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        startDecisionInstanceAndImportEngineEntities(ImmutableMap.of("var2", 5L));
 
-    final String reportId2 = reportClient.createSingleDecisionReportDefinitionDto(
-      decisionDefinitionEngineDto.getKey()).getId();
+    final String reportId2 =
+        reportClient
+            .createSingleDecisionReportDefinitionDto(decisionDefinitionEngineDto.getKey())
+            .getId();
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
-      variablesClient.getProcessVariableNamesForReportIds(Arrays.asList(reportId1, reportId2));
+        variablesClient.getProcessVariableNamesForReportIds(Arrays.asList(reportId1, reportId2));
 
     // then
     assertThat(variableResponse)
-      .hasSize(1)
-      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly(Tuple.tuple("var1", STRING));
+        .hasSize(1)
+        .extracting(
+            ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+        .containsExactly(Tuple.tuple("var1", STRING));
   }
-
 }

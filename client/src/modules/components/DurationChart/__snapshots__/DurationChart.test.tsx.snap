@@ -38,6 +38,7 @@ Object {
         },
         "text": "Instance count",
       },
+      "type": "linear",
     },
   },
 }

@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.filter.process;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
+import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
+
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -21,59 +28,56 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
-import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
-import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
-
 public class OpenIncidentFilterIT extends AbstractFilterIT {
 
   @Test
   public void instanceLevelFilterByOpenIncident() {
     // given
     // @formatter:off
-    final List<ProcessInstanceEngineDto> deployedInstances = IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(ONE_TASK)
-      .startProcessInstance()
-        .withOpenIncident()
-      .startProcessInstance()
-        .withResolvedIncident()
-      .startProcessInstance()
-        .withDeletedIncident()
-      .startProcessInstance()
-        .withoutIncident()
-      .executeDeployment();
+    final List<ProcessInstanceEngineDto> deployedInstances =
+        IncidentDataDeployer.dataDeployer(incidentClient)
+            .deployProcess(ONE_TASK)
+            .startProcessInstance()
+            .withOpenIncident()
+            .startProcessInstance()
+            .withResolvedIncident()
+            .startProcessInstance()
+            .withDeletedIncident()
+            .startProcessInstance()
+            .withoutIncident()
+            .executeDeployment();
     // @formatter:on
     importAllEngineEntitiesFromScratch();
     final List<ProcessFilterDto<?>> filter = openIncidentFilter(FilterApplicationLevel.INSTANCE);
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .build();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .build();
     reportData.setFilter(filter);
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        reportClient.evaluateRawReport(reportData).getResult();
 
     // then the result contains only the instance with an open incident
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId).containsExactly(deployedInstances.get(0).getId());
+    assertThat(result.getData())
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(deployedInstances.get(0).getId());
 
     // when
-    reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
-      .build();
+    reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
+            .build();
     reportData.setFilter(filter);
-    ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> numberResult =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
@@ -86,29 +90,30 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(ONE_TASK)
-      .startProcessInstance()
+        .deployProcess(ONE_TASK)
+        .startProcessInstance()
         .withoutIncident()
-      .startProcessInstance()
+        .startProcessInstance()
         .withResolvedIncident()
-      .startProcessInstance()
+        .startProcessInstance()
         .withDeletedIncident()
-      .startProcessInstance()
+        .startProcessInstance()
         .withOpenIncident()
-      .executeDeployment();
+        .executeDeployment();
     // @formatter:on
     importAllEngineEntitiesFromScratch();
     final List<ProcessFilterDto<?>> filter = openIncidentFilter(FilterApplicationLevel.VIEW);
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-      .build();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+            .build();
     reportData.setFilter(filter);
-    ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -119,39 +124,40 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
 
   private static Stream<Arguments> filterLevelAndExpectedResult() {
     return Stream.of(
-      Arguments.of(FilterApplicationLevel.INSTANCE, 3., 2.),
-      Arguments.of(FilterApplicationLevel.VIEW, 2., 1.)
-    );
+        Arguments.of(FilterApplicationLevel.INSTANCE, 3., 2.),
+        Arguments.of(FilterApplicationLevel.VIEW, 2., 1.));
   }
 
   @ParameterizedTest
   @MethodSource("filterLevelAndExpectedResult")
-  public void canBeMixedWithOtherFilters(final FilterApplicationLevel filterLevel,
-                                         final Double firstExpectedResult,
-                                         final Double secondExpectedResult) {
+  public void canBeMixedWithOtherFilters(
+      final FilterApplicationLevel filterLevel,
+      final Double firstExpectedResult,
+      final Double secondExpectedResult) {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(TWO_SEQUENTIAL_TASKS)
-      .startProcessInstance()
+        .deployProcess(TWO_SEQUENTIAL_TASKS)
+        .startProcessInstance()
         .withoutIncident()
-      .startProcessInstance()
+        .startProcessInstance()
         .withResolvedAndOpenIncident()
-      .startProcessInstance()
+        .startProcessInstance()
         .withOpenIncident()
-      .executeDeployment();
+        .executeDeployment();
     // @formatter:on
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
+            .build();
     reportData.setFilter(openIncidentFilter(filterLevel));
-    ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> numberResult =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(numberResult.getInstanceCount()).isEqualTo(2L);
@@ -159,14 +165,14 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
 
     // when I add the flow node filter as well
     reportData.setFilter(
-      ProcessFilterBuilder.filter()
-        .withOpenIncident()
-        .filterLevel(filterLevel)
-        .add()
-        .executedFlowNodes()
-        .id(SERVICE_TASK_ID_2)
-        .add()
-        .buildList());
+        ProcessFilterBuilder.filter()
+            .withOpenIncident()
+            .filterLevel(filterLevel)
+            .add()
+            .executedFlowNodes()
+            .id(SERVICE_TASK_ID_2)
+            .add()
+            .buildList());
     numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -177,10 +183,9 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
 
   private List<ProcessFilterDto<?>> openIncidentFilter(final FilterApplicationLevel filterLevel) {
     return ProcessFilterBuilder.filter()
-      .withOpenIncident()
-      .filterLevel(filterLevel)
-      .add()
-      .buildList();
+        .withOpenIncident()
+        .filterLevel(filterLevel)
+        .add()
+        .buildList();
   }
-
 }

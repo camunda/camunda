@@ -17,7 +17,7 @@ export default function RawDataModal({name, report, open, onClose}) {
     <Modal className="RawDataModal" open={open} size="lg" onClose={onClose}>
       <Modal.Header>{name}</Modal.Header>
       <Modal.Content>
-        <InstanceViewTable report={report} className="RawDataTable" />
+        <InstanceViewTable report={report} />
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="close" onClick={onClose}>

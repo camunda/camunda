@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.duration.groupby.date.distributedby.none;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -20,15 +26,8 @@ import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ProcessInstanceDurationByInstanceEndDateWithProcessPartReportEvaluationIT
-  extends AbstractProcessInstanceDurationByInstanceDateWithProcessPartReportEvaluationIT {
+    extends AbstractProcessInstanceDurationByInstanceDateWithProcessPartReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getTestReportDataType() {
@@ -41,16 +40,15 @@ public class ProcessInstanceDurationByInstanceEndDateWithProcessPartReportEvalua
   }
 
   @Override
-  protected void adjustProcessInstanceDates(String processInstanceId,
-                                            OffsetDateTime referenceDate,
-                                            long daysToShift,
-                                            Long durationInSec) {
+  protected void adjustProcessInstanceDates(
+      String processInstanceId,
+      OffsetDateTime referenceDate,
+      long daysToShift,
+      Long durationInSec) {
     OffsetDateTime shiftedDate = referenceDate.plusDays(daysToShift);
     if (durationInSec != null) {
       engineDatabaseExtension.changeProcessInstanceStartDate(
-        processInstanceId,
-        shiftedDate.minusSeconds(durationInSec)
-      );
+          processInstanceId, shiftedDate.minusSeconds(durationInSec));
     }
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedDate);
   }
@@ -66,48 +64,56 @@ public class ProcessInstanceDurationByInstanceEndDateWithProcessPartReportEvalua
     importAllEngineEntitiesFromScratch();
 
     // when
-    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
-      new RollingDateFilterStartDto(4L, DateUnit.DAYS)
-    );
+    final RollingDateFilterDataDto dateFilterDataDto =
+        new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateUnit.DAYS));
     final InstanceEndDateFilterDto endDateFilterDto = new InstanceEndDateFilterDto();
     endDateFilterDto.setData(dateFilterDataDto);
     endDateFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
 
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(procDefDto.getKey())
-      .setProcessDefinitionVersion(procDefDto.getVersionAsString())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(getTestReportDataType())
-      .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setFilter(endDateFilterDto)
-      .build();
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
-
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(procDefDto.getKey())
+            .setProcessDefinitionVersion(procDefDto.getVersionAsString())
+            .setStartFlowNodeId(START_EVENT)
+            .setEndFlowNodeId(END_EVENT)
+            .setReportDataType(getTestReportDataType())
+            .setGroupByDateInterval(AggregateByDateUnit.DAY)
+            .setFilter(endDateFilterDto)
+            .build();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData.size()).isEqualTo(5);
 
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(4), ChronoUnit.DAYS));
     assertThat(resultData.get(0).getValue()).isNull();
 
     assertThat(resultData.get(1).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(3), ChronoUnit.DAYS));
     assertThat(resultData.get(1).getValue()).isNull();
 
     assertThat(resultData.get(2).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(2), ChronoUnit.DAYS));
     assertThat(resultData.get(2).getValue()).isEqualTo(2000.);
 
     assertThat(resultData.get(3).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(
+                startDate.minusDays(1), ChronoUnit.DAYS));
     assertThat(resultData.get(3).getValue()).isNull();
 
     assertThat(resultData.get(4).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
+        .isEqualTo(
+            embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
     assertThat(resultData.get(4).getValue()).isEqualTo(1000.);
   }
 }

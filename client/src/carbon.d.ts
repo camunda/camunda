@@ -701,4 +701,50 @@ declare module '@carbon/react' {
       }
     >
   ): JSX.Element;
+
+  declare function ProgressIndicator(
+    props: ForwardRefProps<
+      HTMLElement,
+      {
+        children?: ReactNode;
+        className?: string;
+        currentIndex?: number;
+        onChange?: (evt: UIEvent<HTMLElement>) => void;
+        spaceEqually?: boolean;
+        vertical?: boolean;
+      }
+    >
+  ): JSX.Element;
+
+  declare function ProgressStep(
+    props: ForwardRefProps<
+      HTMLElement,
+      {
+        className?: string;
+        index?: number;
+        onChange?: (evt: UIEvent<HTMLElement>) => void;
+        current?: boolean;
+        complete?: boolean;
+        description?: string;
+        disabled?: boolean;
+        invalid?: boolean;
+        label: string;
+        secondaryLabel?: string;
+      }
+    >
+  ): JSX.Element;
+
+  declare function InlineLoading(
+    props: ForwardRefProps<
+      HTMLElement,
+      {
+        className?: string;
+        description?: ReactNode;
+        iconDescription?: string;
+        onSuccess?: () => void;
+        status?: string;
+        successDelay?: number;
+      }
+    >
+  ): JSX.Element;
 }

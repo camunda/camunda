@@ -47,7 +47,6 @@
     "maintenance/3.12",
     "maintenance/3.11",
     "maintenance/3.10",
-    "maintenance/3.9",
     "master",
   ],
   // This ignores are the ones coming by default from config:base with exception to **/test/**
@@ -127,7 +126,7 @@
       matchManagers: "dockerfile",
       separateMajorMinor: true,
       separateMinorPatch: true,
-      pinDigests: true,
+      pinDigests: false,
       prPriority: 100,
     },
     // Settings for patch versions update

@@ -5,41 +5,39 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.junit.jupiter.api.Test;
 
 public class ProcessVariableLabelRestServiceIT extends AbstractVariableLabelIT {
 
   @Test
   public void updateVariableLabelForUnauthenticatedUser() {
     // given
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      Collections.emptyList()
-    );
+    DefinitionVariableLabelsDto definitionVariableLabelsDto =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableLabelRequest(definitionVariableLabelsDto)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessVariableLabelRequest(definitionVariableLabelsDto)
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Override
-  protected Response executeUpdateProcessVariableLabelRequest(final DefinitionVariableLabelsDto labelOptimizeDto) {
+  protected Response executeUpdateProcessVariableLabelRequest(
+      final DefinitionVariableLabelsDto labelOptimizeDto) {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableLabelRequest(labelOptimizeDto)
-      .execute();
+        .getRequestExecutor()
+        .buildProcessVariableLabelRequest(labelOptimizeDto)
+        .execute();
   }
-
 }

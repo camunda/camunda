@@ -5,9 +5,9 @@ zeebe:
       partitionsCount: 2
     exporters:
       optimize:
-        className: io.camunda.zeebe.exporter.ElasticsearchExporter
+        className: ${ZEEBE_EXPORTER_CLASS_NAME:io.camunda.zeebe.exporter.ElasticsearchExporter}
         args:
-          url: "http://host.testcontainers.internal:9200"
+          url: "http://host.testcontainers.internal:${DATABASE_PORT:9200}"
           bulk:
             delay: 1
             size: 1

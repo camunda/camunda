@@ -5,30 +5,28 @@
  */
 package org.camunda.optimize.websocket;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.OnMessage;
+import java.util.concurrent.CountDownLatch;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.OnMessage;
-import java.util.concurrent.CountDownLatch;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-
 /**
- * Client class to test Web Socket implementation of status
- * report is working. This class will assert 2 properties:
- * <p>
- * 1. import status has changed
- * 2. more then one message is received
+ * Client class to test Web Socket implementation of status report is working. This class will
+ * assert 2 properties:
+ *
+ * <p>1. import status has changed 2. more then one message is received
  */
 @ClientEndpoint
 @Slf4j
 @Getter
 public class AssertHasChangedStatusClientSocket {
-  
+
   private CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
   private CountDownLatch receivedTwoUpdatesLatch = new CountDownLatch(2);
   private boolean importStatusChanged = false;
@@ -40,7 +38,8 @@ public class AssertHasChangedStatusClientSocket {
     log.info("Message received from server:" + message);
 
     StatusResponseDto statusDto = objectMapper.readValue(message, StatusResponseDto.class);
-    Boolean engineIsImporting = statusDto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS).getIsImporting();
+    Boolean engineIsImporting =
+        statusDto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS).getIsImporting();
 
     assertThat(engineIsImporting).isNotNull();
     importStatusChanged |= importStatus != null && engineIsImporting != importStatus;
@@ -48,5 +47,4 @@ public class AssertHasChangedStatusClientSocket {
     initialStatusReceivedLatch.countDown();
     receivedTwoUpdatesLatch.countDown();
   }
-
 }

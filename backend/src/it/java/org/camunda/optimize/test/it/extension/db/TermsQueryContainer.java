@@ -5,19 +5,20 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import java.util.HashMap;
+import java.util.List;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 
-import java.util.HashMap;
-import java.util.List;
-
 public class TermsQueryContainer {
   HashMap<String, List<String>> termQueries;
+
   public TermsQueryContainer() {
     termQueries = new HashMap<>();
   }
+
   public void addTermQuery(String term, List<String> values) {
     termQueries.put(term, values);
   }

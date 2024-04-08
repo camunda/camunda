@@ -24,7 +24,7 @@ public class BranchAnalysisReaderOS implements BranchAnalysisReader {
   @Override
   public BranchAnalysisResponseDto branchAnalysis(
       final BranchAnalysisRequestDto request, final ZoneId timezone) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 }

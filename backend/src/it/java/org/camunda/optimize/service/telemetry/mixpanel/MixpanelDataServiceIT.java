@@ -5,18 +5,24 @@
  */
 package org.camunda.optimize.service.telemetry.mixpanel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_ASSIGNEE;
+
 import lombok.NonNull;
 import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
+import org.elasticsearch.core.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class MixpanelDataServiceIT extends AbstractPlatformIT {
@@ -35,7 +41,8 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
 
     reportClient.createEmptySingleProcessReport();
     final String collectionId = collectionClient.createNewCollection();
-    final String reportInCollectionId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
+    final String reportInCollectionId =
+        reportClient.createEmptySingleProcessReportInCollection(collectionId);
     reportClient.createEmptySingleDecisionReport();
     final String dashboardId = dashboardClient.createEmptyDashboard();
     alertClient.createAlertForReport(reportInCollectionId);
@@ -45,15 +52,17 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
     final DashboardShareRestDto dashboardShare = new DashboardShareRestDto();
     dashboardShare.setDashboardId(dashboardId);
     sharingClient.createDashboardShareResponse(dashboardShare);
+    createUserTaskReport();
 
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final MixpanelHeartbeatProperties mixpanelHeartbeatProperties =
-      getMixpanelDataService().getMixpanelHeartbeatProperties();
+        getMixpanelDataService().getMixpanelHeartbeatProperties();
 
     // then
-    assertThat(mixpanelHeartbeatProperties.getTime()).isLessThanOrEqualTo(System.currentTimeMillis());
+    assertThat(mixpanelHeartbeatProperties.getTime())
+        .isLessThanOrEqualTo(System.currentTimeMillis());
     assertThat(mixpanelHeartbeatProperties.getDistinctId()).isEmpty();
     assertThat(mixpanelHeartbeatProperties.getInsertId()).isNotEmpty();
     assertThat(mixpanelHeartbeatProperties.getProduct()).isEqualTo("optimize");
@@ -61,13 +70,14 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
     assertThat(mixpanelHeartbeatProperties.getOrganizationId()).isEqualTo(ORGANIZATION_ID);
     assertThat(mixpanelHeartbeatProperties.getClusterId()).isEqualTo(CLUSTER_ID);
     // The management reports are not included in the result
-    assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(2);
+    assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(3);
     assertThat(mixpanelHeartbeatProperties.getDecisionReportCount()).isEqualTo(1);
     // The management dashboard is not included in the result
     assertThat(mixpanelHeartbeatProperties.getDashboardCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getReportShareCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getDashboardShareCount()).isEqualTo(1);
     assertThat(mixpanelHeartbeatProperties.getAlertCount()).isEqualTo(1);
+    assertThat(mixpanelHeartbeatProperties.getTaskReportCount()).isEqualTo(1);
   }
 
   @Test
@@ -81,10 +91,11 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
     // when
     final String entityId = "id";
     final MixpanelEntityEventProperties mixpanelEntityEventProperties =
-      getMixpanelDataService().getMixpanelEntityEventProperties(entityId);
+        getMixpanelDataService().getMixpanelEntityEventProperties(entityId);
 
     // then
-    assertThat(mixpanelEntityEventProperties.getTime()).isLessThanOrEqualTo(System.currentTimeMillis());
+    assertThat(mixpanelEntityEventProperties.getTime())
+        .isLessThanOrEqualTo(System.currentTimeMillis());
     assertThat(mixpanelEntityEventProperties.getDistinctId()).isEmpty();
     assertThat(mixpanelEntityEventProperties.getInsertId()).isNotEmpty();
     assertThat(mixpanelEntityEventProperties.getProduct()).isEqualTo("optimize");
@@ -103,4 +114,14 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
     return embeddedOptimizeExtension.getBean(MixpanelDataService.class);
   }
 
+  private void createUserTaskReport() {
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey("aKey")
+            .setProcessDefinitionVersions(List.of("all"))
+            .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
+            .setReportDataType(USER_TASK_DUR_GROUP_BY_ASSIGNEE)
+            .build();
+    reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto(reportData));
+  }
 }

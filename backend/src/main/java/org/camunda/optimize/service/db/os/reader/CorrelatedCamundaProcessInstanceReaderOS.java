@@ -26,14 +26,14 @@ public class CorrelatedCamundaProcessInstanceReaderOS
   @Override
   public List<String> getCorrelationValueSampleForEventSources(
       final List<CamundaEventSourceEntryDto> eventSources) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
       final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return null;
   }
 }

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
 import org.camunda.optimize.service.identity.CCSMIdentityService;
@@ -35,19 +36,21 @@ public class CCSMAlertRecipientValidatorTest {
   @Test
   public void alertValidationSucceedsWhenAllEmailsKnown() {
     // given
-    List<String> emailsToValidate = List.of(TEST_EMAIL_1, TEST_EMAIL_2);
+    final Set<String> emailsToValidate = Set.of(TEST_EMAIL_1, TEST_EMAIL_2);
     when(identityService.getUsersByEmail(emailsToValidate))
         .thenReturn(List.of(TEST_USER_1, TEST_USER_2));
 
     // when/then
     assertDoesNotThrow(
-        () -> ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(emailsToValidate));
+        () ->
+            ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
+                emailsToValidate.stream().toList()));
   }
 
   @Test
   public void alertValidationNoErrorsWhenEmpty() {
     // given
-    when(identityService.getUsersByEmail(Collections.emptyList()))
+    when(identityService.getUsersByEmail(Collections.emptySet()))
         .thenReturn(Collections.emptyList());
 
     // when/then
@@ -60,7 +63,7 @@ public class CCSMAlertRecipientValidatorTest {
   @Test
   public void alertValidationFailsForUnknownEmails() {
     // given
-    List<String> emailsToValidate = List.of(TEST_EMAIL_1, TEST_EMAIL_2);
+    final Set<String> emailsToValidate = Set.of(TEST_EMAIL_1, TEST_EMAIL_2);
     when(identityService.getUsersByEmail(emailsToValidate)).thenReturn(List.of(TEST_USER_1));
 
     // when/then
@@ -68,7 +71,8 @@ public class CCSMAlertRecipientValidatorTest {
         assertThrows(
             OptimizeAlertEmailValidationException.class,
             () ->
-                ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(emailsToValidate));
+                ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
+                    emailsToValidate.stream().toList()));
     assertThat(thrown.getAlertEmails()).containsExactly(TEST_EMAIL_2);
   }
 }

@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
+import static jakarta.ws.rs.HttpMethod.GET;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.mockserver.model.HttpRequest.request;
+
+import java.util.Map;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
@@ -20,15 +28,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.util.Map;
-import java.util.stream.Stream;
-
-import static jakarta.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.mockserver.model.HttpRequest.request;
-
 @Tag(OPENSEARCH_PASSING)
 public class StatusRestServiceIT extends AbstractPlatformIT {
 
@@ -40,7 +39,8 @@ public class StatusRestServiceIT extends AbstractPlatformIT {
     // then
     assertThat(statusWithProgressDto.isConnectedToElasticsearch()).isTrue();
     assertThat(statusWithProgressDto.getEngineStatus()).hasSize(1);
-    assertThat(statusWithProgressDto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS).getIsConnected()).isTrue();
+    assertThat(statusWithProgressDto.getEngineStatus().get(DEFAULT_ENGINE_ALIAS).getIsConnected())
+        .isTrue();
   }
 
   @Test
@@ -71,9 +71,8 @@ public class StatusRestServiceIT extends AbstractPlatformIT {
   public void connectionStatusFalseWhenVersionEndpointFails(ErrorResponseMock mockedResponse) {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final HttpRequest request = request()
-      .withPath(".*" + EngineConstants.VERSION_ENDPOINT)
-      .withMethod(GET);
+    final HttpRequest request =
+        request().withPath(".*" + EngineConstants.VERSION_ENDPOINT).withMethod(GET);
     mockedResponse.mock(request, Times.once(), engineMockServer);
 
     // when
@@ -82,18 +81,17 @@ public class StatusRestServiceIT extends AbstractPlatformIT {
     // then
     final Map<String, EngineStatusDto> connectionStatusMap = status.getEngineStatus();
     assertThat(connectionStatusMap).isNotNull();
-    assertThat(connectionStatusMap.get(DEFAULT_ENGINE_ALIAS)).extracting(
-      EngineStatusDto::getIsConnected,
-      EngineStatusDto::getIsImporting
-    ).containsExactly(false, false);
+    assertThat(connectionStatusMap.get(DEFAULT_ENGINE_ALIAS))
+        .extracting(EngineStatusDto::getIsConnected, EngineStatusDto::getIsImporting)
+        .containsExactly(false, false);
   }
 
   @Test
   public void getConnectedStatusSkipsCache() {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    final HttpRequest engineVersionRequestMatcher = request()
-      .withPath(engineIntegrationExtension.getEnginePath() + "/version");
+    final HttpRequest engineVersionRequestMatcher =
+        request().withPath(engineIntegrationExtension.getEnginePath() + "/version");
 
     // when
     statusClient.getStatus();
@@ -106,5 +104,4 @@ public class StatusRestServiceIT extends AbstractPlatformIT {
   private static Stream<ErrorResponseMock> engineErrors() {
     return MockServerUtil.engineMockedErrorResponses();
   }
-
 }

@@ -7,7 +7,8 @@ package org.camunda.optimize.service.db.repository.script;
 
 public interface ProcessOverviewScriptFactory {
   static String createUpdateOverviewScript() {
-    return """
+    return
+    """
         ctx._source.owner = params.owner;
         ctx._source.processDefinitionKey = params.processDefinitionKey;
         ctx._source.digest.enabled = params.digestEnabled;
@@ -26,7 +27,8 @@ public interface ProcessOverviewScriptFactory {
   }
 
   static String createUpdateOwnerIfNotSetScript() {
-    return """
+    return
+    """
         if (ctx._source.owner == null) {
           ctx._source.owner = params.owner;
         }

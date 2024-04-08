@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.upgrade.os;
 
+import static org.camunda.optimize.rest.constants.RestConstants.HTTPS_PREFIX;
+import static org.camunda.optimize.rest.constants.RestConstants.HTTP_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -52,6 +54,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import org.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -75,9 +78,9 @@ public class OpenSearchClientBuilder {
 
   private static final Logger log = LoggerFactory.getLogger(OpenSearchClientBuilder.class);
 
-  public static OpenSearchClient buildOpenSearchClientFromConfig(
+  public static ExtendedOpenSearchClient buildOpenSearchClientFromConfig(
       final ConfigurationService configurationService) {
-    return new OpenSearchClient(buildOpenSearchTransport(configurationService));
+    return new ExtendedOpenSearchClient(buildOpenSearchTransport(configurationService));
   }
 
   public static OpenSearchAsyncClient buildOpenSearchAsyncClientFromConfig(
@@ -112,9 +115,9 @@ public class OpenSearchClientBuilder {
   }
 
   private static JavaTimeModule buildJavaTimeModule() {
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+    final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
         OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
 
@@ -127,7 +130,7 @@ public class OpenSearchClientBuilder {
   }
 
   private static ObjectMapper buildObjectMapper() {
-    ObjectMapper mapper =
+    final ObjectMapper mapper =
         Jackson2ObjectMapperBuilder.json()
             .modules(new Jdk8Module(), buildJavaTimeModule())
             .featuresToDisable(
@@ -143,7 +146,7 @@ public class OpenSearchClientBuilder {
                 JsonParser.Feature.ALLOW_COMMENTS, MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .build();
 
-    SimpleModule module = new SimpleModule();
+    final SimpleModule module = new SimpleModule();
     module.addDeserializer(
         DefinitionOptimizeResponseDto.class, new CustomDefinitionDeserializer(mapper));
     module.addDeserializer(
@@ -161,22 +164,23 @@ public class OpenSearchClientBuilder {
     return osClient.info().version().number();
   }
 
-  private static org.apache.hc.core5.http.HttpHost getHttpHost(
-      DatabaseConnectionNodeConfiguration configuration) {
-    String uriConfig =
-        String.format("http://%s:%d", configuration.getHost(), configuration.getHttpPort());
+  private static HttpHost getHttpHost(
+      final DatabaseConnectionNodeConfiguration configuration, final Boolean isSSLEnabled) {
+    final String protocol = isSSLEnabled ? HTTPS_PREFIX : HTTP_PREFIX;
+    final String uriConfig =
+        String.format("%s%s:%d", protocol, configuration.getHost(), configuration.getHttpPort());
     try {
       final URI uri = new URI(uriConfig);
       return new org.apache.hc.core5.http.HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new OptimizeRuntimeException("Error in url: " + uriConfig, e);
     }
   }
 
   private static HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, ConfigurationService configurationService) {
-    String username = configurationService.getOpenSearchConfiguration().getSecurityUsername();
-    String password = configurationService.getOpenSearchConfiguration().getSecurityPassword();
+      final HttpAsyncClientBuilder builder, final ConfigurationService configurationService) {
+    final String username = configurationService.getOpenSearchConfiguration().getSecurityUsername();
+    final String password = configurationService.getOpenSearchConfiguration().getSecurityPassword();
     if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
       log.warn(
           "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
@@ -187,7 +191,8 @@ public class OpenSearchClientBuilder {
     credentialsProvider.setCredentials(
         new AuthScope(
             getHttpHost(
-                configurationService.getOpenSearchConfiguration().getFirstConnectionNode())),
+                configurationService.getOpenSearchConfiguration().getFirstConnectionNode(),
+                configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled())),
         new UsernamePasswordCredentials(username, password.toCharArray()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
@@ -195,7 +200,8 @@ public class OpenSearchClientBuilder {
   }
 
   private static void setupSSLContext(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, ConfigurationService configurationService) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ConfigurationService configurationService) {
     try {
       final ClientTlsStrategyBuilder tlsStrategyBuilder = ClientTlsStrategyBuilder.create();
       tlsStrategyBuilder.setSslContext(getSSLContext(configurationService));
@@ -210,12 +216,12 @@ public class OpenSearchClientBuilder {
 
       httpAsyncClientBuilder.setConnectionManager(connectionManager);
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Error in setting up SSLContext", e);
     }
   }
 
-  private static SSLContext getSSLContext(ConfigurationService configurationService)
+  private static SSLContext getSSLContext(final ConfigurationService configurationService)
       throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final org.apache.http.ssl.TrustStrategy trustStrategy =
@@ -231,7 +237,7 @@ public class OpenSearchClientBuilder {
     }
   }
 
-  private static KeyStore loadCustomTrustStore(ConfigurationService configurationService) {
+  private static KeyStore loadCustomTrustStore(final ConfigurationService configurationService) {
     try {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
@@ -239,7 +245,7 @@ public class OpenSearchClientBuilder {
       setCertificateInTrustStore(trustStore, configurationService);
 
       return trustStore;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not create certificate trustStore for the secured OpenSearch Connection!";
       throw new OptimizeRuntimeException(message, e);
@@ -254,7 +260,7 @@ public class OpenSearchClientBuilder {
       try {
         final Certificate cert = loadCertificateFromPath(serverCertificate);
         trustStore.setCertificateEntry("opensearch-host", cert);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         final String message =
             "Could not load configured server certificate for the secured OpenSearch Connection!";
         throw new OptimizeRuntimeException(message, e);
@@ -263,14 +269,14 @@ public class OpenSearchClientBuilder {
 
     // load trusted CA certificates
     int caCertificateCounter = 0;
-    for (String caCertificatePath :
+    for (final String caCertificatePath :
         configurationService.getOpenSearchConfiguration().getSecuritySSLCertificateAuthorities()) {
       try {
-        Certificate cert = loadCertificateFromPath(caCertificatePath);
+        final Certificate cert = loadCertificateFromPath(caCertificatePath);
         trustStore.setCertificateEntry("custom-opensearch-ca-" + caCertificateCounter, cert);
         caCertificateCounter++;
-      } catch (Exception e) {
-        String message =
+      } catch (final Exception e) {
+        final String message =
             "Could not load CA authority certificate for the secured OpenSearch Connection!";
         throw new OptimizeConfigurationException(message, e);
       }
@@ -280,7 +286,8 @@ public class OpenSearchClientBuilder {
   private static Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
     final Certificate cert;
-    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final BufferedInputStream bis =
+        new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
@@ -294,15 +301,20 @@ public class OpenSearchClientBuilder {
     return cert;
   }
 
-  private static org.apache.hc.core5.http.HttpHost[] buildOpenSearchConnectionNodes(
-      ConfigurationService configurationService) {
+  private static HttpHost[] buildOpenSearchConnectionNodes(
+      final ConfigurationService configurationService) {
     return configurationService.getOpenSearchConfiguration().getConnectionNodes().stream()
-        .map(OpenSearchClientBuilder::getHttpHost)
+        .map(
+            node ->
+                getHttpHost(
+                    node,
+                    configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled()))
         .toArray(HttpHost[]::new);
   }
 
   private static HttpAsyncClientBuilder configureHttpClient(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, ConfigurationService configurationService) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ConfigurationService configurationService) {
     setupAuthentication(httpAsyncClientBuilder, configurationService);
     if (Boolean.TRUE.equals(
         configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled())) {

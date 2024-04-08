@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.process.archive;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
+import java.util.List;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
@@ -12,12 +17,6 @@ import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceArchiveIndexES;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 @Tag(OPENSEARCH_PASSING)
 public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
@@ -30,7 +29,10 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
   @Test
   public void processInstanceArchiverCanBeDisabled() {
     getProcessInstanceArchivingService().stopArchiving();
-    embeddedOptimizeExtension.getConfigurationService().getDataArchiveConfiguration().setEnabled(false);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getDataArchiveConfiguration()
+        .setEnabled(false);
     embeddedOptimizeExtension.reloadConfiguration();
     assertThat(getProcessInstanceArchivingService().isScheduledToRun()).isFalse();
   }
@@ -45,11 +47,6 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
     }
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
-  /**
-   * Fails due to missing implementation in
-   * org.camunda.optimize.service.db.os.reader.ProcessInstanceReaderOS#getExistingProcessDefinitionKeysFromInstances()
-   */
   @Test
   public void processInstanceArchiverCreatesMissingArchiveIndices() {
     // given
@@ -63,8 +60,9 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
     getProcessInstanceArchivingService().archiveCompletedProcessInstances();
 
     // then
-    assertThat(getAllProcessInstanceArchiveIndexNames()).hasSize(1)
-      .containsExactly(getExpectedArchiveIndexName(firstProcessKey));
+    assertThat(getAllProcessInstanceArchiveIndexNames())
+        .hasSize(1)
+        .containsExactly(getExpectedArchiveIndexName(firstProcessKey));
 
     // when
     final String secondProcessKey = "secondProcess";
@@ -73,16 +71,17 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
     getProcessInstanceArchivingService().archiveCompletedProcessInstances();
 
     // then
-    assertThat(getAllProcessInstanceArchiveIndexNames()).hasSize(2)
-      .containsExactlyInAnyOrder(
-        getExpectedArchiveIndexName(firstProcessKey),
-        getExpectedArchiveIndexName(secondProcessKey)
-      );
+    assertThat(getAllProcessInstanceArchiveIndexNames())
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            getExpectedArchiveIndexName(firstProcessKey),
+            getExpectedArchiveIndexName(secondProcessKey));
   }
 
   private String getExpectedArchiveIndexName(final String firstProcessKey) {
-    return embeddedOptimizeExtension.getIndexNameService()
-      .getOptimizeIndexNameWithVersion(new ProcessInstanceArchiveIndexES(firstProcessKey));
+    return embeddedOptimizeExtension
+        .getIndexNameService()
+        .getOptimizeIndexNameWithVersion(new ProcessInstanceArchiveIndexES(firstProcessKey));
   }
 
   private ProcessInstanceArchivingService getProcessInstanceArchivingService() {
@@ -91,11 +90,8 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
 
   @SneakyThrows
   private List<String> getAllProcessInstanceArchiveIndexNames() {
-    return databaseIntegrationTestExtension.getTestIndexRepository()
-      .getAllIndexNames()
-      .stream()
-      .filter(index -> index.contains(DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX))
-      .toList();
+    return databaseIntegrationTestExtension.getTestIndexRepository().getAllIndexNames().stream()
+        .filter(index -> index.contains(DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX))
+        .toList();
   }
-
 }

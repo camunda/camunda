@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.test.optimize;
 
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+
+import jakarta.ws.rs.core.Response;
+import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -13,12 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 
-import jakarta.ws.rs.core.Response;
-import java.util.function.Supplier;
-
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-
 @AllArgsConstructor
 public class SharingClient {
 
@@ -26,58 +25,54 @@ public class SharingClient {
 
   public DashboardDefinitionRestDto evaluateDashboard(final String dashboardShareId) {
     return getRequestExecutor()
-      .buildEvaluateSharedDashboardRequest(dashboardShareId)
-      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+        .buildEvaluateSharedDashboardRequest(dashboardShareId)
+        .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   public Response getDashboardShareResponse(final String dashboardId) {
-    return getRequestExecutor()
-      .buildFindShareForDashboardRequest(dashboardId)
-      .execute();
+    return getRequestExecutor().buildFindShareForDashboardRequest(dashboardId).execute();
   }
 
-  public ReportDefinitionDto<?> evaluateReportForSharedDashboard(final String dashboardShareId,
-                                                                 final String reportId) {
+  public ReportDefinitionDto<?> evaluateReportForSharedDashboard(
+      final String dashboardShareId, final String reportId) {
     return getRequestExecutor()
-      .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
-      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
+        .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   public Response createDashboardShareResponse(DashboardShareRestDto share) {
     return createDashboardShareResponse(share, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public Response createDashboardShareResponse(DashboardShareRestDto share, String username, String password) {
+  public Response createDashboardShareResponse(
+      DashboardShareRestDto share, String username, String password) {
     return getRequestExecutor()
-      .buildShareDashboardRequest(share)
-      .withUserAuthentication(username, password)
-      .execute();
+        .buildShareDashboardRequest(share)
+        .withUserAuthentication(username, password)
+        .execute();
   }
 
   public Response createReportShareResponse(ReportShareRestDto share) {
-    return getRequestExecutor()
-      .buildShareReportRequest(share)
-      .execute();
+    return getRequestExecutor().buildShareReportRequest(share).execute();
   }
 
   public String shareReport(final String reportId) {
     ReportShareRestDto shareDto = new ReportShareRestDto();
     shareDto.setReportId(reportId);
     return getRequestExecutor()
-      .buildShareReportRequest(shareDto)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+        .buildShareReportRequest(shareDto)
+        .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+        .getId();
   }
 
   public String shareDashboard(final String dashboardId) {
     DashboardShareRestDto dashboardShare = new DashboardShareRestDto();
     dashboardShare.setDashboardId(dashboardId);
     return getRequestExecutor()
-      .buildShareDashboardRequest(dashboardShare)
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+        .buildShareDashboardRequest(dashboardShare)
+        .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+        .getId();
   }
-
 
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();

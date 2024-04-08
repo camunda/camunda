@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_FLAG;
+import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_STRICT_VALUE;
+
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
@@ -13,14 +21,6 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_FLAG;
-import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_STRICT_VALUE;
 
 @Tag(OPENSEARCH_PASSING)
 public class SecurityCookiesInResponseIT extends AbstractPlatformIT {
@@ -33,7 +33,8 @@ public class SecurityCookiesInResponseIT extends AbstractPlatformIT {
 
     // then
     assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure()).isEqualTo(useHttps);
+    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure())
+        .isEqualTo(useHttps);
   }
 
   @ParameterizedTest
@@ -51,20 +52,26 @@ public class SecurityCookiesInResponseIT extends AbstractPlatformIT {
   @ValueSource(booleans = {true, false})
   public void canDisableSameSiteCookieFlag(final boolean useHttps) {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getCookieConfiguration()
-      .setSameSiteFlagEnabled(false);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getCookieConfiguration()
+        .setSameSiteFlagEnabled(false);
 
     // when
     final Response authResponse = authWithDefaultCredentials(useHttps);
 
     // then
     assertThat(authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString())
-      .doesNotContain(SAME_SITE_COOKIE_FLAG);
+        .doesNotContain(SAME_SITE_COOKIE_FLAG);
 
     // cleanup
     assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getCookieConfiguration()
-      .setSameSiteFlagEnabled(true);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getCookieConfiguration()
+        .setSameSiteFlagEnabled(true);
   }
 
   @ParameterizedTest
@@ -76,18 +83,17 @@ public class SecurityCookiesInResponseIT extends AbstractPlatformIT {
     // then
     assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString())
-      .contains(SAME_SITE_COOKIE_FLAG + "=" + SAME_SITE_COOKIE_STRICT_VALUE);
+        .contains(SAME_SITE_COOKIE_FLAG + "=" + SAME_SITE_COOKIE_STRICT_VALUE);
   }
 
   private Response authWithDefaultCredentials(final boolean useHttps) {
     if (useHttps) {
-      return embeddedOptimizeExtension.securedRootTarget()
-        .path("api/authentication")
-        .request()
-        .post(Entity.json(new CredentialsRequestDto(DEFAULT_USERNAME, DEFAULT_PASSWORD)));
+      return embeddedOptimizeExtension
+          .securedRootTarget()
+          .path("api/authentication")
+          .request()
+          .post(Entity.json(new CredentialsRequestDto(DEFAULT_USERNAME, DEFAULT_PASSWORD)));
     }
-    return embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    return embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
-
 }

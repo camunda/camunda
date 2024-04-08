@@ -5,13 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.Response;
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
 import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static com.google.common.net.HttpHeaders.STRICT_TRANSPORT_SECURITY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
@@ -21,6 +14,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.Response;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 @Tag(OPENSEARCH_PASSING)
 public class SecurityResponseHeadersIT extends AbstractPlatformIT {
@@ -38,13 +38,16 @@ public class SecurityResponseHeadersIT extends AbstractPlatformIT {
   @Test
   public void responseContainsSecurityHeaders_https() {
     // given
-    final CredentialsRequestDto entity = new CredentialsRequestDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final CredentialsRequestDto entity =
+        new CredentialsRequestDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    Response authResponse = embeddedOptimizeExtension.securedRootTarget()
-      .path("api/authentication")
-      .request()
-      .post(Entity.json(entity));
+    Response authResponse =
+        embeddedOptimizeExtension
+            .securedRootTarget()
+            .path("api/authentication")
+            .request()
+            .post(Entity.json(entity));
 
     // then
     defaultSecurityHeadersAreSet(authResponse);
@@ -57,7 +60,8 @@ public class SecurityResponseHeadersIT extends AbstractPlatformIT {
   @Test
   public void responseContainsSecurityHeaders_http() {
     // when
-    Response authResponse = embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    Response authResponse =
+        embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
     assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -66,22 +70,23 @@ public class SecurityResponseHeadersIT extends AbstractPlatformIT {
 
   private void defaultSecurityHeadersAreSet(final Response authResponse) {
     assertThat(authResponse.getHeaderString(X_XSS_PROTECTION))
-      .isNotNull()
-      .isEqualTo(
-        embeddedOptimizeExtension.getConfigurationService()
-          .getSecurityConfiguration().getResponseHeaders().getXsssProtection()
-      );
+        .isNotNull()
+        .isEqualTo(
+            embeddedOptimizeExtension
+                .getConfigurationService()
+                .getSecurityConfiguration()
+                .getResponseHeaders()
+                .getXsssProtection());
 
-    assertThat(authResponse.getHeaderString(X_CONTENT_TYPE_OPTIONS))
-      .isEqualTo("nosniff");
+    assertThat(authResponse.getHeaderString(X_CONTENT_TYPE_OPTIONS)).isEqualTo("nosniff");
 
     assertThat(authResponse.getHeaderString(CONTENT_SECURITY_POLICY))
-      .isNotNull()
-      .isEqualTo(
-        embeddedOptimizeExtension.getConfigurationService()
-          .getSecurityConfiguration().getResponseHeaders().getContentSecurityPolicy()
-      );
+        .isNotNull()
+        .isEqualTo(
+            embeddedOptimizeExtension
+                .getConfigurationService()
+                .getSecurityConfiguration()
+                .getResponseHeaders()
+                .getContentSecurityPolicy());
   }
-
-
 }

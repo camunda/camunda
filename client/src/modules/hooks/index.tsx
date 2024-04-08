@@ -8,3 +8,4 @@
 export {default as useErrorHandling} from './useErrorHandling';
 export {default as useUser} from './useUser';
 export {default as useDocs} from './useDocs';
+export {default as useUiConfig} from './useUiConfig';

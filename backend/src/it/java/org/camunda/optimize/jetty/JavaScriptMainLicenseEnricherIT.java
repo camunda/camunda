@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.jetty;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter.LICENSE_PATH;
+
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter.LICENSE_PATH;
 
 @Tag(OPENSEARCH_PASSING)
 public class JavaScriptMainLicenseEnricherIT extends AbstractPlatformIT {
@@ -23,7 +22,8 @@ public class JavaScriptMainLicenseEnricherIT extends AbstractPlatformIT {
   @Test
   public void licenseIsAdded() {
     // when
-    Response response = embeddedOptimizeExtension.rootTarget("/static/js/main.mock.chunk.js").request().get();
+    Response response =
+        embeddedOptimizeExtension.rootTarget("/static/js/main.mock.chunk.js").request().get();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());

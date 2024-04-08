@@ -5,7 +5,21 @@
  */
 package org.camunda.optimize.service.process;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.engine.AuthorizationClient.SPIDERMAN_USER;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
 import jakarta.ws.rs.core.Response;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -31,21 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.engine.AuthorizationClient.SPIDERMAN_USER;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
 @Tag(OPENSEARCH_PASSING)
 public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
 
@@ -55,10 +54,12 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
   @Test
   public void getProcessOverview_notPossibleForUnauthenticatedUser() {
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessOverviewRequest(null)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessOverviewRequest(null)
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -67,9 +68,12 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
   @Test
   public void getProcessOverview_noProcessDefinitionFound() {
     // when
-    final List<ProcessOverviewResponseDto> processes = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessOverviewRequest(null)
-      .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
+    final List<ProcessOverviewResponseDto> processes =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessOverviewRequest(null)
+            .executeAndReturnList(
+                ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(processes).isEmpty();
@@ -84,10 +88,13 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessOverviewResponseDto> processes = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessOverviewRequest(null)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
+    List<ProcessOverviewResponseDto> processes =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessOverviewRequest(null)
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .executeAndReturnList(
+                ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(processes).isEmpty();
@@ -97,11 +104,12 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
   public void getProcessOverview_eventBasedProcessedNotShownOnProcessOverview() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
-      SECOND_PROCESS_DEFINITION_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
+        SECOND_PROCESS_DEFINITION_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(null);
 
     // then
     assertThat(processes).isEmpty();
@@ -115,34 +123,39 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessOverviewSorter sorter = new ProcessOverviewSorter(
-      ProcessOverviewResponseDto.Fields.processDefinitionName,
-      null
-    );
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(sorter);
+    ProcessOverviewSorter sorter =
+        new ProcessOverviewSorter(ProcessOverviewResponseDto.Fields.processDefinitionName, null);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(sorter);
 
     // then sort in ascending order
-    assertThat(processes).hasSize(2)
-      .isSortedAccordingTo(Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName));
+    assertThat(processes)
+        .hasSize(2)
+        .isSortedAccordingTo(
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName));
   }
 
   @ParameterizedTest
   @MethodSource("getSortCriteriaAndExpectedComparator")
-  public void getProcessOverview_sortByValidSortFields(final String sortBy,
-                                                       final SortOrder sortingOrder,
-                                                       final Comparator<ProcessOverviewResponseDto> comparator) {
+  public void getProcessOverview_sortByValidSortFields(
+      final String sortBy,
+      final SortOrder sortingOrder,
+      final Comparator<ProcessOverviewResponseDto> comparator) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
-    final ProcessDefinitionEngineDto firstDef = deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
-    final ProcessDefinitionEngineDto secondDef = deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
+    final ProcessDefinitionEngineDto firstDef =
+        deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
+    final ProcessDefinitionEngineDto secondDef =
+        deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
     importAllEngineEntitiesFromScratch();
     setProcessOwner(firstDef.getKey(), DEFAULT_USERNAME);
     setProcessOwner(secondDef.getKey(), KERMIT_USER);
 
     // when
     ProcessOverviewSorter sorter = new ProcessOverviewSorter(sortBy, sortingOrder);
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(sorter);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(sorter);
 
     // then
     assertThat(processes).hasSize(2).isSortedAccordingTo(comparator);
@@ -150,8 +163,8 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("getSortOrderAndExpectedDefinitionKeyComparator")
-  public void getProcessOverview_sortByKeyWhenNamesAreIdentical(final SortOrder sortOrder,
-                                                                final Comparator<ProcessOverviewResponseDto> comparator) {
+  public void getProcessOverview_sortByKeyWhenNamesAreIdentical(
+      final SortOrder sortOrder, final Comparator<ProcessOverviewResponseDto> comparator) {
     // given
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "a");
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "b");
@@ -160,11 +173,11 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessOverviewSorter sorter = new ProcessOverviewSorter(
-      ProcessOverviewResponseDto.Fields.processDefinitionName,
-      sortOrder
-    );
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(sorter);
+    ProcessOverviewSorter sorter =
+        new ProcessOverviewSorter(
+            ProcessOverviewResponseDto.Fields.processDefinitionName, sortOrder);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(sorter);
 
     // then
     assertThat(processes).hasSize(3).isSortedAccordingTo(comparator);
@@ -182,21 +195,24 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessOverviewSorter sorter = new ProcessOverviewSorter(
-      ProcessOverviewResponseDto.Fields.processDefinitionName,
-      SortOrder.ASC
-    );
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(sorter);
+    ProcessOverviewSorter sorter =
+        new ProcessOverviewSorter(
+            ProcessOverviewResponseDto.Fields.processDefinitionName, SortOrder.ASC);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(sorter);
 
     // then
-    assertThat(processes).hasSize(3).extracting(ProcessOverviewResponseDto::getProcessDefinitionName)
-      .containsExactly(firstProcessName, "b", thirdProcessName);
+    assertThat(processes)
+        .hasSize(3)
+        .extracting(ProcessOverviewResponseDto::getProcessDefinitionName)
+        .containsExactly(firstProcessName, "b", thirdProcessName);
   }
 
   @ParameterizedTest
   @MethodSource("getDefinitionNameAndExpectedSortOrder")
-  public void getProcessOverview_processesGetOrderedByOwnerAndDefinitionNameWhenOwnerNameIsMissingFromSomeDefinitions(final SortOrder sortOrder,
-                                                                                                                      final List<String> processDefinitionKeys) {
+  public void
+      getProcessOverview_processesGetOrderedByOwnerAndDefinitionNameWhenOwnerNameIsMissingFromSomeDefinitions(
+          final SortOrder sortOrder, final List<String> processDefinitionKeys) {
     // given
     authorizationClient.addSpidermanUserAndGrantAccessToOptimize();
     processDefinitionKeys.forEach(this::deploySimpleProcessDefinition);
@@ -206,22 +222,22 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromLastIndex();
 
     // when
-    ProcessOverviewSorter sorter = new ProcessOverviewSorter(
-      ProcessOverviewResponseDto.Fields.owner,
-      sortOrder
-    );
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(sorter);
+    ProcessOverviewSorter sorter =
+        new ProcessOverviewSorter(ProcessOverviewResponseDto.Fields.owner, sortOrder);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(sorter);
 
     // then
-    assertThat(processes).hasSize(4)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey)
-      .isEqualTo(processDefinitionKeys);
+    assertThat(processes)
+        .hasSize(4)
+        .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey)
+        .isEqualTo(processDefinitionKeys);
   }
 
   @ParameterizedTest
   @MethodSource("getSortOrderAndExpectedDefinitionNameComparator")
-  public void getProcessOverview_processesOrderedByProcessDefinitionNameWhenTheyHaveSameOwner(final SortOrder sortOrder,
-                                                                                              final Comparator<ProcessOverviewResponseDto> comparator) {
+  public void getProcessOverview_processesOrderedByProcessDefinitionNameWhenTheyHaveSameOwner(
+      final SortOrder sortOrder, final Comparator<ProcessOverviewResponseDto> comparator) {
     // given
     deploySimpleProcessDefinition("a");
     deploySimpleProcessDefinition("b");
@@ -230,11 +246,10 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     setProcessOwner("b", DEFAULT_USERNAME);
 
     // when
-    ProcessOverviewSorter sorter = new ProcessOverviewSorter(
-      ProcessOverviewResponseDto.Fields.owner,
-      sortOrder
-    );
-    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(sorter);
+    ProcessOverviewSorter sorter =
+        new ProcessOverviewSorter(ProcessOverviewResponseDto.Fields.owner, sortOrder);
+    final List<ProcessOverviewResponseDto> processes =
+        processOverviewClient.getProcessOverviews(sorter);
 
     // then
     assertThat(processes).hasSize(2).isSortedAccordingTo(comparator);
@@ -246,9 +261,11 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     ProcessOverviewSorter sorter = new ProcessOverviewSorter("invalid", SortOrder.ASC);
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetProcessOverviewRequest(sorter)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessOverviewRequest(sorter)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -259,40 +276,28 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationsForUser(
-      DEFAULT_USERNAME,
-      "kermit",
-      RESOURCE_TYPE_USER
-    );
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+        DEFAULT_USERNAME, "kermit", RESOURCE_TYPE_USER);
+    engineIntegrationExtension.deployAndStartProcess(
+        getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("anotherProcess"));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      FIRST_PROCESS_DEFINITION_KEY,
-      DEFAULT_USERNAME,
-      new ProcessDigestRequestDto(false)
-    );
+        FIRST_PROCESS_DEFINITION_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
     processOverviewClient.updateProcess(
-      "anotherProcess",
-      "kermit",
-      new ProcessDigestRequestDto(false)
-    );
+        "anotherProcess", "kermit", new ProcessDigestRequestDto(false));
 
     // when
     final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
 
     // then
-    assertThat(processes).hasSize(2)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getDigest)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          FIRST_PROCESS_DEFINITION_KEY,
-          new ProcessDigestResponseDto(false)
-        ),
-        Tuple.tuple(
-          "anotherProcess",
-          new ProcessDigestResponseDto(false)
-        )
-      );
+    assertThat(processes)
+        .hasSize(2)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getDigest)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(FIRST_PROCESS_DEFINITION_KEY, new ProcessDigestResponseDto(false)),
+            Tuple.tuple("anotherProcess", new ProcessDigestResponseDto(false)));
   }
 
   @Test
@@ -300,153 +305,158 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     // given
     final String originalName = "originalName";
     engineIntegrationExtension.deployAndStartProcess(
-      createSimpleProcessWithKeyAndName(FIRST_PROCESS_DEFINITION_KEY, originalName));
+        createSimpleProcessWithKeyAndName(FIRST_PROCESS_DEFINITION_KEY, originalName));
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(processOverviewClient.getProcessOverviews()).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getProcessDefinitionName)
-      .containsExactly(Tuple.tuple(FIRST_PROCESS_DEFINITION_KEY, originalName));
+    assertThat(processOverviewClient.getProcessOverviews())
+        .hasSize(1)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getProcessDefinitionName)
+        .containsExactly(Tuple.tuple(FIRST_PROCESS_DEFINITION_KEY, originalName));
 
     // when
     final String updatedName = "updatedName";
     engineIntegrationExtension.deployAndStartProcess(
-      createSimpleProcessWithKeyAndName(FIRST_PROCESS_DEFINITION_KEY, updatedName));
+        createSimpleProcessWithKeyAndName(FIRST_PROCESS_DEFINITION_KEY, updatedName));
     importAllEngineEntitiesFromLastIndex();
-    // We have to invalidate the cache to make sure that the first definition is not the one returned on fetching overviews
+    // We have to invalidate the cache to make sure that the first definition is not the one
+    // returned on fetching overviews
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(processOverviewClient.getProcessOverviews()).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getProcessDefinitionName)
-      .containsExactly(Tuple.tuple(FIRST_PROCESS_DEFINITION_KEY, updatedName));
+    assertThat(processOverviewClient.getProcessOverviews())
+        .hasSize(1)
+        .extracting(
+            ProcessOverviewResponseDto::getProcessDefinitionKey,
+            ProcessOverviewResponseDto::getProcessDefinitionName)
+        .containsExactly(Tuple.tuple(FIRST_PROCESS_DEFINITION_KEY, updatedName));
   }
 
   private BpmnModelInstance createSimpleProcessWithKeyAndName(final String key, final String name) {
     return Bpmn.createExecutableProcess(key)
-      .name(name)
-      .startEvent(BpmnModels.START_EVENT_ID)
-      .endEvent(BpmnModels.END_EVENT_ID_1)
-      .done();
+        .name(name)
+        .startEvent(BpmnModels.START_EVENT_ID)
+        .endEvent(BpmnModels.END_EVENT_ID_1)
+        .done();
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinition(String definitionKey, String name) {
     return ProcessDefinitionOptimizeDto.builder()
-      .id(IdGenerator.getNextId())
-      .key(definitionKey)
-      .name(name)
-      .version("1")
-      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
-      .bpmn20Xml("xml")
-      .build();
+        .id(IdGenerator.getNextId())
+        .key(definitionKey)
+        .name(name)
+        .version("1")
+        .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
+        .bpmn20Xml("xml")
+        .build();
   }
 
   private void addProcessDefinitionWithGivenNameAndKeyToElasticSearch(String name, String key) {
     final DefinitionOptimizeResponseDto definition = createProcessDefinition(key, name);
     databaseIntegrationTestExtension.addEntriesToDatabase(
-      new ProcessDefinitionIndexES().getIndexName(),
-      Map.of(definition.getId(), definition)
-    );
+        new ProcessDefinitionIndexES().getIndexName(), Map.of(definition.getId(), definition));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void setProcessOwner(final String processDefKey, final String ownerId) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateProcessRequest(processDefKey, new ProcessUpdateDto(ownerId, new ProcessDigestRequestDto()))
-      .execute();
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateProcessRequest(
+            processDefKey, new ProcessUpdateDto(ownerId, new ProcessDigestRequestDto()))
+        .execute();
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(processDefinitionKey));
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getSimpleBpmnDiagram(processDefinitionKey));
   }
 
   private static Stream<Arguments> getSortOrderAndExpectedDefinitionNameComparator() {
     return Stream.of(
-      Arguments.of(
-        SortOrder.ASC,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)
-      ),
-      Arguments.of(
-        null,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)
-      ),
-      Arguments.of(
-        SortOrder.DESC,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName).reversed()
-      )
-    );
+        Arguments.of(
+            SortOrder.ASC,
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)),
+        Arguments.of(
+            null, Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)),
+        Arguments.of(
+            SortOrder.DESC,
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName).reversed()));
   }
 
   private static Stream<Arguments> getDefinitionNameAndExpectedSortOrder() {
     return Stream.of(
-      Arguments.of(
-        SortOrder.ASC,
-        List.of("secondDefWithOwner", "firstDefWithOwner", "fourthDefWithOwner", "thirdDefWithOwner")
-      ),
-      Arguments.of(
-        null,
-        List.of("secondDefWithOwner", "firstDefWithOwner", "fourthDefWithOwner", "thirdDefWithOwner")
-      ),
-      Arguments.of(
-        SortOrder.DESC,
-        List.of("thirdDefWithOwner", "fourthDefWithOwner", "firstDefWithOwner", "secondDefWithOwner")
-      )
-    );
+        Arguments.of(
+            SortOrder.ASC,
+            List.of(
+                "secondDefWithOwner",
+                "firstDefWithOwner",
+                "fourthDefWithOwner",
+                "thirdDefWithOwner")),
+        Arguments.of(
+            null,
+            List.of(
+                "secondDefWithOwner",
+                "firstDefWithOwner",
+                "fourthDefWithOwner",
+                "thirdDefWithOwner")),
+        Arguments.of(
+            SortOrder.DESC,
+            List.of(
+                "thirdDefWithOwner",
+                "fourthDefWithOwner",
+                "firstDefWithOwner",
+                "secondDefWithOwner")));
   }
 
   private static Stream<Arguments> getSortCriteriaAndExpectedComparator() {
     return Stream.of(
-      Arguments.of(
-        ProcessOverviewResponseDto.Fields.processDefinitionName,
-        SortOrder.ASC,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)
-      ),
-      Arguments.of(
-        ProcessOverviewResponseDto.Fields.processDefinitionName,
-        null,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)
-      ),
-      Arguments.of(
-        ProcessOverviewResponseDto.Fields.processDefinitionName,
-        SortOrder.DESC,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName).reversed()
-      ),
-      Arguments.of(
-        ProcessOverviewResponseDto.Fields.owner,
-        SortOrder.ASC,
-        Comparator.comparing(
-          (ProcessOverviewResponseDto processOverviewResponseDto) -> processOverviewResponseDto.getOwner().getName(),
-          Comparator.nullsLast(Comparator.naturalOrder())
-        )
-      ),
-      Arguments.of(
-        ProcessOverviewResponseDto.Fields.owner,
-        null,
-        Comparator.comparing(
-          (ProcessOverviewResponseDto processOverviewResponseDto) -> processOverviewResponseDto.getOwner().getName(),
-          Comparator.nullsLast(Comparator.naturalOrder())
-        )
-      ),
-      Arguments.of(
-        ProcessOverviewResponseDto.Fields.owner,
-        SortOrder.DESC,
-        Comparator.comparing(
-          (ProcessOverviewResponseDto processOverviewResponseDto) -> processOverviewResponseDto.getOwner().getName(),
-          Comparator.nullsLast(Comparator.naturalOrder())
-        ).reversed()
-      )
-    );
+        Arguments.of(
+            ProcessOverviewResponseDto.Fields.processDefinitionName,
+            SortOrder.ASC,
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)),
+        Arguments.of(
+            ProcessOverviewResponseDto.Fields.processDefinitionName,
+            null,
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)),
+        Arguments.of(
+            ProcessOverviewResponseDto.Fields.processDefinitionName,
+            SortOrder.DESC,
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName).reversed()),
+        Arguments.of(
+            ProcessOverviewResponseDto.Fields.owner,
+            SortOrder.ASC,
+            Comparator.comparing(
+                (ProcessOverviewResponseDto processOverviewResponseDto) ->
+                    processOverviewResponseDto.getOwner().getName(),
+                Comparator.nullsLast(Comparator.naturalOrder()))),
+        Arguments.of(
+            ProcessOverviewResponseDto.Fields.owner,
+            null,
+            Comparator.comparing(
+                (ProcessOverviewResponseDto processOverviewResponseDto) ->
+                    processOverviewResponseDto.getOwner().getName(),
+                Comparator.nullsLast(Comparator.naturalOrder()))),
+        Arguments.of(
+            ProcessOverviewResponseDto.Fields.owner,
+            SortOrder.DESC,
+            Comparator.comparing(
+                    (ProcessOverviewResponseDto processOverviewResponseDto) ->
+                        processOverviewResponseDto.getOwner().getName(),
+                    Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed()));
   }
 
   private static Stream<Arguments> getSortOrderAndExpectedDefinitionKeyComparator() {
     return Stream.of(
-      Arguments.of(SortOrder.ASC, Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionKey)),
-      Arguments.of(null, Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionKey)),
-      Arguments.of(
-        SortOrder.DESC,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionKey).reversed()
-      )
-    );
+        Arguments.of(
+            SortOrder.ASC,
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionKey)),
+        Arguments.of(
+            null, Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionKey)),
+        Arguments.of(
+            SortOrder.DESC,
+            Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionKey).reversed()));
   }
-
 }

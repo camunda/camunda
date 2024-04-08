@@ -9,7 +9,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Link, Redirect, useLocation} from 'react-router-dom';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
-import {Download, Edit, RowCollapse, RowExpand, Share, TrashCan} from '@carbon/icons-react';
+import {Download, Edit, Share, TrashCan} from '@carbon/icons-react';
 
 import {
   ShareEntity,
@@ -31,6 +31,7 @@ import {t} from 'translation';
 import {track} from 'tracking';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
+import {CollapsibleContainer} from './CollapsibleContainer';
 
 import './ReportView.scss';
 
@@ -39,13 +40,12 @@ export function ReportView({report, error, user, loadReport}) {
   const [sharingEnabled, setSharingEnabled] = useState(false);
   const [optimizeProfile, setOptimizeProfile] = useState(null);
   const [redirect, setRedirect] = useState(false);
-  const [bottomPanelState, setBottomPanelState] = useState('half');
   const location = useLocation();
   const isProcessReport = location.pathname.includes('processes/report');
   // This calculates the max height of the raw data table to make the expand/collapse animation smooth.
   // The height value has to be in pixel to make the animation work.
-  const [reportContainerRef, reportMaxHeight] = useMaxHeight();
-  const [hideChart, setHideChart] = useState(false);
+  const reportContainerRef = useRef();
+  const [showReportRenderer, setShowReportRenderer] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -54,11 +54,28 @@ export function ReportView({report, error, user, loadReport}) {
     })();
   }, []);
 
-  const handleTransitionEnd = (evt) => {
-    if (evt.propertyName === 'max-height' && bottomPanelState !== 'maximized') {
-      setHideChart(false);
+  function showTable(sectionState) {
+    if (sectionState !== 'maximized') {
+      setShowReportRenderer(true);
     }
-  };
+  }
+
+  function handleTableExpand(currentState, newState) {
+    track('changeRawDataView', {
+      from: currentState,
+      to: newState,
+      reportType: report.data?.visualization,
+    });
+    setShowReportRenderer(newState !== 'maximized');
+  }
+
+  function handleTableCollapse(currentState, newState) {
+    track('changeRawDataView', {
+      from: currentState,
+      to: newState,
+      reportType: report.data?.visualization,
+    });
+  }
 
   const shouldShowCSVDownload = () => {
     if (report.combined && typeof report.result !== 'undefined') {
@@ -156,68 +173,28 @@ export function ReportView({report, error, user, loadReport}) {
         </div>
         <InstanceCount report={report} />
       </div>
-      <div className="reportData" ref={reportContainerRef} onTransitionEnd={handleTransitionEnd}>
+      <div className="viewsContainer" ref={reportContainerRef}>
         <div className="Report__view">
-          <div className={classnames('Report__content', {hidden: hideChart})}>
-            {!hideChart && <ReportRenderer error={error} report={report} loadReport={loadReport} />}
+          <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
+            {showReportRenderer && (
+              <ReportRenderer error={error} report={report} loadReport={loadReport} />
+            )}
           </div>
         </div>
         {!isProcessReport &&
           !combined &&
           typeof report.result !== 'undefined' &&
           report.data?.visualization !== 'table' && (
-            <div
-              className={classnames('bottomPanel', bottomPanelState)}
-              style={{maxHeight: bottomPanelState === 'maximized' ? reportMaxHeight : undefined}}
+            <CollapsibleContainer
+              maxHeight={reportContainerRef.current?.offsetHeight}
+              initialState="half"
+              onTransitionEnd={showTable}
+              onExpand={handleTableExpand}
+              onCollapse={handleTableCollapse}
+              title={t('report.view.rawData')}
             >
-              <div className="toolbar">
-                <b>{t('report.view.rawData')}</b>
-                <div>
-                  {bottomPanelState !== 'maximized' && (
-                    <Button
-                      hasIconOnly
-                      label={t('common.expand')}
-                      kind="ghost"
-                      onClick={() => {
-                        const newState = bottomPanelState === 'minimized' ? 'half' : 'maximized';
-                        track('changeRawDataView', {
-                          from: bottomPanelState,
-                          to: newState,
-                          reportType: report.data?.visualization,
-                        });
-                        setBottomPanelState(newState);
-                        setHideChart(newState === 'maximized');
-                      }}
-                      className="expandButton"
-                      tooltipPosition="left"
-                    >
-                      <RowCollapse />
-                    </Button>
-                  )}
-                  {bottomPanelState !== 'minimized' && (
-                    <Button
-                      hasIconOnly
-                      label={t('common.collapse')}
-                      kind="ghost"
-                      onClick={() => {
-                        const newState = bottomPanelState === 'maximized' ? 'half' : 'minimized';
-                        track('changeRawDataView', {
-                          from: bottomPanelState,
-                          to: newState,
-                          reportType: report.data?.visualization,
-                        });
-                        setBottomPanelState(newState);
-                      }}
-                      className="collapseButton"
-                      tooltipPosition="left"
-                    >
-                      <RowExpand />
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <InstanceViewTable className="bottomPanelTable" report={report} />
-            </div>
+              <InstanceViewTable report={report} />
+            </CollapsibleContainer>
           )}
         <Deleter
           type="report"
@@ -244,17 +221,4 @@ function calculateTotalEntries({result}) {
     default:
       return 1;
   }
-}
-
-function useMaxHeight() {
-  const [maxHeight, setMaxHeight] = useState(null);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (ref.current) {
-      setMaxHeight(ref.current.offsetHeight);
-    }
-  }, [ref]);
-
-  return [ref, maxHeight];
 }

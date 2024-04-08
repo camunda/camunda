@@ -19,9 +19,10 @@ const {createDurationFormattingOptions, duration} = formatters;
 interface DurationChartProps {
   data: AnalysisDurationChartEntry[];
   colors: string[];
+  isLogharitmic?: boolean;
 }
 
-function DurationChart({data, colors}: DurationChartProps) {
+export default function DurationChart({data, colors, isLogharitmic}: DurationChartProps) {
   const canvas = useRef(null);
 
   const createTooltipTitle = useCallback(
@@ -99,13 +100,14 @@ function DurationChart({data, colors}: DurationChartProps) {
               text: t('analysis.task.detailsModal.axisLabels.instanceCount').toString(),
               font: {weight: 'bold'},
             },
+            type: isLogharitmic ? 'logarithmic' : 'linear',
           },
         },
       },
     });
 
     return () => chart.destroy();
-  }, [createTooltipTitle, data, colors]);
+  }, [createTooltipTitle, data, colors, isLogharitmic]);
 
   return (
     <div className="DurationChart">
@@ -113,5 +115,3 @@ function DurationChart({data, colors}: DurationChartProps) {
     </div>
   );
 }
-
-export default DurationChart;

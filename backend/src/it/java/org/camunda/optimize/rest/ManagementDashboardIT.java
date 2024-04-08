@@ -5,7 +5,29 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_ID;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+
 import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -45,34 +67,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_ID;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
-import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
-
 @Tag(OPENSEARCH_PASSING)
 public class ManagementDashboardIT extends AbstractPlatformIT {
 
-  private static final Map<String, ExpectedReportConfigurationAndLocation> expectedReportsAndLocationsByName =
-    createExpectedReportsAndLocationsByName();
+  private static final Map<String, ExpectedReportConfigurationAndLocation>
+      expectedReportsAndLocationsByName = createExpectedReportsAndLocationsByName();
   private static final String ADOPTION_DASHBOARD = "Adoption";
 
   @Test
@@ -83,7 +82,8 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
 
     // then
     assertThat(returnedDashboard).isNotNull();
-    assertThat(returnedDashboard.getId()).isEqualTo(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
+    assertThat(returnedDashboard.getId())
+        .isEqualTo(ManagementDashboardService.MANAGEMENT_DASHBOARD_ID);
     assertThat(returnedDashboard.getOwner()).isNull();
     assertThat(returnedDashboard.getLastModifier()).isNull();
   }
@@ -94,10 +94,12 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetManagementDashboardRequest()
-      .withoutAuthentication()
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetManagementDashboardRequest()
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -108,29 +110,40 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
     // given
     final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     embeddedOptimizeExtension.getManagementDashboardService().init();
-    final List<SingleProcessReportDefinitionRequestDto> allSavedManagementReports = getAllSavedManagementReports();
-    final Map<String, String> managementReportIdsByName = allSavedManagementReports.stream().collect(Collectors.toMap(
-      ReportDefinitionDto::getName,
-      ReportDefinitionDto::getId
-    ));
+    final List<SingleProcessReportDefinitionRequestDto> allSavedManagementReports =
+        getAllSavedManagementReports();
+    final Map<String, String> managementReportIdsByName =
+        allSavedManagementReports.stream()
+            .collect(Collectors.toMap(ReportDefinitionDto::getName, ReportDefinitionDto::getId));
 
     // then the created reports have the correct configuration
-    assertThat(allSavedManagementReports).hasSize(expectedReportsAndLocationsByName.size())
-      .allSatisfy(report -> {
-        assertThat(report.getReportType()).isEqualTo(ReportType.PROCESS);
-        assertThat(report.getLastModifier()).isNull();
-        assertThat(report.getLastModified()).isEqualTo(now);
-        assertThat(report.getCreated()).isEqualTo(now);
-        assertThat(report.getOwner()).isNull();
-        assertThat(report.getCollectionId()).isNull();
-        // Management Reports cannot contain KPIs because there is no "real" user when setting the data sources during evaluation
-        assertThat(report.getData().getConfiguration().getTargetValue().getIsKpi()).isNull();
-        assertThat(report.getDefinitionType()).isEqualTo(DefinitionType.PROCESS);
-        assertThat(report.getFilterData()).isEqualTo(
-          expectedReportsAndLocationsByName.get(report.getName()).getReportDefinitionRequestDto().getFilterData());
-        assertThat(report.getData()).isEqualTo(
-          expectedReportsAndLocationsByName.get(report.getName()).getReportDefinitionRequestDto().getData());
-      });
+    assertThat(allSavedManagementReports)
+        .hasSize(expectedReportsAndLocationsByName.size())
+        .allSatisfy(
+            report -> {
+              assertThat(report.getReportType()).isEqualTo(ReportType.PROCESS);
+              assertThat(report.getLastModifier()).isNull();
+              assertThat(report.getLastModified()).isEqualTo(now);
+              assertThat(report.getCreated()).isEqualTo(now);
+              assertThat(report.getOwner()).isNull();
+              assertThat(report.getCollectionId()).isNull();
+              // Management Reports cannot contain KPIs because there is no "real" user when setting
+              // the data sources during evaluation
+              assertThat(report.getData().getConfiguration().getTargetValue().getIsKpi()).isNull();
+              assertThat(report.getDefinitionType()).isEqualTo(DefinitionType.PROCESS);
+              assertThat(report.getFilterData())
+                  .isEqualTo(
+                      expectedReportsAndLocationsByName
+                          .get(report.getName())
+                          .getReportDefinitionRequestDto()
+                          .getFilterData());
+              assertThat(report.getData())
+                  .isEqualTo(
+                      expectedReportsAndLocationsByName
+                          .get(report.getName())
+                          .getReportDefinitionRequestDto()
+                          .getData());
+            });
 
     // and the dashboard configuration is as expected
     final DashboardDefinitionRestDto managementDashboard = dashboardClient.getManagementDashboard();
@@ -144,25 +157,30 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
     assertThat(managementDashboard.getCreated()).isEqualTo(now);
     assertThat(getExternalResourceUrls(managementDashboard)).isEqualTo(Collections.emptySet());
     assertThat(managementDashboard.getRefreshRateSeconds()).isNull();
-    assertThat(managementDashboard.getAvailableFilters()).isEqualTo(List.of(
-      createDashboardStartDateFilterWithDefaultValues(
-        new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS))
-      )
-    ));
+    assertThat(managementDashboard.getAvailableFilters())
+        .isEqualTo(
+            List.of(
+                createDashboardStartDateFilterWithDefaultValues(
+                    new RollingDateFilterDataDto(
+                        new RollingDateFilterStartDto(12L, DateUnit.MONTHS)))));
     assertThat(managementDashboard.getTiles())
-      .hasSize(3)
-      .containsExactlyInAnyOrderElementsOf(
-        expectedReportsAndLocationsByName.keySet()
-          .stream()
-          .map(reportName -> getExpectedDashboardForReportWithName(reportName, managementReportIdsByName))
-          .collect(Collectors.toList())
-      );
+        .hasSize(3)
+        .containsExactlyInAnyOrderElementsOf(
+            expectedReportsAndLocationsByName.keySet().stream()
+                .map(
+                    reportName ->
+                        getExpectedDashboardForReportWithName(
+                            reportName, managementReportIdsByName))
+                .collect(Collectors.toList()));
   }
 
   @Test
   public void managementEntityCreationCanBeDisabled() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getEntityConfiguration().setCreateOnStartup(false);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setCreateOnStartup(false);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
@@ -184,12 +202,13 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
 
     // then
     assertThat(getAllSavedDashboards())
-      .singleElement()
-      .satisfies(dashboard -> {
-        assertThat(dashboard.getId()).isEqualTo(MANAGEMENT_DASHBOARD_ID);
-        assertThat(dashboard.getName()).isEqualTo(MANAGEMENT_DASHBOARD_LOCALIZATION_CODE);
-        assertThat(dashboard.isManagementDashboard()).isTrue();
-      });
+        .singleElement()
+        .satisfies(
+            dashboard -> {
+              assertThat(dashboard.getId()).isEqualTo(MANAGEMENT_DASHBOARD_ID);
+              assertThat(dashboard.getName()).isEqualTo(MANAGEMENT_DASHBOARD_LOCALIZATION_CODE);
+              assertThat(dashboard.isManagementDashboard()).isTrue();
+            });
   }
 
   @ParameterizedTest
@@ -199,28 +218,32 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getManagementDashboardService().init();
 
     // when
-    final DashboardDefinitionRestDto returnedDashboard = dashboardClient.getManagementDashboardLocalized(locale);
+    final DashboardDefinitionRestDto returnedDashboard =
+        dashboardClient.getManagementDashboardLocalized(locale);
 
     // then
     assertThat(returnedDashboard.getName()).isEqualTo(expectedName);
   }
 
-  private DashboardReportTileDto getExpectedDashboardForReportWithName(final String reportName,
-                                                                       final Map<String, String> managementReportIdsByName) {
-    final ExpectedReportConfigurationAndLocation expected = expectedReportsAndLocationsByName.get(reportName);
+  private DashboardReportTileDto getExpectedDashboardForReportWithName(
+      final String reportName, final Map<String, String> managementReportIdsByName) {
+    final ExpectedReportConfigurationAndLocation expected =
+        expectedReportsAndLocationsByName.get(reportName);
     return DashboardReportTileDto.builder()
-      .id(managementReportIdsByName.get(reportName))
-      .type(DashboardTileType.OPTIMIZE_REPORT)
-      .position(expected.getPositionDto())
-      .dimensions(expected.getDimensionDto())
-      .build();
+        .id(managementReportIdsByName.get(reportName))
+        .type(DashboardTileType.OPTIMIZE_REPORT)
+        .position(expected.getPositionDto())
+        .dimensions(expected.getDimensionDto())
+        .build();
   }
 
   private List<DashboardDefinitionRestDto> getAllSavedDashboards() {
-    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class);
   }
 
-  private static DashboardFilterDto<?> createDashboardStartDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
+  private static DashboardFilterDto<?> createDashboardStartDateFilterWithDefaultValues(
+      final DateFilterDataDto<?> defaultValues) {
     DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
     filterDto.setData(new DashboardDateFilterDataDto(defaultValues));
     return filterDto;
@@ -228,71 +251,77 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
 
   private List<SingleProcessReportDefinitionRequestDto> getAllSavedManagementReports() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      SingleProcessReportDefinitionRequestDto.class
-    );
+        SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class);
   }
 
-  private static Map<String, ExpectedReportConfigurationAndLocation> createExpectedReportsAndLocationsByName() {
+  private static Map<String, ExpectedReportConfigurationAndLocation>
+      createExpectedReportsAndLocationsByName() {
     return Stream.of(
-      new ExpectedReportConfigurationAndLocation(
-        CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE,
-        CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE,
-        new SingleProcessReportDefinitionRequestDto(
-          ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(
-              ProcessViewEntity.PROCESS_INSTANCE,
-              ViewProperty.FREQUENCY
-            ))
-            .groupBy(new NoneGroupByDto())
-            .visualization(ProcessVisualization.NUMBER)
-            .managementReport(true)
-            .build()),
-        new PositionDto(0, 0),
-        new DimensionDto(4, 2)
-      ),
-      new ExpectedReportConfigurationAndLocation(
-        STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
-        STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE,
-        new SingleProcessReportDefinitionRequestDto(
-          ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
-            .groupBy(new StartDateGroupByDto(new DateGroupByValueDto(AggregateByDateUnit.MONTH)))
-            .distributedBy(new ProcessDistributedByDto())
-            .visualization(ProcessVisualization.BAR)
-            .filter(ProcessFilterBuilder.filter()
-                      .rollingInstanceStartDate()
-                      .start(6L, DateUnit.MONTHS)
-                      .add()
-                      .buildList())
-            .configuration(SingleReportConfigurationDto.builder().stackedBar(true).build())
-            .managementReport(true)
-            .build()),
-        new PositionDto(4, 0),
-        new DimensionDto(14, 4)
-      ),
-      new ExpectedReportConfigurationAndLocation(
-        ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
-        ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE,
-        new SingleProcessReportDefinitionRequestDto(
-          ProcessReportDataDto.builder()
-            .definitions(Collections.emptyList())
-            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
-            .groupBy(new NoneGroupByDto())
-            .visualization(ProcessVisualization.NUMBER)
-            .filter(ProcessFilterBuilder.filter()
-                      .rollingInstanceEndDate()
-                      .start(6L, DateUnit.MONTHS)
-                      .add()
-                      .buildList())
-            .managementReport(true)
-            .build()),
-        new PositionDto(0, 2),
-        new DimensionDto(4, 2)
-      )
-    ).collect(Collectors.toMap(ExpectedReportConfigurationAndLocation::getReportName, Function.identity()));
+            new ExpectedReportConfigurationAndLocation(
+                CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE,
+                CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE,
+                new SingleProcessReportDefinitionRequestDto(
+                    ProcessReportDataDto.builder()
+                        .definitions(Collections.emptyList())
+                        .view(
+                            new ProcessViewDto(
+                                ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+                        .groupBy(new NoneGroupByDto())
+                        .visualization(ProcessVisualization.NUMBER)
+                        .managementReport(true)
+                        .build()),
+                new PositionDto(0, 0),
+                new DimensionDto(4, 2)),
+            new ExpectedReportConfigurationAndLocation(
+                STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
+                STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE,
+                new SingleProcessReportDefinitionRequestDto(
+                    ProcessReportDataDto.builder()
+                        .definitions(Collections.emptyList())
+                        .view(
+                            new ProcessViewDto(
+                                ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+                        .groupBy(
+                            new StartDateGroupByDto(
+                                new DateGroupByValueDto(AggregateByDateUnit.MONTH)))
+                        .distributedBy(new ProcessDistributedByDto())
+                        .visualization(ProcessVisualization.BAR)
+                        .filter(
+                            ProcessFilterBuilder.filter()
+                                .rollingInstanceStartDate()
+                                .start(6L, DateUnit.MONTHS)
+                                .add()
+                                .buildList())
+                        .configuration(
+                            SingleReportConfigurationDto.builder().stackedBar(true).build())
+                        .managementReport(true)
+                        .build()),
+                new PositionDto(4, 0),
+                new DimensionDto(14, 4)),
+            new ExpectedReportConfigurationAndLocation(
+                ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE,
+                ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE,
+                new SingleProcessReportDefinitionRequestDto(
+                    ProcessReportDataDto.builder()
+                        .definitions(Collections.emptyList())
+                        .view(
+                            new ProcessViewDto(
+                                ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+                        .groupBy(new NoneGroupByDto())
+                        .visualization(ProcessVisualization.NUMBER)
+                        .filter(
+                            ProcessFilterBuilder.filter()
+                                .rollingInstanceEndDate()
+                                .start(6L, DateUnit.MONTHS)
+                                .add()
+                                .buildList())
+                        .managementReport(true)
+                        .build()),
+                new PositionDto(0, 2),
+                new DimensionDto(4, 2)))
+        .collect(
+            Collectors.toMap(
+                ExpectedReportConfigurationAndLocation::getReportName, Function.identity()));
   }
 
   @Data
@@ -308,9 +337,6 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
   @SuppressWarnings(UNUSED)
   private static Stream<Arguments> localizedDashboardNames() {
     return Stream.of(
-      Arguments.of("en", ADOPTION_DASHBOARD),
-      Arguments.of("de", ADOPTION_DASHBOARD)
-    );
+        Arguments.of("en", ADOPTION_DASHBOARD), Arguments.of("de", ADOPTION_DASHBOARD));
   }
-
 }

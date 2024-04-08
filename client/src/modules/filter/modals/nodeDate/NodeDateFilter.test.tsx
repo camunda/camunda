@@ -86,7 +86,10 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
 
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(
-    <NodeDateFilter {...props} filterData={{appliedTo: [], data: {flowNodeIds: []}, type: ''}} />
+    <NodeDateFilter
+      {...props}
+      filterData={{appliedTo: [], data: {flowNodeIds: []}, type: 'flowNodeStartDate'}}
+    />
   );
 
   runAllEffects();

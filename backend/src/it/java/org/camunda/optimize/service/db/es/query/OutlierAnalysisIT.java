@@ -5,7 +5,23 @@
  */
 package org.camunda.optimize.service.db.es.query;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.ANOTHER_FLOW_NODE_ID_TEST;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.FLOW_NODE_ID_TEST;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.SPLITTING_GATEWAY_LABEL;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_2_NAME;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_NORMAL;
+import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_OUTLIER;
+
 import jakarta.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.analysis.function.Gaussian;
@@ -19,23 +35,6 @@ import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
-import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.test.engine.OutlierDistributionClient.ANOTHER_FLOW_NODE_ID_TEST;
-import static org.camunda.optimize.test.engine.OutlierDistributionClient.FLOW_NODE_ID_TEST;
-import static org.camunda.optimize.test.engine.OutlierDistributionClient.SPLITTING_GATEWAY_LABEL;
-import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_2_NAME;
-import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_NORMAL;
-import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_OUTLIER;
 
 public class OutlierAnalysisIT extends AbstractPlatformIT {
 
@@ -53,7 +52,8 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   // given the distribution and outlier setup created by #createNormalDistributionAnd3Outliers
   public static final long SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND = 30738L;
   public static final int NUMBER_OF_DATAPOINTS = 40;
-  public static final int NUMBER_OF_DATAPOINTS_FOR_CHART = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+  public static final int NUMBER_OF_DATAPOINTS_FOR_CHART =
+      NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
   @Test
   public void outlierDetectionNormalDistribution() {
@@ -61,27 +61,24 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     final String testActivity1 = "testActivity1";
     final String testActivity2 = "testActivity2";
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(
-        testActivity1,
-        testActivity2
-      ));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(testActivity1, testActivity2));
 
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition,
-      new Gaussian(NUMBER_OF_DATAPOINTS / 2., 12),
-      NUMBER_OF_DATAPOINTS,
-      testActivity1,
-      testActivity2
-    );
+        processDefinition,
+        new Gaussian(NUMBER_OF_DATAPOINTS / 2., 12),
+        NUMBER_OF_DATAPOINTS,
+        testActivity1,
+        testActivity2);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then
     final long expectedFlowNodeInstances = 936L;
@@ -90,17 +87,16 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     // assuming normal distribution, left and right outliers should be of the same percentile
     assertThat(activity1Findings.getHigherOutlier()).isPresent();
     assertThat(activity1Findings.getHigherOutlier().get().getBoundValue()).isEqualTo(39486L);
-    assertThat(activity1Findings.getHigherOutlier().get().getPercentile()).isCloseTo(
-      activity1Findings.getLowerOutlier().get().getPercentile(),
-      within(0.00001)
-    );
+    assertThat(activity1Findings.getHigherOutlier().get().getPercentile())
+        .isCloseTo(activity1Findings.getLowerOutlier().get().getPercentile(), within(0.00001));
     assertThat(activity1Findings.getLowerOutlier()).isPresent();
     assertThat(activity1Findings.getLowerOutlier().get().getBoundValue()).isEqualTo(513L);
     assertThat(activity1Findings.getLowerOutlier().get().getCount())
-      .isEqualTo(activity1Findings.getHigherOutlier().get().getCount());
+        .isEqualTo(activity1Findings.getHigherOutlier().get().getCount());
     assertThat(activity1Findings.getOutlierCount())
-      .isEqualTo(activity1Findings.getLowerOutlier().get().getCount() +
-                   activity1Findings.getHigherOutlier().get().getCount());
+        .isEqualTo(
+            activity1Findings.getLowerOutlier().get().getCount()
+                + activity1Findings.getHigherOutlier().get().getCount());
     assertThat(activity1Findings.getLowerOutlierHeat()).isEqualTo(1.0D);
     assertThat(activity1Findings.getHigherOutlierHeat()).isGreaterThan(0.0D);
     assertThat(activity1Findings.getHeat()).isGreaterThan(0.0D);
@@ -110,34 +106,36 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     // second activity only has higher outliers
     assertThat(activity2Findings.getLowerOutlier()).isNotPresent();
     assertThat(activity2Findings.getHigherOutlier()).isPresent();
-    assertThat(activity2Findings.getOutlierCount()).isEqualTo(activity2Findings.getHigherOutlier().get().getCount());
+    assertThat(activity2Findings.getOutlierCount())
+        .isEqualTo(activity2Findings.getHigherOutlier().get().getCount());
     assertThat(activity2Findings.getHigherOutlierHeat()).isGreaterThan(0.0D);
     assertThat(activity2Findings.getLowerOutlierHeat()).isEqualTo(0.0D);
     // second activity has way more higher outliers and thus heat than activity 1
     assertThat(activity2Findings.getHeat()).isGreaterThan(activity1Findings.getHeat());
-    assertThat(activity2Findings.getHigherOutlierHeat()).isGreaterThan(activity1Findings.getHigherOutlierHeat());
-    assertThat(activity2Findings.getLowerOutlierHeat()).isLessThan(activity1Findings.getLowerOutlierHeat());
+    assertThat(activity2Findings.getHigherOutlierHeat())
+        .isGreaterThan(activity1Findings.getHigherOutlierHeat());
+    assertThat(activity2Findings.getLowerOutlierHeat())
+        .isLessThan(activity1Findings.getLowerOutlierHeat());
   }
 
   @Test
   public void outlierDetectionProcessHasNoInstances() {
     // given
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      Bpmn.createExecutableProcess("noInstanceKey")
-        .name("aProcessName")
-        .startEvent(START_EVENT_ID)
-        .endEvent()
-        .done()
-    );
+        Bpmn.createExecutableProcess("noInstanceKey")
+            .name("aProcessName")
+            .startEvent(START_EVENT_ID)
+            .endEvent()
+            .done());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then
     assertThat(outlierTest).isEmpty();
@@ -147,32 +145,39 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void noOutliersFoundForFlowNodeTest() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     // high sigma value, so that no process instances are out of 2*sigma bounds
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition,
-      new Gaussian(NUMBER_OF_DATAPOINTS / 2., 15),
-      NUMBER_OF_DATAPOINTS,
-      FLOW_NODE_ID_TEST
-    );
-    // a single higher outlier instance on start and end event but not the FLOW_NODE_ID_TEST activity
+        processDefinition,
+        new Gaussian(NUMBER_OF_DATAPOINTS / 2., 15),
+        NUMBER_OF_DATAPOINTS,
+        FLOW_NODE_ID_TEST);
+    // a single higher outlier instance on start and end event but not the FLOW_NODE_ID_TEST
+    // activity
     ProcessInstanceEngineDto processInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT_ID, 100_000);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), FLOW_NODE_ID_TEST, NUMBER_OF_DATAPOINTS / 2L);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT_ID, 100_000);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+        processInstance.getId(), START_EVENT_ID, 100_000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+        processInstance.getId(), FLOW_NODE_ID_TEST, NUMBER_OF_DATAPOINTS / 2L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+        processInstance.getId(), END_EVENT_ID, 100_000);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY, Collections.singletonList("1"), Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then
     assertThat(outlierTest).isEmpty();
-    // FLOW_NODE_ID_TEST is not part of the result as there are no outliers and start and end event are not
+    // FLOW_NODE_ID_TEST is not part of the result as there are no outliers and start and end event
+    // are not
     // computed in the outlier analysis
   }
 
@@ -180,25 +185,26 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void singleOutlierFoundTest() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10. / 2., 15), 5, FLOW_NODE_ID_TEST
-    );
+        processDefinition, new Gaussian(10. / 2., 15), 5, FLOW_NODE_ID_TEST);
     // a single higher outlier instance
     ProcessInstanceEngineDto processInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+        processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then
     assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getOutlierCount()).isEqualTo(1L);
@@ -206,38 +212,39 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getHigherOutlierHeat()).isGreaterThan(0.0D);
     assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getLowerOutlier()).isNotPresent();
     assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getHigherOutlier()).isPresent();
-    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getHigherOutlier().get().getCount()).isEqualTo(1L);
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getHigherOutlier().get().getCount())
+        .isEqualTo(1L);
   }
 
   @Test
   public void outlierAnalysisRespectsBucketLimit() {
     // given the bucket limit is set to something smaller than the amount of flow nodes present
     final int bucketLimit = 1;
-    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getElasticSearchConfiguration()
+        .setAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(
-        FLOW_NODE_ID_TEST,
-        ANOTHER_FLOW_NODE_ID_TEST
-      ));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST, ANOTHER_FLOW_NODE_ID_TEST));
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10. / 2., 15), 5, FLOW_NODE_ID_TEST
-    );
+        processDefinition, new Gaussian(10. / 2., 15), 5, FLOW_NODE_ID_TEST);
     // a single all flow nodes higher outlier instance
     ProcessInstanceEngineDto processInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then only one bucket will be there
     assertThat(outlierTest).hasSize(1);
@@ -247,18 +254,19 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void allDurationsSameValueNoOutliers() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then
     assertThat(outlierTest).isEmpty();
@@ -269,31 +277,32 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     // 10 is the default terms limit of elasticsearch, this ensures the default does not apply
 
     // given
-    final String[] activityIds = IntStream.range(0, 12).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new);
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getBpmnModelInstance(activityIds)
-    );
+    final String[] activityIds =
+        IntStream.range(0, 12).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new);
+    ProcessDefinitionEngineDto processDefinition =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(activityIds));
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
-    );
+        processDefinition, new Gaussian(10. / 2., 15), 5, activityIds);
     // a single all flow nodes higher outlier instance
     ProcessInstanceEngineDto processInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then
-    // 12 because the start and end event are no longer considered for the outlier analysis, so really only the 12
+    // 12 because the start and end event are no longer considered for the outlier analysis, so
+    // really only the 12
     // activities that I created above
     assertThat(outlierTest.size()).isEqualTo(12);
   }
@@ -302,24 +311,24 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void durationChartNormalDistributionTest() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition,
-      new Gaussian(NUMBER_OF_DATAPOINTS_FOR_CHART / 2., 15),
-      NUMBER_OF_DATAPOINTS_FOR_CHART,
-      FLOW_NODE_ID_TEST
-    );
+        processDefinition,
+        new Gaussian(NUMBER_OF_DATAPOINTS_FOR_CHART / 2., 15),
+        NUMBER_OF_DATAPOINTS_FOR_CHART,
+        FLOW_NODE_ID_TEST);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      FLOW_NODE_ID_TEST
-    );
+    List<DurationChartEntryDto> durationChart =
+        analysisClient.getDurationChart(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            FLOW_NODE_ID_TEST);
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
@@ -334,35 +343,37 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void durationChartNormalDistributionWithOutlierMarkingTest() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition,
-      new Gaussian(NUMBER_OF_DATAPOINTS / 2., 12),
-      NUMBER_OF_DATAPOINTS,
-      FLOW_NODE_ID_TEST
-    );
+        processDefinition,
+        new Gaussian(NUMBER_OF_DATAPOINTS / 2., 12),
+        NUMBER_OF_DATAPOINTS,
+        FLOW_NODE_ID_TEST);
     final long lowerOutlierBound = 513L;
     final long higherOutlierBound = 39486L;
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      FLOW_NODE_ID_TEST,
-      lowerOutlierBound,
-      higherOutlierBound
-    );
+    List<DurationChartEntryDto> durationChart =
+        analysisClient.getDurationChart(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            FLOW_NODE_ID_TEST,
+            lowerOutlierBound,
+            higherOutlierBound);
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
-      assertThat(durationChart.get(i).isOutlier()).isEqualTo(durationChart.get(i).getKey() < lowerOutlierBound);
+      assertThat(durationChart.get(i).isOutlier())
+          .isEqualTo(durationChart.get(i).getKey() < lowerOutlierBound);
     }
     for (int i = durationChart.size() / 2; i < durationChart.size(); i++) {
-      assertThat(durationChart.get(i).isOutlier()).isEqualTo(durationChart.get(i).getKey() > higherOutlierBound);
+      assertThat(durationChart.get(i).isOutlier())
+          .isEqualTo(durationChart.get(i).getKey() > higherOutlierBound);
     }
   }
 
@@ -370,23 +381,25 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void durationChartOnePerBucketTest() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     for (int i = 0; i < 80; i++) {
       ProcessInstanceEngineDto processInstance =
-        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-      engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), FLOW_NODE_ID_TEST, i * 1000);
+          engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      engineDatabaseExtension.changeFlowNodeTotalDuration(
+          processInstance.getId(), FLOW_NODE_ID_TEST, i * 1000);
     }
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      FLOW_NODE_ID_TEST
-    );
+    List<DurationChartEntryDto> durationChart =
+        analysisClient.getDurationChart(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            FLOW_NODE_ID_TEST);
 
     // then
     assertThat(durationChart.get(0).getValue()).isEqualTo(1L);
@@ -397,21 +410,23 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void significantOutlierVariableValues() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
     // a couple of normally distributed instances
-    outlierDistributionClient.createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_OUTLIER);
+    outlierDistributionClient.createNormalDistributionAnd3Outliers(
+        processDefinition, VARIABLE_VALUE_OUTLIER);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtos(
-      SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
-      processDefinition.getKey(),
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      FLOW_NODE_ID_TEST,
-      null
-    );
+    List<VariableTermDto> variableTermDtosActivity =
+        analysisClient.getVariableTermDtos(
+            SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
+            processDefinition.getKey(),
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            FLOW_NODE_ID_TEST,
+            null);
 
     // then
     assertThat(variableTermDtosActivity).hasSize(1);
@@ -425,21 +440,24 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void noSignificantOutlierVariableValues() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
-    outlierDistributionClient.createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_NORMAL);
-    // this particular value is obtained from precalculation, given the distribution and outlier setup
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
+    outlierDistributionClient.createNormalDistributionAnd3Outliers(
+        processDefinition, VARIABLE_VALUE_NORMAL);
+    // this particular value is obtained from precalculation, given the distribution and outlier
+    // setup
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtos(
-      SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
-      processDefinition.getKey(),
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      FLOW_NODE_ID_TEST,
-      null
-    );
+    List<VariableTermDto> variableTermDtosActivity =
+        analysisClient.getVariableTermDtos(
+            SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
+            processDefinition.getKey(),
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            FLOW_NODE_ID_TEST,
+            null);
 
     // then
     assertThat(variableTermDtosActivity).isEmpty();
@@ -449,14 +467,14 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void noOutliersResultsInNotFoundOnVariables() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition,
-      new Gaussian(NUMBER_OF_DATAPOINTS_FOR_CHART / 2., 15),
-      NUMBER_OF_DATAPOINTS_FOR_CHART,
-      FLOW_NODE_ID_TEST
-    );
+        processDefinition,
+        new Gaussian(NUMBER_OF_DATAPOINTS_FOR_CHART / 2., 15),
+        NUMBER_OF_DATAPOINTS_FOR_CHART,
+        FLOW_NODE_ID_TEST);
 
     // high duration for which there are no instances
     final long activityHigherOutlierBound = 100_000L;
@@ -464,14 +482,14 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<VariableTermDto> result = analysisClient.getVariableTermDtos(
-      activityHigherOutlierBound,
-      processDefinition.getKey(),
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      FLOW_NODE_ID_TEST,
-      null
-    );
+    List<VariableTermDto> result =
+        analysisClient.getVariableTermDtos(
+            activityHigherOutlierBound,
+            processDefinition.getKey(),
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            FLOW_NODE_ID_TEST,
+            null);
 
     // then
     assertThat(result).isEmpty();
@@ -481,27 +499,29 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void significantOutlierVariableValuesProcessInstanceIdExport() {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     List<String> expectedOutlierInstanceIds =
-      outlierDistributionClient.createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_OUTLIER);
+        outlierDistributionClient.createNormalDistributionAnd3Outliers(
+            processDefinition, VARIABLE_VALUE_OUTLIER);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildSignificantOutlierVariableTermsInstanceIdsRequest(
-        processDefinition.getKey(),
-        Collections.singletonList("1"),
-        Collections.singletonList(null),
-        FLOW_NODE_ID_TEST,
-        null,
-        SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
-        VARIABLE_2_NAME,
-        VARIABLE_VALUE_OUTLIER
-      )
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildSignificantOutlierVariableTermsInstanceIdsRequest(
+                processDefinition.getKey(),
+                Collections.singletonList("1"),
+                Collections.singletonList(null),
+                FLOW_NODE_ID_TEST,
+                null,
+                SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
+                VARIABLE_2_NAME,
+                VARIABLE_VALUE_OUTLIER)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -510,7 +530,8 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     assertThat(lines).hasSize(4);
     assertThat(lines[0]).isEqualTo("\"processInstanceId\"");
     assertThat(ArrayUtils.subarray(lines, 1, 4))
-      .containsExactlyInAnyOrder(expectedOutlierInstanceIds.stream().map(s -> "\"" + s + "\"").toArray(String[]::new));
+        .containsExactlyInAnyOrder(
+            expectedOutlierInstanceIds.stream().map(s -> "\"" + s + "\"").toArray(String[]::new));
   }
 
   @Test
@@ -518,47 +539,48 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     // given
     // a model with several task types
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstanceWithDifferentTaskTypes());
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstanceWithDifferentTaskTypes());
 
-    final String[] activityIds = List.of(
-      START_EVENT_ID,
-      SPLITTING_GATEWAY_ID,
-      USER_TASK_ID_ONE,
-      SERVICE_TASK_ID_ONE,
-      MERGING_GATEWAY_ID,
-      END_EVENT_ID,
-      USER_TASK_ID_TWO,
-      SERVICE_TASK_ID_TWO,
-      MANUAL_TASK_ID
-    ).toArray(String[]::new);
+    final String[] activityIds =
+        List.of(
+                START_EVENT_ID,
+                SPLITTING_GATEWAY_ID,
+                USER_TASK_ID_ONE,
+                SERVICE_TASK_ID_ONE,
+                MERGING_GATEWAY_ID,
+                END_EVENT_ID,
+                USER_TASK_ID_TWO,
+                SERVICE_TASK_ID_TWO,
+                MANUAL_TASK_ID)
+            .toArray(String[]::new);
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
-    );
+        processDefinition, new Gaussian(10. / 2., 15), 5, activityIds);
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(SPLITTING_GATEWAY_LABEL, true);
     // a single instance where we turn all flow nodes into outliers
     ProcessInstanceEngineDto processInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null));
 
     // then
-    // I expect that all gateways, as well as start and end nodes and also the tasks that are on the side of the
+    // I expect that all gateways, as well as start and end nodes and also the tasks that are on the
+    // side of the
     // gateway that doesn't get executed to not be considered in the outlier analysis
-    assertThat(outlierTest.keySet()).containsExactlyInAnyOrder(USER_TASK_ID_ONE, MANUAL_TASK_ID,
-                                                               SERVICE_TASK_ID_ONE
-    );
+    assertThat(outlierTest.keySet())
+        .containsExactlyInAnyOrder(USER_TASK_ID_ONE, MANUAL_TASK_ID, SERVICE_TASK_ID_ONE);
   }
 
   @Test
@@ -566,42 +588,43 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     // given
     // a model with several flow types
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstanceWithDifferentTaskTypes());
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstanceWithDifferentTaskTypes());
 
-    final String[] activityIds = List.of(
-      START_EVENT_ID,
-      SPLITTING_GATEWAY_ID,
-      USER_TASK_ID_ONE,
-      SERVICE_TASK_ID_ONE,
-      MERGING_GATEWAY_ID,
-      END_EVENT_ID,
-      USER_TASK_ID_TWO,
-      SERVICE_TASK_ID_TWO,
-      MANUAL_TASK_ID
-    ).toArray(String[]::new);
+    final String[] activityIds =
+        List.of(
+                START_EVENT_ID,
+                SPLITTING_GATEWAY_ID,
+                USER_TASK_ID_ONE,
+                SERVICE_TASK_ID_ONE,
+                MERGING_GATEWAY_ID,
+                END_EVENT_ID,
+                USER_TASK_ID_TWO,
+                SERVICE_TASK_ID_TWO,
+                MANUAL_TASK_ID)
+            .toArray(String[]::new);
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
-    );
+        processDefinition, new Gaussian(10. / 2., 15), 5, activityIds);
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(SPLITTING_GATEWAY_LABEL, true);
     // a single all flow nodes higher outlier instance
     ProcessInstanceEngineDto processInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
     importAllEngineEntitiesFromScratch();
 
     // when
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      0,
-      true
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            0,
+            true);
 
     // then
     // I expect that only the relevant user or manual tasks are contained
@@ -613,43 +636,44 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     // given
     // a model with several flow types
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstanceWithDifferentTaskTypes());
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getBpmnModelInstanceWithDifferentTaskTypes());
 
-    final String[] activityIds = List.of(
-      START_EVENT_ID,
-      SPLITTING_GATEWAY_ID,
-      USER_TASK_ID_ONE,
-      SERVICE_TASK_ID_ONE,
-      MERGING_GATEWAY_ID,
-      END_EVENT_ID,
-      USER_TASK_ID_TWO,
-      SERVICE_TASK_ID_TWO,
-      MANUAL_TASK_ID
-    ).toArray(String[]::new);
+    final String[] activityIds =
+        List.of(
+                START_EVENT_ID,
+                SPLITTING_GATEWAY_ID,
+                USER_TASK_ID_ONE,
+                SERVICE_TASK_ID_ONE,
+                MERGING_GATEWAY_ID,
+                END_EVENT_ID,
+                USER_TASK_ID_TWO,
+                SERVICE_TASK_ID_TWO,
+                MANUAL_TASK_ID)
+            .toArray(String[]::new);
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
-    );
+        processDefinition, new Gaussian(10. / 2., 15), 5, activityIds);
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(SPLITTING_GATEWAY_LABEL, true);
     // a single all flow nodes higher outlier instance
     ProcessInstanceEngineDto processInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), 100_000);
     importAllEngineEntitiesFromScratch();
 
     // when
     // Setting a really high minimum deviation
-    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null),
-      100_000_000,
-      false
-    );
+    Map<String, FindingsDto> outlierTest =
+        analysisClient.getFlowNodeOutliers(
+            PROCESS_DEFINITION_KEY,
+            Collections.singletonList("1"),
+            Collections.singletonList(null),
+            100_000_000,
+            false);
 
     // then
     // I expect all outliers to be ignored
@@ -657,12 +681,12 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   }
 
   public static BpmnModelInstance getBpmnModelInstance(String... activityId) {
-    StartEventBuilder builder = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .name("aProcessName")
-      .startEvent(START_EVENT_ID);
+    StartEventBuilder builder =
+        Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+            .name("aProcessName")
+            .startEvent(START_EVENT_ID);
     for (String activity : activityId) {
-      builder.serviceTask(activity)
-        .camundaExpression("${true}");
+      builder.serviceTask(activity).camundaExpression("${true}");
     }
     return builder.endEvent(END_EVENT_ID).done();
   }
@@ -670,25 +694,24 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   @SneakyThrows
   protected static BpmnModelInstance getBpmnModelInstanceWithDifferentTaskTypes() {
     return Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent(START_EVENT_ID)
-      .exclusiveGateway(SPLITTING_GATEWAY_ID)
-      .name(SPLITTING_GATEWAY_LABEL)
-      .condition("yes", "${" + SPLITTING_GATEWAY_LABEL + "}")
-      .userTask(USER_TASK_ID_ONE)
-      .name(USER_TASK_ID_ONE)
-      .manualTask(MANUAL_TASK_ID)
-      .serviceTask(SERVICE_TASK_ID_ONE)
-      .camundaExpression("${true}")
-      .exclusiveGateway(MERGING_GATEWAY_ID)
-      .endEvent(END_EVENT_ID)
-      .moveToNode(SPLITTING_GATEWAY_ID)
-      .condition("no", "${" + SPLITTING_GATEWAY_LABEL + "}")
-      .userTask(USER_TASK_ID_TWO)
-      .name(USER_TASK_ID_TWO)
-      .serviceTask(SERVICE_TASK_ID_TWO)
-      .camundaExpression("${true}")
-      .connectTo(MERGING_GATEWAY_ID)
-      .done();
+        .startEvent(START_EVENT_ID)
+        .exclusiveGateway(SPLITTING_GATEWAY_ID)
+        .name(SPLITTING_GATEWAY_LABEL)
+        .condition("yes", "${" + SPLITTING_GATEWAY_LABEL + "}")
+        .userTask(USER_TASK_ID_ONE)
+        .name(USER_TASK_ID_ONE)
+        .manualTask(MANUAL_TASK_ID)
+        .serviceTask(SERVICE_TASK_ID_ONE)
+        .camundaExpression("${true}")
+        .exclusiveGateway(MERGING_GATEWAY_ID)
+        .endEvent(END_EVENT_ID)
+        .moveToNode(SPLITTING_GATEWAY_ID)
+        .condition("no", "${" + SPLITTING_GATEWAY_LABEL + "}")
+        .userTask(USER_TASK_ID_TWO)
+        .name(USER_TASK_ID_TWO)
+        .serviceTask(SERVICE_TASK_ID_TWO)
+        .camundaExpression("${true}")
+        .connectTo(MERGING_GATEWAY_ID)
+        .done();
   }
-
 }

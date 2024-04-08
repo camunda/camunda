@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
 import jakarta.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.HashMap;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
@@ -23,26 +31,18 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
 @Tag(OPENSEARCH_PASSING)
 public class SharingRestServiceIT extends AbstractSharingIT {
 
   @Test
   public void checkShareStatusWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCheckSharingStatusRequest(null)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCheckSharingStatusRequest(null)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -52,11 +52,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void createNewReportShareWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildShareReportRequest(null)
-        .withoutAuthentication()
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildShareReportRequest(null)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -65,11 +65,12 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void createNewDashboardShareWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildShareDashboardRequest(null)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildShareDashboardRequest(null)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -151,15 +152,18 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void createNewDashboardShareForInstantPreviewDashboard() {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
-      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+        embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
     String dashboardJsonTemplateFilename = "template2.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
-    InstantDashboardDataDto instantPreviewDashboard = instantPreviewDashboardService.createInstantPreviewDashboard(
-        processDefKey, dashboardJsonTemplateFilename)
-      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get instant dashboard"));
-    final DashboardShareRestDto dashboardShareDto = createDashboardShareDto(instantPreviewDashboard.getDashboardId());
+    InstantDashboardDataDto instantPreviewDashboard =
+        instantPreviewDashboardService
+            .createInstantPreviewDashboard(processDefKey, dashboardJsonTemplateFilename)
+            .orElseThrow(
+                () -> new OptimizeIntegrationTestException("Could not get instant dashboard"));
+    final DashboardShareRestDto dashboardShareDto =
+        createDashboardShareDto(instantPreviewDashboard.getDashboardId());
 
     // when
     Response response = sharingClient.createDashboardShareResponse(dashboardShareDto);
@@ -172,15 +176,18 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void createNewReportShareForInstantPreviewDashboardReport() {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
-      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+        embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
     String dashboardJsonTemplateFilename = "template2.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
-    InstantDashboardDataDto instantPreviewDashboard = instantPreviewDashboardService.createInstantPreviewDashboard(
-        processDefKey, dashboardJsonTemplateFilename)
-      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get instant dashboard"));
-    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(instantPreviewDashboard.getDashboardId());
+    InstantDashboardDataDto instantPreviewDashboard =
+        instantPreviewDashboardService
+            .createInstantPreviewDashboard(processDefKey, dashboardJsonTemplateFilename)
+            .orElseThrow(
+                () -> new OptimizeIntegrationTestException("Could not get instant dashboard"));
+    final DashboardDefinitionRestDto dashboard =
+        dashboardClient.getDashboard(instantPreviewDashboard.getDashboardId());
     final DashboardReportTileDto instantPreviewReport = dashboard.getTiles().get(0);
     final ReportShareRestDto reportShare = createReportShare(instantPreviewReport.getId());
 
@@ -194,11 +201,12 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteReportShareWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportShareRequest("1124")
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteReportShareRequest("1124")
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -207,10 +215,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteNonExistingReportShare() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportShareRequest("nonExistingId")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteReportShareRequest("nonExistingId")
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -219,11 +228,12 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteDashboardShareWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardShareRequest("1124")
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteDashboardShareRequest("1124")
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -232,10 +242,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteNonExistingDashboardShare() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteDashboardShareRequest("nonExistingId")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteDashboardShareRequest("nonExistingId")
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -249,10 +260,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildDeleteReportShareRequest(id)
-        .execute();
+        embeddedOptimizeExtension.getRequestExecutor().buildDeleteReportShareRequest(id).execute();
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -268,10 +276,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildDeleteDashboardShareRequest(id)
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteDashboardShareRequest(id)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -298,11 +306,12 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     addShareForFakeReport();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildFindShareForReportRequest(FAKE_REPORT_ID)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildFindShareForReportRequest(FAKE_REPORT_ID)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -316,7 +325,8 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String id = addShareForDashboard(dashboardWithReport);
 
     // when
-    DashboardShareRestDto share = findShareForDashboard(dashboardWithReport).readEntity(DashboardShareRestDto.class);
+    DashboardShareRestDto share =
+        findShareForDashboard(dashboardWithReport).readEntity(DashboardShareRestDto.class);
 
     // then
     assertThat(share).isNotNull();
@@ -324,7 +334,6 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateSharedDashboard() {
     // given
     String reportId = createReportWithInstance();
@@ -332,7 +341,8 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
+    DashboardDefinitionRestDto dashboardShareDto =
+        sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
     assertThat(dashboardShareDto).isNotNull();
@@ -343,10 +353,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     // when
     String reportShareId = dashboardShareDto.getTiles().get(0).getId();
     HashMap<?, ?> evaluatedReportAsMap =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportShareId)
-        .execute(HashMap.class, Response.Status.OK.getStatusCode());
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportShareId)
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     // then
     assertReportData(reportId, evaluatedReportAsMap);
@@ -360,11 +370,12 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     addShareForDashboard(dashboardWithReport);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildFindShareForDashboardRequest(dashboardWithReport)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildFindShareForDashboardRequest(dashboardWithReport)
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -374,24 +385,26 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void evaluationOfNotExistingShareReturnsError() {
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSharedReportRequest("123")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest("123")
+            .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(response.getStatus())
+        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
   public void checkSharingAuthorizationWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildDashboardShareAuthorizationCheck("1124")
-        .withoutAuthentication()
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDashboardShareAuthorizationCheck("1124")
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -405,10 +418,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildDashboardShareAuthorizationCheck(dashboardId)
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDashboardShareAuthorizationCheck(dashboardId)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -424,11 +437,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildDashboardShareAuthorizationCheck(dashboardId)
-        .withUserAuthentication("kermit", "kermit")
-        .execute();
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDashboardShareAuthorizationCheck(dashboardId)
+            .withUserAuthentication("kermit", "kermit")
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -436,9 +449,9 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
   private Response findShareForDashboard(String dashboardId) {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildFindShareForDashboardRequest(dashboardId)
-      .execute();
+        .getRequestExecutor()
+        .buildFindShareForDashboardRequest(dashboardId)
+        .execute();
   }
 
   private void addShareForFakeReport() {
@@ -448,22 +461,19 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @SneakyThrows
   private String createManagementReport() {
     // The initial report is created for a specific process
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey("procDefKey")
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    final String reportId = reportClient.createSingleProcessReport(
-      new SingleProcessReportDefinitionRequestDto(reportData));
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey("procDefKey")
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
+            .build();
+    final String reportId =
+        reportClient.createSingleProcessReport(
+            new SingleProcessReportDefinitionRequestDto(reportData));
     databaseIntegrationTestExtension.update(
-      DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME,
-      reportId,
-      new ScriptData(
-        Collections.emptyMap(),
-        "ctx._source.data.managementReport = true"
-      )
-    );
+        DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME,
+        reportId,
+        new ScriptData(Collections.emptyMap(), "ctx._source.data.managementReport = true"));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return reportId;
   }
@@ -472,15 +482,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   protected String createManagementDashboard() {
     final String dashboardId = dashboardClient.createEmptyDashboard();
     databaseIntegrationTestExtension.update(
-      DASHBOARD_INDEX_NAME,
-      dashboardId,
-      new ScriptData(
-        Collections.emptyMap(),
-        "ctx._source.managementDashboard = true"
-      )
-    );
+        DASHBOARD_INDEX_NAME,
+        dashboardId,
+        new ScriptData(Collections.emptyMap(), "ctx._source.managementDashboard = true"));
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return dashboardId;
   }
-
 }

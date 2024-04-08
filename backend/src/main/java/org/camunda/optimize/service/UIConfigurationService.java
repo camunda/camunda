@@ -59,11 +59,16 @@ public class UIConfigurationService {
     final OptimizeProfile optimizeProfile = ConfigurationService.getOptimizeProfile(environment);
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
     uiConfigurationDto.setUserSearchAvailable(isUserSearchAvailable(optimizeProfile));
-    uiConfigurationDto.setOptimizeProfile(optimizeProfile.getId());
+    uiConfigurationDto.setUserTaskAssigneeAnalyticsEnabled(
+        configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled());
+    uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(
         configurationService.getCsvConfiguration().getExportCsvLimit());
+    uiConfigurationDto.setMaxNumDataSourcesForReport(
+        configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
+    uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
 
     final SettingsResponseDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(
@@ -112,11 +117,11 @@ public class UIConfigurationService {
   }
 
   private Map<String, WebappsEndpointDto> getCamundaWebappsEndpoints() {
-    Map<String, WebappsEndpointDto> engineNameToEndpoints = new HashMap<>();
-    for (Map.Entry<String, EngineConfiguration> entry :
+    final Map<String, WebappsEndpointDto> engineNameToEndpoints = new HashMap<>();
+    for (final Map.Entry<String, EngineConfiguration> entry :
         configurationService.getConfiguredEngines().entrySet()) {
-      EngineConfiguration engineConfiguration = entry.getValue();
-      WebappsEndpointDto webappsEndpoint = new WebappsEndpointDto();
+      final EngineConfiguration engineConfiguration = entry.getValue();
+      final WebappsEndpointDto webappsEndpoint = new WebappsEndpointDto();
       String endpointAsString = "";
       if (engineConfiguration.getWebapps().isEnabled()) {
         endpointAsString = engineConfiguration.getWebapps().getEndpoint();
@@ -129,7 +134,7 @@ public class UIConfigurationService {
   }
 
   private List<String> getConfiguredWebhooks() {
-    List<String> sortedWebhooksList =
+    final List<String> sortedWebhooksList =
         Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
     sortedWebhooksList.sort(String.CASE_INSENSITIVE_ORDER);
     return sortedWebhooksList;

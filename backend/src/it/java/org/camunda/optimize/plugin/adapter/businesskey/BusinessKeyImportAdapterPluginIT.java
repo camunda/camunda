@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.plugin.adapter.businesskey;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import java.util.Arrays;
+import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -14,12 +19,6 @@ import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class BusinessKeyImportAdapterPluginIT extends AbstractPlatformIT {
@@ -34,31 +33,32 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractPlatformIT {
   @Test
   public void businessKeysAreAdaptedByPluginOnRunningProcessInstanceImport() {
     // given
-    addBusinessKeyImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.businesskey");
+    addBusinessKeyImportPluginBasePackagesToConfiguration(
+        "org.camunda.optimize.testplugin.adapter.businesskey");
 
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     importAllEngineEntitiesFromScratch();
 
-  // when
-  List<String> processInstanceBusinessKeys = getBusinessKeysForAllImportedProcessInstances();
+    // when
+    List<String> processInstanceBusinessKeys = getBusinessKeysForAllImportedProcessInstances();
 
-  // then
-  assertThat(processInstanceBusinessKeys)
-      .hasSize(2)
-      .allMatch(key -> key.equals("foo"));
-}
-
+    // then
+    assertThat(processInstanceBusinessKeys).hasSize(2).allMatch(key -> key.equals("foo"));
+  }
 
   @Test
   public void businessKeysAreAdaptedByPluginOnCompletedProcessInstanceImport() {
     // given
-    addBusinessKeyImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.businesskey");
+    addBusinessKeyImportPluginBasePackagesToConfiguration(
+        "org.camunda.optimize.testplugin.adapter.businesskey");
 
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto processInstance1 =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto processInstance2 =
+        engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     importAllEngineEntitiesFromScratch();
 
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
@@ -70,9 +70,7 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractPlatformIT {
     List<String> processInstanceBusinessKeys = getBusinessKeysForAllImportedProcessInstances();
 
     // then
-    assertThat(processInstanceBusinessKeys)
-      .hasSize(2)
-      .allMatch(key -> key.equals("foo"));
+    assertThat(processInstanceBusinessKeys).hasSize(2).allMatch(key -> key.equals("foo"));
   }
 
   @Test
@@ -98,13 +96,13 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractPlatformIT {
   }
 
   private ProcessDefinitionEngineDto deployUserTaskProcess() {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram());
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        BpmnModels.getSingleUserTaskDiagram());
   }
 
-  private List<String> getBusinessKeysForAllImportedProcessInstances(){
-    return databaseIntegrationTestExtension.getAllProcessInstances()
-      .stream()
-      .map(ProcessInstanceDto::getBusinessKey)
-      .toList();
+  private List<String> getBusinessKeysForAllImportedProcessInstances() {
+    return databaseIntegrationTestExtension.getAllProcessInstances().stream()
+        .map(ProcessInstanceDto::getBusinessKey)
+        .toList();
   }
 }

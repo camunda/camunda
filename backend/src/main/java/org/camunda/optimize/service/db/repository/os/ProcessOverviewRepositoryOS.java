@@ -131,7 +131,7 @@ public class ProcessOverviewRepositoryOS implements ProcessOverviewRepository {
                         .build())
             .toList();
     osClient.doBulkRequest(
-        new BulkRequest.Builder(),
+        BulkRequest.Builder::new,
         bulkOperations,
         new ProcessOverviewIndexES().getIndexName(),
         false);

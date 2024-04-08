@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {useEffect, useState} from 'react';
 import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
 import {initTranslation} from 'translation';
 
@@ -35,18 +35,18 @@ import {Tracking} from 'tracking';
 import {Onboarding} from 'onboarding';
 
 import {Provider as Theme} from 'theme';
-import {withErrorHandling, UserProvider, DocsProvider} from 'HOC';
+import {UserProvider, DocsProvider} from 'HOC';
+import {useErrorHandling} from 'hooks';
 
-class App extends React.Component {
-  state = {
-    translationLoaded: false,
-  };
+export default function App({error}) {
+  const [translationLoaded, setTranslationLoaded] = useState(false);
+  const {mightFail} = useErrorHandling();
 
-  async componentDidMount() {
-    this.props.mightFail(initTranslation(), () => this.setState({translationLoaded: true}));
-  }
+  useEffect(() => {
+    mightFail(initTranslation(), () => setTranslationLoaded(true));
+  }, [mightFail]);
 
-  renderEntity = (props) => {
+  function renderEntity(props) {
     const components = {
       report: Report,
       'dashboard/instant': Dashboard,
@@ -81,63 +81,56 @@ class App extends React.Component {
     // we do this to get a fresh component whenever the entity type changes
     // this is needed to be able to create new dashboard from instant preview dashboard page
     return <Component key={selectedEntity} {...newProps} />;
-  };
+  }
 
-  render() {
-    if (this.props.error) {
-      return (
-        <ErrorPage
-          noLink
-          text="Optimize could not be loaded, please make sure the server is running"
-        >
-          <Button link onClick={() => window.location.reload(true)}>
-            Reload
-          </Button>
-        </ErrorPage>
-      );
-    }
-
-    if (!this.state.translationLoaded) {
-      return <LoadingIndicator />;
-    }
-
+  if (error) {
     return (
-      <Theme>
-        <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
-          <WithLicense>
-            <div className="Root-container">
-              <ErrorBoundary>
-                <UserProvider>
-                  <DocsProvider>
-                    <Switch>
-                      <PrivateRoute exact path="/" component={Processes} />
-                      <PrivateRoute path="/analysis" component={Analysis} />
-                      <PrivateRoute exact path="/events/processes" component={Events} />
-                      <PrivateRoute path="/events/ingested" component={Events} />
-                      <Route exact path="/share/:type/:id" component={Sharing} />
-                      <PrivateRoute
-                        path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
-                        render={this.renderEntity}
-                      />
-                      <PrivateRoute exact path="/collections" component={Home} />
-                      <Route path="/license" component={License} />
-                      <Route path="/logout" component={Logout} />
-                      <PrivateRoute path="*" component={ErrorPage} />
-                    </Switch>
-                  </DocsProvider>
-                  <Tracking />
-                  <Onboarding />
-                </UserProvider>
-              </ErrorBoundary>
-            </div>
-          </WithLicense>
-          <SaveGuard />
-          <Prompt />
-        </Router>
-        <Notifications />
-      </Theme>
+      <ErrorPage noLink text="Optimize could not be loaded, please make sure the server is running">
+        <Button link onClick={() => window.location.reload(true)}>
+          Reload
+        </Button>
+      </ErrorPage>
     );
   }
-}
 
-export default withErrorHandling(App);
+  if (!translationLoaded) {
+    return <LoadingIndicator />;
+  }
+
+  return (
+    <Theme>
+      <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
+        <WithLicense>
+          <div className="Root-container">
+            <ErrorBoundary>
+              <UserProvider>
+                <DocsProvider>
+                  <Switch>
+                    <PrivateRoute exact path="/" component={Processes} />
+                    <PrivateRoute path="/analysis" component={Analysis} />
+                    <PrivateRoute exact path="/events/processes" component={Events} />
+                    <PrivateRoute path="/events/ingested" component={Events} />
+                    <Route exact path="/share/:type/:id" component={Sharing} />
+                    <PrivateRoute
+                      path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
+                      render={renderEntity}
+                    />
+                    <PrivateRoute exact path="/collections" component={Home} />
+                    <Route path="/license" component={License} />
+                    <Route path="/logout" component={Logout} />
+                    <PrivateRoute path="*" component={ErrorPage} />
+                  </Switch>
+                </DocsProvider>
+                <Tracking />
+                <Onboarding />
+              </UserProvider>
+            </ErrorBoundary>
+          </div>
+        </WithLicense>
+        <SaveGuard />
+        <Prompt />
+      </Router>
+      <Notifications />
+    </Theme>
+  );
+}

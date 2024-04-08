@@ -7,8 +7,10 @@ package org.camunda.optimize.service.uiconfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +27,8 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.PlatformOptimizeVersionService;
 import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,6 +46,8 @@ import org.springframework.core.env.Environment;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class UIConfigurationServiceTest {
 
+  @InjectMocks UIConfigurationService underTest;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
 
@@ -56,7 +62,17 @@ public class UIConfigurationServiceTest {
   @Mock private Identity identity;
   @Mock private Users identityUsers;
 
-  @InjectMocks UIConfigurationService underTest;
+  private static Stream<Arguments> optimizeProfiles() {
+    return Stream.of(
+        Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE), Arguments.of(PLATFORM_PROFILE));
+  }
+
+  private static Stream<Arguments> optimizeProfilesAndExpectedIsEnterpriseModeResult() {
+    return Stream.of(
+        Arguments.of(CLOUD_PROFILE, true),
+        Arguments.of(CCSM_PROFILE, false), // false by default because it's not mocked
+        Arguments.of(PLATFORM_PROFILE, true));
+  }
 
   @ParameterizedTest
   @MethodSource("optimizeProfiles")
@@ -69,7 +85,8 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(activeProfile);
+    assertThat(configurationResponse.getOptimizeProfile())
+        .isEqualTo(OptimizeProfile.toProfile(activeProfile));
   }
 
   @Test
@@ -82,7 +99,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
   }
 
   @Test
@@ -107,7 +124,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
   }
 
   @ParameterizedTest
@@ -125,21 +142,25 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.isEnterpriseMode()).isEqualTo(expectedIsEnterprise);
   }
 
-  private static Stream<Arguments> optimizeProfiles() {
-    return Stream.of(
-        Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE), Arguments.of(PLATFORM_PROFILE));
-  }
+  @Test
+  public void testMaximumNumberOfDataSourcesForReportIsReturned() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+    when(configurationService.getUiConfiguration().getMaxNumDataSourcesForReport()).thenReturn(50);
 
-  private static Stream<Arguments> optimizeProfilesAndExpectedIsEnterpriseModeResult() {
-    return Stream.of(
-        Arguments.of(CLOUD_PROFILE, true),
-        Arguments.of(CCSM_PROFILE, false), // false by default because it's not mocked
-        Arguments.of(PLATFORM_PROFILE, true));
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getMaxNumDataSourcesForReport()).isEqualTo(50);
   }
 
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);
     when(identityUsers.isAvailable()).thenReturn(true);
+    when(environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY))
+        .thenReturn(DatabaseType.ELASTICSEARCH.toString());
   }
 }

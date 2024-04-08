@@ -7,9 +7,11 @@ package org.camunda.optimize.service.db.repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
+import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 
 public interface ProcessInstanceRepository {
@@ -43,4 +45,15 @@ public interface ProcessInstanceRepository {
 
   void deleteEventsWithIdsInFromAllInstances(
       String index, List<String> eventIdsToDelete, String updateItem);
+
+  boolean processDefinitionHasStartedInstances(String processDefinitionKey);
+
+  PageResultDto<String> getNextPageOfProcessInstanceIds(
+      PageResultDto<String> previousPage, Supplier<PageResultDto<String>> firstPageFetchFunction);
+
+  PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+      String processDefinitionKey, OffsetDateTime endDate, Integer limit);
+
+  PageResultDto<String> getFirstPageOfProcessInstanceIdsThatEndedBefore(
+      String processDefinitionKey, OffsetDateTime endDate, Integer limit);
 }

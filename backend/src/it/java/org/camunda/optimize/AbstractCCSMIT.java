@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -86,6 +87,13 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   protected static boolean isZeebeVersionPre84() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*");
+    return zeebeVersionPattern
+        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
+        .matches();
+  }
+
+  protected static boolean isZeebeVersionPre85() {
+    final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*|8.4.*");
     return zeebeVersionPattern
         .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
         .matches();
@@ -336,7 +344,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
       final String exportIndex,
       final TermsQueryContainer queryForProcessableEvents,
       final Class<T> zeebeRecordClass) {
-    return databaseIntegrationTestExtension.getZeebeExportedProcessableEvents(
+    return databaseIntegrationTestExtension.getZeebeExportedRecordsByQuery(
         exportIndex, queryForProcessableEvents, zeebeRecordClass);
   }
 
@@ -346,5 +354,18 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         ZeebeUserTaskRecordDto.Fields.intent,
         ZeebeUserTaskImportService.INTENTS_TO_IMPORT.stream().map(UserTaskIntent::name).toList());
     return query;
+  }
+
+  protected void waitUntilInstanceRecordWithElementTypeAndIntentExported(
+      final BpmnElementType elementType, final Intent intent) {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value
+            + "."
+            + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
+        elementType.name());
+    query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.intent, intent.name().toUpperCase());
+    waitUntilMinimumDataExportedCount(
+        1, DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, query, 10);
   }
 }

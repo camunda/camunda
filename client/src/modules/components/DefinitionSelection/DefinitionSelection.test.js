@@ -9,7 +9,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {ComboBox} from '@carbon/react';
 
-import {LoadingIndicator, TenantInfo, Typeahead} from 'components';
+import {LoadingIndicator, TenantInfo} from 'components';
 import {getCollection, loadDefinitions} from 'services';
 import {getOptimizeProfile} from 'config';
 
@@ -19,7 +19,10 @@ import VersionPopover from './VersionPopover';
 import {loadVersions, loadTenants} from './service';
 import MultiDefinitionSelection from './MultiDefinitionSelection';
 
-jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
+jest.mock('config', () => ({
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  getMaxNumDataSourcesForReport: jest.fn().mockReturnValue(10),
+}));
 
 jest.mock('./service', () => ({
   loadVersions: jest.fn().mockReturnValue([
@@ -430,7 +433,6 @@ it('should invoke onChange from MultiDefinitionSelection if selectedDefinitions 
 
   await flushPromises();
 
-  expect(node.find(Typeahead)).not.toExist();
   expect(node.find(MultiDefinitionSelection)).toExist();
 
   node.find(MultiDefinitionSelection).simulate('change', ['test']);

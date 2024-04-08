@@ -5,7 +5,14 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
+
 import com.google.common.collect.ImmutableMap;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
@@ -14,14 +21,6 @@ import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessI
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.junit.jupiter.api.Test;
-
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 
 public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT {
   private static final String VARIABLE_NAME = "var";
@@ -32,18 +31,22 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setEnabled(true);
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final String instanceIdToKeep = "trace1";
-    final ProcessInstanceEngineDto engineInstance = deployAndStartInstanceWithBusinessKey(instanceIdToKeep);
+    final ProcessInstanceEngineDto engineInstance =
+        deployAndStartInstanceWithBusinessKey(instanceIdToKeep);
     final String instanceIdToCleanup = "trace2";
-    startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(engineInstance, instanceIdToCleanup);
+    startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(
+        engineInstance, instanceIdToCleanup);
 
     importAllEngineEntitiesFromScratch();
 
-    final String eventProcessMapping = publishEventMappingUsingProcessInstanceCamundaEvents(
-      engineInstance,
-      createMappingsForEventProcess(
-        engineInstance, BPMN_START_EVENT_ID, applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE), BPMN_END_EVENT_ID
-      )
-    );
+    final String eventProcessMapping =
+        publishEventMappingUsingProcessInstanceCamundaEvents(
+            engineInstance,
+            createMappingsForEventProcess(
+                engineInstance,
+                BPMN_START_EVENT_ID,
+                applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+                BPMN_END_EVENT_ID));
     executeImportCycle();
 
     // when
@@ -51,38 +54,41 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     republishEventProcess(eventProcessMapping);
 
     // then
-    final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
+    final String eventProcessPublishState =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
+        getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
-      .extracting(ProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(instanceIdToKeep);
+        .extracting(ProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(instanceIdToKeep);
   }
 
   @Test
   public void republishAfterEngineDataCleanupModeVariablesTracedByBusinessKey() {
     // given
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setEnabled(true);
-    getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
+    getCleanupConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setCleanupMode(CleanupMode.VARIABLES);
     final Map<String, Object> variables = ImmutableMap.of(VARIABLE_NAME, "1");
     final String instanceIdWithAllVariables = "trace1";
-    final ProcessInstanceEngineDto engineInstance = deployAndStartInstanceWithBusinessKey(
-      instanceIdWithAllVariables, variables
-    );
+    final ProcessInstanceEngineDto engineInstance =
+        deployAndStartInstanceWithBusinessKey(instanceIdWithAllVariables, variables);
     final String instanceIdWithCleanedVariables = "trace2";
     startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(
-      engineInstance, instanceIdWithCleanedVariables, variables
-    );
+        engineInstance, instanceIdWithCleanedVariables, variables);
 
     importAllEngineEntitiesFromScratch();
 
-    final String eventProcessMapping = publishEventMappingUsingProcessInstanceCamundaEvents(
-      engineInstance,
-      createMappingsForEventProcess(
-        engineInstance, BPMN_START_EVENT_ID, applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE), BPMN_END_EVENT_ID
-      )
-    );
+    final String eventProcessMapping =
+        publishEventMappingUsingProcessInstanceCamundaEvents(
+            engineInstance,
+            createMappingsForEventProcess(
+                engineInstance,
+                BPMN_START_EVENT_ID,
+                applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+                BPMN_END_EVENT_ID));
     executeImportCycle();
 
     // when
@@ -90,46 +96,53 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     republishEventProcess(eventProcessMapping);
 
     // then
-    final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
+    final String eventProcessPublishState =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
+        getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
-      .extracting(ProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(instanceIdWithAllVariables, instanceIdWithCleanedVariables);
+        .extracting(ProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(instanceIdWithAllVariables, instanceIdWithCleanedVariables);
     assertThat(eventProcessInstances)
-      .allSatisfy(eventProcessInstanceDto -> {
-        if (instanceIdWithAllVariables.equals(eventProcessInstanceDto.getProcessInstanceId())) {
-          assertThat(eventProcessInstanceDto.getVariables()).isNotEmpty();
-        } else if (instanceIdWithCleanedVariables.equals(eventProcessInstanceDto.getProcessInstanceId())) {
-          assertThat(eventProcessInstanceDto.getVariables()).isEmpty();
-        }
-      });
+        .allSatisfy(
+            eventProcessInstanceDto -> {
+              if (instanceIdWithAllVariables.equals(
+                  eventProcessInstanceDto.getProcessInstanceId())) {
+                assertThat(eventProcessInstanceDto.getVariables()).isNotEmpty();
+              } else if (instanceIdWithCleanedVariables.equals(
+                  eventProcessInstanceDto.getProcessInstanceId())) {
+                assertThat(eventProcessInstanceDto.getVariables()).isEmpty();
+              }
+            });
   }
 
   @Test
   public void republishAfterEngineDataCleanupModeVariablesTracedByVariable() {
     // given
     getCleanupConfiguration().getProcessDataCleanupConfiguration().setEnabled(true);
-    getCleanupConfiguration().getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
+    getCleanupConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setCleanupMode(CleanupMode.VARIABLES);
     final String instanceIdWithAllVariables = "trace1";
-    final ProcessInstanceEngineDto engineInstance = deployAndStartProcessWithVariables(
-      ImmutableMap.of(VARIABLE_NAME, instanceIdWithAllVariables)
-    );
+    final ProcessInstanceEngineDto engineInstance =
+        deployAndStartProcessWithVariables(
+            ImmutableMap.of(VARIABLE_NAME, instanceIdWithAllVariables));
     final String instanceIdWithCleanedVariables = "trace2";
     startNewProcessInstanceWithEndTimeLessThanTtlAndVariables(
-      engineInstance, ImmutableMap.of(VARIABLE_NAME, instanceIdWithCleanedVariables)
-    );
+        engineInstance, ImmutableMap.of(VARIABLE_NAME, instanceIdWithCleanedVariables));
 
     importAllEngineEntitiesFromScratch();
 
-    final String eventProcessMapping = publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
-      engineInstance,
-      createMappingsForEventProcess(
-        engineInstance, BPMN_START_EVENT_ID, applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE), BPMN_END_EVENT_ID
-      ),
-      VARIABLE_NAME
-    );
+    final String eventProcessMapping =
+        publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
+            engineInstance,
+            createMappingsForEventProcess(
+                engineInstance,
+                BPMN_START_EVENT_ID,
+                applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+                BPMN_END_EVENT_ID),
+            VARIABLE_NAME);
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     executeImportCycle();
 
@@ -138,13 +151,14 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     republishEventProcess(eventProcessMapping);
 
     // then
-    final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
+    final String eventProcessPublishState =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
+        getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
-      .extracting(ProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(instanceIdWithAllVariables);
+        .extracting(ProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(instanceIdWithAllVariables);
   }
 
   @Test
@@ -158,7 +172,8 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     ingestTestEvent(STARTED_EVENT, OffsetDateTime.now(), instanceIdToKeep);
     ingestTestEvent(FINISHED_EVENT, OffsetDateTime.now(), instanceIdToKeep);
 
-    final String eventProcessMapping = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMapping =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
     publishEventProcess(eventProcessMapping);
 
     // when
@@ -166,39 +181,40 @@ public class RepublishEventProcessAfterCleanupIT extends AbstractEventProcessIT 
     republishEventProcess(eventProcessMapping);
 
     // then
-    final String eventProcessPublishState = getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
+    final String eventProcessPublishState =
+        getEventPublishStateIdForEventProcessMappingId(eventProcessMapping);
     final List<EventProcessInstanceDto> eventProcessInstances =
-      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
+        getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishState);
 
     assertThat(eventProcessInstances)
-      .extracting(ProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(instanceIdToKeep);
+        .extracting(ProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(instanceIdToKeep);
   }
 
-
-  private void startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(final ProcessInstanceEngineDto instance,
-                                                                           final String businessKey) {
-    startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(instance, businessKey, Collections.emptyMap());
+  private void startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(
+      final ProcessInstanceEngineDto instance, final String businessKey) {
+    startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(
+        instance, businessKey, Collections.emptyMap());
   }
 
-  private void startNewProcessInstanceWithEndTimeLessThanTtlAndVariables(final ProcessInstanceEngineDto instance,
-                                                                         final Map<String, Object> variables) {
+  private void startNewProcessInstanceWithEndTimeLessThanTtlAndVariables(
+      final ProcessInstanceEngineDto instance, final Map<String, Object> variables) {
     startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(instance, null, variables);
   }
 
   @SneakyThrows
-  private void startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(final ProcessInstanceEngineDto instance,
-                                                                           final String businessKey,
-                                                                           final Map<String, Object> variables) {
-    final ProcessInstanceEngineDto newEngineInstance = startNewProcessInstanceWithBusinessKey(
-      instance.getDefinitionId(), businessKey, variables
-    );
-    engineDatabaseExtension.changeProcessInstanceEndDate(newEngineInstance.getId(), getEndTimeLessThanGlobalTtl());
+  private void startNewProcessInstanceWithBusinessKeyAndEndTimeLessThanTtl(
+      final ProcessInstanceEngineDto instance,
+      final String businessKey,
+      final Map<String, Object> variables) {
+    final ProcessInstanceEngineDto newEngineInstance =
+        startNewProcessInstanceWithBusinessKey(instance.getDefinitionId(), businessKey, variables);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        newEngineInstance.getId(), getEndTimeLessThanGlobalTtl());
   }
 
-  private ProcessInstanceEngineDto startNewProcessInstanceWithBusinessKey(final String definitionId,
-                                                                          final String businessKey,
-                                                                          final Map<String, Object> variables) {
+  private ProcessInstanceEngineDto startNewProcessInstanceWithBusinessKey(
+      final String definitionId, final String businessKey, final Map<String, Object> variables) {
     return engineIntegrationExtension.startProcessInstance(definitionId, variables, businessKey);
   }
 

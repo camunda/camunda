@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.service.compatibility;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
@@ -23,13 +29,6 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
 
   private static final String INPUT_CUSTOMER_STATUS_ID = "input1";
@@ -44,18 +43,17 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
   public void getInputVariableNames(final String pathToDiagram) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+        engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DecisionVariableNameResponseDto> variableResponse = variablesClient.getDecisionInputVariableNames(
-      new DecisionVariableNameRequestDto(
-        decisionDefinitionDto.getKey(),
-        decisionDefinitionDto.getVersionAsString(),
-        decisionDefinitionDto.getTenantId().orElse(null)
-      )
-    );
+    List<DecisionVariableNameResponseDto> variableResponse =
+        variablesClient.getDecisionInputVariableNames(
+            new DecisionVariableNameRequestDto(
+                decisionDefinitionDto.getKey(),
+                decisionDefinitionDto.getVersionAsString(),
+                decisionDefinitionDto.getTenantId().orElse(null)));
 
     // then
     assertThat(variableResponse).hasSize(2);
@@ -72,18 +70,17 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
   public void getOutputVariableNames(final String pathToDiagram) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+        engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DecisionVariableNameResponseDto> variableResponse = variablesClient.getDecisionOutputVariableNames(
-      new DecisionVariableNameRequestDto(
-        decisionDefinitionDto.getKey(),
-        decisionDefinitionDto.getVersionAsString(),
-        decisionDefinitionDto.getTenantId().orElse(null)
-      )
-    );
+    List<DecisionVariableNameResponseDto> variableResponse =
+        variablesClient.getDecisionOutputVariableNames(
+            new DecisionVariableNameRequestDto(
+                decisionDefinitionDto.getKey(),
+                decisionDefinitionDto.getVersionAsString(),
+                decisionDefinitionDto.getTenantId().orElse(null)));
 
     // then
     assertThat(variableResponse).hasSize(2);
@@ -100,7 +97,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
   public void getInputVariableValues(final String pathToDiagram) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+        engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "bronze", 200.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "silver", 300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
@@ -108,16 +105,12 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> customerStatusVariableValues = variablesClient.getDecisionInputVariableValues(
-      decisionDefinitionDto,
-      INPUT_CUSTOMER_STATUS_ID,
-      VariableType.STRING
-    );
-    List<String> orderSumInputVariableValues = variablesClient.getDecisionInputVariableValues(
-      decisionDefinitionDto,
-      INPUT_ORDER_SUM_ID,
-      VariableType.DOUBLE
-    );
+    List<String> customerStatusVariableValues =
+        variablesClient.getDecisionInputVariableValues(
+            decisionDefinitionDto, INPUT_CUSTOMER_STATUS_ID, VariableType.STRING);
+    List<String> orderSumInputVariableValues =
+        variablesClient.getDecisionInputVariableValues(
+            decisionDefinitionDto, INPUT_ORDER_SUM_ID, VariableType.DOUBLE);
 
     // then
     assertThat(customerStatusVariableValues).hasSize(3);
@@ -132,7 +125,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
   public void getOutputVariableValues(final String pathToDiagram) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+        engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "bronze", 200.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "silver", 300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
@@ -140,27 +133,23 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<String> output1 = variablesClient.getDecisionOutputVariableValues(
-      decisionDefinitionDto,
-      OUTPUT_CHECK_RESULT_ID,
-      VariableType.STRING
-    );
-    List<String> output2 = variablesClient.getDecisionOutputVariableValues(
-      decisionDefinitionDto,
-      OUTPUT_REASON_ID,
-      VariableType.STRING
-    );
+    List<String> output1 =
+        variablesClient.getDecisionOutputVariableValues(
+            decisionDefinitionDto, OUTPUT_CHECK_RESULT_ID, VariableType.STRING);
+    List<String> output2 =
+        variablesClient.getDecisionOutputVariableValues(
+            decisionDefinitionDto, OUTPUT_REASON_ID, VariableType.STRING);
 
     // then
     assertThat(output1).hasSize(2);
     assertThat(output1).contains("notok", "ok");
 
     assertThat(output2).hasSize(3);
-    assertThat(output2).contains(
-      "work on your status first, as bronze you're not going to get anything",
-      "you little fish will get what you want",
-      "you get anything you want"
-    );
+    assertThat(output2)
+        .contains(
+            "work on your status first, as bronze you're not going to get anything",
+            "you little fish will get what you want",
+            "you get anything you want");
   }
 
   @ParameterizedTest
@@ -168,24 +157,25 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
   public void evaluateByInputVariable(final String pathToDiagram) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+        engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByInputVariable(
-      decisionDefinitionDto, INPUT_CUSTOMER_STATUS_ID
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByInputVariable(
+                decisionDefinitionDto, INPUT_CUSTOMER_STATUS_ID)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getFirstMeasureData())
-      .isNotNull()
-      .hasSize(1)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple("gold", 2.0));
+        .isNotNull()
+        .hasSize(1)
+        .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+        .containsExactly(Tuple.tuple("gold", 2.0));
   }
 
   @ParameterizedTest
@@ -193,24 +183,25 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
   public void evaluateByOutputVariable(final String pathToDiagram) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+        engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto, OUTPUT_CHECK_RESULT_ID
-    ).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+        evaluateDecisionInstanceFrequencyByOutputVariable(
+                decisionDefinitionDto, OUTPUT_CHECK_RESULT_ID)
+            .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getFirstMeasureData())
-      .isNotNull()
-      .hasSize(1)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple("ok", 2.0));
+        .isNotNull()
+        .hasSize(1)
+        .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+        .containsExactly(Tuple.tuple("ok", 2.0));
   }
 
   @ParameterizedTest
@@ -218,65 +209,69 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
   public void getDefinitions(final String pathToDiagram) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+        engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<DefinitionResponseDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDefinitions()
-      .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
+    final List<DefinitionResponseDto> definitions =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetDefinitions()
+            .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions)
-      .hasSize(1)
-      .extracting(SimpleDefinitionDto::getKey)
-      .containsExactly(decisionDefinitionDto.getKey());
+        .hasSize(1)
+        .extracting(SimpleDefinitionDto::getKey)
+        .containsExactly(decisionDefinitionDto.getKey());
   }
 
-  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByInputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String variableId) {
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionDto.getVersionAsString())
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
-      .setVariableId(variableId)
-      .setVariableName(null)
-      .setVariableType(VariableType.STRING)
-      .build();
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>
+      evaluateDecisionInstanceFrequencyByInputVariable(
+          final DecisionDefinitionEngineDto decisionDefinitionDto, final String variableId) {
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+            .setDecisionDefinitionVersion(decisionDefinitionDto.getVersionAsString())
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
+            .setVariableId(variableId)
+            .setVariableName(null)
+            .setVariableType(VariableType.STRING)
+            .build();
     return reportClient.evaluateMapReport(reportData);
   }
 
-  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateDecisionInstanceFrequencyByOutputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String variableId) {
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionDto.getVersionAsString())
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
-      .setVariableId(variableId)
-      .setVariableName(null)
-      .setVariableType(VariableType.STRING)
-      .build();
+  private AuthorizedDecisionReportEvaluationResponseDto<List<MapResultEntryDto>>
+      evaluateDecisionInstanceFrequencyByOutputVariable(
+          final DecisionDefinitionEngineDto decisionDefinitionDto, final String variableId) {
+    DecisionReportDataDto reportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+            .setDecisionDefinitionVersion(decisionDefinitionDto.getVersionAsString())
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
+            .setVariableId(variableId)
+            .setVariableName(null)
+            .setVariableType(VariableType.STRING)
+            .build();
     return reportClient.evaluateMapReport(reportData);
   }
 
-  private void startDecisionInstanceWithInputs(final DecisionDefinitionEngineDto decisionDefinitionDto,
-                                               final String customerStatus,
-                                               final double orderSum) {
-    final Map<String, Object> inputs = ImmutableMap.of(INPUT_CUSTOMER_STATUS_VAR, customerStatus,
-                                                       INPUT_ORDER_SUM_VAR, orderSum
-    );
+  private void startDecisionInstanceWithInputs(
+      final DecisionDefinitionEngineDto decisionDefinitionDto,
+      final String customerStatus,
+      final double orderSum) {
+    final Map<String, Object> inputs =
+        ImmutableMap.of(
+            INPUT_CUSTOMER_STATUS_VAR, customerStatus,
+            INPUT_ORDER_SUM_VAR, orderSum);
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId(), inputs);
   }
 
   private static Stream<String> compatibleDmnVersionDiagrams() {
     return Stream.of(
-      "dmn/compatibility/Example-DMN-1.1.dmn",
-      "dmn/compatibility/Example-DMN-1.2.dmn",
-      "dmn/compatibility/Example-DMN-1.3.dmn"
-    );
+        "dmn/compatibility/Example-DMN-1.1.dmn",
+        "dmn/compatibility/Example-DMN-1.2.dmn",
+        "dmn/compatibility/Example-DMN-1.3.dmn");
   }
 }

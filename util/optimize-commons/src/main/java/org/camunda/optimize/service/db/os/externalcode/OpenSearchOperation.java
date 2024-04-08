@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.externalcode;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
+
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.ExceptionSupplier;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -36,9 +39,7 @@ public class OpenSearchOperation {
       } else if (indexFieldContent instanceof List<?> currentIndexes) {
         List<String> fullyQualifiedIndexNames =
             currentIndexes.stream()
-                .map(
-                    currentIndex ->
-                        indexNameService.getOptimizeIndexAliasForIndex((String) currentIndex))
+                .map(currentIndex -> getIndexAliasFor((String) currentIndex))
                 .toList();
         indexField.set(request, fullyQualifiedIndexNames);
       } else {
@@ -66,6 +67,9 @@ public class OpenSearchOperation {
   }
 
   protected String getIndexAliasFor(String indexName) {
+    if (StringUtils.isNotBlank(indexName) && indexName.startsWith(ZEEBE_RECORD_TEST_PREFIX)) {
+      return indexName;
+    }
     return indexNameService.getOptimizeIndexAliasForIndex(indexName);
   }
 

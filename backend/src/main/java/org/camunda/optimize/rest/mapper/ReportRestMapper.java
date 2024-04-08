@@ -43,11 +43,20 @@ public class ReportRestMapper {
   private final AbstractIdentityService identityService;
   private final LocalizationService localizationService;
 
-  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public <T> AuthorizedReportEvaluationResponseDto<?> mapToLocalizedEvaluationResponseDto(
       final AuthorizedReportEvaluationResult reportEvaluationResult, final String locale) {
-    resolveOwnerAndModifierNames(
-        reportEvaluationResult.getEvaluationResult().getReportDefinition());
+    return mapToLocalizedEvaluationResponseDto(reportEvaluationResult, locale, false);
+  }
+
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public <T> AuthorizedReportEvaluationResponseDto<?> mapToLocalizedEvaluationResponseDto(
+      final AuthorizedReportEvaluationResult reportEvaluationResult,
+      final String locale,
+      final boolean skipNameResolution) {
+    if (!skipNameResolution) {
+      resolveOwnerAndModifierNames(
+          reportEvaluationResult.getEvaluationResult().getReportDefinition());
+    }
     if (reportEvaluationResult.getEvaluationResult()
         instanceof final CombinedReportEvaluationResult combinedReportEvaluationResult) {
       final Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> reportResults =
@@ -69,7 +78,7 @@ public class ReportRestMapper {
           new CombinedProcessReportResultDataDto<>(
               reportResults, combinedReportEvaluationResult.getInstanceCount()));
     } else {
-      SingleReportEvaluationResult<?> singleReportEvaluationResult =
+      final SingleReportEvaluationResult<?> singleReportEvaluationResult =
           (SingleReportEvaluationResult<?>) reportEvaluationResult.getEvaluationResult();
       return mapToLocalizedEvaluationResponseDto(
           reportEvaluationResult.getCurrentUserRole(), singleReportEvaluationResult, locale);
@@ -86,7 +95,7 @@ public class ReportRestMapper {
   public static void localizeReportData(
       final ReportDefinitionDto<?> reportDefinitionDto,
       final String locale,
-      LocalizationService localizationService) {
+      final LocalizationService localizationService) {
     if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
       if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
@@ -118,7 +127,7 @@ public class ReportRestMapper {
       final ReportDefinitionDto<?> reportDefinitionDto,
       final LocalizationService localizationService,
       final String validLocale) {
-    if ((reportDefinitionDto.getData() instanceof SingleReportDataDto reportDataDto)
+    if (reportDefinitionDto.getData() instanceof final SingleReportDataDto reportDataDto
         && (reportDataDto.getConfiguration() != null)) {
       Optional.ofNullable(reportDataDto.getConfiguration().getXLabel())
           .map(xLabel -> localizationService.getLocalizedXLabel(validLocale, xLabel))
@@ -127,7 +136,7 @@ public class ReportRestMapper {
                   ((SingleReportDataDto) reportDefinitionDto.getData())
                       .getConfiguration()
                       .setXLabel(localizedLabel));
-      if (reportDataDto instanceof ProcessReportDataDto processReportData) {
+      if (reportDataDto instanceof final ProcessReportDataDto processReportData) {
         Optional.ofNullable(processReportData.getConfiguration().getYLabel())
             .map(
                 yLabel ->
@@ -189,7 +198,7 @@ public class ReportRestMapper {
         firstCommandResult.getPagination().isValid() ? firstCommandResult.getPagination() : null);
   }
 
-  private void resolveOwnerAndModifierNames(ReportDefinitionDto<?> reportDefinitionDto) {
+  private void resolveOwnerAndModifierNames(final ReportDefinitionDto<?> reportDefinitionDto) {
     Optional.ofNullable(reportDefinitionDto.getOwner())
         .flatMap(identityService::getIdentityNameById)
         .ifPresent(reportDefinitionDto::setOwner);

@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
@@ -12,13 +18,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 @Tag(OPENSEARCH_PASSING)
 public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
@@ -30,9 +29,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
   @MethodSource("getInputOutputArgs")
   public void getVariableValuesWithoutAuthentication(String inputOutput) {
     // when
-    Response response = getExecutor(inputOutput, null)
-      .withoutAuthentication()
-      .execute();
+    Response response = getExecutor(inputOutput, null).withoutAuthentication().execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -45,8 +42,9 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
     DecisionVariableValueRequestDto request = generateDefaultVariableRequest();
 
     // when
-    List responseList = getExecutor(inputOutput, request)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    List responseList =
+        getExecutor(inputOutput, request)
+            .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList).isEmpty();
@@ -60,8 +58,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
     request.setVariableId(null);
 
     // when
-    Response response = getExecutor(inputOutput, request)
-      .execute();
+    Response response = getExecutor(inputOutput, request).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -75,8 +72,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
     request.setVariableType(null);
 
     // when
-    Response response = getExecutor(inputOutput, request)
-      .execute();
+    Response response = getExecutor(inputOutput, request).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -90,8 +86,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
     request.setDecisionDefinitionKey(null);
 
     // when
-    Response response = getExecutor(inputOutput, request)
-      .execute();
+    Response response = getExecutor(inputOutput, request).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -105,8 +100,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
     request.setDecisionDefinitionVersions(null);
 
     // when
-    Response response = getExecutor(inputOutput, request)
-      .execute();
+    Response response = getExecutor(inputOutput, request).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -116,16 +110,17 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
     return Stream.of(TEST_VARIANT_INPUTS, TEST_VARIANT_OUTPUTS);
   }
 
-  private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableValueRequestDto requestDto) {
+  private OptimizeRequestExecutor getExecutor(
+      String inputsOrOutputs, DecisionVariableValueRequestDto requestDto) {
     switch (inputsOrOutputs) {
       case TEST_VARIANT_INPUTS:
         return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .buildDecisionInputVariableValuesRequest(requestDto);
+            .getRequestExecutor()
+            .buildDecisionInputVariableValuesRequest(requestDto);
       case TEST_VARIANT_OUTPUTS:
         return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .buildDecisionOutputVariableValuesRequest(requestDto);
+            .getRequestExecutor()
+            .buildDecisionOutputVariableValuesRequest(requestDto);
       default:
         throw new RuntimeException("unsupported type " + inputsOrOutputs);
     }
@@ -139,5 +134,4 @@ public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
     requestDto.setVariableType(VariableType.STRING);
     return requestDto;
   }
-
 }

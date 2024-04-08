@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.service.importing.processdefinition;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.mockserver.model.HttpRequest.request;
+
 import jakarta.ws.rs.core.Response;
+import java.util.List;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
@@ -20,15 +28,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT;
-import static org.camunda.optimize.util.BpmnModels.START_EVENT;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.mockserver.model.HttpRequest.request;
-
 @Tag(OPENSEARCH_PASSING)
 public class ProcessDefinitionImportIT extends AbstractImportIT {
   private static final String START = "aStart";
@@ -37,43 +36,38 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
   @Test
   public void getProcessDefinitionFields() {
     // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
-      "aProcess",
-      START,
-      END
-    ));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aProcess", START, END));
 
     // when
     importAllEngineEntitiesFromScratch();
-    List<ProcessDefinitionOptimizeDto> processDefinitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> processDefinitions =
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(processDefinitions)
-      .singleElement()
-      .satisfies(definition -> assertThat(definition.getFlowNodeData())
-        .containsExactly(
-          new FlowNodeDataDto(END, END, END_EVENT),
-          new FlowNodeDataDto(START, START, START_EVENT)
-        ));
+        .singleElement()
+        .satisfies(
+            definition ->
+                assertThat(definition.getFlowNodeData())
+                    .containsExactly(
+                        new FlowNodeDataDto(END, END, END_EVENT),
+                        new FlowNodeDataDto(START, START, START_EVENT)));
   }
 
   @Test
   public void processImportedForFirstTimeMarkedAsNotOnboarded() {
     // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
-      "aProcess",
-      START,
-      END
-    ));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aProcess", START, END));
 
     // when
     importAllEngineEntitiesFromScratch();
-    List<ProcessDefinitionOptimizeDto> processDefinitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> processDefinitions =
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(processDefinitions)
-      .singleElement()
-      .satisfies(definition -> assertThat(definition.isOnboarded()).isFalse());
+        .singleElement()
+        .satisfies(definition -> assertThat(definition.isOnboarded()).isFalse());
   }
 
   @Test
@@ -84,15 +78,17 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    List<ProcessDefinitionOptimizeDto> processDefinitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> processDefinitions =
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(processDefinitions)
-      .singleElement()
-      .satisfies(definition -> {
-        assertThat(definition.getVersion()).isEqualTo("1");
-        assertThat(definition.isOnboarded()).isFalse();
-      });
+        .singleElement()
+        .satisfies(
+            definition -> {
+              assertThat(definition.getVersion()).isEqualTo("1");
+              assertThat(definition.isOnboarded()).isFalse();
+            });
 
     engineIntegrationExtension.deployAndStartProcess(process);
 
@@ -102,36 +98,38 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
 
     // then
     assertThat(processDefinitions)
-      .hasSize(2)
-      .extracting(DefinitionOptimizeResponseDto::getVersion, ProcessDefinitionOptimizeDto::isOnboarded)
-      .containsExactlyInAnyOrder(Tuple.tuple("1", false), Tuple.tuple("2", true));
+        .hasSize(2)
+        .extracting(
+            DefinitionOptimizeResponseDto::getVersion, ProcessDefinitionOptimizeDto::isOnboarded)
+        .containsExactlyInAnyOrder(Tuple.tuple("1", false), Tuple.tuple("2", true));
   }
 
   @Test
   public void deletedDefinitionsAreMarkedAsDeletedIfXmlIsUnavailable() {
     // given
     final ProcessInstanceEngineDto deployedProcess =
-      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aProcess"));
+        engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aProcess"));
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
-    engineMockServer.when(
-        request()
-          .withPath(
-            engineIntegrationExtension.getEnginePath() + "/process-definition/" + deployedProcess.getDefinitionId() + "/xml"),
-        Times.once()
-      )
-      .respond(
-        HttpResponse.response()
-          .withStatusCode(Response.Status.NOT_FOUND.getStatusCode())
-          .withContentType(MediaType.APPLICATION_JSON_UTF_8)
-      );
+    engineMockServer
+        .when(
+            request()
+                .withPath(
+                    engineIntegrationExtension.getEnginePath()
+                        + "/process-definition/"
+                        + deployedProcess.getDefinitionId()
+                        + "/xml"),
+            Times.once())
+        .respond(
+            HttpResponse.response()
+                .withStatusCode(Response.Status.NOT_FOUND.getStatusCode())
+                .withContentType(MediaType.APPLICATION_JSON_UTF_8));
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
-      .singleElement()
-      .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
+        .singleElement()
+        .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
   }
-
 }

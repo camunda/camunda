@@ -18,7 +18,7 @@ import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {getOptimizeProfile, areTenantsAvailable} from 'config';
+import {getOptimizeProfile, areTenantsAvailable, getMaxNumDataSourcesForReport} from 'config';
 
 import {loadTenants} from './service';
 import DefinitionEditor from './DefinitionEditor';
@@ -33,12 +33,13 @@ export function DefinitionList({location, definitions = [], type, onChange, onRe
   const [tenantInfo, setTenantInfo] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [tenantsAvailable, setTenantsAvailable] = useState(false);
+  const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const {mightFail} = useErrorHandling();
   const {generateDocsLink} = useDocs();
 
   const collection = getCollection(location.pathname);
   const definitionKeysAndVersions = definitions.map(({key, versions}) => ({key, versions}));
-  const isDefinitionLimitReached = definitions.length >= 10;
+  const isDefinitionLimitReached = definitions.length >= reportDataSourceLimit;
 
   useDeepCompareEffect(() => {
     mightFail(loadTenants(type, definitionKeysAndVersions, collection), setTenantInfo, showError);
@@ -48,6 +49,7 @@ export function DefinitionList({location, definitions = [], type, onChange, onRe
     (async () => {
       setOptimizeProfile(await getOptimizeProfile());
       setTenantsAvailable(await areTenantsAvailable());
+      setReportDataSourceLimit(await getMaxNumDataSourcesForReport());
     })();
   }, []);
 
@@ -97,7 +99,7 @@ export function DefinitionList({location, definitions = [], type, onChange, onRe
                     size="sm"
                     className="actionBtn"
                     onClick={() => onCopy(idx)}
-                    iconDescription="Copy"
+                    iconDescription={t('common.copy')}
                     renderIcon={Copy}
                     hasIconOnly
                   />

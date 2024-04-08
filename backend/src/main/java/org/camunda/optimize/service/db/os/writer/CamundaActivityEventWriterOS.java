@@ -25,13 +25,13 @@ public class CamundaActivityEventWriterOS implements CamundaActivityEventWriter 
   @Override
   public List<ImportRequestDto> generateImportRequests(
       final List<CamundaActivityEventDto> camundaActivityEvents) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public void deleteByProcessInstanceIds(
       final String definitionKey, final List<String> processInstanceIds) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

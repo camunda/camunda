@@ -37,7 +37,8 @@ public class MixpanelDataService {
             dashboardReader.getDashboardCount(),
             sharingReader.getReportShareCount(),
             sharingReader.getDashboardShareCount(),
-            alertReader.getAlertCount()),
+            alertReader.getAlertCount(),
+            reportReader.getUserTaskReportCount()),
         mixpanelProperties.getStage(),
         mixpanelProperties.getOrganizationId(),
         mixpanelProperties.getClusterId());

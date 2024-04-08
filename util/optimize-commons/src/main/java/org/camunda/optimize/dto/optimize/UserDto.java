@@ -8,9 +8,11 @@ package org.camunda.optimize.dto.optimize;
 import static java.util.stream.Collectors.collectingAndThen;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AccessLevel;
@@ -74,5 +76,12 @@ public class UserDto extends IdentityWithMetadataResponseDto {
         .collect(
             collectingAndThen(
                 Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : id));
+  }
+
+  @Override
+  @JsonIgnore
+  public List<Supplier<String>> getSearchableDtoFields() {
+    return List.of(
+        this::getId, this::getEmail, this::getName, this::getFirstName, this::getLastName);
   }
 }

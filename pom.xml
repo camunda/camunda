@@ -4,19 +4,19 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.13.0</version>
+  <version>3.14.0</version>
   <packaging>pom</packaging>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.12.0</project.previousVersion>
+    <project.previousVersion>3.13.0</project.previousVersion>
 
     <camunda.engine.version>7.19.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.19.0-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.5.0-alpha2</zeebe.version>
-    <identity.version>8.5.0-alpha2</identity.version>
+    <zeebe.version>8.5.0</zeebe.version>
+    <identity.version>8.5.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -25,7 +25,7 @@
 
     <!-- database config -->
     <elasticsearch.version>7.17.18</elasticsearch.version>
-    <opensearch.version>2.9.0</opensearch.version>
+    <opensearch.version>2.9.1</opensearch.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -35,21 +35,21 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.23.0</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.23.1</elasticsearch.log4j.version>
 
-    <jackson.version>2.16.1</jackson.version>
+    <jackson.version>2.17.0</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
-    <guava.version>33.0.0-jre</guava.version>
-    <spring.boot.version>3.1.9</spring.boot.version>
-    <spring.version>6.1.4</spring.version>
+    <guava.version>33.1.0-jre</guava.version>
+    <spring.boot.version>3.1.10</spring.boot.version>
+    <spring.version>6.1.5</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
-    <netty.version>4.1.107.Final</netty.version>
-    <lombok.version>1.18.30</lombok.version>
-    <logback.version>1.5.0</logback.version>
+    <netty.version>4.1.108.Final</netty.version>
+    <lombok.version>1.18.32</lombok.version>
+    <logback.version>1.5.3</logback.version>
     <slf4j.version>2.0.12</slf4j.version>
     <commons.io.version>2.15.1</commons.io.version>
 
@@ -58,14 +58,14 @@
 
     <!-- testing config -->
     <h2.version>2.2.224</h2.version>
-    <postgres.version>42.7.2</postgres.version>
+    <postgres.version>42.7.3</postgres.version>
     <mockito.version>5.11.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.10.2</junit.jupiter.version>
     <junit.platform.version>1.10.2</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.25.3</assertj.version>
-    <google-java-format.plugin.version>1.20.0</google-java-format.plugin.version>
+    <google-java-format.plugin.version>1.21.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
@@ -373,7 +373,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.0</version>
+      <version>4.2.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -459,7 +459,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.7.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -517,6 +517,9 @@
           <version>2.43.0</version>
           <configuration>
             <java>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
               <googleJavaFormat>
                 <version>${google-java-format.plugin.version}</version>
                 <style>GOOGLE</style>
@@ -602,7 +605,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.12.1</version>
+        <version>3.13.0</version>
         <configuration>
           <release>17</release>
         </configuration>

@@ -9,7 +9,7 @@ export function getRandomId() {
   return Math.random().toString(36).slice(2);
 }
 
-export {loadReports, loadEntities, copyEntity} from './entityService';
+export {loadReports, loadEntities, copyEntity, createEntity} from './entityService';
 
 export * as formatters from './formatters';
 export {
@@ -26,6 +26,7 @@ export {
   isTextTileTooLong,
   isTextTileValid,
   loadRawData,
+  evaluateReport,
 } from './reportService';
 
 export {addSources, getCollection} from './collectionService';
@@ -37,3 +38,4 @@ export {incompatibleFilters} from './incompatibleFilters';
 export {loadDefinitions} from './loadDefinitions';
 
 export type {Definition} from './loadDefinitions';
+export type {ReportPayload} from './reportService';

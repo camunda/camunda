@@ -11,7 +11,8 @@ import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-public abstract class AbstractPlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache {
+public abstract class AbstractPlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache
+    implements UserTaskIdentityService {
 
   protected final EngineContextFactory engineContextFactory;
   protected final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;

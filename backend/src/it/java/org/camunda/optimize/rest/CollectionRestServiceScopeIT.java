@@ -5,10 +5,30 @@
  */
 package org.camunda.optimize.rest;
 
+import static jakarta.ws.rs.HttpMethod.POST;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.mockserver.model.HttpRequest.request;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import io.github.netmikey.logunit.api.LogCapturer;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.assertj.core.api.Condition;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -42,27 +62,6 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static jakarta.ws.rs.HttpMethod.POST;
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
-import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
-import static org.mockserver.model.HttpRequest.request;
-
 @Tag(OPENSEARCH_PASSING)
 public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
@@ -71,26 +70,30 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   @RegisterExtension
   @Order(5)
   protected final LogCapturer logCapturer =
-    LogCapturer.create().forLevel(Level.DEBUG).captureForType(CollectionScopeService.class);
+      LogCapturer.create().forLevel(Level.DEBUG).captureForType(CollectionScopeService.class);
 
   @Test
   public void partialCollectionUpdateDoesNotAffectScopes() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.addScopeEntryToCollection(collectionId, createSimpleScopeEntry(DEFAULT_DEFINITION_KEY));
+    collectionClient.addScopeEntryToCollection(
+        collectionId, createSimpleScopeEntry(DEFAULT_DEFINITION_KEY));
     final List<CollectionScopeEntryResponseDto> expectedCollectionScope =
-      collectionClient.getCollectionScope(collectionId);
+        collectionClient.getCollectionScope(collectionId);
 
     // when
-    final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
-      .execute();
+    final PartialCollectionDefinitionRequestDto collectionRenameDto =
+        new PartialCollectionDefinitionRequestDto("Test");
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    final List<CollectionScopeEntryResponseDto> collectionScope = collectionClient.getCollectionScope(collectionId);
+    final List<CollectionScopeEntryResponseDto> collectionScope =
+        collectionClient.getCollectionScope(collectionId);
     assertThat(collectionScope).isEqualTo(expectedCollectionScope);
   }
 
@@ -106,27 +109,29 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<CollectionScopeEntryResponseDto> scopeEntries = collectionClient.getCollectionScope(collectionId);
+    List<CollectionScopeEntryResponseDto> scopeEntries =
+        collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scopeEntries)
-      .containsExactly(
-        new CollectionScopeEntryResponseDto()
-          .setId(PROCESS + ":" + definitionKey)
-          .setDefinitionKey(definitionKey)
-          .setDefinitionName(definitionKey)
-          .setDefinitionType(PROCESS)
-          .setTenants(Collections.singletonList(TENANT_NOT_DEFINED))
-      );
+        .containsExactly(
+            new CollectionScopeEntryResponseDto()
+                .setId(PROCESS + ":" + definitionKey)
+                .setDefinitionKey(definitionKey)
+                .setDefinitionName(definitionKey)
+                .setDefinitionType(PROCESS)
+                .setTenants(Collections.singletonList(TENANT_NOT_DEFINED)));
   }
 
   @Test
   public void scopesAreOrderByDefinitionTypeAndThenDefinitionName() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto decisionScope1 = createSimpleScopeEntry("DECISION_KEY_LAST", DECISION);
+    final CollectionScopeEntryDto decisionScope1 =
+        createSimpleScopeEntry("DECISION_KEY_LAST", DECISION);
     final CollectionScopeEntryDto decisionScope2 = createSimpleScopeEntry("xdecKey2", DECISION);
-    final CollectionScopeEntryDto processScope1 = createSimpleScopeEntry("PROCESS_KEY_LAST", PROCESS);
+    final CollectionScopeEntryDto processScope1 =
+        createSimpleScopeEntry("PROCESS_KEY_LAST", PROCESS);
     final CollectionScopeEntryDto processScope2 = createSimpleScopeEntry("xprocKey2", PROCESS);
     // should fallback to key as name when name is null
     addDecisionDefinitionToElasticsearch(decisionScope1.getDefinitionKey(), null);
@@ -134,22 +139,23 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     addDecisionDefinitionToElasticsearch(decisionScope2.getDefinitionKey(), "DECISION_KEY_FIRST");
     addProcessDefinitionToElasticsearch(processScope2.getDefinitionKey(), "PROCESS_KEY_FIRST");
     collectionClient.addScopeEntriesToCollection(
-      collectionId, asList(decisionScope1, processScope1, decisionScope2, processScope2)
-    );
+        collectionId, asList(decisionScope1, processScope1, decisionScope2, processScope2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<CollectionScopeEntryResponseDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
-      });
+    List<CollectionScopeEntryResponseDto> scopeEntries =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetScopeForCollectionRequest(collectionId)
+            .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {});
 
     // then
     assertThat(scopeEntries)
-      .hasSize(4)
-      .extracting(CollectionScopeEntryResponseDto::getDefinitionName)
-      .containsExactly("PROCESS_KEY_FIRST", "PROCESS_KEY_LAST", "DECISION_KEY_FIRST", "DECISION_KEY_LAST");
+        .hasSize(4)
+        .extracting(CollectionScopeEntryResponseDto::getDefinitionName)
+        .containsExactly(
+            "PROCESS_KEY_FIRST", "PROCESS_KEY_LAST", "DECISION_KEY_FIRST", "DECISION_KEY_LAST");
   }
 
   @Test
@@ -167,9 +173,9 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // then
     assertThat(scope)
-      .hasSize(1)
-      .extracting(CollectionScopeEntryResponseDto::getId)
-      .containsExactly("process:_KEY_");
+        .hasSize(1)
+        .extracting(CollectionScopeEntryResponseDto::getId)
+        .containsExactly("process:_KEY_");
   }
 
   @Test
@@ -187,9 +193,9 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // then
     assertThat(scope)
-      .hasSize(1)
-      .extracting(CollectionScopeEntryResponseDto::getId)
-      .containsExactly("process:_KEY_");
+        .hasSize(1)
+        .extracting(CollectionScopeEntryResponseDto::getId)
+        .containsExactly("process:_KEY_");
   }
 
   @Test
@@ -206,14 +212,15 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
+    collectionClient.addScopeEntriesToCollection(
+        collectionId, Collections.singletonList(anotherEntry));
     List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scope)
-      .hasSize(2)
-      .extracting(CollectionScopeEntryResponseDto::getId)
-      .containsExactlyInAnyOrder("process:_KEY_", "process:_ANOTHER_KEY_");
+        .hasSize(2)
+        .extracting(CollectionScopeEntryResponseDto::getId)
+        .containsExactlyInAnyOrder("process:_KEY_", "process:_ANOTHER_KEY_");
   }
 
   @Test
@@ -234,10 +241,12 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // then
     assertThat(scope)
-      .hasSize(1)
-      .have(new Condition<>(c -> c.getId().equals("process:_KEY_"), "Scope id should match process:_KEY_"))
-      .flatExtracting(CollectionScopeEntryResponseDto::getTenantIds)
-      .containsExactlyInAnyOrder(null, "newTenant");
+        .hasSize(1)
+        .have(
+            new Condition<>(
+                c -> c.getId().equals("process:_KEY_"), "Scope id should match process:_KEY_"))
+        .flatExtracting(CollectionScopeEntryResponseDto::getTenantIds)
+        .containsExactlyInAnyOrder(null, "newTenant");
   }
 
   @Test
@@ -250,7 +259,8 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry(anotherDefinitionKey);
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
+    collectionClient.addScopeEntriesToCollection(
+        collectionId, Collections.singletonList(anotherEntry));
     addTenantToElasticsearch("newTenant");
     entry.getTenants().add("newTenant");
 
@@ -262,12 +272,12 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // then
     assertThat(scope)
-      .hasSize(2)
-      .extracting(CollectionScopeEntryResponseDto::getId, CollectionScopeEntryResponseDto::getTenantIds)
-      .containsExactlyInAnyOrder(
-        new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant")),
-        new Tuple("process:_ANOTHER_KEY_", Lists.newArrayList((Object) null))
-      );
+        .hasSize(2)
+        .extracting(
+            CollectionScopeEntryResponseDto::getId, CollectionScopeEntryResponseDto::getTenantIds)
+        .containsExactlyInAnyOrder(
+            new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant")),
+            new Tuple("process:_ANOTHER_KEY_", Lists.newArrayList((Object) null)));
   }
 
   @Test
@@ -288,11 +298,11 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // then
     assertThat(scope)
-      .hasSize(1)
-      .extracting(CollectionScopeEntryResponseDto::getId, CollectionScopeEntryResponseDto::getTenantIds)
-      .containsExactlyInAnyOrder(
-        new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant"))
-      );
+        .hasSize(1)
+        .extracting(
+            CollectionScopeEntryResponseDto::getId, CollectionScopeEntryResponseDto::getTenantIds)
+        .containsExactlyInAnyOrder(
+            new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant")));
   }
 
   @Test
@@ -311,9 +321,9 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // then
     assertThat(scope)
-      .hasSize(1)
-      .extracting(CollectionScopeEntryResponseDto::getId)
-      .containsExactly("process:_KEY_");
+        .hasSize(1)
+        .extracting(CollectionScopeEntryResponseDto::getId)
+        .containsExactly("process:_KEY_");
   }
 
   @Test
@@ -323,9 +333,11 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntriesToCollectionRequest("unknownId", Collections.singletonList(entry))
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildAddScopeEntriesToCollectionRequest("unknownId", Collections.singletonList(entry))
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -350,9 +362,9 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // then
     assertThat(scope)
-      .hasSize(2)
-      .extracting(CollectionScopeEntryResponseDto::getId)
-      .containsExactlyInAnyOrder("process:_KEY1_", "process:_KEY2_");
+        .hasSize(2)
+        .extracting(CollectionScopeEntryResponseDto::getId)
+        .containsExactlyInAnyOrder("process:_KEY1_", "process:_KEY2_");
   }
 
   @Test
@@ -369,21 +381,23 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     final String tenant1 = "tenant1";
     addTenantToElasticsearch(tenant1);
     entry.setTenants(Lists.newArrayList(null, tenant1));
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateCollectionScopeEntryRequest(
+            collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
+        .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     assertThat(scope)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
-          .extracting(TenantDto::getId)
-          .containsExactly(null, tenant1)
-      );
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            scopeEntryDto ->
+                assertThat(scopeEntryDto.getTenants())
+                    .extracting(TenantDto::getId)
+                    .containsExactly(null, tenant1));
   }
 
   @Test
@@ -402,21 +416,23 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // when
     entry.setTenants(Collections.singletonList(null));
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateCollectionScopeEntryRequest(
+            collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
+        .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     List<CollectionScopeEntryResponseDto> scope = collectionClient.getCollectionScope(collectionId);
 
     assertThat(scope)
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
-          .extracting(TenantDto::getId)
-          .containsExactly((String) null)
-      );
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            scopeEntryDto ->
+                assertThat(scopeEntryDto.getTenants())
+                    .extracting(TenantDto::getId)
+                    .containsExactly((String) null));
   }
 
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
@@ -433,36 +449,51 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .definitions(List.of(new ReportDataDefinitionDto(DEFAULT_DEFINITION_KEY)))
-      .setTenantIds(List.of(tenant))
-      .build();
+    final ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .definitions(List.of(new ReportDataDefinitionDto(DEFAULT_DEFINITION_KEY)))
+            .setTenantIds(List.of(tenant))
+            .build();
     reportData.getConfiguration().setXml(definitionXml);
     final String reportId = reportClient.createSingleProcessReport(reportData, collectionId);
 
     // then
-    assertThat(reportClient.evaluateRawReportById(reportId).getReportDefinition().getData().getConfiguration().getXml())
-      .isEqualTo(definitionXml);
+    assertThat(
+            reportClient
+                .evaluateRawReportById(reportId)
+                .getReportDefinition()
+                .getData()
+                .getConfiguration()
+                .getXml())
+        .isEqualTo(definitionXml);
 
     // when
     entry.setTenants(Collections.singletonList(null));
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry), true)
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdateCollectionScopeEntryRequest(
+            collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry), true)
+        .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then the scope is updated
     assertThat(collectionClient.getCollectionScope(collectionId))
-      .hasSize(1)
-      .singleElement()
-      .satisfies(
-        scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
-          .extracting(TenantDto::getId)
-          .containsExactly((String) null)
-      );
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            scopeEntryDto ->
+                assertThat(scopeEntryDto.getTenants())
+                    .extracting(TenantDto::getId)
+                    .containsExactly((String) null));
     // and the collection report still has the expected xml
-    assertThat(reportClient.evaluateRawReportById(reportId).getReportDefinition().getData().getConfiguration().getXml())
-      .isEqualTo(definitionXml);
+    assertThat(
+            reportClient
+                .evaluateRawReportById(reportId)
+                .getReportDefinition()
+                .getData()
+                .getConfiguration()
+                .getXml())
+        .isEqualTo(definitionXml);
   }
 
   @Test
@@ -473,9 +504,12 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, "fooScopeId", new CollectionScopeEntryUpdateDto(entry))
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateCollectionScopeEntryRequest(
+                collectionId, "fooScopeId", new CollectionScopeEntryUpdateDto(entry))
+            .execute();
 
     // then not found is thrown
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -485,19 +519,18 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   public void updatingNonExistingDefinitionScopeEntryFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionScopeEntryResponseDto> expectedScope = collectionClient.getCollectionScope(collectionId);
+    final List<CollectionScopeEntryResponseDto> expectedScope =
+        collectionClient.getCollectionScope(collectionId);
     final String notExistingScopeEntryId = "PROCESS:abc";
 
     // when
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(
-        collectionId,
-        notExistingScopeEntryId,
-        new CollectionScopeEntryUpdateDto(entry)
-      )
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateCollectionScopeEntryRequest(
+                collectionId, notExistingScopeEntryId, new CollectionScopeEntryUpdateDto(entry))
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -521,9 +554,10 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     assertThat(scope).hasSize(1);
 
     // when
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
-      .execute(Response.Status.NO_CONTENT.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
+        .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     scope = collectionClient.getCollectionScope(collectionId);
 
@@ -538,22 +572,23 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
-    String reportId = reportClient.createAndStoreProcessReport(
-      collectionId,
-      DEFAULT_DEFINITION_KEY,
-      Collections.singletonList(null)
-    );
+    String reportId =
+        reportClient.createAndStoreProcessReport(
+            collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
 
     // when
-    ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
-      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
+    ConflictResponseDto conflictResponseDto =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
+            .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
+    assertThat(conflictResponseDto.getErrorCode())
+        .isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
     assertThat(conflictResponseDto.getConflictedItems())
-      .extracting(ConflictedItemDto::getId)
-      .containsExactly(reportId);
+        .extracting(ConflictedItemDto::getId)
+        .containsExactly(reportId);
   }
 
   @Test
@@ -562,26 +597,29 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     String collectionId = collectionClient.createNewCollection();
     CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
-    reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
+    reportClient.createAndStoreProcessReport(
+        collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+            .withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // when
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId(), true)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId(), true)
+        .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
-      .extracting(CollectionScopeEntryDto::getId)
-      .contains(entry.getId());
+        .extracting(CollectionScopeEntryDto::getId)
+        .contains(entry.getId());
   }
 
   @Test
@@ -590,18 +628,22 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     String collectionId = collectionClient.createNewCollection();
 
     // then
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
-      .execute(Response.Status.NOT_FOUND.getStatusCode());
+    embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildDeleteScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
+        .execute(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
   public void bulkDeleteScopesFromCollectionUnauthenticatedUser() {
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList("doesntMatter", "doesntMatter"), "doesntMatter")
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildBulkDeleteScopeEntriesFromCollectionRequest(
+                Arrays.asList("doesntMatter", "doesntMatter"), "doesntMatter")
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -614,10 +656,12 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildBulkDeleteScopeEntriesFromCollectionRequest(Collections.emptyList(), collectionId)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildBulkDeleteScopeEntriesFromCollectionRequest(Collections.emptyList(), collectionId)
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -630,10 +674,9 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
-      Collections.emptyList(),
-      collectionId
-    );
+    Response response =
+        buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+            Collections.emptyList(), collectionId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -646,7 +689,8 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(null, collectionId);
+    Response response =
+        buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(null, collectionId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -656,16 +700,15 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   public void bulkDeleteScopesFromCollectionCollectionNotFound() {
     // given
     final CollectionScopeEntryDto scopeEntry1 =
-      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+        new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     final CollectionScopeEntryDto scopeEntry2 =
-      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+        new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
 
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
-      scopeEntry1.getId(),
-      scopeEntry2.getId()
-    ), "doesNotExist");
+    Response response =
+        buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+            Arrays.asList(scopeEntry1.getId(), scopeEntry2.getId()), "doesNotExist");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -676,19 +719,18 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     // given
     String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry1 =
-      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+        new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     final CollectionScopeEntryDto scopeEntry2 =
-      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+        new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
 
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
-      scopeEntry1.getId(),
-      "process:someKey",
-      scopeEntry2.getId()
-    ), collectionId);
+    Response response =
+        buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+            Arrays.asList(scopeEntry1.getId(), "process:someKey", scopeEntry2.getId()),
+            collectionId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -701,22 +743,18 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     // given
     String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry1 =
-      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+        new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
     reportClient.createSingleReport(
-      collectionId,
-      definitionType,
-      DEFAULT_DEFINITION_KEY,
-      DEFAULT_TENANTS
-    );
-    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+        collectionId, definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final CollectionScopeEntryDto scopeEntry2 =
+        new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
 
     // when
-    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
-      scopeEntry1.getId(),
-      scopeEntry2.getId()
-    ), collectionId);
+    Response response =
+        buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+            Arrays.asList(scopeEntry1.getId(), scopeEntry2.getId()), collectionId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -726,27 +764,24 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
-  public void bulkDeleteScopesFromCollectionScopesHaveTheSameId(final DefinitionType definitionType) {
+  public void bulkDeleteScopesFromCollectionScopesHaveTheSameId(
+      final DefinitionType definitionType) {
     // given
     String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry1 =
-      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+        new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
     reportClient.createSingleReport(
-      collectionId,
-      definitionType,
-      DEFAULT_DEFINITION_KEY,
-      DEFAULT_TENANTS
-    );
-    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+        collectionId, definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final CollectionScopeEntryDto scopeEntry2 =
+        new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
 
     // when
-    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
-      scopeEntry1.getId(),
-      scopeEntry1.getId(),
-      scopeEntry2.getId()
-    ), collectionId);
+    Response response =
+        buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+            Arrays.asList(scopeEntry1.getId(), scopeEntry1.getId(), scopeEntry2.getId()),
+            collectionId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -760,75 +795,73 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     String collectionId = collectionClient.createNewCollection();
     CollectionScopeEntryDto scopeEntry1 = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
-    reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
-    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    reportClient.createAndStoreProcessReport(
+        collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
+    final CollectionScopeEntryDto scopeEntry2 =
+        new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
 
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
-      .withMethod(POST);
+    final HttpRequest requestMatcher =
+        request()
+            .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+            .withMethod(POST);
     dbMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
+        .when(requestMatcher, Times.once())
+        .error(HttpError.error().withDropConnection(true));
 
     // when
     buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
-      Arrays.asList(
-        scopeEntry1.getId(),
-        scopeEntry2.getId()
-      ),
-      collectionId
-    );
+        Arrays.asList(scopeEntry1.getId(), scopeEntry2.getId()), collectionId);
 
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope()).hasSize(1)
-      .extracting(CollectionScopeEntryDto::getId)
-      .containsExactly(scopeEntry1.getId());
-    String message = String.format(
-      "There was an error while deleting reports associated to collection scope with id %s. The scope cannot be " +
-        "deleted.",
-      scopeEntry1.getId()
-    );
+    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
+        .hasSize(1)
+        .extracting(CollectionScopeEntryDto::getId)
+        .containsExactly(scopeEntry1.getId());
+    String message =
+        String.format(
+            "There was an error while deleting reports associated to collection scope with id %s. The scope cannot be "
+                + "deleted.",
+            scopeEntry1.getId());
     logCapturer.assertContains(message);
   }
 
-  private void addDecisionDefinitionToElasticsearch(final String key,
-                                                    final String name) {
-    final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
-      .id(key)
-      .key(key)
-      .version("1")
-      .dmn10Xml("someXml")
-      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
-      .name(name)
-      .build();
+  private void addDecisionDefinitionToElasticsearch(final String key, final String name) {
+    final DecisionDefinitionOptimizeDto decisionDefinitionDto =
+        DecisionDefinitionOptimizeDto.builder()
+            .id(key)
+            .key(key)
+            .version("1")
+            .dmn10Xml("someXml")
+            .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
+            .name(name)
+            .build();
     databaseIntegrationTestExtension.addEntryToDatabase(
-      DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
-    );
+        DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto);
   }
 
-  private void addProcessDefinitionToElasticsearch(final String key,
-                                                   final String name) {
-    final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
-      .id(key)
-      .key(key)
-      .name(name)
-      .version("1")
-      .bpmn20Xml("someXml")
-      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
-      .build();
+  private void addProcessDefinitionToElasticsearch(final String key, final String name) {
+    final ProcessDefinitionOptimizeDto expectedDto =
+        ProcessDefinitionOptimizeDto.builder()
+            .id(key)
+            .key(key)
+            .name(name)
+            .version("1")
+            .bpmn20Xml("someXml")
+            .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
+            .build();
     databaseIntegrationTestExtension.addEntryToDatabase(
-      PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto
-    );
+        PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto);
   }
 
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey) {
     return createSimpleScopeEntry(definitionKey, PROCESS);
   }
 
-  private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
+  private CollectionScopeEntryDto createSimpleScopeEntry(
+      String definitionKey, DefinitionType definitionType) {
     List<String> tenants = new ArrayList<>();
     tenants.add(null);
     return new CollectionScopeEntryDto(definitionType, definitionKey, tenants);
@@ -840,10 +873,11 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.reloadEngineTenantCache();
   }
 
-  private Response buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(List<String> collectionScopeIds,
-                                                                              String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildBulkDeleteScopeEntriesFromCollectionRequest(collectionScopeIds, collectionId)
-      .execute();
+  private Response buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+      List<String> collectionScopeIds, String collectionId) {
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildBulkDeleteScopeEntriesFromCollectionRequest(collectionScopeIds, collectionId)
+        .execute();
   }
 }

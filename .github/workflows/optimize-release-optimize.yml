@@ -1,4 +1,4 @@
-name: Optimize - Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
+name: Optimize Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
 
 on:
   schedule:
@@ -7,32 +7,32 @@ on:
     inputs:
       RELEASE_VERSION:
         required: true
-        description: 'Version to release. Applied to pom.xml and Git tag'
-        default: '0.0.0'
+        description: "Version to release. Applied to pom.xml and Git tag"
+        default: "0.0.0"
       DEVELOPMENT_VERSION:
         required: true
-        description: 'Next development version'
-        default: '0.1.0-SNAPSHOT'
+        description: "Next development version"
+        default: "0.1.0-SNAPSHOT"
       BRANCH:
         required: true
-        description: 'The branch used for the release checkout'
-        default: 'release/0.0.0'
+        description: "The branch used for the release checkout"
+        default: "release/0.0.0"
       ADDITIONAL_DOCKER_TAG:
         required: false
-        description: 'Any additional tag that should be added to the docker image'
+        description: "Any additional tag that should be added to the docker image"
       DOCKER_LATEST:
         required: true
-        description: 'Should the docker image be tagged as latest?'
+        description: "Should the docker image be tagged as latest?"
         type: boolean
         default: true
       IS_DRY_RUN:
         required: true
-        description: 'Is this a dry run?'
+        description: "Is this a dry run?"
         type: boolean
         default: true
       RELEASE_EXAMPLES:
         required: true
-        description: 'Update Optimize examples repository?'
+        description: "Update Optimize examples repository?"
         type: boolean
         default: false
 
@@ -48,6 +48,8 @@ jobs:
       fail-fast: true
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          fetch-depth: 0
 
       - name: Import Secrets
         id: secrets
@@ -119,7 +121,7 @@ jobs:
           app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
 
-      - name: Install common tooling (buildx)  # required on self-hosted runners
+      - name: Install common tooling (buildx) # required on self-hosted runners
         uses: camunda/infra-global-github-actions/common-tooling@main
         with:
           buildx-enabled: true
@@ -149,15 +151,31 @@ jobs:
             echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'true' }}"
           } >> "$GITHUB_ENV"
 
+      # When it's neither a dry run nor a release candidate it means we are running the workflow from the proper branch.
+      # Generating changelog and creating a draft release will only work on the proper branch.
+      - name: Get last tag on branch
+        if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
+        run: |
+          echo "LAST_TAG=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
+
+      - name: Calculate changelog
+        if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
+        uses: dlavrenuek/conventional-changelog-action@86998ff61a0b14063262141358dbf2a4e6c630e7 # v1.2.4
+        id: changelog
+        with:
+          from: ${{ env.LAST_TAG }}
+          to: ${{ github.sha }}
+          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
+
       - name: Login to prod Harbor docker registry
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
         with:
           registry: registry.camunda.cloud
           username: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_USR }}
           password: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_PSW }}
 
       - name: Login to docker hub
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
@@ -168,7 +186,7 @@ jobs:
           GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           .github/scripts/execute-release.sh
 
@@ -178,14 +196,15 @@ jobs:
         uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
-          ee: 'true'
-          env: 'prod'
+          ee: "true"
+          env: "prod"
           version: ${{ github.event.inputs.RELEASE_VERSION }}
           artifact_file: target/checkout/distro/target/*.{tar.gz,zip}
-          repo_name: 'optimize'
+          repo_name: "optimize"
 
       - name: Auto-update previous version
         env:
+          GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
         run: |
@@ -205,7 +224,8 @@ jobs:
           OPTIMIZE_IMAGE_TAG: ${{ github.event.inputs.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
           CAMBPM_HOST: "172.17.0.1"
-          CAMBPM_PORT: "8080"
+          CAMBPM_PORT:
+            "8080"
             # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
             # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners.
             # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
@@ -216,25 +236,7 @@ jobs:
         with:
           version: ${{ env.VERSION }}
           date: ${{ env.DATE }}
-          revision:  ${{ env.REVISION }}
-
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-        with:
-          fetch-depth: 0
-
-      - name: Get last tag on branch
-        if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
-        run: |
-          echo "LAST_TAG=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
-
-      - name: Calculate changelog
-        if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
-        uses: dlavrenuek/conventional-changelog-action@86998ff61a0b14063262141358dbf2a4e6c630e7 # v1.2.4
-        id: changelog
-        with:
-          from: ${{ env.LAST_TAG }}
-          to: ${{ github.sha }}
-          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
+          revision: ${{ env.REVISION }}
 
       - name: Create a draft release
         if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
@@ -265,6 +267,7 @@ jobs:
         if: inputs.RELEASE_EXAMPLES == true
         working-directory: camunda-optimize-examples
         env:
+          GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
         run: |

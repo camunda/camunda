@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.plugin.engine.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 @Tag(OPENSEARCH_PASSING)
 public class EngineRestFilterPluginIT extends AbstractPlatformIT {
@@ -35,17 +34,15 @@ public class EngineRestFilterPluginIT extends AbstractPlatformIT {
   public void allEventFieldDataOfImportIsAvailableWithCustomAuthentication() {
     // given
     configurationService.setEngineRestFilterPluginBasePackages(
-      Collections.singletonList("org.camunda.optimize.testplugin.engine.rest")
-    );
+        Collections.singletonList("org.camunda.optimize.testplugin.engine.rest"));
     embeddedOptimizeExtension.reloadConfiguration();
-    EngineConfiguration engineConfiguration = embeddedOptimizeExtension.getDefaultEngineConfiguration();
+    EngineConfiguration engineConfiguration =
+        embeddedOptimizeExtension.getDefaultEngineConfiguration();
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword("kermit");
     engineConfiguration.getAuthentication().setUser("kermit");
     engineConfiguration.setRest(
-      engineConfiguration.getRest()
-        .replace("engine-rest", "engine-it-plugin/custom-auth")
-    );
+        engineConfiguration.getRest().replace("engine-rest", "engine-it-plugin/custom-auth"));
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantAllAuthorizations("kermit");
     embeddedOptimizeExtension.reloadConfiguration();
@@ -57,9 +54,7 @@ public class EngineRestFilterPluginIT extends AbstractPlatformIT {
 
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(
-      engineConfiguration.getRest()
-        .replace("engine-it-plugin/custom-auth", "engine-rest")
-    );
+        engineConfiguration.getRest().replace("engine-it-plugin/custom-auth", "engine-rest"));
 
     // then
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances().size()).isEqualTo(1L);
@@ -72,7 +67,7 @@ public class EngineRestFilterPluginIT extends AbstractPlatformIT {
   }
 
   private void deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
-    engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleServiceTaskProcess(), variables);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(
+        getSingleServiceTaskProcess(), variables);
   }
-
 }

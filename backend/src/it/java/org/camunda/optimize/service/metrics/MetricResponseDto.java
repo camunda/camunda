@@ -6,10 +6,9 @@
 package org.camunda.optimize.service.metrics;
 
 import io.micrometer.core.instrument.Statistic;
+import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

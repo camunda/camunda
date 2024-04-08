@@ -27,6 +27,9 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSUserClient extends AbstractCCSaaSClient {
 
+  private static final String GET_USER_BY_ID_TEMPLATE = GET_ORGS_TEMPLATE + "/members/%s";
+  private static final String GET_USERS_TEMPLATE = GET_ORGS_TEMPLATE + "/members?filter=members";
+
   public CCSaaSUserClient(
       final ConfigurationService configurationService, final ObjectMapper objectMapper) {
     super(objectMapper, configurationService);
@@ -54,7 +57,7 @@ public class CCSaaSUserClient extends AbstractCCSaaSClient {
         return Optional.ofNullable(
             objectMapper.readValue(response.getEntity().getContent(), CloudUserDto.class));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem fetching the cloud user by id.", e);
     }
   }
@@ -79,7 +82,7 @@ public class CCSaaSUserClient extends AbstractCCSaaSClient {
             response.getEntity().getContent(),
             objectMapper.getTypeFactory().constructCollectionType(List.class, CloudUserDto.class));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem fetching Cloud users.", e);
     }
   }

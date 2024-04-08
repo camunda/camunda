@@ -5,16 +5,16 @@
  */
 package org.camunda.optimize.service.schema;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public abstract class AbstractSchemaManagerIT extends AbstractPlatformIT {
 
@@ -50,15 +50,14 @@ public abstract class AbstractSchemaManagerIT extends AbstractPlatformIT {
 
     // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    assertThatThrownBy(() -> databaseIntegrationTestExtension.addEntryToDatabase(
-      DatabaseConstants.METADATA_INDEX_NAME,
-      "12312412",
-      extendedEventDto
-    )).isInstanceOf(expectedDatabaseExtensionStatusException());
+    assertThatThrownBy(
+            () ->
+                databaseIntegrationTestExtension.addEntryToDatabase(
+                    DatabaseConstants.METADATA_INDEX_NAME, "12312412", extendedEventDto))
+        .isInstanceOf(expectedDatabaseExtensionStatusException());
   }
 
   protected void assertIndexExists(String indexName) {
     assertThat(databaseIntegrationTestExtension.indexExists(indexName)).isTrue();
   }
-
 }

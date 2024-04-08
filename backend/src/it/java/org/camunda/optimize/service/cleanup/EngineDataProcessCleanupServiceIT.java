@@ -5,7 +5,14 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+import static org.mockserver.model.JsonBody.json;
+
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
@@ -22,27 +29,22 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-import static org.mockserver.model.JsonBody.json;
-
 public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @RegisterExtension
   LogCapturer cleanupServiceLogs = LogCapturer.create().captureForType(CleanupService.class);
+
   @RegisterExtension
-  LogCapturer engineDataCleanupLogs = LogCapturer.create().captureForType(EngineDataProcessCleanupService.class);
+  LogCapturer engineDataCleanupLogs =
+      LogCapturer.create().captureForType(EngineDataProcessCleanupService.class);
 
   @BeforeEach
   public void enableProcessCleanup() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getProcessDataCleanupConfiguration()
-      .setEnabled(true);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCleanupServiceConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setEnabled(true);
   }
 
   @Test
@@ -51,9 +53,9 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromScratch();
 
@@ -73,7 +75,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     getProcessDataCleanupConfiguration().setEnabled(false);
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> unaffectedProcessInstances =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
     importAllEngineEntitiesFromScratch();
 
@@ -82,7 +84,8 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(unaffectedProcessInstances));
+    assertPersistedProcessInstanceDataComplete(
+        extractProcessInstanceIds(unaffectedProcessInstances));
   }
 
   @Test
@@ -92,9 +95,9 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     getProcessDataCleanupConfiguration().setBatchSize(1);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromScratch();
 
@@ -107,15 +110,16 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
-    instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
-      HttpRequest.request()
-        .withPath("/_bulk")
-        .withBody(json(createBulkDeleteProcessInstanceRequestJson(
-          instance.getId(),
-          instance.getProcessDefinitionKey()
-        ))),
-      VerificationTimes.exactly(1)
-    ));
+    instancesToGetCleanedUp.forEach(
+        instance ->
+            elasticsearchFacade.verify(
+                HttpRequest.request()
+                    .withPath("/_bulk")
+                    .withBody(
+                        json(
+                            createBulkDeleteProcessInstanceRequestJson(
+                                instance.getId(), instance.getProcessDefinitionKey()))),
+                VerificationTimes.exactly(1)));
   }
 
   @Test
@@ -124,11 +128,12 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
     final List<ProcessInstanceEngineDto> instancesOfDefinitionWithHigherTtl =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
-    configureHigherProcessSpecificTtl(instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    configureHigherProcessSpecificTtl(
+        instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
 
     importAllEngineEntitiesFromScratch();
 
@@ -138,7 +143,8 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(
+        extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
 
   @Test
@@ -148,9 +154,9 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromScratch();
 
@@ -162,15 +168,15 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
     assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getCamundaActivityEvents())
-      .extracting(CamundaActivityEventDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .extracting(CamundaActivityEventDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getAllCamundaEventBusinessKeys())
-      .extracting(BusinessKeyDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .extracting(BusinessKeyDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
-      .isNotEmpty()
-      .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .isNotEmpty()
+        .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
   }
 
   @Test
@@ -180,11 +186,12 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
     final List<ProcessInstanceEngineDto> instancesOfDefinitionWithHigherTtl =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
-    configureHigherProcessSpecificTtl(instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    configureHigherProcessSpecificTtl(
+        instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
 
     importAllEngineEntitiesFromScratch();
 
@@ -194,17 +201,18 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(
+        extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(getCamundaActivityEvents())
-      .extracting(CamundaActivityEventDto::getProcessInstanceId)
-      .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+        .extracting(CamundaActivityEventDto::getProcessInstanceId)
+        .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(getAllCamundaEventBusinessKeys())
-      .extracting(BusinessKeyDto::getProcessInstanceId)
-      .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+        .extracting(BusinessKeyDto::getProcessInstanceId)
+        .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
-      .isNotEmpty()
-      .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
-      .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+        .isNotEmpty()
+        .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
+        .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
 
   @Test
@@ -213,9 +221,9 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromScratch();
 
@@ -235,9 +243,9 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     getProcessDataCleanupConfiguration().setBatchSize(1);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromScratch();
 
@@ -250,15 +258,16 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
-    instancesToGetCleanedUp.forEach(instance -> elasticsearchFacade.verify(
-      HttpRequest.request()
-        .withPath("/_bulk")
-        .withBody(json(createBulkUpdateProcessInstanceRequestJson(
-          instance.getId(),
-          instance.getProcessDefinitionKey()
-        ))),
-      VerificationTimes.exactly(1)
-    ));
+    instancesToGetCleanedUp.forEach(
+        instance ->
+            elasticsearchFacade.verify(
+                HttpRequest.request()
+                    .withPath("/_bulk")
+                    .withBody(
+                        json(
+                            createBulkUpdateProcessInstanceRequestJson(
+                                instance.getId(), instance.getProcessDefinitionKey()))),
+                VerificationTimes.exactly(1)));
   }
 
   @Test
@@ -267,13 +276,15 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
     final List<ProcessInstanceEngineDto> instancesOfDefinitionWithVariableMode =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
-    getCleanupConfiguration().getProcessDataCleanupConfiguration()
-      .getProcessDefinitionSpecificConfiguration()
-      .put(
-        instancesOfDefinitionWithVariableMode.get(0).getProcessDefinitionKey(),
-        ProcessDefinitionCleanupConfiguration.builder().cleanupMode(CleanupMode.VARIABLES).build()
-      );
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    getCleanupConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(
+            instancesOfDefinitionWithVariableMode.get(0).getProcessDefinitionKey(),
+            ProcessDefinitionCleanupConfiguration.builder()
+                .cleanupMode(CleanupMode.VARIABLES)
+                .build());
 
     importAllEngineEntitiesFromScratch();
 
@@ -282,7 +293,8 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesOfDefinitionWithVariableMode));
+    assertVariablesEmptyInProcessInstances(
+        extractProcessInstanceIds(instancesOfDefinitionWithVariableMode));
   }
 
   @Test
@@ -290,14 +302,17 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
   public void testCleanupModeVariables_specificKeyCleanupMode_noInstanceDataExists() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
-    final ProcessDefinitionEngineDto processDefinitionEngineDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      BpmnModels.getSingleUserTaskDiagram());
-    getCleanupConfiguration().getProcessDataCleanupConfiguration()
-      .getProcessDefinitionSpecificConfiguration()
-      .put(
-        processDefinitionEngineDto.getKey(),
-        ProcessDefinitionCleanupConfiguration.builder().cleanupMode(CleanupMode.VARIABLES).build()
-      );
+    final ProcessDefinitionEngineDto processDefinitionEngineDto =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            BpmnModels.getSingleUserTaskDiagram());
+    getCleanupConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(
+            processDefinitionEngineDto.getKey(),
+            ProcessDefinitionCleanupConfiguration.builder()
+                .cleanupMode(CleanupMode.VARIABLES)
+                .build());
 
     importAllEngineEntitiesFromScratch();
 
@@ -307,7 +322,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     engineDataCleanupLogs.assertContains(
-      "Finished cleanup on process instances for processDefinitionKey: aProcess, with ttl: P2Y and mode:VARIABLES");
+        "Finished cleanup on process instances for processDefinitionKey: aProcess, with ttl: P2Y and mode:VARIABLES");
   }
 
   @Test
@@ -316,11 +331,12 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
     final List<ProcessInstanceEngineDto> instancesOfDefinitionWithHigherTtl =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
-    configureHigherProcessSpecificTtl(instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    configureHigherProcessSpecificTtl(
+        instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
 
     importAllEngineEntitiesFromScratch();
 
@@ -330,7 +346,8 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(
+        extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
 
   @Test
@@ -341,9 +358,9 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final ProcessInstanceEngineDto unaffectedProcessInstanceForSameDefinition =
-      startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
+        startNewInstanceWithEndTime(OffsetDateTime.now(), instancesToGetCleanedUp.get(0));
 
     importAllEngineEntitiesFromScratch();
 
@@ -355,9 +372,9 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
-      .isNotEmpty()
-      .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
-      .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
+        .isNotEmpty()
+        .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
+        .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
   }
 
   @Test
@@ -368,11 +385,12 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
 
     final List<ProcessInstanceEngineDto> instancesToGetCleanedUp =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
 
     final List<ProcessInstanceEngineDto> instancesOfDefinitionWithHigherTtl =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
-    configureHigherProcessSpecificTtl(instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+    configureHigherProcessSpecificTtl(
+        instancesOfDefinitionWithHigherTtl.get(0).getProcessDefinitionKey());
 
     importAllEngineEntitiesFromScratch();
 
@@ -382,11 +400,12 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+    assertPersistedProcessInstanceDataComplete(
+        extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
-      .isNotEmpty()
-      .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
-      .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
+        .isNotEmpty()
+        .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
+        .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
   }
 
   @Test
@@ -396,15 +415,14 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
-    getProcessDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
-      configuredKey,
-      new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
-    );
+    getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(configuredKey, new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES));
     // and deploy processes with different keys
     final List<ProcessInstanceEngineDto> instancesWithEndTimeLessThanTtl =
-      deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
+        deployProcessAndStartTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<ProcessInstanceEngineDto> instancesWithEndTimeWithinTtl =
-      deployProcessAndStartTwoProcessInstancesWithEndTime(OffsetDateTime.now());
+        deployProcessAndStartTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
     importAllEngineEntitiesFromScratch();
 
@@ -413,33 +431,37 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then data clear up has succeeded as expected
-    assertPersistedProcessInstanceDataComplete(extractProcessInstanceIds(instancesWithEndTimeWithinTtl));
-    assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesWithEndTimeLessThanTtl));
+    assertPersistedProcessInstanceDataComplete(
+        extractProcessInstanceIds(instancesWithEndTimeWithinTtl));
+    assertVariablesEmptyInProcessInstances(
+        extractProcessInstanceIds(instancesWithEndTimeLessThanTtl));
     // and the misconfigured process is logged
-    cleanupServiceLogs.assertContains(String.format(
-      "History Cleanup Configuration contains definition keys for which there is no "
-        + "definition imported yet. The keys without a match in the database are: [%s]", configuredKey));
+    cleanupServiceLogs.assertContains(
+        String.format(
+            "History Cleanup Configuration contains definition keys for which there is no "
+                + "definition imported yet. The keys without a match in the database are: [%s]",
+            configuredKey));
   }
 
-  private String createBulkDeleteProcessInstanceRequestJson(final String processInstanceId,
-                                                            final String processDefinitionKey) {
+  private String createBulkDeleteProcessInstanceRequestJson(
+      final String processInstanceId, final String processDefinitionKey) {
     return createBulkProcessInstanceRequestJson(processInstanceId, processDefinitionKey, "delete");
   }
 
-  private String createBulkUpdateProcessInstanceRequestJson(final String processInstanceId,
-                                                            final String processDefinitionKey) {
+  private String createBulkUpdateProcessInstanceRequestJson(
+      final String processInstanceId, final String processDefinitionKey) {
     return createBulkProcessInstanceRequestJson(processInstanceId, processDefinitionKey, "update");
   }
 
-  private String createBulkProcessInstanceRequestJson(final String processInstanceId, final String processDefinitionKey,
-                                                      final String operation) {
+  private String createBulkProcessInstanceRequestJson(
+      final String processInstanceId, final String processDefinitionKey, final String operation) {
     return String.format(
-      "{\"%s\":{\"_index\":\"%s\",\"_id\":\"%s\"}}",
-      operation,
-      embeddedOptimizeExtension.getOptimizeDatabaseClient().getIndexNameService()
-        .getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(processDefinitionKey)),
-      processInstanceId
-    );
+        "{\"%s\":{\"_index\":\"%s\",\"_id\":\"%s\"}}",
+        operation,
+        embeddedOptimizeExtension
+            .getOptimizeDatabaseClient()
+            .getIndexNameService()
+            .getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(processDefinitionKey)),
+        processInstanceId);
   }
-
 }

@@ -5,10 +5,11 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import static jakarta.ws.rs.HttpMethod.POST;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,8 +19,6 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Instant;
-
-import static jakarta.ws.rs.HttpMethod.POST;
 
 public class ClockActuatorClient {
   private final HttpClient httpClient = HttpClient.newBuilder().build();
@@ -35,8 +34,9 @@ public class ClockActuatorClient {
     return pinAt;
   }
 
-  private void sendRequest(final String method, final String endpoint, final PinRequestDto requestDto)
-    throws IOException, InterruptedException {
+  private void sendRequest(
+      final String method, final String endpoint, final PinRequestDto requestDto)
+      throws IOException, InterruptedException {
     final URI uri = URI.create(String.format("http://%s/%s", monitoringAddress, endpoint));
     final BodyPublisher body;
     if (requestDto == null) {
@@ -45,10 +45,10 @@ public class ClockActuatorClient {
       body = BodyPublishers.ofByteArray(objectWriter.writeValueAsBytes(requestDto));
     }
     final HttpRequest httpRequest =
-      HttpRequest.newBuilder(uri)
-        .method(method, body)
-        .header("Content-Type", "application/json")
-        .build();
+        HttpRequest.newBuilder(uri)
+            .method(method, body)
+            .header("Content-Type", "application/json")
+            .build();
     final HttpResponse<String> httpResponse = httpClient.send(httpRequest, BodyHandlers.ofString());
     if (httpResponse.statusCode() != 200) {
       throw new IllegalStateException("Pinning time failed: " + httpResponse.body());
@@ -63,5 +63,4 @@ public class ClockActuatorClient {
       epochMilli = pinAt.toEpochMilli();
     }
   }
-
 }

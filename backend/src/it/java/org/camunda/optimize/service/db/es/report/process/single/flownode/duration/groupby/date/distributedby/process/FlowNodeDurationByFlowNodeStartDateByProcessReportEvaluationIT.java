@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
 public class FlowNodeDurationByFlowNodeStartDateByProcessReportEvaluationIT
-  extends FlowNodeDurationByFlowNodeDateByProcessReportEvaluationIT {
+    extends FlowNodeDurationByFlowNodeDateByProcessReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getReportDataType() {
@@ -21,4 +21,3 @@ public class FlowNodeDurationByFlowNodeStartDateByProcessReportEvaluationIT
     return ProcessGroupByType.START_DATE;
   }
 }
-

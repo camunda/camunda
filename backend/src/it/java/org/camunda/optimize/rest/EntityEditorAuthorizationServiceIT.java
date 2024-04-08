@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+
+import jakarta.ws.rs.core.Response;
+import java.util.Collections;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
@@ -16,13 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import jakarta.ws.rs.core.Response;
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-
 @Tag(OPENSEARCH_PASSING)
 public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
 
@@ -30,31 +29,38 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
   public void createNewEntitiesAsNonSuperUserWithEntityEditorAuthorization() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.ALL);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.ALL);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     assertThat(createReportAsKermit().getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(createDashboardAsKermit().getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(createCollectionAsKermit().getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(createCollectionAsKermit().getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"SUPERUSER", "NONE"})
-  public void createNewEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(final String authorizationType) {
+  public void createNewEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(
+      final String authorizationType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(createReportAsKermit().getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(createDashboardAsKermit().getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(createCollectionAsKermit().getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(createReportAsKermit().getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(createDashboardAsKermit().getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(createCollectionAsKermit().getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -62,74 +68,91 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
   public void createNewEntitiesAsSuperUserWithEditAuthorization(final String authorizationType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     assertThat(createReportAsKermit().getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(createDashboardAsKermit().getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(createCollectionAsKermit().getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(createCollectionAsKermit().getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
   public void createNewEntitiesAsSuperUserWithReadOnlyAuthorization() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.NONE);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(createReportAsKermit().getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(createDashboardAsKermit().getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(createCollectionAsKermit().getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(createReportAsKermit().getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(createDashboardAsKermit().getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(createCollectionAsKermit().getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
   public void editEntitiesAsNonSuperUserWithEntityEditorAuthorization() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.ALL);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.ALL);
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
 
     // then
-    assertThat(updateReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(updateDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(updateCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"SUPERUSER", "NONE"})
-  public void editEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(final String authorizationType) {
+  public void editEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(
+      final String authorizationType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(updateReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(updateDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(updateReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(updateDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     // the user is a manager of the collection so can update it
-    assertThat(updateCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -140,18 +163,23 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(updateReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(updateDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(updateCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -161,57 +189,71 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.NONE);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(updateReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(updateDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(updateReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(updateDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     // the user is a manager of the collection so can update it
-    assertThat(updateCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(updateCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
   public void deleteEntitiesAsNonSuperUserWithEntityEditorAuthorization() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.ALL);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.ALL);
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
 
     // then
-    assertThat(deleteReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(deleteDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(deleteCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"SUPERUSER", "NONE"})
-  public void deleteEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(final String authorizationType) {
+  public void deleteEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(
+      final String authorizationType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(deleteReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(deleteDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(deleteReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(deleteDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     // the user is a manager of the collection so can delete it
-    assertThat(deleteCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
@@ -222,18 +264,23 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(deleteReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(deleteDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(deleteCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -243,58 +290,71 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.NONE);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(deleteReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(deleteDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(deleteReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(deleteDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     // the user is a manager of the collection so can delete it
-    assertThat(deleteCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(deleteCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
-
 
   @Test
   public void copyEntitiesAsNonSuperUserWithEntityEditorAuthorization() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.ALL);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.ALL);
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
 
     // then
-    assertThat(copyReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(copyDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(copyCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"SUPERUSER", "NONE"})
-  public void copyEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(final String authorizationType) {
+  public void copyEntitiesAsNonSuperUserWithoutEntityEditorAuthorization(
+      final String authorizationType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(copyReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(copyDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(copyReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(copyDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     // the user is a manager of the collection so can copy it
-    assertThat(copyCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -305,18 +365,23 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(copyReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(copyDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(copyCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -326,71 +391,84 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
     final String reportId = createReportAsKermitAndGetId();
     final String dashboardId = createDashboardAsKermitAndGetId();
     final String collectionId = createCollectionAsKermitAndGetId();
-    embeddedOptimizeExtension.getConfigurationService()
-      .getAuthConfiguration()
-      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.NONE);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEntityConfiguration()
+        .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(copyReportAsKermit(reportId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-    assertThat(copyDashboardAsKermit(dashboardId).getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(copyReportAsKermit(reportId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(copyDashboardAsKermit(dashboardId).getStatus())
+        .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     // the user is a manager of the collection so can copy it
-    assertThat(copyCollectionAsKermit(collectionId).getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(copyCollectionAsKermit(collectionId).getStatus())
+        .isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   private String createReportAsKermitAndGetId() {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateSingleProcessReportRequest(
-        new SingleProcessReportDefinitionRequestDto())
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto())
+        .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+        .getId();
   }
 
   private Response createReportAsKermit() {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateSingleProcessReportRequest(
-        new SingleProcessReportDefinitionRequestDto())
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto())
+        .execute();
   }
 
   private Response copyReportAsKermit(final String reportId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCopyReportRequest(reportId, null)
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCopyReportRequest(reportId, null)
+        .execute();
   }
 
   private Response updateReportAsKermit(final String reportId) {
-    return reportClient.updateSingleProcessReport(reportId, reportClient.createSingleProcessReportDefinitionDto(
-      null,
-      "someKey",
-      Collections.singletonList(null)
-    ), true, KERMIT_USER, KERMIT_USER);
+    return reportClient.updateSingleProcessReport(
+        reportId,
+        reportClient.createSingleProcessReportDefinitionDto(
+            null, "someKey", Collections.singletonList(null)),
+        true,
+        KERMIT_USER,
+        KERMIT_USER);
   }
 
   private Response deleteReportAsKermit(final String reportId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildDeleteReportRequest(reportId)
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildDeleteReportRequest(reportId)
+        .execute();
   }
 
   private String createDashboardAsKermitAndGetId() {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateDashboardRequest()
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCreateDashboardRequest()
+        .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+        .getId();
   }
 
   private Response createDashboardAsKermit() {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateDashboardRequest()
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCreateDashboardRequest()
+        .execute();
   }
 
   private Response deleteDashboardAsKermit(final String dashboardId) {
@@ -398,49 +476,57 @@ public class EntityEditorAuthorizationServiceIT extends AbstractPlatformIT {
   }
 
   private Response updateDashboardAsKermit(final String dashboardId) {
-    return dashboardClient.updateDashboardAsUser(dashboardId, new DashboardDefinitionRestDto(), KERMIT_USER, KERMIT_USER);
+    return dashboardClient.updateDashboardAsUser(
+        dashboardId, new DashboardDefinitionRestDto(), KERMIT_USER, KERMIT_USER);
   }
 
   private Response copyDashboardAsKermit(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCopyDashboardRequest(dashboardId)
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCopyDashboardRequest(dashboardId)
+        .execute();
   }
 
   private String createCollectionAsKermitAndGetId() {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateCollectionRequest()
-      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode()).getId();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCreateCollectionRequest()
+        .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
+        .getId();
   }
 
   private Response createCollectionAsKermit() {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateCollectionRequest()
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCreateCollectionRequest()
+        .execute();
   }
 
   private Response updateCollectionAsKermit(final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdatePartialCollectionRequest(collectionId, new PartialCollectionDefinitionRequestDto())
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildUpdatePartialCollectionRequest(
+            collectionId, new PartialCollectionDefinitionRequestDto())
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .execute();
   }
 
   private Response deleteCollectionAsKermit(final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteCollectionRequest(collectionId)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildDeleteCollectionRequest(collectionId)
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .execute();
   }
 
   private Response copyCollectionAsKermit(final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCopyCollectionRequest(collectionId)
-      .execute();
+    return embeddedOptimizeExtension
+        .getRequestExecutor()
+        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .buildCopyCollectionRequest(collectionId)
+        .execute();
   }
-
 }

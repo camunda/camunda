@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static java.util.stream.Collectors.groupingBy;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
@@ -17,22 +24,15 @@ import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinition
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.stream.Collectors.groupingBy;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
 public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
   @BeforeEach
   public void enableCamundaCleanup() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getCleanupServiceConfiguration()
-      .getProcessDataCleanupConfiguration()
-      .setEnabled(true);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCleanupServiceConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setEnabled(true);
   }
 
   @Test
@@ -40,7 +40,8 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     // given
     getProcessCleanupConfiguration().setEnabled(true);
     getProcessCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
-    final String instanceIdToGetCleanedUp = ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
+    final String instanceIdToGetCleanedUp =
+        ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
     final String instanceIdToKeep = ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
     createAndPublishEventProcess();
 
@@ -49,10 +50,11 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
+    final List<EventProcessInstanceDto> eventProcessInstances =
+        getEventProcessInstancesFromDatabase();
     assertThat(eventProcessInstances)
-      .extracting(EventProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(instanceIdToKeep);
+        .extracting(EventProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(instanceIdToKeep);
   }
 
   @Test
@@ -60,35 +62,37 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     // given
     getProcessCleanupConfiguration().setEnabled(true);
     getProcessCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
-    final String instanceIdWithEndDateOlderThanDefaultTtl = ingestStartAndEndEventWithSameTraceId(
-      getEndTimeLessThanGlobalTtl());
-    final String instanceIdWithEndDateNewerThanDefaultTtl = ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
+    final String instanceIdWithEndDateOlderThanDefaultTtl =
+        ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
+    final String instanceIdWithEndDateNewerThanDefaultTtl =
+        ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
     final String publishedProcessWithNoSpecialConfiguration = createAndPublishEventProcess();
     final String publishedProcessWithSpecialConfiguration = createAndPublishEventProcess();
     getProcessCleanupConfiguration()
-      .getProcessDefinitionSpecificConfiguration()
-      .put(
-        publishedProcessWithSpecialConfiguration,
-        ProcessDefinitionCleanupConfiguration.builder()
-          .cleanupMode(CleanupMode.ALL)
-          // higher ttl than default
-          .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
-          .build()
-      );
+        .getProcessDefinitionSpecificConfiguration()
+        .put(
+            publishedProcessWithSpecialConfiguration,
+            ProcessDefinitionCleanupConfiguration.builder()
+                .cleanupMode(CleanupMode.ALL)
+                // higher ttl than default
+                .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
+                .build());
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromDatabase()
-      .stream().collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
+    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances =
+        getEventProcessInstancesFromDatabase().stream()
+            .collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
     assertThat(eventProcessInstances.get(publishedProcessWithNoSpecialConfiguration))
-      .extracting(EventProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(instanceIdWithEndDateNewerThanDefaultTtl);
+        .extracting(EventProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(instanceIdWithEndDateNewerThanDefaultTtl);
     assertThat(eventProcessInstances.get(publishedProcessWithSpecialConfiguration))
-      .extracting(EventProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(instanceIdWithEndDateNewerThanDefaultTtl, instanceIdWithEndDateOlderThanDefaultTtl);
+        .extracting(EventProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(
+            instanceIdWithEndDateNewerThanDefaultTtl, instanceIdWithEndDateOlderThanDefaultTtl);
   }
 
   @Test
@@ -96,7 +100,8 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     // given
     getProcessCleanupConfiguration().setEnabled(false);
     getProcessCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
-    final String instanceIdToKeep = ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
+    final String instanceIdToKeep =
+        ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
     createAndPublishEventProcess();
 
     // when
@@ -104,10 +109,11 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
+    final List<EventProcessInstanceDto> eventProcessInstances =
+        getEventProcessInstancesFromDatabase();
     assertThat(eventProcessInstances)
-      .extracting(EventProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(instanceIdToKeep);
+        .extracting(EventProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(instanceIdToKeep);
   }
 
   @Test
@@ -115,8 +121,10 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     // given
     getProcessCleanupConfiguration().setEnabled(true);
     getProcessCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
-    final String instanceIdWithCleanedVariables = ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
-    final String instanceIdWithKeptVariables = ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
+    final String instanceIdWithCleanedVariables =
+        ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
+    final String instanceIdWithKeptVariables =
+        ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
     createAndPublishEventProcess();
 
     // when
@@ -124,20 +132,22 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
+    final List<EventProcessInstanceDto> eventProcessInstances =
+        getEventProcessInstancesFromDatabase();
     assertThat(eventProcessInstances)
-      .extracting(EventProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(instanceIdWithKeptVariables, instanceIdWithCleanedVariables);
+        .extracting(EventProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(instanceIdWithKeptVariables, instanceIdWithCleanedVariables);
     assertThat(eventProcessInstances)
-      .allSatisfy(instance -> {
-        if (instanceIdWithKeptVariables.equals(instance.getProcessInstanceId())) {
-          assertThat(instance.getVariables()).hasSize(1);
-        } else if (instanceIdWithCleanedVariables.equals(instance.getProcessInstanceId())) {
-          assertThat(instance.getVariables()).isEmpty();
-        } else {
-          fail("unexpected instance with id " + instance.getProcessInstanceId());
-        }
-      });
+        .allSatisfy(
+            instance -> {
+              if (instanceIdWithKeptVariables.equals(instance.getProcessInstanceId())) {
+                assertThat(instance.getVariables()).hasSize(1);
+              } else if (instanceIdWithCleanedVariables.equals(instance.getProcessInstanceId())) {
+                assertThat(instance.getVariables()).isEmpty();
+              } else {
+                fail("unexpected instance with id " + instance.getProcessInstanceId());
+              }
+            });
   }
 
   @Test
@@ -145,38 +155,43 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     // given
     getProcessCleanupConfiguration().setEnabled(true);
     getProcessCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
-    final String instanceIdToBeCleanup = ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
-    final String instanceIdToNotCleanupAtAll = ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
+    final String instanceIdToBeCleanup =
+        ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
+    final String instanceIdToNotCleanupAtAll =
+        ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
     final String publishedProcessWithNoSpecialConfiguration = createAndPublishEventProcess();
     final String publishedProcessWithSpecialConfiguration = createAndPublishEventProcess();
     getProcessCleanupConfiguration()
-      .getProcessDefinitionSpecificConfiguration()
-      .put(
-        publishedProcessWithSpecialConfiguration,
-        // variable mode for specific key
-        ProcessDefinitionCleanupConfiguration.builder().cleanupMode(CleanupMode.VARIABLES).build()
-      );
+        .getProcessDefinitionSpecificConfiguration()
+        .put(
+            publishedProcessWithSpecialConfiguration,
+            // variable mode for specific key
+            ProcessDefinitionCleanupConfiguration.builder()
+                .cleanupMode(CleanupMode.VARIABLES)
+                .build());
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromDatabase()
-      .stream().collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
+    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances =
+        getEventProcessInstancesFromDatabase().stream()
+            .collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
     assertThat(eventProcessInstances.get(publishedProcessWithNoSpecialConfiguration))
-      .extracting(ProcessInstanceDto::getProcessInstanceId)
-      .containsOnly(instanceIdToNotCleanupAtAll);
+        .extracting(ProcessInstanceDto::getProcessInstanceId)
+        .containsOnly(instanceIdToNotCleanupAtAll);
     assertThat(eventProcessInstances.get(publishedProcessWithSpecialConfiguration))
-      .allSatisfy(instance -> {
-        if (instanceIdToNotCleanupAtAll.equals(instance.getProcessInstanceId())) {
-          assertThat(instance.getVariables()).hasSize(1);
-        } else if (instanceIdToBeCleanup.equals(instance.getProcessInstanceId())) {
-          assertThat(instance.getVariables()).isEmpty();
-        } else {
-          fail("unexpected instance with id " + instance.getProcessInstanceId());
-        }
-      });
+        .allSatisfy(
+            instance -> {
+              if (instanceIdToNotCleanupAtAll.equals(instance.getProcessInstanceId())) {
+                assertThat(instance.getVariables()).hasSize(1);
+              } else if (instanceIdToBeCleanup.equals(instance.getProcessInstanceId())) {
+                assertThat(instance.getVariables()).isEmpty();
+              } else {
+                fail("unexpected instance with id " + instance.getProcessInstanceId());
+              }
+            });
   }
 
   @Test
@@ -185,41 +200,44 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     getProcessCleanupConfiguration().setEnabled(true);
     getProcessCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     final String instanceIdWithCleanedVariablesByDefaultConfig =
-      ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
-    final String instanceIdWithKeptVariables = ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
+        ingestStartAndEndEventWithSameTraceId(getEndTimeLessThanGlobalTtl());
+    final String instanceIdWithKeptVariables =
+        ingestStartAndEndEventWithSameTraceId(OffsetDateTime.now());
     final String publishedProcessWithNoSpecialConfiguration = createAndPublishEventProcess();
     final String publishedProcessWithSpecialConfiguration = createAndPublishEventProcess();
     getProcessCleanupConfiguration()
-      .getProcessDefinitionSpecificConfiguration()
-      .put(
-        publishedProcessWithSpecialConfiguration,
-        ProcessDefinitionCleanupConfiguration.builder()
-          .cleanupMode(CleanupMode.VARIABLES)
-          // higher ttl than default
-          .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
-          .build()
-      );
+        .getProcessDefinitionSpecificConfiguration()
+        .put(
+            publishedProcessWithSpecialConfiguration,
+            ProcessDefinitionCleanupConfiguration.builder()
+                .cleanupMode(CleanupMode.VARIABLES)
+                // higher ttl than default
+                .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
+                .build());
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromDatabase()
-      .stream().collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
+    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances =
+        getEventProcessInstancesFromDatabase().stream()
+            .collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
     assertThat(eventProcessInstances.get(publishedProcessWithNoSpecialConfiguration))
-      .allSatisfy(instance -> {
-        if (instanceIdWithKeptVariables.equals(instance.getProcessInstanceId())) {
-          assertThat(instance.getVariables()).hasSize(1);
-        } else if (instanceIdWithCleanedVariablesByDefaultConfig.equals(instance.getProcessInstanceId())) {
-          assertThat(instance.getVariables()).isEmpty();
-        } else {
-          fail("unexpected instance with id " + instance.getProcessInstanceId());
-        }
-      });
+        .allSatisfy(
+            instance -> {
+              if (instanceIdWithKeptVariables.equals(instance.getProcessInstanceId())) {
+                assertThat(instance.getVariables()).hasSize(1);
+              } else if (instanceIdWithCleanedVariablesByDefaultConfig.equals(
+                  instance.getProcessInstanceId())) {
+                assertThat(instance.getVariables()).isEmpty();
+              } else {
+                fail("unexpected instance with id " + instance.getProcessInstanceId());
+              }
+            });
     assertThat(eventProcessInstances.get(publishedProcessWithSpecialConfiguration))
-      .extracting(EventProcessInstanceDto::getVariables)
-      .allSatisfy(variables -> assertThat(variables).hasSize(1));
+        .extracting(EventProcessInstanceDto::getVariables)
+        .allSatisfy(variables -> assertThat(variables).hasSize(1));
   }
 
   @Test
@@ -236,19 +254,20 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
-    assertThat(eventProcessInstances)
-      .extracting(ProcessInstanceDto::getVariables)
-      .hasSize(1);
+    final List<EventProcessInstanceDto> eventProcessInstances =
+        getEventProcessInstancesFromDatabase();
+    assertThat(eventProcessInstances).extracting(ProcessInstanceDto::getVariables).hasSize(1);
   }
 
   private String createAndPublishEventProcess() {
-    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId =
+        createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
     publishEventProcess(eventProcessMappingId);
     return eventProcessMappingId;
   }
 
-  private String ingestStartAndEndEventWithSameTraceId(final OffsetDateTime endTimeLessThanGlobalTtl) {
+  private String ingestStartAndEndEventWithSameTraceId(
+      final OffsetDateTime endTimeLessThanGlobalTtl) {
     final String traceId = IdGenerator.getNextId();
     ingestTestEvent(STARTED_EVENT, endTimeLessThanGlobalTtl, traceId);
     ingestTestEvent(FINISHED_EVENT, endTimeLessThanGlobalTtl, traceId);
@@ -256,9 +275,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
   }
 
   protected OffsetDateTime getEndTimeLessThanGlobalTtl() {
-    return OffsetDateTime.now()
-      .minus(getCleanupConfiguration().getTtl())
-      .minusSeconds(1);
+    return OffsetDateTime.now().minus(getCleanupConfiguration().getTtl()).minusSeconds(1);
   }
 
   private CleanupConfiguration getCleanupConfiguration() {

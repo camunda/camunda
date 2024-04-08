@@ -1,0 +1,33 @@
+name: Optimize generate changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to use"
+        required: true
+        default: "master"
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
+      - name: Get last tag on branch
+        run: |
+          echo "LAST_TAG=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
+
+      - name: Calculate changelog
+        uses: dlavrenuek/conventional-changelog-action@86998ff61a0b14063262141358dbf2a4e6c630e7 # v1.2.4
+        id: changelog
+        with:
+          from: ${{ env.LAST_TAG }}
+          to: "HEAD"
+          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
+      - name: Print changelog
+        run: |
+          echo "${{ steps.changelog.outputs.body }}"

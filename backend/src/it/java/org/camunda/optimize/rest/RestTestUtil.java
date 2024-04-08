@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
-
 import jakarta.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestTestUtil {
@@ -32,7 +31,8 @@ public class RestTestUtil {
   }
 
   public static double getOffsetDiffInHours(final OffsetDateTime o1, final OffsetDateTime o2) {
-    int offsetDiffInSeconds = Math.abs(o1.getOffset().getTotalSeconds() - o2.getOffset().getTotalSeconds());
+    int offsetDiffInSeconds =
+        Math.abs(o1.getOffset().getTotalSeconds() - o2.getOffset().getTotalSeconds());
     return offsetDiffInSeconds / 3600.0; // convert to hours
   }
 }

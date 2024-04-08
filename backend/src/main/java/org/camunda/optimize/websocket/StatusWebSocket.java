@@ -38,7 +38,7 @@ public class StatusWebSocket {
   @OnWebSocketConnect
   public void onOpen(final Session session) {
     if (statusReportJobs.size() < configurationService.getMaxStatusConnections()) {
-      StatusNotifier job = new StatusNotifier(statusCheckingService, objectMapper, session);
+      final StatusNotifier job = new StatusNotifier(statusCheckingService, objectMapper, session);
       statusReportJobs.put(session.toString(), job);
       importSchedulerManagerService.subscribeImportObserver(job);
       log.debug("starting to report status for session [{}]", session);
@@ -56,7 +56,7 @@ public class StatusWebSocket {
 
   private void removeSession(final Session session) {
     if (statusReportJobs.containsKey(session.toString())) {
-      StatusNotifier job = statusReportJobs.remove(session.toString());
+      final StatusNotifier job = statusReportJobs.remove(session.toString());
       importSchedulerManagerService.unsubscribeImportObserver(job);
     }
   }

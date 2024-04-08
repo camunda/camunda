@@ -23,6 +23,7 @@ import {
   DashboardTemplateModal,
   PageTitle,
   Tabs,
+  KpiCreationModal,
 } from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
@@ -46,8 +47,7 @@ export class Collection extends Component {
   state = {
     collection: null,
     editingCollection: false,
-    creatingProcessReport: false,
-    creatingDashboard: false,
+    creating: null,
     deleting: false,
     redirect: '',
     copying: null,
@@ -124,14 +124,13 @@ export class Collection extends Component {
       collection,
       deleting,
       editingCollection,
-      creatingProcessReport,
-      creatingDashboard,
       redirect,
       copying,
       entities,
       sorting,
       isLoading,
       userSearchAvailable,
+      creating,
     } = this.state;
 
     const {match} = this.props;
@@ -193,9 +192,8 @@ export class Collection extends Component {
                     <CreateNewButton
                       kind={bulkActive ? 'tertiary' : 'primary'}
                       collection={collection.id}
-                      createProcessReport={() => this.setState({creatingProcessReport: true})}
-                      createDashboard={() => this.setState({creatingDashboard: true})}
                       importEntity={() => this.fileInput.current.click()}
+                      create={(type) => this.setState({creating: type})}
                     />
                   )
                 }
@@ -403,12 +401,13 @@ export class Collection extends Component {
           }}
           onCancel={() => this.setState({copying: null})}
         />
-        {creatingProcessReport && (
-          <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
+        {creating === 'report' && (
+          <ReportTemplateModal onClose={() => this.setState({creating: null})} />
         )}
-        {creatingDashboard && (
-          <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
+        {creating === 'dashboard' && (
+          <DashboardTemplateModal onClose={() => this.setState({creating: null})} />
         )}
+        {creating === 'kpi' && <KpiCreationModal onClose={() => this.setState({creating: null})} />}
         <input
           className="hidden"
           onChange={this.createUploadedEntity}

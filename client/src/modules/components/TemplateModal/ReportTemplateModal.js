@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
+import React, {useEffect, useState} from 'react';
+import {getMaxNumDataSourcesForReport} from 'config';
 import {t} from 'translation';
 
 import TemplateModal from './TemplateModal';
@@ -27,6 +27,8 @@ import {
 import './ReportTemplateModal.scss';
 
 export default function ReportTemplateModal({onClose, onConfirm, initialDefinitions}) {
+  const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
+
   const templateGroups = [
     {
       name: 'blankGroup',
@@ -50,6 +52,10 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
     },
   ];
 
+  useEffect(() => {
+    (async () => setReportDataSourceLimit(await getMaxNumDataSourcesForReport()))();
+  }, []);
+
   return (
     <TemplateModal
       className="ReportTemplateModal"
@@ -58,7 +64,11 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
       entity="report"
       blankSlate={
         <ol>
-          <li>{t('templates.blankSlate.selectProcess')}</li>
+          <li>
+            {t('templates.blankSlate.selectProcess', {
+              maxNumProcesses: reportDataSourceLimit,
+            })}
+          </li>
           <li>{t('templates.blankSlate.selectTemplate')}</li>
         </ol>
       }

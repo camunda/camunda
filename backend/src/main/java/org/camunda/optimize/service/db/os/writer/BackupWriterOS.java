@@ -20,11 +20,11 @@ public class BackupWriterOS implements BackupWriter {
 
   @Override
   public void triggerSnapshotCreation(final Long backupId) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteOptimizeSnapshots(final Long backupId) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

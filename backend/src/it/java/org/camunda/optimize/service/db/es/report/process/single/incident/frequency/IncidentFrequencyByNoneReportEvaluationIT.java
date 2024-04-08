@@ -5,6 +5,19 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.incident.frequency;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
+import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
+import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
+import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -26,51 +39,39 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.INSTANCE;
-import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
-import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
-import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
-import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private Stream<Supplier<ProcessInstanceEngineDto>> startInstanceWithDifferentIncidents() {
     return Stream.of(
-      () -> incidentClient.deployAndStartProcessInstanceWithTwoOpenIncidents(),
-      () -> incidentClient.deployAndStartProcessInstanceWithTwoResolvedIncidents(),
-      () -> incidentClient.deployAndStartProcessInstanceWithDeletedResolvedIncidents()
-    );
+        () -> incidentClient.deployAndStartProcessInstanceWithTwoOpenIncidents(),
+        () -> incidentClient.deployAndStartProcessInstanceWithTwoResolvedIncidents(),
+        () -> incidentClient.deployAndStartProcessInstanceWithDeletedResolvedIncidents());
   }
 
   @ParameterizedTest
   @MethodSource("startInstanceWithDifferentIncidents")
-  public void twoIncidentsInOneProcessInstance(Supplier<ProcessInstanceEngineDto> startAndReturnProcessInstanceWithTwoIncidents) {
+  public void twoIncidentsInOneProcessInstance(
+      Supplier<ProcessInstanceEngineDto> startAndReturnProcessInstanceWithTwoIncidents) {
     // given
-    final ProcessInstanceEngineDto processInstance = startAndReturnProcessInstanceWithTwoIncidents.get();
+    final ProcessInstanceEngineDto processInstance =
+        startAndReturnProcessInstanceWithTwoIncidents.get();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
     AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getProcessDefinitionKey())
+        .isEqualTo(processInstance.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions())
-      .containsExactly(processInstance.getProcessDefinitionVersion());
+        .containsExactly(processInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.INCIDENT);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
@@ -87,18 +88,20 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
-      .deployProcess(ONE_TASK)
-      .startProcessInstance()
+        .deployProcess(ONE_TASK)
+        .startProcessInstance()
         .withOpenIncident()
-      .startProcessInstance()
+        .startProcessInstance()
         .withOpenIncidentOfCustomType("myCustomIncidentType")
-      .executeDeployment();
+        .executeDeployment();
     // @formatter:on
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
-    final ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
+    final ReportResultResponseDto<Double> resultDto =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -109,17 +112,18 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
   @Test
   public void incidentsForMultipleProcessInstances() {
     // given
-    final ProcessInstanceEngineDto processInstance = incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    final ProcessInstanceEngineDto processInstance =
+        incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     incidentClient.startProcessInstanceAndCreateOpenIncident(processInstance.getDefinitionId());
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
     final ReportResultResponseDto<Double> resultDto =
-      reportClient.evaluateNumberReport(reportData).getResult();
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -130,18 +134,19 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
   @Test
   public void differentIncidentTypesInTheSameReport() {
     // given
-    final ProcessInstanceEngineDto processInstance = incidentClient.deployAndStartProcessInstanceWithResolvedIncident();
+    final ProcessInstanceEngineDto processInstance =
+        incidentClient.deployAndStartProcessInstanceWithResolvedIncident();
     incidentClient.startProcessInstanceAndCreateOpenIncident(processInstance.getDefinitionId());
     incidentClient.startProcessInstanceAndCreateDeletedIncident(processInstance.getDefinitionId());
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
     final ReportResultResponseDto<Double> resultDto =
-      reportClient.evaluateNumberReport(reportData).getResult();
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(3L);
@@ -152,17 +157,18 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
   @Test
   public void otherProcessDefinitionVersionsDoNoAffectResult() {
     // given
-    final ProcessInstanceEngineDto processInstance = incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    final ProcessInstanceEngineDto processInstance =
+        incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion());
     final ReportResultResponseDto<Double> resultDto =
-      reportClient.evaluateNumberReport(reportData).getResult();
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
@@ -173,17 +179,16 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
   @Test
   public void incidentReportAcrossMultipleDefinitionVersions() {
     // given
-    final ProcessInstanceEngineDto processInstance = incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    final ProcessInstanceEngineDto processInstance =
+        incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstance.getProcessDefinitionKey(),
-      ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData =
+        createReport(processInstance.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS);
     final ReportResultResponseDto<Double> resultDto =
-      reportClient.evaluateNumberReport(reportData).getResult();
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
@@ -201,19 +206,19 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     engineIntegrationExtension.createTenant(tenantId2);
 
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId1);
+        incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId1);
     incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId2);
     incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(DEFAULT_TENANT);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(
-      processInstanceEngineDto.getProcessDefinitionKey(),
-      ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData =
+        createReport(
+            processInstanceEngineDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEqualTo((double) selectedTenants.size());
@@ -225,35 +230,34 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     // Instance 1: one incident in task 1 (resolved) and one incident in task 2 (open)
     // Instance 2: one incident in task 1 (open) and because of that the task is still pending.
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+        engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
     incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
     final ProcessInstanceEngineDto processInstanceEngineDto2 =
-      engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto2.getBusinessKey());
+        engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto2.getBusinessKey());
 
     importAllEngineEntitiesFromScratch();
 
     // when I create a report without filters
     ProcessReportDataDto reportData =
-      createReport(
-        processInstanceEngineDto.getProcessDefinitionKey(),
-        processInstanceEngineDto.getProcessDefinitionVersion()
-      );
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+        createReport(
+            processInstanceEngineDto.getProcessDefinitionKey(),
+            processInstanceEngineDto.getProcessDefinitionVersion());
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then the result has two process instances
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getFirstMeasureData()).isEqualTo(3.);
 
     // when I create a flow node filter on task 2
-    List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
-      .filter()
-      .executedFlowNodes()
-      .id(SERVICE_TASK_ID_2)
-      .add()
-      .buildList();
+    List<ProcessFilterDto<?>> flowNodeFilter =
+        ProcessFilterBuilder.filter().executedFlowNodes().id(SERVICE_TASK_ID_2).add().buildList();
     reportData.getFilter().addAll(flowNodeFilter);
     result = reportClient.evaluateNumberReport(reportData).getResult();
 
@@ -265,21 +269,42 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
 
   private Stream<Arguments> filterAndExpectedResult() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncident().filterLevel(INSTANCE).add().buildList(), 2.),
-      Arguments.of(ProcessFilterBuilder.filter().withOpenIncident().filterLevel(VIEW).add().buildList(), 1.),
-      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(INSTANCE).add().buildList(), 2.),
-      Arguments.of(ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(VIEW).add().buildList(), 1.),
-      Arguments.of(ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(), 0.)
-    );
+        Arguments.of(
+            ProcessFilterBuilder.filter()
+                .withOpenIncident()
+                .filterLevel(INSTANCE)
+                .add()
+                .buildList(),
+            2.),
+        Arguments.of(
+            ProcessFilterBuilder.filter().withOpenIncident().filterLevel(VIEW).add().buildList(),
+            1.),
+        Arguments.of(
+            ProcessFilterBuilder.filter()
+                .withResolvedIncident()
+                .filterLevel(INSTANCE)
+                .add()
+                .buildList(),
+            2.),
+        Arguments.of(
+            ProcessFilterBuilder.filter()
+                .withResolvedIncident()
+                .filterLevel(VIEW)
+                .add()
+                .buildList(),
+            1.),
+        Arguments.of(
+            ProcessFilterBuilder.filter().noIncidents().filterLevel(INSTANCE).add().buildList(),
+            0.));
   }
 
   @ParameterizedTest
   @MethodSource("filterAndExpectedResult")
-  public void incidentFilterIsAppliedAtCorrectLevel(final List<ProcessFilterDto<?>> filter,
-                                                    final Double expectedResult) {
+  public void incidentFilterIsAppliedAtCorrectLevel(
+      final List<ProcessFilterDto<?>> filter, final Double expectedResult) {
     // given
     final ProcessInstanceEngineDto firstInstance =
-      engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
+        engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
     incidentClient.createOpenIncidentForInstancesWithBusinessKey(firstInstance.getBusinessKey());
     incidentClient.resolveOpenIncidents(firstInstance.getId());
     incidentClient.createOpenIncidentForInstancesWithBusinessKey(firstInstance.getBusinessKey());
@@ -290,9 +315,11 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
 
     // when
     ProcessReportDataDto reportData =
-      createReport(firstInstance.getProcessDefinitionKey(), firstInstance.getProcessDefinitionVersion());
+        createReport(
+            firstInstance.getProcessDefinitionKey(), firstInstance.getProcessDefinitionVersion());
     reportData.setFilter(filter);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -302,47 +329,52 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
 
   private static Stream<List<ProcessFilterDto<?>>> nonIncidentViewLevelFilters() {
     return viewLevelFilters()
-      .filter(filters -> {
-        final ProcessFilterDto<?> filter = filters.get(0);
-        return !(filter instanceof OpenIncidentFilterDto) && !(filter instanceof ResolvedIncidentFilterDto);
-      });
+        .filter(
+            filters -> {
+              final ProcessFilterDto<?> filter = filters.get(0);
+              return !(filter instanceof OpenIncidentFilterDto)
+                  && !(filter instanceof ResolvedIncidentFilterDto);
+            });
   }
 
   @ParameterizedTest
   @MethodSource("nonIncidentViewLevelFilters")
-  public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  public void multiLevelFiltersOnlyAppliedToInstances(
+      final List<ProcessFilterDto<?>> filtersToApply) {
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+        engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
     incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
     final ProcessInstanceEngineDto processInstanceEngineDto2 =
-      engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto2.getBusinessKey());
+        engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto2.getBusinessKey());
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
-      createReport(
-        processInstanceEngineDto.getProcessDefinitionKey(),
-        processInstanceEngineDto.getProcessDefinitionVersion()
-      );
+        createReport(
+            processInstanceEngineDto.getProcessDefinitionKey(),
+            processInstanceEngineDto.getProcessDefinitionVersion());
     reportData.getFilter().addAll(filtersToApply);
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isZero();
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
-  private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(INCIDENT_FREQ_GROUP_BY_NONE)
-      .build();
+  private ProcessReportDataDto createReport(
+      String processDefinitionKey, String processDefinitionVersion) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(INCIDENT_FREQ_GROUP_BY_NONE)
+        .build();
   }
-
 }

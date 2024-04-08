@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -13,31 +15,27 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-
 @Tag(OPENSEARCH_PASSING)
 public class EngineVersionCheckerIT extends AbstractPlatformIT {
 
   @RegisterExtension
-  protected final LogCapturer engineContextLogCapturer = LogCapturer.create()
-    .forLevel(Level.ERROR)
-    .captureForType(EngineContext.class);
+  protected final LogCapturer engineContextLogCapturer =
+      LogCapturer.create().forLevel(Level.ERROR).captureForType(EngineContext.class);
 
   @Test
   public void engineVersionCantBeDetermined() {
     // given
-    embeddedOptimizeExtension.getDefaultEngineConfiguration()
-      .setRest("http://localhost:8080/engine-rest/ding-dong-you-rest-path-is-wrong");
+    embeddedOptimizeExtension
+        .getDefaultEngineConfiguration()
+        .setRest("http://localhost:8080/engine-rest/ding-dong-you-rest-path-is-wrong");
 
     // when
     embeddedOptimizeExtension.reloadConfiguration();
     embeddedOptimizeExtension.authenticateUser("", "");
 
     engineContextLogCapturer.assertContains(
-      "Failed to validate engine camunda-bpm version with error message: While checking the Engine version, " +
-        "following error occurred: Status code: 404, this means you either configured a wrong endpoint or you have" +
-        " an unsupported engine version < "
-    );
+        "Failed to validate engine camunda-bpm version with error message: While checking the Engine version, "
+            + "following error occurred: Status code: 404, this means you either configured a wrong endpoint or you have"
+            + " an unsupported engine version < ");
   }
-
 }

@@ -11,6 +11,8 @@ import {login, save, getUser, createNewDashboard, addEditEntityDescription} from
 
 import * as Common from './Common.elements.js';
 import * as e from './Collection.elements.js';
+import * as Report from './ProcessReport.elements.js';
+import * as Filter from './Filter.elements.js';
 
 fixture('Collection')
   .page(config.endpoint)
@@ -203,8 +205,8 @@ test('add, edit and delete sources', async (t) => {
   const tenantName = 'engineering';
   await t.typeText(Common.comboBox, tenantName, {replace: true});
   await t.click(Common.carbonOption(tenantName));
-  await t.click(e.itemCheckbox(3));
-  await t.click(e.itemCheckbox(4));
+  await t.click(e.itemCheckbox(5));
+  await t.click(e.itemCheckbox(6));
   await t.takeElementScreenshot(Common.modalContainer, 'img/sourceByTenant.png');
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.visible).ok();
@@ -235,4 +237,40 @@ test('add, edit and delete sources', async (t) => {
   await t.click(e.remove(Common.bulkMenu.filterVisible()));
   await t.click(Common.modalConfirmButton);
   await t.expect(Common.listItem.filterVisible().exists).notOk();
+});
+
+test('create new KPI report', async (t) => {
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
+  await t.typeText(Common.modalNameInput, 'test collection', {replace: true});
+  await t.click(Common.modalConfirmButton);
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
+  await t.click(Common.submenuOption('Process KPI'));
+
+  await t.click(Common.kpiTemplateSelection);
+  await t.click(Common.carbonOption('Automation rate'));
+
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Common.kpiFilterButton.nth(0));
+
+  await t.click(Report.flowNode('approveInvoice'));
+  await t.click(Report.flowNode('reviewInvoice'));
+  await t.click(Report.flowNode('prepareBankTransfer'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Common.kpiFilterButton.nth(1));
+
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Common.menuOption('This...'));
+  await t.click(Filter.unitSelect);
+  await t.click(Common.menuOption('year'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Common.modalConfirmButton);
+  await t.expect(Common.editButton.visible).ok();
 });

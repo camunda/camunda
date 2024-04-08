@@ -5,9 +5,6 @@
  */
 package org.camunda.optimize.rest.cloud;
 
-import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.CONSOLE;
-import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.MODELER;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -29,18 +26,6 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 public abstract class AbstractCCSaaSClient {
   protected static final String GET_ORGS_TEMPLATE = "%s/external/organizations/%s";
-  protected static final String GET_CLUSTERS_TEMPLATE = GET_ORGS_TEMPLATE + "/clusters";
-  protected static final String GET_USERS_TEMPLATE = GET_ORGS_TEMPLATE + "/members?filter=members";
-  protected static final String GET_USER_BY_ID_TEMPLATE = GET_ORGS_TEMPLATE + "/members/%s";
-  // E.g.https://modeler.cloud.dev.ultrawombat.com/org/<ORG_ID>
-  protected static final String MODELER_URL_TEMPLATE = "https://" + MODELER + ".cloud%s/org/%s";
-  // E.g. https://console.cloud.dev.ultrawombat.com
-  protected static final String CONSOLE_ROOTURL_TEMPLATE = "https://" + CONSOLE + ".cloud%s";
-  // E.g. https://console.cloud.dev.ultrawombat.com/org/<ORG_ID>/cluster/<CLUSTER_ID>
-  protected static final String CONSOLE_URL_TEMPLATE =
-      CONSOLE_ROOTURL_TEMPLATE + "/org/%s/cluster/%s";
-  // Prod domain as fall back
-  protected static final String DEFAULT_DOMAIN_WHEN_ERROR_OCCURS = ".camunda.io";
 
   protected final CloseableHttpClient httpClient;
   protected final ObjectMapper objectMapper;
@@ -50,22 +35,22 @@ public abstract class AbstractCCSaaSClient {
       final ObjectMapper objectMapper, final ConfigurationService configurationService) {
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
-    HttpClientBuilder builder = HttpClientBuilder.create();
+    final HttpClientBuilder builder = HttpClientBuilder.create();
 
     // Setting a general timeout for external requests to 5000 milliseconds, so that outgoing
     // requests don't block the
     // execution flow from Optimize
-    int timeout = 5000;
+    final int timeout = 5000;
     builder.setConnectionTimeToLive(timeout, TimeUnit.MILLISECONDS);
     builder.evictIdleConnections(timeout, TimeUnit.MILLISECONDS);
-    RequestConfig rc =
+    final RequestConfig rc =
         RequestConfig.custom()
             .setConnectionRequestTimeout(timeout)
             .setConnectTimeout(timeout)
             .setSocketTimeout(timeout)
             .build();
     builder.setDefaultRequestConfig(rc);
-    this.httpClient = builder.build();
+    httpClient = builder.build();
   }
 
   // In case the connection times out, the execution will throw a SocketTimeoutException or a

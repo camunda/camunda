@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.test.optimize;
 
+import jakarta.ws.rs.core.Response;
+import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
-
-import jakarta.ws.rs.core.Response;
-import java.util.function.Supplier;
 
 @AllArgsConstructor
 public class StatusClient {
@@ -19,9 +18,9 @@ public class StatusClient {
 
   public StatusResponseDto getStatus() {
     return getRequestExecutor()
-      .withoutAuthentication()
-      .buildCheckImportStatusRequest()
-      .execute(StatusResponseDto.class, Response.Status.OK.getStatusCode());
+        .withoutAuthentication()
+        .buildCheckImportStatusRequest()
+        .execute(StatusResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

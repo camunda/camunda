@@ -15,6 +15,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -42,8 +43,42 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
     initializeAuthorizations(configurationService);
   }
 
+  private static void initializeAuthorizations(final ConfigurationService configurationService) {
+    final List<AuthorizationType> initializedSuperUserAuthorizations =
+        new ArrayList<>(List.of(AuthorizationType.TELEMETRY));
+    final List<AuthorizationType> initializedDefaultUserAuthorizations = new ArrayList<>();
+
+    initializeUserAuthorizationsForAuthorizationType(
+        AuthorizationType.CSV_EXPORT,
+        configurationService.getCsvConfiguration().getAuthorizedUserType(),
+        initializedSuperUserAuthorizations,
+        initializedDefaultUserAuthorizations);
+    initializeUserAuthorizationsForAuthorizationType(
+        AuthorizationType.ENTITY_EDITOR,
+        configurationService.getEntityConfiguration().getAuthorizedUserType(),
+        initializedSuperUserAuthorizations,
+        initializedDefaultUserAuthorizations);
+    superUserAuthorizations = ImmutableList.copyOf(initializedSuperUserAuthorizations);
+    defaultUserAuthorizations = ImmutableList.copyOf(initializedDefaultUserAuthorizations);
+  }
+
+  private static void initializeUserAuthorizationsForAuthorizationType(
+      final AuthorizationType authorizationType,
+      final AuthorizedUserType authorizedUserType,
+      final List<AuthorizationType> initializedSuperUserAuthorizations,
+      final List<AuthorizationType> initializedDefaultUserAuthorizations) {
+    if (authorizedUserType == ALL) {
+      initializedSuperUserAuthorizations.add(authorizationType);
+      initializedDefaultUserAuthorizations.add(authorizationType);
+    } else {
+      if (authorizedUserType == SUPERUSER) {
+        initializedSuperUserAuthorizations.add(authorizationType);
+      }
+    }
+  }
+
   @Override
-  public void reloadConfiguration(ApplicationContext context) {
+  public void reloadConfiguration(final ApplicationContext context) {
     initializeAuthorizations(configurationService);
   }
 
@@ -64,6 +99,24 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
       final String searchString,
       final int maxResults,
       final boolean excludeUserGroups);
+
+  public List<IdentityWithMetadataResponseDto> getUsersById(final Set<String> userIds) {
+    return userIds.stream()
+        .map(this::getUserById)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(IdentityWithMetadataResponseDto.class::cast)
+        .toList();
+  }
+
+  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
+    return groupIds.stream()
+        .map(this::getGroupById)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(IdentityWithMetadataResponseDto.class::cast)
+        .toList();
+  }
 
   public boolean isSuperUserIdentity(final String userId) {
     return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId)
@@ -121,7 +174,7 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
     if (API_IMPORT_OWNER_NAME.equals(identityId)) {
       return Optional.empty();
     }
-    Optional<? extends IdentityWithMetadataResponseDto> identityDto =
+    final Optional<? extends IdentityWithMetadataResponseDto> identityDto =
         getIdentityWithMetadataForId(identityId);
     return identityDto.map(IdentityWithMetadataResponseDto::getName);
   }
@@ -139,39 +192,5 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
     return getAllGroupsOfUser(userId).stream()
         .map(IdentityDto::getId)
         .anyMatch(authorizedGroupIds::contains);
-  }
-
-  private static void initializeAuthorizations(final ConfigurationService configurationService) {
-    final List<AuthorizationType> initializedSuperUserAuthorizations =
-        new ArrayList<>(List.of(AuthorizationType.TELEMETRY));
-    final List<AuthorizationType> initializedDefaultUserAuthorizations = new ArrayList<>();
-
-    initializeUserAuthorizationsForAuthorizationType(
-        AuthorizationType.CSV_EXPORT,
-        configurationService.getCsvConfiguration().getAuthorizedUserType(),
-        initializedSuperUserAuthorizations,
-        initializedDefaultUserAuthorizations);
-    initializeUserAuthorizationsForAuthorizationType(
-        AuthorizationType.ENTITY_EDITOR,
-        configurationService.getEntityConfiguration().getAuthorizedUserType(),
-        initializedSuperUserAuthorizations,
-        initializedDefaultUserAuthorizations);
-    superUserAuthorizations = ImmutableList.copyOf(initializedSuperUserAuthorizations);
-    defaultUserAuthorizations = ImmutableList.copyOf(initializedDefaultUserAuthorizations);
-  }
-
-  private static void initializeUserAuthorizationsForAuthorizationType(
-      final AuthorizationType authorizationType,
-      final AuthorizedUserType authorizedUserType,
-      final List<AuthorizationType> initializedSuperUserAuthorizations,
-      final List<AuthorizationType> initializedDefaultUserAuthorizations) {
-    if (authorizedUserType == ALL) {
-      initializedSuperUserAuthorizations.add(authorizationType);
-      initializedDefaultUserAuthorizations.add(authorizationType);
-    } else {
-      if (authorizedUserType == SUPERUSER) {
-        initializedSuperUserAuthorizations.add(authorizationType);
-      }
-    }
   }
 }

@@ -27,7 +27,9 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support"
+    "feedback": "Feedback und Support",
+    "opensearchPreview": "Opensearch Vorschauversion",
+    "opensearchWarningText": "Dies ist eine Vorschauversion von Optimize mit OpenSearch-Unterstützung. Der Datenimport ist voll funktionsfähig, jedoch befinden sich die Datenvisualisierungs- und Auswertungsfunktionen in einem experimentellen Stadium und sollten nicht für Produktionszwecke verwendet werden."
   },
   "login": {
     "label": "Einloggen",
@@ -46,7 +48,8 @@
     "notConnected": "ist nicht verbunden",
     "rightsReserved": "Alle Rechte vorbehalten",
     "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)",
-    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
+    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:",
+    "database": "Database"
   },
   "license": {
     "label": "Lizenz",
@@ -87,7 +90,7 @@
     "noProcessHint": "Leeres Dashboard erstellen",
     "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen",
     "blankSlate": {
-      "selectProcess": "Wählen Sie bis zu 10 Prozessdefinitionen aus",
+      "selectProcess": "Wählen Sie bis zu {maxNumProcesses} Prozessdefinitionen aus",
       "selectTemplate": "Wählen Sie eine Vorlage aus",
       "review": "Überprüfen Sie Ihren Dashboardentwurf und entfernen Sie unerwünschte Berichte",
       "refine": "Verfeinern Sie Ihr Dashboard und Ihre Berichte"
@@ -381,6 +384,27 @@
       "monitorTargetAsMetric-description": "Messe Ziele für zeitliche, prozentuale und zählbare Metriken eines Prozesses.",
       "monitorTargetsOverTime": "Messe Ziele für einen Zeitraum",
       "monitorTargetsOverTime-description": "Messe Ziele über die Zeit für zeitliche, prozentuale und zählbare Metriken eines Prozesses."
+    },
+    "kpiTemplates": {
+      "processKpi": "Prozess-KPI",
+      "create": "Prozess-KPI erstellen",
+      "step": "Schritt {count}",
+      "selectKpi": "Prozess-KPI auswählen",
+      "automationRate": "Automatisierungsrate",
+      "automationRate-description": "Die Automatisierungsrate misst, wie viel Prozent des Prozesses ohne menschliche Interaktion ausgeführt werden.",
+      "automationRate-filter1": "Wählen Sie die End-Events aus, die einen vollautomatischen Prozess hinweisen",
+      "automationRate-filter2": "Wählen Sie den Zeitraum, für den die Automatisierungsrate bewertet werden soll",
+      "preview": "Vorschau",
+      "setTargetAndFilters": "Ziel und Filter einstellen",
+      "throughput": "Durchlaufzeit",
+      "throughput-description": "Die Durchlaufzeit gibt an, wie lange ein Prozess auf dem glücklichen Weg im Durchschnitt braucht, um zu enden",
+      "throughput-filter1": "Wählen Sie die End-Events aus, die einen vollautomatischen Prozess hinweisen",
+      "throughput-filter2": "Wählen Sie den Zeitrahmen, für den der Durchsatz bewertet werden soll",
+      "mandatoryFilters": "Obligatorische Filter",
+      "filters": {
+        "nodeSelection": "Event Ende auswählen",
+        "endDate": "Zeitrahmen wählen"
+      }
     },
     "instanceCount": {
       "appliedFilters": "Angewandte Filter",
@@ -1070,6 +1094,7 @@
     "editAccess": "Zugriff bearbeiten",
     "id": "ID",
     "instanceIds": "Instanz IDs",
+    "processInstanceIds": "Prozessinstanz IDs",
     "seeDocs": "Siehe Dokumentation",
     "undefined": "nicht definiert",
     "null": "null",
@@ -1096,6 +1121,8 @@
     "units": "Einheiten",
     "link": "Link",
     "details": "Details",
+    "nextStep": "nächster Schritt",
+    "previousStep": "Vorheriger Schritt",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
@@ -1454,7 +1481,7 @@
       "latest": "Neueste",
       "multiple": "Mehrere",
       "noDefinition": "Keine Definitionen gefunden",
-      "limitReached": "Prozessdefinitionsgrenze erreicht. Nur zehn Prozesse erlaubt.",
+      "limitReached": "Prozessdefinitionsgrenze erreicht. Nur {maxNumProcesses} Prozesse erlaubt.",
       "select": {
         "process": "Prozess auswählen",
         "decision": "Entscheidung auswählen",

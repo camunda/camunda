@@ -8,14 +8,16 @@
 import React, {useEffect, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {C3Navigation, C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
+import {DefinitionTooltip, Tooltip, Link as CarbonLink} from '@carbon/react';
 
-import {Tooltip, NavItem} from 'components';
+import {NavItem} from 'components';
 import {
   getOptimizeProfile,
   isEnterpriseMode,
   getWebappLinks,
   getOnboardingConfig,
   getNotificationsUrl,
+  getOptimizeDatabase,
 } from 'config';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -44,6 +46,7 @@ export function Header({noActions}) {
   const [notificationsUrl, setNotificationsUrl] = useState();
   const {user} = useUser();
   const {mightFail} = useErrorHandling();
+  const [optimizeDatabase, setOptimizeDatabase] = useState();
   const {generateDocsLink} = useDocs();
   const userSideBar = useUserMenu({user, mightFail, setTelemetrySettingsOpen});
 
@@ -57,6 +60,7 @@ export function Header({noActions}) {
         getOnboardingConfig(),
         getUserToken(),
         getNotificationsUrl(),
+        getOptimizeDatabase(),
       ]),
       ([
         enabled,
@@ -66,6 +70,7 @@ export function Header({noActions}) {
         onboardingConfig,
         userToken,
         notificationsUrl,
+        optimizeDatabase,
       ]) => {
         setShowEventBased(enabled && optimizeProfile === 'platform');
         setEnterpiseMode(isEnterpriseMode);
@@ -74,6 +79,7 @@ export function Header({noActions}) {
         setOrganizationId(onboardingConfig.orgId);
         setUserToken(userToken);
         setNotificationsUrl(notificationsUrl);
+        setOptimizeDatabase(optimizeDatabase);
       },
       showError
     );
@@ -86,7 +92,7 @@ export function Header({noActions}) {
   };
 
   if (!noActions) {
-    props.navbar = createNavBarProps(showEventBased, enterpriseMode);
+    props.navbar = createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase);
     props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMode);
     props.userSideBar = userSideBar;
   }
@@ -159,7 +165,7 @@ function createWebappLinks(webappLinks) {
     }));
 }
 
-function createNavBarProps(showEventBased, enterpriseMode) {
+function createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase) {
   const elements = [
     {
       key: 'dashboards',
@@ -214,26 +220,46 @@ function createNavBarProps(showEventBased, enterpriseMode) {
     tags.push({
       key: 'licenseWarning',
       label: (
-        <Tooltip
-          content={
+        <DefinitionTooltip
+          className="nonProductionTooltip"
+          definition={
             <>
               {t('license.referTo')}{' '}
-              <a
-                href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
+              <CarbonLink
+                inline
                 target="_blank"
                 rel="noopener noreferrer"
+                href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
               >
                 {t('license.terms')}
-              </a>{' '}
+              </CarbonLink>{' '}
               {t('common.or')}{' '}
-              <a href="https://camunda.com/contact/" target="_blank" rel="noopener noreferrer">
+              <CarbonLink
+                href="https://camunda.com/contact/"
+                target="_blank"
+                rel="noopener noreferrer"
+                inline
+              >
                 {t('license.contactSales')}
-              </a>
+              </CarbonLink>
             </>
           }
-          delay={500}
+          openOnHover
+          align="bottom"
         >
-          <div className="warning">{t('license.nonProduction')}</div>
+          {t('license.nonProduction')}
+        </DefinitionTooltip>
+      ),
+      color: 'red',
+    });
+  }
+
+  if (optimizeDatabase === 'opensearch') {
+    tags.push({
+      key: 'opensearchWarning',
+      label: (
+        <Tooltip align="bottom" label={t('navigation.opensearchWarningText')}>
+          <button className="tooltipTrigger">{t('navigation.opensearchPreview')}</button>
         </Tooltip>
       ),
       color: 'red',

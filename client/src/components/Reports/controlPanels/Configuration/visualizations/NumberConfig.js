@@ -7,19 +7,14 @@
 
 import {Checkbox, FormGroup, Stack, Toggle} from '@carbon/react';
 
+import {TargetSelection} from 'components';
 import {t} from 'translation';
 import {track} from 'tracking';
-
-import CountTargetInput from './subComponents/CountTargetInput';
-import DurationTargetInput from './subComponents/DurationTargetInput';
 
 export default function NumberConfig({report, onChange}) {
   const {configuration, view, definitions} = report.data;
   const targetValue = configuration.targetValue;
-  const isPercentageReport = view.properties.includes('percentage');
 
-  const countOperation =
-    view.properties.includes('frequency') || isPercentageReport || view.entity === 'variable';
   const isMultiMeasure = report.result?.measures.length > 1;
   const isSingleProcessReport = definitions.length === 1;
 
@@ -49,27 +44,7 @@ export default function NumberConfig({report, onChange}) {
       }
     >
       <Stack gap={4}>
-        {countOperation ? (
-          <CountTargetInput
-            baseline={targetValue.countProgress.baseline}
-            target={targetValue.countProgress.target}
-            isBelow={targetValue.countProgress.isBelow}
-            disabled={!targetValue.active}
-            isPercentageReport={isPercentageReport}
-            onChange={(type, value) =>
-              onChange({targetValue: {countProgress: {[type]: {$set: value}}}})
-            }
-          />
-        ) : (
-          <DurationTargetInput
-            baseline={targetValue.durationProgress.baseline}
-            target={targetValue.durationProgress.target}
-            disabled={!targetValue.active}
-            onChange={(type, subType, value) =>
-              onChange({targetValue: {durationProgress: {[type]: {[subType]: {$set: value}}}}})
-            }
-          />
-        )}
+        <TargetSelection report={report} onChange={onChange} />
         {view.entity !== 'variable' &&
           report.reportType !== 'decision' &&
           isSingleProcessReport && (

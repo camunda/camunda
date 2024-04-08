@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.retrieval;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
@@ -12,35 +17,34 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
+@Tag(OPENSEARCH_PASSING)
 public class FlowNodeMappingIT extends AbstractPlatformIT {
 
   private static final String A_START = "aStart";
   private static final String A_TASK = "aTask";
   private static final String AN_END = "anEnd";
 
-  private final static String PROCESS_DEFINITION_KEY = "aProcess";
+  private static final String PROCESS_DEFINITION_KEY = "aProcess";
 
   @Test
   public void mapFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      modelInstance);
+    ProcessDefinitionEngineDto processDefinition =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    FlowNodeNamesResponseDto result = flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(
+        String.valueOf(processDefinition.getVersion()));
+    FlowNodeNamesResponseDto result =
+        flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(result).isNotNull();
@@ -55,11 +59,11 @@ public class FlowNodeMappingIT extends AbstractPlatformIT {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .name(A_START)
-          .serviceTask()
-          .name(A_TASK)
-          .camundaExpression("${true}")
+        .serviceTask()
+        .name(A_TASK)
+        .camundaExpression("${true}")
         .endEvent()
-          .name(AN_END)
+        .name(AN_END)
         .done();
     // @formatter:on
   }
@@ -68,21 +72,22 @@ public class FlowNodeMappingIT extends AbstractPlatformIT {
   public void mapFilteredFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      modelInstance);
+    ProcessDefinitionEngineDto processDefinition =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
     importAllEngineEntitiesFromScratch();
     StartEvent start = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
-
 
     // when
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(
+        String.valueOf(processDefinition.getVersion()));
     List<String> ids = new ArrayList<>();
     ids.add(start.getId());
     flowNodeIdsToNamesRequestDto.setNodeIds(ids);
 
-    FlowNodeNamesResponseDto result = flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
+    FlowNodeNamesResponseDto result =
+        flowNodeNamesClient.getFlowNodeNames(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(result).isNotNull();

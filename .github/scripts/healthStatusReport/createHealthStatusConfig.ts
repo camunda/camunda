@@ -38,9 +38,12 @@ async function createHealthStatusConfig() {
     SNYK_EXCLUDED_PROJECT_VERSIONS,
   );
 
-  const hardcodedBranches = getRenovateStringBranches();
+  const renovateStringBranches = getRenovateStringBranches();
   const releaseBranches = await githubService.getBranchesWithPrefix('release');
-  const ciBranches = [...releaseBranches, ...hardcodedBranches].sort(githubService.sortBranches);
+  const ciBranches = [...releaseBranches, ...renovateStringBranches].sort(
+    githubService.sortBranches,
+  );
+  const maintenanceBranches = ciBranches.filter((branch) => branch.includes('maintenance'));
 
   const snykProjects = await snykService.fetchSnykProjects();
   const snykProjectVersions = snykService.getHighestDockerVersions(snykProjects);
@@ -56,19 +59,24 @@ async function createHealthStatusConfig() {
       defaultBranch: 'master',
       workflows: [
         {
-          name: 'ci',
+          name: 'optimize-ci',
           branches: ciBranches,
         },
-        'connect-to-secured-es',
-        'zeebe-compatibility',
-        'upgrade-data-performance',
-        'cluster-test',
-        'java-compatibility',
-        'import-dynamic-data-performance',
-        'e2e-tests',
-        'release-optimize',
-        'engine-compatibility',
-        'es-compatibility',
+        {
+          name: 'ci',
+          branches: maintenanceBranches,
+        },
+        'optimize-connect-to-secured-es',
+        'optimize-zeebe-compatibility',
+        'optimize-upgrade-data-performance',
+        'optimize-cluster-test',
+        'optimize-java-compatibility',
+        'optimize-import-dynamic-data-performance',
+        'optimize-e2e-tests',
+        'optimize-release-optimize',
+        'optimize-engine-compatibility',
+        'optimize-es-compatibility-test',
+        'optimize-os-compatibility-test',
       ],
     },
     snyk: {

@@ -29,7 +29,9 @@ jest.mock('services', () => {
 });
 
 jest.mock('./service', () => {
+  const rest = jest.requireActual('./service');
   return {
+    ...rest,
     remove: jest.fn(),
   };
 });
@@ -76,10 +78,10 @@ it('should provide a link to edit mode in view mode', () => {
   expect(node.find({to: 'edit'})).toExist();
 });
 
-it('should open a deletion modal on delete button click', async () => {
+it('should open a deletion modal on delete button click', () => {
   const node = shallow(<ReportView report={report} />);
 
-  await node.find({iconDescription: 'Delete'}).prop('onClick')();
+  node.find({iconDescription: 'Delete'}).prop('onClick')();
 
   expect(node.find(Deleter).prop('entity')).toBeTruthy();
 });
@@ -108,12 +110,11 @@ it('should render sharing options', async () => {
   expect(node.find('ShareEntity')).toExist();
 });
 
-it('should hide Sharing options if sharing is disabled', async () => {
+it('should hide Sharing options if sharing is disabled', () => {
   isSharingEnabled.mockReturnValueOnce(false);
   const node = shallow(<ReportView report={report} />);
 
-  await runLastEffect();
-  await node.update();
+  runLastEffect();
 
   expect(node.find('ShareEntity')).not.toExist();
 });
@@ -133,7 +134,7 @@ it('should hide edit/delete if the report current user role is not "editor"', ()
 });
 
 it('should show alert dropdown for number reports', async () => {
-  const node = await shallow(
+  const node = shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
 
@@ -143,9 +144,9 @@ it('should show alert dropdown for number reports', async () => {
   expect(node.find(AlertsDropdown)).toExist();
 });
 
-it('should hide alert dropdown in ccsm environment', async () => {
+it('should hide alert dropdown in ccsm environment', () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
-  const node = await shallow(
+  const node = shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
 
@@ -224,46 +225,37 @@ it('should hide share, edit and delete buttons for instant preview report', () =
   expect(node.find('.tool-button.delete-button')).not.toExist();
 });
 
-it('should hide bottom raw data panel for table reports', async () => {
-  const node = await shallow(<ReportView report={report} />);
-
-  await node.update();
+it('should hide bottom raw data panel for table reports', () => {
+  const node = shallow(<ReportView report={report} />);
 
   expect(node.find('.bottomPanel')).not.toExist();
 });
 
-it('should hide bottom raw data panel for processes page reports', async () => {
+it('should hide bottom raw data panel for processes page reports', () => {
   useLocation.mockReturnValueOnce({pathname: '/processes/report'});
 
-  const node = await shallow(
+  const node = shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
 
-  await node.update();
-
   expect(node.find('.bottomPanel')).not.toExist();
 });
 
-it('should hide bottom raw data panel for empty reports', async () => {
-  const node = await shallow(
+it('should hide bottom raw data panel for empty reports', () => {
+  const node = shallow(
     <ReportView
       report={{...report, result: undefined, data: {...report.data, visualization: 'number'}}}
     />
   );
 
-  await node.update();
-
   expect(node.find('.bottomPanel')).not.toExist();
 });
 
-it('should hide expandButton & report content when expanding bottom panel', async () => {
-  const node = await shallow(
+it('should hide report content when expanding bottom panel', () => {
+  const node = shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
 
-  await node.update();
-
-  node.find('.expandButton').simulate('click');
-  expect(node.find('.expandButton')).not.toExist();
+  node.find('CollapsibleContainer').dive().find('.expandButton').simulate('click');
   expect(node.find('.Report__content').hasClass('hidden')).toBe(true);
 });

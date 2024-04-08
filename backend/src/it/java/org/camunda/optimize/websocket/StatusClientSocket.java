@@ -5,38 +5,34 @@
  */
 package org.camunda.optimize.websocket;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.OnMessage;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.OnMessage;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-
 /**
- * Client class to test Web Socket implementation of status
- * report is working. This class provides two latches:
- * <p>
- * 1. initialStatusReceivedLatch is count down when an initial message is received
- * 2. importingStatusReceivedLatch is count down when a message with isImporting = true is received
+ * Client class to test Web Socket implementation of status report is working. This class provides
+ * two latches:
+ *
+ * <p>1. initialStatusReceivedLatch is count down when an initial message is received 2.
+ * importingStatusReceivedLatch is count down when a message with isImporting = true is received
  */
 @ClientEndpoint
 @Slf4j
 public class StatusClientSocket {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  @Getter
-  private final CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
+  @Getter private final CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
 
-  @Getter
-  private final CountDownLatch importingStatusReceivedLatch = new CountDownLatch(1);
-
+  @Getter private final CountDownLatch importingStatusReceivedLatch = new CountDownLatch(1);
 
   @OnMessage
   public void onText(String message) throws Exception {
@@ -52,5 +48,4 @@ public class StatusClientSocket {
       importingStatusReceivedLatch.countDown();
     }
   }
-
 }

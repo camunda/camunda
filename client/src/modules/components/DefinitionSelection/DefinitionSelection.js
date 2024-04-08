@@ -16,7 +16,7 @@ import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import debouncePromise from 'debouncePromise';
-import {getOptimizeProfile} from 'config';
+import {getOptimizeProfile, getMaxNumDataSourcesForReport} from 'config';
 
 import MultiDefinitionSelection from './MultiDefinitionSelection';
 import TenantPopover from './TenantPopover';
@@ -48,6 +48,7 @@ export class DefinitionSelection extends React.Component {
       selection: defaultSelection(props),
       selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
       optimizeProfile: null,
+      reportDataSourceLimit: 100,
     };
   }
 
@@ -69,6 +70,7 @@ export class DefinitionSelection extends React.Component {
 
     this.setState({
       optimizeProfile: await getOptimizeProfile(),
+      reportDataSourceLimit: await getMaxNumDataSourcesForReport(),
     });
   };
 
@@ -411,8 +413,12 @@ export class DefinitionSelection extends React.Component {
               {collectionId && noDefinitions && (
                 <Message>{t('common.definitionSelection.noSourcesWarning')}</Message>
               )}
-              {selectedDefinitions?.length >= 10 && (
-                <Message error>{t('common.definitionSelection.limitReached')}</Message>
+              {selectedDefinitions?.length >= this.state.reportDataSourceLimit && (
+                <Message error>
+                  {t('common.definitionSelection.limitReached', {
+                    maxNumProcesses: this.state.reportDataSourceLimit,
+                  })}
+                </Message>
               )}
               {selectedDefinitions?.length > 1 && (
                 <Message>{t('templates.disabledMessage.editReport')}</Message>

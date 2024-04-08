@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 
 import {addNotification} from 'notifications';
 import {EntityList} from 'components';
-import {isUserSearchAvailable} from 'config';
+import {isUserSearchAvailable, getOptimizeDatabase} from 'config';
 import {track} from 'tracking';
 
 import {Processes} from './Processes';
@@ -39,6 +39,7 @@ jest.mock('./service', () => ({
 
 jest.mock('config', () => ({
   isUserSearchAvailable: jest.fn().mockReturnValue(true),
+  getOptimizeDatabase: jest.fn().mockReturnValue('elasticsearch'),
 }));
 
 jest.mock('tracking', () => ({track: jest.fn()}));
@@ -141,6 +142,7 @@ it('should pass loaded tiles to the management dashboard view component', async 
   const node = shallow(<Processes {...props} />);
 
   await runAllEffects();
+  await flushPromises();
 
   expect(loadManagementDashboard).toHaveBeenCalled();
 
@@ -198,4 +200,19 @@ it('display the search info correctly', async () => {
 
   const textWithQuery = node.find(EntityList).prop('displaySearchInfo')('def', 1).props.children;
   expect(textWithQuery).toBe('1 of 1 process listed.');
+});
+
+it('should not display adoption dashboard when running optimize with opensearch', async () => {
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+  await flushPromises();
+
+  expect(node.find('.processOverview')).toExist();
+
+  getOptimizeDatabase.mockReturnValue('opensearch');
+  await runAllEffects();
+  await flushPromises();
+
+  expect(node.find('.processOverview')).not.toExist();
 });

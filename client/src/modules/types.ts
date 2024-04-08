@@ -26,12 +26,14 @@ interface Report<Data> {
   id: string;
   owner: string;
   lastModified: string;
-  collectionId: string;
+  collectionId?: string | null;
   created: string;
   lastModifier: string;
   data: Data;
   combined: boolean;
   reportType: ReportType;
+  description: string | null;
+  result?: unknown;
 }
 
 type FilterFilterApplicationLevel = 'instance' | 'view';
@@ -253,7 +255,7 @@ interface ConfigurationMeasureVisualizationsDto {
   duration: string;
 }
 
-interface SingleReportConfiguration {
+export interface SingleReportConfiguration {
   color: string;
   aggregationTypes: ConfigurationAggregation[];
   userTaskDurationTimes: 'idle' | 'work' | 'total';
@@ -297,7 +299,7 @@ interface SingleReportData {
   definitions: SingleReportDataDefinition[];
 }
 
-interface SingleProcessReportData extends SingleReportData {
+export interface SingleProcessReportData extends SingleReportData {
   filter: ProcessFilter<any>[];
   view: ProcessView;
   groupBy: GroupProcessGroupByDto<any>;
@@ -376,8 +378,8 @@ type CombinedReport = Report<CombinedReportData> & {
     >;
   };
 };
-type SingleProcessReport = Report<SingleProcessReportData> & {combined: false};
-type SingleDecisionReport = Report<SingleDecisionReportData> & {combined: false};
+export type SingleProcessReport = Report<SingleProcessReportData> & {combined: false};
+export type SingleDecisionReport = Report<SingleDecisionReportData> & {combined: false};
 
 export type GenericReport = CombinedReport | SingleDecisionReport | SingleProcessReport;
 

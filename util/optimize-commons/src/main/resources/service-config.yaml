@@ -686,6 +686,14 @@ locales:
 ui:
   # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
   logoutHidden: ${CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN:false}
+  # The maximum number of data sources available for a report. The minimum value is 1, the maximum is 1024
+  maxNumDataSourcesForReport: ${CAMUNDA_OPTIMIZE_UI_MAX_NUM_REPORT_DATA_SOURCES:100}
+  # Flag to disable userTask assignee specific analytics such as report types and filters
+  userTaskAssigneeAnalyticsEnabled: ${CAMUNDA_OPTIMIZE_UI_USER_TASK_ASSIGNEE_ANALYTICS_ENABLED:true}
+  # The URL for Optimize to use to navigate to console in the sidebar
+  consoleUrl: ${CAMUNDA_OPTIMIZE_CLOUD_CONSOLE_URL:}
+  # The URL for Optimize to use to navigate to modeler in the sidebar
+  modelerUrl: ${CAMUNDA_OPTIMIZE_CLOUD_MODELER_URL:}
 
 eventBasedProcess:
   # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
@@ -789,6 +797,10 @@ caches:
     maxSize: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE:10000}
     # the time (in millis) the tenant authorizations will be cached
     defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS:300000}
+  users:
+    # This cache is used to hold users in a CCSM environment
+    maxSize: ${CAMUNDA_OPTIMIZE_CACHES_USERS_MAX_SIZE:10000}
+    defaultTtlMillis: ${CAMUNDA_OPTIMIZE_CACHES_USERS_DEFAULT_TTL_MILLIS:600000}
 
 externalVariable:
   import:

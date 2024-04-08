@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.report.decision;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
+
 import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -19,18 +27,12 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import jakarta.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
-
+@Tag(OPENSEARCH_PASSING)
 public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
 
   @Test
@@ -39,15 +41,17 @@ public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
     String id = reportClient.createEmptySingleDecisionReport();
 
     final String variableName = "variableName";
-    DecisionReportDataDto expectedReportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("ID")
-      .setDecisionDefinitionVersion("1")
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
-      .setVariableId("id")
-      .setVariableName(variableName)
-      .build();
+    DecisionReportDataDto expectedReportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey("ID")
+            .setDecisionDefinitionVersion("1")
+            .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
+            .setVariableId("id")
+            .setVariableName(variableName)
+            .build();
 
-    SingleDecisionReportDefinitionRequestDto report = new SingleDecisionReportDefinitionRequestDto();
+    SingleDecisionReportDefinitionRequestDto report =
+        new SingleDecisionReportDefinitionRequestDto();
     report.setData(expectedReportData);
 
     // when
@@ -56,9 +60,10 @@ public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
 
     // then
     assertThat(reports.size()).isEqualTo(1);
-    SingleDecisionReportDefinitionRequestDto reportFromApi = (SingleDecisionReportDefinitionRequestDto) reports.get(0);
-    final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
-      reportFromApi.getData().getGroupBy().getValue();
+    SingleDecisionReportDefinitionRequestDto reportFromApi =
+        (SingleDecisionReportDefinitionRequestDto) reports.get(0);
+    final DecisionGroupByVariableValueDto value =
+        (DecisionGroupByVariableValueDto) reportFromApi.getData().getGroupBy().getValue();
     assertThat(value.getName().isPresent()).isEqualTo(true);
     assertThat(value.getName().get()).isEqualTo(variableName);
   }
@@ -70,10 +75,12 @@ public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
     final String reportId = deployDefinitionAndCreateReport(reportType);
 
     // when
-    final ReportResultResponseDto<?> result = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<?>>() {
-      }).getResult();
+    final ReportResultResponseDto<?> result =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<?>>() {})
+            .getResult();
 
     // then
     assertEmptyResult(result);
@@ -87,25 +94,29 @@ public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
     } else if (result.getFirstMeasureData() instanceof Double) {
       assertThat((Double) result.getFirstMeasureData()).isZero();
     } else {
-      throw new OptimizeIntegrationTestException("Unexpected result type: " + result.getFirstMeasureData().getClass());
+      throw new OptimizeIntegrationTestException(
+          "Unexpected result type: " + result.getFirstMeasureData().getClass());
     }
   }
 
   private String deployDefinitionAndCreateReport(final DecisionReportDataType reportType) {
     final DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtension.deployDecisionDefinition(createDefaultDmnModel(
-        "TestDecision_evaluateReport_missingInstanceIndicesReturnsEmptyResult"));
+        engineIntegrationExtension.deployDecisionDefinition(
+            createDefaultDmnModel(
+                "TestDecision_evaluateReport_missingInstanceIndicesReturnsEmptyResult"));
 
-    final DecisionReportDataDto expectedReportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-      .setDecisionDefinitionVersion("1")
-      .setReportDataType(reportType)
-      .setVariableId("variableId")
-      .setVariableName("variableName")
-      .setVariableType(VariableType.STRING)
-      .setDateInterval(AggregateByDateUnit.DAY)
-      .build();
-    final SingleDecisionReportDefinitionRequestDto report = new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDataDto expectedReportData =
+        DecisionReportDataBuilder.create()
+            .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+            .setDecisionDefinitionVersion("1")
+            .setReportDataType(reportType)
+            .setVariableId("variableId")
+            .setVariableName("variableName")
+            .setVariableType(VariableType.STRING)
+            .setDateInterval(AggregateByDateUnit.DAY)
+            .build();
+    final SingleDecisionReportDefinitionRequestDto report =
+        new SingleDecisionReportDefinitionRequestDto();
     report.setData(expectedReportData);
     return reportClient.createSingleDecisionReport(report);
   }
@@ -114,11 +125,12 @@ public class SingleDecisionReportHandlingIT extends AbstractPlatformIT {
     return getAllPrivateReportsWithQueryParam(new HashMap<>());
   }
 
-  private List<ReportDefinitionDto> getAllPrivateReportsWithQueryParam(Map<String, Object> queryParams) {
+  private List<ReportDefinitionDto> getAllPrivateReportsWithQueryParam(
+      Map<String, Object> queryParams) {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllPrivateReportsRequest()
-      .addQueryParams(queryParams)
-      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+        .getRequestExecutor()
+        .buildGetAllPrivateReportsRequest()
+        .addQueryParams(queryParams)
+        .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 }

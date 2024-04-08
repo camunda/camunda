@@ -37,7 +37,7 @@ interface Onboarding {
   salesPlanType: string;
 }
 
-type Config = {
+export type UiConfig = {
   emailEnabled: boolean;
   sharingEnabled: boolean;
   metadataTelemetryEnabled: boolean;
@@ -53,9 +53,12 @@ type Config = {
   mixpanel: MixpanelConfig;
   logoutHidden: boolean;
   exportCsvLimit: number;
+  maxNumDataSourcesForReport: number;
   onboarding: Onboarding;
   notificationsUrl: string;
   userSearchAvailable: boolean;
+  optimizeDatabase: 'opensearch' | 'elasticsearch';
+  userTaskAssigneeAnalyticsEnabled: boolean;
 };
 
 let config: Record<string, unknown>;
@@ -73,9 +76,7 @@ export async function loadConfig(): Promise<void> {
   }
 }
 
-loadConfig();
-
-function createAccessorFunction<T>(property: keyof Config): () => Promise<T> {
+export function createAccessorFunction<T>(property: keyof UiConfig): () => Promise<T> {
   return async function (): Promise<T> {
     if (config) {
       return config[property] as T;
@@ -103,12 +104,20 @@ export const getWebappLinks = createAccessorFunction<WebappLinks>('webappsLinks'
 export const getWebhooks = createAccessorFunction<string[]>('webhooks');
 export const getMixpanelConfig = createAccessorFunction<MixpanelConfig>('mixpanel');
 export const getOptimizeProfile =
-  createAccessorFunction<Config['optimizeProfile']>('optimizeProfile');
+  createAccessorFunction<UiConfig['optimizeProfile']>('optimizeProfile');
 export const isLogoutHidden = createAccessorFunction<boolean>('logoutHidden');
 export const getExportCsvLimit = createAccessorFunction<number>('exportCsvLimit');
+export const getMaxNumDataSourcesForReport = createAccessorFunction<number>(
+  'maxNumDataSourcesForReport'
+);
 export const isEnterpriseMode = createAccessorFunction<boolean>('enterpriseMode');
 export const getOnboardingConfig = createAccessorFunction<Onboarding>('onboarding');
 export const getNotificationsUrl = createAccessorFunction<string>('notificationsUrl');
 export const isUserSearchAvailable = createAccessorFunction<boolean>('userSearchAvailable');
+export const getOptimizeDatabase =
+  createAccessorFunction<UiConfig['optimizeDatabase']>('optimizeDatabase');
+export const getUserTaskAssigneeAnalyticsEnabled = createAccessorFunction<boolean>(
+  'userTaskAssigneeAnalyticsEnabled'
+);
 
 export {default as newReport} from './newReport.json';

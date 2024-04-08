@@ -5,7 +5,22 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.duration.groupby.none;
 
+import static java.time.temporal.ChronoUnit.MILLIS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
+
 import jakarta.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -27,26 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static java.time.temporal.ChronoUnit.MILLIS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
-
 public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   public static final String PROCESS_DEFINITION_KEY = "123";
@@ -65,17 +60,22 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
 
     AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
-    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getProcessDefinitionKey())
+        .isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions())
+        .contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getEntity())
+        .isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
     assertThat(resultReportDataDto.getConfiguration().getProcessPart()).isNotPresent();
@@ -92,23 +92,29 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
 
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        processInstanceDto.getId(), startDate.plusSeconds(1));
     importAllEngineEntitiesFromScratch();
     ProcessReportDataDto reportDataDto =
-      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
 
     String reportId = createNewReport(reportDataDto);
 
     // when
     AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReportById(reportId);
+        reportClient.evaluateNumberReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
-    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getProcessDefinitionKey())
+        .isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions())
+        .contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getEntity())
+        .isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
@@ -122,9 +128,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+        engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+        engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     Map<String, OffsetDateTime> startDatesToUpdate = new HashMap<>();
     startDatesToUpdate.put(processInstanceDto.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
@@ -139,8 +145,11 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // when
     ProcessReportDataDto reportDataDto =
-      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
-    ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportDataDto).getResult();
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
+    ReportResultResponseDto<Double> resultDto =
+        reportClient.evaluateNumberReport(reportDataDto).getResult();
 
     // then
     assertThat(resultDto.getFirstMeasureData()).isNotNull();
@@ -153,9 +162,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+        engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+        engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     Map<String, OffsetDateTime> startDatesToUpdate = new HashMap<>();
     startDatesToUpdate.put(processInstanceDto.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
@@ -170,11 +179,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
     reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
     final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
 
     // then
     assertAggregationResults(evaluationResponse, 1000., 2000., 9000.);
@@ -185,7 +196,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     // when
     ProcessReportDataDto reportData = createReport("fooProcDef", "1");
 
-    ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> resultDto =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getFirstMeasureData()).isNull();
@@ -201,13 +213,18 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
 
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        processInstanceDto.getId(), startDate.plusSeconds(1));
+    processInstanceDto =
+        engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
-    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        processInstanceDto.getId(), startDate.plusSeconds(9));
+    processInstanceDto =
+        engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        processInstanceDto.getId(), startDate.plusSeconds(2));
     deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
@@ -216,7 +233,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     reportData.getConfiguration().setAggregationTypes(getSupportedAggregationTypes());
 
     final AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
-      reportClient.evaluateNumberReport(reportData);
+        reportClient.evaluateNumberReport(reportData);
 
     // then
     assertAggregationResults(evaluationResponse, 1000., 9000., 2000.);
@@ -228,16 +245,17 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = Collections.singletonList(tenantId1);
-    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
-      Arrays.asList(null, tenantId1, tenantId2)
-    );
+    final String processKey =
+        deployAndStartMultiTenantSimpleServiceTaskProcess(
+            Arrays.asList(null, tenantId1, tenantId2));
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
@@ -249,38 +267,33 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
     OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
+    ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcessWithVariables(variables);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        processInstanceDto.getId(), startDate.plusSeconds(1));
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
 
-    reportData.setFilter(ProcessFilterBuilder
-                           .filter()
-                           .variable()
-                           .booleanTrue()
-                           .name("var")
-                           .add()
-                           .buildList());
-    ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    reportData.setFilter(
+        ProcessFilterBuilder.filter().variable().booleanTrue().name("var").add().buildList());
+    ReportResultResponseDto<Double> resultDto =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     Double calculatedResult = resultDto.getFirstMeasureData();
     assertThat(calculatedResult).isEqualTo(1000.);
 
     // when
-    reportData.setFilter(ProcessFilterBuilder
-                           .filter()
-                           .variable()
-                           .booleanFalse()
-                           .name("var")
-                           .add()
-                           .buildList());
+    reportData.setFilter(
+        ProcessFilterBuilder.filter().variable().booleanFalse().name("var").add().buildList());
     resultDto = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
@@ -290,23 +303,28 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
   @ParameterizedTest
   @MethodSource("viewLevelFilters")
-  public void viewLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
+  public void viewLevelFiltersOnlyAppliedToInstances(
+      final List<ProcessFilterDto<?>> filtersToApply) {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        processInstanceDto.getId(), startDate.plusSeconds(1));
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+        createReport(
+            processInstanceDto.getProcessDefinitionKey(),
+            processInstanceDto.getProcessDefinitionVersion());
 
     reportData.setFilter(filtersToApply);
-    ReportResultResponseDto<Double> resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+    ReportResultResponseDto<Double> resultDto =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount()).isZero();
@@ -326,38 +344,38 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
     engineDatabaseExtension.changeProcessInstanceStartDate(
-      completeProcessInstanceDto.getId(),
-      completedProcInstStartDate
-    );
-    engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+        completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
-    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtension.startProcessInstance(
-      completeProcessInstanceDto.getDefinitionId()
-    );
+    final ProcessInstanceEngineDto newRunningProcessInstance =
+        engineIntegrationExtension.startProcessInstance(
+            completeProcessInstanceDto.getDefinitionId());
     OffsetDateTime runningProcInstStartDate = now.minusDays(1);
-    engineDatabaseExtension.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+        newRunningProcessInstance.getId(), runningProcInstStartDate);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> runningInstanceFilter = ProcessFilterBuilder.filter()
-      .runningInstancesOnly()
-      .add()
-      .buildList();
+    final List<ProcessFilterDto<?>> runningInstanceFilter =
+        ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList();
 
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
-      .setFilter(runningInstanceFilter)
-      .build();
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+            .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+            .setFilter(runningInstanceFilter)
+            .build();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getFirstMeasureData()).isNotNull()
-      .isEqualTo((double) runningProcInstStartDate.until(now, MILLIS));
+    assertThat(result.getFirstMeasureData())
+        .isNotNull()
+        .isEqualTo((double) runningProcInstStartDate.until(now, MILLIS));
   }
 
   @Test
@@ -373,40 +391,38 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
     engineDatabaseExtension.changeProcessInstanceStartDate(
-      completeProcessInstanceDto.getId(),
-      completedProcInstStartDate
-    );
-    engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+        completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
-    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtension.startProcessInstance(
-      completeProcessInstanceDto.getDefinitionId()
-    );
+    final ProcessInstanceEngineDto newRunningProcessInstance =
+        engineIntegrationExtension.startProcessInstance(
+            completeProcessInstanceDto.getDefinitionId());
     OffsetDateTime runningProcInstStartDate = now.minusDays(1);
-    engineDatabaseExtension.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+        newRunningProcessInstance.getId(), runningProcInstStartDate);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> completedInstanceFilter = ProcessFilterBuilder.filter()
-      .completedInstancesOnly()
-      .add()
-      .buildList();
+    final List<ProcessFilterDto<?>> completedInstanceFilter =
+        ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList();
 
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
-      .setFilter(completedInstanceFilter)
-      .build();
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+            .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+            .setFilter(completedInstanceFilter)
+            .build();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     final Double resultData = result.getFirstMeasureData();
     assertThat(resultData).isEqualTo(1000.);
   }
-
 
   @Test
   public void calculateDurationForRunningAndCompletedProcessInstances() {
@@ -421,34 +437,37 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
     engineDatabaseExtension.changeProcessInstanceStartDate(
-      completeProcessInstanceDto.getId(),
-      completedProcInstStartDate
-    );
-    engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+        completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
-    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtension.startProcessInstance(
-      completeProcessInstanceDto.getDefinitionId()
-    );
+    final ProcessInstanceEngineDto newRunningProcessInstance =
+        engineIntegrationExtension.startProcessInstance(
+            completeProcessInstanceDto.getDefinitionId());
     OffsetDateTime runningProcInstStartDate = now.minusDays(1);
-    engineDatabaseExtension.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+        newRunningProcessInstance.getId(), runningProcInstStartDate);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
-      .build();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+            .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+            .build();
 
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     final Double resultData = result.getFirstMeasureData();
-    assertThat(resultData).isEqualTo(
-      calculateExpectedValueGivenDurationsDefaultAggr(1000., (double) runningProcInstStartDate.until(now, MILLIS)));
+    assertThat(resultData)
+        .isEqualTo(
+            calculateExpectedValueGivenDurationsDefaultAggr(
+                1000., (double) runningProcInstStartDate.until(now, MILLIS)));
   }
 
   @Test
@@ -457,7 +476,6 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
 
-
     // 1 completed proc inst
     ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
@@ -465,37 +483,39 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
     engineDatabaseExtension.changeProcessInstanceStartDate(
-      completeProcessInstanceDto.getId(),
-      completedProcInstStartDate
-    );
-    engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+        completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+        completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
-    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtension.startProcessInstance(
-      completeProcessInstanceDto.getDefinitionId()
-    );
+    final ProcessInstanceEngineDto newRunningProcessInstance =
+        engineIntegrationExtension.startProcessInstance(
+            completeProcessInstanceDto.getDefinitionId());
     OffsetDateTime runningProcInstStartDate = now.minusDays(1);
-    engineDatabaseExtension.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+        newRunningProcessInstance.getId(), runningProcInstStartDate);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
-      .duration()
-      .operator(GREATER_THAN_EQUALS)
-      .unit(DurationUnit.HOURS)
-      .value(1L)
-      .add()
-      .buildList();
+    final List<ProcessFilterDto<?>> durationFilter =
+        ProcessFilterBuilder.filter()
+            .duration()
+            .operator(GREATER_THAN_EQUALS)
+            .unit(DurationUnit.HOURS)
+            .value(1L)
+            .add()
+            .buildList();
 
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
-      .setFilter(durationFilter)
-      .build();
-    final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+            .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+            .setFilter(durationFilter)
+            .build();
+    final ReportResultResponseDto<Double> result =
+        reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
     final Double resultData = result.getFirstMeasureData();
@@ -530,36 +550,39 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask(ProcessInstanceDurationByNoneReportEvaluationIT.TEST_ACTIVITY)
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(
+      Map<String, Object> variables) {
+    BpmnModelInstance processModel =
+        Bpmn.createExecutableProcess("aProcess")
+            .name("aProcessName")
+            .startEvent()
+            .serviceTask(ProcessInstanceDurationByNoneReportEvaluationIT.TEST_ACTIVITY)
+            .camundaExpression("${true}")
+            .endEvent()
+            .done();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private void assertAggregationResults(AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse,
-                                        Number... durationsToCalculate) {
+  private void assertAggregationResults(
+      AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse,
+      Number... durationsToCalculate) {
     final Map<AggregationDto, Double> expectedAggregationResults =
-      databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(durationsToCalculate);
-    final Map<AggregationDto, Double> resultByAggregationType = evaluationResponse.getResult()
-      .getMeasures()
-      .stream()
-      .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
+        databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(durationsToCalculate);
+    final Map<AggregationDto, Double> resultByAggregationType =
+        evaluationResponse.getResult().getMeasures().stream()
+            .collect(
+                Collectors.toMap(
+                    MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
     assertThat(resultByAggregationType)
-      .hasSize(getSupportedAggregationTypes().length)
-      .containsAllEntriesOf(expectedAggregationResults);
+        .hasSize(getSupportedAggregationTypes().length)
+        .containsAllEntriesOf(expectedAggregationResults);
   }
 
   private ProcessReportDataDto createReport(String processKey, String definitionVersion) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processKey)
-      .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    return TemplatedProcessReportDataBuilder.createReportData()
+        .setProcessDefinitionKey(processKey)
+        .setProcessDefinitionVersion(definitionVersion)
+        .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+        .build();
   }
 }

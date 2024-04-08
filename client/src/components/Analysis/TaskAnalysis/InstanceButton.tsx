@@ -54,7 +54,7 @@ export function InstancesButton({id, name, config, value, totalCount}: Instances
       }
       totalCount={totalCount}
     >
-      {t('common.instanceIds')}
+      {t('common.processInstanceIds')}
     </DownloadButton>
   );
 }

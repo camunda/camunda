@@ -6,16 +6,14 @@
  */
 
 import {useState, useEffect} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Checkbox, Stack} from '@carbon/react';
 
-import {Modal, LabeledInput, DocsLink} from 'components';
+import {Modal, DocsLink} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {isMetadataTelemetryEnabled, loadConfig} from 'config';
 import {updateTelemetry} from './service';
-
-import './TelemetrySettings.scss';
 
 interface TelemetrySettingsProps extends WithErrorHandlingProps {
   onClose: () => void;
@@ -55,31 +53,31 @@ export function TelemetrySettings({onClose, mightFail}: TelemetrySettingsProps):
     <Modal className="TelemetrySettings" open onClose={onClose}>
       <Modal.Header>{t('telemetry.header')}</Modal.Header>
       <Modal.Content>
-        <p>{t('telemetry.text')}</p>
-        <div className="options">
-          <LabeledInput
-            type="checkbox"
-            label={
+        <Stack gap={4} orientation="vertical">
+          <p>{t('telemetry.text')}</p>
+          <Checkbox
+            id="enableTelemetryCheckbox"
+            labelText={
               <>
-                <h2>{t('telemetry.enable')}</h2>
+                <b>{t('telemetry.enable')}</b>
                 <p>{t('telemetry.info')}</p>
               </>
             }
             checked={telemetryEnabled}
             onChange={(evt) => setTelemetryEnabled(evt.target.checked)}
           />
-        </div>
-        <p>
-          <b>{t('telemetry.respectPrivacy')} </b>
-          {t('telemetry.personalData')}{' '}
-          <DocsLink location="self-managed/optimize-deployment/configuration/telemetry/">
-            {t('common.documentation')}
-          </DocsLink>{' '}
-          {t('telemetry.orView', {
-            policy: t('telemetry.privacyPolicy'),
-            link: 'https://camunda.com/legal/privacy/',
-          })}
-        </p>
+          <p>
+            <b>{t('telemetry.respectPrivacy')} </b>
+            {t('telemetry.personalData')}{' '}
+            <DocsLink location="self-managed/optimize-deployment/configuration/telemetry/">
+              {t('common.documentation')}
+            </DocsLink>{' '}
+            {t('telemetry.orView', {
+              policy: t('telemetry.privacyPolicy'),
+              link: 'https://camunda.com/legal/privacy/',
+            })}
+          </p>
+        </Stack>
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="cancel" onClick={onClose} disabled={isLoading}>

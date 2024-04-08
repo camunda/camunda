@@ -5,14 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.util.List;
+import java.util.function.Supplier;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -41,7 +45,20 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
     this.name = name;
   }
 
+  @JsonIgnore
+  protected abstract List<Supplier<String>> getSearchableDtoFields();
+
   public IdentityDto toIdentityDto() {
     return new IdentityDto(getId(), getType());
+  }
+
+  @JsonIgnore
+  public boolean isIdentityContainsSearchTerm(final String searchTerm) {
+    return StringUtils.isBlank(searchTerm)
+        || getSearchableDtoFields().stream()
+            .anyMatch(
+                searchableField ->
+                    StringUtils.isNotBlank(searchableField.get())
+                        && StringUtils.containsAnyIgnoreCase(searchableField.get(), searchTerm));
   }
 }

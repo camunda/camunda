@@ -27,7 +27,9 @@
     "termsOfUse": "Terms of use",
     "imprint": "Imprint",
     "academy": "Camunda Academy",
-    "feedback": "Feedback and Support"
+    "feedback": "Feedback and Support",
+    "opensearchPreview": "Opensearch preview release",
+    "opensearchWarningText": "This is a preview release of Optimize with OpenSearch support. The data import is fully functional, however the data visualization and evaluation features are in an experimental stage and should not be used for production use-cases."
   },
   "login": {
     "label": "Log in",
@@ -46,7 +48,8 @@
     "notConnected": "is not connected",
     "rightsReserved": "All Rights Reserved",
     "connectionError": "Connection Status Unknown (Cannot establish Websocket connection)",
-    "timezone": "Date and time displayed in local timezone:"
+    "timezone": "Date and time displayed in local timezone:",
+    "database": "Database"
   },
   "license": {
     "label": "License",
@@ -87,7 +90,7 @@
     "noProcessHint": "Create blank dashboard",
     "noXmlHint": "Select process definition to display diagram",
     "blankSlate": {
-      "selectProcess": "Select up to 10 process definitions",
+      "selectProcess": "Select up to {maxNumProcesses} process definitions",
       "selectTemplate": "Select a template",
       "review": "Review your draft dashboard and remove unwanted reports",
       "refine": "Refine your dashboard and reports"
@@ -381,6 +384,27 @@
       "monitorTargetAsMetric-description": "Monitor targets for metrics based on duration, percentage, and count of a process.",
       "monitorTargetsOverTime": "Monitor targets over time",
       "monitorTargetsOverTime-description": "Monitor targets over time on duration, percentage, and count of a process."
+    },
+    "kpiTemplates": {
+      "processKpi": "Process KPI",
+      "create": "Create process KPI",
+      "step": "Step {count}",
+      "selectKpi": "Select process KPI",
+      "automationRate": "Automation rate",
+      "automationRate-description": "The automation rate measures which percentage of the process is executed without human interaction.",
+      "automationRate-filter1": "Select the end events that indicate a fully automated process",
+      "automationRate-filter2": "Select the timeframe for which to evaluate automation rate",
+      "preview": "Preview",
+      "setTargetAndFilters": "Set target and filters",
+      "throughput": "Throughput time",
+      "throughput-description": "The throughput time indicates how long a process on the happy path needs in average to end",
+      "throughput-filter1": "Select the end events that indicate a fully automated process",
+      "throughput-filter2": "Select the timeframe for which to evaluate throughput",
+      "mandatoryFilters": "Mandatory Filters",
+      "filters": {
+        "nodeSelection": "Select end event",
+        "endDate": "Select timeframe"
+      }
     },
     "instanceCount": {
       "appliedFilters": "Applied filters",
@@ -1070,6 +1094,7 @@
     "editAccess": "Edit access",
     "id": "ID",
     "instanceIds": "Instance IDs",
+    "processInstanceIds": "Process instance IDs",
     "seeDocs": "See documentation",
     "undefined": "undefined",
     "null": "null",
@@ -1096,6 +1121,8 @@
     "units": "Units",
     "link": "Link",
     "details": "Details",
+    "nextStep": "Next step",
+    "previousStep": "Previous step",
     "process": {
       "label": "Process",
       "label-plural": "Processes"
@@ -1454,7 +1481,7 @@
       "latest": "Latest",
       "multiple": "Multiple",
       "noDefinition": "No definitions found",
-      "limitReached": "Process definition limit reached. Only 10 processes allowed.",
+      "limitReached": "Process definition limit reached. Only {maxNumProcesses} processes allowed.",
       "select": {
         "process": "Select process",
         "decision": "Select decision",

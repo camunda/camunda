@@ -23,11 +23,11 @@ public class ExternalProcessVariableWriterOS implements ExternalProcessVariableW
 
   @Override
   public void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteExternalVariablesIngestedBefore(final OffsetDateTime timestamp) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
   }
 }

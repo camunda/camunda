@@ -5,6 +5,17 @@
  */
 package org.camunda.optimize.service.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.IntStream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
@@ -22,18 +33,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-
 public class EventIndexRolloverIT extends AbstractPlatformIT {
 
   private static final int NUMBER_OF_EVENTS_IN_BATCH = 10;
@@ -43,10 +42,11 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   @BeforeEach
   public void before() {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEventBasedProcessConfiguration()
-      .getEventImport()
-      .setEnabled(true);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getEventBasedProcessConfiguration()
+        .getEventImport()
+        .setEnabled(true);
   }
 
   @BeforeEach
@@ -54,14 +54,15 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   public void cleanUpEventIndices() {
     databaseIntegrationTestExtension.deleteAllExternalEventIndices();
     databaseIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
-    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
-      new EventIndexES()
-    );
-    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
-      new VariableUpdateInstanceIndexES()
-    );
+    embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .createOrUpdateOptimizeIndex(
+            embeddedOptimizeExtension.getOptimizeDatabaseClient(), new EventIndexES());
+    embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .createOrUpdateOptimizeIndex(
+            embeddedOptimizeExtension.getOptimizeDatabaseClient(),
+            new VariableUpdateInstanceIndexES());
   }
 
   @Test
@@ -74,10 +75,8 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     final List<String> rolledOverIndices = getEventIndexRolloverService().triggerRollover();
 
     // then
-    assertThat(rolledOverIndices).containsExactlyInAnyOrder(
-      EXTERNAL_EVENTS_INDEX_NAME,
-      VARIABLE_UPDATE_INSTANCE_INDEX_NAME
-    );
+    assertThat(rolledOverIndices)
+        .containsExactlyInAnyOrder(EXTERNAL_EVENTS_INDEX_NAME, VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
   }
 
   @Test
@@ -90,11 +89,12 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     final List<String> rolledOverIndices = getEventIndexRolloverService().triggerRollover();
 
     // then
-    assertThat(rolledOverIndices).containsExactlyInAnyOrder(
-      EXTERNAL_EVENTS_INDEX_NAME,
-      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processInstanceEngineDto.getProcessDefinitionKey(),
-      VARIABLE_UPDATE_INSTANCE_INDEX_NAME
-    );
+    assertThat(rolledOverIndices)
+        .containsExactlyInAnyOrder(
+            EXTERNAL_EVENTS_INDEX_NAME,
+            CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX
+                + processInstanceEngineDto.getProcessDefinitionKey(),
+            VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
   }
 
   @Test
@@ -107,73 +107,90 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     importVariableUpdateInstances(3);
     final ProcessInstanceEngineDto processInstanceEngineDto = importCamundaEvents();
     final CamundaActivityEventIndexES camundaActivityIndex =
-      new CamundaActivityEventIndexES(processInstanceEngineDto.getProcessDefinitionKey());
-    final List<String> rolledOverIndicesFirstRollover = getEventIndexRolloverService().triggerRollover();
+        new CamundaActivityEventIndexES(processInstanceEngineDto.getProcessDefinitionKey());
+    final List<String> rolledOverIndicesFirstRollover =
+        getEventIndexRolloverService().triggerRollover();
     List<String> indicesWithExternalEventWriteAliasFirstRollover =
-      getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
+        getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
     List<String> indicesWithCamundaActivityWriteAliasFirstRollover =
-      getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
+        getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
     List<String> indicesWithVariableUpdateInstanceWriteAliasFirstRollover =
-      getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+        getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
 
     // then
-    assertThat(rolledOverIndicesFirstRollover).containsExactlyInAnyOrder(
-      EXTERNAL_EVENTS_INDEX_NAME,
-      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processInstanceEngineDto.getProcessDefinitionKey(),
-      VARIABLE_UPDATE_INSTANCE_INDEX_NAME
-    );
-    assertThat(indicesWithExternalEventWriteAliasFirstRollover).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
-    assertThat(indicesWithCamundaActivityWriteAliasFirstRollover).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
-    assertThat(indicesWithVariableUpdateInstanceWriteAliasFirstRollover).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(rolledOverIndicesFirstRollover)
+        .containsExactlyInAnyOrder(
+            EXTERNAL_EVENTS_INDEX_NAME,
+            CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX
+                + processInstanceEngineDto.getProcessDefinitionKey(),
+            VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+    assertThat(indicesWithExternalEventWriteAliasFirstRollover)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(indicesWithCamundaActivityWriteAliasFirstRollover)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(indicesWithVariableUpdateInstanceWriteAliasFirstRollover)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
 
-    assertThat(getAllStoredExternalEvents())
-      .hasSize(NUMBER_OF_EVENTS_IN_BATCH);
-    // The process start, start event and start of user tasks have been imported, so we expect 3 in ES
-    assertThat(getAllStoredCamundaActivityEventsForDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
-      .hasSize(3);
-    assertThat(getAllStoredVariableUpdateInstanceDtos())
-      .hasSize(3);
+    assertThat(getAllStoredExternalEvents()).hasSize(NUMBER_OF_EVENTS_IN_BATCH);
+    // The process start, start event and start of user tasks have been imported, so we expect 3 in
+    // ES
+    assertThat(
+            getAllStoredCamundaActivityEventsForDefinitionKey(
+                processInstanceEngineDto.getProcessDefinitionKey()))
+        .hasSize(3);
+    assertThat(getAllStoredVariableUpdateInstanceDtos()).hasSize(3);
 
     // when
     ingestExternalEvents();
     importVariableUpdateInstances(3);
     importNextCamundaEventsForProcessInstance(processInstanceEngineDto);
-    final List<String> rolledOverIndicesSecondRollover = getEventIndexRolloverService().triggerRollover();
+    final List<String> rolledOverIndicesSecondRollover =
+        getEventIndexRolloverService().triggerRollover();
     List<String> indicesWithExternalEventWriteAliasSecondRollover =
-      getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
+        getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
     List<String> indicesWithCamundaActivityWriteAliasSecondRollover =
-      getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
+        getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
     List<String> indicesWithVariableUpdateInstanceWriteAliasSecondRollover =
-      getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+        getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
 
     // then
-    assertThat(rolledOverIndicesSecondRollover).containsExactlyInAnyOrder(
-      EXTERNAL_EVENTS_INDEX_NAME,
-      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processInstanceEngineDto.getProcessDefinitionKey(),
-      VARIABLE_UPDATE_INSTANCE_INDEX_NAME
-    );
-    assertThat(indicesWithExternalEventWriteAliasSecondRollover).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
-    assertThat(indicesWithCamundaActivityWriteAliasSecondRollover).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
-    assertThat(indicesWithVariableUpdateInstanceWriteAliasSecondRollover).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
-    assertThat(getAllStoredExternalEvents())
-      .hasSize(NUMBER_OF_EVENTS_IN_BATCH * 2);
+    assertThat(rolledOverIndicesSecondRollover)
+        .containsExactlyInAnyOrder(
+            EXTERNAL_EVENTS_INDEX_NAME,
+            CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX
+                + processInstanceEngineDto.getProcessDefinitionKey(),
+            VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+    assertThat(indicesWithExternalEventWriteAliasSecondRollover)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
+    assertThat(indicesWithCamundaActivityWriteAliasSecondRollover)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
+    assertThat(indicesWithVariableUpdateInstanceWriteAliasSecondRollover)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
+    assertThat(getAllStoredExternalEvents()).hasSize(NUMBER_OF_EVENTS_IN_BATCH * 2);
     // Over the two imports, we expect 3 activities to be imported in the first and 5 in the second
-    assertThat(getAllStoredCamundaActivityEventsForDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
-      .hasSize(8);
-    assertThat(getAllStoredVariableUpdateInstanceDtos())
-      .hasSize(6);
+    assertThat(
+            getAllStoredCamundaActivityEventsForDefinitionKey(
+                processInstanceEngineDto.getProcessDefinitionKey()))
+        .hasSize(8);
+    assertThat(getAllStoredVariableUpdateInstanceDtos()).hasSize(6);
   }
 
   @Test
@@ -195,27 +212,34 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     ingestExternalEvents();
     final ProcessInstanceEngineDto processInstanceEngineDto = importCamundaEvents();
     final CamundaActivityEventIndexES camundaActivityIndex =
-      new CamundaActivityEventIndexES(processInstanceEngineDto.getProcessDefinitionKey());
+        new CamundaActivityEventIndexES(processInstanceEngineDto.getProcessDefinitionKey());
     getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
 
     // when
     getEventIndexRolloverService().triggerRollover();
-    List<String> indicesWithExternalEventWriteAlias = getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
+    List<String> indicesWithExternalEventWriteAlias =
+        getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
     List<String> indicesWithCamundaActivityWriteAlias =
-      getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
+        getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
     List<String> indicesWithVariableUpdateInstanceWriteAlias =
-      getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+        getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
 
     // then
-    assertThat(indicesWithExternalEventWriteAlias).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
-    assertThat(indicesWithCamundaActivityWriteAlias).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
-    assertThat(indicesWithVariableUpdateInstanceWriteAlias).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(indicesWithExternalEventWriteAlias)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(indicesWithCamundaActivityWriteAlias)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(indicesWithVariableUpdateInstanceWriteAlias)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
   }
 
   @Test
@@ -230,9 +254,12 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
 
     // then
     assertThat(getAllStoredExternalEvents()).hasSize(NUMBER_OF_EVENTS_IN_BATCH);
-    // The process start, start event and start of user tasks have been imported, so we expect 3 in ES
-    assertThat(getAllStoredCamundaActivityEventsForDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
-      .hasSize(3);
+    // The process start, start event and start of user tasks have been imported, so we expect 3 in
+    // ES
+    assertThat(
+            getAllStoredCamundaActivityEventsForDefinitionKey(
+                processInstanceEngineDto.getProcessDefinitionKey()))
+        .hasSize(3);
   }
 
   @Test
@@ -247,38 +274,46 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     ingestExternalEvents();
     importNextCamundaEventsForProcessInstance(processInstanceEngineDto);
 
-    // then there are 2 * EXPECTED_NUMBER_OF_EVENTS present (half in the old index and half in the new)
+    // then there are 2 * EXPECTED_NUMBER_OF_EVENTS present (half in the old index and half in the
+    // new)
     assertThat(getAllStoredExternalEvents()).hasSize(NUMBER_OF_EVENTS_IN_BATCH * 2);
     // Over the two imports, we expect 3 activities to be imported in the first and 5 in the second
-    assertThat(getAllStoredCamundaActivityEventsForDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
-      .hasSize(8);
+    assertThat(
+            getAllStoredCamundaActivityEventsForDefinitionKey(
+                processInstanceEngineDto.getProcessDefinitionKey()))
+        .hasSize(8);
   }
 
   @Test
-  public void aliasAssociatedWithCorrectIndexAfterRolloverOfMultipleCamundaActivityIndices() throws IOException {
+  public void aliasAssociatedWithCorrectIndexAfterRolloverOfMultipleCamundaActivityIndices()
+      throws IOException {
     // given
     getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
     final ProcessInstanceEngineDto firstProcessInstanceEngineDto = importCamundaEvents();
     final CamundaActivityEventIndexES firstCamundaActivityIndex =
-      new CamundaActivityEventIndexES(firstProcessInstanceEngineDto.getProcessDefinitionKey());
+        new CamundaActivityEventIndexES(firstProcessInstanceEngineDto.getProcessDefinitionKey());
     final ProcessInstanceEngineDto secondProcessInstanceEngineDto = importCamundaEvents();
     final CamundaActivityEventIndexES secondCamundaActivityIndex =
-      new CamundaActivityEventIndexES(secondProcessInstanceEngineDto.getProcessDefinitionKey());
+        new CamundaActivityEventIndexES(secondProcessInstanceEngineDto.getProcessDefinitionKey());
 
     // when
     getEventIndexRolloverService().triggerRollover();
     List<String> indicesWithFirstCamundaActivityWriteAlias =
-      getAllIndicesWithWriteAlias(firstCamundaActivityIndex.getIndexName());
-    List<String> indicesWithSecondCamundaActivityWriteAlias = getAllIndicesWithWriteAlias(
-      secondCamundaActivityIndex.getIndexName());
+        getAllIndicesWithWriteAlias(firstCamundaActivityIndex.getIndexName());
+    List<String> indicesWithSecondCamundaActivityWriteAlias =
+        getAllIndicesWithWriteAlias(secondCamundaActivityIndex.getIndexName());
 
     // then
-    assertThat(indicesWithFirstCamundaActivityWriteAlias).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
-    assertThat(indicesWithSecondCamundaActivityWriteAlias).hasSize(1)
-      .singleElement()
-      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(indicesWithFirstCamundaActivityWriteAlias)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+    assertThat(indicesWithSecondCamundaActivityWriteAlias)
+        .hasSize(1)
+        .singleElement()
+        .satisfies(
+            indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
   }
 
   private EventIndexRolloverService getEventIndexRolloverService() {
@@ -293,8 +328,10 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     return databaseIntegrationTestExtension.getAllStoredExternalEvents();
   }
 
-  private List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinitionKey(final String indexName) {
-    return databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(indexName);
+  private List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinitionKey(
+      final String indexName) {
+    return databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(
+        indexName);
   }
 
   private List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
@@ -302,64 +339,66 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   }
 
   private void ingestExternalEvents() {
-    final List<CloudEventRequestDto> eventDtos = IntStream.range(0, NUMBER_OF_EVENTS_IN_BATCH)
-      .mapToObj(operand -> ingestionClient.createCloudEventDto())
-      .toList();
+    final List<CloudEventRequestDto> eventDtos =
+        IntStream.range(0, NUMBER_OF_EVENTS_IN_BATCH)
+            .mapToObj(operand -> ingestionClient.createCloudEventDto())
+            .toList();
 
     ingestionClient.ingestEventBatch(eventDtos);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private void importNextCamundaEventsForProcessInstance(final ProcessInstanceEngineDto processInstanceEngineDto) {
+  private void importNextCamundaEventsForProcessInstance(
+      final ProcessInstanceEngineDto processInstanceEngineDto) {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
     importAllEngineEntitiesFromLastIndex();
   }
 
   private void importVariableUpdateInstances(final int count) {
     IntStream.range(0, count)
-      .mapToObj(operand -> createSimpleVariableUpdateInstanceDto(String.valueOf(operand)))
-      .forEach(variableUpdateInstanceDto -> databaseIntegrationTestExtension.addEntryToDatabase(
-        VARIABLE_UPDATE_INSTANCE_INDEX_NAME,
-        variableUpdateInstanceDto.getInstanceId(),
-        variableUpdateInstanceDto
-      ));
+        .mapToObj(operand -> createSimpleVariableUpdateInstanceDto(String.valueOf(operand)))
+        .forEach(
+            variableUpdateInstanceDto ->
+                databaseIntegrationTestExtension.addEntryToDatabase(
+                    VARIABLE_UPDATE_INSTANCE_INDEX_NAME,
+                    variableUpdateInstanceDto.getInstanceId(),
+                    variableUpdateInstanceDto));
 
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private VariableUpdateInstanceDto createSimpleVariableUpdateInstanceDto(final String instanceId) {
     return VariableUpdateInstanceDto.builder()
-      .instanceId(instanceId)
-      .name("someName")
-      .processInstanceId("someProcessInstanceId")
-      .build();
+        .instanceId(instanceId)
+        .name("someName")
+        .processInstanceId("someProcessInstanceId")
+        .build();
   }
 
   private ProcessInstanceEngineDto importCamundaEvents() {
-    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension
-      .deployAndStartProcess(getSingleUserTaskDiagram(
-        "akey",
-        "start_event_id",
-        "end_event_id",
-        "some_user_task"
-      ));
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+        engineIntegrationExtension.deployAndStartProcess(
+            getSingleUserTaskDiagram("akey", "start_event_id", "end_event_id", "some_user_task"));
     importAllEngineEntitiesFromScratch();
     return processInstanceEngineDto;
   }
 
   private List<String> getAllIndicesWithWriteAlias(String indexName) throws IOException {
-    final String aliasNameWithPrefix = embeddedOptimizeExtension.getOptimizeDatabaseClient()
-      .getIndexNameService()
-      .getOptimizeIndexAliasForIndex(indexName);
+    final String aliasNameWithPrefix =
+        embeddedOptimizeExtension
+            .getOptimizeDatabaseClient()
+            .getIndexNameService()
+            .getOptimizeIndexAliasForIndex(indexName);
 
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    Map<String, Set<AliasMetadata>> aliasMap = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-      .getAlias(aliasesRequest).getAliases();
+    Map<String, Set<AliasMetadata>> aliasMap =
+        databaseIntegrationTestExtension
+            .getOptimizeElasticsearchClient()
+            .getAlias(aliasesRequest)
+            .getAliases();
 
-    return aliasMap.keySet()
-      .stream()
-      .filter(index -> aliasMap.get(index).removeIf(AliasMetadata::writeIndex))
-      .toList();
+    return aliasMap.keySet().stream()
+        .filter(index -> aliasMap.get(index).removeIf(AliasMetadata::writeIndex))
+        .toList();
   }
-
 }

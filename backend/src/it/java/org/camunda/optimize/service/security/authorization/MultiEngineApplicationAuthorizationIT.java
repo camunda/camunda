@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.security.EngineAuthenticationProvider.INVALID_CREDENTIALS_ERROR_MESSAGE;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.mockserver.model.HttpRequest.request;
+
 import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -12,17 +18,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.model.HttpError;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.security.EngineAuthenticationProvider.INVALID_CREDENTIALS_ERROR_MESSAGE;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.mockserver.model.HttpRequest.request;
-
 @Tag(OPENSEARCH_PASSING)
 public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT {
 
-  private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  private final AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtension);
+  private final AuthorizationClient defaultAuthorizationClient =
+      new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient secondAuthorizationClient =
+      new AuthorizationClient(secondaryEngineIntegrationExtension);
 
   @Test
   public void authorizedByAtLeastOneEngine() {
@@ -71,7 +73,8 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     // when
     Response response1 = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "123");
     secondaryEngineIntegrationExtension.unlockUser(KERMIT_USER);
-    Response response2 = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
+    Response response2 =
+        embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response1.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -86,7 +89,8 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "wrongPassword");
+    Response response =
+        embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, "wrongPassword");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -102,9 +106,11 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName())
-      .when(request().withPath(".*")).error(HttpError.error().withDropConnection(true));
+        .when(request().withPath(".*"))
+        .error(HttpError.error().withDropConnection(true));
     useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName())
-      .when(request().withPath(".*")).error(HttpError.error().withDropConnection(true));
+        .when(request().withPath(".*"))
+        .error(HttpError.error().withDropConnection(true));
 
     // when
     Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
@@ -112,5 +118,4 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
-
 }

@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.mockserver.model.HttpRequest.request;
+
+import jakarta.ws.rs.core.Response;
+import java.util.stream.Stream;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
@@ -18,22 +24,14 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
-import jakarta.ws.rs.core.Response;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.mockserver.model.HttpRequest.request;
-
 @Tag(OPENSEARCH_PASSING)
 public class HealthRestServiceIT extends AbstractMultiEngineIT {
 
   @Test
   public void getReadiness() {
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetReadinessRequest()
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReadinessRequest().execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -42,10 +40,12 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   @Test
   public void getReadiness_noAuthentication() {
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetReadinessRequest()
-      .withoutAuthentication()
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetReadinessRequest()
+            .withoutAuthentication()
+            .execute();
 
     // then the status is still returned
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -57,9 +57,8 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetReadinessRequest()
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReadinessRequest().execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -74,9 +73,8 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
     mockedResponse.mock(request, Times.unlimited(), engineMockServer);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetReadinessRequest()
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReadinessRequest().execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
@@ -84,17 +82,17 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
 
   @ParameterizedTest
   @MethodSource("engineErrors")
-  public void getReadiness_oneOfMultipleConfiguredEnginesNotConnected(ErrorResponseMock mockedResponse) {
+  public void getReadiness_oneOfMultipleConfiguredEnginesNotConnected(
+      ErrorResponseMock mockedResponse) {
     // given
     addSecondEngineToConfiguration();
     final ClientAndServer secondEngineMockServer =
-      useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName());
+        useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName());
     mockedResponse.mock(request(), Times.unlimited(), secondEngineMockServer);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetReadinessRequest()
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReadinessRequest().execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -104,14 +102,11 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   public void getReadiness_databaseNotConnected() {
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
-    dbMockServer
-      .when(request())
-      .error(HttpError.error().withDropConnection(true));
+    dbMockServer.when(request()).error(HttpError.error().withDropConnection(true));
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetReadinessRequest()
-      .execute();
+    final Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildGetReadinessRequest().execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
@@ -120,5 +115,4 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   private static Stream<ErrorResponseMock> engineErrors() {
     return MockServerUtil.engineMockedErrorResponses();
   }
-
 }

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.event;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
@@ -14,12 +18,6 @@ import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountInd
 import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
-
 public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT {
 
   @BeforeEach
@@ -27,7 +25,8 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
-  protected <T> List<T> getAllStoredDocumentsForIndexAsClass(final String indexName, final Class<T> dtoClass) {
+  protected <T> List<T> getAllStoredDocumentsForIndexAsClass(
+      final String indexName, final Class<T> dtoClass) {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(indexName, dtoClass);
   }
 
@@ -37,16 +36,14 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
 
   protected List<EventTraceStateDto> getAllStoredExternalEventTraceStates() {
     return getAllStoredDocumentsForIndexAsClass(
-      EventTraceStateIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
-      EventTraceStateDto.class
-    );
+        EventTraceStateIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
+        EventTraceStateDto.class);
   }
 
   protected List<EventSequenceCountDto> getAllStoredExternalEventSequenceCounts() {
     return getAllStoredDocumentsForIndexAsClass(
-      EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
-      EventSequenceCountDto.class
-    );
+        EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
+        EventSequenceCountDto.class);
   }
 
   protected void processEventCountAndTraces() {
@@ -57,12 +54,12 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
 
   protected Long getLastProcessedEntityTimestampFromElasticsearch(String definitionKey) {
     final OffsetDateTime lastImportTimestampOfTimestampBasedImportIndex =
-      databaseIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
-        // lowercase as the index names are automatically lowercased and thus the entry contains has a lowercase suffix
-        DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase(),
-        DatabaseConstants.ENGINE_ALIAS_OPTIMIZE
-      );
+        databaseIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
+            // lowercase as the index names are automatically lowercased and thus the entry contains
+            // has a lowercase suffix
+            DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX
+                + definitionKey.toLowerCase(),
+            DatabaseConstants.ENGINE_ALIAS_OPTIMIZE);
     return lastImportTimestampOfTimestampBasedImportIndex.toInstant().toEpochMilli();
   }
-
 }

@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.rest.pub;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
+import jakarta.ws.rs.core.Response;
+import java.util.Optional;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -12,16 +20,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 @Tag(OPENSEARCH_PASSING)
 public class PublicApiReportDeletionIT extends AbstractPlatformIT {
@@ -38,7 +36,9 @@ public class PublicApiReportDeletionIT extends AbstractPlatformIT {
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(SINGLE_PROCESS_REPORT_INDEX_NAME)).isEqualTo(0);
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(SINGLE_PROCESS_REPORT_INDEX_NAME))
+        .isEqualTo(0);
   }
 
   @Test
@@ -63,12 +63,13 @@ public class PublicApiReportDeletionIT extends AbstractPlatformIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard =
-      dashboardClient.getInstantPreviewDashboard(processDefKey, "template1.json");
+        dashboardClient.getInstantPreviewDashboard(processDefKey, "template1.json");
     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
     // when
-    final Response deleteResponse = publicApiClient.deleteReport(instantReportId.get(), ACCESS_TOKEN);
+    final Response deleteResponse =
+        publicApiClient.deleteReport(instantReportId.get(), ACCESS_TOKEN);
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -85,7 +86,9 @@ public class PublicApiReportDeletionIT extends AbstractPlatformIT {
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(SINGLE_DECISION_REPORT_INDEX_NAME)).isEqualTo(0);
+    assertThat(
+            databaseIntegrationTestExtension.getDocumentCountOf(SINGLE_DECISION_REPORT_INDEX_NAME))
+        .isEqualTo(0);
   }
 
   @Test
@@ -101,17 +104,20 @@ public class PublicApiReportDeletionIT extends AbstractPlatformIT {
   }
 
   private void setAccessToken() {
-    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(ACCESS_TOKEN);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOptimizeApiConfiguration()
+        .setAccessToken(ACCESS_TOKEN);
   }
 
   private String findManagementReportId() {
-    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class)
-      .stream()
-      .filter(reportDef -> reportDef.getData().isManagementReport())
-      .findFirst()
-      .map(ReportDefinitionDto::getId)
-      .orElseThrow(() -> new OptimizeIntegrationTestException("No Management Report Found"));
+    return databaseIntegrationTestExtension
+        .getAllDocumentsOfIndexAs(
+            SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class)
+        .stream()
+        .filter(reportDef -> reportDef.getData().isManagementReport())
+        .findFirst()
+        .map(ReportDefinitionDto::getId)
+        .orElseThrow(() -> new OptimizeIntegrationTestException("No Management Report Found"));
   }
-
 }

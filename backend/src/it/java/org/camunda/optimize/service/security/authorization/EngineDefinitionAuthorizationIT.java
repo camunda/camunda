@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.READ_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -40,10 +41,12 @@ import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRe
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.util.SuppressionConstants;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EngineDefinitionAuthorizationIT extends AbstractPlatformIT {
   public static final String PROCESS_KEY = "aProcess";
   public static final String DECISION_KEY = "aDecision";
@@ -511,7 +514,8 @@ public class EngineDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void authorizationForOneGroupIsNotTransferredToOtherGroups(final int definitionResourceType) {
+  public void authorizationForOneGroupIsNotTransferredToOtherGroups(
+      final int definitionResourceType) {
     // given
     final String genzoUser = "genzo";
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

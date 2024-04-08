@@ -37,7 +37,7 @@ jobs:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: "Read Java / Version Info"
       id: pom-info
-      uses: YunaBraska/java-info-action@eee73ae36952eafc3520d2714562f3e1e7a13407 # 1.12.0
+      uses: YunaBraska/java-info-action@a39db57e7ff3656a1ad67b920444363dd1ec11e9 # 2.0.0
     - name: Login to Harbor registry
       uses: ./.github/actions/login-registry
       with:
@@ -51,7 +51,7 @@ jobs:
       with:
         parameters: install -DskipTests -Dskip.docker
     - name: Build and push Docker image
-      uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5
+      uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # v5
       with:
         context: .
         provenance: false
@@ -204,38 +204,15 @@ jobs:
       with:
         archive_name: data-upgrade-test-docker
 
-  # TODO with #11449 once OS project is completed, the step below shall be completely removed
-  setup-database-test-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      database: ${{ steps.set-matrix.outputs.database }}
-    steps:
-      - name: Determine Matrix for Database
-        id: set-matrix
-        run: |
-          if echo "${{ toJSON(github.event.pull_request.labels.*.name) }}" | grep -q "opensearch"; then
-            echo "database=[\"opensearch\", \"elasticsearch\"]" >> $GITHUB_OUTPUT
-          else
-            echo "database=[\"elasticsearch\"]" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Show Database Output
-        run: echo "Executing tests for these databases ${{ steps.set-matrix.outputs.database }}"
-
   integration-tests:
     name: Integration Tests
-    # TODO with #11449 once OS project is completed, remove this dependency
-    needs: setup-database-test-matrix
     runs-on: gcp-core-32-default
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         cambpm: [ 'latest' ]
-        # TODO with #11449 once OS project is completed, this shall be changed to
-        # database: ['elasticsearch', 'opensearch']
-        database: ${{fromJson(needs.setup-database-test-matrix.outputs.database)}}
-        includedGroups: [ 'ccsm-test', 'import,eventBasedProcess', 'reportEvaluation', 'openSearchPassing', '' ]
+        includedGroups: [ 'ccsm-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
         include:
         - includedGroups: 'ccsm-test'
           excludedGroups: ''
@@ -253,16 +230,6 @@ jobs:
           excludedGroups: ''
           profiles: 'it,engine-latest'
           requiresCambpm: true
-        # TODO with #11449 once OS project is completed remove this "includedGroups" section and the "exclude"
-        # section below
-        - includedGroups: 'openSearchPassing'
-          excludedGroups: 'openSearchSingleTestFailOK,openSearchShouldBePassing'
-          profiles: 'it,engine-latest'
-          requiresCambpm: true
-          database: 'opensearch'
-        exclude:
-        - database: 'elasticsearch'
-          includedGroups: 'openSearchPassing'
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Setup Maven
@@ -277,12 +244,8 @@ jobs:
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
     - name: Expose Parsed Elastic Version
-      if: contains(matrix.database, 'elasticsearch')
       run: |
         echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}" >> "$GITHUB_ENV"
-    - name: Expose Parsed OpenSearch Version
-      if: contains(matrix.database, 'opensearch')
-      run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
     - name: Start Cambpm
       if: ${{ matrix.requiresCambpm }}
       uses: ./.github/actions/compose
@@ -293,7 +256,6 @@ jobs:
         CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
         CAMBPM_JVM_MEMORY: 8
     - name: Start Elastic
-      if: contains(matrix.database, 'elasticsearch')
       uses: ./.github/actions/compose
       with:
         compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
@@ -302,16 +264,6 @@ jobs:
         ELASTIC_VERSION: ${{ env.ELASTIC_VERSION }}
         ELASTIC_JVM_MEMORY: 16
         ELASTIC_HTTP_PORT: 9200
-    - name: Start OpenSearch
-      if: contains(matrix.database, 'opensearch')
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
-        project_name: opensearch
-      env:
-        OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
-        OPENSEARCH_JVM_MEMORY: 16
-        OPENSEARCH_HTTP_PORT: 9205
     - name: Verify integration
       uses: ./.github/actions/run-maven
       env:
@@ -323,13 +275,13 @@ jobs:
           -Dit.test.includedGroups=${{ matrix.includedGroups }}
           -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
           -Dfailsafe.rerunFailingTestsCount=2
-          -Ddatabase.type=${{ matrix.database }} -pl backend -am
+          -Ddatabase.type=elasticsearch -pl backend -am
 
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
       with:
-        name: integration-test-${{ matrix.database }}-${{ matrix.includedGroups }}-junit
+        name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
         path: |
           **/failsafe-reports/**/*.xml
         retention-days: 7
@@ -338,7 +290,165 @@ jobs:
       uses: ./.github/actions/docker-logs
       if: always()
       with:
-        archive_name: integration-tests-${{ matrix.database }}-${{ matrix.includedGroups }}-docker
+        archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
+
+  integration-tests-os:
+    name: Integration Tests OpenSearch
+    runs-on: gcp-core-32-default
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        includedGroups: [ 'ccsm-test', 'openSearchPassing' ]
+        include:
+          - includedGroups: 'openSearchPassing'
+            excludedGroups: 'openSearchSingleTestFailOK,openSearchShouldBePassing'
+            profiles: 'it,engine-latest'
+            requiresCambpm: true
+          - includedGroups: 'ccsm-test'
+            excludedGroups: ''
+            profiles: 'ccsm-it'
+            requiresCambpm: false
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Expose Parsed OpenSearch Version
+        run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
+      - name: Start Cambpm
+        if: ${{ matrix.requiresCambpm }}
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          project_name: cambpm
+        env:
+          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+          CAMBPM_JVM_MEMORY: 8
+      - name: Start OpenSearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
+          project_name: opensearch
+        env:
+          OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
+          OPENSEARCH_JVM_MEMORY: 16
+          OPENSEARCH_HTTP_PORT: 9205
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: >
+            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+            -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+            -Dfailsafe.rerunFailingTestsCount=2
+            -Ddatabase.type=opensearch -pl backend -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        with:
+          name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
+
+  integration-tests-os-dev:
+    name: Integration Tests OpenSearch Development
+    runs-on: gcp-core-32-default
+    # checks that the PR isn't closed AND check whether the labeled event contains 'opensearch' as substring || check whether on new commit of PR the label 'opensearch'' is part of label array
+    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'opensearch') || contains( github.event.pull_request.labels.*.name, 'opensearch'))
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        includedGroups: [ 'import,eventBasedProcess', 'reportEvaluation', '' ]
+        include:
+          - includedGroups: ''
+            excludedGroups: 'ccsm-test,import,eventBasedProcess,reportEvaluation'
+            profiles: 'it,engine-latest'
+          - includedGroups: 'import,eventBasedProcess'
+            excludedGroups: ''
+            profiles: 'it,engine-latest'
+          - includedGroups: 'reportEvaluation'
+            excludedGroups: ''
+            profiles: 'it,engine-latest'
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Expose Parsed OpenSearch Version
+        run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
+      - name: Start Cambpm
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          project_name: cambpm
+        env:
+          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+          CAMBPM_JVM_MEMORY: 8
+      - name: Start OpenSearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
+          project_name: opensearch
+        env:
+          OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
+          OPENSEARCH_JVM_MEMORY: 16
+          OPENSEARCH_HTTP_PORT: 9205
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: >
+            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+            -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+            -Dfailsafe.rerunFailingTestsCount=2
+            -Ddatabase.type=opensearch -pl backend -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        with:
+          name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: integration-tests-opensearch-dev-${{ matrix.includedGroups }}-docker
 
   # Only deploy artifacts on push event, which in this case can only be triggered by master and maintenance
   deploy-artifacts:

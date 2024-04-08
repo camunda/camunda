@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
 public abstract class UserTaskDurationByUserTaskEndDateByCandidateGroupReportEvaluationIT
-  extends UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT {
+    extends UserTaskDurationByUserTaskDateByCandidateGroupReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getReportDataType() {
@@ -20,5 +20,4 @@ public abstract class UserTaskDurationByUserTaskEndDateByCandidateGroupReportEva
   protected ProcessGroupByType getGroupByType() {
     return ProcessGroupByType.END_DATE;
   }
-
 }

@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.rest.pub;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.ws.rs.core.Response;
+import java.util.Collections;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.rest.AbstractVariableLabelIT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class PublicApiProcessVariableLabelIT extends AbstractVariableLabelIT {
 
@@ -21,35 +20,35 @@ public class PublicApiProcessVariableLabelIT extends AbstractVariableLabelIT {
 
   @BeforeEach
   public void setup() {
-    embeddedOptimizeExtension.getConfigurationService()
-      .getOptimizeApiConfiguration()
-      .setAccessToken(ACCESS_TOKEN);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOptimizeApiConfiguration()
+        .setAccessToken(ACCESS_TOKEN);
   }
 
   @Test
   public void updateVariableLabelsWithoutAccessToken() {
     // given
-    DefinitionVariableLabelsDto definitionVariableLabelsDto = new DefinitionVariableLabelsDto(
-      PROCESS_DEFINITION_KEY,
-      Collections.emptyList()
-    );
+    DefinitionVariableLabelsDto definitionVariableLabelsDto =
+        new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableLabelRequest(definitionVariableLabelsDto, null)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessVariableLabelRequest(definitionVariableLabelsDto, null)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Override
-  protected Response executeUpdateProcessVariableLabelRequest(final DefinitionVariableLabelsDto labelOptimizeDto) {
+  protected Response executeUpdateProcessVariableLabelRequest(
+      final DefinitionVariableLabelsDto labelOptimizeDto) {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableLabelRequest(labelOptimizeDto, ACCESS_TOKEN)
-      .execute();
+        .getRequestExecutor()
+        .buildProcessVariableLabelRequest(labelOptimizeDto, ACCESS_TOKEN)
+        .execute();
   }
-
 }

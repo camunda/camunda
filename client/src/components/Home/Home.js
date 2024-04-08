@@ -22,6 +22,7 @@ import {
   DashboardTemplateModal,
   EmptyState,
   LoadingIndicator,
+  KpiCreationModal,
 } from 'components';
 import {formatters, createEntity, updateEntity, checkDeleteConflict, loadEntities} from 'services';
 
@@ -39,9 +40,7 @@ export function Home({mightFail, user}) {
   const [deleting, setDeleting] = useState(null);
   const [copying, setCopying] = useState(null);
   const [redirect, setRedirect] = useState(null);
-  const [creatingCollection, setCreatingCollection] = useState(false);
-  const [creatingProcessReport, setCreatingProcessReport] = useState(false);
-  const [creatingDashboard, setCreatingDashboard] = useState(false);
+  const [creating, setCreating] = useState(null);
   const [editingCollection, setEditingCollection] = useState(null);
   const [sorting, setSorting] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,9 +69,6 @@ export function Home({mightFail, user}) {
   useEffect(() => {
     loadList();
   }, [loadList]);
-
-  const startCreatingCollection = () => setCreatingCollection(true);
-  const stopCreatingCollection = () => setCreatingCollection(false);
 
   const startEditingCollection = (editingCollection) => {
     setEditingCollection(editingCollection);
@@ -119,13 +115,11 @@ export function Home({mightFail, user}) {
             icon="dashboard-optimize-accent"
             actions={
               <>
-                <Button size="md" onClick={() => setCreatingDashboard(true)}>
+                <Button size="md" onClick={() => setCreating('dashboard')}>
                   {t('dashboard.createNew')}
                 </Button>
                 <CreateNewButton
-                  createCollection={startCreatingCollection}
-                  createProcessReport={() => setCreatingProcessReport(true)}
-                  createDashboard={() => setCreatingDashboard(true)}
+                  create={setCreating}
                   importEntity={() => fileInput.current.click()}
                 />
               </>
@@ -139,10 +133,8 @@ export function Home({mightFail, user}) {
               isEditor && (
                 <CreateNewButton
                   kind={bulkActive ? 'tertiary' : 'primary'}
-                  createCollection={startCreatingCollection}
-                  createProcessReport={() => setCreatingProcessReport(true)}
-                  createDashboard={() => setCreatingDashboard(true)}
                   importEntity={() => fileInput.current.click()}
+                  create={setCreating}
                 />
               )
             }
@@ -262,12 +254,12 @@ export function Home({mightFail, user}) {
         }}
         onCancel={() => setCopying(null)}
       />
-      {creatingCollection && (
+      {creating === 'collection' && (
         <CollectionModal
           title={t('common.collection.modal.title.new')}
           initialName={t('common.collection.modal.defaultName')}
           confirmText={t('common.collection.modal.createBtn')}
-          onClose={stopCreatingCollection}
+          onClose={() => setCreating(null)}
           onConfirm={(name) => createEntity('collection', {name})}
           showSourcesModal
         />
@@ -285,10 +277,9 @@ export function Home({mightFail, user}) {
           }}
         />
       )}
-      {creatingProcessReport && (
-        <ReportTemplateModal onClose={() => setCreatingProcessReport(false)} />
-      )}
-      {creatingDashboard && <DashboardTemplateModal onClose={() => setCreatingDashboard(false)} />}
+      {creating === 'report' && <ReportTemplateModal onClose={() => setCreating(null)} />}
+      {creating === 'kpi' && <KpiCreationModal onClose={() => setCreating(null)} />}
+      {creating === 'dashboard' && <DashboardTemplateModal onClose={() => setCreating(null)} />}
       <input
         className="hiddenFilterInput"
         onChange={createUploadedEntity}

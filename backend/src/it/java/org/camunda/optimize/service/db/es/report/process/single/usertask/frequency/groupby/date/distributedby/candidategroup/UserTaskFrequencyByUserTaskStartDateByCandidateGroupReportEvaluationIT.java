@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.usertask.frequency.groupby.date.distributedby.candidategroup;
 
+import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -22,15 +28,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
-
 public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluationIT
-  extends UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvaluationIT {
+    extends UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvaluationIT {
 
   @Test
   public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
@@ -45,25 +44,28 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
-      .processInstanceCount(1L)
-      .processInstanceCountWithoutFilters(1L)
-      .measure(ViewProperty.FREQUENCY)
-      .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-      .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
-      .doAssert(result);
+        .processInstanceCount(1L)
+        .processInstanceCountWithoutFilters(1L)
+        .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(referenceDate))
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .distributedByContains(
+            DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
+        .doAssert(result);
   }
 
   @ParameterizedTest
   @MethodSource("getFlowNodeStatusFilterExpectedValues")
-  public void evaluateReportWithFlowNodeStatusFilter(final List<ProcessFilterDto<?>> processFilter,
-                                                     final Double candidateGroup1Count,
-                                                     final Double candidateGroup2Count,
-                                                     final Long expectedInstanceCount) {
+  public void evaluateReportWithFlowNodeStatusFilter(
+      final List<ProcessFilterDto<?>> processFilter,
+      final Double candidateGroup1Count,
+      final Double candidateGroup2Count,
+      final Long expectedInstanceCount) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -75,23 +77,26 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
+    final ProcessReportDataDto reportData =
+        createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(processFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
-      .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.FREQUENCY)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
+    final HyperMapAsserter.GroupByAdder groupByAsserter =
+        HyperMapAsserter.asserter()
+            .processInstanceCount(expectedInstanceCount)
+            .processInstanceCountWithoutFilters(2L)
+            .measure(ViewProperty.FREQUENCY)
+            .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
     if (candidateGroup1Count != null) {
-      groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP_ID, candidateGroup1Count, FIRST_CANDIDATE_GROUP_NAME);
+      groupByAsserter.distributedByContains(
+          FIRST_CANDIDATE_GROUP_ID, candidateGroup1Count, FIRST_CANDIDATE_GROUP_NAME);
     }
     if (candidateGroup2Count != null) {
       groupByAsserter.distributedByContains(
-        SECOND_CANDIDATE_GROUP_ID, candidateGroup2Count, SECOND_CANDIDATE_GROUP_NAME
-      );
+          SECOND_CANDIDATE_GROUP_ID, candidateGroup2Count, SECOND_CANDIDATE_GROUP_NAME);
     }
     groupByAsserter.doAssert(result);
   }
@@ -104,38 +109,46 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
     finishTwoUserTasksWithDifferentCandidateGroups();
 
     final ProcessInstanceEngineDto secondInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
+    final ProcessReportDataDto reportData =
+        createReportData(processDefinition, AggregateByDateUnit.DAY);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+        reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
-      .processInstanceCount(1L)
-      .processInstanceCountWithoutFilters(2L)
-      .measure(ViewProperty.FREQUENCY)
-      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
-      .doAssert(result);
+        .processInstanceCount(1L)
+        .processInstanceCountWithoutFilters(2L)
+        .measure(ViewProperty.FREQUENCY)
+        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+        .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .doAssert(result);
   }
 
   protected static Stream<Arguments> getFlowNodeStatusFilterExpectedValues() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 1., null, 1L),
-      Arguments.of(ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(), 1., 1., 1L),
-      Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1., 1., 1L)
-    );
+        Arguments.of(
+            ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 1., null, 1L),
+        Arguments.of(
+            ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(), 1., 1., 1L),
+        Arguments.of(
+            ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
+            1.,
+            1.,
+            1L));
   }
 
   private String getLocalizedUnassignedLabel() {
-    return embeddedOptimizeExtension.getLocalizationService()
-      .getDefaultLocaleMessageForMissingAssigneeLabel();
+    return embeddedOptimizeExtension
+        .getLocalizationService()
+        .getDefaultLocaleMessageForMissingAssigneeLabel();
   }
 
   @Override
@@ -154,9 +167,11 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
   }
 
   @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                    final String userTaskKey,
-                                    final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  protected void changeUserTaskDate(
+      final ProcessInstanceEngineDto processInstance,
+      final String userTaskKey,
+      final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeFlowNodeStartDate(
+        processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

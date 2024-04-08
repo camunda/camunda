@@ -32,7 +32,7 @@ import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 
-@DisabledIf("isZeebeVersionPre84")
+@DisabledIf("isZeebeVersionPre85")
 public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
   private static final String TEST_PROCESS = "aProcess";
@@ -906,7 +906,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
         zeebeExtension.getZeebeRecordPrefix(),
         ZEEBE_USER_TASK_INDEX_NAME,
-        """
+            """
             if (ctx._source.intent == "CREATED") {
               ctx._source.intent = "ASSIGNED";
               ctx._source.timestamp = ctx._source.timestamp + 1000;
@@ -921,7 +921,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
         zeebeExtension.getZeebeRecordPrefix(),
         ZEEBE_USER_TASK_INDEX_NAME,
-        """
+            """
             if (ctx._source.intent == "CREATED") {
               ctx._source.intent = "UPDATED";
               ctx._source.timestamp = ctx._source.timestamp + 1000;
@@ -937,7 +937,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
         zeebeExtension.getZeebeRecordPrefix(),
         ZEEBE_USER_TASK_INDEX_NAME,
-        """
+            """
             if (ctx._source.intent == "CANCELED") {
               ctx._source.value.assignee = "%s";
             }

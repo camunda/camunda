@@ -5,24 +5,24 @@
  */
 package org.camunda.optimize.service.identity;
 
+import static java.util.stream.Collectors.toList;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.container.ContainerRequestContext;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.rest.cloud.CloudUsersService;
+import org.camunda.optimize.rest.cloud.CCSaaSUserCache;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
@@ -32,20 +32,19 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CCSaaSIdentityService extends AbstractIdentityService
-    implements UserTaskIdentityService {
+public class CCSaaSIdentityService extends AbstractIdentityService {
 
-  private final CloudUsersService usersService;
+  private final CCSaaSUserCache usersCache;
 
   public CCSaaSIdentityService(
-      final ConfigurationService configurationService, final CloudUsersService usersService) {
+      final ConfigurationService configurationService, final CCSaaSUserCache usersCache) {
     super(configurationService);
-    this.usersService = usersService;
+    this.usersCache = usersCache;
   }
 
   @Override
   public Optional<UserDto> getUserById(final String userId) {
-    return usersService.getUserById(userId).map(this::mapToUserDto);
+    return usersCache.getUserById(userId).map(this::mapToUserDto);
   }
 
   @Override
@@ -56,7 +55,14 @@ public class CCSaaSIdentityService extends AbstractIdentityService
 
   @Override
   public Optional<GroupDto> getGroupById(final String groupId) {
+    // Groups do not exist in SaaS
     return Optional.empty();
+  }
+
+  @Override
+  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
+    // Groups do not exist in SaaS
+    return Collections.emptyList();
   }
 
   @Override
@@ -75,40 +81,43 @@ public class CCSaaSIdentityService extends AbstractIdentityService
       final String searchString,
       final int maxResults,
       final boolean excludeUserGroups) {
-    final String lowerCasedSearchString = searchString.toLowerCase(Locale.ENGLISH);
     try {
-      final List<IdentityWithMetadataResponseDto> users =
-          usersService.getAllUsers().stream()
-              .filter(
-                  cloudUser ->
-                      cloudUser
-                              .getName()
-                              .toLowerCase(Locale.ENGLISH)
-                              .contains(lowerCasedSearchString)
-                          || cloudUser
-                              .getEmail()
-                              .toLowerCase(Locale.ENGLISH)
-                              .contains(lowerCasedSearchString))
-              .limit(maxResults)
-              .map(this::mapToUserDto)
-              .collect(Collectors.toList());
-      return new IdentitySearchResultResponseDto(users);
+      if (StringUtils.isBlank(searchString)) {
+        return new IdentitySearchResultResponseDto(
+            usersCache.getAllUsers().stream()
+                .limit(maxResults)
+                .map(this::mapToUserDto)
+                .collect(toList()));
+      } else {
+        return new IdentitySearchResultResponseDto(
+            usersCache.getAllUsers().stream()
+                .filter(
+                    cloudUser ->
+                        cloudUser.getSearchableDtoFields().stream()
+                            .map(Supplier::get)
+                            .anyMatch(
+                                field ->
+                                    StringUtils.isNotBlank(field)
+                                        && StringUtils.containsIgnoreCase(field, searchString)))
+                .limit(maxResults)
+                .map(this::mapToUserDto)
+                .collect(toList()));
+      }
     } catch (final OptimizeRuntimeException e) {
       log.warn("Failed retrieving users.", e);
       return new IdentitySearchResultResponseDto(Collections.emptyList());
     }
   }
 
-  public List<UserDto> getUsersByEmail(final List<String> emails) {
-    final Set<String> lowerCasedEmails =
-        emails.stream().map(email -> email.toLowerCase(Locale.ENGLISH)).collect(Collectors.toSet());
+  public List<UserDto> getUsersByEmail(final Set<String> emails) {
     try {
-      return usersService.getAllUsers().stream()
+      return usersCache.getAllUsers().stream()
           .filter(
               cloudUser ->
-                  lowerCasedEmails.contains(cloudUser.getEmail().toLowerCase(Locale.ENGLISH)))
+                  StringUtils.containsAnyIgnoreCase(
+                      cloudUser.getEmail(), emails.toArray(new String[0])))
           .map(this::mapToUserDto)
-          .collect(Collectors.toList());
+          .toList();
     } catch (final OptimizeRuntimeException e) {
       log.warn("Failed retrieving users.", e);
       return Collections.emptyList();
@@ -116,15 +125,11 @@ public class CCSaaSIdentityService extends AbstractIdentityService
   }
 
   @Override
-  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
-      final String id, final IdentityType type) {
-    return Optional.empty(); // TODO with #11655
-  }
-
-  @Override
-  public List<IdentityWithMetadataResponseDto> getIdentities(
-      final Collection<IdentityDto> identities) {
-    return Collections.emptyList(); // TODO to be implemented with #11655
+  public List<IdentityWithMetadataResponseDto> getUsersById(final Set<String> userIds) {
+    return usersCache.getUsersById(userIds).stream()
+        .map(this::mapToUserDto)
+        .map(IdentityWithMetadataResponseDto.class::cast)
+        .toList();
   }
 
   @NotNull

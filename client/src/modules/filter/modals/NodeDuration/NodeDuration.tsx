@@ -178,7 +178,7 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
     this.props.addFilter({
       type: 'flowNodeDuration',
       data,
-      appliedTo: [this.state.applyTo?.identifier],
+      appliedTo: this.state.applyTo ? [this.state.applyTo.identifier] : [],
     });
   };
 

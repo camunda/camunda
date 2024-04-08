@@ -453,3 +453,36 @@ it('should update local report copy when column rearangement is updated', () => 
     tableColumns: {columnOrder: ['c', 'a', 'b']},
   });
 });
+
+it('should hide bottom raw data panel for table reports', async () => {
+  const node = await shallow(<ReportEdit report={report} />);
+
+  await node.update();
+
+  expect(node.find('.bottomPanel')).not.toExist();
+});
+
+it('should hide bottom raw data panel for empty reports', async () => {
+  const node = await shallow(
+    <ReportEdit
+      {...props}
+      report={{...report, result: undefined, data: {...report.data, visualization: 'number'}}}
+    />
+  );
+
+  expect(node.find('.bottomPanel')).not.toExist();
+});
+
+it('should hide expandButton & report content when expanding bottom panel', async () => {
+  const node = await shallow(
+    <ReportEdit {...props} report={{...report, data: {...report.data, visualization: 'number'}}} />
+  );
+
+  const collapsibleContainer = node.find('CollapsibleContainer').dive();
+
+  collapsibleContainer.find('.expandButton').simulate('click');
+  collapsibleContainer.find('.expandButton').simulate('click');
+
+  expect(collapsibleContainer.find('.expandButton')).not.toExist();
+  expect(node.find('.Report__content').hasClass('hidden')).toBe(true);
+});

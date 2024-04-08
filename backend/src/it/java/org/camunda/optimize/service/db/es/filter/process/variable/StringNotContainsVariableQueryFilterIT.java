@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.filter.process.variable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
+
+import jakarta.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -15,17 +24,10 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
-
+@Tag(OPENSEARCH_PASSING)
 public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
 
   private static final String STRING_VARIABLE_NAME = "secretSauce";
@@ -52,18 +54,19 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(STRING_VARIABLE_NAME, "noMatch");
     final ProcessInstanceEngineDto doesNotMatchValue =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues("ketchup");
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
-      .hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(doesNotMatchValue.getId());
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(doesNotMatchValue.getId());
   }
 
   @Test
@@ -79,7 +82,8 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues("ketchup");
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).isEmpty();
@@ -96,18 +100,19 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
     variables.put(STRING_VARIABLE_NAME, "mustard");
     variables.put("anotherVar", "ketchup");
     final ProcessInstanceEngineDto shouldNotMatch =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues("ketchup");
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
-      .hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(shouldNotMatch.getId());
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactly(shouldNotMatch.getId());
   }
 
   @Test
@@ -121,18 +126,19 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(STRING_VARIABLE_NAME, "ketchup");
     final ProcessInstanceEngineDto noNullValue =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues((String) null);
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
-      .hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(noNullValue.getId());
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(noNullValue.getId());
   }
 
   @Test
@@ -152,18 +158,19 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     variables.put(STRING_VARIABLE_NAME, "mayonnaise");
     final ProcessInstanceEngineDto noneOfTheGivenValuesMatches =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues("ketchup", null, "must");
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
-      .hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(noneOfTheGivenValuesMatches.getId());
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(noneOfTheGivenValuesMatches.getId());
   }
 
   @Test
@@ -175,18 +182,19 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(STRING_VARIABLE_NAME, "12345678910");
     final ProcessInstanceEngineDto shouldMatch =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues("1234567891011");
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
-      .hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(shouldMatch.getId());
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(shouldMatch.getId());
   }
 
   @Test
@@ -200,16 +208,18 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues();
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinition.getKey())
-      .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .setFilter(filter)
-      .build();
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(processDefinition.getKey())
+            .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .setFilter(filter)
+            .build();
+    final Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildEvaluateSingleUnsavedReportRequest(reportData)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -224,18 +234,19 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put(STRING_VARIABLE_NAME, 123);
     final ProcessInstanceEngineDto shouldNotMatch =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues("12");
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
-      .hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(shouldNotMatch.getId());
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(shouldNotMatch.getId());
   }
 
   @Test
@@ -248,30 +259,30 @@ public class StringNotContainsVariableQueryFilterIT extends AbstractFilterIT {
     variables.remove(STRING_VARIABLE_NAME);
     variables.put(STRING_VARIABLE_NAME + "2", "123");
     final ProcessInstanceEngineDto shouldNotMatch =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filter = createNotContainsFilterForValues("12");
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, filter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData())
-      .hasSize(1)
-      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(shouldNotMatch.getId());
+        .hasSize(1)
+        .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+        .containsExactlyInAnyOrder(shouldNotMatch.getId());
   }
 
-  private List<ProcessFilterDto<?>> createNotContainsFilterForValues(final String... valueToFilterFor) {
-    return ProcessFilterBuilder
-      .filter()
-      .variable()
-      .name(STRING_VARIABLE_NAME)
-      .stringType()
-      .values(Arrays.asList(valueToFilterFor))
-      .operator(NOT_CONTAINS)
-      .add()
-      .buildList();
+  private List<ProcessFilterDto<?>> createNotContainsFilterForValues(
+      final String... valueToFilterFor) {
+    return ProcessFilterBuilder.filter()
+        .variable()
+        .name(STRING_VARIABLE_NAME)
+        .stringType()
+        .values(Arrays.asList(valueToFilterFor))
+        .operator(NOT_CONTAINS)
+        .add()
+        .buildList();
   }
-
 }

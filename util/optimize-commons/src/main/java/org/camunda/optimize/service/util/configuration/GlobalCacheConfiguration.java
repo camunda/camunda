@@ -15,4 +15,5 @@ public class GlobalCacheConfiguration {
   private CacheConfiguration eventProcessRoles;
   private CloudUserCacheConfiguration cloudUsers;
   private CacheConfiguration cloudTenantAuthorizations;
+  private CacheConfiguration users;
 }

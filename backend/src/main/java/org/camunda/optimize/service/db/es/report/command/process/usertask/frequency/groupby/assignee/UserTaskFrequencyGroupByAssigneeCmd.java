@@ -34,4 +34,9 @@ public class UserTaskFrequencyGroupByAssigneeCmd extends ProcessCmd<List<MapResu
         .resultAsMap()
         .build();
   }
+
+  @Override
+  public boolean isAssigneeReport() {
+    return true;
+  }
 }

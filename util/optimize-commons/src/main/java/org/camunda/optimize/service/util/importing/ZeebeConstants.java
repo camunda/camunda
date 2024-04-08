@@ -17,6 +17,10 @@ public class ZeebeConstants {
   public static final String ZEEBE_RECORD_TEST_PREFIX = "zeebe-record";
   public static final String ZEEBE_DEFAULT_TENANT_ID = "<default>";
   public static final String ZEEBE_DEFAULT_TENANT_NAME = "Default Tenant";
+  public static final String ZEEBE_OPENSEARCH_EXPORTER =
+      "io.camunda.zeebe.exporter.opensearch.OpensearchExporter";
+  public static final String ZEEBE_ELASTICSEARCH_EXPORTER =
+      "io.camunda.zeebe.exporter.ElasticsearchExporter";
   public static final TenantDto ZEEBE_DEFAULT_TENANT =
       new TenantDto(ZEEBE_DEFAULT_TENANT_ID, ZEEBE_DEFAULT_TENANT_NAME, ZEEBE_DATA_SOURCE);
 }

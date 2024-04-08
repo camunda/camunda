@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import {DataTableSkeleton} from '@carbon/react';
-import classNames from 'classnames';
+import deepEqual from 'fast-deep-equal';
 
 import {useErrorHandling} from 'hooks';
 import {evaluateReport} from 'services';
@@ -16,30 +16,49 @@ import {newReport} from 'config';
 
 import './InstanceViewTable.scss';
 
-export default function InstanceViewTable({report, className}) {
+export default function InstanceViewTable({report}) {
   const {mightFail} = useErrorHandling();
-  const [rawDataReport, setRawDataReport] = useState();
+  const [rawDataReport, setRawDataReport] = useChangedState();
   const [rawDataError, setRawDataError] = useState();
-  const [reportPayload, setReportPayload] = useState(convertToRawData(report));
-  const [params, setParams] = useState();
+
+  const [reportPayload, setReportPayload] = useChangedState(convertToRawData(report));
+  const [params, setParams] = useChangedState();
   const [loading, setLoading] = useState(false);
+  const prevReportRef = useRef(report);
 
   useEffect(() => {
-    mightFail(evaluateReport(reportPayload, [], params), setRawDataReport, setRawDataError, () =>
-      setLoading(false)
-    );
-  }, [mightFail, params, reportPayload]);
+    setReportPayload(convertToRawData(report));
+    prevReportRef.current = report;
+  }, [report, setReportPayload]);
 
-  const loadRawDataReport = useCallback((params, reportWithUpdatedSorting) => {
+  useEffect(() => {
     setLoading(true);
-    setParams(params);
-    if (reportWithUpdatedSorting) {
-      setReportPayload(reportWithUpdatedSorting);
-    }
-  }, []);
+    mightFail(
+      evaluateReport(reportPayload, [], params),
+      (newReportData) => {
+        setRawDataReport(newReportData);
+        setRawDataError();
+      },
+      (error) => {
+        setRawDataError(error);
+        error.reportDefinition && setRawDataReport(error.reportDefinition);
+      },
+      () => setLoading(false)
+    );
+  }, [mightFail, params, reportPayload, setRawDataReport]);
+
+  const loadRawDataReport = useCallback(
+    (params, reportWithUpdatedSorting) => {
+      setParams(params);
+      if (reportWithUpdatedSorting) {
+        setReportPayload(reportWithUpdatedSorting);
+      }
+    },
+    [setParams, setReportPayload]
+  );
 
   return (
-    <div className={classNames('InstanceViewTable', className)}>
+    <div className="InstanceViewTable">
       {!rawDataReport && !rawDataError ? (
         <DataTableSkeleton showToolbar={false} showHeader={false} />
       ) : (
@@ -78,4 +97,14 @@ function convertToRawData(report) {
       visualization: 'table',
     },
   };
+}
+
+function useChangedState(initialState) {
+  const [state, _setState] = useState(initialState);
+
+  const setState = useCallback((newState) => {
+    _setState((prevState) => (deepEqual(prevState, newState) ? prevState : newState));
+  }, []);
+
+  return [state, setState];
 }

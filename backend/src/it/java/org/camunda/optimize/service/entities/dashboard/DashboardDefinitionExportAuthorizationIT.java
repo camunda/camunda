@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.service.entities.dashboard;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
 import jakarta.ws.rs.core.Response;
+import java.util.Collections;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.util.SuperUserType;
@@ -14,19 +20,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Collections;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
 /**
- * These are authIT for the export via UI with user authorization. For the public API, please refer to
- * PublicJsonExportRestServiceIT.
+ * These are authIT for the export via UI with user authorization. For the public API, please refer
+ * to PublicJsonExportRestServiceIT.
  */
 @Tag(OPENSEARCH_PASSING)
-public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
+public class DashboardDefinitionExportAuthorizationIT
+    extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest
   @EnumSource(SuperUserType.class)
@@ -41,8 +41,13 @@ public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImpo
     } else {
       authorizationClient.addKermitUserAndGrantAccessToOptimize();
       authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
-      response = exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
+      embeddedOptimizeExtension
+          .getConfigurationService()
+          .getAuthConfiguration()
+          .getSuperGroupIds()
+          .add(GROUP_ID);
+      response =
+          exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
     }
 
     // then
@@ -57,7 +62,7 @@ public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImpo
 
     // when
     final Response response =
-      exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
+        exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -67,20 +72,24 @@ public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImpo
   public void exportDashboardAsJson_withoutReportDefinitionAuth() {
     // given a dashboard with a report that Kermit is not authorized to access
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getAuthConfiguration()
+        .getSuperUserIds()
+        .add(KERMIT_USER);
     final String defKey =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram()).getKey();
-    final String reportId = reportClient.createSingleReport(
-      null,
-      DefinitionType.PROCESS,
-      defKey,
-      Collections.emptyList()
-    );
-    final String dashboardId = dashboardClient.createDashboard(null, Collections.singletonList(reportId));
+        engineIntegrationExtension
+            .deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram())
+            .getKey();
+    final String reportId =
+        reportClient.createSingleReport(
+            null, DefinitionType.PROCESS, defKey, Collections.emptyList());
+    final String dashboardId =
+        dashboardClient.createDashboard(null, Collections.singletonList(reportId));
 
     // when
     final Response response =
-      exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
+        exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());

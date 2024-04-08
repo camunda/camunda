@@ -164,7 +164,8 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
         alertClient.createAlertAsUser(alertCreationRequestDto, KERMIT_USER, KERMIT_USER);
     final Response editResponse =
         alertClient.editAlertAsUser(alertId, alertCreationRequestDto, KERMIT_USER, KERMIT_USER);
-    final Response deleteResponse = alertClient.deleteAlertAsUser(alertId, KERMIT_USER, KERMIT_USER);
+    final Response deleteResponse =
+        alertClient.deleteAlertAsUser(alertId, KERMIT_USER, KERMIT_USER);
 
     // then
     final SoftAssertions softly = new SoftAssertions();

@@ -5,16 +5,19 @@
  */
 package org.camunda.optimize.service.db.es.report.process.combined;
 
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_DURATION;
+
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_DURATION;
-
-public class CombinedProcessInstanceFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
+public class CombinedProcessInstanceFrequencyByDurationReportIT
+    extends AbstractCombinedDurationReportIT {
 
   @Override
-  protected void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMillis) {
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
+  protected void startInstanceAndModifyRelevantDurations(
+      final String definitionId, final int durationInMillis) {
+    final ProcessInstanceEngineDto processInstance =
+        engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
     changeProcessInstanceDuration(processInstance, durationInMillis);
   }
@@ -23,5 +26,4 @@ public class CombinedProcessInstanceFrequencyByDurationReportIT extends Abstract
   protected ProcessReportDataType getReportDataType() {
     return PROC_INST_FREQ_GROUP_BY_DURATION;
   }
-
 }

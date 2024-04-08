@@ -13,18 +13,14 @@ import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
 interface CreateNewButtonProps {
-  createCollection: () => void;
-  createProcessReport: () => void;
-  createDashboard: () => void;
+  create: (type: 'report' | 'dashboard' | 'kpi' | 'collection') => void;
   collection?: string;
   importEntity: () => void;
   kind?: ComponentProps<typeof MenuButton>['kind'];
 }
 
 export default function CreateNewButton({
-  createCollection,
-  createProcessReport,
-  createDashboard,
+  create,
   collection,
   importEntity,
   kind = 'tertiary',
@@ -45,14 +41,24 @@ export default function CreateNewButton({
       className="CreateNewButton"
     >
       {!collection && (
-        <MenuItem onClick={createCollection} label={t('home.createBtn.collection').toString()} />
+        <MenuItem
+          onClick={() => create('collection')}
+          label={t('home.createBtn.collection').toString()}
+        />
       )}
-      <MenuItem onClick={createDashboard} label={t('home.createBtn.dashboard').toString()} />
+      <MenuItem
+        onClick={() => create('dashboard')}
+        label={t('home.createBtn.dashboard').toString()}
+      />
       {optimizeProfile === 'platform' ? (
         <MenuItem label={t('home.createBtn.report.default').toString()}>
           <MenuItem
-            onClick={createProcessReport}
+            onClick={() => create('report')}
             label={t('home.createBtn.report.process').toString()}
+          />
+          <MenuItem
+            onClick={() => create('kpi')}
+            label={t('report.kpiTemplates.processKpi').toString()}
           />
           <Link to="report/new-combined/edit">
             <MenuItem label={t('home.createBtn.report.combined').toString()} />
@@ -62,10 +68,16 @@ export default function CreateNewButton({
           </Link>
         </MenuItem>
       ) : (
-        <MenuItem
-          onClick={createProcessReport}
-          label={t('home.createBtn.report.default').toString()}
-        />
+        <>
+          <MenuItem
+            onClick={() => create('report')}
+            label={t('home.createBtn.report.default').toString()}
+          />
+          <MenuItem
+            onClick={() => create('kpi')}
+            label={t('report.kpiTemplates.processKpi').toString()}
+          />
+        </>
       )}
       <MenuItem onClick={importEntity} label={t('common.importReportDashboard').toString()} />
     </MenuButton>

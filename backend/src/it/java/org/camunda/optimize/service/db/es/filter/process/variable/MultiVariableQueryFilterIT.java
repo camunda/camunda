@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.filter.process.variable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
@@ -13,15 +20,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.filter.process.AbstractFilterIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-
+@Tag(OPENSEARCH_PASSING)
 public class MultiVariableQueryFilterIT extends AbstractFilterIT {
 
   public final String STRING_VAR_NAME = "stringVar";
@@ -33,33 +35,35 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
   public void multipleVariableFilter_bothConditionsOfOrLogicAreSatisfied() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(STRING_VAR_NAME, "value"));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(STRING_VAR_NAME, "otherValue"));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(STRING_VAR_NAME, "value"));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(STRING_VAR_NAME, "otherValue"));
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos = ProcessFilterBuilder.filter()
-      .variable()
-      .name(STRING_VAR_NAME)
-      .stringType()
-      .values(Collections.singletonList("value"))
-      .operator(IN)
-      .add()
-      .variable()
-      .name(STRING_VAR_NAME)
-      .stringType()
-      .values(Collections.singletonList("otherValue"))
-      .operator(IN)
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(STRING_VAR_NAME)
+            .stringType()
+            .values(Collections.singletonList("value"))
+            .operator(IN)
+            .add()
+            .variable()
+            .name(STRING_VAR_NAME)
+            .stringType()
+            .values(Collections.singletonList("otherValue"))
+            .operator(IN)
+            .add()
+            .buildList();
 
     List<ProcessFilterDto<?>> filter = buildFilter(processFilterDtos);
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(2);
@@ -69,33 +73,35 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
   public void multipleVariableFilter_oneConditionOfOrLogicIsSatisfied() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(DOUBLE_VAR_NAME, 1.0));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(INT_VAR_NAME, 2));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(DOUBLE_VAR_NAME, 1.0));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(INT_VAR_NAME, 2));
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos = ProcessFilterBuilder.filter()
-      .variable()
-      .name(INT_VAR_NAME)
-      .integerType()
-      .operator(IN)
-      .values(Collections.singletonList("2"))
-      .add()
-      .variable()
-      .name(DOUBLE_VAR_NAME)
-      .operator(IN)
-      .doubleType()
-      .values(Collections.singletonList("2.0"))
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(INT_VAR_NAME)
+            .integerType()
+            .operator(IN)
+            .values(Collections.singletonList("2"))
+            .add()
+            .variable()
+            .name(DOUBLE_VAR_NAME)
+            .operator(IN)
+            .doubleType()
+            .values(Collections.singletonList("2.0"))
+            .add()
+            .buildList();
 
     List<ProcessFilterDto<?>> filter = buildFilter(processFilterDtos);
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(1);
@@ -105,33 +111,35 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
   public void multipleVariableFilter_noConditionsOfOrLogicAreSatisfied() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(STRING_VAR_NAME, "otherValue"));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(STRING_VAR_NAME, "otherValue"));
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos = ProcessFilterBuilder.filter()
-      .variable()
-      .name(STRING_VAR_NAME)
-      .stringType()
-      .values(Collections.singletonList("someCondition"))
-      .operator(IN)
-      .add()
-      .variable()
-      .name(INT_VAR_NAME)
-      .operator(IN)
-      .integerType()
-      .values(Collections.singletonList("2"))
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(STRING_VAR_NAME)
+            .stringType()
+            .values(Collections.singletonList("someCondition"))
+            .operator(IN)
+            .add()
+            .variable()
+            .name(INT_VAR_NAME)
+            .operator(IN)
+            .integerType()
+            .values(Collections.singletonList("2"))
+            .add()
+            .buildList();
 
     List<ProcessFilterDto<?>> filter = buildFilter(processFilterDtos);
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).isEmpty();
@@ -141,27 +149,29 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
   public void multipleVariableFilter_onlyOneConditionExistsInTheMultiVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(STRING_VAR_NAME, "otherValue"));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(BOOL_VAR_NAME, true));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(STRING_VAR_NAME, "otherValue"));
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos = ProcessFilterBuilder.filter()
-      .variable()
-      .name(INT_VAR_NAME)
-      .operator(IN)
-      .integerType()
-      .values(Collections.singletonList("1"))
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(INT_VAR_NAME)
+            .operator(IN)
+            .integerType()
+            .values(Collections.singletonList("1"))
+            .add()
+            .buildList();
 
     List<ProcessFilterDto<?>> filter = buildFilter(processFilterDtos);
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(1);
@@ -171,38 +181,38 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
   public void multipleVariableFilter_filtersCorrectlyWhenCombinedWithOtherFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
+    final ProcessInstanceEngineDto processInstance =
+        engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("group");
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos = ProcessFilterBuilder.filter()
-      .variable()
-      .name(INT_VAR_NAME)
-      .operator(IN)
-      .integerType()
-      .values(Collections.singletonList("1"))
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(INT_VAR_NAME)
+            .operator(IN)
+            .integerType()
+            .values(Collections.singletonList("1"))
+            .add()
+            .buildList();
 
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .candidateGroups()
-      .id("group")
-      .inOperator()
-      .add()
-      .multipleVariable()
-      .variableFilters(processFilterDtos)
-      .add()
-      .buildList();
+    List<ProcessFilterDto<?>> filter =
+        ProcessFilterBuilder.filter()
+            .candidateGroups()
+            .id("group")
+            .inOperator()
+            .add()
+            .multipleVariable()
+            .variableFilters(processFilterDtos)
+            .add()
+            .buildList();
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).isEmpty();
@@ -215,22 +225,21 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos = ProcessFilterBuilder.filter()
-      .variable()
-      .name(INT_VAR_NAME)
-      .operator(IN)
-      .integerType()
-      .values(Collections.singletonList("1"))
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(INT_VAR_NAME)
+            .operator(IN)
+            .integerType()
+            .values(Collections.singletonList("1"))
+            .add()
+            .buildList();
 
     List<ProcessFilterDto<?>> filter = buildFilter(processFilterDtos);
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).isEmpty();
@@ -240,25 +249,25 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
   public void multipleVariableFilter_variableInTheFilterDoesNotExist() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos = ProcessFilterBuilder.filter()
-      .variable()
-      .name("varDoesntExist")
-      .operator(IN)
-      .integerType()
-      .values(Collections.singletonList("1"))
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name("varDoesntExist")
+            .operator(IN)
+            .integerType()
+            .values(Collections.singletonList("1"))
+            .add()
+            .buildList();
 
     List<ProcessFilterDto<?>> filter = buildFilter(processFilterDtos);
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).isEmpty();
@@ -268,83 +277,80 @@ public class MultiVariableQueryFilterIT extends AbstractFilterIT {
   public void multipleVariableFilter_twoMultipleVariableFilters() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), Map.of(STRING_VAR_NAME, "stringValue"));
     engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId(),
-      Map.of(STRING_VAR_NAME, "stringValue2", BOOL_VAR_NAME, true)
-    );
+        processDefinition.getId(), Map.of(INT_VAR_NAME, 1));
     engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId(),
-      Map.of(
-        STRING_VAR_NAME,
-        "stringValue",
-        BOOL_VAR_NAME,
-        true,
-        INT_VAR_NAME,
-        1,
-        "stringVar2",
-        "stringValue2"
-      )
-    );
+        processDefinition.getId(), Map.of(STRING_VAR_NAME, "stringValue"));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(), Map.of(STRING_VAR_NAME, "stringValue2", BOOL_VAR_NAME, true));
+    engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId(),
+        Map.of(
+            STRING_VAR_NAME,
+            "stringValue",
+            BOOL_VAR_NAME,
+            true,
+            INT_VAR_NAME,
+            1,
+            "stringVar2",
+            "stringValue2"));
 
     importAllEngineEntitiesFromScratch();
 
-    final List<VariableFilterDto> processFilterDtos1 = ProcessFilterBuilder.filter()
-      .variable()
-      .name(INT_VAR_NAME)
-      .operator(IN)
-      .integerType()
-      .values(Collections.singletonList("1"))
-      .add()
-      .variable()
-      .operator(IN)
-      .name(STRING_VAR_NAME)
-      .stringType()
-      .values(Collections.singletonList("stringValue"))
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos1 =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(INT_VAR_NAME)
+            .operator(IN)
+            .integerType()
+            .values(Collections.singletonList("1"))
+            .add()
+            .variable()
+            .operator(IN)
+            .name(STRING_VAR_NAME)
+            .stringType()
+            .values(Collections.singletonList("stringValue"))
+            .add()
+            .buildList();
 
-    final List<VariableFilterDto> processFilterDtos2 = ProcessFilterBuilder.filter()
-      .variable()
-      .name(BOOL_VAR_NAME)
-      .operator(IN)
-      .booleanTrue()
-      .add()
-      .variable()
-      .name("stringVar2")
-      .stringType()
-      .values(Collections.singletonList("stringValue2"))
-      .operator(IN)
-      .add()
-      .buildList();
+    final List<VariableFilterDto> processFilterDtos2 =
+        ProcessFilterBuilder.filter()
+            .variable()
+            .name(BOOL_VAR_NAME)
+            .operator(IN)
+            .booleanTrue()
+            .add()
+            .variable()
+            .name("stringVar2")
+            .stringType()
+            .values(Collections.singletonList("stringValue2"))
+            .operator(IN)
+            .add()
+            .buildList();
 
-    List<ProcessFilterDto<?>> filter = ProcessFilterBuilder
-      .filter()
-      .multipleVariable()
-      .variableFilters(processFilterDtos1)
-      .add()
-      .multipleVariable()
-      .variableFilters(processFilterDtos2)
-      .add()
-      .buildList();
+    List<ProcessFilterDto<?>> filter =
+        ProcessFilterBuilder.filter()
+            .multipleVariable()
+            .variableFilters(processFilterDtos1)
+            .add()
+            .multipleVariable()
+            .variableFilters(processFilterDtos2)
+            .add()
+            .buildList();
 
     // when
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
-      processDefinition,
-      filter
-    );
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+        evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertThat(result.getData()).hasSize(1);
   }
 
   public List<ProcessFilterDto<?>> buildFilter(final List<VariableFilterDto> processFilterDtos) {
-    return ProcessFilterBuilder
-      .filter()
-      .multipleVariable()
-      .variableFilters(processFilterDtos)
-      .add()
-      .buildList();
+    return ProcessFilterBuilder.filter()
+        .multipleVariable()
+        .variableFilters(processFilterDtos)
+        .add()
+        .buildList();
   }
 }

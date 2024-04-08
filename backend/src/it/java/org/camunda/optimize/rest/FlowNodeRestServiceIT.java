@@ -5,18 +5,20 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-
+@Tag(OPENSEARCH_PASSING)
 public class FlowNodeRestServiceIT extends AbstractPlatformIT {
   private static final String START = "aStart";
   private static final String END = "anEnd";
@@ -24,24 +26,23 @@ public class FlowNodeRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getFlowNodeNamesWithoutAuthentication() {
     // given
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(
-      getSimpleBpmnDiagram(
-        "aProcess",
-        START,
-        END
-      ));
+    final ProcessInstanceEngineDto processInstance =
+        engineIntegrationExtension.deployAndStartProcess(
+            getSimpleBpmnDiagram("aProcess", START, END));
     importAllEngineEntitiesFromScratch();
 
     // when
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
-    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(
+        processInstance.getProcessDefinitionVersion());
 
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetFlowNodeNamesExternal(flowNodeIdsToNamesRequestDto)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetFlowNodeNamesExternal(flowNodeIdsToNamesRequestDto)
+            .withoutAuthentication()
+            .execute();
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
@@ -49,41 +50,33 @@ public class FlowNodeRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getFlowNodesForDefinition() {
     // given
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(
-      getSimpleBpmnDiagram(
-        "aProcess",
-        START,
-        END
-      ));
+    final ProcessInstanceEngineDto processInstance =
+        engineIntegrationExtension.deployAndStartProcess(
+            getSimpleBpmnDiagram("aProcess", START, END));
     importAllEngineEntitiesFromScratch();
 
     // when
-    final FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
+    final FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto =
+        new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
-    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(
+        processInstance.getProcessDefinitionVersion());
 
     FlowNodeNamesResponseDto response = getFlowNodeNamesWithoutAuth(flowNodeIdsToNamesRequestDto);
 
     // then
     assertThat(response.getFlowNodeNames()).hasSize(2);
     assertThat(response.getFlowNodeNames())
-      .containsExactlyEntriesOf(
-        ImmutableMap.of(
-          END, END,
-          START, START
-        )
-      );
+        .containsExactlyEntriesOf(
+            ImmutableMap.of(
+                END, END,
+                START, START));
   }
 
   @Test
   public void getFlowNodesWithNullParameter() {
     // given
-    engineIntegrationExtension.deployAndStartProcess(
-      getSimpleBpmnDiagram(
-        "aProcess1",
-        START,
-        END
-      ));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aProcess1", START, END));
 
     // when
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
@@ -94,11 +87,12 @@ public class FlowNodeRestServiceIT extends AbstractPlatformIT {
     assertThat(response.getFlowNodeNames()).isEmpty();
   }
 
-  private FlowNodeNamesResponseDto getFlowNodeNamesWithoutAuth(FlowNodeIdsToNamesRequestDto requestDto) {
+  private FlowNodeNamesResponseDto getFlowNodeNamesWithoutAuth(
+      FlowNodeIdsToNamesRequestDto requestDto) {
     return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetFlowNodeNamesExternal(requestDto)
-      .withoutAuthentication()
-      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
+        .getRequestExecutor()
+        .buildGetFlowNodeNamesExternal(requestDto)
+        .withoutAuthentication()
+        .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
   }
 }

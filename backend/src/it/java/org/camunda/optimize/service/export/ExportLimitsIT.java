@@ -5,31 +5,6 @@
  */
 package org.camunda.optimize.service.export;
 
-import com.opencsv.CSVReader;
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import org.camunda.optimize.service.util.ProcessReportDataType;
-import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.xcontent.XContentType;
-import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsByteArray;
@@ -37,16 +12,37 @@ import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECOR
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+import com.opencsv.CSVReader;
+import jakarta.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.UUID;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.xcontent.XContentType;
+import org.junit.jupiter.api.Test;
+
 public class ExportLimitsIT extends AbstractPlatformIT {
 
   @Test
   public void exportWithLimit() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreRawReportDefinition(
-      processInstance.getProcessDefinitionKey(),
-      ALL_VERSIONS
-    );
+    String reportId =
+        createAndStoreRawReportDefinition(processInstance.getProcessDefinitionKey(), ALL_VERSIONS);
     deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
 
@@ -66,7 +62,6 @@ public class ExportLimitsIT extends AbstractPlatformIT {
     reader.close();
   }
 
-
   @Test
   public void exportWithBiggerThanDefaultReportLimit() throws Exception {
     // given
@@ -79,7 +74,10 @@ public class ExportLimitsIT extends AbstractPlatformIT {
     addProcessInstancesToElasticsearch(instanceCount, processDefinitionKey);
 
     // the CSV export limit is higher than the default record export limit
-    embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvLimit(highExportCsvLimit);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCsvConfiguration()
+        .setExportCsvLimit(highExportCsvLimit);
 
     // when
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
@@ -98,15 +96,19 @@ public class ExportLimitsIT extends AbstractPlatformIT {
   public void exportWithBiggerThanDefaultElasticsearchPageLimit() throws Exception {
     // given
     final int highExportCsvLimit = DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT + 1;
-    final  ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleProcessDefinition();
+    final ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleProcessDefinition();
     importAllEngineEntitiesFromScratch();
-    final String reportId = createAndStoreRawReportDefinition(processDefinitionEngineDto.getKey(), ALL_VERSIONS);
+    final String reportId =
+        createAndStoreRawReportDefinition(processDefinitionEngineDto.getKey(), ALL_VERSIONS);
 
     // instance count is higher than limit to ensure limit is enforced
     final int instanceCount = 2 * highExportCsvLimit;
     addProcessInstancesToElasticsearch(instanceCount, processDefinitionEngineDto.getKey());
     // the CSV export limit is higher than the max response limit
-    embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvLimit(highExportCsvLimit);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getCsvConfiguration()
+        .setExportCsvLimit(highExportCsvLimit);
 
     // when
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
@@ -121,35 +123,41 @@ public class ExportLimitsIT extends AbstractPlatformIT {
     reader.close();
   }
 
-  private void addProcessInstancesToElasticsearch(final int totalInstanceCount,
-                                                  final String processDefinitionKey) throws IOException {
+  private void addProcessInstancesToElasticsearch(
+      final int totalInstanceCount, final String processDefinitionKey) throws IOException {
     final int maxBulkSize = 10000;
-    final int batchCount = Double.valueOf(Math.ceil((double) totalInstanceCount / maxBulkSize)).intValue();
+    final int batchCount =
+        Double.valueOf(Math.ceil((double) totalInstanceCount / maxBulkSize)).intValue();
 
-    final ProcessInstanceDto processInstanceDto = ProcessInstanceDto.builder()
-      .processDefinitionKey(processDefinitionKey)
-      .processDefinitionVersion("1")
-      .build();
+    final ProcessInstanceDto processInstanceDto =
+        ProcessInstanceDto.builder()
+            .processDefinitionKey(processDefinitionKey)
+            .processDefinitionVersion("1")
+            .build();
 
-    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
-      new ProcessInstanceIndexES(processDefinitionKey)
-    );
+    embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .createOrUpdateOptimizeIndex(
+            embeddedOptimizeExtension.getOptimizeDatabaseClient(),
+            new ProcessInstanceIndexES(processDefinitionKey));
 
     for (int i = 0; i < batchCount; i++) {
       final BulkRequest bulkInsert = new BulkRequest();
       final int alreadyInsertedInstanceCount = i * maxBulkSize;
       final int endOfThisBatchCount = alreadyInsertedInstanceCount + maxBulkSize;
-      for (int j = alreadyInsertedInstanceCount; j < endOfThisBatchCount && j < totalInstanceCount; j++) {
+      for (int j = alreadyInsertedInstanceCount;
+          j < endOfThisBatchCount && j < totalInstanceCount;
+          j++) {
         processInstanceDto.setProcessInstanceId(UUID.randomUUID().toString());
 
         final IndexRequest indexRequest =
-          new IndexRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
-            .id(processInstanceDto.getProcessInstanceId())
-            .source(
-              databaseIntegrationTestExtension.getObjectMapper().writeValueAsString(processInstanceDto),
-              XContentType.JSON
-            );
+            new IndexRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
+                .id(processInstanceDto.getProcessInstanceId())
+                .source(
+                    databaseIntegrationTestExtension
+                        .getObjectMapper()
+                        .writeValueAsString(processInstanceDto),
+                    XContentType.JSON);
 
         bulkInsert.add(indexRequest);
       }
@@ -159,16 +167,16 @@ public class ExportLimitsIT extends AbstractPlatformIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private String createAndStoreRawReportDefinition(String processDefinitionKey,
-                                                   String processDefinitionVersion) {
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .build();
+  private String createAndStoreRawReportDefinition(
+      String processDefinitionKey, String processDefinitionVersion) {
+    ProcessReportDataDto reportData =
+        TemplatedProcessReportDataBuilder.createReportData()
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setProcessDefinitionVersion(processDefinitionVersion)
+            .setReportDataType(ProcessReportDataType.RAW_DATA)
+            .build();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
-      new SingleProcessReportDefinitionRequestDto();
+        new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
     singleProcessReportDefinitionDto.setId("something");
     singleProcessReportDefinitionDto.setLastModifier("something");
@@ -181,7 +189,8 @@ public class ExportLimitsIT extends AbstractPlatformIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(getSimpleBpmnDiagram(), new HashMap<>());
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+        getSimpleBpmnDiagram(), new HashMap<>());
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {

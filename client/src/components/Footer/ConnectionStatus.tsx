@@ -88,7 +88,7 @@ export default function ConnectionStatus() {
               {Object.entries(engineStatus).map(([key, {isConnected, isImporting}]) =>
                 renderListElement(key, isConnected, isImporting)
               )}
-              {renderListElement('Elasticsearch', connectedToElasticsearch, false)}
+              {renderListElement(t('footer.database').toString(), connectedToElasticsearch, false)}
             </>
           </ul>
         )

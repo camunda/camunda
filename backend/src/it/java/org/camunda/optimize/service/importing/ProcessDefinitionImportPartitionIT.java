@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import java.util.stream.IntStream;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 @Tag(OPENSEARCH_PASSING)
 public class ProcessDefinitionImportPartitionIT extends AbstractImportIT {
@@ -24,15 +23,16 @@ public class ProcessDefinitionImportPartitionIT extends AbstractImportIT {
     // more definitions than the max ES boolQuery clause limit (1024)
     final int definitionsToDeploy = 1100;
     IntStream.range(0, definitionsToDeploy)
-      .forEach(defCount -> engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess(
-        "procName_" + defCount), null));
+        .forEach(
+            defCount ->
+                engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+                    getSingleServiceTaskProcess("procName_" + defCount), null));
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
-      .isEqualTo(definitionsToDeploy);
+        .isEqualTo(definitionsToDeploy);
   }
-
 }

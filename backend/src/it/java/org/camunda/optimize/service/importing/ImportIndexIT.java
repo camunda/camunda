@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
+
+import java.util.List;
 import lombok.SneakyThrows;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 
 @Tag(OPENSEARCH_PASSING)
 public class ImportIndexIT extends AbstractImportIT {
@@ -34,11 +33,14 @@ public class ImportIndexIT extends AbstractImportIT {
   public void indexLastTimestampIsEqualEvenAfterReset() throws InterruptedException {
     // given
     final int currentTimeBackOff = 1000;
-    embeddedOptimizeExtension.getConfigurationService().setCurrentTimeBackoffMilliseconds(currentTimeBackOff);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setCurrentTimeBackoffMilliseconds(currentTimeBackOff);
     deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
 
-    // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
+    // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp
+    // stored
     Thread.sleep(currentTimeBackOff);
 
     importAllEngineEntitiesFromScratch();
@@ -72,7 +74,7 @@ public class ImportIndexIT extends AbstractImportIT {
 
     // then
     assertThat(embeddedOptimizeExtension.getImportIndexes())
-      .allSatisfy(index -> assertThat(index).isPositive());
+        .allSatisfy(index -> assertThat(index).isPositive());
   }
 
   @Test
@@ -148,10 +150,13 @@ public class ImportIndexIT extends AbstractImportIT {
 
     // create incident data
     ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+        engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
     incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
-    processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+    processInstanceEngineDto =
+        engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(
+        processInstanceEngineDto.getBusinessKey());
   }
 }

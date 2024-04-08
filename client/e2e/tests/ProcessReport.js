@@ -1248,9 +1248,11 @@ test('Display precision properly', async (t) => {
 
   await u.selectGroupby(t, 'Start date', 'Automatic');
 
-  let a = e.tableCell(19, 1);
-  let b = e.tableCell(19, 2);
-  let c = e.tableCell(19, 3);
+  await t.click(e.nextPageButton);
+
+  let a = e.tableCell(15, 1);
+  let b = e.tableCell(15, 2);
+  let c = e.tableCell(15, 3);
 
   // Default precision for duration is 3
   // shouldn't affect percentage values
@@ -1262,9 +1264,9 @@ test('Display precision properly', async (t) => {
   await t.click(e.limitPrecisionSwitch);
   await t.typeText(e.limitPrecisionInput, '4', {replace: true});
 
-  a = e.tableCell(19, 1);
-  b = e.tableCell(19, 2);
-  c = e.tableCell(19, 3);
+  a = e.tableCell(15, 1);
+  b = e.tableCell(15, 2);
+  c = e.tableCell(15, 3);
 
   await t.expect(a.textContent).match(/\d+/);
   await t.expect(b.textContent).match(/\d(\.\d)?%/);
@@ -1272,9 +1274,9 @@ test('Display precision properly', async (t) => {
 
   await t.typeText(e.limitPrecisionInput, '1', {replace: true});
 
-  a = e.tableCell(19, 1);
-  b = e.tableCell(19, 2);
-  c = e.tableCell(19, 3);
+  a = e.tableCell(15, 1);
+  b = e.tableCell(15, 2);
+  c = e.tableCell(15, 3);
 
   await t.expect(a.textContent).match(/\d+/);
   await t.expect(b.textContent).match(/\d(\.\d)?%/);

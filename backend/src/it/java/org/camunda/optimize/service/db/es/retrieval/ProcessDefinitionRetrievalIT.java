@@ -5,25 +5,27 @@
  */
 package org.camunda.optimize.service.db.es.retrieval;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+
+import jakarta.ws.rs.core.Response;
+import java.util.List;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-
+@Tag(OPENSEARCH_PASSING)
 public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
 
-  private final static String PROCESS_DEFINITION_KEY = "aProcess";
-  private final static String VERSION_TAG = "aVersionTag";
+  private static final String PROCESS_DEFINITION_KEY = "aProcess";
+  private static final String VERSION_TAG = "aVersionTag";
 
   @Test
   public void getProcessDefinitionsWithMoreThanTen() {
@@ -31,7 +33,9 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
       // given
       deploySimpleServiceTaskProcessDefinition(PROCESS_DEFINITION_KEY + System.currentTimeMillis());
     }
-    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(11);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setEngineImportProcessDefinitionXmlMaxPageSize(11);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -50,11 +54,12 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionsRequest()
-        .addSingleQueryParam("includeXml", false)
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .addSingleQueryParam("includeXml", false)
+            .executeAndReturnList(
+                ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions).hasSize(1);
@@ -75,11 +80,12 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionsRequest()
-        .addSingleQueryParam("includeXml", true)
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .addSingleQueryParam("includeXml", true)
+            .executeAndReturnList(
+                ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions).hasSize(1);
@@ -100,11 +106,12 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionsRequest()
-        .addSingleQueryParam("includeXml", false)
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .addSingleQueryParam("includeXml", false)
+            .executeAndReturnList(
+                ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions).hasSize(1);
@@ -135,17 +142,15 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     // @formatter:off
     BpmnModelInstance modelInstance = BpmnModels.getSingleServiceTaskProcess(processId);
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension
-      .deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition =
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    String actualXml = definitionClient.getProcessDefinitionXml(
-      processDefinition.getKey(),
-      processDefinition.getVersionAsString(),
-      null
-    );
+    String actualXml =
+        definitionClient.getProcessDefinitionXml(
+            processDefinition.getKey(), processDefinition.getVersionAsString(), null);
 
     // then
     assertThat(actualXml).isEqualTo(Bpmn.convertToString(modelInstance));
@@ -158,21 +163,23 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
     // @formatter:off
     BpmnModelInstance modelInstance = BpmnModels.getSingleServiceTaskProcess(processId);
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
-    modelInstance = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-        .name("Add name to ensure that this is the latest version!")
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
+    modelInstance =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .name("Add name to ensure that this is the latest version!")
+            .serviceTask()
+            .camundaExpression("${true}")
+            .endEvent()
+            .done();
     // @formatter:on
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    String actualXml = definitionClient.getProcessDefinitionXml(processDefinition.getKey(), ALL_VERSIONS, null);
+    String actualXml =
+        definitionClient.getProcessDefinitionXml(processDefinition.getKey(), ALL_VERSIONS, null);
 
     // then
     assertThat(actualXml).isEqualTo(Bpmn.convertToString(modelInstance));
@@ -188,16 +195,19 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
       deploySimpleServiceTaskProcessDefinition(definitionKey);
     }
 
-    BpmnModelInstance latestModelInstance = Bpmn.createExecutableProcess(definitionKey)
-      .startEvent()
-      .name("Add name to ensure that this is the latest version!")
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
+    BpmnModelInstance latestModelInstance =
+        Bpmn.createExecutableProcess(definitionKey)
+            .startEvent()
+            .name("Add name to ensure that this is the latest version!")
+            .serviceTask()
+            .camundaExpression("${true}")
+            .endEvent()
+            .done();
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(latestModelInstance);
 
-    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(12);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .setEngineImportProcessDefinitionXmlMaxPageSize(12);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -208,20 +218,18 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
   }
 
   private String deploySimpleServiceTaskProcessDefinition(String processId) {
-    return engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSingleServiceTaskProcess(processId));
+    return engineIntegrationExtension.deployProcessAndGetId(
+        BpmnModels.getSingleServiceTaskProcess(processId));
   }
 
   private void addProcessDefinitionWithoutXmlToElasticsearch() {
-    ProcessDefinitionOptimizeDto processDefinitionWithoutXml = ProcessDefinitionOptimizeDto.builder()
-      .id("aProcDefId")
-      .key("aProcDefKey")
-      .version("aProcDefVersion")
-      .build();
+    ProcessDefinitionOptimizeDto processDefinitionWithoutXml =
+        ProcessDefinitionOptimizeDto.builder()
+            .id("aProcDefId")
+            .key("aProcDefKey")
+            .version("aProcDefVersion")
+            .build();
     databaseIntegrationTestExtension.addEntryToDatabase(
-      PROCESS_DEFINITION_INDEX_NAME,
-      "fooId",
-      processDefinitionWithoutXml
-    );
+        PROCESS_DEFINITION_INDEX_NAME, "fooId", processDefinitionWithoutXml);
   }
-
 }

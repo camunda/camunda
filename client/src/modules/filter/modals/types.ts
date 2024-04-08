@@ -7,7 +7,7 @@
 
 import {ReactNode} from 'react';
 
-import {Definition, FilterData, Variable} from 'types';
+import {Definition, FilterData, ProcessFilter, Variable} from 'types';
 
 export type MultipleVarialbeFilterConfig = {
   getValues: (
@@ -69,21 +69,18 @@ export type IncidentFilterType =
   | 'includesClosedIncident'
   | 'doesNotIncludeIncident';
 
-export interface FilterProps<T = FilterData> {
-  addFilter: (filter: FilterProps<T>['filterData']) => void;
+export interface FilterProps<DATA = FilterData> {
+  addFilter: (filter: FilterProps<DATA>['filterData']) => void;
   className?: string;
   close: () => void;
   config?: MultipleVarialbeFilterConfig | undefined;
   definitions: Definition[];
   filterLevel: FilterLevel;
-  filterType: ViewFilterType | InstanceFilterType;
-  filterData?: {
-    type: string;
-    appliedTo: (string | undefined)[];
-    data: T;
-  };
+  filterType: ProcessFilter['type'];
+  filterData?: Omit<ProcessFilter<DATA>, 'filterLevel'>;
   reportIds?: string[];
   forceEnabled?: (...args: any[]) => boolean;
   getPretext?: (...args: any[]) => ReactNode;
   getPosttext?: (...args: any[]) => ReactNode;
+  modalTitle?: ReactNode;
 }

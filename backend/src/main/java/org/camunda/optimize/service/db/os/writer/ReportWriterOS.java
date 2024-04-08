@@ -17,6 +17,7 @@ import static org.camunda.optimize.service.db.schema.index.report.CombinedReport
 import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.json.JsonValue;
 import jakarta.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -328,7 +329,11 @@ public class ReportWriterOS implements ReportWriter {
         OpenSearchWriterUtil.createFieldUpdateScriptParams(
             UPDATABLE_FIELDS, updatedReport, objectMapper);
     // We always update the description, even if the new value is null
-    updateParams.put(DESCRIPTION, JsonData.of(String.valueOf(updatedReport.getDescription())));
+    final JsonData descriptionJson =
+        updatedReport.getDescription() == null
+            ? JsonData.of(JsonValue.NULL)
+            : JsonData.of(updatedReport.getDescription());
+    updateParams.put(DESCRIPTION, descriptionJson);
 
     final Script updateScript =
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(

@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21@sha256:3d91ebae861712f72a6df4a3e6bd8fceb632ba84e0adef4b1ab30dac329dbb4b
+FROM eclipse-temurin:21@sha256:1f64d3e6c88850f2d88982c561954683803e1dec8894e85cda1d1df89de93454
 
 EXPOSE 8090
 

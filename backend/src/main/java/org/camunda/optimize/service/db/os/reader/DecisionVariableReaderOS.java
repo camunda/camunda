@@ -27,7 +27,7 @@ public class DecisionVariableReaderOS implements DecisionVariableReader {
       final String decisionDefinitionKey,
       final List<String> decisionDefinitionVersions,
       final List<String> tenantIds) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
@@ -36,19 +36,19 @@ public class DecisionVariableReaderOS implements DecisionVariableReader {
       final String decisionDefinitionKey,
       final List<String> decisionDefinitionVersions,
       final List<String> tenantIds) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<String> getInputVariableValues(final DecisionVariableValueRequestDto requestDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<String> getOutputVariableValues(final DecisionVariableValueRequestDto requestDto) {
-    log.error("Functionality not implemented for OpenSearch");
+    log.debug("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 }

@@ -5,13 +5,46 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+
+import java.util.Collections;
 import java.util.Set;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
-public interface DefinitionInstanceReader {
+public abstract class DefinitionInstanceReader {
 
-  Set<String> getAllExistingDefinitionKeys(final DefinitionType type);
+  public Set<String> getAllExistingDefinitionKeys(final DefinitionType type) {
+    return getAllExistingDefinitionKeys(type, Collections.emptySet());
+  }
 
-  Set<String> getAllExistingDefinitionKeys(
+  public abstract Set<String> getAllExistingDefinitionKeys(
       final DefinitionType type, final Set<String> instanceIds);
+
+  protected String resolveInstanceIdFieldForType(final DefinitionType type) {
+    return switch (type) {
+      case PROCESS -> ProcessInstanceDto.Fields.processInstanceId;
+      case DECISION -> DecisionInstanceDto.Fields.decisionInstanceId;
+      default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    };
+  }
+
+  protected String resolveDefinitionKeyFieldForType(final DefinitionType type) {
+    return switch (type) {
+      case PROCESS -> ProcessInstanceDto.Fields.processDefinitionKey;
+      case DECISION -> DecisionInstanceDto.Fields.decisionDefinitionKey;
+      default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    };
+  }
+
+  protected String resolveIndexMultiAliasForType(final DefinitionType type) {
+    return switch (type) {
+      case PROCESS -> PROCESS_INSTANCE_MULTI_ALIAS;
+      case DECISION -> DECISION_INSTANCE_MULTI_ALIAS;
+      default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    };
+  }
 }

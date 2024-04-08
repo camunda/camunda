@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import com.google.common.collect.Lists;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
@@ -18,47 +19,52 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
 
-import java.util.List;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CaseInsensitiveAuthenticationMockUtil {
 
-  public static List<HttpRequest> setupCaseInsensitiveAuthentication(final EmbeddedOptimizeExtension embeddedOptimizeExtension,
-                                                                     final EngineIntegrationExtension engineIntegrationExtension,
-                                                                     final ClientAndServer engineMockServer,
-                                                                     final String allUpperCaseUserId,
-                                                                     final String actualUserId) {
+  public static List<HttpRequest> setupCaseInsensitiveAuthentication(
+      final EmbeddedOptimizeExtension embeddedOptimizeExtension,
+      final EngineIntegrationExtension engineIntegrationExtension,
+      final ClientAndServer engineMockServer,
+      final String allUpperCaseUserId,
+      final String actualUserId) {
     // a case-insensitive authentication backend (e.g. LDAP)
-    final HttpRequest authenticateRequestWithUppercaseUserId = HttpRequest.request()
-      .withPath(engineIntegrationExtension.getEnginePath() + "/identity/verify")
-      .withBody(embeddedOptimizeExtension.toJsonString(new CredentialsRequestDto(allUpperCaseUserId, actualUserId)));
+    final HttpRequest authenticateRequestWithUppercaseUserId =
+        HttpRequest.request()
+            .withPath(engineIntegrationExtension.getEnginePath() + "/identity/verify")
+            .withBody(
+                embeddedOptimizeExtension.toJsonString(
+                    new CredentialsRequestDto(allUpperCaseUserId, actualUserId)));
     engineMockServer
-      .when(authenticateRequestWithUppercaseUserId)
-      .respond(
-        HttpResponse
-          .response()
-          .withBody(
-            // engine API returns userId with same case as passed in
-            embeddedOptimizeExtension.toJsonString(
-              AuthenticationResultDto.builder().authenticatedUser(allUpperCaseUserId).isAuthenticated(true).build()
-            ),
-            MediaType.APPLICATION_JSON
-          )
-      );
+        .when(authenticateRequestWithUppercaseUserId)
+        .respond(
+            HttpResponse.response()
+                .withBody(
+                    // engine API returns userId with same case as passed in
+                    embeddedOptimizeExtension.toJsonString(
+                        AuthenticationResultDto.builder()
+                            .authenticatedUser(allUpperCaseUserId)
+                            .isAuthenticated(true)
+                            .build()),
+                    MediaType.APPLICATION_JSON));
 
     // and case-insensitive user by id retrieval from the same backend
-    final HttpRequest getUserByUppercaseIdRequest = HttpRequest.request()
-      .withPath(engineIntegrationExtension.getEnginePath() + "/user/" + allUpperCaseUserId + "/profile");
+    final HttpRequest getUserByUppercaseIdRequest =
+        HttpRequest.request()
+            .withPath(
+                engineIntegrationExtension.getEnginePath()
+                    + "/user/"
+                    + allUpperCaseUserId
+                    + "/profile");
     engineMockServer
-      .when(getUserByUppercaseIdRequest)
-      .respond(
-        HttpResponse
-          .response()
-          .withBody(
-            // here the correct case userId should get returned
-            embeddedOptimizeExtension.toJsonString(EngineListUserDto.builder().id(actualUserId).build()),
-            MediaType.APPLICATION_JSON
-          ));
+        .when(getUserByUppercaseIdRequest)
+        .respond(
+            HttpResponse.response()
+                .withBody(
+                    // here the correct case userId should get returned
+                    embeddedOptimizeExtension.toJsonString(
+                        EngineListUserDto.builder().id(actualUserId).build()),
+                    MediaType.APPLICATION_JSON));
 
     return Lists.newArrayList(authenticateRequestWithUppercaseUserId, getUserByUppercaseIdRequest);
   }

@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
+
+import jakarta.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-
-import jakarta.ws.rs.core.Response;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 
 @Tag(OPENSEARCH_PASSING)
 public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
@@ -31,11 +30,12 @@ public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
     variableRequestDto.setProcessDefinitionVersion("boka");
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto), false)
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto), false)
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -44,10 +44,8 @@ public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getVariableNames() {
     // when
-    List<ProcessVariableNameResponseDto> responseList = variablesClient.getProcessVariableNames(
-      "akey",
-      "aVersion"
-    );
+    List<ProcessVariableNameResponseDto> responseList =
+        variablesClient.getProcessVariableNames("akey", "aVersion");
 
     // then
     assertThat(responseList.isEmpty()).isTrue();
@@ -60,7 +58,8 @@ public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
     variableRequestDto.setProcessDefinitionKey("akey");
 
     // when
-    List<ProcessVariableNameResponseDto> responseList = variablesClient.getProcessVariableNames(variableRequestDto);
+    List<ProcessVariableNameResponseDto> responseList =
+        variablesClient.getProcessVariableNames(variableRequestDto);
 
     // then
     assertThat(responseList.isEmpty()).isTrue();
@@ -69,11 +68,12 @@ public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getVariableValuesWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableValuesRequest(new ProcessVariableValueRequestDto())
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessVariableValuesRequest(new ProcessVariableValueRequestDto())
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -104,13 +104,13 @@ public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
     requestDto.setType(BOOLEAN);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessVariableValuesRequest(requestDto)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildProcessVariableValuesRequest(requestDto)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
-
 }

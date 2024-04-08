@@ -7,6 +7,8 @@
 
 import {post} from 'request';
 
+import {GenericReport, SingleDecisionReport, SingleProcessReport} from 'types';
+
 interface ConfigParams {
   processDefinitionKey: string;
   processDefinitionVersions: string[];
@@ -32,4 +34,39 @@ export async function loadRawData(config: ConfigParams): Promise<Blob> {
   const response = await post('api/export/csv/process/rawData/data', config);
 
   return await response.blob();
+}
+
+type DeepPartial<T> = {
+  [P in keyof T]?: DeepPartial<T[P]>;
+};
+
+export interface ReportPayload<T>
+  extends Omit<DeepPartial<SingleProcessReport | SingleDecisionReport>, 'reportType'> {
+  reportType: T;
+}
+
+type ObjectType<T> = T extends 'process'
+  ? SingleProcessReport
+  : T extends 'decision'
+    ? SingleDecisionReport
+    : never;
+
+export async function evaluateReport<T extends 'process' | 'decision'>(
+  payload: ReportPayload<T> | GenericReport,
+  filter = [],
+  query = {}
+): Promise<ObjectType<T>> {
+  let response;
+
+  if (typeof payload !== 'object') {
+    // evaluate saved report
+    response = await post(`api/report/${payload}/evaluate`, {filter}, {query});
+  } else {
+    // evaluate unsaved report
+    // we dont want to send report result in payload to prevent exceedeing request size limit
+    const {result, ...evaluationPayload} = payload;
+    response = await post(`api/report/evaluate/`, evaluationPayload, {query});
+  }
+
+  return await response.json();
 }

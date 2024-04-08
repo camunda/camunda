@@ -3,8 +3,8 @@ set -ex
 echo "IS_DRY_RUN=${IS_DRY_RUN}"
 echo "IS_RC=${IS_RC}"
 
-git config user.name "github-actions[bot]"
-git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+git config user.name "${GITHUB_ACTOR}"
+git config user.email "${GITHUB_APP_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
 git remote set-url origin "https://${GITHUB_APP_ID}:${GITHUB_APP_PRIVATE_KEY}@github.com/camunda/camunda-optimize.git"
 git fetch
 git checkout $BRANCH

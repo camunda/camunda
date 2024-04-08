@@ -5,7 +5,19 @@
  */
 package org.camunda.optimize.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_PER_GROUP_BY_NONE;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -24,26 +36,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 
-import jakarta.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_PER_GROUP_BY_NONE;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
-
 @Tag(OPENSEARCH_PASSING)
 public class AlertRestServiceIT extends AbstractAlertIT {
 
   @RegisterExtension
   @Order(5)
   protected final LogCapturer logCapturer =
-    LogCapturer.create().forLevel(Level.DEBUG).captureForType(AlertService.class);
+      LogCapturer.create().forLevel(Level.DEBUG).captureForType(AlertService.class);
 
   private static final String TEST = "test";
 
@@ -54,11 +53,12 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void createNewAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildCreateAlertRequest(null)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildCreateAlertRequest(null)
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -67,10 +67,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void cantCreateWithoutReport() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(new AlertCreationRequestDto())
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateAlertRequest(new AlertCreationRequestDto())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -87,10 +88,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     alert.setReportId(TEST);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(id, alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildUpdateAlertRequest(id, alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -104,10 +103,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -122,10 +119,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
-    String id = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    String id =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateAlertRequest(alert)
+            .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(id).isNotNull();
@@ -134,53 +132,56 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void createNewAlertWithForPercentageReport() {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
-    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
-    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
-      TemplatedProcessReportDataBuilder.createReportData()
-        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
-        .setProcessDefinitionKey(processDefinition.getKey())
-        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-        .build()
-    );
+    String collectionId =
+        collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition =
+        deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef =
+        new SingleProcessReportDefinitionRequestDto(
+            TemplatedProcessReportDataBuilder.createReportData()
+                .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+                .setProcessDefinitionKey(processDefinition.getKey())
+                .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+                .build());
     reportDef.setCollectionId(collectionId);
     final String reportId = reportClient.createSingleProcessReport(reportDef);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     alert.setThreshold(50.);
 
     // when
-    String id = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    String id =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateAlertRequest(alert)
+            .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(id).isNotNull();
   }
 
   @ParameterizedTest
-  @ValueSource(doubles = { 101.0, -1.0 })
+  @ValueSource(doubles = {101.0, -1.0})
   public void createNewAlertWithThresholdNotInValidRange(final double threshold) {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
-    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
-    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
-      TemplatedProcessReportDataBuilder.createReportData()
-        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
-        .setProcessDefinitionKey(processDefinition.getKey())
-        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-        .build()
-    );
+    String collectionId =
+        collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition =
+        deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef =
+        new SingleProcessReportDefinitionRequestDto(
+            TemplatedProcessReportDataBuilder.createReportData()
+                .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+                .setProcessDefinitionKey(processDefinition.getKey())
+                .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+                .build());
     reportDef.setCollectionId(collectionId);
     final String reportId = reportClient.createSingleProcessReport(reportDef);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     alert.setThreshold(threshold);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -189,43 +190,45 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void createNewAlertWithNullThreshold() {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
-    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
-    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
-      TemplatedProcessReportDataBuilder.createReportData()
-        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
-        .setProcessDefinitionKey(processDefinition.getKey())
-        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-        .build()
-    );
+    String collectionId =
+        collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition =
+        deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef =
+        new SingleProcessReportDefinitionRequestDto(
+            TemplatedProcessReportDataBuilder.createReportData()
+                .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+                .setProcessDefinitionKey(processDefinition.getKey())
+                .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+                .build());
     reportDef.setCollectionId(collectionId);
     final String reportId = reportClient.createSingleProcessReport(reportDef);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     alert.setThreshold(null);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
-  @ValueSource(doubles = { 101.0, -1.0 })
+  @ValueSource(doubles = {101.0, -1.0})
   public void updateAlertWithThresholdNotInValidRange(final double threshold) {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
-    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
-    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
-      TemplatedProcessReportDataBuilder.createReportData()
-        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
-        .setProcessDefinitionKey(processDefinition.getKey())
-        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-        .build()
-    );
+    String collectionId =
+        collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition =
+        deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef =
+        new SingleProcessReportDefinitionRequestDto(
+            TemplatedProcessReportDataBuilder.createReportData()
+                .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+                .setProcessDefinitionKey(processDefinition.getKey())
+                .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+                .build());
     reportDef.setCollectionId(collectionId);
     final String reportId = reportClient.createSingleProcessReport(reportDef);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -234,10 +237,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
     // when
     alert.setThreshold(threshold);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(savedAlert, alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(savedAlert, alert)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -246,15 +250,17 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void updateAlertWithNullThreshold() {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
-    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
-    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto(
-      TemplatedProcessReportDataBuilder.createReportData()
-        .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
-        .setProcessDefinitionKey(processDefinition.getKey())
-        .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-        .build()
-    );
+    String collectionId =
+        collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final ProcessDefinitionEngineDto processDefinition =
+        deployAndStartSimpleServiceTaskProcess(DEFAULT_DEFINITION_KEY);
+    SingleProcessReportDefinitionRequestDto reportDef =
+        new SingleProcessReportDefinitionRequestDto(
+            TemplatedProcessReportDataBuilder.createReportData()
+                .setReportDataType(PROC_INST_PER_GROUP_BY_NONE)
+                .setProcessDefinitionKey(processDefinition.getKey())
+                .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+                .build());
     reportDef.setCollectionId(collectionId);
     final String reportId = reportClient.createSingleProcessReport(reportDef);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
@@ -263,10 +269,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
     // when
     alert.setThreshold(null);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(savedAlert, alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(savedAlert, alert)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -275,30 +282,27 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void createNewAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    String collectionId =
+        collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
     alert.setEmails(new ArrayList<>());
     alert.setWebhook(null);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.readEntity(String.class))
-      .contains("The fields [emails] and [webhook] are not allowed to both be empty");
+        .contains("The fields [emails] and [webhook] are not allowed to both be empty");
 
     // when
     alert.setEmails(new ArrayList<>());
     alert.setWebhook("foo");
-    response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute();
+    response =
+        embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -306,10 +310,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // when
     alert.setEmails(Collections.singletonList("foo@bar.com"));
     alert.setWebhook(null);
-    response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute();
+    response =
+        embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
@@ -325,10 +327,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     alert.setThreshold(Double.MAX_VALUE);
 
     // when
-    String id = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(alert)
-      .execute(String.class, Response.Status.OK.getStatusCode());
+    String id =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildCreateAlertRequest(alert)
+            .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(id).isNotNull();
@@ -337,11 +340,12 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void updateAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildUpdateAlertRequest("1", new AlertCreationRequestDto())
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildUpdateAlertRequest("1", new AlertCreationRequestDto())
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -355,12 +359,13 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String reportId = createNumberReportForCollection(collectionId, definitionType);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest("nonExistingId", alertClient.createSimpleAlert(reportId))
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateAlertRequest("nonExistingId", alertClient.createSimpleAlert(reportId))
+            .execute();
 
-    // then 
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
@@ -374,12 +379,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String id = alertClient.createAlert(alert);
     alert.setEmails(Collections.singletonList("new@camunda.com"));
 
-
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(id, alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildUpdateAlertRequest(id, alert).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -388,7 +390,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void updateAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    String collectionId =
+        collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
     String alertId = alertClient.createAlert(alert);
@@ -396,23 +399,25 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // when
     alert.setEmails(new ArrayList<>());
     alert.setWebhook(null);
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(alertId, alert)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(alertId, alert)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(response.readEntity(String.class))
-      .contains("The fields [emails] and [webhook] are not allowed to both be empty");
+        .contains("The fields [emails] and [webhook] are not allowed to both be empty");
 
     // when
     alert.setEmails(new ArrayList<>());
     alert.setWebhook("foo");
-    response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(alertId, alert)
-      .execute();
+    response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(alertId, alert)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -420,10 +425,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // when
     alert.setEmails(Collections.singletonList("foo@bar.com"));
     alert.setWebhook(null);
-    response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(alertId, alert)
-      .execute();
+    response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(alertId, alert)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -439,7 +445,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String id = alertClient.createAlert(alert);
 
     // when
-    List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId);
+    List<AlertDefinitionDto> allAlerts =
+        alertClient.getAlertsForCollectionAsDefaultUser(collectionId);
 
     // then
     assertThat(allAlerts.size()).isEqualTo(1);
@@ -449,11 +456,12 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void deleteAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildDeleteAlertRequest("1124")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildDeleteAlertRequest("1124")
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -465,14 +473,13 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId, 1, AlertIntervalUnit.HOURS);
+    AlertCreationRequestDto alert =
+        alertClient.createSimpleAlert(reportId, 1, AlertIntervalUnit.HOURS);
     String id = alertClient.createAlert(alert);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteAlertRequest(id)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension.getRequestExecutor().buildDeleteAlertRequest(id).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -482,10 +489,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void deleteNonExistingAlert() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteAlertRequest("nonExistingId")
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildDeleteAlertRequest("nonExistingId")
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -494,11 +502,12 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void bulkDeleteAlertsNoAuthentication() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildBulkDeleteAlertsRequest(Collections.emptyList())
-      .withoutAuthentication()
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildBulkDeleteAlertsRequest(Collections.emptyList())
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
@@ -515,11 +524,12 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildBulkDeleteAlertsRequest(Arrays.asList(alertId1, alertId2))
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildBulkDeleteAlertsRequest(Arrays.asList(alertId1, alertId2))
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -528,10 +538,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void bulkDeleteEmptyListOfAlerts() {
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildBulkDeleteAlertsRequest(Collections.emptyList())
-      .execute();
+    Response response =
+        embeddedOptimizeExtension
+            .getRequestExecutor()
+            .buildBulkDeleteAlertsRequest(Collections.emptyList())
+            .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -565,7 +576,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void bulkDeleteAlertsOnlyDeletesAlertsThatExistInBulk(final DefinitionType definitionType) {
+  public void bulkDeleteAlertsOnlyDeletesAlertsThatExistInBulk(
+      final DefinitionType definitionType) {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
@@ -573,12 +585,13 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 
     // when
-    Response response = alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, "doesntExist", alertId2));
+    Response response =
+        alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, "doesntExist", alertId2));
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertThat(alertClient.getAllAlerts()).isEmpty();
-    logCapturer.assertContains("Cannot find alert with id [doesntExist], it may have been deleted already");
+    logCapturer.assertContains(
+        "Cannot find alert with id [doesntExist], it may have been deleted already");
   }
-
 }

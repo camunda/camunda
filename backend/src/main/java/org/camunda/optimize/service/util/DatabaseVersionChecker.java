@@ -34,16 +34,6 @@ public abstract class DatabaseVersionChecker {
   private static final EnumMap<Database, List<String>> databaseSupportedVersionsMap =
       new EnumMap<>(Database.class);
 
-  static {
-    databaseSupportedVersionsMap.put(
-        Database.ELASTICSEARCH,
-        List.of(
-            "7.10.0", "7.11.0", "7.12.0", "7.13.0", "7.14.0", "7.15.0", "7.16.2", "7.17.0",
-            "8.9.0"));
-    databaseSupportedVersionsMap.put(
-        Database.OPENSEARCH, List.of("2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0"));
-  }
-
   private static final Comparator<String> MAJOR_COMPARATOR =
       Comparator.comparingInt(major -> Integer.parseInt(getMajorVersionFrom(major)));
   private static final Comparator<String> MINOR_COMPARATOR =
@@ -52,6 +42,17 @@ public abstract class DatabaseVersionChecker {
       Comparator.comparingInt(patch -> Integer.parseInt(getPatchVersionFrom(patch)));
   private static final Comparator<String> LATEST_VERSION_COMPARATOR =
       MAJOR_COMPARATOR.thenComparing(MINOR_COMPARATOR).thenComparing(PATCH_COMPARATOR);
+
+  static {
+    databaseSupportedVersionsMap.put(
+        Database.ELASTICSEARCH,
+        List.of(
+            "7.10.0", "7.11.0", "7.12.0", "7.13.0", "7.14.0", "7.15.0", "7.16.2", "7.17.0",
+            "8.9.0"));
+    databaseSupportedVersionsMap.put(
+        Database.OPENSEARCH,
+        List.of("2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"));
+  }
 
   public static void checkESVersionSupport(
       final RestHighLevelClient esClient, final RequestOptions requestOptions) throws IOException {
@@ -66,16 +67,16 @@ public abstract class DatabaseVersionChecker {
 
   private static void checkDatabaseVersionSupported(
       final String currentVersion, final Database database) {
-    List<String> supportedVersions = databaseSupportedVersionsMap.get(database);
+    final List<String> supportedVersions = databaseSupportedVersionsMap.get(database);
     if (!isCurrentVersionSupported(currentVersion, supportedVersions)) {
       if (doesVersionNeedWarning(currentVersion, getLatestSupportedVersion(supportedVersions))) {
         log.warn(
             String.format(
                 """
-                                  The version of %1$s you're using is not officially supported by Camunda Optimize.
-                                  We can not guarantee full functionality.
-                                  Please check the technical guide for the list of supported %1$s versions
-                                 """,
+                     The version of %1$s you're using is not officially supported by Camunda Optimize.
+                     We can not guarantee full functionality.
+                     Please check the technical guide for the list of supported %1$s versions
+                    """,
                 database));
 
       } else {
@@ -86,31 +87,31 @@ public abstract class DatabaseVersionChecker {
   }
 
   public static boolean doesVersionNeedWarning(
-      String currentVersion, String latestSupportedVersion) {
+      final String currentVersion, final String latestSupportedVersion) {
     return (Integer.parseInt(getMajorVersionFrom(currentVersion))
             == Integer.parseInt(getMajorVersionFrom(latestSupportedVersion)))
         && (Integer.parseInt(getMinorVersionFrom(currentVersion))
             > Integer.parseInt(getMinorVersionFrom(latestSupportedVersion)));
   }
 
-  public static boolean isCurrentElasticsearchVersionSupported(String currentVersion) {
+  public static boolean isCurrentElasticsearchVersionSupported(final String currentVersion) {
     return isCurrentVersionSupported(
         currentVersion, databaseSupportedVersionsMap.get(Database.ELASTICSEARCH));
   }
 
-  public static boolean isCurrentOpenSearchVersionSupported(String currentVersion) {
+  public static boolean isCurrentOpenSearchVersionSupported(final String currentVersion) {
     return isCurrentVersionSupported(
         currentVersion, databaseSupportedVersionsMap.get(Database.OPENSEARCH));
   }
 
   private static boolean isCurrentVersionSupported(
-      String currentVersion, List<String> supportedVersions) {
-    String currentMajorAndMinor = getMajorAndMinor(currentVersion);
+      final String currentVersion, final List<String> supportedVersions) {
+    final String currentMajorAndMinor = getMajorAndMinor(currentVersion);
     return supportedVersions.stream()
         .anyMatch(
             v -> {
-              String neededVersion = stripToPlainVersion(v);
-              String neededMajorAndMinor = getMajorAndMinor(neededVersion);
+              final String neededVersion = stripToPlainVersion(v);
+              final String neededMajorAndMinor = getMajorAndMinor(neededVersion);
 
               return currentMajorAndMinor.equals(neededMajorAndMinor)
                   && Integer.parseInt(getPatchVersionFrom(currentVersion))
@@ -126,22 +127,22 @@ public abstract class DatabaseVersionChecker {
     return getLatestSupportedVersion(databaseSupportedVersionsMap.get(Database.OPENSEARCH));
   }
 
-  private static String getLatestSupportedVersion(List<String> supportedVersions) {
+  private static String getLatestSupportedVersion(final List<String> supportedVersions) {
     return supportedVersions.stream()
         .max(LATEST_VERSION_COMPARATOR)
         .orElseThrow(() -> new IllegalStateException("No supported versions found"));
   }
 
   private static String buildUnsupportedErrorMessage(
-      String dbVersion, Database database, List<String> supportedVersions) {
-    StringBuilder message =
+      final String dbVersion, final Database database, final List<String> supportedVersions) {
+    final StringBuilder message =
         new StringBuilder(database + " version is not supported by Optimize.\n");
 
     message
         .append("Current version of Optimize supports the following ")
         .append(database)
         .append(" versions:\n");
-    for (String version : supportedVersions) {
+    for (final String version : supportedVersions) {
       message.append(version).append("+\n");
     }
 
@@ -151,6 +152,6 @@ public abstract class DatabaseVersionChecker {
 
   enum Database {
     ELASTICSEARCH,
-    OPENSEARCH;
+    OPENSEARCH
   }
 }

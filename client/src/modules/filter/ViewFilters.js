@@ -10,8 +10,14 @@ import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import classNames from 'classnames';
 
 import {t} from 'translation';
+import {useUiConfig} from 'hooks';
 
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
+    'userTaskAssigneeAnalyticsEnabled',
+    'optimizeProfile'
+  );
+
   return (
     <MenuDropdown
       size="sm"
@@ -48,16 +54,20 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
         label={t('common.filter.types.incident')}
         onClick={openNewFilterModal('incident')}
       />
-      <MenuItem
-        label={t('report.groupBy.userAssignee')}
-        disabled={processDefinitionIsNotSelected}
-        onClick={openNewFilterModal('assignee')}
-      />
-      <MenuItem
-        label={t('report.groupBy.userGroup')}
-        disabled={processDefinitionIsNotSelected}
-        onClick={openNewFilterModal('candidateGroup')}
-      />
+      {userTaskAssigneeAnalyticsEnabled && (
+        <MenuItem
+          label={t('report.groupBy.userAssignee')}
+          disabled={processDefinitionIsNotSelected}
+          onClick={openNewFilterModal('assignee')}
+        />
+      )}
+      {optimizeProfile === 'platform' && (
+        <MenuItem
+          label={t('report.groupBy.userGroup')}
+          disabled={processDefinitionIsNotSelected}
+          onClick={openNewFilterModal('candidateGroup')}
+        />
+      )}
       <MenuItem
         label={t('common.filter.types.flowNodeSelection')}
         disabled={processDefinitionIsNotSelected}
