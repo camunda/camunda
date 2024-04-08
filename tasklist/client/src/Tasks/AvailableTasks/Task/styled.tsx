@@ -15,11 +15,15 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Stack as BaseStack} from '@carbon/react';
+import {forwardRef} from 'react';
+import {Calendar} from '@carbon/icons-react';
+import {
+  Stack as BaseStack,
+  PopoverContent as BasePopoverContent,
+} from '@carbon/react';
 import {NavLink} from 'react-router-dom';
 import styles from './styles.module.scss';
 import cn from 'classnames';
-import {forwardRef} from 'react';
 
 type LabelProps = {
   $variant: 'primary' | 'secondary';
@@ -46,21 +50,23 @@ const Label: React.FC<React.ComponentProps<'span'> & LabelProps> = ({
 
 type RowProps = {
   $direction?: 'row' | 'column';
+  $alignItems?: 'flex-end';
 };
 
 const Row: React.FC<React.ComponentProps<'div'> & RowProps> = ({
   className = '',
   children,
   $direction,
+  $alignItems,
   ...rest
 }) => (
   <div
     {...rest}
-    className={cn(
-      className,
-      styles.flex,
-      $direction === 'row' ? styles.flexRow : styles.flexColumn,
-    )}
+    className={cn(className, styles.flex, {
+      [styles.flexRow]: $direction === 'row',
+      [styles.flexColumn]: $direction !== 'row',
+      [styles.alignItemsEnd]: $alignItems === 'flex-end',
+    })}
   >
     {children}
   </div>
@@ -115,4 +121,29 @@ const DateLabel: React.FC<React.ComponentProps<typeof Label>> = ({
   </Label>
 );
 
-export {Row, Label, TaskLink, Stack, Container, SkeletonContainer, DateLabel};
+const PopoverContent: React.FC<
+  React.ComponentProps<typeof BasePopoverContent>
+> = ({className = '', children, ...rest}) => (
+  <BasePopoverContent
+    {...rest}
+    className={cn(className, styles.popoverContent)}
+  >
+    {children}
+  </BasePopoverContent>
+);
+
+const InlineCalender: React.FC<React.ComponentProps<typeof Calendar>> = ({
+  ...rest
+}) => <Calendar className={styles.inlineIcon} {...rest} />;
+
+export {
+  Row,
+  Label,
+  TaskLink,
+  Stack,
+  Container,
+  SkeletonContainer,
+  DateLabel,
+  PopoverContent,
+  InlineCalender,
+};

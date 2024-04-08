@@ -44,6 +44,13 @@ const createWrapper = (
 };
 
 describe('<Task />', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({now: Date.parse('2024-05-30T00:00:00.000Z')});
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should render task', () => {
     render(
       <Task
@@ -66,9 +73,10 @@ describe('<Task />', () => {
 
     expect(screen.getByText('name')).toBeInTheDocument();
     expect(screen.getByText('processName')).toBeInTheDocument();
-    expect(
-      screen.getByTitle('Created at 29 May 2024 - 02:00 PM'),
-    ).toBeInTheDocument();
+    expect(screen.getByTitle('Created Yesterday at 14:00')).toBeInTheDocument();
+    expect(screen.getByTitle('Created Yesterday at 14:00')).toHaveTextContent(
+      'Yesterday, 14:00',
+    );
     expect(screen.getByText('Me')).toBeInTheDocument();
   });
 
@@ -102,8 +110,8 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationDate="invalid date"
-        assignee={currentUser.userId}
         context="My Task"
+        assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
         completionDate={null}
@@ -125,8 +133,8 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        assignee={currentUser.userId}
         context="My Task"
+        assignee={currentUser.userId}
         followUpDate={null}
         dueDate={null}
         completionDate={null}
@@ -277,7 +285,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="name"
+        context="My Task"
         assignee={currentUser.userId}
         followUpDate={null}
         dueDate={yesterdaysDate}

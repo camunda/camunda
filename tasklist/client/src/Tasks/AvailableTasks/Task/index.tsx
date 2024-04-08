@@ -16,13 +16,13 @@
  */
 
 import React, {useMemo} from 'react';
-import {Row, Label, TaskLink, Stack, Container, DateLabel} from './styled';
 import {pages} from 'modules/routing';
 import {formatDate} from 'modules/utils/formatDate';
+import {formatISODateTime} from 'modules/utils/formatDateRelative';
 import {CurrentUser, Task as TaskType} from 'modules/types';
 import {useLocation, useMatch} from 'react-router-dom';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
-import {BodyCompact} from 'modules/components/FontTokens';
+import {BodyCompact, HeadingCompact} from 'modules/components/FontTokens';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {
@@ -33,6 +33,8 @@ import {
 } from '@carbon/icons-react';
 import {compareAsc} from 'date-fns';
 import {unraw} from 'modules/utils/unraw';
+import {Row, Label, TaskLink, Stack, Container} from './styled';
+import {DateLabelWithPopover} from './DateLabelWithPopover';
 
 type Props = {
   taskId: TaskType['id'];
@@ -56,7 +58,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
       processName,
       context,
       assignee,
-      creationDate,
+      creationDate: creationDateString,
       followUpDate,
       dueDate,
       completionDate,
@@ -72,6 +74,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const location = useLocation();
     const isActive = match?.params?.id === taskId;
     const {filter, sortBy} = useTaskFilters();
+    const creationDate = formatISODateTime(creationDateString);
     const hasCompletionDate =
       completionDate !== null && formatDate(completionDate) !== '';
     const hasDueDate = dueDate !== null && formatDate(dueDate) !== '';
@@ -126,15 +129,13 @@ const Task = React.forwardRef<HTMLElement, Props>(
             pathname: pages.taskDetails(taskId),
             search: searchWithRefTag.toString(),
           }}
-          aria-label={
+          aria-label={`${
             isAssigned
-              ? `${
-                  isAssignedToCurrentUser
-                    ? `Task assigned to me`
-                    : 'Assigned task'
-                }: ${name}`
-              : `Unassigned task: ${name}`
-          }
+              ? isAssignedToCurrentUser
+                ? 'Task assigned to me'
+                : 'Assigned task'
+              : 'Unassigned task'
+          }: ${name}`}
         >
           <Stack data-testid={`task-${taskId}`} gap={3} ref={ref}>
             <Row>
@@ -157,23 +158,36 @@ const Task = React.forwardRef<HTMLElement, Props>(
                 <AssigneeTag currentUser={currentUser} assignee={assignee} />
               </Label>
             </Row>
-            <Row data-testid="creation-time" $direction="row">
-              {formatDate(creationDate) === '' ? null : (
-                <DateLabel
-                  $variant="primary"
-                  title={`Created at ${formatDate(creationDate)}`}
-                >
-                  <Stack orientation="vertical" gap={1}>
-                    <Label $variant="secondary">Created</Label>
-                    <Stack orientation="horizontal" gap={2}>
-                      <Calendar />
-                      {formatDate(creationDate)}
+            <Row
+              data-testid="creation-time"
+              $direction="row"
+              $alignItems="flex-end"
+            >
+              {creationDate ? (
+                <DateLabelWithPopover
+                  title={
+                    ['week', 'months', 'years'].includes(
+                      creationDate.relative.resolution,
+                    )
+                      ? `Created on ${creationDate.relative.speech}`
+                      : `Created ${creationDate.relative.speech}`
+                  }
+                  popoverContent={
+                    <Stack orientation="vertical" gap={2}>
+                      <HeadingCompact>Created on</HeadingCompact>
+                      <BodyCompact>{creationDate.absolute.text}</BodyCompact>
                     </Stack>
-                  </Stack>
-                </DateLabel>
-              )}
+                  }
+                  align="top-left"
+                >
+                  <Calendar
+                    style={{verticalAlign: 'text-bottom', marginRight: '4px'}}
+                  />
+                  {creationDate.relative.text}
+                </DateLabelWithPopover>
+              ) : null}
               {showFollowupDate ? (
-                <DateLabel
+                <Label
                   $variant="primary"
                   title={`Follow-up at ${formatDate(followUpDate!, false)}`}
                 >
@@ -184,10 +198,10 @@ const Task = React.forwardRef<HTMLElement, Props>(
                       {formatDate(followUpDate!, false)}
                     </Stack>
                   </Stack>
-                </DateLabel>
+                </Label>
               ) : null}
               {showDueDate ? (
-                <DateLabel
+                <Label
                   $variant="primary"
                   title={
                     isOverdue
@@ -211,10 +225,10 @@ const Task = React.forwardRef<HTMLElement, Props>(
                       </>
                     )}
                   </Stack>
-                </DateLabel>
+                </Label>
               ) : null}
               {showCompletionDate ? (
-                <DateLabel
+                <Label
                   $variant="primary"
                   title={`Completed at ${formatDate(completionDate!, false)}`}
                 >
@@ -225,7 +239,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
                       {formatDate(completionDate!, false)}
                     </Stack>
                   </Stack>
-                </DateLabel>
+                </Label>
               ) : null}
             </Row>
           </Stack>

@@ -125,7 +125,7 @@ describe('<Tasks />', () => {
       withinFirstTask.getByText(firstTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinFirstTask.getByTitle('Created at 28 May 2024 - 10:11 AM'),
+      withinFirstTask.getByTitle('Created on 28th of May at 10:11'),
     ).toBeInTheDocument();
     expect(await withinFirstTask.findByText('Me')).toBeInTheDocument();
 
@@ -134,7 +134,7 @@ describe('<Tasks />', () => {
       withinSecondTask.getByText(secondTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinSecondTask.getByTitle('Created at 29 May 2024 - 01:14 PM'),
+      withinSecondTask.getByTitle('Created on 29th of May at 13:14'),
     ).toBeInTheDocument();
     expect(withinSecondTask.getByText('mustermann')).toBeInTheDocument();
   });

@@ -291,6 +291,57 @@ declare module '@carbon/react' {
       | 'right';
   }>;
 
+  interface PopoverContext {
+    setFloating: React.Ref<HTMLSpanElement>;
+    caretRef: React.Ref<HTMLSpanElement>;
+    autoAlign: boolean | null;
+  }
+
+  type PopoverAlignment =
+    | 'top'
+    | 'top-left' // deprecated
+    | 'top-right' // deprecated
+    | 'bottom'
+    | 'bottom-left' // deprecated
+    | 'bottom-right' // deprecated
+    | 'left'
+    | 'left-bottom' // deprecated
+    | 'left-top' // deprecated
+    | 'right'
+    | 'right-bottom' // deprecated
+    | 'right-top' // deprecated
+    // new values to match floating-ui
+    | 'top-start'
+    | 'top-end'
+    | 'bottom-start'
+    | 'bottom-end'
+    | 'left-end'
+    | 'left-start'
+    | 'right-end'
+    | 'right-start';
+
+  interface PopoverBaseProps {
+    align?: PopoverAlignment;
+    autoAlign?: boolean;
+    caret?: boolean;
+    children?: React.ReactNode;
+    className?: string;
+    dropShadow?: boolean;
+    highContrast?: boolean;
+    isTabTip?: boolean;
+    onRequestClose?: () => void;
+    open: boolean;
+  }
+
+  type PopoverProps<E extends ElementType> = PolymorphicProps<
+    E,
+    PopoverBaseProps
+  >;
+
+  export const Popover = React.FC<PopoverProps<'span'>>;
+
+  export const PopoverContent = React.FC<React.HTMLAttributes<HTMLSpanElement>>;
+
   export * from 'carbon-components-react';
 }
 

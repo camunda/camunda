@@ -15,75 +15,37 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled, {css} from 'styled-components';
+import {Popover} from '@carbon/react';
+import {ReactNode, useCallback, useState} from 'react';
+import {Label, PopoverContent} from './styled';
 
-const textOverflowStyles = css`
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-type BaseProps = {
-  $showEllipsisOnOverflow?: boolean;
+const DateLabelWithPopover: React.FC<{
+  title: string;
+  popoverContent: ReactNode;
+  children: ReactNode;
+  align: (typeof Popover)['align'];
+}> = ({title, popoverContent, children, align}) => {
+  const [popOverOpen, setPopOverOpen] = useState(false);
+  const onMouseEnter = useCallback(() => {
+    setPopOverOpen(true);
+  }, []);
+  const onMouseLeave = useCallback(() => {
+    setPopOverOpen(false);
+  }, []);
+  return (
+    <Popover
+      open={popOverOpen}
+      align={align}
+      caret
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <Label $variant="primary" title={title}>
+        {children}
+      </Label>
+      <PopoverContent>{popoverContent}</PopoverContent>
+    </Popover>
+  );
 };
 
-type Props = {
-  $color?: 'primary' | 'secondary';
-  $variant?: '01' | '02';
-};
-
-const BodyCompact = styled.span<Props & BaseProps>`
-  ${({
-    theme,
-    $color = 'primary',
-    $variant = '01',
-    $showEllipsisOnOverflow,
-  }) => css`
-    color: var(--cds-text-${$color});
-    ${$variant === '01' ? theme.bodyShort01 : theme.bodyShort02};
-    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
-  `}
-`;
-
-const BodyLong = styled.span<Props & BaseProps>`
-  ${({
-    theme,
-    $color = 'primary',
-    $variant = '01',
-    $showEllipsisOnOverflow,
-  }) => css`
-    color: var(--cds-text-${$color});
-    ${$variant === '01' ? theme.bodyLong01 : theme.bodyLong02};
-    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
-  `}
-`;
-
-const HeadingCompact = styled.span<Props & BaseProps>`
-  ${({
-    theme,
-    $color = 'primary',
-    $variant = '01',
-    $showEllipsisOnOverflow,
-  }) => css`
-    color: var(--cds-text-${$color});
-    ${$variant === '01' ? theme.heading01 : theme.heading02};
-    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
-  `}
-`;
-
-const Label = styled.span<Props & BaseProps>`
-  ${({
-    theme,
-    $color = 'primary',
-    $variant = '01',
-    $showEllipsisOnOverflow,
-  }) => css`
-    display: inline-flex;
-    align-items: center;
-    color: var(--cds-text-${$color});
-    ${$variant === '01' ? theme.label01 : theme.label02};
-    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
-  `}
-`;
-
-export {BodyCompact, HeadingCompact, Label, BodyLong};
+export {DateLabelWithPopover};
