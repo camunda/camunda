@@ -12,7 +12,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 
 @FieldNameConstants(asEnum = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -21,5 +20,4 @@ import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 public class MetadataDto implements OptimizeDto, Serializable {
   private String schemaVersion;
   private String installationId;
-  private OptimizeProfile optimizeProfile;
 }

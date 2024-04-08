@@ -16,7 +16,6 @@ import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
@@ -46,43 +45,14 @@ public class DatabaseMetadataVersionIT extends AbstractPlatformIT {
             metadata -> {
               assertThat(metadata.getSchemaVersion()).isEqualTo(expectedVersion);
               assertThat(metadata.getInstallationId()).isNotNull();
-              assertThat(metadata.getOptimizeProfile().getId())
-                  .isEqualTo(OptimizeProfile.PLATFORM.getId());
             });
-  }
-
-  @Test
-  public void verifyNotStartingIfProfileDoesNotMatch() {
-    // when
-    startAndUseNewOptimizeInstance();
-
-    final MetadataDto metadataDto = getMetadataDto().get();
-    metadataDto.setOptimizeProfile(OptimizeProfile.CCSM);
-    databaseIntegrationTestExtension.addEntryToDatabase(
-        METADATA_INDEX_NAME, MetadataIndex.ID, metadataDto);
-
-    assertThatThrownBy(
-            () -> {
-              ConfigurableApplicationContext context = SpringApplication.run(Main.class);
-              context.close();
-            })
-        .cause()
-        .cause()
-        .hasMessageContaining(
-            "The mode Optimize has saved in the database, ["
-                + OptimizeProfile.CCSM
-                + "], does not match the current running mode, ["
-                + OptimizeProfile.PLATFORM
-                + "].");
-
-    databaseIntegrationTestExtension.deleteAllOptimizeData();
   }
 
   @Test
   public void verifyNotStartingIfVersionDoesNotMatch() {
     databaseIntegrationTestExtension.deleteAllOptimizeData();
 
-    MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID, OptimizeProfile.PLATFORM);
+    MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID);
     databaseIntegrationTestExtension.addEntryToDatabase(
         METADATA_INDEX_NAME, MetadataIndex.ID, meta);
     assertThatThrownBy(

@@ -14,9 +14,10 @@ import DurationTargetInput from './DurationTargetInput';
 interface TargetSelectionProps {
   report: SingleProcessReport | SingleDecisionReport;
   onChange: (change: Spec<SingleReportConfiguration>) => void;
+  hideBaseLine?: boolean;
 }
 
-export default function TargetSelection({report, onChange}: TargetSelectionProps) {
+export default function TargetSelection({report, onChange, hideBaseLine}: TargetSelectionProps) {
   const {configuration, view} = report.data;
   const targetValue = configuration.targetValue;
   const isPercentageReport = view.properties.includes('percentage');
@@ -37,6 +38,7 @@ export default function TargetSelection({report, onChange}: TargetSelectionProps
           onChange={(type, value) =>
             onChange({targetValue: {countProgress: {[type]: {$set: value}}}})
           }
+          hideBaseLine={hideBaseLine}
         />
       ) : (
         <DurationTargetInput
@@ -46,6 +48,7 @@ export default function TargetSelection({report, onChange}: TargetSelectionProps
           onChange={(type, subType, value) =>
             onChange({targetValue: {durationProgress: {[type]: {[subType]: {$set: value}}}}})
           }
+          hideBaseLine={hideBaseLine}
         />
       )}
     </>

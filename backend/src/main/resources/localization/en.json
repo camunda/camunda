@@ -386,6 +386,7 @@
       "monitorTargetsOverTime-description": "Monitor targets over time on duration, percentage, and count of a process."
     },
     "kpiTemplates": {
+      "processKpi": "Process KPI",
       "create": "Create process KPI",
       "step": "Step {count}",
       "selectKpi": "Select process KPI",
@@ -395,10 +396,15 @@
       "automationRate-filter2": "Select the timeframe for which to evaluate automation rate",
       "preview": "Preview",
       "setTargetAndFilters": "Set target and filters",
-      "throughput": "Throughput",
-      "throughput-description": "The throughput indicates how long a process on the happy path needs in average to end",
+      "throughput": "Throughput time",
+      "throughput-description": "The throughput time indicates how long a process on the happy path needs in average to end",
       "throughput-filter1": "Select the end events that indicate a fully automated process",
-      "throughput-filter2": "Select the timeframe for which to evaluate throughput"
+      "throughput-filter2": "Select the timeframe for which to evaluate throughput",
+      "mandatoryFilters": "Mandatory Filters",
+      "filters": {
+        "nodeSelection": "Select end event",
+        "endDate": "Select timeframe"
+      }
     },
     "instanceCount": {
       "appliedFilters": "Applied filters",

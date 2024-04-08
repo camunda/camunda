@@ -1,12 +1,14 @@
-## Copy tiles directly on a dashboard
-Optimize allows the copying of any existing tile directly on the dashboard. This allows you to e.g., compare certain variants of the process with each other easily. The report tile can be copied with its configuration. The configuration of the new tile can be adjusted to certain variants for comparison with the initial report.
+## Process KPI Wizard
+The KPI wizard is the new way to build a KPI Report quickly. The wizard already contains predefined KPIs that can be selected. It guides the users through the needed customizations and generates a Optimize report. The list of predefined KPIs will be extended with upcoming releases. Start setting up a first Process KPI now.
 
+## Reports on Task Assignment (Camunda 8 SaaS and SM)
+The first iteration of this feature brings back existing features from Camunda 7 to Camunda 8. It is now possible to aggregate the duration of User Tasks in the states “Assigned” and “Unassigned” for a “User Task” / “Assignee”. The evaluation per “Assignee” is only possible for Camunda SM and can be switched off via a configuration. Have a look at the new options in the User Task Report now.
 
-## Carbon Design migration (All distributions)
+## Build custom adoption reports
+It is now possible to build reports evaluating up to 1024 data sources. This feature allows flexible evaluations across all processes to measure the adoption of specific patterns and process orchestration overall.
 
-We are in the process of migrating Camunda Optimize UI to use the Carbon Design System. Our primary focus is to bring the Optimize UI in line with other Camunda products, providing a consistent and seamless experience across the entire ecosystem. With this migration, we will also adhere to accessibility best practices, ensuring that our application is usable by a broader range of users.
+## Copy reports on dashboards
+Duplicate reports easily directly on the dashboard. The new feature copies the selected report with all configurations and allows it to be positioned freely on the dashboard. This allows you to compare different data sets using the same report configuration quickly. Copying is not possible only for reports, but also for all other tiles on the dashboard.
 
-The migration to the Carbon Design System for Camunda Optimize is an ongoing effort. We have successfully migrated modals, tables, and popovers, ensuring these components seamlessly integrate into the new design. While the functionality you love remains intact, you can expect a refreshing new UI that aligns with the Carbon Design System.
-
-## Human task analytics (Camunda 8 SaaS and SM)
-The first iteration of this feature brings back existing features from Camunda 7 to Camunda 8. It is now possible to aggregate the duration of Human Tasks in the states “Total”, “Assigned” and “Unassigned” for an “Assignee” / “Candidate group”. This allows the user to build heatmaps with defined “Target values” to track targets. It is also possible to filter tasks by “Assignee” / “Candidate group”.
+## Display raw data in report builder
+Zeigen Sie Rohdaten im Report Builder an, um die Auswirkungen der für einen bestimmten Bericht definierten Filter besser zu verstehen. Beginnen Sie mit der Erstellung eines Berichts schneller, indem Sie die Daten nachschlagen, auf denen der Bericht basiert.

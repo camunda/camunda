@@ -20,6 +20,7 @@ interface CountTargetInputProps {
   isPercentageReport?: boolean;
   disabled?: boolean;
   onChange: (property: string, value: boolean | string) => void;
+  hideBaseLine?: boolean;
 }
 
 const {isNonNegativeNumber} = numberParser;
@@ -31,6 +32,7 @@ export default function CountTargetInput({
   isPercentageReport,
   disabled,
   onChange,
+  hideBaseLine,
 }: CountTargetInputProps) {
   const baselineInvalid = !isNonNegativeNumber(baseline);
   const targetInvalid = !isNonNegativeNumber(target);
@@ -76,17 +78,19 @@ export default function CountTargetInput({
           <Percentage aria-disabled={disabled} className="percentageIndicator" />
         )}
       </div>
-      <TextInput
-        id="setBaselineInput"
-        labelText={t('report.config.goal.baseline')}
-        type="number"
-        min="0"
-        value={baseline}
-        disabled={disabled}
-        invalid={baselineInvalid}
-        invalidText={t('report.config.goal.invalidInput')}
-        onChange={(evt) => onChange('baseline', evt.target.value)}
-      />
+      {!hideBaseLine && (
+        <TextInput
+          id="setBaselineInput"
+          labelText={t('report.config.goal.baseline')}
+          type="number"
+          min="0"
+          value={baseline}
+          disabled={disabled}
+          invalid={baselineInvalid}
+          invalidText={t('report.config.goal.invalidInput')}
+          onChange={(evt) => onChange('baseline', evt.target.value)}
+        />
+      )}
     </Stack>
   );
 }

@@ -8,7 +8,35 @@
 
     button {
       margin-left: auto;
-      width: 100px;
+      width: 170px;
     }
+  }
+
+  .preview {
+    min-width: 0;
+    text-align: center;
+
+    img {
+      width: 100%;
+      max-width: 400px;
+    }
+  }
+
+  .text-mandatory {
+    color: var(--cds-text-error, #da1e28);
+  }
+}
+
+.instanceEndDateKpiModal {
+  .cds--inline-notification,
+  .tip {
+    display: none;
+  }
+}
+
+.executedFlowNodesKpiModal {
+  .modalContent p,
+  .diagramActions {
+    display: none;
   }
 }

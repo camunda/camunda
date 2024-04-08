@@ -13,7 +13,10 @@ import {t} from 'translation';
 import {useUiConfig} from 'hooks';
 
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
-  const isUserTaskAssigneeAnalyticsEnabled = useUiConfig('userTaskAssigneeAnalyticsEnabled');
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
+    'userTaskAssigneeAnalyticsEnabled',
+    'optimizeProfile'
+  );
 
   return (
     <MenuDropdown
@@ -51,18 +54,20 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
         label={t('common.filter.types.incident')}
         onClick={openNewFilterModal('incident')}
       />
-      {isUserTaskAssigneeAnalyticsEnabled && (
+      {userTaskAssigneeAnalyticsEnabled && (
         <MenuItem
           label={t('report.groupBy.userAssignee')}
           disabled={processDefinitionIsNotSelected}
           onClick={openNewFilterModal('assignee')}
         />
       )}
-      <MenuItem
-        label={t('report.groupBy.userGroup')}
-        disabled={processDefinitionIsNotSelected}
-        onClick={openNewFilterModal('candidateGroup')}
-      />
+      {optimizeProfile === 'platform' && (
+        <MenuItem
+          label={t('report.groupBy.userGroup')}
+          disabled={processDefinitionIsNotSelected}
+          onClick={openNewFilterModal('candidateGroup')}
+        />
+      )}
       <MenuItem
         label={t('common.filter.types.flowNodeSelection')}
         disabled={processDefinitionIsNotSelected}

@@ -9,11 +9,13 @@ import {ProcessFilter, SingleProcessReportData} from 'types';
 
 export interface defaultProcessFilter extends Omit<ProcessFilter, 'appliedTo'> {
   label: string;
+  description: string;
 }
 
 export interface KpiTemplate {
   name: string;
   description: string;
+  img: string;
   config: Omit<Partial<SingleProcessReportData>, 'configuration'> & {
     configuration?: Partial<SingleProcessReportData['configuration']>;
   };

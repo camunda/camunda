@@ -386,6 +386,7 @@
       "monitorTargetsOverTime-description": "Messe Ziele über die Zeit für zeitliche, prozentuale und zählbare Metriken eines Prozesses."
     },
     "kpiTemplates": {
+      "processKpi": "Prozess-KPI",
       "create": "Prozess-KPI erstellen",
       "step": "Schritt {count}",
       "selectKpi": "Prozess-KPI auswählen",
@@ -395,10 +396,15 @@
       "automationRate-filter2": "Wählen Sie den Zeitraum, für den die Automatisierungsrate bewertet werden soll",
       "preview": "Vorschau",
       "setTargetAndFilters": "Ziel und Filter einstellen",
-      "throughput": "Durchsatz",
-      "throughput-description": "Der Durchsatz gibt an, wie lange ein Prozess auf dem glücklichen Weg im Durchschnitt braucht, um zu enden",
+      "throughput": "Durchlaufzeit",
+      "throughput-description": "Die Durchlaufzeit gibt an, wie lange ein Prozess auf dem glücklichen Weg im Durchschnitt braucht, um zu enden",
       "throughput-filter1": "Wählen Sie die End-Events aus, die einen vollautomatischen Prozess hinweisen",
-      "throughput-filter2": "Wählen Sie den Zeitrahmen, für den der Durchsatz bewertet werden soll"
+      "throughput-filter2": "Wählen Sie den Zeitrahmen, für den der Durchsatz bewertet werden soll",
+      "mandatoryFilters": "Obligatorische Filter",
+      "filters": {
+        "nodeSelection": "Event Ende auswählen",
+        "endDate": "Zeitrahmen wählen"
+      }
     },
     "instanceCount": {
       "appliedFilters": "Angewandte Filter",

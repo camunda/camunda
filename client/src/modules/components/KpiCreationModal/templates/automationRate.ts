@@ -9,10 +9,13 @@ import {t} from 'translation';
 
 import {KpiTemplate} from './types';
 
+import automationRateImg from './images/automationRate.png';
+
 export default function automationRate(): KpiTemplate {
   return {
     name: t('report.kpiTemplates.automationRate').toString(),
     description: t('report.kpiTemplates.automationRate-description').toString(),
+    img: automationRateImg,
     config: {
       view: {entity: 'processInstance', properties: ['percentage']},
       groupBy: {
@@ -24,13 +27,17 @@ export default function automationRate(): KpiTemplate {
     uiConfig: {
       filters: [
         {
-          label: t('report.kpiTemplates.automationRate-filter1').toString(),
+          label: t('report.kpiTemplates.filters.nodeSelection').toString(),
+          description: t('report.kpiTemplates.automationRate-filter1').toString(),
           type: 'executedFlowNodes',
-          data: {},
+          data: {
+            values: [],
+          },
           filterLevel: 'view',
         },
         {
-          label: t('report.kpiTemplates.automationRate-filter1').toString(),
+          label: t('report.kpiTemplates.filters.endDate').toString(),
+          description: t('report.kpiTemplates.automationRate-filter2').toString(),
           type: 'instanceEndDate',
           data: {},
           filterLevel: 'instance',

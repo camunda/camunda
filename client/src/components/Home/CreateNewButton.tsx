@@ -58,7 +58,7 @@ export default function CreateNewButton({
           />
           <MenuItem
             onClick={() => create('kpi')}
-            label={t('report.kpiTemplates.create').toString()}
+            label={t('report.kpiTemplates.processKpi').toString()}
           />
           <Link to="report/new-combined/edit">
             <MenuItem label={t('home.createBtn.report.combined').toString()} />
@@ -68,10 +68,16 @@ export default function CreateNewButton({
           </Link>
         </MenuItem>
       ) : (
-        <MenuItem
-          onClick={() => create('report')}
-          label={t('home.createBtn.report.default').toString()}
-        />
+        <>
+          <MenuItem
+            onClick={() => create('report')}
+            label={t('home.createBtn.report.default').toString()}
+          />
+          <MenuItem
+            onClick={() => create('kpi')}
+            label={t('report.kpiTemplates.processKpi').toString()}
+          />
+        </>
       )}
       <MenuItem onClick={importEntity} label={t('common.importReportDashboard').toString()} />
     </MenuButton>

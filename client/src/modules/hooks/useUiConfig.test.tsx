@@ -16,27 +16,38 @@ jest.mock('config', () => ({
   createAccessorFunction: jest.fn(() => () => null),
 }));
 
-function Mock({uiProperty}: {uiProperty: keyof UiConfig}) {
-  const uiConfigValue = useUiConfig(uiProperty);
-  return <p>{uiConfigValue?.toString()}</p>;
+function Mock({uiProperties}: {uiProperties: (keyof UiConfig)[]}) {
+  const uiConfigValue = useUiConfig(...uiProperties);
+  return <p>{JSON.stringify(uiConfigValue)}</p>;
 }
 
 it('should return the value of the uiConfig', async () => {
   (createAccessorFunction as jest.Mock).mockImplementationOnce(() => () => 'value');
-  const node = shallow(<Mock uiProperty="emailEnabled" />);
+  const node = shallow(<Mock uiProperties={['emailEnabled']} />);
 
-  runLastEffect();
+  await runLastEffect();
   await node.update();
 
-  expect(node.text()).toBe('value');
+  expect(node.text()).toBe('{"emailEnabled":"value"}');
 });
 
-it('should return undefined if the uiConfig is not set', async () => {
+it('should return empty object if the uiConfig is not set', async () => {
   (createAccessorFunction as jest.Mock).mockImplementationOnce(() => () => undefined);
-  const node = shallow(<Mock uiProperty="emailEnabled" />);
+  const node = shallow(<Mock uiProperties={['emailEnabled']} />);
 
-  runLastEffect();
+  await runLastEffect();
   await node.update();
 
-  expect(node.text()).toBe('');
+  expect(node.text()).toBe('{}');
+});
+
+it('should return the value of the uiConfig for multiple keys', async () => {
+  (createAccessorFunction as jest.Mock).mockImplementationOnce(() => () => 'value1');
+  (createAccessorFunction as jest.Mock).mockImplementationOnce(() => () => 'value2');
+  const node = shallow(<Mock uiProperties={['emailEnabled', 'enterpriseMode']} />);
+
+  await runLastEffect();
+  await node.update();
+
+  expect(node.text()).toBe('{"emailEnabled":"value1","enterpriseMode":"value2"}');
 });

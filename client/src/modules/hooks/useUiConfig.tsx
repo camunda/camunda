@@ -9,16 +9,26 @@ import {useState, useEffect} from 'react';
 
 import {UiConfig, createAccessorFunction} from 'config';
 
-export default function useUiConfig<T extends keyof UiConfig>(key: T): UiConfig[T] | undefined {
-  const [value, setValue] = useState<UiConfig[T] | undefined>();
+export default function useUiConfig<T extends keyof UiConfig>(...keys: T[]): Pick<UiConfig, T> {
+  const [value, setValue] = useState<Partial<Pick<UiConfig, T>>>({});
 
   useEffect(() => {
-    if (value !== undefined) {
+    if (Object.keys(value).length === keys.length) {
       return;
     }
-    const accessorFunction = createAccessorFunction<UiConfig[T]>(key);
-    (async () => setValue(await accessorFunction()))();
-  }, [key, value]);
 
-  return value;
+    const accessorFunctions = keys.map((k) => createAccessorFunction<UiConfig[T]>(k));
+    (async () => {
+      const values = await Promise.all(accessorFunctions.map((fn) => fn()));
+      setValue((currentState) => {
+        const newState = {...currentState};
+        keys.forEach((k, i) => {
+          newState[k] = values[i];
+        });
+        return newState;
+      });
+    })();
+  }, [keys, value]);
+
+  return value as Pick<UiConfig, T>;
 }

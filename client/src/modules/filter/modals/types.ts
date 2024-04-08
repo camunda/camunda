@@ -82,4 +82,5 @@ export interface FilterProps<DATA = FilterData> {
   forceEnabled?: (...args: any[]) => boolean;
   getPretext?: (...args: any[]) => ReactNode;
   getPosttext?: (...args: any[]) => ReactNode;
+  modalTitle?: ReactNode;
 }
