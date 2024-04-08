@@ -173,7 +173,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
-    <version.keycloak>23.0.4</version.keycloak>
+    <version.keycloak>23.0.7</version.keycloak>
     <version.jna>5.14.0</version.jna>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
