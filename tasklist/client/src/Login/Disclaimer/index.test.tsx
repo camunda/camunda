@@ -15,7 +15,7 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Disclaimer} from './index';
 
@@ -47,10 +47,7 @@ describe('<Disclaimer />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {name: 'terms & conditions page'}),
-    ).toHaveAttribute(
-      'href',
-      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/',
-    );
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
       'https://camunda.com/contact/',
@@ -67,10 +64,7 @@ describe('<Disclaimer />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {name: 'terms & conditions page'}),
-    ).toHaveAttribute(
-      'href',
-      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/',
-    );
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
       'https://camunda.com/contact/',
@@ -92,5 +86,25 @@ describe('<Disclaimer />', () => {
     expect(
       screen.queryByRole('link', {name: 'contact sales'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should open terms & conditions modal', async () => {
+    const {user} = render(<Disclaimer />, {wrapper: MockThemeProvider});
+
+    await user.click(
+      screen.getByRole('link', {
+        name: 'terms & conditions page',
+      }),
+    );
+
+    expect(
+      within(
+        screen.getByRole('dialog', {
+          name: /terms & conditions/i,
+        }),
+      ).getByRole('button', {
+        name: /close/i,
+      }),
+    ).toHaveFocus();
   });
 });
