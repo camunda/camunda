@@ -2,26 +2,26 @@ name: Operate a11y tests
 on:
   push:
     branches:
-      - 'main'
-      - 'stable/**'
-      - 'release/**'
+      - "main"
+      - "stable/**"
+      - "release/**"
     paths-ignore:
-      - '.github/workflows/zeebe-*'
-      - 'dist/**'
-      - 'zeebe/**'
-      - 'spring-boot-starter-camunda-sdk/**'
+      - ".github/workflows/zeebe-*"
+      - "dist/**"
+      - "zeebe/**"
+      - "spring-boot-starter-camunda-sdk/**"
   pull_request:
     paths-ignore:
-      - '.github/workflows/zeebe-*'
-      - 'dist/**'
-      - 'zeebe/**'
-      - 'spring-boot-starter-camunda-sdk/**'
+      - ".github/workflows/zeebe-*"
+      - "dist/**"
+      - "zeebe/**"
+      - "spring-boot-starter-camunda-sdk/**"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.39.0
+      image: mcr.microsoft.com/playwright:v1.43.0
       options: --user 1001:1000
     steps:
       - name: Check out repository code
