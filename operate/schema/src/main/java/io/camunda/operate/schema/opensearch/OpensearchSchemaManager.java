@@ -110,32 +110,45 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public void checkAndUpdateIndices() {
-    LOGGER.info("Updating Indices with currently-configured number of replicas...");
+    if (operateProperties.getArchiver().isIlmEnabled()) {
+      createIsmPolicy();
+    }
     final String currentConfigNumberOfReplicas =
         String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
-    getIndexNames("*")
-        .forEach(
-            index -> {
-              final Map<String, String> indexSettings =
-                  getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
-              final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
-              final String refreshInterval = indexSettings.get(REFRESH_INTERVAL);
-              if (currentIndexNumberOfReplicas == null
-                  || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
-                indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-                indexSettings.put(
-                    REFRESH_INTERVAL,
-                    (refreshInterval == null)
-                        ? operateProperties.getOpensearch().getRefreshInterval()
-                        : refreshInterval);
-                final boolean success = setIndexSettingsFor(indexSettings, index);
-                if (success) {
-                  LOGGER.debug("Successfully updated number of replicas for index {}", index);
-                } else {
-                  LOGGER.warn("Failed to update number of replicas for index {}", index);
-                }
-              }
-            });
+    final Map<String, Object> allPolicies = richOpenSearchClient.ism().isPolicyAttached("*");
+    final Set<String> testSet = getIndexNames("*");
+    testSet.forEach(
+        index -> {
+          final Map<String, String> indexSettings =
+              getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+          final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
+          final String refreshInterval = indexSettings.get(REFRESH_INTERVAL);
+          if (currentIndexNumberOfReplicas == null
+              || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
+            indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
+            indexSettings.put(
+                REFRESH_INTERVAL,
+                (refreshInterval == null)
+                    ? operateProperties.getOpensearch().getRefreshInterval()
+                    : refreshInterval);
+            final boolean success = setIndexSettingsFor(indexSettings, index);
+            if (success) {
+              LOGGER.debug("Successfully updated number of replicas for index {}", index);
+            } else {
+              LOGGER.warn("Failed to update number of replicas for index {}", index);
+            }
+
+            // Update Index policies based on ILM
+            final LinkedHashMap<String, String> indexPolicy = (LinkedHashMap<String, String>) allPolicies.get(index);
+            if (operateProperties.getArchiver().isIlmEnabled() && indexPolicy != null && !indexPolicy.containsKey("policy_id")) {
+              LOGGER.info("Adding policy to index {}", index);
+              richOpenSearchClient.ism().addPolicyToIndex(index, OPERATE_DELETE_ARCHIVED_INDICES);
+            } else if (!operateProperties.getArchiver().isIlmEnabled() && indexPolicy != null && indexPolicy.containsKey("policy_id")) {
+              LOGGER.info("Removing policy from index {}", index);
+              richOpenSearchClient.ism().removePolicyFromIndex(index);
+            }
+          }
+        });
   }
 
   @Override

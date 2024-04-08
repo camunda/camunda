@@ -23,11 +23,11 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 
 public class OpenSearchISMOperations extends OpenSearchRetryOperation {
-  public OpenSearchISMOperations(Logger logger, OpenSearchClient openSearchClient) {
+  public OpenSearchISMOperations(final Logger logger, final OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
   }
 
-  public Map<String, Object> addPolicyToIndex(String index, String policy) {
+  public Map<String, Object> addPolicyToIndex(final String index, final String policy) {
     final var json = format("{\"policy_id\": \"%s\"}", policy);
     return withExtendedOpenSearchClient(
         extendedOpenSearchClient ->
@@ -38,7 +38,7 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
                 e -> format("Failed to add policy %s to index %s", policy, index)));
   }
 
-  public Map<String, Object> createPolicy(String policyName, String policyJson) {
+  public Map<String, Object> createPolicy(final String policyName, final String policyJson) {
     return withExtendedOpenSearchClient(
         extendedOpenSearchClient ->
             safe(
@@ -48,7 +48,7 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
                 e -> format("Failed to create policy: %s", policyName)));
   }
 
-  public Map<String, Object> deletePolicy(String policyName) {
+  public Map<String, Object> deletePolicy(final String policyName) {
     return withExtendedOpenSearchClient(
         extendedOpenSearchClient ->
             safe(
@@ -58,7 +58,7 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
                 e -> format("Failed to delete policy: %s", policyName)));
   }
 
-  public Map<String, Object> getPolicy(String policyName) {
+  public Map<String, Object> getPolicy(final String policyName) {
     return withExtendedOpenSearchClient(
         extendedOpenSearchClient ->
             safe(
@@ -66,5 +66,25 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
                     extendedOpenSearchClient.arbitraryRequest(
                         "GET", "/_plugins/_ism/policies/" + policyName, "{}"),
                 e -> format("Failed to get policy: %s", policyName)));
+  }
+
+  public Map<String, Object> isPolicyAttached(final String index) {
+    return withExtendedOpenSearchClient(
+        extendedOpenSearchClient ->
+            safe(
+                () ->
+                    extendedOpenSearchClient.arbitraryRequest(
+                        "GET", "/_plugins/_ism/explain/" + index, "{}"),
+                e -> format("Failed to get index policy for index: %s", index)));
+  }
+
+  public Map<String, Object> removePolicyFromIndex(final String index) {
+    return withExtendedOpenSearchClient(
+        extendedOpenSearchClient ->
+            safe(
+                () ->
+                    extendedOpenSearchClient.arbitraryRequest(
+                        "POST", "/_plugins/_ism/remove/" + index, "{}"),
+                e -> format("Failed to remove policy from index: %s", index)));
   }
 }
