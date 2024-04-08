@@ -32,6 +32,7 @@ import {
   Notification,
 } from '@carbon/icons-react';
 import {compareAsc} from 'date-fns';
+import {unraw} from 'modules/utils/unraw';
 
 type Props = {
   taskId: TaskType['id'];
@@ -112,6 +113,11 @@ const Task = React.forwardRef<HTMLElement, Props>(
       return params;
     }, [location, position, filter, sortBy]);
 
+    const decodedContext = useMemo(
+      () => (context !== null ? unraw(context) : null),
+      [context],
+    );
+
     return (
       <Container $active={isActive}>
         <TaskLink
@@ -136,14 +142,10 @@ const Task = React.forwardRef<HTMLElement, Props>(
               <Label $variant="secondary">{processName}</Label>
             </Row>
 
-            {context === null ? null : (
+            {decodedContext === null ? null : (
               <Row>
-                <Label
-                  $variant="secondary"
-                  $shouldWrap
-                  title={context.replace(/\\n/g, '\n')}
-                >
-                  {context.split('\\n').map((line, index) => (
+                <Label $variant="secondary" $shouldWrap title={decodedContext}>
+                  {decodedContext.split('\n').map((line, index) => (
                     <div key={index}>{line}</div>
                   ))}
                 </Label>
