@@ -65,7 +65,6 @@
     <version.identity>8.5.0</version.identity>
     <version.jackson>2.17.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.jna>5.14.0</version.jna>
     <version.junit>5.10.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.23.1</version.log4j>
@@ -143,6 +142,42 @@
     <version.jakarta-annotation>2.1.1</version.jakarta-annotation>
     <version.jna-platform>5.14.0</version.jna-platform>
     <version.msal4j>1.15.0</version.msal4j>
+
+    <version.commons-io>2.16.0</version.commons-io>
+    <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
+    <version.unboundid-ldapsdk>6.0.11</version.unboundid-ldapsdk>
+    <version.parsson>1.1.5</version.parsson>
+    <version.springdoc>2.2.0</version.springdoc>
+    <version.jakarta.json>2.0.1</version.jakarta.json>
+    <version.node>v20.8.0</version.node>
+    <version.yarn>v1.22.10</version.yarn>
+    <version.log4j.testjar>2.19.0</version.log4j.testjar>
+    <version.aws-java-sdk>1.12.690</version.aws-java-sdk>
+    <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
+    <postgres-test-container.version>1.17.6</postgres-test-container.version>
+    <version.elasticsearch7>7.17.19</version.elasticsearch7>
+    <version.lucene>8.11.3</version.lucene>
+    <version.android-json>0.0.20131108.vaadin1</version.android-json>
+    <version.hdr-histogram>2.1.12</version.hdr-histogram>
+    <version.joda-time>2.12.7</version.joda-time>
+    <version.commons-collections4>4.4</version.commons-collections4>
+    <version.jetty>11.0.20</version.jetty>
+
+    <!-- Auth0 Dependencies -->
+    <!-- If any of the following version changes, -->
+    <!-- please check if they are compatible with "mvc-auth-commons" -->
+    <version.auth0>1.44.2</version.auth0>
+    <version.auth0.commons>1.11.0</version.auth0.commons>
+    <version.auth0.jwt>4.4.0</version.auth0.jwt>
+    <version.okio-jvm>3.9.0</version.okio-jvm>
+    <version.jwks-rsa>0.22.1</version.jwks-rsa>
+    <version.guava.annotations>r03</version.guava.annotations>
+    <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
+    <version.keycloak>23.0.4</version.keycloak>
+    <version.jna>5.14.0</version.jna>
+
+    <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
+    <!--    <mockito.version>5.5.0</mockito.version>-->
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -460,6 +495,135 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- Operate Modules -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-webjar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-archiver</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer-8_4</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-importer-8_5</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-data-generator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-schema</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-mvc-auth-commons</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-110</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-120</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-130</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-800</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-810</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-820</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-830</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-840</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
@@ -551,6 +715,28 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-json</artifactId>
         <version>${version.spring-boot}</version>
+      </dependency>
+
+      <!--
+           In order resolve dependency issues with wiremock and spring-boot-dependencies
+           make sure this is declared before spring boot dependencies.
+      -->
+
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-bom</artifactId>
+        <version>${version.jetty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <!-- Import dependency management from Spring Boot -->
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${version.spring-boot}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <dependency>
@@ -1280,7 +1466,7 @@
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.16.0</version>
+        <version>${version.commons-io}</version>
       </dependency>
 
       <!-- between log4j2 and commons-compress (from testcontainers) -->
@@ -1382,13 +1568,6 @@
         <version>${version.jakarta.json-api}</version>
       </dependency>
 
-      <!-- fixes CVE-2023-52428 -->
-      <dependency>
-        <groupId>com.nimbusds</groupId>
-        <artifactId>nimbus-jose-jwt</artifactId>
-        <version>9.37.2</version>
-      </dependency>
-
       <!-- internal conflicts from azure-identity -->
       <dependency>
         <groupId>com.microsoft.azure</groupId>
@@ -1401,6 +1580,204 @@
         <artifactId>jna-platform</artifactId>
         <version>${version.jna-platform}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch.client</groupId>
+        <artifactId>elasticsearch-rest-high-level-client</artifactId>
+        <version>${version.elasticsearch7}</version>
+      </dependency>
+
+      <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->
+      <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch-x-content</artifactId>
+        <version>${version.elasticsearch7}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch</artifactId>
+        <version>${version.elasticsearch7}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch-core</artifactId>
+        <version>${version.elasticsearch7}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch.plugin</groupId>
+        <artifactId>parent-join-client</artifactId>
+        <version>${version.elasticsearch7}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-core</artifactId>
+        <version>${version.lucene}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-join</artifactId>
+        <version>${version.lucene}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.parsson</groupId>
+        <artifactId>parsson</artifactId>
+        <version>${version.parsson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-collections4</artifactId>
+        <version>${version.commons-collections4}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${version.log4j.testjar}</version>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.glassfish</groupId>
+        <artifactId>jakarta.json</artifactId>
+        <version>${version.jakarta.json}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-models-jakarta</artifactId>
+        <version>${version.swagger-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations-jakarta</artifactId>
+        <version>${version.swagger-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${version.joda-time}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hdrhistogram</groupId>
+        <artifactId>HdrHistogram</artifactId>
+        <version>${version.hdr-histogram}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.vaadin.external.google</groupId>
+        <artifactId>android-json</artifactId>
+        <version>${version.android-json}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-common</artifactId>
+        <version>${version.springdoc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        <version>${version.springdoc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>elasticsearch</artifactId>
+        <version>${elasticsearch-test-container.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${postgres-test-container.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-admin-client</artifactId>
+        <version>${version.keycloak}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-core</artifactId>
+        <version>${version.keycloak}</version>
+      </dependency>
+
+      <!-- Auth0 and it's direct dependencies -->
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>mvc-auth-commons</artifactId>
+        <version>${version.auth0.commons}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>auth0</artifactId>
+        <version>${version.auth0}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>jwks-rsa</artifactId>
+        <version>${version.jwks-rsa}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.squareup.okio</groupId>
+        <artifactId>okio-jvm</artifactId>
+        <version>${version.okio-jvm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava-annotations</artifactId>
+        <version>${version.guava.annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${version.nimbus-jose-jwt}</version>
+      </dependency>
+
+      <!-- Start AWS -->
+
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-bom</artifactId>
+        <version>${version.aws-java-sdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- testcontainers and docker: see
+        https://github.com/testcontainers/testcontainers-java/issues/3308 -->
+
+      <!-- Dependencies present for convergence only -->
+      <!-- between commons-compress and testcontainers-keycloak -->
+
+      <dependency>
+        <groupId>org.thymeleaf</groupId>
+        <artifactId>thymeleaf</artifactId>
+        <version>${version.thymeleaf}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.unboundid</groupId>
+        <artifactId>unboundid-ldapsdk</artifactId>
+        <version>${version.unboundid-ldapsdk}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

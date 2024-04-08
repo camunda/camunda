@@ -48,21 +48,21 @@ jobs:
         include:
           - group: modules
             name: "Module Integration Tests"
-            maven-modules: "'!zeebe/qa/integration-tests,!zeebe/qa/update-tests'"
+            maven-modules: "'!qa/integration-tests,!qa/update-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             tcc-enabled: 'false'
             tcc-concurrency: 1
           - group: qa-integration
             name: "QA Integration Tests"
-            maven-modules: "zeebe/qa/integration-tests"
+            maven-modules: "qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             tcc-enabled: ${{ vars.TCC_ENABLED }}
             tcc-concurrency: 1
           - group: qa-update
             name: "QA Update Tests"
-            maven-modules: "zeebe/qa/update-tests"
+            maven-modules: "qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             tcc-enabled: ${{ vars.TCC_ENABLED }}
@@ -85,7 +85,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -116,6 +116,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.maven-modules }}
+          -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Terminate TCC
@@ -155,7 +156,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -166,6 +167,7 @@ jobs:
           -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
+          -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
@@ -213,7 +215,7 @@ jobs:
         id: build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
@@ -230,9 +232,10 @@ jobs:
         run: >
           ./mvnw -B --no-snapshot-updates
           -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
-          -pl zeebe/qa/integration-tests
+          -pl qa/integration-tests
           -P smoke-test,extract-flaky-tests
           -D excludedGroups=$EXCLUDED_TEST_GROUPS
+          -f zeebe
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
@@ -254,7 +257,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -263,6 +266,7 @@ jobs:
           -P parallel-tests,include-random-tests
           -D junitThreadCount=16
           -D skipChecks
+          -f zeebe
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -302,6 +306,7 @@ jobs:
           -P include-performance-tests
           -D skipChecks
           -T1C
+          -f zeebe
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
         env:

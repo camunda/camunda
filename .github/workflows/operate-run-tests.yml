@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "adopt"
-          java-version: "17"
+          java-version: "21"
           cache: "maven"
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v3.0.0
@@ -44,7 +44,7 @@ jobs:
              }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build Operate
-        run: mvn -f operate -B -DskipTests -P skipFrontendBuild clean install
+        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
         run: ${{ inputs.command }}
       - name: Publish Test Results

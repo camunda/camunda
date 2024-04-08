@@ -5,16 +5,11 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.5.0-SNAPSHOT</version>
+    <version>8.6.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-query-performance-tests</artifactId>
 
   <name>Operate QA Query Performace Tests</name>
-
-  <properties>
-    <plugin.version.license>3.0</plugin.version.license>
-    <license.header>${project.baseUri}/../../../license/license-header</license.header>
-  </properties>
 
   <dependencies>
 
@@ -141,13 +136,6 @@
     </testResources>
 
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>

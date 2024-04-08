@@ -10,10 +10,10 @@
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-root</artifactId>
+  <artifactId>camunda-8-root</artifactId>
   <packaging>pom</packaging>
 
-  <name>Zeebe Root</name>
+  <name>Camunda 8 Root</name>
 
   <modules>
     <module>bom</module>
@@ -21,51 +21,8 @@
     <module>dist</module>
     <module>build-tools</module>
     <module>spring-boot-starter-camunda-sdk</module>
-    <module>zeebe/atomix</module>
-    <module>zeebe/auth</module>
-    <module>zeebe/broker</module>
-    <module>zeebe/broker-client</module>
-    <module>zeebe/protocol-test-util</module>
-    <module>zeebe/protocol</module>
-    <module>zeebe/bpmn-model</module>
-    <module>zeebe/logstreams</module>
-    <module>zeebe/stream-platform</module>
-    <module>zeebe/engine</module>
-    <module>zeebe/transport</module>
-    <module>zeebe/util</module>
-    <module>zeebe/test-util</module>
-    <module>zeebe/msgpack-core</module>
-    <module>zeebe/msgpack-value</module>
-    <module>zeebe/gateway-protocol</module>
-    <module>zeebe/gateway-protocol-impl</module>
-    <module>zeebe/gateway</module>
-    <module>zeebe/gateway-rest</module>
-    <module>zeebe/clients/java</module>
-    <module>zeebe/clients/zeebe-client-spring</module>
-    <module>zeebe/exporter-api</module>
-    <module>zeebe/exporter-test</module>
-    <module>zeebe/protocol-asserts</module>
-    <module>zeebe/exporters/elasticsearch-exporter</module>
-    <module>zeebe/exporters/opensearch-exporter</module>
-    <module>zeebe/protocol-impl</module>
-    <module>zeebe/protocol-jackson</module>
-    <module>zeebe/zb-db</module>
-    <module>zeebe/expression-language</module>
-    <module>zeebe/feel</module>
-    <module>zeebe/dmn</module>
-    <module>zeebe/snapshot</module>
-    <module>zeebe/journal</module>
-    <module>zeebe/qa</module>
-    <module>zeebe/benchmarks/project</module>
-    <module>zeebe/scheduler</module>
-    <module>zeebe/backup</module>
-    <module>zeebe/backup-stores/testkit</module>
-    <module>zeebe/backup-stores/s3</module>
-    <module>zeebe/backup-stores/gcs</module>
-    <module>zeebe/backup-stores/azure</module>
-    <module>zeebe/backup-stores/common</module>
-    <module>zeebe/restore</module>
-    <module>zeebe/topology</module>
+    <module>zeebe</module>
+    <module>operate</module>
   </modules>
 
   <scm>
@@ -92,6 +49,7 @@
             <excludes>
               <exclude>**/target/**/*.md</exclude>
               <exclude>clients/go/vendor/**/*.md</exclude>
+              <exclude>**/node_modules/**/*.md</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>
