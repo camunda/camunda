@@ -37,6 +37,10 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
     request.setType(AdminRequestType.PAUSE_EXPORTING);
   }
 
+  public void softPauseExporting() {
+    request.setType(AdminRequestType.SOFT_PAUSE_EXPORTING);
+  }
+
   public void resumeExporting() {
     request.setType(AdminRequestType.RESUME_EXPORTING);
   }

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 @WebEndpoint(id = "exporting")
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
+  static final String SOFT_PAUSE = "softPause";
   static final String RESUME = "resume";
   final ExportingControlApi exportingService;
 
@@ -35,6 +36,7 @@ public final class ExportingEndpoint {
       final var result =
           switch (operationKey) {
             case PAUSE -> exportingService.pauseExporting();
+            case SOFT_PAUSE -> exportingService.softPauseExporting();
             case RESUME -> exportingService.resumeExporting();
             default -> throw new UnsupportedOperationException();
           };
