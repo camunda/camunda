@@ -2,6 +2,16 @@
 name: Operate E2E Tests
 on:
   push:
+    branches:
+      - 'main'
+      - 'stable/**'
+      - 'release/**'
+    paths-ignore:
+      - '.github/workflows/zeebe-*'
+      - 'dist/**'
+      - 'zeebe/**'
+      - 'spring-boot-starter-camunda-sdk/**'
+  pull_request:
     paths-ignore:
       - '.github/workflows/zeebe-*'
       - 'dist/**'
@@ -77,7 +87,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "adopt"
-          java-version: "17"
+          java-version: "21"
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4.5
         with:
@@ -95,9 +105,9 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn -f operate clean install -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B spring-boot:start -f operate/webapp/pom.xml -Dspring-boot.run.fork=true
+        run: mvn -q -B spring-boot:start -pl operate/webapp -Dspring-boot.run.fork=true
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci

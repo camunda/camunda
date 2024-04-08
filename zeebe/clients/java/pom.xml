@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.5.0-SNAPSHOT</version>
+    <version>8.6.0-SNAPSHOT</version>
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 
@@ -37,6 +37,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
 
     <dependency>
@@ -72,6 +77,12 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -210,6 +221,7 @@
       <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest</artifactId>
@@ -220,6 +232,7 @@
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
+
     <dependency>
       <groupId>net.jcip</groupId>
       <artifactId>jcip-annotations</artifactId>
@@ -246,6 +259,7 @@
           </ignoredNonTestScopedDependencies>
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
+            <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
           </ignoredDependencies>
         </configuration>
       </plugin>
@@ -270,11 +284,12 @@
               <generatorName>java</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
+              <typeMappings>OffsetDateTime=String</typeMappings>
               <generateApis>false</generateApis>
               <generateApiTests>false</generateApiTests>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
-              <generateModelDocumentation>true</generateModelDocumentation>
+              <generateModelDocumentation>false</generateModelDocumentation>
               <generateModelTests>false</generateModelTests>
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
@@ -283,6 +298,8 @@
                 <documentationProvider>none</documentationProvider>
                 <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
                 <library>apache-httpclient</library>
+                <java8>true</java8>
+                <openApiNullable>false</openApiNullable>
                 <serializationLibrary>jackson</serializationLibrary>
                 <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
               </configOptions>

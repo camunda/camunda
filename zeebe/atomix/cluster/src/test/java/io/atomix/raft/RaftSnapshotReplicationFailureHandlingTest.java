@@ -27,7 +27,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.awaitility.Awaitility;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,7 +47,8 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
     totalInstallRequest = new AtomicInteger(0);
     leaderProtocol.interceptRequest(
-        InstallRequest.class, (request) -> totalInstallRequest.incrementAndGet());
+        InstallRequest.class,
+        (Consumer<InstallRequest>) (request) -> totalInstallRequest.incrementAndGet());
   }
 
   @Test
@@ -55,8 +57,10 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     final int numberOfChunks = 10;
     disconnectFollowerAndTakeSnapshot(numberOfChunks);
 
+    // Time out request after sending a request. This simulates the behaviour that the receiver has
+    // processed the request, but the request timeout out at the sender.
     leaderProtocol.interceptResponse(
-        InstallResponse.class, new TimingOutInterceptor(numberOfChunks - 1));
+        InstallResponse.class, new TimingOutResponseInterceptor(numberOfChunks - 1));
 
     // when
     reconnectFollowerAndAwaitSnapshot();
@@ -95,27 +99,17 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     final int numberOfChunks = 1;
     disconnectFollowerAndTakeSnapshot(numberOfChunks);
 
-    final TimingOutInterceptor responseInterceptor = new TimingOutInterceptor(1);
-    leaderProtocol.interceptResponse(InstallResponse.class, responseInterceptor);
+    // Time out request before sending it to the follower. This is required for deterministic test.
+    final var requestInterceptor = new TimingOutRequestInterceptor(1);
+    leaderProtocol.interceptRequest(InstallRequest.class, requestInterceptor);
 
     // when
     reconnectFollowerAndAwaitSnapshot();
 
     // then
-    // We have to wait because, the snapshot is persisted when receiving the first chunk. The
-    // interceptor is only called after the first chunks is processed. Hence, the await snapshot is
-    // completed before the leader resend the request. To ensure that the leader resent the request,
-    // we wait until the totalInstallRequest includes the retry.
-    Awaitility.await("Snapshot chunk-0 is resend")
-        .untilAsserted(
-            () ->
-                assertThat(responseInterceptor.getCount())
-                    .describedAs("Should resent snapshot chunk")
-                    // Before follower reconnects, sometimes leader sends an InstallRequest which
-                    // ends up in connect exception. So comparing number of requests results in
-                    // flaky test. Instead, compare there were two responses. First one is timeout
-                    // and second is success.
-                    .isEqualTo(2));
+    assertThat(requestInterceptor.getCount())
+        .describedAs("Should resent snapshot chunk")
+        .isEqualTo(2);
   }
 
   private void reconnectFollowerAndAwaitSnapshot() throws InterruptedException {
@@ -139,11 +133,12 @@ public class RaftSnapshotReplicationFailureHandlingTest {
     raftRule.appendEntry();
   }
 
-  private static class TimingOutInterceptor implements ResponseInterceptor<InstallResponse> {
+  private static class TimingOutResponseInterceptor
+      implements ResponseInterceptor<InstallResponse> {
     private int count = 0;
     private final int timeoutAtRequest;
 
-    public TimingOutInterceptor(final int timeoutAtRequest) {
+    public TimingOutResponseInterceptor(final int timeoutAtRequest) {
       this.timeoutAtRequest = timeoutAtRequest;
     }
 
@@ -159,6 +154,30 @@ public class RaftSnapshotReplicationFailureHandlingTest {
 
     int getCount() {
       return count;
+    }
+  }
+
+  private static class TimingOutRequestInterceptor
+      implements Function<InstallRequest, CompletableFuture<Void>> {
+    private int count = 0;
+    private final int timeoutAtRequest;
+
+    public TimingOutRequestInterceptor(final int timeoutAtRequest) {
+      this.timeoutAtRequest = timeoutAtRequest;
+    }
+
+    int getCount() {
+      return count;
+    }
+
+    @Override
+    public CompletableFuture<Void> apply(final InstallRequest installRequest) {
+      count++;
+      if (count == timeoutAtRequest) {
+        return CompletableFuture.failedFuture(new TimeoutException());
+      } else {
+        return CompletableFuture.completedFuture(null);
+      }
     }
   }
 

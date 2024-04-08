@@ -29,7 +29,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -336,19 +335,19 @@ public class OpensearchSchemaManager implements SchemaManager {
   @Override
   public IndexMapping getExpectedIndexFields(final IndexDescriptor indexDescriptor) {
     final InputStream description =
-        ElasticsearchSchemaManager.class.getResourceAsStream(
+        OpensearchSchemaManager.class.getResourceAsStream(
             indexDescriptor.getSchemaClasspathFilename());
     try {
       final String currentVersionSchema =
           StreamUtils.copyToString(description, StandardCharsets.UTF_8);
       final TypeReference<HashMap<String, Object>> type = new TypeReference<>() {};
-      final Map<String, Object> properties =
-          (Map<String, Object>)
-              ((Map<String, Object>)
-                      objectMapper.readValue(currentVersionSchema, type).get("mappings"))
-                  .get("properties");
+      final Map<String, Object> mappings =
+          (Map<String, Object>) objectMapper.readValue(currentVersionSchema, type).get("mappings");
+      final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
+      final String dynamic = (String) mappings.get("dynamic");
       return new IndexMapping()
           .setIndexName(indexDescriptor.getIndexName())
+          .setDynamic(dynamic)
           .setProperties(
               properties.entrySet().stream()
                   .map(

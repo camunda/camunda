@@ -10,7 +10,7 @@ on:
 jobs:
   run-release:
     name: "Release ${{ github.event.client_payload.releaseVersion }}"
-    uses: ./.github/workflows/zeebe-release.yml
+    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.5
     secrets: inherit
     with:
       releaseVersion: ${{ github.event.client_payload.releaseVersion }}

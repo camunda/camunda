@@ -25,8 +25,8 @@ public final class AtomicUtil {
    * replaced.
    *
    * <p>If the value of the atomic reference has been replaced by another thread in the meantime,
-   * the rollback function is called with the value provided by the replacer function, and the
-   * replacer function is called again.
+   * the replacer function is called again. Additionally, the rollback function is applied to any
+   * non-empty value returned by the previous replacer function call.
    *
    * @param ref The atomic reference that holds the value to replace
    * @param replacer The replacer function used to provide a new value to the atomic reference; if
@@ -40,20 +40,17 @@ public final class AtomicUtil {
       final AtomicReference<T> ref,
       final Function<T, Optional<T>> replacer,
       final Consumer<T> rollback) {
-    T currentVal;
+    T currentVal = null;
     T newVal = null;
     do {
-      if (newVal != null) {
+      if (newVal != null && newVal != currentVal) {
         // another thread appears to have replaced the value in the meantime
         rollback.accept(newVal);
       }
       currentVal = ref.get();
       final var result = replacer.apply(currentVal);
-      if (result.isEmpty()) {
-        return null;
-      }
-      newVal = result.get();
+      newVal = result.orElse(currentVal);
     } while (!ref.compareAndSet(currentVal, newVal));
-    return currentVal;
+    return currentVal == newVal ? null : currentVal;
   }
 }

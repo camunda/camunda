@@ -63,7 +63,7 @@ public class JobBackoffCleanupMigrationTest {
 
   // regression test of https://github.com/camunda/zeebe/issues/14329
   @Test
-  public void shoulCleanOrphanBackoffEntries() {
+  public void shouldCleanOrphanBackoffEntries() {
     // given
     final MutableJobState jobState = processingState.getJobState();
     final JobRecord record = createJobRecord(1000);

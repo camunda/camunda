@@ -37,7 +37,7 @@ public class DueDateCheckerTest {
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     dueDateChecker.execute(mock(TaskResultBuilder.class));
     Mockito.clearInvocations(mockScheduleService);
 
@@ -63,7 +63,7 @@ public class DueDateCheckerTest {
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     dueDateChecker.execute(mock(TaskResultBuilder.class));
     Mockito.clearInvocations(mockScheduleService);
 
@@ -93,7 +93,7 @@ public class DueDateCheckerTest {
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     Mockito.clearInvocations(mockScheduleService);
 
     // when
@@ -119,7 +119,7 @@ public class DueDateCheckerTest {
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService).runDelayed(eq(Duration.ofMillis(timerResolution)), any(Task.class));
     Mockito.clearInvocations(mockScheduleService);
 
     dueDateChecker.execute(mock(TaskResultBuilder.class));

@@ -110,6 +110,7 @@ public class SchemaManagerIT extends AbstractSchemaIT {
                 indexName,
                 new IndexMapping()
                     .setIndexName(indexName)
+                    .setDynamic("strict")
                     .setProperties(
                         Set.of(
                             new IndexMappingProperty()
@@ -161,6 +162,7 @@ public class SchemaManagerIT extends AbstractSchemaIT {
                 indexName,
                 new IndexMapping()
                     .setIndexName(indexName)
+                    .setDynamic("strict")
                     .setProperties(
                         Set.of(
                             new IndexMappingProperty()
@@ -184,7 +186,7 @@ public class SchemaManagerIT extends AbstractSchemaIT {
 
     // and a second templated index of it
     final String secondTemplatedIndexName = testTemplate.getFullQualifiedName() + "instantiated";
-    final Map<String, String> document = Map.of("propA", "test", "propB", "test");
+    final Map<String, Object> document = Map.of("propA", "test", "propB", "test");
     clientTestHelper.createDocument(secondTemplatedIndexName, "1", document);
 
     final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
@@ -204,6 +206,7 @@ public class SchemaManagerIT extends AbstractSchemaIT {
                 secondTemplatedIndexName,
                 new IndexMapping()
                     .setIndexName(secondTemplatedIndexName)
+                    .setDynamic("strict")
                     .setProperties(
                         Set.of(
                             new IndexMappingProperty()
@@ -230,7 +233,7 @@ public class SchemaManagerIT extends AbstractSchemaIT {
 
     // and a second templated index of it
     final String secondTemplatedIndexName = testTemplate.getFullQualifiedName() + "instantiated";
-    final Map<String, String> document = Map.of("propA", "test", "propB", "test");
+    final Map<String, Object> document = Map.of("propA", "test", "propB", "test");
     clientTestHelper.createDocument(secondTemplatedIndexName, "1", document);
 
     // and one of the indices is read only
