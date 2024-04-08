@@ -97,6 +97,14 @@ func TestJobWorkerBuilder_FetchVariables(t *testing.T) {
 	assert.Equal(t, fetchVariables, builder.request.FetchVariable)
 }
 
+func TestJobWorkerBuilder_TenantIds(t *testing.T) {
+	tenantIds := []string{"foo", "bar", "baz"}
+
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
+	builder.TenantIds(tenantIds...)
+	assert.Equal(t, tenantIds, builder.request.TenantIds)
+}
+
 func TestJobWorkerBuilder_Metrics(t *testing.T) {
 	builder := JobWorkerBuilder{}
 	workerMetrics := mock_pb.NewMockJobWorkerMetrics(gomock.NewController(t))
