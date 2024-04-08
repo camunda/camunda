@@ -102,7 +102,7 @@ public class FeelFunctionProvider extends JavaFunctionProvider {
         default ->
             new ValError(
                 "cycle function expected an interval (duration) parameter, but found '%s'"
-                    .formatted(args));
+                    .formatted(args.getFirst()));
       };
     }
   }
