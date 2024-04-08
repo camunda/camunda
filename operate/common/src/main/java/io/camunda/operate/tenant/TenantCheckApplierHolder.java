@@ -32,27 +32,21 @@ public class TenantCheckApplierHolder implements ApplicationContextAware {
   private static ApplicationContext applicationContext;
   private static TenantCheckApplier<Query> tenantCheckApplier;
 
-  public static Optional<TenantCheckApplier<Query>> getOpenSearchTenantCheckApplier() {
-    if (tenantCheckApplier == null) {
-      synchronized (TenantCheckApplierHolder.class) {
-        if (tenantCheckApplier == null) {
-          try {
-            tenantCheckApplier = applicationContext.getBean(TenantCheckApplier.class);
-          } catch (NoSuchBeanDefinitionException ex) {
-            tenantCheckApplier = null;
-          }
-        }
+  public static synchronized Optional<TenantCheckApplier<Query>> getOpenSearchTenantCheckApplier() {
+    try {
+      if (tenantCheckApplier == null) {
+        tenantCheckApplier = applicationContext.getBean(TenantCheckApplier.class);
       }
-    }
-    if (tenantCheckApplier == null) {
-      return Optional.empty();
-    } else {
       return Optional.of(tenantCheckApplier);
+    } catch (final NoSuchBeanDefinitionException ex) {
+      tenantCheckApplier = null;
+      return Optional.empty();
     }
   }
 
   @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+  public void setApplicationContext(final ApplicationContext applicationContext)
+      throws BeansException {
     this.applicationContext = applicationContext;
   }
 }

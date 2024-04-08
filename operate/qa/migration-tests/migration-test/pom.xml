@@ -5,15 +5,11 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa-migration-tests-parent</artifactId>
-    <version>8.5.0-SNAPSHOT</version>
+    <version>8.6.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-migration-tests</artifactId>
 
   <name>Operate QA Migration Tests</name>
-
-  <properties>
-    <license.header>${project.baseUri}/../../../../license/license-header</license.header>
-  </properties>
 
   <dependencies>
     <dependency>
@@ -168,12 +164,6 @@
       </testResource>
     </testResources>
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

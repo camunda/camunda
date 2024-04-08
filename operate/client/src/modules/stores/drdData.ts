@@ -121,14 +121,13 @@ class Drd extends NetworkReconnectionHandler {
     }
 
     return (
-      Object.keys(drdData).find(
-        (decisionId) =>
-          drdData[decisionId]?.some((drdData) => {
-            return (
-              drdData.decisionInstanceId ===
-              decisionInstanceDetailsStore.state.decisionInstanceId
-            );
-          }),
+      Object.keys(drdData).find((decisionId) =>
+        drdData[decisionId]?.some((drdData) => {
+          return (
+            drdData.decisionInstanceId ===
+            decisionInstanceDetailsStore.state.decisionInstanceId
+          );
+        }),
       ) ?? null
     );
   }
