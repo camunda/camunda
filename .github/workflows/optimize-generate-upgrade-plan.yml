@@ -50,6 +50,7 @@ jobs:
         GITHUB_APP_ID=${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
         GITHUB_APP_PRIVATE_KEY=${{ steps.github-token.outputs.token }}
         GITHUB_ACTOR=${{ github.actor }}
+        GITHUB_ACTOR_ID=${{ github.actor_id }}
 
         # Define Java content using a Here Document
         cat <<EOF > upgrade/src/main/java/org/camunda/optimize/upgrade/plan/factories/Upgrade${FROM_VERSION_NO_DOTS}To${TO_VERSION_NO_DOTS}PlanFactory.java
@@ -69,7 +70,7 @@ jobs:
         EOF
 
         git config user.name "${GITHUB_ACTOR}"
-        git config user.email "${GITHUB_APP_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
+        git config user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
         git remote set-url origin "https://${GITHUB_APP_ID}:${GITHUB_APP_PRIVATE_KEY}@github.com/camunda/camunda-optimize.git"
         git add .
         git commit -m "chore(release): generate upgrade plan for ${FROM_VERSION} to ${TO_VERSION}"
