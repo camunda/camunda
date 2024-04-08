@@ -333,19 +333,6 @@ unacceptable behavior as soon as possible.
 [issues]: https://github.com/zeebe-io/zeebe/issues
 [forum]: https://forum.zeebe.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
-[status]: https://github.com/zeebe-io/zeebe/labels?q=Type
-[planned]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
-[ready]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
-[in progress]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
-[needs review]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
-[type]: https://github.com/zeebe-io/zeebe/labels?q=Type
-[enhancement]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
-[maintenance]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
-[bug]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
-[docs]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
-[question]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Question
-[scope]: https://github.com/zeebe-io/zeebe/labels?q=Scope
-[broker]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20broker
 [clients/java]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fjava
 [clients/go]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fgo
 [changelog generation]: https://github.com/zeebe-io/zeebe-changelog
