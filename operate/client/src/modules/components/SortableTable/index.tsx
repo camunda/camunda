@@ -225,9 +225,11 @@ const SortableTable: React.FC<Props> = ({
                               </TableCell>
                             ))}
                           </TableExpandRow>
-                          <TableExpandedRow colSpan={headers.length + 2}>
-                            <div>{operationErrorMessage}</div>
-                          </TableExpandedRow>
+                          {operationErrorMessage && (
+                            <TableExpandedRow colSpan={headers.length + 2}>
+                              <div>{operationErrorMessage}</div>
+                            </TableExpandedRow>
+                          )}
                         </React.Fragment>
                       );
                     })}
