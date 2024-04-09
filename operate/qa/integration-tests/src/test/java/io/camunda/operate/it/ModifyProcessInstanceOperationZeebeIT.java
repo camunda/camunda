@@ -74,40 +74,6 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   }
 
   @Test
-  @Ignore("operationIsFailed() check does not work correctly and times out")
-  public void shouldCancelTokenFailsForFlowNodeId() throws Exception {
-    // given
-    tester
-        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
-        .waitUntil()
-        .flowNodeIsActive("taskA");
-    // when
-    var modifications =
-        List.of(
-            new Modification()
-                .setModification(Modification.Type.CANCEL_TOKEN)
-                .setFromFlowNodeId("taskA"));
-
-    tester
-        .modifyProcessInstanceOperation(modifications)
-        .waitUntil()
-        .operationIsCompleted()
-        .then()
-        .waitUntil()
-        .flowNodeIsTerminated("taskA");
-    // then
-    assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
-
-    modifications =
-        List.of(
-            new Modification()
-                .setModification(Modification.Type.CANCEL_TOKEN)
-                .setFromFlowNodeId("taskA"));
-
-    tester.modifyProcessInstanceOperation(modifications).waitUntil().operationIsFailed();
-  }
-
-  @Test
   public void shouldCancelTokenForFlowNodeInstanceKey() throws Exception {
     // given
     final long flowNodeInstanceKey =
@@ -466,7 +432,6 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   }
 
   @Test // NPE in cancelToken : https://github.com/camunda/operate/issues/3499
-  @Ignore("operationIsFailed() check does not work correctly and times out")
   public void shouldMoveTokenFailsDueMissingFlowNodeInstanceKeys() throws Exception {
     // given
     final var flowNodeInstanceKey =
