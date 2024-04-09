@@ -16,6 +16,7 @@
 package io.camunda.zeebe.spring.client.processor;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -30,7 +31,6 @@ import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -68,11 +68,9 @@ public class DeploymentPostProcessorTest {
 
     when(client.newDeployResourceCommand()).thenReturn(deployStep1);
 
-    when(deploymentPostProcessor.getResources(ArgumentMatchers.anyString()))
-        .thenReturn(new Resource[] {resource});
+    when(deploymentPostProcessor.getResources(anyString())).thenReturn(new Resource[] {resource});
 
-    when(deployStep1.addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.anyString()))
-        .thenReturn(deployStep2);
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
     when(deployStep2.send()).thenReturn(zeebeFuture);
 
@@ -85,7 +83,7 @@ public class DeploymentPostProcessorTest {
     deploymentPostProcessor.start(client);
 
     // then
-    verify(deployStep1).addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
+    verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
     verify(deployStep2).send();
     verify(zeebeFuture).join();
   }
@@ -108,8 +106,7 @@ public class DeploymentPostProcessorTest {
     when(deploymentPostProcessor.getResources("classpath*:/2.bpmn"))
         .thenReturn(new Resource[] {resources[1]});
 
-    when(deployStep1.addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.anyString()))
-        .thenReturn(deployStep2);
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
     when(deployStep2.send()).thenReturn(zeebeFuture);
 
@@ -122,8 +119,8 @@ public class DeploymentPostProcessorTest {
     deploymentPostProcessor.start(client);
 
     // then
-    verify(deployStep1).addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
-    verify(deployStep1).addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
+    verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
+    verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
 
     verify(deployStep2).send();
     verify(zeebeFuture).join();
