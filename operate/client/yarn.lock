@@ -5062,7 +5062,7 @@ dlv@^1.1.3:
   resolved "https://registry.yarnpkg.com/dlv/-/dlv-1.1.3.tgz#5c198a8a11453596e751494d49874bc7732f2e79"
   integrity sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==
 
-dmn-js-decision-table@^16.0.0:
+dmn-js-decision-table@^16.1.0:
   version "16.1.0"
   resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.1.0.tgz#2561788715f1ee5adfead76bf1af6c560a0dd2d0"
   integrity sha512-f22u0giG1SUJqE7UKZYRJXfkafroFzVC+KuG8FukZZ9UipAVyrUppSDZ49YR+9Y0uBM6Q9xtzrKr7ySOCTUnqA==
@@ -5078,7 +5078,7 @@ dmn-js-decision-table@^16.0.0:
     selection-ranges "^3.0.2"
     table-js "^9.1.0"
 
-dmn-js-drd@^16.0.2:
+dmn-js-drd@^16.1.0:
   version "16.1.0"
   resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-16.1.0.tgz#ac0807bb2504a664cf9e46775d444f5f5028920e"
   integrity sha512-8DHknqe0xm5Fg1b1hwEoGPanRRT7zHIgywgUQnqN518J1fEztL0fBycaApfBqqa+H7xozrkeg5Wl/3XRzpsXjQ==
@@ -5092,7 +5092,7 @@ dmn-js-drd@^16.0.2:
     object-refs "^0.4.0"
     tiny-svg "^3.0.0"
 
-dmn-js-literal-expression@^16.0.0:
+dmn-js-literal-expression@^16.1.0:
   version "16.1.0"
   resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.1.0.tgz#b982d8a483451188e88dc8634ff0d0792b8328e4"
   integrity sha512-R4k8JIYDSclviqybMniNt04q3XjjrnYS99cfHpUIyECtkrQvmwDvPQY4dto9Z+j9hxyyuQcFjlTi7/vV/DCBfw==
@@ -5106,7 +5106,7 @@ dmn-js-literal-expression@^16.0.0:
     min-dom "^4.0.3"
     table-js "^9.1.0"
 
-dmn-js-shared@^16.0.0, dmn-js-shared@^16.1.0:
+dmn-js-shared@^16.1.0:
   version "16.1.0"
   resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-16.1.0.tgz#06c80167317fce39373070fff050b514222e6867"
   integrity sha512-bZnTJfOpfOIcvw7X5NhLiKbZsChM4YojeJuNh98DrhTvtAIOQuuf6mp28eNStr8Sq+lAPEti0EAWUK8uEuhk1Q==
@@ -5123,15 +5123,15 @@ dmn-js-shared@^16.0.0, dmn-js-shared@^16.1.0:
     selection-update "^0.1.2"
     table-js "^9.1.0"
 
-dmn-js@16.0.2:
-  version "16.0.2"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.0.2.tgz#14e77f691f9d70677fc5227a725e9133da08380a"
-  integrity sha512-BceQR7fq+KIjnsDJAwSotuPLMWLQk2uGeJu7yxYBnB01Fix+X+GDpkuvvCGa/6zTiHDGJa3XDpTsIP4BSE1XSA==
+dmn-js@16.1.0:
+  version "16.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.1.0.tgz#ade18185bf3baf560d4287330d559f0ada32df1a"
+  integrity sha512-N76XHGDmIihVRbtBvmGIkaO1WIbTcaSFEUyWvC7RN6trIfUbbNN1auvTa7GZwwXVvRkM5WnTbvKwkKE84TmDAA==
   dependencies:
-    dmn-js-decision-table "^16.0.0"
-    dmn-js-drd "^16.0.2"
-    dmn-js-literal-expression "^16.0.0"
-    dmn-js-shared "^16.0.0"
+    dmn-js-decision-table "^16.1.0"
+    dmn-js-drd "^16.1.0"
+    dmn-js-literal-expression "^16.1.0"
+    dmn-js-shared "^16.1.0"
 
 dmn-moddle@^10.0.0:
   version "10.0.0"
