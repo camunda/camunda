@@ -111,10 +111,6 @@
       "groupSlug": "all-minor-patch"
     },
     {
-      "matchFileNames": ["operate.Dockerfile"],
-      "enabled": false
-    },
-    {
       "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
     }
