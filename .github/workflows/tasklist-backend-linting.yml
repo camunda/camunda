@@ -1,13 +1,27 @@
-name: Tasklist Backend
+name: Tasklist Backend linting
 on:
   push:
     branches:
       - master
+    paths:
+      - '.'
+      - '.github/actions/*-tasklist-*/*'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
     paths-ignore:
       - 'tasklist/client/**'
       - '.ci/**'
       - '.husky/**'
   pull_request:
+    paths:
+      - '.'
+      - '.github/actions/*-tasklist-*/*'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
     paths-ignore:
       - 'tasklist/client/**'
       - '.ci/**'

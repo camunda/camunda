@@ -8,7 +8,23 @@ on:
     branches:
       - 'master'
       - 'stable/**'
+    paths:
+      - '.'
+      - '.ci/preview-environments/**'
+      - '.github/actions/*-tasklist-*/*'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
   pull_request:
+    paths:
+      - '.'
+      - '.ci/preview-environments/**'
+      - '.github/actions/*-tasklist-*/*'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.

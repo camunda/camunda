@@ -1,5 +1,16 @@
 name: Tasklist a11y tests
-on: push
+on:
+  push:
+    branches:
+      - 'master'
+      - 'stable/**'
+    paths:
+      - '.github/workflows/tasklist-a11y.yml'
+      - 'tasklist/client/**'
+  pull_request:
+    paths:
+      - '.github/workflows/tasklist-a11y.yml'
+      - 'tasklist/client/**'
 
 jobs:
   test:
