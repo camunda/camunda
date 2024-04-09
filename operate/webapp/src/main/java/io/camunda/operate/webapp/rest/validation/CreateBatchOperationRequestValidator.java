@@ -14,119 +14,79 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.rest.dto.operation;
+package io.camunda.operate.webapp.rest.validation;
 
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import java.util.List;
-import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
-public class CreateBatchOperationRequestDto {
+@Component
+public class CreateBatchOperationRequestValidator {
 
-  /** Batch operation name */
-  private String name;
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(CreateBatchOperationRequestValidator.class);
 
-  /** Query to filter the process instances affected */
-  private ListViewQueryDto query;
-
-  /** Operation type */
-  private OperationType operationType;
-
-  /** Migration plan, only needed for process instance migration operation */
-  private MigrationPlanDto migrationPlan;
-
-  /** Modifications, only needed for MODIFY_PROCESS_INSTANCE operation type */
-  private List<Modification> modifications;
-
-  public CreateBatchOperationRequestDto() {}
-
-  public CreateBatchOperationRequestDto(
-      final ListViewQueryDto query, final OperationType operationType) {
-    this.query = query;
-    this.operationType = operationType;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public CreateBatchOperationRequestDto setName(final String name) {
-    this.name = name;
-    return this;
-  }
-
-  public ListViewQueryDto getQuery() {
-    return query;
-  }
-
-  public CreateBatchOperationRequestDto setQuery(final ListViewQueryDto query) {
-    this.query = query;
-    return this;
-  }
-
-  public OperationType getOperationType() {
-    return operationType;
-  }
-
-  public CreateBatchOperationRequestDto setOperationType(final OperationType operationType) {
-    this.operationType = operationType;
-    return this;
-  }
-
-  public MigrationPlanDto getMigrationPlan() {
-    return migrationPlan;
-  }
-
-  public CreateBatchOperationRequestDto setMigrationPlan(final MigrationPlanDto migrationPlan) {
-    this.migrationPlan = migrationPlan;
-    return this;
-  }
-
-  public List<Modification> getModifications() {
-    return modifications;
-  }
-
-  public CreateBatchOperationRequestDto setModifications(final List<Modification> modifications) {
-    this.modifications = modifications;
-    return this;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, query, operationType, migrationPlan, modifications);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
+  public void validate(final CreateBatchOperationRequestDto batchOperationRequest) {
+    if (batchOperationRequest.getQuery() == null) {
+      throw new InvalidRequestException("List view query must be defined.");
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
+
+    final OperationType operationType = batchOperationRequest.getOperationType();
+    if (operationType == null) {
+      throw new InvalidRequestException("Operation type must be defined.");
     }
-    final CreateBatchOperationRequestDto that = (CreateBatchOperationRequestDto) o;
-    return Objects.equals(name, that.name)
-        && Objects.equals(query, that.query)
-        && operationType == that.operationType
-        && Objects.equals(migrationPlan, that.migrationPlan)
-        && Objects.equals(modifications, that.modifications);
+
+    if (operationType != OperationType.MODIFY_PROCESS_INSTANCE
+        && batchOperationRequest.getModifications() != null) {
+      throw new InvalidRequestException(
+          String.format("Modifications field not supported for %s operation", operationType));
+    }
+
+    switch (operationType) {
+      case UPDATE_VARIABLE:
+      case ADD_VARIABLE:
+        throw new InvalidRequestException(
+            "For variable update use \"Create operation for one process instance\" endpoint.");
+
+      case MIGRATE_PROCESS_INSTANCE:
+        validateMigrateProcessInstanceType(batchOperationRequest);
+        break;
+
+      case MODIFY_PROCESS_INSTANCE:
+        validateModifyProcessInstanceType(batchOperationRequest);
+        break;
+      default:
+        break;
+    }
   }
 
-  @Override
-  public String toString() {
-    return "CreateBatchOperationRequestDto{"
-        + "name='"
-        + name
-        + '\''
-        + ", query="
-        + query
-        + ", operationType="
-        + operationType
-        + ", migrationPlan="
-        + migrationPlan
-        + ", modifications="
-        + modifications
-        + '}';
+  private void validateModifyProcessInstanceType(
+      final CreateBatchOperationRequestDto batchOperationRequest) {
+    final List<Modification> modifications = batchOperationRequest.getModifications();
+    if (CollectionUtils.isEmpty(modifications)) {
+      throw new InvalidRequestException("Operation requires a single modification entry.");
+    } else if (modifications.size() > 1) {
+      LOGGER.warn("Multiple modifications in request, only one will be processed.");
+      batchOperationRequest.setModifications(List.of(modifications.get(0)));
+    }
+  }
+
+  private void validateMigrateProcessInstanceType(
+      final CreateBatchOperationRequestDto batchOperationRequest) {
+    final MigrationPlanDto migrationPlanDto = batchOperationRequest.getMigrationPlan();
+    if (migrationPlanDto == null) {
+      throw new InvalidRequestException(
+          String.format(
+              "Migration plan is mandatory for %s operation",
+              OperationType.MIGRATE_PROCESS_INSTANCE));
+    }
+    migrationPlanDto.validate();
   }
 }

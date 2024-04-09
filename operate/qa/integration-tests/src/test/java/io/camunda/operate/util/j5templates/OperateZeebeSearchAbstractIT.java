@@ -68,10 +68,15 @@ public class OperateZeebeSearchAbstractIT {
   @MockBean protected UserService userService;
   @MockBean protected TenantService tenantService;
 
+  // Prevents the zeebe client from being constructed. Components that need to connect to zeebe
+  // should use the one in the zeebe container manager
+  @MockBean protected ZeebeClient mockZeebeClient;
+
   @Autowired protected ZeebeContainerManager zeebeContainerManager;
   @Autowired protected SearchContainerManager searchContainerManager;
   @Autowired protected TestResourceManager testResourceManager;
   @Autowired protected TestSearchRepository testSearchRepository;
+  @Autowired protected MockMvcManager mockMvcManager;
 
   // Used to control and clear process/import info between test suites
   @Autowired protected ProcessCache processCache;
@@ -81,9 +86,6 @@ public class OperateZeebeSearchAbstractIT {
   @Autowired protected BeanFactory beanFactory;
 
   @Autowired protected ObjectMapper objectMapper;
-
-  protected ZeebeClient zeebeClient;
-
   protected OperateJ5Tester operateTester;
 
   @BeforeAll
@@ -100,7 +102,7 @@ public class OperateZeebeSearchAbstractIT {
     zeebeContainerManager.startContainer();
     searchContainerManager.startContainer();
 
-    zeebeClient = zeebeContainerManager.getClient();
+    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
     operateTester = beanFactory.getBean(OperateJ5Tester.class, zeebeClient);
 
     // Required to keep search and zeebe from hanging between test suites
@@ -119,8 +121,9 @@ public class OperateZeebeSearchAbstractIT {
 
   protected void zeebeStabilityDelay() {
     try {
+      // This is an arbitrary value that was picked and seems to work
       Thread.sleep(3000);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new RuntimeException(e);
     }
   }

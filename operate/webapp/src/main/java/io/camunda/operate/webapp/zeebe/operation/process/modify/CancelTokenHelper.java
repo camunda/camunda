@@ -14,70 +14,31 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.zeebeimport;
+package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
-import java.io.IOException;
-import java.util.ArrayList;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
+@Component
+public class CancelTokenHelper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CancelTokenHelper.class);
 
-  @Autowired private IncidentTemplate incidentTemplate;
-
-  @Test
-  public void shouldImportMigratedIncident() throws IOException {
-
-    // given
-    final String bpmnSource = "double-task-incident.bpmn";
-    final String bpmnTarget = "double-task.bpmn";
-    final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
-    final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
-    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
-
-    // when
-    final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
-    operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
-
-    final MigrationPlan migrationPlan =
-        new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
-    List.of("taskA", "taskB")
-        .forEach(
-            item ->
-                migrationPlan
-                    .getMappingInstructions()
-                    .add(new MigrationPlanBuilderImpl.MappingInstruction(item + "Incident", item)));
-    zeebeClient
-        .newMigrateProcessInstanceCommand(processInstanceKey)
-        .migrationPlan(migrationPlan)
-        .send()
-        .join();
-
-    operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
-    final List<IncidentEntity> incidents =
-        testSearchRepository.searchTerm(
-            incidentTemplate.getAlias(),
-            IncidentTemplate.PROCESS_INSTANCE_KEY,
-            processInstanceKey,
-            IncidentEntity.class,
-            1);
-
-    // then
-    assertThat(incidents.size()).isEqualTo(1);
-    assertThat(incidents.get(0).getState()).isEqualTo(IncidentState.ACTIVE);
-    assertThat(incidents.get(0).getBpmnProcessId()).isEqualTo("doubleTask");
-    assertThat(incidents.get(0).getProcessDefinitionKey()).isEqualTo(processDefinitionKeyTarget);
-    assertThat(incidents.get(0).getFlowNodeId()).isEqualTo("taskA");
+  public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
+      cancelFlowNodeInstances(
+          ModifyProcessInstanceCommandStep1 currentStep, final List<Long> flowNodeInstanceKeys) {
+    LOGGER.debug("Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeys);
+    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep = null;
+    final int size = flowNodeInstanceKeys.size();
+    for (int i = 0; i < size; i++) {
+      if (i < size - 1) {
+        currentStep = currentStep.terminateElement(flowNodeInstanceKeys.get(i)).and();
+      } else {
+        nextStep = currentStep.terminateElement(flowNodeInstanceKeys.get(i));
+      }
+    }
+    return nextStep;
   }
 }
