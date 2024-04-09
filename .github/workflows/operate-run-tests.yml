@@ -1,6 +1,6 @@
 name: Operate Run Tests
 env:
-  JAVA_VERSION: "17"
+  JAVA_VERSION: "21"
 on:
   workflow_call:
     inputs:
