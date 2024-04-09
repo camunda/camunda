@@ -1,9 +1,9 @@
 ---
 
-name: PDP Epic
+name: Tasklist PDP Epic
 about: Summary of tasks/features to implement PDP epic.
 title: 🎯
-labels: kind/epic, Root task
+labels: ["kind/epic", "Root task", "component/tasklist"]
 assignees: ''
 
 ---

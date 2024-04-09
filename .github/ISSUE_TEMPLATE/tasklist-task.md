@@ -1,9 +1,9 @@
 ---
 
-name: Task
+name: Tasklist Task
 about: Describe a task for the technical issue - it may be individual issue or be connected to epic.
 title: ''
-labels: kind/task
+labels: ["kind/task", "component/tasklist"]
 assignees: ''
 
 ---

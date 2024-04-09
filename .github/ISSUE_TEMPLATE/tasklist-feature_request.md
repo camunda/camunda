@@ -1,9 +1,9 @@
 ---
 
-name: Feature request
-about: Suggest an idea for this project
+name: Tasklist feature request
+about: Suggest an idea for Tasklist project
 title: ''
-labels: kind/feature-request
+labels: ["kind/feature-request" , "component/tasklist"]
 assignees: ''
 
 ---

@@ -1,9 +1,9 @@
 ---
 
-name: Bug report
-about: Report a problem and help us fix it.
+name: Tasklist bug report
+about: Report a problem about Tasklist and help us fix it.
 title: ''
-labels: kind/bug
+labels: ["kind/bug", "component/tasklist"]
 assignees: ''
 
 ---

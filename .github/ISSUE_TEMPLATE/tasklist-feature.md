@@ -1,9 +1,9 @@
 ---
 
-name: Feature
-about: This is a template to write a new feature or story related to the Epic
+name: Tasklist feature
+about: This is a template to write a new Tasklist feature or story related to the Epic
 title: ''
-labels: kind/feature
+labels: ["kind/feature" , "component/tasklist"]
 assignees: ''
 
 ---
