@@ -44,6 +44,7 @@
   // Branches to be checked
   baseBranches: [
     "/^release\\/.*/",
+    "maintenance/3.13",
     "maintenance/3.12",
     "maintenance/3.11",
     "maintenance/3.10",
