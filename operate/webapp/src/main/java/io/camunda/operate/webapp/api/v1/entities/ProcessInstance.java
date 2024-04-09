@@ -36,6 +36,7 @@ public class ProcessInstance {
       START_DATE = ListViewTemplate.START_DATE,
       END_DATE = ListViewTemplate.END_DATE,
       STATE = ListViewTemplate.STATE,
+      INCIDENT = ListViewTemplate.INCIDENT,
       TENANT_ID = ListViewTemplate.TENANT_ID;
 
   private Long key;
@@ -48,6 +49,8 @@ public class ProcessInstance {
 
   @Schema(implementation = ProcessInstanceState.class)
   private String state;
+
+  private Boolean incident;
 
   private Long processDefinitionKey;
   private String tenantId;
@@ -130,6 +133,15 @@ public class ProcessInstance {
     return this;
   }
 
+  public Boolean getIncident() {
+    return incident;
+  }
+
+  public ProcessInstance setIncident(final Boolean incident) {
+    this.incident = incident;
+    return this;
+  }
+
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
@@ -149,37 +161,37 @@ public class ProcessInstance {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ProcessInstance that = (ProcessInstance) o;
+    return Objects.equals(key, that.key)
+        && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(parentKey, that.parentKey)
+        && Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(state, that.state)
+        && Objects.equals(incident, that.incident)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         key,
         processVersion,
         bpmnProcessId,
         parentKey,
+        parentFlowNodeInstanceKey,
         startDate,
         endDate,
         state,
+        incident,
         processDefinitionKey,
         tenantId);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final ProcessInstance that = (ProcessInstance) o;
-    return Objects.equals(key, that.key)
-        && Objects.equals(processVersion, that.processVersion)
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(parentKey, that.parentKey)
-        && Objects.equals(startDate, that.startDate)
-        && Objects.equals(endDate, that.endDate)
-        && Objects.equals(state, that.state)
-        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
-        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -194,6 +206,8 @@ public class ProcessInstance {
         + '\''
         + ", parentKey="
         + parentKey
+        + ", parentFlowNodeInstanceKey="
+        + parentFlowNodeInstanceKey
         + ", startDate='"
         + startDate
         + '\''
@@ -203,6 +217,8 @@ public class ProcessInstance {
         + ", state='"
         + state
         + '\''
+        + ", incident="
+        + incident
         + ", processDefinitionKey="
         + processDefinitionKey
         + ", tenantId='"
