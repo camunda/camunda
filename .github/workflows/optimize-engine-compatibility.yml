@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cambpm: ["7.19", "7.20"] #TODO: add the 'snapshot' option back when we find a solution for new engine DMN transform error and BPMN history ttl issues
+        cambpm: ["7.19", "7.20", "7.21"] #TODO: add the 'snapshot' option back when we find a solution for new engine DMN transform error and BPMN history ttl issues
         includedGroups:
           ["import,eventBasedProcess", "reportEvaluation", ""]
         include:
