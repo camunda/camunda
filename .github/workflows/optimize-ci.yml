@@ -452,8 +452,7 @@ jobs:
 
   # Only deploy artifacts on push event, which in this case can only be triggered by master and maintenance
   deploy-artifacts:
-#    if: github.event_name == 'push' && (github.ref_name == 'master' || startsWith(github.ref_name, 'maintenance/'))
-    if: github.ref_name == 'fix_3130_migation_ci_branch'
+    if: github.event_name == 'push' && (github.ref_name == 'master' || startsWith(github.ref_name, 'maintenance/'))
     name: Deploy Artifacts
     needs: [unit-tests, migration, data-upgrade-test, integration-tests]
     uses: ./.github/workflows/deploy-artifacts.yml
