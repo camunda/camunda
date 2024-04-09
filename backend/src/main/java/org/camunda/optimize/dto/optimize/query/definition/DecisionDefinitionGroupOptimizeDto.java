@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 @Data
 public class DecisionDefinitionGroupOptimizeDto {
@@ -18,9 +19,15 @@ public class DecisionDefinitionGroupOptimizeDto {
   private List<DecisionDefinitionOptimizeDto> versions = new ArrayList<>();
 
   public void sort() {
-    versions.sort(
-        Comparator.comparing(
-                DecisionDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf))
-            .reversed());
+    try {
+      versions.sort(
+          Comparator.comparing(
+                  DecisionDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf))
+              .reversed());
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Error while trying to parse version numbers for sorting decision definition groups: "
+              + versions);
+    }
   }
 }

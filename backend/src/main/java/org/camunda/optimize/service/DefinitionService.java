@@ -47,6 +47,7 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsR
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.db.reader.DefinitionReader;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
@@ -453,12 +454,17 @@ public class DefinitionService implements ConfigurationReloadable {
 
   public Optional<DefinitionOptimizeResponseDto> getLatestCachedDefinitionOnAnyTenant(
       final DefinitionType type, final String definitionKey) {
-    final Comparator<Map.Entry<String, DefinitionOptimizeResponseDto>> defVersionComparator =
-        Comparator.comparingInt(e -> Integer.parseInt(e.getValue().getVersion()));
-    return getCachedTenantToLatestDefinitionMap(type, definitionKey).entrySet().stream()
-        .sorted(defVersionComparator.reversed())
-        .map(Map.Entry::getValue)
-        .findFirst();
+    final Comparator<Map.Entry<String, DefinitionOptimizeResponseDto>> defVersionComparator;
+    try {
+      defVersionComparator =
+          Comparator.comparingInt(e -> Integer.parseInt(e.getValue().getVersion()));
+      return getCachedTenantToLatestDefinitionMap(type, definitionKey).entrySet().stream()
+          .sorted(defVersionComparator.reversed())
+          .map(Map.Entry::getValue)
+          .findFirst();
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException("Error parsing version string for sorting definitions");
+    }
   }
 
   private Map<String, DefinitionOptimizeResponseDto> fetchLatestProcessDefinition(
@@ -485,11 +491,17 @@ public class DefinitionService implements ConfigurationReloadable {
     final Map<String, DefinitionOptimizeResponseDto> tenantToDefinitionMap =
         getCachedTenantToLatestDefinitionMap(type, definitionKey);
 
-    final List<Map.Entry<String, DefinitionOptimizeResponseDto>> sortedFilteredEntries =
-        tenantToDefinitionMap.entrySet().stream()
-            .filter(e -> tenantIds.contains(e.getKey()) || e.getKey() == null)
-            .sorted(Comparator.comparing(e -> Integer.parseInt(e.getValue().getVersion())))
-            .toList();
+    final List<Map.Entry<String, DefinitionOptimizeResponseDto>> sortedFilteredEntries;
+    try {
+      sortedFilteredEntries =
+          tenantToDefinitionMap.entrySet().stream()
+              .filter(e -> tenantIds.contains(e.getKey()) || e.getKey() == null)
+              .sorted(Comparator.comparing(e -> Integer.parseInt(e.getValue().getVersion())))
+              .toList();
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Error while parsing versions while trying to sort definitions");
+    }
 
     // If only one or no definition with the latest version is present, return that
     if (sortedFilteredEntries.size() <= 1) {

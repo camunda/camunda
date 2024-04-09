@@ -44,6 +44,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.db.reader.InstantDashboardMetadataReader;
 import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.entities.EntityImportService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -383,7 +384,12 @@ public class InstantPreviewDashboardService {
     // If the file has a number as a suffix, increment it
     if (matcher.find()) {
       String prefix = matcher.group(1);
-      int suffix = Integer.parseInt(matcher.group(2)) + 1;
+      int suffix;
+      try {
+        suffix = Integer.parseInt(matcher.group(2)) + 1;
+      } catch (final NumberFormatException exception) {
+        throw new OptimizeRuntimeException("Error while incrementing file name");
+      }
       return prefix + suffix + fileExtension;
     } else {
       // In case the file has no number in the suffix, just add "1" as default

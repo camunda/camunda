@@ -7,6 +7,7 @@ package org.camunda.optimize.jetty;
 
 import com.google.common.collect.ImmutableList;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -42,10 +43,13 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(ApplicationContext context) {
-    setActuatorPortStatic(
-        Integer.parseInt(
-            context
-                .getEnvironment()
-                .getProperty(ACTUATOR_PORT_PROPERTY_KEY, ACTUATOR_PORT_DEFAULT)));
+    String configuredPort =
+        context.getEnvironment().getProperty(ACTUATOR_PORT_PROPERTY_KEY, ACTUATOR_PORT_DEFAULT);
+    try {
+      setActuatorPortStatic(Integer.parseInt(configuredPort));
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Cannot reload Actuator config as port is not valid: " + configuredPort);
+    }
   }
 }

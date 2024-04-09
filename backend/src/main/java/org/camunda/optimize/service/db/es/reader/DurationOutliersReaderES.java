@@ -199,14 +199,19 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
         .getBuckets().stream()
             .map(
                 b -> {
-                  final Long durationKey = Double.valueOf(b.getKeyAsString()).longValue();
-                  return new DurationChartEntryDto(
-                      durationKey,
-                      b.getDocCount(),
-                      isOutlier(
-                          outlierParams.getLowerOutlierBound(),
-                          outlierParams.getHigherOutlierBound(),
-                          durationKey));
+                  try {
+                    final Long durationKey = Double.valueOf(b.getKeyAsString()).longValue();
+                    return new DurationChartEntryDto(
+                        durationKey,
+                        b.getDocCount(),
+                        isOutlier(
+                            outlierParams.getLowerOutlierBound(),
+                            outlierParams.getHigherOutlierBound(),
+                            durationKey));
+                  } catch (final NumberFormatException exception) {
+                    throw new OptimizeRuntimeException(
+                        "Error mapping key to numerical value: " + b.getKeyAsString());
+                  }
                 })
             .collect(Collectors.toList());
   }

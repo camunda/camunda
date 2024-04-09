@@ -95,7 +95,12 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   protected GetTasksResponse waitTaskCompletion(String taskId) {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
-    final long id = Long.parseLong(taskIdParts[1]);
+    final long id;
+    try {
+      id = Long.parseLong(taskIdParts[1]);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException("Error while parsing task ID parts");
+    }
     return executeWithGivenRetries(
         Integer.MAX_VALUE,
         "GetTaskInfo{" + nodeId + "},{" + id + "}",

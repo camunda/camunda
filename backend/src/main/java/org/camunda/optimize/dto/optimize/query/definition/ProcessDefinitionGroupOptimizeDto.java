@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 @Data
 public class ProcessDefinitionGroupOptimizeDto {
@@ -18,9 +19,15 @@ public class ProcessDefinitionGroupOptimizeDto {
   private List<ProcessDefinitionOptimizeDto> versions = new ArrayList<>();
 
   public void sort() {
-    versions.sort(
-        Comparator.comparing(
-                ProcessDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf))
-            .reversed());
+    try {
+      versions.sort(
+          Comparator.comparing(
+                  ProcessDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf))
+              .reversed());
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Error while trying to parse version numbers for sorting process definition groups: "
+              + versions);
+    }
   }
 }

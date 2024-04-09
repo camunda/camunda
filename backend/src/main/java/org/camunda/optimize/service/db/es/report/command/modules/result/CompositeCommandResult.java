@@ -291,9 +291,14 @@ public class CompositeCommandResult {
               if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
                 return null;
               } else {
-                return keyIsOfNumericType
-                    ? Double.valueOf(entry.getKey())
-                    : entry.getKey().toLowerCase();
+                try {
+                  return keyIsOfNumericType
+                      ? Double.valueOf(entry.getKey())
+                      : entry.getKey().toLowerCase();
+                } catch (final NumberFormatException exception) {
+                  throw new OptimizeRuntimeException(
+                      "Error sorting numerically for key: " + entry.getKey());
+                }
               }
             };
         break;
@@ -347,9 +352,14 @@ public class CompositeCommandResult {
                         if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
                           return null;
                         } else {
-                          return keyIsOfNumericType
-                              ? Double.valueOf(entry.getKey())
-                              : entry.getKey().toLowerCase();
+                          try {
+                            return keyIsOfNumericType
+                                ? Double.valueOf(entry.getKey())
+                                : entry.getKey().toLowerCase();
+                          } catch (final NumberFormatException exception) {
+                            throw new OptimizeRuntimeException(
+                                "Error sorting numerically for key: " + entry.getKey());
+                          }
                         }
                       };
                   break;

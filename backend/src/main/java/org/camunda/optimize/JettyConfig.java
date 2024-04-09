@@ -214,7 +214,11 @@ public class JettyConfig {
           ? configurationService.getContainerHttpsPort()
           : configurationService.getContainerHttpPort().orElse(8090);
     }
-    return Integer.parseInt(portProperty);
+    try {
+      return Integer.parseInt(portProperty);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeConfigurationException("Error while determining container port");
+    }
   }
 
   public Optional<String> getContextPath() {

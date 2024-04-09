@@ -74,24 +74,20 @@ public abstract class AbstractVariableQueryFilter {
 
   protected Object retrieveValue(OperatorMultipleValuesVariableFilterDataDto dto) {
     final String value = dto.getData().getValues().get(0);
-    if (value != null) {
-      switch (dto.getType()) {
-        case INTEGER:
-          return Integer.parseInt(value);
-        case LONG:
-          return Long.parseLong(value);
-        case SHORT:
-          return Short.parseShort(value);
-        case DOUBLE:
-          return Double.parseDouble(value);
-        case STRING:
-        case DATE:
-        case BOOLEAN:
-        default:
-          return value;
+    try {
+      if (value != null) {
+        return switch (dto.getType()) {
+          case INTEGER -> Integer.parseInt(value);
+          case LONG -> Long.parseLong(value);
+          case SHORT -> Short.parseShort(value);
+          case DOUBLE -> Double.parseDouble(value);
+          default -> value;
+        };
+      } else {
+        return null;
       }
-    } else {
-      return null;
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException("Error trying to parse value for filter: " + value);
     }
   }
 }

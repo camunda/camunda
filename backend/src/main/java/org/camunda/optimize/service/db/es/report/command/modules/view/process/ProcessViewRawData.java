@@ -84,7 +84,7 @@ public class ProcessViewRawData extends ProcessViewPart {
   private static final String PARAMS_CURRENT_TIME = "params." + CURRENT_TIME;
   private static final String DATE_FORMAT = "dateFormat";
   private static final String FLOWNODE_IDS_TO_DURATIONS = "flowNodeIdsToDurations";
-  private static final String NUMBER_OF_USERTASKS = "numberOfUserTasks";
+  private static final String NUMBER_OF_USER_TASKS = "numberOfUserTasks";
 
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
@@ -189,7 +189,7 @@ public class ProcessViewRawData extends ProcessViewPart {
     searchRequest
         .source()
         .scriptField(
-            NUMBER_OF_USERTASKS,
+            NUMBER_OF_USER_TASKS,
             createDefaultScript(
                 "Optional.ofNullable(params._source.flowNodeInstances).map(list -> list.stream().filter(item -> item.flowNodeType"
                     + ".equals('userTask')).count()).orElse(0L)"));
@@ -225,7 +225,7 @@ public class ProcessViewRawData extends ProcessViewPart {
                 hit.getFields().get(FLOWNODE_IDS_TO_DURATIONS).getValue());
             instanceIdsToUserTaskCount.put(
                 processInstance.getProcessInstanceId(),
-                Long.valueOf(hit.getFields().get(NUMBER_OF_USERTASKS).getValue().toString()));
+                Long.valueOf(hit.getFields().get(NUMBER_OF_USER_TASKS).getValue().toString()));
             if (processInstance.getDuration() == null && processInstance.getStartDate() != null) {
               final Optional<ReportSortingDto> sorting =
                   context.getReportConfiguration().getSorting();
@@ -241,6 +241,8 @@ public class ProcessViewRawData extends ProcessViewPart {
               }
             }
             return processInstance;
+          } catch (final NumberFormatException exception) {
+            throw new OptimizeRuntimeException("Error while parsing fields to numbers");
           } catch (IOException e) {
             final String reason = "Error while mapping search results to Process Instances";
             log.error(reason, e);

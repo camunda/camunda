@@ -15,6 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.importing.EngineConstants;
@@ -80,14 +81,18 @@ public class EngineVersionChecker {
 
     final String plainVersion = Version.stripToPlainVersion(currentVersion);
     final String currentMajorAndMinor = Version.getMajorAndMinor(currentVersion);
-    return supportedVersions.stream()
-        .filter(v -> currentMajorAndMinor.equals(Version.getMajorAndMinor(v)))
-        .findFirst()
-        .map(
-            s ->
-                Integer.parseInt(Version.getPatchVersionFrom(plainVersion))
-                    >= Integer.parseInt(Version.getPatchVersionFrom(s)))
-        .orElseGet(() -> isCurrentBiggerThanSupported(plainVersion, supportedVersions));
+    try {
+      return supportedVersions.stream()
+          .filter(v -> currentMajorAndMinor.equals(Version.getMajorAndMinor(v)))
+          .findFirst()
+          .map(
+              s ->
+                  Integer.parseInt(Version.getPatchVersionFrom(plainVersion))
+                      >= Integer.parseInt(Version.getPatchVersionFrom(s)))
+          .orElseGet(() -> isCurrentBiggerThanSupported(plainVersion, supportedVersions));
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeConfigurationException("Error determining engine Version!");
+    }
   }
 
   private static boolean isCurrentBiggerThanSupported(
