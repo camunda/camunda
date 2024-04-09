@@ -124,7 +124,7 @@ services:
     ports:
       - 26500:26500
       - 8000:8000
-      - 8083:8080
+      - 8089:8080
     restart: always
     networks:
       - identity-network
@@ -145,7 +145,7 @@ services:
     ports:
       - 26500:26500
       - 8000:8000
-      - 8083:8080
+      - 8089:8080
     restart: always
     networks:
       - identity-network

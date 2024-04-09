@@ -75,7 +75,7 @@ services:
     ports:
       - 26500:26500
       - 9600:9600
-      - 8083:8080
+      - 8089:8080
     depends_on:
       - elasticsearch
     networks:
@@ -97,7 +97,7 @@ services:
     ports:
       - 26500:26500
       - 8000:8000
-      - 8083:8080
+      - 8089:8080
     depends_on:
       - opensearch
     networks:
@@ -186,7 +186,7 @@ services:
     ports:
       - 26503:26503
       - 8001:8000
-      - 8083:8080
+      - 8088:8080
     networks:
       - zeebe_network
     restart: always
@@ -202,6 +202,7 @@ services:
       - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebeElasticsearch.prefix=e2e
       - camunda.tasklist.zeebe.gatewayAddress=zeebe-e2e:26503
+      - camunda.tasklist.zeebe.restAddress=http://zeebe-e2e:8088
       - camunda.tasklist.importer.readerBackoff=0
       - camunda.tasklist.importer.schedulerBackoff=0
       - spring.profiles.active=e2e-test

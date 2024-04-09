@@ -21,7 +21,7 @@ public class ZeebeProperties {
   private String gatewayAddress = "localhost:26500";
   private boolean isSecure = false;
   private String certificatePath = null;
-  private String restAddress = "http://localhost:8083";
+  private String restAddress = "http://localhost:8089";
 
   public boolean isSecure() {
     return isSecure;
