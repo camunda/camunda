@@ -16,7 +16,7 @@
 package io.camunda.zeebe.spring.client.processor;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -33,7 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -55,7 +54,7 @@ public class DeploymentPostProcessorTest {
 
   @BeforeEach
   public void init() {
-    deploymentPostProcessor = Mockito.spy(new ZeebeDeploymentAnnotationProcessor());
+    deploymentPostProcessor = spy(new ZeebeDeploymentAnnotationProcessor());
   }
 
   @Test
@@ -63,35 +62,32 @@ public class DeploymentPostProcessorTest {
     // given
     final ClassInfo classInfo = ClassInfo.builder().bean(new WithSingleClassPathResource()).build();
 
-    final Resource resource = Mockito.mock(FileSystemResource.class);
+    final Resource resource = mock(FileSystemResource.class);
 
-    Mockito.when(resource.getFilename()).thenReturn("1.bpmn");
+    when(resource.getFilename()).thenReturn("1.bpmn");
 
-    Mockito.when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
 
-    Mockito.when(deploymentPostProcessor.getResources(ArgumentMatchers.anyString()))
+    when(deploymentPostProcessor.getResources(ArgumentMatchers.anyString()))
         .thenReturn(new Resource[] {resource});
 
-    Mockito.when(
-            deployStep1.addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.anyString()))
+    when(deployStep1.addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.anyString()))
         .thenReturn(deployStep2);
 
-    Mockito.when(deployStep2.send()).thenReturn(zeebeFuture);
+    when(deployStep2.send()).thenReturn(zeebeFuture);
 
-    Mockito.when(zeebeFuture.join()).thenReturn(deploymentEvent);
+    when(zeebeFuture.join()).thenReturn(deploymentEvent);
 
-    Mockito.when(deploymentEvent.getProcesses())
-        .thenReturn(Collections.singletonList(getProcess()));
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
 
     // when
     deploymentPostProcessor.configureFor(classInfo);
     deploymentPostProcessor.start(client);
 
     // then
-    Mockito.verify(deployStep1)
-        .addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
-    Mockito.verify(deployStep2).send();
-    Mockito.verify(zeebeFuture).join();
+    verify(deployStep1).addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
+    verify(deployStep2).send();
+    verify(zeebeFuture).join();
   }
 
   @Test
@@ -99,44 +95,38 @@ public class DeploymentPostProcessorTest {
     // given
     final ClassInfo classInfo = ClassInfo.builder().bean(new WithDoubleClassPathResource()).build();
 
-    final Resource[] resources = {
-      Mockito.mock(FileSystemResource.class), Mockito.mock(FileSystemResource.class)
-    };
+    final Resource[] resources = {mock(FileSystemResource.class), mock(FileSystemResource.class)};
 
-    Mockito.when(resources[0].getFilename()).thenReturn("1.bpmn");
-    Mockito.when(resources[1].getFilename()).thenReturn("2.bpmn");
+    when(resources[0].getFilename()).thenReturn("1.bpmn");
+    when(resources[1].getFilename()).thenReturn("2.bpmn");
 
-    Mockito.when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
 
-    Mockito.when(deploymentPostProcessor.getResources("classpath*:/1.bpmn"))
+    when(deploymentPostProcessor.getResources("classpath*:/1.bpmn"))
         .thenReturn(new Resource[] {resources[0]});
 
-    Mockito.when(deploymentPostProcessor.getResources("classpath*:/2.bpmn"))
+    when(deploymentPostProcessor.getResources("classpath*:/2.bpmn"))
         .thenReturn(new Resource[] {resources[1]});
 
-    Mockito.when(
-            deployStep1.addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.anyString()))
+    when(deployStep1.addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.anyString()))
         .thenReturn(deployStep2);
 
-    Mockito.when(deployStep2.send()).thenReturn(zeebeFuture);
+    when(deployStep2.send()).thenReturn(zeebeFuture);
 
-    Mockito.when(zeebeFuture.join()).thenReturn(deploymentEvent);
+    when(zeebeFuture.join()).thenReturn(deploymentEvent);
 
-    Mockito.when(deploymentEvent.getProcesses())
-        .thenReturn(Collections.singletonList(getProcess()));
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
 
     // when
     deploymentPostProcessor.configureFor(classInfo);
     deploymentPostProcessor.start(client);
 
     // then
-    Mockito.verify(deployStep1)
-        .addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
-    Mockito.verify(deployStep1)
-        .addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
+    verify(deployStep1).addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
+    verify(deployStep1).addResourceStream(ArgumentMatchers.any(), ArgumentMatchers.eq("1.bpmn"));
 
-    Mockito.verify(deployStep2).send();
-    Mockito.verify(zeebeFuture).join();
+    verify(deployStep2).send();
+    verify(zeebeFuture).join();
   }
 
   @Test
@@ -148,7 +138,7 @@ public class DeploymentPostProcessorTest {
           final ClassInfo classInfo =
               ClassInfo.builder().bean(new WithNoClassPathResource()).build();
 
-          Mockito.when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+          when(client.newDeployResourceCommand()).thenReturn(deployStep1);
 
           // when
           deploymentPostProcessor.configureFor(classInfo);

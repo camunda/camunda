@@ -775,12 +775,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-spring</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
         <classifier>tests</classifier>
