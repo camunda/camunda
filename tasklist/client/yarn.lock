@@ -249,15 +249,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.8.1":
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.1.tgz#9932b8607195b4bb3e84fc1e580c99de3526d620"
-  integrity sha512-yCd/IK5yBDuax3NxbPfjJZRzBG8ii5h8/ssnJERT9KsEluhfIBfPXuFtsB9/hH+XQ7Mke9C0whScWgqpN77Gjw==
+"@bpmn-io/form-js-carbon-styles@1.8.3":
+  version "1.8.3"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.3.tgz#8457869147a175be67cacc053d65d9b16481035a"
+  integrity sha512-OBuGlmR1QXPHrB4T5QpRyYp2Pfiq0PYHwIzIlDh77j0LVbWJDQwR+uG8ovRKo2S/Em4tatNia9Qy416E25CUMg==
 
-"@bpmn-io/form-js-viewer@1.8.1":
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.1.tgz#648fa9cfa457b2e6b52c127108445f3dbbacdf9a"
-  integrity sha512-QDDGxEGIyDp756zp8uA0itpj6nmDwz4ZNls9mZSf2+E2oX2jNkxnuhZ7+ZQ0r5TGK291mRBAZJjy0h3DIEBeKw==
+"@bpmn-io/form-js-viewer@1.8.3":
+  version "1.8.3"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.3.tgz#0d47d01ceaa6ee7b4a9a3f33c87910e7b5249fbb"
+  integrity sha512-maD2ryMHMj4frd5/6ESc6aEmh9/eCrxOy7n9Cb75iMEZq4n+xi0uQAnXFiVR6H6Yj4Ldu8BVTOdoQoP2/gg4JQ==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -1364,10 +1364,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@20.12.2", "@types/node@>=12.12.47", "@types/node@>=13.7.0", "@types/node@^20.11.16":
-  version "20.12.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.12.2.tgz#9facdd11102f38b21b4ebedd9d7999663343d72e"
-  integrity sha512-zQ0NYO87hyN6Xrclcqp7f8ZbXNbRfoGWNcMvHTPQp9UUrwI0mI7XBz+cu7/W6/VClYo2g63B0cjull/srU7LgQ==
+"@types/node@*", "@types/node@20.12.6", "@types/node@>=12.12.47", "@types/node@>=13.7.0", "@types/node@^20.11.16":
+  version "20.12.6"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.12.6.tgz#72d068870518d7da1d97b49db401e2d6a1805294"
+  integrity sha512-3KurE8taB8GCvZBPngVbp0lk5CKi8M9f9k1rsADh0Evdz5SzJ+Q+Hx9uHoFGsLnLnd1xmkDQr2hVhlA0Mn0lKQ==
   dependencies:
     undici-types "~5.26.4"
 
@@ -1390,10 +1390,10 @@
   resolved "https://registry.yarnpkg.com/@types/prop-types/-/prop-types-15.7.9.tgz#b6f785caa7ea1fe4414d9df42ee0ab67f23d8a6d"
   integrity sha512-n1yyPsugYNSmHgxDFjicaI2+gCNjsBck8UX9kuofAKlc0h1bL+20oSF72KeNaW2DUlesbEVCFgyV2dPGTiY42g==
 
-"@types/react-dom@18.2.23", "@types/react-dom@^18.0.0":
-  version "18.2.23"
-  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.2.23.tgz#112338760f622a16d64271b408355f2f27f6302c"
-  integrity sha512-ZQ71wgGOTmDYpnav2knkjr3qXdAFu0vsk8Ci5w3pGAIdj7/kKAyn+VsQDhXsmzzzepAiI9leWMmubXz690AI/A==
+"@types/react-dom@18.2.24", "@types/react-dom@^18.0.0":
+  version "18.2.24"
+  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.2.24.tgz#8dda8f449ae436a7a6e91efed8035d4ab03ff759"
+  integrity sha512-cN6upcKd8zkGy4HU9F1+/s98Hrp6D4MOcippK4PoE8OZRngohHZpbJn1GsaDLz87MqvHNoT13nHvNqM9ocRHZg==
   dependencies:
     "@types/react" "*"
 
@@ -1404,10 +1404,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@18.2.74":
-  version "18.2.74"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.74.tgz#2d52eb80e4e7c4ea8812c89181d6d590b53f958c"
-  integrity sha512-9AEqNZZyBx8OdZpxzQlaFEVCSFUM2YXJH46yPOiOpm078k6ZLOCcuAzGum/zK8YBwY+dbahVNbHrbgrAwIRlqw==
+"@types/react@*", "@types/react@18.2.75":
+  version "18.2.75"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.75.tgz#45d18f384939306d35312def1bf532eb38a68562"
+  integrity sha512-+DNnF7yc5y0bHkBTiLKqXFe+L4B3nvOphiMY3tuA5X10esmjqk7smyBZzbGTy2vsiy/Bnzj8yFIBL8xhRacoOg==
   dependencies:
     "@types/prop-types" "*"
     csstype "^3.0.2"
@@ -5948,10 +5948,10 @@ typescript-plugin-css-modules@5.1.0:
     stylus "^0.62.0"
     tsconfig-paths "^4.2.0"
 
-typescript@5.4.3:
-  version "5.4.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.4.3.tgz#5c6fedd4c87bee01cd7a528a30145521f8e0feff"
-  integrity sha512-KrPd3PKaCLr78MalgiwJnA25Nm8HAmdwN3mYUYZgG/wizIo9EainNVQI9/yDavtVFRN2h3k8uf3GLHuhDMgEHg==
+typescript@5.4.4:
+  version "5.4.4"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.4.4.tgz#eb2471e7b0a5f1377523700a21669dce30c2d952"
+  integrity sha512-dGE2Vv8cpVvw28v8HCPqyb08EzbBURxDpuhJvTrusShUfGnhHBafDsLdS1EhhxyL6BJQE+2cT3dDPAv+MQ6oLw==
 
 ufo@^1.3.0:
   version "1.3.2"
@@ -6139,10 +6139,10 @@ vite-tsconfig-paths@4.3.2:
     globrex "^0.1.2"
     tsconfck "^3.0.3"
 
-vite@5.2.7, vite@^5.0.0:
-  version "5.2.7"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-5.2.7.tgz#e1b8a985eb54fcb9467d7f7f009d87485016df6e"
-  integrity sha512-k14PWOKLI6pMaSzAuGtT+Cf0YmIx12z9YGon39onaJNy8DLBfBJrzg9FQEmkAM5lpHBZs9wksWAsyF/HkpEwJA==
+vite@5.2.8, vite@^5.0.0:
+  version "5.2.8"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-5.2.8.tgz#a99e09939f1a502992381395ce93efa40a2844aa"
+  integrity sha512-OyZR+c1CE8yeHw5V5t59aXsUPPVTHMDjEZz8MgguLL/Q7NblxhZUlTu9xSPqlsUO/y+X7dlU05jdhvyycD55DA==
   dependencies:
     esbuild "^0.20.1"
     postcss "^8.4.38"
