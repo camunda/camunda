@@ -137,7 +137,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById(final ReportType reportType) {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
@@ -704,7 +703,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReport(final ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
@@ -722,7 +720,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReport_reflectOwnerAndModifierNames_ownerHasNoAuthSideEffects(
       final ReportType reportType) {
     // given
@@ -761,7 +758,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReportWithoutVersionsAndTenantsDoesNotFail(
       final ReportType reportType) {
     // given

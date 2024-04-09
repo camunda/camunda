@@ -83,6 +83,8 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
+import org.opensearch.client.opensearch.indices.Alias;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
@@ -303,10 +305,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void deleteAllOptimizeData() {
-    getOptimizeOpenSearchClient()
-        .getRichOpenSearchClient()
-        .doc()
-        .deleteByQuery(QueryDSL.matchAll(), true, getIndexNameService().getIndexPrefix() + "*");
+    try {
+      getOptimizeOpenSearchClient()
+          .deleteByQuery(QueryDSL.matchAll(), true, getIndexNameService().getIndexPrefix() + "*");
+    } catch (final Exception e) {
+      // Not a problem if the deletion fails
+    }
   }
 
   @SneakyThrows
@@ -673,6 +677,27 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
               getOptimizeOpenSearchClient().getOpenSearchClient());
     }
     return opensearchDatabaseVersion;
+  }
+
+  @Override
+  public void createIndex(
+      final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
+      throws IOException {
+    final HashMap<String, Alias> aliasData = new HashMap<>();
+    aliasData.put(optimizeIndexAliasForIndex, new Alias.Builder().isWriteIndex(true).build());
+    final CreateIndexRequest request =
+        new CreateIndexRequest.Builder()
+            .index(optimizeIndexNameWithVersion)
+            .aliases(aliasData)
+            .build();
+    final boolean created =
+        getOptimizeOpenSearchClient()
+            .getRichOpenSearchClient()
+            .index()
+            .createIndexWithRetries(request);
+    if (!created) {
+      throw new IOException("Could not create index " + optimizeIndexNameWithVersion);
+    }
   }
 
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {

@@ -435,7 +435,6 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
                     .containsExactly((String) null));
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void updateDefinitionScopeEntry_removeTenant_reportXmlNotAffected() {
     // given

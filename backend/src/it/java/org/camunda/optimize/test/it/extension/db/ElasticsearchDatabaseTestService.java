@@ -92,6 +92,7 @@ import org.camunda.optimize.test.repository.TestIndexRepositoryES;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
+import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -106,6 +107,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
@@ -880,6 +882,18 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         .putSettings(
             new UpdateSettingsRequest(buildDynamicSettings(configurationService), indexName),
             esClient.requestOptions());
+  }
+
+  @Override
+  public void createIndex(
+      final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
+      throws IOException {
+    final CreateIndexRequest request = new CreateIndexRequest(optimizeIndexNameWithVersion);
+    request.alias(new Alias(optimizeIndexAliasForIndex).writeIndex(true));
+    getOptimizeElasticsearchClient()
+        .getHighLevelClient()
+        .indices()
+        .create(request, getOptimizeElasticsearchClient().requestOptions());
   }
 
   @SneakyThrows

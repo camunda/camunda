@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.JsonBody.json;
@@ -23,12 +24,14 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
+@Tag(OPENSEARCH_PASSING)
 public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @RegisterExtension
@@ -90,6 +93,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeAll_customBatchSize() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
@@ -149,6 +153,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeAll_camundaEventData() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
@@ -181,6 +186,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeAll_camundaEventData_specificKeyTtl() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
@@ -217,6 +223,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeVariables() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
@@ -238,6 +245,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeVariables_customBatchSize() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
@@ -272,6 +280,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeVariables_specificKeyCleanupMode() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
@@ -299,6 +308,8 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Passes locally but flaky on pipeline
   public void testCleanupModeVariables_specificKeyCleanupMode_noInstanceDataExists() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
@@ -327,6 +338,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeVariables_specificKeyTtl() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
@@ -352,6 +364,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeVariables_camundaEventData() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
@@ -379,6 +392,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeVariables_camundaEventData_specificKey() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
@@ -411,6 +425,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
   @Test
   @SneakyThrows
   @SuppressWarnings(UNCHECKED_CAST)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionLogsWarning() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";

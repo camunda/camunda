@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -241,6 +242,9 @@ public abstract class DatabaseTestService {
       String processDefinitionKey,
       int nestedDocLimit,
       final ConfigurationService configurationService);
+
+  public abstract void createIndex(
+      String optimizeIndexNameWithVersion, String optimizeIndexAliasForIndex) throws IOException;
 
   public void disableCleanup() {
     haveToClean = false;

@@ -3,20 +3,15 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.es.writer;
+package org.camunda.optimize.service.db.repository.es;
 
-import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForImportIndices;
-import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForNonImportIndices;
 import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWithBackupId;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.MappingMetadataUtil;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.db.writer.BackupWriter;
+import org.camunda.optimize.service.db.repository.SnapshotRepository;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.ActionListener;
@@ -29,26 +24,13 @@ import org.elasticsearch.transport.TransportException;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Component
 @Slf4j
+@Component
+@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class BackupWriterES implements BackupWriter {
-
+public class SnapshotRepositoryES implements SnapshotRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
-  private final OptimizeIndexNameService indexNameService;
-
-  @Override
-  public void triggerSnapshotCreation(final Long backupId) {
-    final String snapshot1Name = getSnapshotNameForImportIndices(backupId);
-    final String snapshot2Name = getSnapshotNameForNonImportIndices(backupId);
-    CompletableFuture.runAsync(
-        () -> {
-          triggerSnapshot(snapshot1Name, getIndexAliasesWithImportIndexFlag(true));
-          triggerSnapshot(snapshot2Name, getIndexAliasesWithImportIndexFlag(false));
-        });
-  }
 
   @Override
   public void deleteOptimizeSnapshots(final Long backupId) {
@@ -60,7 +42,8 @@ public class BackupWriterES implements BackupWriter {
     esClient.deleteSnapshotAsync(deleteSnapshotRequest, getDeleteSnapshotActionListener(backupId));
   }
 
-  private void triggerSnapshot(final String snapshotName, final String[] indexNames) {
+  @Override
+  public void triggerSnapshot(final String snapshotName, final String[] indexNames) {
     log.info("Triggering async snapshot {}.", snapshotName);
     esClient.triggerSnapshotAsync(
         new CreateSnapshotRequest()
@@ -152,13 +135,5 @@ public class BackupWriterES implements BackupWriter {
         }
       }
     };
-  }
-
-  private String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
-    return mappingUtil.getAllMappings(indexNameService.getIndexPrefix()).stream()
-        .filter(mapping -> isImportIndex == mapping.isImportIndex())
-        .map(indexNameService::getOptimizeIndexAliasForIndex)
-        .toArray(String[]::new);
   }
 }

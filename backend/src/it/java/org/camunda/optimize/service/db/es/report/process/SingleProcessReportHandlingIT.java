@@ -460,7 +460,6 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void reportEvaluationReturnsMetaData() {
     // given
     final String reportId = reportClient.createEmptySingleProcessReport();
@@ -494,7 +493,6 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportWithoutVisualization() {
     // given
     final ProcessReportDataDto reportData =
@@ -518,7 +516,6 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @EnumSource(ProcessReportDataType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReport_missingInstanceIndicesReturnsEmptyResult(
       final ProcessReportDataType reportType) {
     // given

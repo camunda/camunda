@@ -20,6 +20,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -458,5 +459,11 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public int getNestedDocumentLimit(final ConfigurationService configurationService) {
     return databaseTestService.getNestedDocumentsLimit(configurationService);
+  }
+
+  public void createIndex(
+      final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
+      throws IOException {
+    databaseTestService.createIndex(optimizeIndexNameWithVersion, optimizeIndexAliasForIndex);
   }
 }
