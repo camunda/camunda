@@ -54,7 +54,7 @@ jobs:
       - name: Send report to slack channel
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
         with:
-          channel-id: "#optimize-health-status-update"
+          channel-id: "#optimize-status"
           slack-message: ${{ steps.get-report.outputs.infra_report }}
         env:
           SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_API_KEY }}
