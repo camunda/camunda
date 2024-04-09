@@ -213,7 +213,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         () -> {
           final GetIndicesSettingsResponse response =
               openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
-          final IndexSettings settings = response.result().get(indexName).settings().index();
+          final IndexSettings settings = response.result().get(indexName).settings();
           // Opensearch bug where all index settings are in the inner index object
           return (settings.index() == null ? settings : settings.index());
         });
