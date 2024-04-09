@@ -38,7 +38,7 @@ public abstract class AbstractEngineIncidentImportService
       final EngineContext engineContext,
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
@@ -48,29 +48,31 @@ public abstract class AbstractEngineIncidentImportService
 
   @Override
   public void executeImport(
-      List<HistoricIncidentEngineDto> pageOfEngineEntities, Runnable importCompleteCallback) {
+      final List<HistoricIncidentEngineDto> pageOfEngineEntities,
+      final Runnable importCompleteCallback) {
     log.trace("Importing incidents from engine...");
 
-    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<IncidentDto> newOptimizeEntities =
+      final List<IncidentDto> newOptimizeEntities =
           mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      DatabaseImportJob<IncidentDto> databaseImportJob =
+      final DatabaseImportJob<IncidentDto> databaseImportJob =
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
+  @Override
   public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
     return databaseImportJobExecutor;
   }
 
-  private void addDatabaseImportJobToQueue(DatabaseImportJob<?> databaseImportJob) {
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob<?> databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<IncidentDto> mapEngineEntitiesToOptimizeEntities(
-      List<HistoricIncidentEngineDto> engineIncidents) {
+      final List<HistoricIncidentEngineDto> engineIncidents) {
     logIncidentsToBeSkipped(engineIncidents);
     return engineIncidents.stream()
         .filter(this::containsProcessInstanceId)
@@ -83,8 +85,8 @@ public abstract class AbstractEngineIncidentImportService
   protected abstract DatabaseImportJob<IncidentDto> createDatabaseImportJob(
       List<IncidentDto> incidents, Runnable callback);
 
-  private void logIncidentsToBeSkipped(List<HistoricIncidentEngineDto> engineIncidents) {
-    List<String> incidentIdsWithoutProcessInstanceId =
+  private void logIncidentsToBeSkipped(final List<HistoricIncidentEngineDto> engineIncidents) {
+    final List<String> incidentIdsWithoutProcessInstanceId =
         engineIncidents.stream()
             .filter(incident -> !containsProcessInstanceId(incident))
             .map(HistoricIncidentEngineDto::getId)

@@ -36,6 +36,7 @@ public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByM
         context.getReportData(), context.getFilterContext(), definitionService);
   }
 
+  @Override
   protected QueryBuilder getModelElementTypeFilterQuery() {
     return createUserTaskFlowNodeTypeFilter();
   }

@@ -33,6 +33,7 @@ public class HistoricActivityInstanceEngineDto implements TenantSpecificEngineDt
   protected String tenantId;
   protected Long sequenceCounter;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

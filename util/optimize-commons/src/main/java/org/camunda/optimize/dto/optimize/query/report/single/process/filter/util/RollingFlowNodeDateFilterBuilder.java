@@ -19,30 +19,33 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Flow
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
 public class RollingFlowNodeDateFilterBuilder {
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private List<String> flowNodeIds;
   private RollingDateFilterStartDto start;
   private String type;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.VIEW;
 
-  private RollingFlowNodeDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private RollingFlowNodeDateFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  public static RollingFlowNodeDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    RollingFlowNodeDateFilterBuilder builder = new RollingFlowNodeDateFilterBuilder(filterBuilder);
+  public static RollingFlowNodeDateFilterBuilder startDate(
+      final ProcessFilterBuilder filterBuilder) {
+    final RollingFlowNodeDateFilterBuilder builder =
+        new RollingFlowNodeDateFilterBuilder(filterBuilder);
     builder.type = FLOW_NODE_START_DATE;
     return builder;
   }
 
-  public static RollingFlowNodeDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    RollingFlowNodeDateFilterBuilder builder = new RollingFlowNodeDateFilterBuilder(filterBuilder);
+  public static RollingFlowNodeDateFilterBuilder endDate(final ProcessFilterBuilder filterBuilder) {
+    final RollingFlowNodeDateFilterBuilder builder =
+        new RollingFlowNodeDateFilterBuilder(filterBuilder);
     builder.type = FLOW_NODE_END_DATE;
     return builder;
   }
 
-  public RollingFlowNodeDateFilterBuilder start(Long value, DateUnit unit) {
-    this.start = new RollingDateFilterStartDto(value, unit);
+  public RollingFlowNodeDateFilterBuilder start(final Long value, final DateUnit unit) {
+    start = new RollingDateFilterStartDto(value, unit);
     return this;
   }
 
@@ -57,7 +60,7 @@ public class RollingFlowNodeDateFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    ProcessFilterDto<FlowNodeDateFilterDataDto<?>> filterDto;
+    final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> filterDto;
     filterDto =
         type.equals(FLOW_NODE_START_DATE)
             ? new FlowNodeStartDateFilterDto()

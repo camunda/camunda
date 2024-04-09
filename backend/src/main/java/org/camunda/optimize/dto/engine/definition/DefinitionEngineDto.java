@@ -32,6 +32,7 @@ public class DefinitionEngineDto implements Serializable, TenantSpecificEngineDt
    */
   protected boolean deleted;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

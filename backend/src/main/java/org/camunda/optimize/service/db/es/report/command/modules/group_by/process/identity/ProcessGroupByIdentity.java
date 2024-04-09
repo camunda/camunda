@@ -100,6 +100,7 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
     return Collections.singletonList(groupByIdentityAggregation);
   }
 
+  @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse response,
@@ -149,9 +150,9 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
     final Terms byIdentityAggregation =
         filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
     final List<GroupByResult> groupedData = new ArrayList<>();
-    for (Terms.Bucket identityBucket : byIdentityAggregation.getBuckets()) {
+    for (final Terms.Bucket identityBucket : byIdentityAggregation.getBuckets()) {
       final String key = identityBucket.getKeyAsString();
-      List<DistributedByResult> distributedByResults =
+      final List<DistributedByResult> distributedByResults =
           distributedByPart.retrieveResult(response, identityBucket.getAggregations(), context);
 
       if (GROUP_BY_IDENTITY_MISSING_KEY.equals(key)) {

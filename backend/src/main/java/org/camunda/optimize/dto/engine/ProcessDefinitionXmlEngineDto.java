@@ -14,6 +14,7 @@ public class ProcessDefinitionXmlEngineDto implements TenantSpecificEngineDto {
   private String bpmn20Xml;
   private String tenantId;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

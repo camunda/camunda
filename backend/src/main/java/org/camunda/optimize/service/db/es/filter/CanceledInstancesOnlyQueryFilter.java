@@ -21,13 +21,14 @@ import org.springframework.stereotype.Component;
 public class CanceledInstancesOnlyQueryFilter
     implements QueryFilter<CanceledInstancesOnlyFilterDataDto> {
 
+  @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<CanceledInstancesOnlyFilterDataDto> canceledInstancesOnlyFilters,
       final FilterContext filterContext) {
     if (canceledInstancesOnlyFilters != null && !canceledInstancesOnlyFilters.isEmpty()) {
-      List<QueryBuilder> filters = query.filter();
-      BoolQueryBuilder onlyRunningInstances =
+      final List<QueryBuilder> filters = query.filter();
+      final BoolQueryBuilder onlyRunningInstances =
           boolQuery()
               .should(termQuery(STATE, EXTERNALLY_TERMINATED_STATE))
               .should(termQuery(STATE, INTERNALLY_TERMINATED_STATE));

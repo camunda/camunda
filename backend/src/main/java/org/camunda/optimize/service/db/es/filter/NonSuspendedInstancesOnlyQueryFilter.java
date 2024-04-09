@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class NonSuspendedInstancesOnlyQueryFilter
     implements QueryFilter<NonSuspendedInstancesOnlyFilterDataDto> {
+
   @Override
   public void addFilters(
       final BoolQueryBuilder query,

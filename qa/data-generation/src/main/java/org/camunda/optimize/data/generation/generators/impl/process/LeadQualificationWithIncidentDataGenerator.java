@@ -23,13 +23,14 @@ public class LeadQualificationWithIncidentDataGenerator extends ProcessDataGener
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("qualified", RandomUtils.nextDouble());
     variables.put("sdrAvailable", RandomUtils.nextDouble());
     variables.put("landingPage", RandomUtils.nextDouble());

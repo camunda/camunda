@@ -41,13 +41,13 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
     this.idleBackoffCalculator = idleBackoffCalculator;
     this.importIndexHandler = importIndexHandler;
     this.importService = importService;
-    this.excludedTenantIds = readExcludedIdsFromConfig();
+    excludedTenantIds = readExcludedIdsFromConfig();
   }
 
   @Override
   public CompletableFuture<Void> runImport() {
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
-    boolean pageIsPresent = importNextPageRetryOnError(importCompleted);
+    final boolean pageIsPresent = importNextPageRetryOnError(importCompleted);
     if (pageIsPresent) {
       idleBackoffCalculator.resetBackoff();
     } else {
@@ -62,6 +62,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
    *
    * @return time to sleep for import process of an engine in general
    */
+  @Override
   public long getBackoffTimeInMs() {
     return idleBackoffCalculator.getTimeUntilNextRetry();
   }
@@ -73,7 +74,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
 
   @Override
   public boolean canImport() {
-    boolean canImportNewPage = idleBackoffCalculator.isReadyForNextRetry();
+    final boolean canImportNewPage = idleBackoffCalculator.isReadyForNextRetry();
     logger.debug("can import next page [{}]", canImportNewPage);
     return canImportNewPage;
   }
@@ -100,7 +101,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
       while (result == null) {
         try {
           result = importNextPage(() -> importCompleteCallback.complete(null));
-        } catch (IllegalStateException e) {
+        } catch (final IllegalStateException e) {
           throw e;
         } catch (final Exception e) {
           if (errorBackoffCalculator.isMaximumBackoffReached()) {
@@ -111,7 +112,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
             importCompleteCallback.complete(null);
             result = true;
           } else {
-            long timeToSleep = errorBackoffCalculator.calculateSleepTime();
+            final long timeToSleep = errorBackoffCalculator.calculateSleepTime();
             logger.error(
                 "Was not able to import next page, retrying after sleeping for {}ms.",
                 timeToSleep,
@@ -120,7 +121,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
           }
         }
       }
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       logger.warn("Was interrupted while importing next page.", e);
       Thread.currentThread().interrupt();
       return false;
@@ -141,13 +142,13 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
   }
 
   private List<String> readExcludedIdsFromConfig() {
-    List<String> excludedIdsFromConfig =
+    final List<String> excludedIdsFromConfig =
         // This check for configurationService being null is necessary, otherwise migration tests
         // fail
         Optional.ofNullable(configurationService)
             .map(
                 config -> {
-                  List<String> idsToExclude = new ArrayList<>();
+                  final List<String> idsToExclude = new ArrayList<>();
                   // If the internal Optimize alias is used, then the mediator is an internal
                   // mechanism and no tenant exclusion should
                   // be applied
@@ -155,7 +156,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
                     try {
                       idsToExclude.addAll(
                           config.getExcludedTenants(importIndexHandler.getEngineAlias()));
-                    } catch (OptimizeConfigurationException e) {
+                    } catch (final OptimizeConfigurationException e) {
                       // This happens when the Engine configured in the importIndexHandler doesn't
                       // exist in the config. That's
                       // not a problem, then we just simply have no excluded Tenants and don't do
@@ -175,14 +176,14 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
     return excludedIdsFromConfig;
   }
 
-  protected List<DTO> filterEntitiesFromExcludedTenants(List<DTO> allEntities) {
+  protected List<DTO> filterEntitiesFromExcludedTenants(final List<DTO> allEntities) {
     if (excludedTenantIds.isEmpty()) {
       return allEntities;
     } else {
       logger.debug(
           "Import filter by tenant is active - Excluding data from these tenants: {}",
           excludedTenantIds);
-      Predicate<DTO> isTenantSpecific = TenantSpecificEngineDto.class::isInstance;
+      final Predicate<DTO> isTenantSpecific = TenantSpecificEngineDto.class::isInstance;
       // We only exclude entities that are tenant specific AND the tenant ID is in the exclusion
       // list
       return allEntities.stream()

@@ -19,6 +19,7 @@ public class HistoricVariableInstanceDto implements TenantSpecificEngineDto {
   private String processInstanceId;
   private String tenantId;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

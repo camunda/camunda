@@ -38,6 +38,7 @@ public class HistoricDecisionInstanceDto implements TenantSpecificEngineDto {
   private String decisionRequirementsDefinitionKey;
   private String tenantId;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

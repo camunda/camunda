@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class InstancesContainingUserTasksFilter
     implements QueryFilter<InstancesContainingUserTasksFilterDataDto> {
+
   @Override
   public void addFilters(
       final BoolQueryBuilder query,

@@ -17,24 +17,28 @@ public class AlertCheckJobFactory extends AbstractAlertFactory<AlertJob> {
     super(applicationContext);
   }
 
+  @Override
   protected String getTriggerGroup() {
     return "statusCheck-trigger";
   }
 
-  protected String getTriggerName(AlertDefinitionDto alert) {
+  @Override
+  protected String getTriggerName(final AlertDefinitionDto alert) {
     return alert.getId() + "-check-trigger";
   }
 
+  @Override
   protected String getJobGroup() {
     return "statusCheck-job";
   }
 
-  protected String getJobName(AlertDefinitionDto alert) {
+  @Override
+  protected String getJobName(final AlertDefinitionDto alert) {
     return alert.getId() + "-check-job";
   }
 
   @Override
-  protected AlertInterval getInterval(AlertDefinitionDto alert) {
+  protected AlertInterval getInterval(final AlertDefinitionDto alert) {
     return alert.getCheckInterval();
   }
 

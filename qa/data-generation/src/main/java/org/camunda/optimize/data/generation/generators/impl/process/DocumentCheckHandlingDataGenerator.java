@@ -23,13 +23,14 @@ public class DocumentCheckHandlingDataGenerator extends ProcessDataGenerator {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("approved", ThreadLocalRandom.current().nextDouble());
     return variables;
   }

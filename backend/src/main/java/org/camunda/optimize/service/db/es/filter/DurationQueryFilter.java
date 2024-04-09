@@ -20,15 +20,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
 
+  @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<DurationFilterDataDto> durations,
       final FilterContext filterContext) {
     if (durations != null && !durations.isEmpty()) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
 
-      for (DurationFilterDataDto durationDto : durations) {
-        ScriptQueryBuilder scriptQueryBuilder =
+      for (final DurationFilterDataDto durationDto : durations) {
+        final ScriptQueryBuilder scriptQueryBuilder =
             QueryBuilders.scriptQuery(
                 getDurationFilterScript(
                     LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),

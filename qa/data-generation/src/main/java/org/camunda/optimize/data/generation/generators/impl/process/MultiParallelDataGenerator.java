@@ -23,13 +23,14 @@ public class MultiParallelDataGenerator extends ProcessDataGenerator {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("freightOrdered", ThreadLocalRandom.current().nextDouble());
     variables.put("isTransferShipment", ThreadLocalRandom.current().nextDouble());
     return variables;

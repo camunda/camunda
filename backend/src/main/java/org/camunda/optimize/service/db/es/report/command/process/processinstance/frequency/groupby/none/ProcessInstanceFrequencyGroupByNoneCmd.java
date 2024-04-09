@@ -20,6 +20,7 @@ public class ProcessInstanceFrequencyGroupByNoneCmd extends ProcessCmd<Double> {
     super(builder);
   }
 
+  @Override
   protected ProcessReportCmdExecutionPlan<Double> buildExecutionPlan(
       final ReportCmdExecutionPlanBuilder builder) {
     return builder

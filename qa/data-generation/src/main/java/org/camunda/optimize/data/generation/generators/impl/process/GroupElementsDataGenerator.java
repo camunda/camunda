@@ -15,9 +15,9 @@ import org.camunda.optimize.test.util.client.SimpleEngineClient;
 public class GroupElementsDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/group-elements.bpmn";
-  private Random r = new Random();
-  private String[] firstGatewayOptions = new String[] {"a", "b"};
-  private String[] secondGatewayOptions = new String[] {"c", "d"};
+  private final Random r = new Random();
+  private final String[] firstGatewayOptions = new String[] {"a", "b"};
+  private final String[] secondGatewayOptions = new String[] {"c", "d"};
 
   public GroupElementsDataGenerator(
       final SimpleEngineClient engineClient,
@@ -26,13 +26,14 @@ public class GroupElementsDataGenerator extends ProcessDataGenerator {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("firstGateway", firstGatewayOptions[r.nextInt(firstGatewayOptions.length)]);
     variables.put("secondGateway", secondGatewayOptions[r.nextInt(secondGatewayOptions.length)]);
     return variables;

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 @Produces(MediaType.APPLICATION_JSON)
 @Component
 public class EngineObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
+
   private final ObjectMapper engineObjectMapper;
 
   public EngineObjectMapperContextResolver(
@@ -24,6 +25,7 @@ public class EngineObjectMapperContextResolver implements ContextResolver<Object
     this.engineObjectMapper = objectMapper;
   }
 
+  @Override
   public ObjectMapper getContext(Class<?> type) {
     return engineObjectMapper;
   }

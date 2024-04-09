@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FlowNodeDurationQueryFilter implements QueryFilter<FlowNodeDurationFiltersDataDto> {
 
+  @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<FlowNodeDurationFiltersDataDto> durationFilters,

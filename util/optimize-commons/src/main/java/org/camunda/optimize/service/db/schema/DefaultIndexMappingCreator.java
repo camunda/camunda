@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public abstract class DefaultIndexMappingCreator<TBuilder>
     implements PropertiesAppender, IndexMappingCreator<TBuilder> {
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
   public static final String LOWERCASE = "lowercase";
   protected static final String ANALYZER = "analyzer";
@@ -31,12 +31,13 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
   public abstract TBuilder addStaticSetting(
       final String key, final int value, TBuilder contentBuilder) throws IOException;
 
+  @Override
   public XContentBuilder getSource() {
     XContentBuilder source = null;
     try {
       source = createMapping();
-    } catch (IOException e) {
-      String message = "Could not add mapping to the index '" + getIndexName() + "'!";
+    } catch (final IOException e) {
+      final String message = "Could not add mapping to the index '" + getIndexName() + "'!";
       logger.error(message, e);
     }
     return source;
@@ -44,7 +45,8 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
 
   @Override
   public TBuilder getStaticSettings(
-      TBuilder xContentBuilder, ConfigurationService configurationService) throws IOException {
+      final TBuilder xContentBuilder, final ConfigurationService configurationService)
+      throws IOException {
     return addStaticSetting(NUMBER_OF_SHARDS_SETTING, DEFAULT_SHARD_NUMBER, xContentBuilder);
   }
 

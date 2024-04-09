@@ -16,13 +16,13 @@ import org.camunda.optimize.test.util.client.SimpleEngineClient;
 public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/hiring-process.bpmn";
-  private static String TASK_AUTOMATICALLY_ASSIGNED = "Task_automatically_assigned";
-  private static String TASK_SCREEN_PROCEED = "Task_screen_proceed";
-  private static String TASK_PHONE_PROCEED = "Task_phone_proceed";
-  private static String TASK_ONSITE_INTERVIEW = "Task_onsite_interview";
-  private static String TASK_MAKE_OFFER = "Task_make_offer";
-  private static String TASK_OFFER_ACCEPTED = "Task_offer_accepted";
-  private static String[] allVariableNames = {
+  private static final String TASK_AUTOMATICALLY_ASSIGNED = "Task_automatically_assigned";
+  private static final String TASK_SCREEN_PROCEED = "Task_screen_proceed";
+  private static final String TASK_PHONE_PROCEED = "Task_phone_proceed";
+  private static final String TASK_ONSITE_INTERVIEW = "Task_onsite_interview";
+  private static final String TASK_MAKE_OFFER = "Task_make_offer";
+  private static final String TASK_OFFER_ACCEPTED = "Task_offer_accepted";
+  private static final String[] allVariableNames = {
     TASK_AUTOMATICALLY_ASSIGNED,
     TASK_SCREEN_PROCEED,
     TASK_PHONE_PROCEED,
@@ -38,6 +38,7 @@ public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends Proce
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
@@ -54,7 +55,7 @@ public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends Proce
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     Arrays.stream(allVariableNames)
         .forEach(v -> variables.put(v, ThreadLocalRandom.current().nextDouble()));
     return variables;

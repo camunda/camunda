@@ -28,17 +28,18 @@ public class DRIProcessWithLoadsOfVariablesDataGenerator extends ProcessDataGene
       final Integer nVersions,
       final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
-    this.variableNames =
+    variableNames =
         IntStream.range(0, 100).mapToObj(i -> random(15, true, false)).toArray(String[]::new);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("doReview", REVIEW_GATEWAY_OPTIONS[nextInt(0, REVIEW_GATEWAY_OPTIONS.length)]);
     variables.put("loopCardinality", nextInt(1, 6));
     Arrays.stream(variableNames).forEach(variableName -> variables.put(variableName, nextInt()));

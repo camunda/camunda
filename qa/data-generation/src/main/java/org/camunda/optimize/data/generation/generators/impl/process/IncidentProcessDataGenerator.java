@@ -23,14 +23,15 @@ public class IncidentProcessDataGenerator extends ProcessDataGenerator {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    String[] incidentType = new String[] {"noIncident", "incidentToBeResolved", "incident"};
-    Map<String, Object> variables = new HashMap<>();
+    final String[] incidentType = new String[] {"noIncident", "incidentToBeResolved", "incident"};
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(
         "incidentType", incidentType[ThreadLocalRandom.current().nextInt(0, incidentType.length)]);
     return variables;

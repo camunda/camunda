@@ -23,13 +23,14 @@ public class LeadQualificationDataGenerator extends ProcessDataGenerator {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("qualified", ThreadLocalRandom.current().nextDouble());
     variables.put("sdrAvailable", ThreadLocalRandom.current().nextDouble());
     variables.put("landingPage", ThreadLocalRandom.current().nextDouble());
