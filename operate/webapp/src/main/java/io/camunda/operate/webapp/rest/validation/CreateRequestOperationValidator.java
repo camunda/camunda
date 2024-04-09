@@ -14,70 +14,58 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.zeebeimport;
+package io.camunda.operate.webapp.rest.validation;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.util.Set;
+import org.springframework.stereotype.Component;
 
-public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
+@Component
+public class CreateRequestOperationValidator {
+  private final VariableReader variableReader;
+  private final OperationReader operationReader;
 
-  @Autowired private IncidentTemplate incidentTemplate;
+  public CreateRequestOperationValidator(
+      final VariableReader variableReader, final OperationReader operationReader) {
+    this.variableReader = variableReader;
+    this.operationReader = operationReader;
+  }
 
-  @Test
-  public void shouldImportMigratedIncident() throws IOException {
-
-    // given
-    final String bpmnSource = "double-task-incident.bpmn";
-    final String bpmnTarget = "double-task.bpmn";
-    final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
-    final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
-    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
-
-    // when
-    final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
-    operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
-
-    final MigrationPlan migrationPlan =
-        new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
-    List.of("taskA", "taskB")
-        .forEach(
-            item ->
-                migrationPlan
-                    .getMappingInstructions()
-                    .add(new MigrationPlanBuilderImpl.MappingInstruction(item + "Incident", item)));
-    zeebeClient
-        .newMigrateProcessInstanceCommand(processInstanceKey)
-        .migrationPlan(migrationPlan)
-        .send()
-        .join();
-
-    operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
-    final List<IncidentEntity> incidents =
-        testSearchRepository.searchTerm(
-            incidentTemplate.getAlias(),
-            IncidentTemplate.PROCESS_INSTANCE_KEY,
-            processInstanceKey,
-            IncidentEntity.class,
-            1);
-
-    // then
-    assertThat(incidents.size()).isEqualTo(1);
-    assertThat(incidents.get(0).getState()).isEqualTo(IncidentState.ACTIVE);
-    assertThat(incidents.get(0).getBpmnProcessId()).isEqualTo("doubleTask");
-    assertThat(incidents.get(0).getProcessDefinitionKey()).isEqualTo(processDefinitionKeyTarget);
-    assertThat(incidents.get(0).getFlowNodeId()).isEqualTo("taskA");
+  public void validate(
+      final CreateOperationRequestDto operationRequest, final String processInstanceId) {
+    if (operationRequest.getOperationType() == null) {
+      throw new InvalidRequestException("Operation type must be defined.");
+    }
+    if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(operationRequest.getOperationType())
+        && (operationRequest.getVariableScopeId() == null
+            || operationRequest.getVariableName() == null
+            || operationRequest.getVariableName().isEmpty()
+            || operationRequest.getVariableValue() == null)) {
+      throw new InvalidRequestException(
+          "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    }
+    if (operationRequest.getOperationType().equals(ADD_VARIABLE)
+        && (variableReader.getVariableByName(
+                    processInstanceId,
+                    operationRequest.getVariableScopeId(),
+                    operationRequest.getVariableName())
+                != null
+            || !operationReader
+                .getOperations(
+                    ADD_VARIABLE,
+                    processInstanceId,
+                    operationRequest.getVariableScopeId(),
+                    operationRequest.getVariableName())
+                .isEmpty())) {
+      throw new InvalidRequestException(
+          String.format(
+              "Variable with the name \"%s\" already exists.", operationRequest.getVariableName()));
+    }
   }
 }

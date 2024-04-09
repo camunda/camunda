@@ -14,70 +14,71 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.zeebeimport;
+package io.camunda.operate.webapp.writer;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import java.util.Map;
+import java.util.Objects;
 
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+public class ProcessInstanceSource {
+  private Long processInstanceKey;
+  private Long processDefinitionKey;
+  private String bpmnProcessId;
 
-public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
+  public static ProcessInstanceSource fromSourceMap(final Map<String, Object> sourceMap) {
+    final ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
+    processInstanceSource.setProcessInstanceKey(
+        (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY));
+    processInstanceSource.setProcessDefinitionKey(
+        (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY));
+    processInstanceSource.setBpmnProcessId(
+        (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID));
+    return processInstanceSource;
+  }
 
-  @Autowired private IncidentTemplate incidentTemplate;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
 
-  @Test
-  public void shouldImportMigratedIncident() throws IOException {
+  public ProcessInstanceSource setProcessInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+    return this;
+  }
 
-    // given
-    final String bpmnSource = "double-task-incident.bpmn";
-    final String bpmnTarget = "double-task.bpmn";
-    final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
-    final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
-    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
 
-    // when
-    final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
-    operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
+  public ProcessInstanceSource setProcessDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+    return this;
+  }
 
-    final MigrationPlan migrationPlan =
-        new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
-    List.of("taskA", "taskB")
-        .forEach(
-            item ->
-                migrationPlan
-                    .getMappingInstructions()
-                    .add(new MigrationPlanBuilderImpl.MappingInstruction(item + "Incident", item)));
-    zeebeClient
-        .newMigrateProcessInstanceCommand(processInstanceKey)
-        .migrationPlan(migrationPlan)
-        .send()
-        .join();
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
 
-    operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
-    final List<IncidentEntity> incidents =
-        testSearchRepository.searchTerm(
-            incidentTemplate.getAlias(),
-            IncidentTemplate.PROCESS_INSTANCE_KEY,
-            processInstanceKey,
-            IncidentEntity.class,
-            1);
+  public ProcessInstanceSource setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
 
-    // then
-    assertThat(incidents.size()).isEqualTo(1);
-    assertThat(incidents.get(0).getState()).isEqualTo(IncidentState.ACTIVE);
-    assertThat(incidents.get(0).getBpmnProcessId()).isEqualTo("doubleTask");
-    assertThat(incidents.get(0).getProcessDefinitionKey()).isEqualTo(processDefinitionKeyTarget);
-    assertThat(incidents.get(0).getFlowNodeId()).isEqualTo("taskA");
+  @Override
+  public int hashCode() {
+    return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessInstanceSource that = (ProcessInstanceSource) o;
+    return Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId);
   }
 }
