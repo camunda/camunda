@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.ResponseException;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -96,6 +99,7 @@ final class OpensearchExporterIT {
 
   @BeforeEach
   void cleanup() {
+    configureExporter(true);
     testClient.deleteIndices();
   }
 
@@ -273,9 +277,33 @@ final class OpensearchExporterIT {
     assertThat(updatedMinimumAge).isEqualTo(config.retention.getMinimumAge());
   }
 
+  @Test
+  void shouldDeleteIndexStateManagementPolicy() {
+    // given - Make sure we create the policy before the exporter does
+    final var initialMinimumAge = "100d";
+    assertThat(initialMinimumAge).isNotEqualTo(config.retention.getMinimumAge());
+    testClient.putIndexStateManagementPolicy(initialMinimumAge);
+    final var record = factory.generateRecord();
+
+    // when - export a single record to enforce deletion the policy
+    configureExporter(false);
+    export(record);
+
+    // then
+    assertThatThrownBy(() -> testClient.getIndexStateManagementPolicy())
+        .isInstanceOf(UncheckedIOException.class)
+        .hasCauseInstanceOf(ResponseException.class)
+        .hasMessageContaining("Policy not found");
+  }
+
   private boolean export(final Record<?> record) {
     exporter.export(record);
     return true;
+  }
+
+  private void configureExporter(final boolean retentionEnabled) {
+    config.retention.setEnabled(retentionEnabled);
+    exporter.configure(exporterTestContext);
   }
 
   /**
@@ -412,11 +440,6 @@ final class OpensearchExporterIT {
 
         assertHasISMPolicy(response);
       }
-    }
-
-    private void configureExporter(final boolean retentionEnabled) {
-      config.retention.setEnabled(retentionEnabled);
-      exporter.configure(exporterTestContext);
     }
 
     private void assertHasISMPolicy(final Optional<IndexISMPolicyDto> indexSettings) {
