@@ -17,9 +17,6 @@ package io.camunda.zeebe.spring.client.configuration;
 
 import static org.springframework.util.StringUtils.hasText;
 
-import io.camunda.common.auth.Authentication;
-import io.camunda.common.auth.DefaultNoopAuthentication;
-import io.camunda.common.auth.Product;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -28,6 +25,9 @@ import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CommonConfigurationProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
+import io.camunda.zeebe.spring.common.auth.Authentication;
+import io.camunda.zeebe.spring.common.auth.DefaultNoopAuthentication;
+import io.camunda.zeebe.spring.common.auth.Product;
 import io.grpc.ClientInterceptor;
 import io.grpc.Status.Code;
 import jakarta.annotation.PostConstruct;
