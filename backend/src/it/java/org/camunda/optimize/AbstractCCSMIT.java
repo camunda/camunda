@@ -64,20 +64,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
       () -> new OptimizeIntegrationTestException("Cannot find exported event");
 
-  protected static boolean isZeebeVersionPre81() {
-    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*");
-    return zeebeVersionPreSequenceField
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
-  }
-
-  protected static boolean isZeebeVersionPre82() {
-    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*");
-    return zeebeVersionPreSequenceField
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
-  }
-
   protected static boolean isZeebeVersionPre83() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*");
     return zeebeVersionPattern
