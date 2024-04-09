@@ -24,6 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
@@ -80,9 +81,13 @@ public class ElasticsearchSchemaManagerTest {
     when(retryElasticsearchClient.setIndexSettingsFor(index2Settings, "index2")).thenReturn(true);
     when(retryElasticsearchClient.setIndexSettingsFor(index3Settings, "index3")).thenReturn(false);
 
+    final ArchiverProperties archiverProperties = mock(ArchiverProperties.class);
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.isIlmEnabled()).thenReturn(true);
+
     underTest.checkAndUpdateIndices();
 
     verify(retryElasticsearchClient, times(3)).getIndexSettingsFor(anyString(), anyString());
-    verify(retryElasticsearchClient, times(2)).setIndexSettingsFor(any(), anyString());
+    verify(retryElasticsearchClient, times(3)).setIndexSettingsFor(any(), anyString());
   }
 }

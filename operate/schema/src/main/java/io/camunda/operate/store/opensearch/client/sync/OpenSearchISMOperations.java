@@ -68,7 +68,7 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
                 e -> format("Failed to get policy: %s", policyName)));
   }
 
-  public Map<String, Object> isPolicyAttached(final String index) {
+  public Map<String, Object> getAttachedPolicy(final String index) {
     return withExtendedOpenSearchClient(
         extendedOpenSearchClient ->
             safe(

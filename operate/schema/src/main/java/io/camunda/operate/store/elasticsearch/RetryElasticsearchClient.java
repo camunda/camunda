@@ -65,6 +65,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
+import org.elasticsearch.client.indexlifecycle.RemoveIndexLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.ComposableIndexTemplateExistRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
@@ -492,6 +493,18 @@ public class RetryElasticsearchClient {
                 .putSettings(
                     new UpdateSettingsRequest(indexPattern).settings(settings), requestOptions)
                 .isAcknowledged());
+  }
+
+  public boolean deleteIndexPolicyFor(final String indexPattern) {
+    return !executeWithRetries(
+        "DeletePolicySettings " + indexPattern,
+        () ->
+            esClient
+                .indexLifecycle()
+                .removeIndexLifecyclePolicy(
+                    new RemoveIndexLifecyclePolicyRequest(List.of(indexPattern)),
+                    RequestOptions.DEFAULT)
+                .hasFailures());
   }
 
   public boolean addPipeline(final String name, final String definition) {

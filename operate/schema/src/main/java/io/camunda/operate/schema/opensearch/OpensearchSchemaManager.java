@@ -115,40 +115,33 @@ public class OpensearchSchemaManager implements SchemaManager {
     }
     final String currentConfigNumberOfReplicas =
         String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
-    final Map<String, Object> allPolicies = richOpenSearchClient.ism().isPolicyAttached("*");
-    final Set<String> testSet = getIndexNames("*");
-    testSet.forEach(
-        index -> {
-          final Map<String, String> indexSettings =
-              getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
-          final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
-          final String refreshInterval = indexSettings.get(REFRESH_INTERVAL);
-          if (currentIndexNumberOfReplicas == null
-              || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
-            indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-            indexSettings.put(
-                REFRESH_INTERVAL,
-                (refreshInterval == null)
-                    ? operateProperties.getOpensearch().getRefreshInterval()
-                    : refreshInterval);
-            final boolean success = setIndexSettingsFor(indexSettings, index);
-            if (success) {
-              LOGGER.debug("Successfully updated number of replicas for index {}", index);
-            } else {
-              LOGGER.warn("Failed to update number of replicas for index {}", index);
-            }
+    final Map<String, Object> allPolicies = richOpenSearchClient.ism().getAttachedPolicy("*");
+    getIndexNames("*")
+        .forEach(
+            index -> {
+              final Map<String, String> indexSettings =
+                  getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+              final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
+              final String refreshInterval = indexSettings.get(REFRESH_INTERVAL);
+              if (currentIndexNumberOfReplicas == null
+                  || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
+                indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
+                indexSettings.put(
+                    REFRESH_INTERVAL,
+                    (refreshInterval == null)
+                        ? operateProperties.getOpensearch().getRefreshInterval()
+                        : refreshInterval);
+                final boolean success = setIndexSettingsFor(indexSettings, index);
+                if (success) {
+                  LOGGER.debug("Successfully updated number of replicas for index {}", index);
+                } else {
+                  LOGGER.warn("Failed to update number of replicas for index {}", index);
+                }
+              }
 
-            // Update Index policies based on ILM
-            final LinkedHashMap<String, String> indexPolicy = (LinkedHashMap<String, String>) allPolicies.get(index);
-            if (operateProperties.getArchiver().isIlmEnabled() && indexPolicy != null && !indexPolicy.containsKey("policy_id")) {
-              LOGGER.info("Adding policy to index {}", index);
-              richOpenSearchClient.ism().addPolicyToIndex(index, OPERATE_DELETE_ARCHIVED_INDICES);
-            } else if (!operateProperties.getArchiver().isIlmEnabled() && indexPolicy != null && indexPolicy.containsKey("policy_id")) {
-              LOGGER.info("Removing policy from index {}", index);
-              richOpenSearchClient.ism().removePolicyFromIndex(index);
-            }
-          }
-        });
+              // Update Index policies based on ILM
+              updateRetentionPolicy((LinkedHashMap<String, String>) allPolicies.get(index), index);
+            });
   }
 
   @Override
@@ -619,5 +612,20 @@ public class OpensearchSchemaManager implements SchemaManager {
                     "Failed to create ISM policy " + OPERATE_DELETE_ARCHIVED_INDICES, e);
               }
             });
+  }
+
+  private void updateRetentionPolicy(
+      final LinkedHashMap<String, String> indexPolicy, final String index) {
+    if (operateProperties.getArchiver().isIlmEnabled()
+        && indexPolicy != null
+        && !indexPolicy.containsKey("policy_id")) {
+      LOGGER.info("Adding policy to index {}", index);
+      richOpenSearchClient.ism().addPolicyToIndex(index, OPERATE_DELETE_ARCHIVED_INDICES);
+    } else if (!operateProperties.getArchiver().isIlmEnabled()
+        && indexPolicy != null
+        && indexPolicy.containsKey("policy_id")) {
+      LOGGER.info("Removing policy from index {}", index);
+      richOpenSearchClient.ism().removePolicyFromIndex(index);
+    }
   }
 }

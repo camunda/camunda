@@ -114,6 +114,15 @@ public class ElasticsearchSchemaManager implements SchemaManager {
                 }
               }
             });
+
+    // Updates Index policy
+    if (operateProperties.getArchiver().isIlmEnabled()) {
+      retryElasticsearchClient.setIndexSettingsFor(
+          Settings.builder().put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES).build(),
+          "*");
+    } else {
+      retryElasticsearchClient.deleteIndexPolicyFor("*");
+    }
   }
 
   @Override
@@ -295,6 +304,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
+  }
+
+  public void testStuff() {
+    retryElasticsearchClient.setIndexSettingsFor(
+        Settings.builder().put(INDEX_LIFECYCLE_NAME, "policy_1").build(), "index*");
   }
 
   private String settingsTemplateName() {

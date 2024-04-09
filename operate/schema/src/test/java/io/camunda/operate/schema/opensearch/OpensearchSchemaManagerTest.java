@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.schema.opensearch;
 
+import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -23,13 +24,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchISMOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,9 +92,28 @@ public class OpensearchSchemaManagerTest {
         .thenReturn(true)
         .thenReturn(false);
 
+    final OpenSearchISMOperations openSearchISMOperations = mock(OpenSearchISMOperations.class);
+    final ArchiverProperties archiverProperties = mock(ArchiverProperties.class);
+    // Retention Policy
+    when(richOpenSearchClient.ism()).thenReturn(openSearchISMOperations);
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(openSearchISMOperations.getPolicy(OPERATE_DELETE_ARCHIVED_INDICES))
+        .thenReturn(new LinkedHashMap<>());
+    when(archiverProperties.isIlmEnabled()).thenReturn(true);
+
+    final Map<String, Object> mockPolicies = new HashMap<>();
+    final LinkedHashMap<String, String> indexPolicy = new LinkedHashMap<>();
+    mockPolicies.put("index1", indexPolicy);
+    mockPolicies.put("index2", indexPolicy);
+    mockPolicies.put("index3", indexPolicy);
+
+    when(openSearchISMOperations.getAttachedPolicy("*")).thenReturn(mockPolicies);
+    when(openSearchISMOperations.addPolicyToIndex(anyString(), anyString())).thenReturn(null);
+
     underTest.checkAndUpdateIndices();
 
     verify(openSearchIndexOperations, times(3)).getIndexSettingsWithRetries(anyString());
     verify(openSearchIndexOperations, times(2)).setIndexSettingsFor(any(), anyString());
+    verify(openSearchISMOperations, times(3)).addPolicyToIndex(anyString(), anyString());
   }
 }
