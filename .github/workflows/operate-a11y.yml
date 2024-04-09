@@ -6,26 +6,12 @@ on:
       - "stable/**"
       - "release/**"
     paths:
-      - '.ci/**'
-      - '.github/workflows/actions/**'
-      - '.github/workflows/operate-*'
-      - 'bom/*'
-      - 'distro/**'
-      - 'operate.Dockerfile'
-      - 'operate/**'
-      - 'parent/*'
-      - 'pom.xml'
+      - '.github/workflows/operate-a11y.yml'
+      - 'operate/client/**'
   pull_request:
     paths:
-      - '.ci/**'
-      - '.github/workflows/actions/**'
-      - '.github/workflows/operate-*'
-      - 'bom/*'
-      - 'distro/**'
-      - 'operate.Dockerfile'
-      - 'operate/**'
-      - 'parent/*'
-      - 'pom.xml'
+      - '.github/workflows/operate-a11y.yml'
+      - 'operate/client/**'
 
 jobs:
   test:
