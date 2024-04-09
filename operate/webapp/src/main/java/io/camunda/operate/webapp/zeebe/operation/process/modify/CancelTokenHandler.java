@@ -14,6 +14,54 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.zeebe.operation;
+package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
-public interface ModifyProcessInstanceHandler extends OperationHandler {}
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+@Component
+public class CancelTokenHandler {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CancelTokenHandler.class);
+  private final FlowNodeInstanceReader flowNodeInstanceReader;
+  private final CancelTokenHelper cancelTokenHelper;
+
+  public CancelTokenHandler(
+      final FlowNodeInstanceReader flowNodeInstanceReader,
+      final CancelTokenHelper cancelTokenHelper) {
+    this.flowNodeInstanceReader = flowNodeInstanceReader;
+    this.cancelTokenHelper = cancelTokenHelper;
+  }
+
+  public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 cancelToken(
+      final ModifyProcessInstanceCommandStep1 currentStep,
+      final Long processInstanceKey,
+      final Modification modification) {
+    final String flowNodeId = modification.getFromFlowNodeId();
+    final String flowNodeInstanceKeyAsString = modification.getFromFlowNodeInstanceKey();
+    if (StringUtils.hasText(flowNodeInstanceKeyAsString)) {
+      final Long flowNodeInstanceKey = Long.parseLong(flowNodeInstanceKeyAsString);
+      LOGGER.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
+      return cancelTokenHelper.cancelFlowNodeInstances(currentStep, List.of(flowNodeInstanceKey));
+    } else {
+      final List<Long> flowNodeInstanceKeys =
+          flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
+              processInstanceKey, flowNodeId, List.of(FlowNodeState.ACTIVE));
+      if (flowNodeInstanceKeys.isEmpty()) {
+        throw new OperateRuntimeException(
+            String.format(
+                "Abort CANCEL_TOKEN: Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
+                processInstanceKey, flowNodeId));
+      }
+      LOGGER.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
+      return cancelTokenHelper.cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
+    }
+  }
+}

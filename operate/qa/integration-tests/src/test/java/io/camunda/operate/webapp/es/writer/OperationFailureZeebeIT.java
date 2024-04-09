@@ -27,11 +27,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.writer.ProcessInstanceSource;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import java.util.Arrays;
 import org.junit.Before;
@@ -52,6 +52,7 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -64,10 +65,8 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testCancelExecutedEvenThoughBatchOperationNotFullyPersisted() throws Exception {
     // given
-    final BatchOperationWriter.ProcessInstanceSource processInstanceSource1 =
-        startDemoProcessInstance();
-    final BatchOperationWriter.ProcessInstanceSource processInstanceSource2 =
-        startDemoProcessInstance();
+    final ProcessInstanceSource processInstanceSource1 = startDemoProcessInstance();
+    final ProcessInstanceSource processInstanceSource2 = startDemoProcessInstance();
 
     // first single operation will be created successfully, second will fail
     /*  doCallRealMethod().when(batchOperationWriter)
@@ -87,7 +86,7 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
                     processInstanceSource2.getProcessInstanceKey().toString()));
     try {
       postBatchOperation(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE, null, 500);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       // expected
     }
     searchTestRule.refreshSerchIndexes();
@@ -109,17 +108,17 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
             ProcessInstanceStateDto.ACTIVE, ProcessInstanceStateDto.CANCELED);
   }
 
-  private BatchOperationWriter.ProcessInstanceSource startDemoProcessInstance() {
+  private ProcessInstanceSource startDemoProcessInstance() {
     final String processId = "demoProcess";
     tester.startProcessInstance(processId, "{\"a\": \"b\"}").waitUntil().flowNodeIsActive("taskA");
 
-    return new BatchOperationWriter.ProcessInstanceSource()
+    return new ProcessInstanceSource()
         .setProcessInstanceKey(tester.getProcessInstanceKey())
         .setProcessDefinitionKey(tester.getProcessDefinitionKey())
         .setBpmnProcessId(processId);
   }
 
-  private ListViewResponseDto getProcessInstances(ListViewQueryDto query) throws Exception {
+  private ListViewResponseDto getProcessInstances(final ListViewQueryDto query) throws Exception {
     final ListViewRequestDto request = new ListViewRequestDto(query);
     request.setPageSize(100);
     final MockHttpServletRequestBuilder getProcessInstancesRequest =

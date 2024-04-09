@@ -14,87 +14,58 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.rest.dto.operation;
+package io.camunda.operate.webapp.writer;
 
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import java.util.List;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import java.util.Map;
 import java.util.Objects;
 
-public class CreateBatchOperationRequestDto {
+public class ProcessInstanceSource {
+  private Long processInstanceKey;
+  private Long processDefinitionKey;
+  private String bpmnProcessId;
 
-  /** Batch operation name */
-  private String name;
-
-  /** Query to filter the process instances affected */
-  private ListViewQueryDto query;
-
-  /** Operation type */
-  private OperationType operationType;
-
-  /** Migration plan, only needed for process instance migration operation */
-  private MigrationPlanDto migrationPlan;
-
-  /** Modifications, only needed for MODIFY_PROCESS_INSTANCE operation type */
-  private List<Modification> modifications;
-
-  public CreateBatchOperationRequestDto() {}
-
-  public CreateBatchOperationRequestDto(
-      final ListViewQueryDto query, final OperationType operationType) {
-    this.query = query;
-    this.operationType = operationType;
+  public static ProcessInstanceSource fromSourceMap(final Map<String, Object> sourceMap) {
+    final ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
+    processInstanceSource.setProcessInstanceKey(
+        (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY));
+    processInstanceSource.setProcessDefinitionKey(
+        (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY));
+    processInstanceSource.setBpmnProcessId(
+        (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID));
+    return processInstanceSource;
   }
 
-  public String getName() {
-    return name;
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
-  public CreateBatchOperationRequestDto setName(final String name) {
-    this.name = name;
+  public ProcessInstanceSource setProcessInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
-  public ListViewQueryDto getQuery() {
-    return query;
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
   }
 
-  public CreateBatchOperationRequestDto setQuery(final ListViewQueryDto query) {
-    this.query = query;
+  public ProcessInstanceSource setProcessDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
-  public OperationType getOperationType() {
-    return operationType;
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
-  public CreateBatchOperationRequestDto setOperationType(final OperationType operationType) {
-    this.operationType = operationType;
-    return this;
-  }
-
-  public MigrationPlanDto getMigrationPlan() {
-    return migrationPlan;
-  }
-
-  public CreateBatchOperationRequestDto setMigrationPlan(final MigrationPlanDto migrationPlan) {
-    this.migrationPlan = migrationPlan;
-    return this;
-  }
-
-  public List<Modification> getModifications() {
-    return modifications;
-  }
-
-  public CreateBatchOperationRequestDto setModifications(final List<Modification> modifications) {
-    this.modifications = modifications;
+  public ProcessInstanceSource setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, query, operationType, migrationPlan, modifications);
+    return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
   }
 
   @Override
@@ -105,28 +76,9 @@ public class CreateBatchOperationRequestDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final CreateBatchOperationRequestDto that = (CreateBatchOperationRequestDto) o;
-    return Objects.equals(name, that.name)
-        && Objects.equals(query, that.query)
-        && operationType == that.operationType
-        && Objects.equals(migrationPlan, that.migrationPlan)
-        && Objects.equals(modifications, that.modifications);
-  }
-
-  @Override
-  public String toString() {
-    return "CreateBatchOperationRequestDto{"
-        + "name='"
-        + name
-        + '\''
-        + ", query="
-        + query
-        + ", operationType="
-        + operationType
-        + ", migrationPlan="
-        + migrationPlan
-        + ", modifications="
-        + modifications
-        + '}';
+    final ProcessInstanceSource that = (ProcessInstanceSource) o;
+    return Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId);
   }
 }
