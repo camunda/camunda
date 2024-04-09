@@ -20,8 +20,8 @@
     <module>schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-8_4</module>
     <module>importer-8_5</module>
+    <module>importer-8_6</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>

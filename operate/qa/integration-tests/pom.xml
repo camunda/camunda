@@ -101,7 +101,8 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_4</artifactId>
+      <artifactId>operate-importer-8_6</artifactId>
+      <version>8.6.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>

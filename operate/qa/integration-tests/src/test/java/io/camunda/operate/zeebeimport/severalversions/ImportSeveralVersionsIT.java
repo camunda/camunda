@@ -42,7 +42,7 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
-import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
+import io.camunda.operate.zeebeimport.v8_6.processors.ImportBulkProcessor;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,7 +89,7 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
 
   @SpyBean private ImportBulkProcessor importerv2;
 
-  @SpyBean private io.camunda.operate.zeebeimport.v8_4.processors.ImportBulkProcessor importerv1;
+  @SpyBean private io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor importerv1;
 
   @MockBean private PartitionHolder partitionHolder;
 
@@ -172,20 +172,21 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
           ElasticsearchUtil.getFieldCardinality(
               esClient, incidentTemplate.getAlias(), IncidentTemplate.KEY);
       assertThat(count).isEqualTo(incidentCount);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       fail("Unable to assert data.", ex);
     }
   }
 
-  private void executeAndRetry(int retryTimes, long waitTime, Runnable execute) {
+  private void executeAndRetry(final int retryTimes, final long waitTime, final Runnable execute) {
     executeAndRetry(0, retryTimes, waitTime, execute);
   }
 
-  private void executeAndRetry(int currentRun, int retryTimes, long waitTime, Runnable execute) {
+  private void executeAndRetry(
+      int currentRun, final int retryTimes, final long waitTime, final Runnable execute) {
     currentRun++;
     try {
       execute.run();
-    } catch (Exception | AssertionError ex) {
+    } catch (final Exception | AssertionError ex) {
       if (currentRun > retryTimes) {
         throw ex;
       } else {
