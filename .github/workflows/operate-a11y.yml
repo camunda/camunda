@@ -5,17 +5,27 @@ on:
       - "main"
       - "stable/**"
       - "release/**"
-    paths-ignore:
-      - ".github/workflows/zeebe-*"
-      - "dist/**"
-      - "zeebe/**"
-      - "spring-boot-starter-camunda-sdk/**"
+    paths:
+      - '.ci/**'
+      - '.github/workflows/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'distro/**'
+      - 'operate.Dockerfile'
+      - 'operate/**'
+      - 'parent/*'
+      - 'pom.xml'
   pull_request:
-    paths-ignore:
-      - ".github/workflows/zeebe-*"
-      - "dist/**"
-      - "zeebe/**"
-      - "spring-boot-starter-camunda-sdk/**"
+    paths:
+      - '.ci/**'
+      - '.github/workflows/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'distro/**'
+      - 'operate.Dockerfile'
+      - 'operate/**'
+      - 'parent/*'
+      - 'pom.xml'
 
 jobs:
   test:

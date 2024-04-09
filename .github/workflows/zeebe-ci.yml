@@ -8,15 +8,33 @@ on:
       - release-*
       - trying
       - staging
-    paths-ignore:
-      - '.github/workflows/operate-*'
-      - 'distro/**'
-      - 'operate/**'
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/zeebe-*'
+      - 'Dockerfile'
+      - 'bom/*'
+      - 'build-tools/**'
+      - 'clients/**'
+      - 'dist/**'
+      - 'monitor/**'
+      - 'parent/*'
+      - 'pom.xml'
+      - 'spring-boot-starter-camunda-sdk/**'
+      - 'zeebe/**'
   pull_request:
-    paths-ignore:
-      - '.github/workflows/operate-*'
-      - 'distro/**'
-      - 'operate/**'
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/zeebe-*'
+      - 'Dockerfile'
+      - 'bom/*'
+      - 'build-tools/**'
+      - 'clients/**'
+      - 'dist/**'
+      - 'monitor/**'
+      - 'parent/*'
+      - 'pom.xml'
+      - 'spring-boot-starter-camunda-sdk/**'
+      - 'zeebe/**'
   merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
