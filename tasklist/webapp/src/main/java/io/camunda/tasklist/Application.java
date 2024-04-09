@@ -20,7 +20,6 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PR
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT_AUTH;
 
 import io.camunda.tasklist.data.DataGenerator;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,7 +55,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @EnableAutoConfiguration(exclude = ElasticsearchClientAutoConfiguration.class)
-public class Application extends TasklistProperties {
+public class Application {
 
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";

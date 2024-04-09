@@ -4,7 +4,7 @@
 env-up:
 	@mvn clean install -DskipTests=true \
 	&& docker-compose up -d elasticsearch zeebe \
-	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,auth
+	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,auth -Dspring-boot.run.arguments="--camunda.tasklist.csrfPreventionEnabled=false"
 
 .PHONY: env-up-os
 env-up-os:

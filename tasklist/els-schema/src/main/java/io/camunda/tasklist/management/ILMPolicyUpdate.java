@@ -14,44 +14,13 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.service;
+package io.camunda.tasklist.management;
 
-import io.camunda.tasklist.management.ILMPolicyUpdate;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-@Service
-public class ILMService {
+public interface ILMPolicyUpdate {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ILMService.class);
+  public void applyIlmPolicyToAllIndices(final String policyName) throws IOException;
 
-  @Autowired private ILMPolicyUpdate ilmPolicyUpdate;
-
-  @PostConstruct
-  public void init() throws IOException {
-    if (true) {
-      applyIlmPolicyToAllIndices("tasklist_policy");
-    } else {
-      removeIlmPolicyFromAllIndices();
-    }
-  }
-
-  public void applyIlmPolicyToAllIndices(final String policyName) throws IOException {
-    LOGGER.info("Applying ILM policy to all existent indices");
-    try {
-      ilmPolicyUpdate.applyIlmPolicyToAllIndices(policyName);
-    } catch (final Exception e) {
-      LOGGER.error("Error applying ILM policy to all existent indices", e);
-    }
-  }
-
-  // Method to remove ILM policy from all indices
-  public void removeIlmPolicyFromAllIndices() throws IOException {
-    LOGGER.info("Removing ILM policy to all existent indices");
-    ilmPolicyUpdate.removeIlmPolicyFromAllIndices();
-  }
+  public void removeIlmPolicyFromAllIndices() throws IOException;
 }

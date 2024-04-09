@@ -17,7 +17,8 @@
 package io.camunda.tasklist.es;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.property.ArchiverProperties;
+import io.camunda.tasklist.management.ILMPolicyUpdate;
+import io.camunda.tasklist.util.ArchiverPropertiesUtil;
 import java.io.IOException;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
@@ -28,20 +29,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class ILMPolicyUpdate extends ArchiverProperties {
+public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Autowired private RestHighLevelClient esClient;
 
-  public void applyIlmPolicyToAllIndices(final String policyName, final String policyJson)
-      throws IOException {
+  private ArchiverPropertiesUtil archiverPropertiesUtils;
+
+  @Override
+  public void applyIlmPolicyToAllIndices(final String policyName) throws IOException {
 
     final Request request = new Request("PUT", "/_ilm/policy/" + policyName);
-    request.setJsonEntity(policyJson);
+    request.setJsonEntity(archiverPropertiesUtils.generateIlmPolicyJsonElasticSearch());
 
     final RestClient lowLevelClient = esClient.getLowLevelClient();
     lowLevelClient.performRequest(request);
   }
 
+  @Override
   public void removeIlmPolicyFromAllIndices() throws IOException {
     final String jsonString = "{ \"index\": { \"lifecycle.name\": null }}";
 
