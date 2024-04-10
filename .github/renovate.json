@@ -26,7 +26,9 @@
     "enabled": true
   },
   "lockFileMaintenance": {
-    "enabled": true
+    "enabled": true,
+    "automerge": true,
+    "addLabels": ["automerge"]
   },
   "packageRules": [
     {
@@ -92,6 +94,12 @@
       "description": "Both dependencies need to be updated at once for green CI.",
       "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
+    },
+    {
+      "description": "Automerge all updates with green CI.",
+      "matchPackagePatterns": ["*"],
+      "automerge": true,
+      "addLabels": ["automerge"]
     }
   ],
   "dockerfile": {
