@@ -50,6 +50,7 @@ export {TargetSelection} from './TargetSelection';
 export {DefinitionSelection} from './DefinitionSelection';
 // @ts-ignore
 export {ReportRenderer} from './ReportRenderer';
+export {Loading} from './Loading';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

@@ -9,7 +9,7 @@ import React from 'react';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
-import {ErrorPage, LoadingIndicator, PageTitle} from 'components';
+import {ErrorPage, Loading, PageTitle} from 'components';
 import {evaluateReport} from 'services';
 import {newReport} from 'config';
 
@@ -106,7 +106,7 @@ export class Report extends React.Component {
     }
 
     if (!report) {
-      return <LoadingIndicator />;
+      return <Loading />;
     }
 
     const {viewMode} = this.props.match.params;

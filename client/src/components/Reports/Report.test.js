@@ -63,7 +63,7 @@ beforeEach(() => {
 it('should display a loading indicator', () => {
   const node = shallow(<Report {...props} mightFail={() => {}} />);
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('Loading')).toExist();
 });
 
 it("should show an error page if report doesn't exist", () => {

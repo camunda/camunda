@@ -7,10 +7,17 @@
 
 import {useEffect, useState} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, ButtonSet, Loading} from '@carbon/react';
+import {Button, ButtonSet} from '@carbon/react';
 import classnames from 'classnames';
 
-import {Modal, BPMNDiagram, ClickBehavior, RegistryElement, ModdleElement} from 'components';
+import {
+  Modal,
+  BPMNDiagram,
+  Loading,
+  ClickBehavior,
+  RegistryElement,
+  ModdleElement,
+} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -124,8 +131,9 @@ export default function NodeSelection({
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        {!xml && <Loading className="loadingIndicator" withOverlay={false} />}
-        {xml && (
+        {!xml ? (
+          <Loading />
+        ) : (
           <>
             <p>{t('common.filter.UnselectFlowNodes')}</p>
             <div className="diagramActions">

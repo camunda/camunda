@@ -6,16 +6,15 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form} from '@carbon/react';
 import classnames from 'classnames';
 
 import {
   Modal,
-  Form,
   DateRangeInput,
+  Loading,
   BPMNDiagram,
   ClickBehavior,
-  LoadingIndicator,
   ModdleElement,
 } from 'components';
 import {loadProcessDefinitionXml} from 'services';
@@ -131,8 +130,7 @@ export function NodeDateFilter({
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        {!xml && <LoadingIndicator />}
-        {xml && (
+        {xml ? (
           <>
             <Form>
               <p className="info">
@@ -159,6 +157,8 @@ export function NodeDateFilter({
               </div>
             )}
           </>
+        ) : (
+          <Loading />
         )}
       </Modal.Content>
       <Modal.Footer>

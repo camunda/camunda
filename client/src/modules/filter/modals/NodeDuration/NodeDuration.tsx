@@ -7,9 +7,16 @@
 
 import {Component} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, InlineNotification, Loading} from '@carbon/react';
+import {Button, InlineNotification} from '@carbon/react';
 
-import {Modal, BPMNDiagram, TargetValueBadge, ClickBehavior, RegistryElement} from 'components';
+import {
+  Modal,
+  BPMNDiagram,
+  TargetValueBadge,
+  Loading,
+  ClickBehavior,
+  RegistryElement,
+} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
@@ -201,8 +208,9 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
             applyTo={applyTo}
             setApplyTo={(applyTo) => this.setState({applyTo})}
           />
-          {loading && <Loading withOverlay={false} />}
-          {!loading && (
+          {loading ? (
+            <Loading />
+          ) : (
             <>
               <div className="diagramContainer">
                 <BPMNDiagram xml={xml}>

@@ -7,9 +7,9 @@
 
 import {useState, useEffect} from 'react';
 import ReactMarkdown from 'react-markdown';
-import {Button, Loading} from '@carbon/react';
+import {Button} from '@carbon/react';
 
-import {Modal} from 'components';
+import {Modal, Loading} from 'components';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {t, getLanguage} from 'translation';
 import {showError} from 'notifications';
@@ -57,11 +57,7 @@ export function WhatsNewModal({open, onClose, mightFail}: WhatsNewModalProps): J
         {t('whatsNew.modalHeader')} {optimizeVersion}
       </Modal.Header>
       <Modal.Content>
-        {modalContent ? (
-          <ReactMarkdown>{modalContent}</ReactMarkdown>
-        ) : (
-          <Loading withOverlay={false} />
-        )}
+        {modalContent ? <ReactMarkdown>{modalContent}</ReactMarkdown> : <Loading />}
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="close" onClick={closeModal}>

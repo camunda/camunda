@@ -8,9 +8,8 @@
 import {Component} from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
-import {Loading} from '@carbon/react';
 
-import {EntityNameForm, BPMNDiagram, PageTitle} from 'components';
+import {EntityNameForm, BPMNDiagram, Loading, PageTitle} from 'components';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
@@ -226,7 +225,7 @@ export class ProcessEdit extends Component {
     const {name, mappings, selectedNode, xml, eventSources, selectedEvent} = this.state;
 
     if (!xml) {
-      return <Loading className="processEditLoading" withOverlay={false} />;
+      return <Loading />;
     }
 
     return (

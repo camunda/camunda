@@ -6,9 +6,9 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Button, Loading} from '@carbon/react';
+import {Button} from '@carbon/react';
 
-import {Modal} from 'components';
+import {Modal, Loading} from 'components';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -55,7 +55,7 @@ export function ObjectVariableModal({
             <pre>{objectString}</pre>
           </>
         ) : (
-          <Loading withOverlay={false} />
+          <Loading />
         )}
       </Modal.Content>
       <Modal.Footer>

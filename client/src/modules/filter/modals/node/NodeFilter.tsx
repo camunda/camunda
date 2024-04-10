@@ -8,7 +8,7 @@
 import {useEffect, useState} from 'react';
 import {Button, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
-import {Modal, BPMNDiagram, ClickBehavior, LoadingIndicator, ModdleElement} from 'components';
+import {Modal, BPMNDiagram, Loading, ClickBehavior, ModdleElement} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
@@ -119,8 +119,7 @@ export function NodeFilter({
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        {!xml && <LoadingIndicator />}
-        {xml && (
+        {xml ? (
           <>
             <Stack gap={6}>
               <div className="preview">
@@ -168,7 +167,7 @@ export function NodeFilter({
               <p>{t('common.filter.nodeModal.selectFlowNode')}</p>
             </Stack>
             <div className="diagramContainer">
-              <BPMNDiagram xml={xml}>
+              <BPMNDiagram xml={xml} loading={!xml}>
                 <ClickBehavior
                   setSelectedNodes={setSelectedNodes}
                   onClick={toggleNode}
@@ -177,6 +176,8 @@ export function NodeFilter({
               </BPMNDiagram>
             </div>
           </>
+        ) : (
+          <Loading />
         )}
       </Modal.Content>
       <Modal.Footer>

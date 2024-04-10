@@ -7,13 +7,12 @@
 
 import {Component} from 'react';
 import {Redirect} from 'react-router-dom';
-import {Loading} from '@carbon/react';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled, newReport} from 'config';
-import {ErrorPage, PageTitle} from 'components';
+import {ErrorPage, Loading, PageTitle} from 'components';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
@@ -354,7 +353,7 @@ export class Dashboard extends Component {
     }
 
     if (!loaded) {
-      return <Loading className="DashboardLoading" withOverlay={false} />;
+      return <Loading />;
     }
 
     if (redirect) {
