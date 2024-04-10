@@ -1,7 +1,9 @@
 component/zeebe:
   - changed-files:
     - any-glob-to-any-file:
+        - '.github/ISSUE_TEMPLATE/zeebe-*'
         - '.github/actions/**'
+        - '.github/renovate.json'
         - '.github/workflows/zeebe-*'
         - 'Dockerfile'
         - 'bom/*'
@@ -17,7 +19,9 @@ component/operate:
   - changed-files:
     - any-glob-to-any-file:
         - '.ci/**'
-        - '.github/workflows/actions/**'
+        - '.github/ISSUE_TEMPLATE/operate-*'
+        - '.github/actions/**'
+        - '.github/renovate.json'
         - '.github/workflows/operate-*'
         - 'bom/*'
         - 'distro/**'
