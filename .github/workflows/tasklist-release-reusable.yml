@@ -140,7 +140,7 @@ jobs:
           PUSH_CHANGES: ${{ inputs.dryRun == false }}
           SKIP_DEPLOY: ${{ inputs.dryRun }}
         run: |
-          mvn release:prepare release:perform -P -docker \
+          mvn -f tasklist release:prepare release:perform -P -docker \
           -DpushChanges=${{ env.PUSH_CHANGES }} \
           -DlocalCheckout=true \
           -DskipTests=true -B -T${{ env.LIMITS_CPU }} --fail-at-end \
@@ -164,7 +164,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           ARTIFACT="camunda-tasklist"
-          ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
+          ZEEBE_VERSION=$(mvn -f tasklist help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
 
           cd target/checkout/tasklist-distro/target
 

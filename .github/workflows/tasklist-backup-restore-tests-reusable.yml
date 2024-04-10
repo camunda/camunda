@@ -37,7 +37,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
             secret/data/products/tasklist/ci/tasklist TASKLIST_CI_ALERT_WEBHOOK_URL;
-            
+
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -67,7 +67,7 @@ jobs:
       # Build: maven artifacts
       - name: Build backend
         run: |
-          mvn -B -DskipTests -P skipFrontendBuild clean install
+          mvn -f tasklist -B -DskipTests -P skipFrontendBuild clean install
 
       # Tests: run backup and restore tests
       - name: Run backup and restore tests
