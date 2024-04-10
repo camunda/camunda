@@ -47,6 +47,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
 
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
     metrics = new ExporterMetrics(1);
+    metrics.initializeExporterState(ExporterPhase.EXPORTING);
   }
 
   @Override

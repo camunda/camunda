@@ -114,7 +114,7 @@ public final class ExporterRule implements TestRule {
             .descriptors(exporterDescriptors)
             .positionsToSkipFilter(positionsToSkipFilter);
 
-    director = new ExporterDirector(context, false);
+    director = new ExporterDirector(context, ExporterPhase.EXPORTING);
     director.startAsync(actorSchedulerRule.get()).join();
   }
 
