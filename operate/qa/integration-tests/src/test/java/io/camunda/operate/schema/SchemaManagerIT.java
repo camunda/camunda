@@ -72,10 +72,8 @@ public class SchemaManagerIT {
 
     final int defaultNumberofReplicas = 5;
     if (DatabaseInfo.isOpensearch()) {
-      System.out.println("opensearch");
       operateProperties.getOpensearch().setNumberOfReplicas(defaultNumberofReplicas);
     } else {
-      System.out.println("elasticsearch");
       operateProperties.getElasticsearch().setNumberOfReplicas(defaultNumberofReplicas);
     }
 
@@ -84,16 +82,12 @@ public class SchemaManagerIT {
     createIndex(idxName("index-3.4.5_"), List.of(Map.of("test_name3", "test_value3")));
 
     // set reindex settings
-    final boolean isSetting1 =
-        schemaManager.setIndexSettingsFor(
-            Map.of(NUMBERS_OF_REPLICA, NO_REPLICA, REFRESH_INTERVAL, "2s"),
-            idxName("index-1.2.3_"));
-    final boolean isSetting2 =
-        schemaManager.setIndexSettingsFor(
-            Map.of(NUMBERS_OF_REPLICA, 3, REFRESH_INTERVAL, "2s"), idxName("index-2.3.4_"));
-    final boolean isSetting3 =
-        schemaManager.setIndexSettingsFor(
-            Map.of(NUMBERS_OF_REPLICA, "5", REFRESH_INTERVAL, "2s"), idxName("index-3.4.5_"));
+    schemaManager.setIndexSettingsFor(
+        Map.of(NUMBERS_OF_REPLICA, NO_REPLICA, REFRESH_INTERVAL, "2s"), idxName("index-1.2.3_"));
+    schemaManager.setIndexSettingsFor(
+        Map.of(NUMBERS_OF_REPLICA, 3, REFRESH_INTERVAL, "2s"), idxName("index-2.3.4_"));
+    schemaManager.setIndexSettingsFor(
+        Map.of(NUMBERS_OF_REPLICA, "5", REFRESH_INTERVAL, "2s"), idxName("index-3.4.5_"));
 
     // update number of replicas for each index
     schemaManager.checkAndUpdateIndices();
