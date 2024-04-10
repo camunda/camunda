@@ -41,7 +41,7 @@ import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
-import {CheckmarkFilled} from '@carbon/icons-react';
+import {CheckmarkFilled} from '@carbon/react/icons';
 
 type AssignmentStatus =
   | 'off'

@@ -16,7 +16,7 @@
  */
 
 import {InlineLoadingStatus, Stack} from '@carbon/react';
-import {ArrowRight} from '@carbon/icons-react';
+import {ArrowRight} from '@carbon/react/icons';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';

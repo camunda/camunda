@@ -378,6 +378,9 @@ declare module '@carbon/react/icons' {
   export const CircleDash: Icon;
   export const UserAvatar: Icon;
   export const UserAvatarFilled: Icon;
+  export const Calendar: Icon;
+  export const CheckmarkFilled: Icon;
+  export const Notification: Icon;
 }
 
 declare module '@carbon/elements' {

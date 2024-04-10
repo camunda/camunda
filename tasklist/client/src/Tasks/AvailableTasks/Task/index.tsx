@@ -30,7 +30,7 @@ import {
   CheckmarkFilled,
   Warning,
   Notification,
-} from '@carbon/icons-react';
+} from '@carbon/react/icons';
 import {compareAsc} from 'date-fns';
 import {unraw} from 'modules/utils/unraw';
 import {Row, Label, TaskLink, Stack, Container} from './styled';
