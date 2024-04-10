@@ -120,23 +120,6 @@ jobs:
         run: yarn run test:e2e:ci
         env:
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
-      - name: Publish test results to TestRail
-        if: always()
-        working-directory: ./tasklist/client
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ secrets.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ secrets.TESTRAIL_QA_KEY }}
-          JUNIT_RESULTS_FILE: "results.xml"
-        run: |
-          pip install trcli
-          trcli -y -h $TESTRAIL_HOST \
-            --project 'HTO' \
-            --username $TESTRAIL_USERNAME \
-            --key $TESTRAIL_KEY \
-            parse_junit --title "Playwright Automated Regression E2E Tests" \
-            --close-run \
-            -f $JUNIT_RESULTS_FILE
       - uses: actions/upload-artifact@v4
         if: always()
         with:
