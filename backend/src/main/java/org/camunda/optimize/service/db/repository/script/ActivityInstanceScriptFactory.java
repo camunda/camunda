@@ -9,8 +9,7 @@ import static org.camunda.optimize.service.db.es.writer.usertask.UserTaskDuratio
 
 public interface ActivityInstanceScriptFactory {
   static String createCompletedActivityInlineUpdateScript(final String updateUserTaskFiledsScript) {
-    return
-        """
+    return """
         def existingFlowNodeInstancesById = ctx._source.${flowNodesField}.stream()
          .filter(flowNode -> !"${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}))
          .collect(Collectors.toMap(n -> n.${flowNodeInstanceIdField}, n -> n, (n1, n2) -> n1));
@@ -34,8 +33,7 @@ public interface ActivityInstanceScriptFactory {
           if (existingTask != null) {
       """
         + updateUserTaskFiledsScript
-        +
-        """
+        + """
           } else {
             existingUserTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
           }
@@ -54,15 +52,13 @@ public interface ActivityInstanceScriptFactory {
           // CompletedUserTaskImport)
      """
         + createUpdateUserTaskMetricsScript()
-        +
-        """
+        + """
         }
       """;
   }
 
   static String createRunningActivityInlineUpdateScript(final String updateUserTaskFiledsScript) {
-    return
-        """
+    return """
           def existingFlowNodeInstancesById = ctx._source.${flowNodesField}.stream()
             .filter(n -> !"${userTaskFlowNodeType}".equalsIgnoreCase(n.${flowNodeTypeField}))
             .collect(Collectors.toMap(n -> n.${flowNodeInstanceIdField}, n -> n, (n1, n2) -> n1));
@@ -91,8 +87,7 @@ public interface ActivityInstanceScriptFactory {
             if (existingTask != null) {
         """
         + updateUserTaskFiledsScript
-        +
-        """
+        + """
             } else {
               existingUserTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
             }

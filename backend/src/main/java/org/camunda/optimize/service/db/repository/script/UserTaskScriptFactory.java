@@ -9,8 +9,7 @@ import static org.camunda.optimize.service.db.es.writer.usertask.UserTaskDuratio
 
 public interface UserTaskScriptFactory {
   static String createCompletedUserTaskInlineUpdateScript(final String updateUserTaskFiledsScript) {
-    return
-        """
+    return """
         if (ctx._source.${flowNodesField} == null) { ctx._source.${flowNodesField} = []; }
           def userTaskInstancesById = ctx._source.${flowNodesField}.stream()
             .filter(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}))
@@ -23,8 +22,7 @@ public interface UserTaskScriptFactory {
               if (existingTask != null) {
             """
         + updateUserTaskFiledsScript
-        +
-        """
+        + """
               } else {
                 userTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
               }
@@ -36,8 +34,7 @@ public interface UserTaskScriptFactory {
   }
 
   static String createIdentityLinkLogInlineUpdateScript() {
-    return
-    """
+    return """
         // 1 check for existing userTask
         if (ctx._source.${flowNodesField} == null) ctx._source.${flowNodesField} = [];
         def userTaskInstancesById = ctx._source.${flowNodesField}.stream()
@@ -78,8 +75,7 @@ public interface UserTaskScriptFactory {
   }
 
   static String createIdentityLinkLogUpdateAssigneeScript() {
-    return
-    """
+    return """
       if (ctx._source.${flowNodesField} != null) {
         for (def currentFlowNode : ctx._source.${flowNodesField}) {
           // Ignore any flowNodes that arent userTasks
@@ -110,8 +106,7 @@ public interface UserTaskScriptFactory {
   }
 
   static String createIdentityLinkLogUpdateCandidateGroupScript() {
-    return
-    """
+    return """
       if (ctx._source.${flowNodesField} != null) {
         for (def currentFlowNode : ctx._source.${flowNodesField}) {
           // Ignore any flowNodes that arent userTasks
@@ -137,8 +132,7 @@ public interface UserTaskScriptFactory {
 
   static String createRunningUserTaskInstanceInlineUpdateScript(
       final String updateUserTaskFiledsScript) {
-    return
-        """
+    return """
       if (ctx._source.${flowNodesField} == null) { ctx._source.${flowNodesField} = []; }
       def userTaskInstancesById = ctx._source.${flowNodesField}.stream()
         .filter(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}))
@@ -151,8 +145,7 @@ public interface UserTaskScriptFactory {
         if (existingTask != null) {
       """
         + updateUserTaskFiledsScript
-        +
-        """
+        + """
         } else {
           userTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
         }
