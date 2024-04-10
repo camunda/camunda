@@ -6,18 +6,12 @@ on:
       - 'stable/**'
       - 'release/**'
     paths:
+      - '.github/workflows/operate-frontend.yml'
       - 'operate/client/**'
-      - '!.github/workflows/zeebe-*'
-      - '!dist/**'
-      - '!zeebe/**'
-      - '!spring-boot-starter-camunda-sdk/**'
   pull_request:
     paths:
+      - '.github/workflows/operate-frontend.yml'
       - 'operate/client/**'
-      - '!.github/workflows/zeebe-*'
-      - '!dist/**'
-      - '!zeebe/**'
-      - '!spring-boot-starter-camunda-sdk/**'
 
 jobs:
   linting-and-testing:

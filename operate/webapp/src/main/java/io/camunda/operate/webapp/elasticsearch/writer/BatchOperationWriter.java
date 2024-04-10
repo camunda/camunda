@@ -56,12 +56,13 @@ import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.writer.PersistOperationHelper;
+import io.camunda.operate.webapp.writer.ProcessInstanceSource;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
@@ -80,8 +81,6 @@ import org.springframework.stereotype.Component;
 public class BatchOperationWriter implements io.camunda.operate.webapp.writer.BatchOperationWriter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationWriter.class);
-
-  @Autowired private ListViewReader listViewReader;
 
   @Autowired private IncidentReader incidentReader;
 
@@ -105,8 +104,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Autowired private ProcessInstanceReader processInstanceReader;
 
-  @Autowired private DecisionInstanceReader decisionInstanceReader;
-
   @Autowired private DecisionReader decisionReader;
 
   @Autowired private ProcessReader processReader;
@@ -119,6 +116,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   @Autowired private ListViewStore listViewStore;
 
   @Autowired private QueryHelper queryHelper;
+
+  @Autowired private PersistOperationHelper persistOperationHelper;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of
@@ -140,7 +139,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     final BatchRequest batchRequest = operationStore.newBatchRequest();
 
     // lock the operations
-    for (OperationEntity operation : operationEntities) {
+    for (final OperationEntity operation : operationEntities) {
       // lock operation: update workerId, state, lockExpirationTime
       operation.setState(OperationState.LOCKED);
       operation.setLockOwner(workerId);
@@ -156,7 +155,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   }
 
   @Override
-  public void updateOperation(OperationEntity operation) throws PersistenceException {
+  public void updateOperation(final OperationEntity operation) throws PersistenceException {
     operationStore.update(operation, true);
   }
 
@@ -168,7 +167,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
    */
   @Override
   public BatchOperationEntity scheduleBatchOperation(
-      CreateBatchOperationRequestDto batchOperationRequest) {
+      final CreateBatchOperationRequestDto batchOperationRequest) {
     LOGGER.debug("Creating batch operation: operationRequest [{}]", batchOperationRequest);
     try {
       // add batch operation with unique id
@@ -176,6 +175,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
           createBatchOperationEntity(
               batchOperationRequest.getOperationType(), batchOperationRequest.getName());
 
+      // Creates an OperationEntity object for each process instance that will be changed and
+      // sends to the batch processor to be executed asynchronously
       final var operationsCount = addOperations(batchOperationRequest, batchOperation);
 
       // update counts
@@ -186,9 +187,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       }
       operationStore.add(batchOperation);
       return batchOperation;
-    } catch (InvalidRequestException ex) {
+    } catch (final InvalidRequestException ex) {
       throw ex;
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new OperateRuntimeException(
           String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
     }
@@ -203,7 +204,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
    */
   @Override
   public BatchOperationEntity scheduleSingleOperation(
-      long processInstanceKey, CreateOperationRequestDto operationRequest) {
+      final long processInstanceKey, final CreateOperationRequestDto operationRequest) {
     LOGGER.debug(
         "Creating operation: processInstanceKey [{}], operation type [{}]",
         processInstanceKey,
@@ -236,7 +237,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
           batchOperation.setEndDate(OffsetDateTime.now());
           noOperationsReason = "No incidents found.";
         } else {
-          for (IncidentEntity incident : allIncidents) {
+          for (final IncidentEntity incident : allIncidents) {
             final OperationEntity operationEntity =
                 createOperationEntity(processInstanceKey, operationType, batchOperation.getId());
             operationEntity.setIncidentKey(incident.getKey());
@@ -289,11 +290,11 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
       batchRequest.execute();
       return batchOperation;
-    } catch (io.camunda.operate.store.NotFoundException nfe) {
+    } catch (final io.camunda.operate.store.NotFoundException nfe) {
       throw new OperateRuntimeException(
           String.format("Exception occurred, while scheduling operation: %s", nfe.getMessage()),
           new NotFoundException(nfe.getMessage()));
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new OperateRuntimeException(
           String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
     }
@@ -301,7 +302,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Override
   public BatchOperationEntity scheduleModifyProcessInstance(
-      ModifyProcessInstanceRequestDto modifyRequest) {
+      final ModifyProcessInstanceRequestDto modifyRequest) {
     LOGGER.debug(
         "Creating modify process instance operation: processInstanceKey [{}]",
         modifyRequest.getProcessInstanceKey());
@@ -348,7 +349,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
       batchRequest.execute();
       return batchOperation;
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new OperateRuntimeException(
           String.format(
               "Exception occurred, while scheduling 'modify process instance' operation: %s",
@@ -359,7 +360,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Override
   public BatchOperationEntity scheduleDeleteDecisionDefinition(
-      DecisionDefinitionEntity decisionDefinitionEntity) {
+      final DecisionDefinitionEntity decisionDefinitionEntity) {
 
     final Long decisionDefinitionKey = decisionDefinitionEntity.getKey();
     final OperationType operationType = OperationType.DELETE_DECISION_DEFINITION;
@@ -398,7 +399,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
               .add(batchOperationTemplate.getFullQualifiedName(), batchOperation);
       batchRequest.execute();
       return batchOperation;
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new OperateRuntimeException(
           String.format(
               "Exception occurred, while scheduling 'delete decision definition' operation: %s",
@@ -408,7 +409,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   }
 
   @Override
-  public BatchOperationEntity scheduleDeleteProcessDefinition(ProcessEntity processEntity) {
+  public BatchOperationEntity scheduleDeleteProcessDefinition(final ProcessEntity processEntity) {
 
     final Long processDefinitionKey = processEntity.getKey();
     final OperationType operationType = OperationType.DELETE_PROCESS_DEFINITION;
@@ -447,7 +448,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
               .add(batchOperationTemplate.getFullQualifiedName(), batchOperation);
       batchRequest.execute();
       return batchOperation;
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new OperateRuntimeException(
           String.format(
               "Exception occurred, while scheduling 'delete process definition' operation: %s",
@@ -457,7 +458,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   }
 
   private int addOperations(
-      CreateBatchOperationRequestDto batchOperationRequest, BatchOperationEntity batchOperation)
+      final CreateBatchOperationRequestDto batchOperationRequest,
+      final BatchOperationEntity batchOperation)
       throws IOException {
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
     ConstantScoreQueryBuilder query =
@@ -484,6 +486,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
           OperationTemplate.PROCESS_DEFINITION_KEY,
           OperationTemplate.BPMN_PROCESS_ID
         };
+
+    // Query the list of process instances that will be modified based on the input query
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
             .source(
@@ -502,17 +506,17 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
               searchHits -> {
                 try {
                   final List<ProcessInstanceSource> processInstanceSources = new ArrayList<>();
-                  for (SearchHit hit : searchHits.getHits()) {
+                  for (final SearchHit hit : searchHits.getHits()) {
                     processInstanceSources.add(
                         ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
                   }
                   operationsCount.addAndGet(
-                      persistOperations(
+                      persistOperationHelper.persistOperations(
                           processInstanceSources,
                           batchOperation.getId(),
                           batchOperationRequest,
                           null));
-                } catch (PersistenceException e) {
+                } catch (final PersistenceException e) {
                   throw new RuntimeException(e);
                 }
               },
@@ -527,7 +531,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   }
 
   private BatchOperationEntity createBatchOperationEntity(
-      OperationType operationType, String name) {
+      final OperationType operationType, final String name) {
     final BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
     batchOperationEntity.generateId();
     batchOperationEntity.setType(operationType);
@@ -537,84 +541,10 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     return batchOperationEntity;
   }
 
-  private int persistOperations(
-      List<ProcessInstanceSource> processInstanceSources,
-      String batchOperationId,
-      CreateBatchOperationRequestDto batchOperationRequest,
-      String incidentId)
-      throws PersistenceException {
-    final var batchRequest = operationStore.newBatchRequest();
-    int operationsCount = 0;
-    final OperationType operationType = batchOperationRequest.getOperationType();
-
-    final List<Long> processInstanceKeys =
-        processInstanceSources.stream()
-            .map(ProcessInstanceSource::getProcessInstanceKey)
-            .collect(Collectors.toList());
-    Map<Long, List<Long>> incidentKeys = new HashMap<>();
-    // prepare map of incident ids per process instance id
-    if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
-      incidentKeys = incidentReader.getIncidentKeysPerProcessInstance(processInstanceKeys);
-    }
-    final Map<Long, String> processInstanceIdToIndexName;
-    try {
-      processInstanceIdToIndexName =
-          listViewStore.getListViewIndicesForProcessInstances(processInstanceKeys);
-    } catch (IOException e) {
-      throw new NotFoundException("Couldn't find index names for process instances.", e);
-    }
-    for (ProcessInstanceSource processInstanceSource : processInstanceSources) {
-      // add single operations
-      final Long processInstanceKey = processInstanceSource.getProcessInstanceKey();
-      if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
-        final List<Long> allIncidentKeys = incidentKeys.get(processInstanceKey);
-        if (allIncidentKeys != null && !allIncidentKeys.isEmpty()) {
-          for (Long incidentKey : allIncidentKeys) {
-            final OperationEntity operationEntity =
-                createOperationEntity(processInstanceSource, operationType, batchOperationId)
-                    .setIncidentKey(incidentKey);
-            batchRequest.add(operationTemplate.getFullQualifiedName(), operationEntity);
-            operationsCount++;
-          }
-        }
-      } else {
-        final OperationEntity operationEntity =
-            createOperationEntity(processInstanceSource, operationType, batchOperationId)
-                .setIncidentKey(toLongOrNull(incidentId));
-        if (operationType == OperationType.MIGRATE_PROCESS_INSTANCE) {
-          try {
-            operationEntity.setMigrationPlan(
-                objectMapper.writeValueAsString(batchOperationRequest.getMigrationPlan()));
-          } catch (IOException e) {
-            throw new PersistenceException(e);
-          }
-        }
-        batchRequest.add(operationTemplate.getFullQualifiedName(), operationEntity);
-        operationsCount++;
-      }
-      // update process instance
-      final String processInstanceId = String.valueOf(processInstanceKey);
-      final String indexForProcessInstance =
-          getOrDefaultForNullValue(
-              processInstanceIdToIndexName,
-              processInstanceKey,
-              listViewTemplate.getFullQualifiedName());
-      final Map<String, Object> params = Map.of("batchOperationId", batchOperationId);
-      final String script =
-          "if (ctx._source.batchOperationIds == null){"
-              + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
-              + "} else {"
-              + "ctx._source.batchOperationIds.add(params.batchOperationId);"
-              + "}";
-      batchRequest.updateWithScript(indexForProcessInstance, processInstanceId, script, params);
-    }
-
-    batchRequest.execute();
-    return operationsCount;
-  }
-
   private OperationEntity createOperationEntity(
-      Long processInstanceKey, OperationType operationType, String batchOperationId) {
+      final Long processInstanceKey,
+      final OperationType operationType,
+      final String batchOperationId) {
     final ProcessInstanceSource processInstanceSource =
         new ProcessInstanceSource().setProcessInstanceKey(processInstanceKey);
     final Optional<ProcessInstanceForListViewEntity> optionalProcessInstance =
@@ -629,9 +559,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   }
 
   private OperationEntity createOperationEntity(
-      ProcessInstanceSource processInstanceSource,
-      OperationType operationType,
-      String batchOperationId) {
+      final ProcessInstanceSource processInstanceSource,
+      final OperationType operationType,
+      final String batchOperationId) {
 
     final OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
@@ -646,7 +576,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     return operationEntity;
   }
 
-  private void validateTotalHits(SearchHits hits) {
+  private void validateTotalHits(final SearchHits hits) {
     final long totalHits = hits.getTotalHits().value;
     if (operateProperties.getBatchOperationMaxSize() != null
         && totalHits > operateProperties.getBatchOperationMaxSize()) {
@@ -658,80 +588,16 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   }
 
   private Optional<ProcessInstanceForListViewEntity> tryGetProcessInstance(
-      Long processInstanceKey) {
+      final Long processInstanceKey) {
     ProcessInstanceForListViewEntity processInstance = null;
     try {
       processInstance = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
-    } catch (OperateRuntimeException ex) {
+    } catch (final OperateRuntimeException ex) {
       LOGGER.error(
           String.format(
               "Failed to get process instance for key %s: %s",
               processInstanceKey, ex.getMessage()));
     }
     return Optional.ofNullable(processInstance);
-  }
-
-  public static class ProcessInstanceSource {
-
-    private Long processInstanceKey;
-    private Long processDefinitionKey;
-    private String bpmnProcessId;
-
-    public static ProcessInstanceSource fromSourceMap(Map<String, Object> sourceMap) {
-      final ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
-      processInstanceSource.processInstanceKey =
-          (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
-      processInstanceSource.processDefinitionKey =
-          (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
-      processInstanceSource.bpmnProcessId =
-          (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID);
-      return processInstanceSource;
-    }
-
-    public Long getProcessInstanceKey() {
-      return processInstanceKey;
-    }
-
-    public ProcessInstanceSource setProcessInstanceKey(Long processInstanceKey) {
-      this.processInstanceKey = processInstanceKey;
-      return this;
-    }
-
-    public Long getProcessDefinitionKey() {
-      return processDefinitionKey;
-    }
-
-    public ProcessInstanceSource setProcessDefinitionKey(Long processDefinitionKey) {
-      this.processDefinitionKey = processDefinitionKey;
-      return this;
-    }
-
-    public String getBpmnProcessId() {
-      return bpmnProcessId;
-    }
-
-    public ProcessInstanceSource setBpmnProcessId(String bpmnProcessId) {
-      this.bpmnProcessId = bpmnProcessId;
-      return this;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final ProcessInstanceSource that = (ProcessInstanceSource) o;
-      return Objects.equals(processInstanceKey, that.processInstanceKey)
-          && Objects.equals(processDefinitionKey, that.processDefinitionKey)
-          && Objects.equals(bpmnProcessId, that.bpmnProcessId);
-    }
   }
 }

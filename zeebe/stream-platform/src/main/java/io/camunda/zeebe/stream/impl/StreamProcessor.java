@@ -129,6 +129,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     partitionId = logStream.getPartitionId();
     actorName = buildActorName("StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
+    metrics.initializeProcessorPhase(streamProcessorContext.getStreamProcessorPhase());
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
 
@@ -198,6 +199,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         setStateToPausedAndNotifyListeners();
       } else {
         streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
+        metrics.setStreamProcessorReplay();
       }
 
       if (isInReplayOnlyMode()) {
@@ -262,6 +264,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public void onActorFailed() {
     streamProcessorContext.streamProcessorPhase(Phase.FAILED);
+    metrics.setStreamProcessorFailed();
     isOpened.set(false);
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
@@ -313,6 +316,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       streamProcessorContext.logStreamWriter(writer);
 
       streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
+      metrics.setStreamProcessorProcessing();
 
       chainSteps(
           0,
@@ -542,6 +546,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     shouldProcess = false;
     streamProcessorContext.streamProcessorPhase(Phase.PAUSED);
+    metrics.setStreamProcessorPaused();
   }
 
   public void resumeProcessing() {
@@ -549,9 +554,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         () -> {
           if (!shouldProcess) {
             shouldProcess = true;
-
             if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
               streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
+              metrics.setStreamProcessorReplay();
               actor.submit(replayStateMachine::replayNextEvent);
               LOG.debug("Resumed replay for partition {}", partitionId);
             } else {
@@ -559,6 +564,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               // since the listeners are not recovered yet
               lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
               streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
+              metrics.setStreamProcessorProcessing();
               if (processingStateMachine != null) {
                 actor.submit(processingStateMachine::tryToReadNextRecord);
               }

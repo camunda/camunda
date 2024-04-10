@@ -31,6 +31,22 @@ import org.springframework.stereotype.Component;
     matchIfMissing = true)
 public class SearchCheckPredicatesHolder {
   @Autowired
+  @Qualifier("processInstancesAreStartedCheck")
+  private Predicate<Object[]> processInstancesAreStartedCheck;
+
+  @Autowired
+  @Qualifier("flowNodeIsActiveCheck")
+  private Predicate<Object[]> flowNodeIsActiveCheck;
+
+  // Note: The operation check predicates check for the same status for *all* operations for
+  // a process instance, not a single one. This causes issues in tests where we want mixed
+  // operation statuses (ex: 1 completed 1 failed operation) and should be used sparingly
+  // and deliberately until a better solution is found.
+  @Autowired
+  @Qualifier("operationsByProcessInstanceAreCompletedCheck")
+  private Predicate<Object[]> operationsByProcessInstanceAreCompletedCheck;
+
+  @Autowired
   @Qualifier("processIsDeployedCheck")
   private Predicate<Object[]> processIsDeployedCheck;
 
@@ -76,5 +92,17 @@ public class SearchCheckPredicatesHolder {
 
   public Predicate<Object[]> getIncidentsInProcessAreActiveCheck() {
     return incidentsInProcessAreActiveCheck;
+  }
+
+  public Predicate<Object[]> getOperationsByProcessInstanceAreCompletedCheck() {
+    return operationsByProcessInstanceAreCompletedCheck;
+  }
+
+  public Predicate<Object[]> getFlowNodeIsActiveCheck() {
+    return flowNodeIsActiveCheck;
+  }
+
+  public Predicate<Object[]> getProcessInstancesAreStartedCheck() {
+    return processInstancesAreStartedCheck;
   }
 }

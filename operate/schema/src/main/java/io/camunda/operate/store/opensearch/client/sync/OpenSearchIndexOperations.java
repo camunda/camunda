@@ -211,10 +211,11 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
-          final Map<String, String> settings = new HashMap<>();
           final GetIndicesSettingsResponse response =
               openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
-          return response.result().get(indexName).settings();
+          final IndexSettings settings = response.result().get(indexName).settings();
+          // Opensearch bug where all index settings are in the inner index object
+          return (settings.index() == null ? settings : settings.index());
         });
   }
 

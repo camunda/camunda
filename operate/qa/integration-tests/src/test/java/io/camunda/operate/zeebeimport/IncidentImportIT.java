@@ -22,6 +22,7 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
@@ -43,6 +44,7 @@ public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
     final String bpmnTarget = "double-task.bpmn";
     final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
     final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
+    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
 
     // when
     final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");

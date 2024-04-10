@@ -24,7 +24,7 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
-import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,6 +39,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -70,39 +71,6 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .flowNodeIsTerminated("taskA");
     // then
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
-  }
-
-  @Test
-  public void shouldCancelTokenFailsForFlowNodeId() throws Exception {
-    // given
-    tester
-        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
-        .waitUntil()
-        .flowNodeIsActive("taskA");
-    // when
-    var modifications =
-        List.of(
-            new Modification()
-                .setModification(Modification.Type.CANCEL_TOKEN)
-                .setFromFlowNodeId("taskA"));
-
-    tester
-        .modifyProcessInstanceOperation(modifications)
-        .waitUntil()
-        .operationIsCompleted()
-        .then()
-        .waitUntil()
-        .flowNodeIsTerminated("taskA");
-    // then
-    assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
-
-    modifications =
-        List.of(
-            new Modification()
-                .setModification(Modification.Type.CANCEL_TOKEN)
-                .setFromFlowNodeId("taskA"));
-
-    tester.modifyProcessInstanceOperation(modifications).waitUntil().operationIsFailed();
   }
 
   @Test
@@ -504,6 +472,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         List.of(
             new Modification()
                 .setModification(Modification.Type.MOVE_TOKEN)
+                .setNewTokensCount(1)
                 .setFromFlowNodeId("taskA")
                 .setToFlowNodeId("taskB"));
     tester.modifyProcessInstanceOperation(modifications).waitUntil().operationIsFailed();
@@ -937,7 +906,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
         .isEqualTo(FlowNodeStateDto.TERMINATED);
   }
 
-  private List<String> varsToStrings(List<Long> flowNodeKeys) {
+  private List<String> varsToStrings(final List<Long> flowNodeKeys) {
     final var variables =
         flowNodeKeys.stream()
             .map(key -> tester.getVariablesForScope(key))

@@ -8,15 +8,31 @@ on:
       - release-*
       - trying
       - staging
-    paths-ignore:
-      - '.github/workflows/operate-*'
-      - 'distro/**'
-      - 'operate/**'
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/zeebe-*'
+      - 'Dockerfile'
+      - 'bom/*'
+      - 'build-tools/**'
+      - 'clients/**'
+      - 'dist/**'
+      - 'parent/*'
+      - 'pom.xml'
+      - 'spring-boot-starter-camunda-sdk/**'
+      - 'zeebe/**'
   pull_request:
-    paths-ignore:
-      - '.github/workflows/operate-*'
-      - 'distro/**'
-      - 'operate/**'
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/zeebe-*'
+      - 'Dockerfile'
+      - 'bom/*'
+      - 'build-tools/**'
+      - 'clients/**'
+      - 'dist/**'
+      - 'parent/*'
+      - 'pom.xml'
+      - 'spring-boot-starter-camunda-sdk/**'
+      - 'zeebe/**'
   merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
@@ -408,7 +424,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest

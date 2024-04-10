@@ -95,7 +95,7 @@ const Container = styled.div<ContainerProps>`
           background-color: var(--cds-layer);
           border-color: var(--cds-icon-secondary);
           border-width: 1px 2px;
-          height: auto;
+          min-height: 0;
         }
 
         .literal-expression-properties {
