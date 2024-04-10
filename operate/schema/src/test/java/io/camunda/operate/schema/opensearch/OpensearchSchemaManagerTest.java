@@ -30,14 +30,11 @@ import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opensearch.client.opensearch._types.Time;
-import org.opensearch.client.opensearch.indices.IndexSettings;
 
 @ExtendWith(MockitoExtension.class)
 public class OpensearchSchemaManagerTest {
@@ -57,38 +54,14 @@ public class OpensearchSchemaManagerTest {
     when(operateOpensearchProperties.getRefreshInterval()).thenReturn("2s");
     when(operateProperties.getOpensearch()).thenReturn(operateOpensearchProperties);
 
-    final IndexSettings indexSettings1 = mock(IndexSettings.class);
-    final IndexSettings indexSettings2 = mock(IndexSettings.class);
-    final IndexSettings indexSettings3 = mock(IndexSettings.class);
-    final Time time = mock(Time.class);
-    when(time.time()).thenReturn("1s");
-
-    when(indexSettings1.numberOfReplicas()).thenReturn("5");
-    when(indexSettings1.refreshInterval()).thenReturn(time);
-    when(indexSettings2.numberOfReplicas()).thenReturn("3");
-    when(indexSettings2.refreshInterval()).thenReturn(time);
-    when(indexSettings3.numberOfReplicas()).thenReturn(null);
-    when(indexSettings3.refreshInterval()).thenReturn(null);
-
     final OpenSearchIndexOperations openSearchIndexOperations =
         mock(OpenSearchIndexOperations.class);
     when(richOpenSearchClient.index()).thenReturn(openSearchIndexOperations);
-    when(openSearchIndexOperations.getIndexNamesWithRetries("*"))
-        .thenReturn(Set.of("index1", "index2", "index3"));
-    when(openSearchIndexOperations.getIndexSettingsWithRetries("index1"))
-        .thenReturn(indexSettings1);
-    when(openSearchIndexOperations.getIndexSettingsWithRetries("index2"))
-        .thenReturn(indexSettings2);
-    when(openSearchIndexOperations.getIndexSettingsWithRetries("index3"))
-        .thenReturn(indexSettings3);
 
-    when(openSearchIndexOperations.setIndexSettingsFor(any(), anyString()))
-        .thenReturn(true)
-        .thenReturn(false);
+    when(openSearchIndexOperations.setIndexSettingsFor(any(), anyString())).thenReturn(true);
 
     underTest.checkAndUpdateIndices();
 
-    verify(openSearchIndexOperations, times(3)).getIndexSettingsWithRetries(anyString());
-    verify(openSearchIndexOperations, times(2)).setIndexSettingsFor(any(), anyString());
+    verify(openSearchIndexOperations, times(1)).setIndexSettingsFor(any(), anyString());
   }
 }

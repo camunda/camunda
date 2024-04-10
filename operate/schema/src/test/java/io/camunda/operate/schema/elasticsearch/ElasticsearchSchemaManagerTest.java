@@ -17,6 +17,7 @@
 package io.camunda.operate.schema.elasticsearch;
 
 import static io.camunda.operate.schema.SchemaManager.NUMBERS_OF_REPLICA;
+import static io.camunda.operate.schema.SchemaManager.REFRESH_INTERVAL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -32,7 +33,6 @@ import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,34 +55,18 @@ public class ElasticsearchSchemaManagerTest {
     final OperateElasticsearchProperties operateElasticsearchProperties =
         mock(OperateElasticsearchProperties.class);
     when(operateElasticsearchProperties.getNumberOfReplicas()).thenReturn(5);
+    when(operateElasticsearchProperties.getRefreshInterval()).thenReturn("2s");
     when(operateProperties.getElasticsearch()).thenReturn(operateElasticsearchProperties);
-    when(retryElasticsearchClient.getIndexNames("*"))
-        .thenReturn(Set.of("index1", "index2", "index3"));
 
-    final Map<String, String> indexMap1 = new HashMap<>();
-    indexMap1.put(NUMBERS_OF_REPLICA, "5");
-    final Map<String, String> indexMap2 = new HashMap<>();
-    indexMap2.put(NUMBERS_OF_REPLICA, "3");
-    final Map<String, String> indexMap3 = new HashMap<>();
-    when(retryElasticsearchClient.getIndexSettingsFor("index1", NUMBERS_OF_REPLICA))
-        .thenReturn(indexMap1);
-    when(retryElasticsearchClient.getIndexSettingsFor("index2", NUMBERS_OF_REPLICA))
-        .thenReturn(indexMap2);
-    when(retryElasticsearchClient.getIndexSettingsFor("index3", NUMBERS_OF_REPLICA))
-        .thenReturn(indexMap3);
+    final Map<String, String> updatedSettings = new HashMap<>();
+    updatedSettings.put(NUMBERS_OF_REPLICA, "5");
+    updatedSettings.put(REFRESH_INTERVAL, "2s");
 
-    final Map<String, String> index2UpdatedSettings = new HashMap<>();
-    index2UpdatedSettings.put(NUMBERS_OF_REPLICA, "5");
-    final Map<String, String> index3UpdatedSettings = new HashMap<>();
-    index3UpdatedSettings.put(NUMBERS_OF_REPLICA, "5");
-    final Settings index2Settings = Settings.builder().loadFromMap(index2UpdatedSettings).build();
-    final Settings index3Settings = Settings.builder().loadFromMap(index3UpdatedSettings).build();
-    when(retryElasticsearchClient.setIndexSettingsFor(index2Settings, "index2")).thenReturn(true);
-    when(retryElasticsearchClient.setIndexSettingsFor(index3Settings, "index3")).thenReturn(false);
+    final Settings indexSettings = Settings.builder().loadFromMap(updatedSettings).build();
+    when(retryElasticsearchClient.setIndexSettingsFor(indexSettings, "*")).thenReturn(true);
 
     underTest.checkAndUpdateIndices();
 
-    verify(retryElasticsearchClient, times(3)).getIndexSettingsFor(anyString(), anyString());
-    verify(retryElasticsearchClient, times(2)).setIndexSettingsFor(any(), anyString());
+    verify(retryElasticsearchClient, times(1)).setIndexSettingsFor(any(), anyString());
   }
 }
