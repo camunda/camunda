@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +20,7 @@ public class PartitionProcessingState {
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
   private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private boolean isProcessingPaused;
-  private ExporterState exporterState;
+  private ExporterPhase exporterPhase;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
 
@@ -71,22 +72,22 @@ public class PartitionProcessingState {
   }
 
   public boolean isExportingPaused() {
-    return exporterState.equals(ExporterState.PAUSED);
+    return exporterPhase.equals(ExporterPhase.PAUSED);
   }
 
-  public ExporterState getExporterState() {
-    return exporterState;
+  public ExporterPhase getExporterPhase() {
+    return exporterPhase;
   }
 
   public boolean isExportingSoftPaused() {
-    return exporterState.equals(ExporterState.SOFT_PAUSED);
+    return exporterPhase.equals(ExporterPhase.SOFT_PAUSED);
   }
 
   @SuppressWarnings({"squid:S899"})
   /** Returns true if exporting is paused. This method overrides the effects of soft pause. */
   public boolean pauseExporting() {
     try {
-      setPersistedExporterState(ExporterState.PAUSED);
+      setPersistedExporterPhase(ExporterPhase.PAUSED);
     } catch (final IOException e) {
       return false;
     }
@@ -96,7 +97,7 @@ public class PartitionProcessingState {
   /** Returns true if soft exporting is paused. This method overrides the effects of hard pause. */
   public boolean softPauseExporting() {
     try {
-      setPersistedExporterState(ExporterState.SOFT_PAUSED);
+      setPersistedExporterPhase(ExporterPhase.SOFT_PAUSED);
     } catch (final IOException e) {
       return false;
     }
@@ -106,16 +107,16 @@ public class PartitionProcessingState {
   /** Returns true if exporting is resumed. This method resumes both soft and "hard" exporting. */
   public boolean resumeExporting() {
     try {
-      setPersistedExporterState(ExporterState.EXPORTING);
+      setPersistedExporterPhase(ExporterPhase.EXPORTING);
     } catch (final IOException e) {
       return false;
     }
     return true;
   }
 
-  void setPersistedExporterState(final ExporterState state) throws IOException {
-    exporterState = state;
-    if (state.equals(ExporterState.EXPORTING)) {
+  void setPersistedExporterPhase(final ExporterPhase state) throws IOException {
+    exporterPhase = state;
+    if (state.equals(ExporterPhase.EXPORTING)) {
       // since exporting is the default state, we can delete the file
       Files.deleteIfExists(
           getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
@@ -135,28 +136,22 @@ public class PartitionProcessingState {
   private void initExportingState() {
     try {
       if (!getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists()) {
-        setPersistedExporterState(ExporterState.EXPORTING);
-        exporterState = ExporterState.EXPORTING;
+        setPersistedExporterPhase(ExporterPhase.EXPORTING);
+        exporterPhase = ExporterPhase.EXPORTING;
       } else {
         final var state =
             Files.readString(
                 getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
         if (state == null || state.isEmpty() || state.isBlank()) {
           // Backwards compatibility. If the file exists, it is paused.
-          exporterState = ExporterState.PAUSED;
+          exporterPhase = ExporterPhase.PAUSED;
           return;
         }
-        exporterState = ExporterState.valueOf(state);
+        exporterPhase = ExporterPhase.valueOf(state);
       }
     } catch (final IOException e) {
       // exporting is the default state
-      exporterState = ExporterState.EXPORTING;
+      exporterPhase = ExporterPhase.EXPORTING;
     }
-  }
-
-  public enum ExporterState {
-    PAUSED,
-    SOFT_PAUSED,
-    EXPORTING;
   }
 }

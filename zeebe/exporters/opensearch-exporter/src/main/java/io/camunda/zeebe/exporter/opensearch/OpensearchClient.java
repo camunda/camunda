@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.AddPolicyRequest;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.opensearch.dto.DeleteStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.IndexPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
@@ -235,6 +236,19 @@ public class OpensearchClient implements AutoCloseable {
     return putIndexStateManagementPolicy(queryParameters);
   }
 
+  public boolean deleteIndexStateManagementPolicy() {
+    try {
+      final var request =
+          new Request(
+              "DELETE", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+
+      final var response = sendRequest(request, DeleteStateManagementPolicyResponse.class);
+      return response.result().equals(DeleteStateManagementPolicyResponse.DELETED);
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to delete index state management policy", e);
+    }
+  }
+
   private boolean putIndexStateManagementPolicy(final Map<String, String> queryParameters) {
     try {
       final var request =
@@ -272,7 +286,7 @@ public class OpensearchClient implements AutoCloseable {
       final var response = sendRequest(request, IndexPolicyResponse.class);
       return !response.failures();
     } catch (final IOException e) {
-      throw new OpensearchExporterException("Failed to add policy to indices", e);
+      throw new OpensearchExporterException("Failed to remove policy from indices", e);
     }
   }
 

@@ -115,29 +115,20 @@ public class OpensearchSchemaManager implements SchemaManager {
     }
     final String currentConfigNumberOfReplicas =
         String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
+
+    final Map<String, String> indexSettings = new HashMap<>();
+    indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
+    indexSettings.put(REFRESH_INTERVAL, operateProperties.getOpensearch().getRefreshInterval());
+    final boolean success = setIndexSettingsFor(indexSettings, "*");
+    if (success) {
+      LOGGER.info("Successfully updated number of replicas for all indices");
+    } else {
+      LOGGER.warn("Failed to update number of replicas for index for all indices");
+    }
     final Map<String, Object> allPolicies = richOpenSearchClient.ism().getAttachedPolicy("*");
     getIndexNames("*")
         .forEach(
             index -> {
-              final Map<String, String> indexSettings =
-                  getIndexSettingsFor(index, NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
-              final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
-              final String refreshInterval = indexSettings.get(REFRESH_INTERVAL);
-              if (currentIndexNumberOfReplicas == null
-                  || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
-                indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-                indexSettings.put(
-                    REFRESH_INTERVAL,
-                    (refreshInterval == null)
-                        ? operateProperties.getOpensearch().getRefreshInterval()
-                        : refreshInterval);
-                final boolean success = setIndexSettingsFor(indexSettings, index);
-                if (success) {
-                  LOGGER.debug("Successfully updated number of replicas for index {}", index);
-                } else {
-                  LOGGER.warn("Failed to update number of replicas for index {}", index);
-                }
-              }
 
               // Update Index policies based on ILM
               updateRetentionPolicy((LinkedHashMap<String, String>) allPolicies.get(index), index);

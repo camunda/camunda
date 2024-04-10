@@ -1,12 +1,31 @@
 component/zeebe:
   - changed-files:
-    - all-globs-to-any-file:
-      - '!.github/workflows/operate-*'
-      - '!distro/**'
-      - '!operate/**'
+    - any-glob-to-any-file:
+        - '.github/ISSUE_TEMPLATE/zeebe-*'
+        - '.github/actions/**'
+        - '.github/renovate.json'
+        - '.github/workflows/zeebe-*'
+        - 'Dockerfile'
+        - 'bom/*'
+        - 'build-tools/**'
+        - 'clients/**'
+        - 'dist/**'
+        - 'monitor/**'
+        - 'parent/*'
+        - 'pom.xml'
+        - 'spring-boot-starter-camunda-sdk/**'
+        - 'zeebe/**'
 component/operate:
   - changed-files:
-    - all-globs-to-any-file:
-      - '!.github/workflows/zeebe-*'
-      - '!dist/**'
-      - '!zeebe/**'
+    - any-glob-to-any-file:
+        - '.ci/**'
+        - '.github/ISSUE_TEMPLATE/operate-*'
+        - '.github/actions/**'
+        - '.github/renovate.json'
+        - '.github/workflows/operate-*'
+        - 'bom/*'
+        - 'distro/**'
+        - 'operate.Dockerfile'
+        - 'operate/**'
+        - 'parent/*'
+        - 'pom.xml'

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState.ExporterState;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -62,17 +62,17 @@ class PartitionProcessingStateTest {
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
     partitionProcessingState.pauseExporting();
 
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be paused.")
-        .isEqualTo(ExporterState.PAUSED);
+        .isEqualTo(ExporterPhase.PAUSED);
 
     // when
     partitionProcessingState.resumeExporting();
 
     // then
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be resumed.")
-        .isEqualTo(ExporterState.EXPORTING);
+        .isEqualTo(ExporterPhase.EXPORTING);
   }
 
   @Test
@@ -81,17 +81,17 @@ class PartitionProcessingStateTest {
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
     partitionProcessingState.softPauseExporting();
 
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be soft paused.")
-        .isEqualTo(ExporterState.SOFT_PAUSED);
+        .isEqualTo(ExporterPhase.SOFT_PAUSED);
 
     // when
     partitionProcessingState.resumeExporting();
 
     // then
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be resumed.")
-        .isEqualTo(ExporterState.EXPORTING);
+        .isEqualTo(ExporterPhase.EXPORTING);
   }
 
   @Test
@@ -101,23 +101,23 @@ class PartitionProcessingStateTest {
 
     partitionProcessingState.pauseExporting();
 
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be paused.")
-        .isEqualTo(ExporterState.PAUSED);
+        .isEqualTo(ExporterPhase.PAUSED);
 
     // we overwrite the pause state
     partitionProcessingState.softPauseExporting();
 
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be soft paused.")
-        .isEqualTo(ExporterState.SOFT_PAUSED);
+        .isEqualTo(ExporterPhase.SOFT_PAUSED);
 
     // then we resume again
     partitionProcessingState.resumeExporting();
 
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be resumed.")
-        .isEqualTo(ExporterState.EXPORTING);
+        .isEqualTo(ExporterPhase.EXPORTING);
   }
 
   @Test
@@ -138,8 +138,8 @@ class PartitionProcessingStateTest {
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
     // the exporter state should be paused
 
-    assertThat(partitionProcessingState.getExporterState())
+    assertThat(partitionProcessingState.getExporterPhase())
         .describedAs("Exporting must be paused.")
-        .isEqualTo(ExporterState.PAUSED);
+        .isEqualTo(ExporterPhase.PAUSED);
   }
 }

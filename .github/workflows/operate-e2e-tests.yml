@@ -6,17 +6,27 @@ on:
       - 'main'
       - 'stable/**'
       - 'release/**'
-    paths-ignore:
-      - '.github/workflows/zeebe-*'
-      - 'dist/**'
-      - 'zeebe/**'
-      - 'spring-boot-starter-camunda-sdk/**'
+    paths:
+      - '.ci/**'
+      - '.github/workflows/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'distro/**'
+      - 'operate.Dockerfile'
+      - 'operate/**'
+      - 'parent/*'
+      - 'pom.xml'
   pull_request:
-    paths-ignore:
-      - '.github/workflows/zeebe-*'
-      - 'dist/**'
-      - 'zeebe/**'
-      - 'spring-boot-starter-camunda-sdk/**'
+    paths:
+      - '.ci/**'
+      - '.github/workflows/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'distro/**'
+      - 'operate.Dockerfile'
+      - 'operate/**'
+      - 'parent/*'
+      - 'pom.xml'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -40,7 +50,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.5.0-alpha2
+        image: camunda/zeebe:8.5.0
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter

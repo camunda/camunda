@@ -97,25 +97,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     LOGGER.info("Updating Indices with currently-configured number of replicas...");
     final String currentConfigNumberOfReplicas =
         String.valueOf(operateProperties.getElasticsearch().getNumberOfReplicas());
-    getIndexNames("*")
-        .forEach(
-            index -> {
-              final Map<String, String> indexSettings =
-                  getIndexSettingsFor(index, NUMBERS_OF_REPLICA);
-              final String currentIndexNumberOfReplicas = indexSettings.get(NUMBERS_OF_REPLICA);
-              if (currentIndexNumberOfReplicas == null
-                  || !currentIndexNumberOfReplicas.equals(currentConfigNumberOfReplicas)) {
-                indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-                final boolean success = setIndexSettingsFor(indexSettings, index);
-                if (success) {
-                  LOGGER.info("Successfully updated number of replicas for index {}", index);
-                } else {
-                  LOGGER.warn("Failed to update number of replicas for index {}", index);
-                }
-              }
-            });
 
-    // Updates Index policy
+    final Map<String, String> indexSettings = new HashMap<>();
+    indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
+    indexSettings.put(REFRESH_INTERVAL, operateProperties.getElasticsearch().getRefreshInterval());
+    final boolean success = setIndexSettingsFor(indexSettings, "*");
+    if (success) {
+      LOGGER.info("Successfully updated number of replicas for all indices");
+    } else {
+      LOGGER.warn("Failed to update number of replicas for for all indices");
+    }
+
     if (operateProperties.getArchiver().isIlmEnabled()) {
       retryElasticsearchClient.setIndexSettingsFor(
           Settings.builder().put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES).build(),
@@ -304,11 +296,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
-  }
-
-  public void testStuff() {
-    retryElasticsearchClient.setIndexSettingsFor(
-        Settings.builder().put(INDEX_LIFECYCLE_NAME, "policy_1").build(), "index*");
   }
 
   private String settingsTemplateName() {

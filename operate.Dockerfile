@@ -74,7 +74,7 @@ LABEL io.k8s.description="Tool for process observability and troubleshooting pro
 EXPOSE 8080
 
 RUN apk update && apk upgrade
-RUN apk add --no-cache bash openjdk17-jre tzdata
+RUN apk add --no-cache bash openjdk21-jre tzdata
 
 WORKDIR /usr/local/operate
 VOLUME /tmp

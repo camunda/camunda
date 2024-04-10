@@ -75,7 +75,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private volatile HealthReport healthReport = HealthReport.healthy(this);
 
   private boolean inExportingPhase;
-  private boolean isHardPaused;
   private ExporterPhase exporterPhase;
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsTopic;
@@ -85,7 +84,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final int partitionId;
   private final EventFilter positionsToSkipFilter;
 
-  public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
+  public ExporterDirector(
+      final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
     name = context.getName();
 
     logStream = Objects.requireNonNull(context.getLogStream());
@@ -95,11 +95,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             .map(descriptor -> new ExporterContainer(descriptor, partitionId))
             .collect(Collectors.toList());
     metrics = new ExporterMetrics(partitionId);
+    metrics.initializeExporterState(exporterPhase);
     recordExporter = new RecordExporter(metrics, containers, partitionId);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     recordWrapStrategy = new EndlessRetryStrategy(actor);
     zeebeDb = context.getZeebeDb();
-    isHardPaused = shouldPauseOnStart;
+    this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
     exporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     exporterMode = context.getExporterMode();
@@ -131,7 +132,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     return actor.call(
         () -> {
-          isHardPaused = true;
+          metrics.setExporterPaused();
           exporterPhase = ExporterPhase.PAUSED;
         });
   }
@@ -153,9 +154,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     return actor.call(
         () -> {
-          isHardPaused = false;
           containers.stream().forEach(ExporterContainer::softPauseExporter);
           exporterPhase = ExporterPhase.SOFT_PAUSED;
+          metrics.setExporterSoftPaused();
         });
   }
 
@@ -174,11 +175,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     return actor.call(
         () -> {
-          isHardPaused = false;
           if (exporterPhase == ExporterPhase.SOFT_PAUSED) {
             containers.stream().forEach(ExporterContainer::undoSoftPauseExporter);
           }
           exporterPhase = ExporterPhase.EXPORTING;
+          metrics.setExporterActive();
           if (exporterMode == ExporterMode.ACTIVE) {
             actor.submit(this::readNextEvent);
           }
@@ -376,11 +377,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         throw new IllegalStateException(
             String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
       }
-      if (!isHardPaused) {
-        exporterPhase = ExporterPhase.EXPORTING;
+      if (!exporterPhase.equals(ExporterPhase.PAUSED)) {
         actor.submit(this::readNextEvent);
-      } else {
-        exporterPhase = ExporterPhase.PAUSED;
       }
 
       actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
@@ -441,7 +439,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private boolean shouldExport() {
-    return isOpened.get() && logStreamReader.hasNext() && !inExportingPhase && !isHardPaused;
+    return isOpened.get()
+        && logStreamReader.hasNext()
+        && !inExportingPhase
+        && !exporterPhase.equals(ExporterPhase.PAUSED);
   }
 
   private void exportEvent(final LoggedEvent event) {

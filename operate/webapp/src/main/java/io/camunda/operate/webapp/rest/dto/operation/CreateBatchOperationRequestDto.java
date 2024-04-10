@@ -18,6 +18,8 @@ package io.camunda.operate.webapp.rest.dto.operation;
 
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import java.util.List;
 import java.util.Objects;
 
 public class CreateBatchOperationRequestDto {
@@ -34,9 +36,13 @@ public class CreateBatchOperationRequestDto {
   /** Migration plan, only needed for process instance migration operation */
   private MigrationPlanDto migrationPlan;
 
+  /** Modifications, only needed for MODIFY_PROCESS_INSTANCE operation type */
+  private List<Modification> modifications;
+
   public CreateBatchOperationRequestDto() {}
 
-  public CreateBatchOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
+  public CreateBatchOperationRequestDto(
+      final ListViewQueryDto query, final OperationType operationType) {
     this.query = query;
     this.operationType = operationType;
   }
@@ -45,7 +51,7 @@ public class CreateBatchOperationRequestDto {
     return name;
   }
 
-  public CreateBatchOperationRequestDto setName(String name) {
+  public CreateBatchOperationRequestDto setName(final String name) {
     this.name = name;
     return this;
   }
@@ -54,7 +60,7 @@ public class CreateBatchOperationRequestDto {
     return query;
   }
 
-  public CreateBatchOperationRequestDto setQuery(ListViewQueryDto query) {
+  public CreateBatchOperationRequestDto setQuery(final ListViewQueryDto query) {
     this.query = query;
     return this;
   }
@@ -63,7 +69,7 @@ public class CreateBatchOperationRequestDto {
     return operationType;
   }
 
-  public CreateBatchOperationRequestDto setOperationType(OperationType operationType) {
+  public CreateBatchOperationRequestDto setOperationType(final OperationType operationType) {
     this.operationType = operationType;
     return this;
   }
@@ -72,18 +78,27 @@ public class CreateBatchOperationRequestDto {
     return migrationPlan;
   }
 
-  public CreateBatchOperationRequestDto setMigrationPlan(MigrationPlanDto migrationPlan) {
+  public CreateBatchOperationRequestDto setMigrationPlan(final MigrationPlanDto migrationPlan) {
     this.migrationPlan = migrationPlan;
+    return this;
+  }
+
+  public List<Modification> getModifications() {
+    return modifications;
+  }
+
+  public CreateBatchOperationRequestDto setModifications(final List<Modification> modifications) {
+    this.modifications = modifications;
     return this;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, query, operationType, migrationPlan);
+    return Objects.hash(name, query, operationType, migrationPlan, modifications);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -94,7 +109,8 @@ public class CreateBatchOperationRequestDto {
     return Objects.equals(name, that.name)
         && Objects.equals(query, that.query)
         && operationType == that.operationType
-        && Objects.equals(migrationPlan, that.migrationPlan);
+        && Objects.equals(migrationPlan, that.migrationPlan)
+        && Objects.equals(modifications, that.modifications);
   }
 
   @Override
@@ -109,6 +125,8 @@ public class CreateBatchOperationRequestDto {
         + operationType
         + ", migrationPlan="
         + migrationPlan
+        + ", modifications="
+        + modifications
         + '}';
   }
 }

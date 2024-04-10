@@ -47,8 +47,10 @@ import io.camunda.operate.util.MapPath;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -184,8 +186,12 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public <A, R> List<R> searchTerm(
-      final String index, final String field, final A value, final Class<R> clazz, final int size)
+  public <R> List<R> searchTerm(
+      final String index,
+      final String field,
+      final Object value,
+      final Class<R> clazz,
+      final int size)
       throws IOException {
     Query query = null;
 
@@ -207,6 +213,38 @@ public class TestOpenSearchRepository implements TestSearchRepository {
     final var requestBuilder = searchRequestBuilder(index).query(query).size(size);
 
     return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
+  }
+
+  @Override
+  public <R> List<R> searchTerms(
+      final String index,
+      final Map<String, Object> fieldValueMap,
+      final Class<R> clazz,
+      final int size)
+      throws IOException {
+    final List<Query> queryList = new LinkedList<>();
+    fieldValueMap.forEach(
+        (field, value) -> {
+          Query query = null;
+
+          if (value instanceof final Long l) {
+            query = term(field, l);
+          }
+
+          if (value instanceof final String s) {
+            query = term(field, s);
+          }
+          queryList.add(query);
+        });
+    final var queryTerms = queryList.stream().filter(Objects::nonNull).toList();
+
+    if (!queryTerms.isEmpty()) {
+      final var requestBuilder = searchRequestBuilder(index).query(and(queryTerms)).size(size);
+
+      return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
+    } else {
+      return List.of();
+    }
   }
 
   @Override

@@ -7,50 +7,11 @@
         {
           "ignore": true,
           "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder::withCandidateGroups(java.lang.String)",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder::withCandidateUsers(java.lang.String)",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::getCandidateGroups()",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::getCandidateUsers()",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::withCandidateGroups(java.lang.String)",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::withCandidateUsers(java.lang.String)",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.UserTaskRecordValue::getCandidateGroups()",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.UserTaskRecordValue::getCandidateUsers()",
-          "justification": "The properties are replaced by new ones with a more distinct type. Their data is lost in an update but the user tasks are only experimental in the previous version and cannot be used in production yet. Therefore, this is an acceptable change"
+          "justification": "The method removed was part of the generated code and is not expected to be used by users",
+          "old": {
+            "matcher": "java",
+            "match": "type * { int io.camunda.zeebe.protocol.**::^initialOffset(); }"
+          }
         }
       ]
     }
