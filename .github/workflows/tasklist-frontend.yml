@@ -2,7 +2,7 @@ name: Tasklist Frontend
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "tasklist/client/**"
   pull_request:

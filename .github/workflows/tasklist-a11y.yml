@@ -2,7 +2,7 @@ name: Tasklist a11y tests
 on:
   push:
     branches:
-      - "master"
+      - "main"
       - "stable/**"
     paths:
       - ".github/workflows/tasklist-a11y.yml"

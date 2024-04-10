@@ -1,4 +1,4 @@
-# This GitHub Actions (GHA) workflow performs a scheduled dry-run of the release process for `master` and last 3 `stable` branches.
+# This GitHub Actions (GHA) workflow performs a scheduled dry-run of the release process for `main` and last 3 `stable` branches.
 #
 # The workflow is scheduled to run at 03:00 from Monday through Friday, according to the cron format.
 #
@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - branch: master
+          - branch: main
             releaseVersion: 99.0.0
           - branch: stable/8.0
             releaseVersion: 90.0.0

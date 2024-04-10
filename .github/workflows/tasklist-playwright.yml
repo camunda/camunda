@@ -2,7 +2,7 @@ name: Tasklist Visual regression tests
 on:
   push:
     branches:
-      - "master"
+      - "main"
       - "stable/**"
     paths:
       - ".github/workflows/tasklist-playwright.yml"

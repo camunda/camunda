@@ -29,7 +29,7 @@ defaults:
 # Define environment variables
 env:
   BRANCH_NAME: ${{ inputs.branch }}
-  IS_MASTER_BRANCH: ${{ inputs.branch == 'master' }}
+  IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
 
 jobs:
   build:
@@ -49,7 +49,7 @@ jobs:
         run: |
           GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
           BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "master" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG"; fi)" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG"; fi)" >> $GITHUB_ENV
           echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH" >> $GITHUB_ENV
           echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
 
@@ -117,7 +117,7 @@ jobs:
       #########################################################################
       # Docker login for snapshot deployment
       - name: Login to docker hub
-        if: ${{ env.IS_MASTER_BRANCH == 'true' }}
+        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
@@ -126,7 +126,7 @@ jobs:
       #########################################################################
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_MASTER_BRANCH == 'true' }}
+        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         uses: ./.github/actions/build-tasklist-docker
         with:
           tags: |
@@ -136,6 +136,6 @@ jobs:
       #########################################################################
       # Deploy Nexus SNAPSHOT
       - name: Deploy - Nexus SNAPSHOT
-        if: ${{ env.IS_MASTER_BRANCH == 'true' }}
+        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         run: |
           mvn -f tasklist org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
