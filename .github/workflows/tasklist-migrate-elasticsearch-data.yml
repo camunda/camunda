@@ -64,7 +64,7 @@ jobs:
       # Build: maven artifacts
       - name: Build backend
         run: |
-          mvn -B -DskipTests -P skipFrontendBuild clean install
+          mvn -f tasklist -B -DskipTests -P skipFrontendBuild clean install
 
       # Tests: run migration tests
       - name: Run migration tests
