@@ -192,6 +192,8 @@ public class OpensearchExporter implements Exporter {
   private void createIndexTemplates() {
     if (configuration.retention.isEnabled()) {
       createIndexStateManagementPolicy();
+    } else {
+      deleteIndexStateManagementPolicy();
     }
 
     final IndexConfiguration index = configuration.index;
@@ -320,6 +322,17 @@ public class OpensearchExporter implements Exporter {
       if (!client.updateIndexStateManagementPolicy(policy.seqNo(), policy.primaryTerm())) {
         log.warn("Failed to acknowledge the update of the Index State Management Policy");
       }
+    }
+  }
+
+  private void deleteIndexStateManagementPolicy() {
+    final var policyOptional = client.getIndexStateManagementPolicy();
+    if (policyOptional.isEmpty()) {
+      return;
+    }
+
+    if (!client.deleteIndexStateManagementPolicy()) {
+      log.warn("Failed to acknowledge the deletion of the Index State Management Policy");
     }
   }
 
