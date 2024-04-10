@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIndex;
@@ -68,7 +68,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
       try {
         result =
             objectMapper
-                .readValue(getResponse.getSourceAsString(), EsEventProcessMappingDto.class)
+                .readValue(getResponse.getSourceAsString(), DbEventProcessMappingDto.class)
                 .toEventProcessMappingDto();
       } catch (IOException e) {
         String reason =
@@ -88,7 +88,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
   @Override
   public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
     log.debug("Fetching all available event-based processes.");
-    String[] fieldsToExclude = new String[] {EsEventProcessMappingDto.Fields.xml};
+    String[] fieldsToExclude = new String[] {DbEventProcessMappingDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(matchAllQuery())
@@ -113,12 +113,12 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
             scrollResp,
-            EsEventProcessMappingDto.class,
+            DbEventProcessMappingDto.class,
             objectMapper,
             esClient,
             configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds())
         .stream()
-        .map(EsEventProcessMappingDto::toEventProcessMappingDto)
+        .map(DbEventProcessMappingDto::toEventProcessMappingDto)
         .toList();
   }
 
@@ -149,7 +149,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
       try {
         result =
             objectMapper
-                .readValue(getResponse.getSourceAsString(), EsEventProcessMappingDto.class)
+                .readValue(getResponse.getSourceAsString(), DbEventProcessMappingDto.class)
                 .getRoles();
       } catch (IOException e) {
         final String reason =

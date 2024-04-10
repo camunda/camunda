@@ -46,7 +46,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinit
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -290,8 +290,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
             .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
             .map(EventProcessRoleRequestDto::new)
             .collect(Collectors.toList());
-    final EsEventProcessMappingDto eventProcessMappingDto =
-        EsEventProcessMappingDto.builder().id(key).roles(roles).build();
+    final DbEventProcessMappingDto eventProcessMappingDto =
+        DbEventProcessMappingDto.builder().id(key).roles(roles).build();
     addEntryToDatabase(
         EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(), eventProcessMappingDto);
 

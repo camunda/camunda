@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.es.writer;
+package org.camunda.optimize.service.db.repository.es;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -12,22 +12,21 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
-import lombok.AllArgsConstructor;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.repository.MappingRepository;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIndex;
-import org.camunda.optimize.service.db.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -41,22 +40,18 @@ import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Component
 @Slf4j
+@Component
+@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class EventProcessMappingWriterES implements EventProcessMappingWriter {
-
+public class MappingRepositoryES implements MappingRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   @Override
   public IdResponseDto createEventProcessMapping(
       final EventProcessMappingDto eventProcessMappingDto) {
-    String id = IdGenerator.getNextId();
-    eventProcessMappingDto.setId(id);
-    eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    log.debug("Writing event-based process [{}] to Elasticsearch", id);
+    final String id = eventProcessMappingDto.getId();
     IndexResponse indexResponse;
     try {
       final IndexRequest request =
@@ -64,7 +59,7 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
               .id(id)
               .source(
                   objectMapper.writeValueAsString(
-                      EsEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto)),
+                      DbEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto)),
                   XContentType.JSON)
               .setRefreshPolicy(IMMEDIATE);
       indexResponse = esClient.index(request);
@@ -83,66 +78,8 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
   }
 
   @Override
-  public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
-    updateOfEventProcessMappingWithScript(
-        eventProcessMappingDto,
-        Sets.newHashSet(
-            EventProcessMappingIndex.NAME,
-            EventProcessMappingIndex.XML,
-            EventProcessMappingIndex.MAPPINGS,
-            EventProcessMappingIndex.LAST_MODIFIED,
-            EventProcessMappingIndex.LAST_MODIFIER,
-            EventProcessMappingIndex.EVENT_SOURCES));
-  }
-
-  @Override
-  public void updateRoles(final EventProcessMappingDto eventProcessMappingDto) {
-    updateOfEventProcessMappingWithScript(
-        eventProcessMappingDto, Sets.newHashSet(EventProcessMappingIndex.ROLES));
-  }
-
-  @Override
-  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    log.debug("Deleting event-based process with id [{}].", eventProcessMappingId);
-    final DeleteRequest request =
-        new DeleteRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
-            .id(eventProcessMappingId)
-            .setRefreshPolicy(IMMEDIATE);
-
-    final DeleteResponse deleteResponse;
-    try {
-      deleteResponse = esClient.delete(request);
-    } catch (IOException e) {
-      String errorMessage =
-          String.format(
-              "Could not delete event-based process with id [%s]. ", eventProcessMappingId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-
-    return deleteResponse.getResult().equals(DeleteResponse.Result.DELETED);
-  }
-
-  @Override
-  public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
-    log.debug("Deleting event process mapping ids: " + eventProcessMappingIds);
-
-    try {
-      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-          esClient,
-          boolQuery().must(termsQuery(EventProcessMappingIndex.ID, eventProcessMappingIds)),
-          "event process mapping ids" + eventProcessMappingIds,
-          true,
-          EVENT_PROCESS_MAPPING_INDEX_NAME);
-    } catch (OptimizeRuntimeException e) {
-      String reason = "Could not delete event process mappings due to an unexpected error.";
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-  }
-
-  private void updateOfEventProcessMappingWithScript(
-      final EventProcessMappingDto eventProcessMappingDto, final HashSet<String> fieldsToUpdate) {
+  public void updateEventProcessMappingWithScript(
+      final EventProcessMappingDto eventProcessMappingDto, final Set<String> fieldsToUpdate) {
     final String id = eventProcessMappingDto.getId();
     log.debug("Updating event-based process [{}] in Elasticsearch.", id);
     eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -150,7 +87,7 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
       final Script updateScript =
           ElasticsearchWriterUtil.createFieldUpdateScript(
               fieldsToUpdate,
-              EsEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
+              DbEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
               objectMapper);
 
       final UpdateRequest request =
@@ -179,6 +116,43 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
               id);
       log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
+    }
+  }
+
+  @Override
+  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
+    log.debug("Deleting event-based process with id [{}].", eventProcessMappingId);
+    final DeleteRequest request =
+        new DeleteRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
+            .id(eventProcessMappingId)
+            .setRefreshPolicy(IMMEDIATE);
+
+    try {
+      return esClient.delete(request).getResult().equals(DeleteResponse.Result.DELETED);
+    } catch (IOException e) {
+      String errorMessage =
+          String.format(
+              "Could not delete event-based process with id [%s]. ", eventProcessMappingId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
+  public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
+    log.debug("Deleting event process mapping ids: " + eventProcessMappingIds);
+
+    try {
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+          esClient,
+          boolQuery().must(termsQuery(EventProcessMappingIndex.ID, eventProcessMappingIds)),
+          "event process mapping ids" + eventProcessMappingIds,
+          true,
+          EVENT_PROCESS_MAPPING_INDEX_NAME);
+    } catch (OptimizeRuntimeException e) {
+      String reason = "Could not delete event process mappings due to an unexpected error.";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
     }
   }
 }

@@ -28,7 +28,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceE
 @Builder
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class EsEventProcessMappingDto implements OptimizeDto {
+public class DbEventProcessMappingDto implements OptimizeDto {
   @EqualsAndHashCode.Include private String id;
   private String name;
   private String xml;
@@ -38,9 +38,9 @@ public class EsEventProcessMappingDto implements OptimizeDto {
   private List<EventSourceEntryDto<?>> eventSources;
   private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
-  public static EsEventProcessMappingDto fromEventProcessMappingDto(
+  public static DbEventProcessMappingDto fromEventProcessMappingDto(
       final EventProcessMappingDto eventMappingDto) {
-    return EsEventProcessMappingDto.builder()
+    return DbEventProcessMappingDto.builder()
         .id(eventMappingDto.getId())
         .name(eventMappingDto.getName())
         .xml(eventMappingDto.getXml())
