@@ -2,7 +2,7 @@ name: Tasklist Backend linting
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - '.github/actions/**'
       - '.github/workflows/tasklist-*'

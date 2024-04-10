@@ -3,7 +3,7 @@ name: Tasklist Docker Tests
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
       - 'stable/**'
     paths:
       - '.github/actions/**'

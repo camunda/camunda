@@ -1,4 +1,4 @@
-# This GitHub Actions workflow that is triggered on push to `master` and `stable/**` branch or on any pull request creation
+# This GitHub Actions workflow that is triggered on push to `main` and `stable/**` branch or on any pull request creation
 # and invokes `ci-build-reusable` and `ci-test-reusable` workflows.
 ---
 name: Tasklist CI
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'master'
+      - 'main'
       - 'stable/**'
     paths:
       - '.github/actions/**'
@@ -34,7 +34,7 @@ jobs:
     uses: ./.github/workflows/tasklist-ci-build-reusable.yml
     secrets: inherit
     with:
-      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
 
   run-tests:
     name: run-tests

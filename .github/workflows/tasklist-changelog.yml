@@ -25,7 +25,7 @@ jobs:
         run: |-
           if [[ -z "${{ github.event.inputs.branch }}" ]]; then
             # no branch is entered
-            echo "branch=master" >> "$GITHUB_OUTPUT";
+            echo "branch=main" >> "$GITHUB_OUTPUT";
           else
             echo "branch=${{ github.event.inputs.branch }}" >> "$GITHUB_OUTPUT";
           fi
