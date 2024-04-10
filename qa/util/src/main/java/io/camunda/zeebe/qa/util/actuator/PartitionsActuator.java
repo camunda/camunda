@@ -74,6 +74,10 @@ public interface PartitionsActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseExporting();
 
+  @RequestLine("POST /softPauseExporting")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, PartitionStatus> softPauseExporting();
+
   @RequestLine("POST /resumeExporting")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> resumeExporting();
