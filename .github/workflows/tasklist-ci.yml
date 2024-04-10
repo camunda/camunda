@@ -9,18 +9,14 @@ on:
       - 'master'
       - 'stable/**'
     paths:
-      - '.'
-      - '.ci/preview-environments/**'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'
   pull_request:
     paths:
-      - '.'
-      - '.ci/preview-environments/**'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - 'tasklist-distro/**'

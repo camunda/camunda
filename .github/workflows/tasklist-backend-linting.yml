@@ -4,28 +4,22 @@ on:
     branches:
       - master
     paths:
-      - '.'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'
     paths-ignore:
       - 'tasklist/client/**'
-      - '.ci/**'
-      - '.husky/**'
   pull_request:
     paths:
-      - '.'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'
     paths-ignore:
       - 'tasklist/client/**'
-      - '.ci/**'
-      - '.husky/**'
 jobs:
   linting:
     name: Linting

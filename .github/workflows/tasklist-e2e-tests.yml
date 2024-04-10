@@ -6,16 +6,14 @@ on:
       - 'master'
       - 'stable/**'
     paths:
-      - '.'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'
   pull_request:
     paths:
-      - '.'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - 'tasklist-distro/**'
