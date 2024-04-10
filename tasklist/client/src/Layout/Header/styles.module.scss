@@ -1,0 +1,9 @@
+.inlineLink {
+  display: inline;
+  color: var(--cds-link-primary);
+
+  &:visited,
+  &:visited:hover {
+    color: var(--cds-link-primary);
+  }
+}

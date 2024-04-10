@@ -1,0 +1,24 @@
+#!/bin/sh
+[ -n "$CI" ] && exit 0
+
+. "$(dirname "$0")/_/husky.sh"
+
+yarn --cwd tasklist/client lint-staged
+# backend hooks
+mvn checkstyle:check
+if [ $? -eq 1 ]; then
+  echo "Found errors in checkstyle."
+  exit 1
+fi
+mvn spotless:check
+if [ $? -eq 1 ]; then
+  echo "Found errors in formatting. Reformat ..."
+  mvn spotless:apply
+  exit 1
+fi
+mvn license:check -Dlicense.header=license/license-header
+if [ $? -eq 1 ]; then
+  echo "Found files without license. Add license(s)"
+  mvn license:format -Dlicense.header=license/license-header
+  exit 1
+fi
