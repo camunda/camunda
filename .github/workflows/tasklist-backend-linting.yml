@@ -4,8 +4,7 @@ on:
     branches:
       - master
     paths:
-      - '.'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - '!tasklist/client/**'
@@ -13,8 +12,7 @@ on:
       - 'tasklist.Dockerfile'
   pull_request:
     paths:
-      - '.'
-      - '.github/actions/*-tasklist-*/*'
+      - '.github/actions/**'
       - '.github/workflows/tasklist-*'
       - 'tasklist/**'
       - '!tasklist/client/**'
