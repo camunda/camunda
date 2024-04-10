@@ -8,7 +8,6 @@
 import {shallow} from 'enzyme';
 
 import VisibleEventsModal from './VisibleEventsModal';
-import {LabeledInput} from 'components';
 
 const props = {
   initialScope: ['process_instance'],
@@ -29,7 +28,7 @@ it('should match snapshot', () => {
 it('should add a scope', () => {
   const node = shallow(<VisibleEventsModal {...props} />);
 
-  node.find(LabeledInput).at(1).simulate('change');
+  node.find('Checkbox').at(1).simulate('change');
 
   node.find('Button').at(1).simulate('click');
 
@@ -39,7 +38,7 @@ it('should add a scope', () => {
 it('should disable the confirm button when no scope is selected', () => {
   const node = shallow(<VisibleEventsModal {...props} />);
 
-  node.find(LabeledInput).at(0).simulate('change');
+  node.find('Checkbox').at(0).simulate('change');
 
   expect(node.find('Button').at(1)).toBeDisabled();
 });
