@@ -8,16 +8,12 @@ package org.camunda.optimize.service.importing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,12 +30,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.metrics.ValueCount;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -313,7 +303,6 @@ public class EngineActivityImportIT extends AbstractImportIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() {
     // given
     startAndUseNewOptimizeInstance();
@@ -342,29 +331,6 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private Long getImportedActivityCount() {
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(QueryBuilders.matchAllQuery())
-            .size(0)
-            .fetchSource(false)
-            .aggregation(
-                nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
-                    .subAggregation(
-                        count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
-                            .field(
-                                FLOW_NODE_INSTANCES
-                                    + "."
-                                    + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)));
-
-    final SearchRequest searchRequest =
-        new SearchRequest().indices(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
-
-    final SearchResponse response =
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
-
-    final Nested nested = response.getAggregations().get(FLOW_NODE_INSTANCES);
-    final ValueCount countAggregator =
-        nested.getAggregations().get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
-    return countAggregator.getValue();
+    return databaseIntegrationTestExtension.getImportedActivityCount();
   }
 }

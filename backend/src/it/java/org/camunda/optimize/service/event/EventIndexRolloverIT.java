@@ -13,8 +13,6 @@ import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.IntStream;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
@@ -27,8 +25,6 @@ import org.camunda.optimize.service.db.es.schema.index.events.CamundaActivityEve
 import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.util.configuration.IndexRolloverConfiguration;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -110,11 +106,11 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
         new CamundaActivityEventIndexES(processInstanceEngineDto.getProcessDefinitionKey());
     final List<String> rolledOverIndicesFirstRollover =
         getEventIndexRolloverService().triggerRollover();
-    List<String> indicesWithExternalEventWriteAliasFirstRollover =
+    final List<String> indicesWithExternalEventWriteAliasFirstRollover =
         getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
-    List<String> indicesWithCamundaActivityWriteAliasFirstRollover =
+    final List<String> indicesWithCamundaActivityWriteAliasFirstRollover =
         getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
-    List<String> indicesWithVariableUpdateInstanceWriteAliasFirstRollover =
+    final List<String> indicesWithVariableUpdateInstanceWriteAliasFirstRollover =
         getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
 
     // then
@@ -155,11 +151,11 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     importNextCamundaEventsForProcessInstance(processInstanceEngineDto);
     final List<String> rolledOverIndicesSecondRollover =
         getEventIndexRolloverService().triggerRollover();
-    List<String> indicesWithExternalEventWriteAliasSecondRollover =
+    final List<String> indicesWithExternalEventWriteAliasSecondRollover =
         getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
-    List<String> indicesWithCamundaActivityWriteAliasSecondRollover =
+    final List<String> indicesWithCamundaActivityWriteAliasSecondRollover =
         getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
-    List<String> indicesWithVariableUpdateInstanceWriteAliasSecondRollover =
+    final List<String> indicesWithVariableUpdateInstanceWriteAliasSecondRollover =
         getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
 
     // then
@@ -217,11 +213,11 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
 
     // when
     getEventIndexRolloverService().triggerRollover();
-    List<String> indicesWithExternalEventWriteAlias =
+    final List<String> indicesWithExternalEventWriteAlias =
         getAllIndicesWithWriteAlias(EXTERNAL_EVENTS_INDEX_NAME);
-    List<String> indicesWithCamundaActivityWriteAlias =
+    final List<String> indicesWithCamundaActivityWriteAlias =
         getAllIndicesWithWriteAlias(camundaActivityIndex.getIndexName());
-    List<String> indicesWithVariableUpdateInstanceWriteAlias =
+    final List<String> indicesWithVariableUpdateInstanceWriteAlias =
         getAllIndicesWithWriteAlias(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
 
     // then
@@ -298,9 +294,9 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
 
     // when
     getEventIndexRolloverService().triggerRollover();
-    List<String> indicesWithFirstCamundaActivityWriteAlias =
+    final List<String> indicesWithFirstCamundaActivityWriteAlias =
         getAllIndicesWithWriteAlias(firstCamundaActivityIndex.getIndexName());
-    List<String> indicesWithSecondCamundaActivityWriteAlias =
+    final List<String> indicesWithSecondCamundaActivityWriteAlias =
         getAllIndicesWithWriteAlias(secondCamundaActivityIndex.getIndexName());
 
     // then
@@ -383,22 +379,12 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
     return processInstanceEngineDto;
   }
 
-  private List<String> getAllIndicesWithWriteAlias(String indexName) throws IOException {
+  private List<String> getAllIndicesWithWriteAlias(final String indexName) throws IOException {
     final String aliasNameWithPrefix =
         embeddedOptimizeExtension
             .getOptimizeDatabaseClient()
             .getIndexNameService()
             .getOptimizeIndexAliasForIndex(indexName);
-
-    GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    Map<String, Set<AliasMetadata>> aliasMap =
-        databaseIntegrationTestExtension
-            .getOptimizeElasticsearchClient()
-            .getAlias(aliasesRequest)
-            .getAliases();
-
-    return aliasMap.keySet().stream()
-        .filter(index -> aliasMap.get(index).removeIf(AliasMetadata::writeIndex))
-        .toList();
+    return databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(aliasNameWithPrefix);
   }
 }

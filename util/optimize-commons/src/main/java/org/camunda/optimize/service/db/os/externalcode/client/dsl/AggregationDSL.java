@@ -21,33 +21,40 @@ import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregati
 import org.opensearch.client.opensearch._types.aggregations.ChildrenAggregation;
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregation;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ParentAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
+import org.opensearch.client.opensearch._types.aggregations.ValueCountAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.lang.Nullable;
 
 public interface AggregationDSL {
   static BucketSortAggregation bucketSortAggregation(
-      @Nullable Integer size, SortOptions... sortOptions) {
+      @Nullable final Integer size, final SortOptions... sortOptions) {
     return BucketSortAggregation.of(a -> a.sort(Arrays.asList(sortOptions)).size(size));
   }
 
-  static CardinalityAggregation cardinalityAggregation(String field) {
+  static CardinalityAggregation cardinalityAggregation(final String field) {
     return CardinalityAggregation.of(a -> a.field(field));
   }
 
-  static CardinalityAggregation cardinalityAggregation(String field, int precisionThreshold) {
+  static CardinalityAggregation cardinalityAggregation(
+      final String field, final int precisionThreshold) {
     return CardinalityAggregation.of(a -> a.field(field).precisionThreshold(precisionThreshold));
   }
 
-  static CalendarInterval calendarIntervalByAlias(String alias) {
+  static ValueCountAggregation valueCountAggregation(final String field) {
+    return ValueCountAggregation.of(a -> a.field(field));
+  }
+
+  static CalendarInterval calendarIntervalByAlias(final String alias) {
     return Arrays.stream(CalendarInterval.values())
         .filter(ci -> Arrays.asList(ci.aliases()).contains(alias))
         .findFirst()
         .orElseThrow(
             () -> {
-              List<String> legalAliases =
+              final List<String> legalAliases =
                   Arrays.stream(CalendarInterval.values())
                       .flatMap(v -> Arrays.stream(v.aliases()))
                       .sorted()
@@ -59,7 +66,10 @@ public interface AggregationDSL {
   }
 
   static DateHistogramAggregation dateHistogramAggregation(
-      String field, String calendarIntervalAlias, String format, boolean keyed) {
+      final String field,
+      final String calendarIntervalAlias,
+      final String format,
+      final boolean keyed) {
     return DateHistogramAggregation.of(
         a ->
             a.field(field)
@@ -68,57 +78,64 @@ public interface AggregationDSL {
                 .keyed(keyed));
   }
 
-  static FiltersAggregation filtersAggregation(Map<String, Query> queries) {
+  static FiltersAggregation filtersAggregation(final Map<String, Query> queries) {
     return FiltersAggregation.of(a -> a.filters(Buckets.of(b -> b.keyed(queries))));
   }
 
-  static TermsAggregation termAggregation(String field, int size) {
+  static TermsAggregation termAggregation(final String field, final int size) {
     return TermsAggregation.of(a -> a.field(field).size(size));
   }
 
-  static TermsAggregation termAggregation(String field, int size, Map<String, SortOrder> orderBy) {
+  static TermsAggregation termAggregation(
+      final String field, final int size, final Map<String, SortOrder> orderBy) {
     return TermsAggregation.of(a -> a.field(field).size(size).order(orderBy));
   }
 
   static TopHitsAggregation topHitsAggregation(
-      List<String> sourceFields, int size, SortOptions... sortOptions) {
+      final List<String> sourceFields, final int size, final SortOptions... sortOptions) {
     return TopHitsAggregation.of(
         a -> a.source(QueryDSL.sourceInclude(sourceFields)).size(size).sort(List.of(sortOptions)));
   }
 
-  static TopHitsAggregation topHitsAggregation(int size, SortOptions... sortOptions) {
+  static TopHitsAggregation topHitsAggregation(final int size, final SortOptions... sortOptions) {
     return TopHitsAggregation.of(a -> a.size(size).sort(List.of(sortOptions)));
   }
 
   static Aggregation withSubaggregations(
-      DateHistogramAggregation aggregation, Map<String, Aggregation> aggregations) {
+      final DateHistogramAggregation aggregation, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.dateHistogram(aggregation).aggregations(aggregations));
   }
 
   static Aggregation withSubaggregations(
-      FiltersAggregation aggregation, Map<String, Aggregation> aggregations) {
+      final NestedAggregation aggregation, final Map<String, Aggregation> aggregations) {
+    return Aggregation.of(a -> a.nested(aggregation).aggregations(aggregations));
+  }
+
+  static Aggregation withSubaggregations(
+      final FiltersAggregation aggregation, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.filters(aggregation).aggregations(aggregations));
   }
 
   static Aggregation withSubaggregations(
-      ChildrenAggregation childrenAggregation, Map<String, Aggregation> aggregations) {
+      final ChildrenAggregation childrenAggregation, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.children(childrenAggregation).aggregations(aggregations));
   }
 
-  static Aggregation withSubaggregations(Query query, Map<String, Aggregation> aggregations) {
+  static Aggregation withSubaggregations(
+      final Query query, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.filter(query).aggregations(aggregations));
   }
 
   static Aggregation withSubaggregations(
-      TermsAggregation aggregation, Map<String, Aggregation> aggregations) {
+      final TermsAggregation aggregation, final Map<String, Aggregation> aggregations) {
     return Aggregation.of(a -> a.terms(aggregation).aggregations(aggregations));
   }
 
-  static ParentAggregation parent(String type) {
+  static ParentAggregation parent(final String type) {
     return ParentAggregation.of(p -> p.type(type));
   }
 
-  static ChildrenAggregation children(String type) {
+  static ChildrenAggregation children(final String type) {
     return ChildrenAggregation.of(c -> c.type(type));
   }
 }

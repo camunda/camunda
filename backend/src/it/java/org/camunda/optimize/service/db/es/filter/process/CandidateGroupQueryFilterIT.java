@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.filter.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
@@ -20,8 +21,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
 
   private static final String SECOND_USER = "secondUser";
@@ -58,7 +61,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter =
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
         ProcessFilterBuilder.filter()
             .candidateGroups()
             .id(CANDIDATE_GROUP1)
@@ -66,7 +69,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
             .add()
             .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
         evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
@@ -95,7 +98,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter =
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
         ProcessFilterBuilder.filter()
             .candidateGroups()
             .id(CANDIDATE_GROUP3)
@@ -103,7 +106,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
             .add()
             .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
         evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
@@ -126,7 +129,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter =
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
         ProcessFilterBuilder.filter()
             .candidateGroups()
             .ids(CANDIDATE_GROUP1, CANDIDATE_GROUP2)
@@ -134,7 +137,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
             .add()
             .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
         evaluateReportWithFilter(processDefinition, candidateGroupFilter);
     // then
     assertThat(result.getData())
@@ -160,7 +163,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter =
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
         ProcessFilterBuilder.filter()
             .candidateGroups()
             .ids(CANDIDATE_GROUP1, CANDIDATE_GROUP2)
@@ -168,7 +171,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
             .add()
             .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
         evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
@@ -178,6 +181,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void filterByUnassignedCandidateGroup() {
     // given
     final ProcessDefinitionEngineDto processDefinition =
@@ -321,7 +325,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter =
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
         ProcessFilterBuilder.filter()
             .candidateGroups()
             .ids(CANDIDATE_GROUP1, CANDIDATE_GROUP2)
@@ -362,7 +366,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter =
+    final List<ProcessFilterDto<?>> candidateGroupFilter =
         ProcessFilterBuilder.filter()
             .candidateGroups()
             .ids(CANDIDATE_GROUP1, CANDIDATE_GROUP2)
@@ -374,7 +378,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
             .add()
             .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
         evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then

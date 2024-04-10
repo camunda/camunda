@@ -7,6 +7,7 @@ package org.camunda.optimize.service.metadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -14,8 +15,8 @@ import java.util.Optional;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
@@ -23,6 +24,7 @@ import org.mockserver.model.HttpStatusCode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
+@Tag(OPENSEARCH_PASSING)
 public class DatabaseMetadataVersionIT extends AbstractPlatformIT {
 
   private static final String SCHEMA_VERSION = "testVersion";
@@ -52,12 +54,12 @@ public class DatabaseMetadataVersionIT extends AbstractPlatformIT {
   public void verifyNotStartingIfVersionDoesNotMatch() {
     databaseIntegrationTestExtension.deleteAllOptimizeData();
 
-    MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID);
+    final MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID);
     databaseIntegrationTestExtension.addEntryToDatabase(
         METADATA_INDEX_NAME, MetadataIndex.ID, meta);
     assertThatThrownBy(
             () -> {
-              ConfigurableApplicationContext context = SpringApplication.run(Main.class);
+              final ConfigurableApplicationContext context = SpringApplication.run(Main.class);
               context.close();
             })
         .cause()
@@ -82,8 +84,6 @@ public class DatabaseMetadataVersionIT extends AbstractPlatformIT {
   }
 
   private Optional<MetadataDto> getMetadataDto() {
-    return embeddedOptimizeExtension
-        .getBean(ElasticSearchMetadataService.class)
-        .readMetadata(databaseIntegrationTestExtension.getOptimizeElasticsearchClient());
+    return databaseIntegrationTestExtension.readMetadata();
   }
 }

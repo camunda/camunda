@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.eventprocess;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.id;
 import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.source;
 import static org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto.Fields.specversion;
@@ -46,10 +47,12 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventIngestionRestIT extends AbstractPlatformIT {
 
   @BeforeEach
@@ -58,6 +61,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch() {
     // given
     final List<CloudEventRequestDto> eventDtos =
@@ -94,6 +98,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatchWithPlainJsonContentType() {
     // given
     final List<CloudEventRequestDto> eventDtos =
@@ -129,7 +134,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
             .collect(toList());
 
     // when
-    Response response =
+    final Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
             .buildIngestEventBatch(eventDtos, getAccessToken())
@@ -147,6 +152,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch_customSecret() {
     // given
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
@@ -171,6 +177,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch_customSecretUsingBearerScheme() {
     // given
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
@@ -275,6 +282,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch_omitOptionalProperties() {
     // given
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
@@ -334,7 +342,8 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("invalidRFC3339EventTimes")
-  public void ingestEventBatch_nonCompliantDateFormat(Object time) throws JsonProcessingException {
+  public void ingestEventBatch_nonCompliantDateFormat(final Object time)
+      throws JsonProcessingException {
     // given
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
 
@@ -431,8 +440,8 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
         String.valueOf(Instant.now().toEpochMilli()));
   }
 
-  private String convertToJsonBodyWithTime(CloudEventRequestDto cloudEventDto, Object time)
-      throws JsonProcessingException {
+  private String convertToJsonBodyWithTime(
+      final CloudEventRequestDto cloudEventDto, final Object time) throws JsonProcessingException {
     return "[ {\n"
         + "  \"id\" : \""
         + cloudEventDto.getId()
@@ -457,7 +466,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
 
   private void assertEventDtosArePersisted(final List<CloudEventRequestDto> cloudEventDtos) {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
+    final Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
     final List<EventDto> expectedEventDtos =
         cloudEventDtos.stream()
             .map(

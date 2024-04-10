@@ -17,8 +17,10 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -40,6 +43,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
@@ -49,9 +53,9 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleReq
 import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
+import org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.DatabaseType;
@@ -61,6 +65,7 @@ import org.camunda.optimize.test.it.extension.db.OpenSearchDatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.camunda.optimize.test.repository.TestIndexRepository;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.core.TimeValue;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -202,10 +207,6 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public boolean indexExists(final String indexOrAliasName) {
     return databaseTestService.indexExists(indexOrAliasName);
-  }
-
-  public OptimizeElasticsearchClient getOptimizeElasticsearchClient() {
-    return databaseTestService.getOptimizeElasticsearchClient();
   }
 
   public TestIndexRepository getTestIndexRepository() {
@@ -465,5 +466,84 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
       final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
       throws IOException {
     databaseTestService.createIndex(optimizeIndexNameWithVersion, optimizeIndexAliasForIndex);
+  }
+
+  public Optional<MetadataDto> readMetadata() {
+    return databaseTestService.readMetadata();
+  }
+
+  public void createMissingIndices(
+      final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
+      final Set<String> aliases,
+      final Set<String> aKey) {
+    databaseTestService.createMissingIndices(indexMappingCreatorBuilder, aliases, aKey);
+  }
+
+  public void setActivityStartDatesToNull(final String processDefinitionKey) {
+    final ScriptData scriptData =
+        new ScriptData(
+            Map.of(),
+            "for (flowNodeInstance in ctx._source.flowNodeInstances) { flowNodeInstance.startDate = null }");
+    databaseTestService.setActivityStartDatesToNull(processDefinitionKey, scriptData);
+  }
+
+  public void setUserTaskDurationToNull(
+      final String processInstanceId, final String durationFieldName) {
+    final StringSubstitutor substitutor =
+        new StringSubstitutor(
+            ImmutableMap.<String, String>builder()
+                .put("flowNodesField", FLOW_NODE_INSTANCES)
+                .put("durationFieldName", durationFieldName)
+                .build());
+
+    // @formatter:off
+    final String setDurationToNull =
+        substitutor.replace(
+            "for(flowNode in ctx._source.${flowNodesField}) {"
+                + "flowNode.${durationFieldName} = null;"
+                + "}");
+    // @formatter:on
+
+    final ScriptData updateScript = new ScriptData(Collections.emptyMap(), setDurationToNull);
+    databaseTestService.setUserTaskDurationToNull(
+        processInstanceId, durationFieldName, updateScript);
+  }
+
+  public Long getImportedActivityCount() {
+    return databaseTestService.getImportedActivityCount();
+  }
+
+  public void removeStoredOrderCountersForDefinitionKey(final String definitionKey) {
+    final ScriptData scriptData = new ScriptData(Map.of(), "ctx._source.orderCounter = null");
+    databaseTestService.removeStoredOrderCountersForDefinitionKey(definitionKey, scriptData);
+  }
+
+  public List<String> getAllIndicesWithWriteAlias(final String externalProcessVariableIndexName) {
+    final String aliasNameWithPrefix =
+        getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
+    return databaseTestService.getAllIndicesWithWriteAlias(aliasNameWithPrefix);
+  }
+
+  public List<String> getAllIndicesWithReadOnlyAlias(
+      final String externalProcessVariableIndexName) {
+    final String aliasNameWithPrefix =
+        getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
+    return databaseTestService.getAllIndicesWithReadOnlyAlias(aliasNameWithPrefix);
+  }
+
+  public void deleteTraceStateImportIndexForDefinitionKey(final String definitionKey) {
+    databaseTestService.deleteTraceStateImportIndexForDefinitionKey(definitionKey);
+  }
+
+  public void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
+      final String entityIndex,
+      final String processInstanceField,
+      final TimeValue scrollKeepAlive) {
+    databaseTestService.verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
+        entityIndex, processInstanceField, scrollKeepAlive);
+  }
+
+  public Integer getVariableInstanceCount(final String variableName) {
+    return databaseTestService.getVariableInstanceCount(variableName);
   }
 }
