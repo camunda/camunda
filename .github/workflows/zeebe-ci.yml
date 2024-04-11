@@ -361,6 +361,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         with:
@@ -458,6 +460,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         with:
@@ -560,6 +564,8 @@ jobs:
           docker-token: REGISTRY_HUB_DOCKER_COM_PSW
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         with:
