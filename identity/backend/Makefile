@@ -19,12 +19,6 @@ license-fix:
 test: license-check
 	mvn clean verify
 
-generate-dependency-docs:
-	mvn org.codehaus.mojo:license-maven-plugin:2.0.0:add-third-party \
-		-Dlicense.excludedScopes=test \
-		-Dlicense.outputDirectory='$${project.build.directory}/../docs/' \
-		-Dlicense.fileTemplate='$${project.build.directory}/../docs/dependency-template.ftl'
-
 start:
 	mvn spring-boot:run
 

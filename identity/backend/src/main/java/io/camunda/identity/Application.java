@@ -11,6 +11,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
+/**
+ * This application file is a temporary addition to support the development of the minimal feature
+ * set of Identity. It will be removed once the monojar integration is clear and available.
+ */
 @SpringBootApplication
 @ConfigurationPropertiesScan
 public class Application {
