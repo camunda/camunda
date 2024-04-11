@@ -42,10 +42,6 @@ public class SimpleAuthentication implements Authentication {
     authUrl = simpleUrl + "/api/login";
   }
 
-  public SimpleConfig getSimpleConfig() {
-    return simpleConfig;
-  }
-
   public static SimpleAuthenticationBuilder builder() {
     return new SimpleAuthenticationBuilder();
   }

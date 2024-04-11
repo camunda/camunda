@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.common.auth.simple;
 
-/** Contains credential for particular product. Used for Simple authentication. */
+/** Used for Simple authentication. */
 public class SimpleCredential {
 
   private final String user;
