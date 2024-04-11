@@ -53,8 +53,7 @@ public class SchemaManagerIT {
 
   @BeforeEach
   public void before() {
-    //    indexPrefix = UUID.randomUUID().toString();
-    indexPrefix = "test";
+    indexPrefix = UUID.randomUUID().toString();
     schemaManager.deleteIndicesFor(idxName("index-*"));
   }
 
