@@ -133,8 +133,10 @@ public class ProcessDefinitionController extends ErrorController
                     description = "Filter by version and sort by bpmnProcessId"),
               }))
   @Override
-  public Results<ProcessDefinition> search(@RequestBody final Query<ProcessDefinition> query) {
+  public Results<ProcessDefinition> search(
+      @RequestBody(required = false) Query<ProcessDefinition> query) {
     logger.debug("search for query {}", query);
+    query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, ProcessDefinition.class);
     return processDefinitionDao.search(query);
   }

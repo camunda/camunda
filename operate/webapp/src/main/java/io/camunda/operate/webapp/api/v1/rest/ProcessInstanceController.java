@@ -136,8 +136,10 @@ public class ProcessInstanceController extends ErrorController
                         "Returns max 50 process instances, filtered by processVersion of 2 sorted ascending by bpmnProcessId"),
               }))
   @Override
-  public Results<ProcessInstance> search(@RequestBody final Query<ProcessInstance> query) {
+  public Results<ProcessInstance> search(
+      @RequestBody(required = false) Query<ProcessInstance> query) {
     logger.debug("search for query {}", query);
+    query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, ProcessInstance.class);
     return processInstanceDao.search(query);
   }

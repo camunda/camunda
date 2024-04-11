@@ -86,7 +86,7 @@ public class DecisionInstanceController extends ErrorController {
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public DecisionInstance byId(
       @Parameter(description = "Id of decision instance", required = true) @PathVariable
-          String id) {
+          final String id) {
     return decisionInstanceDao.byId(id);
   }
 
@@ -168,7 +168,9 @@ public class DecisionInstanceController extends ErrorController {
       value = SEARCH,
       consumes = {MediaType.APPLICATION_JSON_VALUE},
       produces = {MediaType.APPLICATION_JSON_VALUE})
-  public Results<DecisionInstance> search(@RequestBody final Query<DecisionInstance> query) {
+  public Results<DecisionInstance> search(
+      @RequestBody(required = false) Query<DecisionInstance> query) {
+    query = (query == null) ? new Query<>() : query;
     return decisionInstanceDao.search(query);
   }
 }

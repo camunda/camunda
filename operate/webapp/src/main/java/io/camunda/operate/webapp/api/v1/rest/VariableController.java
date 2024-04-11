@@ -123,8 +123,9 @@ public class VariableController extends ErrorController implements SearchControl
                         "Returns next variables for 'processInstanceKey' ascending by 'name'. (Copy value of 'sortValues' field of previous results) "),
               }))
   @Override
-  public Results<Variable> search(@RequestBody final Query<Variable> query) {
+  public Results<Variable> search(@RequestBody(required = false) Query<Variable> query) {
     logger.debug("search for query {}", query);
+    query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, Variable.class);
     return variableDao.search(query);
   }
