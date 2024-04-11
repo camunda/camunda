@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.filter.process.date.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -21,19 +22,21 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.DateFilterUtil;
 import org.camunda.optimize.service.util.ProcessReportDataType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
   @MethodSource("getRelativeSupportedFilterUnits")
-  public void testStartDateCurrentIntervalRelativeLogic(DateUnit dateUnit) {
+  public void testStartDateCurrentIntervalRelativeLogic(final DateUnit dateUnit) {
     // given
     embeddedOptimizeExtension.reloadConfiguration();
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    OffsetDateTime processInstanceStartTime =
+    final OffsetDateTime processInstanceStartTime =
         engineIntegrationExtension
             .getHistoricProcessInstance(processInstance.getId())
             .getStartTime();
@@ -81,11 +84,11 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
   @MethodSource("simpleDateReportTypes")
   public void dateReportsWithFilter_noDataReturnsEmptyResult(final ProcessReportDataType type) {
     // given
-    ProcessDefinitionEngineDto engineDto = deployServiceTaskProcess();
+    final ProcessDefinitionEngineDto engineDto = deployServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         getAutomaticGroupByDateReportData(type, engineDto.getKey(), engineDto.getVersionAsString());
     reportData.setFilter(
         ProcessFilterBuilder.filter()
@@ -93,7 +96,8 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
             .start(1L, DateUnit.DAYS)
             .add()
             .buildList());
-    List<MapResultEntryDto> resultData = reportClient.evaluateReportAndReturnMapResult(reportData);
+    final List<MapResultEntryDto> resultData =
+        reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
     assertThat(resultData).isEmpty();

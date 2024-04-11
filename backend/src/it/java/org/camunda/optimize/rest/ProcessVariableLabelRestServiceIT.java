@@ -6,22 +6,25 @@
 package org.camunda.optimize.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessVariableLabelRestServiceIT extends AbstractVariableLabelIT {
 
   @Test
   public void updateVariableLabelForUnauthenticatedUser() {
     // given
-    DefinitionVariableLabelsDto definitionVariableLabelsDto =
+    final DefinitionVariableLabelsDto definitionVariableLabelsDto =
         new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
 
     // when
-    Response response =
+    final Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableLabelRequest(definitionVariableLabelsDto)

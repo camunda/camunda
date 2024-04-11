@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.permutations;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
@@ -24,9 +25,11 @@ import org.camunda.optimize.service.importing.engine.mediator.RunningProcessInst
 import org.camunda.optimize.service.importing.engine.mediator.RunningUserTaskInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class RunningProcessInstanceMediatorPermutationsImportIT
     extends AbstractImportMediatorPermutationsIT {
 

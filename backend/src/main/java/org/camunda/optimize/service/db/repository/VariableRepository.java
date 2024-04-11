@@ -6,8 +6,17 @@
 package org.camunda.optimize.service.db.repository;
 
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.service.db.schema.ScriptData;
 
-public interface ProcessVariableRepository {
+public interface VariableRepository {
   void deleteVariableDataByProcessInstanceIds(
       String processDefinitionKey, List<String> processInstanceIds);
+
+  void upsertVariableLabel(
+      String variableLabelIndexName,
+      DefinitionVariableLabelsDto definitionVariableLabelsDto,
+      ScriptData scriptData);
+
+  void deleteVariablesForDefinition(String variableLabelIndexName, String processDefinitionKey);
 }

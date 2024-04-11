@@ -14,13 +14,17 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.repository.ProcessVariableRepository;
+import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import org.camunda.optimize.service.db.repository.VariableRepository;
 import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
@@ -30,7 +34,7 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
-public class ProcessVariableRepositoryOS implements ProcessVariableRepository {
+public class VariableRepositoryOS implements VariableRepository {
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
 
@@ -62,5 +66,39 @@ public class ProcessVariableRepositoryOS implements ProcessVariableRepository {
         bulkOperations,
         getProcessInstanceIndexAliasName(processDefinitionKey),
         false);
+  }
+
+  @Override
+  public void upsertVariableLabel(
+      final String variableLabelIndexName,
+      final DefinitionVariableLabelsDto definitionVariableLabelsDto,
+      final ScriptData scriptData) {
+
+    final UpdateRequest.Builder updateRequest =
+        new UpdateRequest.Builder()
+            .index(variableLabelIndexName)
+            .id(definitionVariableLabelsDto.getDefinitionKey().toLowerCase())
+            .scriptedUpsert(true)
+            .script(QueryDSL.script(scriptData.scriptString(), scriptData.params()))
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+            .refresh(Refresh.True)
+            .upsert(definitionVariableLabelsDto);
+
+    osClient
+        .getRichOpenSearchClient()
+        .doc()
+        .upsert(
+            updateRequest,
+            DefinitionVariableLabelsDto.class,
+            e ->
+                String.format(
+                    "Was not able to update the variable labels for the process definition with id: [%s]",
+                    definitionVariableLabelsDto.getDefinitionKey()));
+  }
+
+  @Override
+  public void deleteVariablesForDefinition(
+      final String variableLabelIndexName, final String processDefinitionKey) {
+    osClient.delete(variableLabelIndexName, processDefinitionKey);
   }
 }
