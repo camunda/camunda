@@ -515,6 +515,12 @@ export const mockProcessInstances = {
       processId: '2251799813685592',
       state: 'CANCELED',
     }),
+  ],
+  totalCount: 912,
+};
+
+export const mockProcessInstancesWithOperation = {
+  processInstances: [
     createInstance({
       id: '0000000000000002',
       processId: '2251799813685612',
@@ -529,7 +535,7 @@ export const mockProcessInstances = {
       ],
     }),
   ],
-  totalCount: 912,
+  totalCount: 1,
 };
 
 export const mockCalledProcessInstances = {

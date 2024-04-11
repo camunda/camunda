@@ -29,6 +29,7 @@ import {
   mockProcessStatistics,
   mockProcessXML,
   mockProcessInstances,
+  mockProcessInstancesWithOperation,
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -357,7 +358,7 @@ describe('Instances', () => {
   });
 
   it('should hide Operation State column when Operation Id filter is not set', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
 
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}`),
@@ -379,7 +380,7 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
     await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
 
     expect(screen.getByText('Operation State')).toBeInTheDocument();
@@ -401,7 +402,7 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
 
     await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
 

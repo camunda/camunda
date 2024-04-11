@@ -20,6 +20,7 @@ import {createInstance} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {IS_INSTANCE_LIST_OPERATION_ERROR_ENABLED} from 'modules/feature-flags';
 
 const currentInstanceMock = createInstance();
 
@@ -168,52 +169,57 @@ describe('stores/currentInstance', () => {
     ).toEqual([]);
   });
 
-  it('should not set active operation state to false if there are still running operations', async () => {
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: '123',
-        hasActiveOperation: false,
-      }),
-    );
+  (IS_INSTANCE_LIST_OPERATION_ERROR_ENABLED ? it.skip : it)(
+    'should not set active operation state to false if there are still running operations',
+    async () => {
+      processInstanceDetailsStore.setProcessInstance(
+        createInstance({
+          id: '123',
+          hasActiveOperation: false,
+        }),
+      );
 
-    expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
-    ).toBe(false);
-    processInstanceDetailsStore.activateOperation('CANCEL_PROCESS_INSTANCE');
+      expect(
+        processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
+      ).toBe(false);
+      processInstanceDetailsStore.activateOperation('CANCEL_PROCESS_INSTANCE');
 
-    expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
-    ).toBe(true);
-    expect(
-      processInstanceDetailsStore.state.processInstance?.operations,
-    ).toEqual([
-      {
-        batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
-        errorMessage: 'string',
-        id: 'id_25',
-        state: 'SENT',
-        type: 'RESOLVE_INCIDENT',
-      },
-      createOperation('CANCEL_PROCESS_INSTANCE'),
-    ]);
+      expect(
+        processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
+      ).toBe(true);
+      expect(
+        processInstanceDetailsStore.state.processInstance?.operations,
+      ).toEqual([
+        {
+          batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
+          errorMessage: 'string',
+          id: 'id_25',
+          state: 'SENT',
+          type: 'RESOLVE_INCIDENT',
+        },
+        createOperation('CANCEL_PROCESS_INSTANCE'),
+      ]);
 
-    processInstanceDetailsStore.deactivateOperation('CANCEL_PROCESS_INSTANCE');
+      processInstanceDetailsStore.deactivateOperation(
+        'CANCEL_PROCESS_INSTANCE',
+      );
 
-    expect(
-      processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
-    ).toBe(true);
-    expect(
-      processInstanceDetailsStore.state.processInstance?.operations,
-    ).toEqual([
-      {
-        batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
-        errorMessage: 'string',
-        id: 'id_25',
-        state: 'SENT',
-        type: 'RESOLVE_INCIDENT',
-      },
-    ]);
-  });
+      expect(
+        processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
+      ).toBe(true);
+      expect(
+        processInstanceDetailsStore.state.processInstance?.operations,
+      ).toEqual([
+        {
+          batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
+          errorMessage: 'string',
+          id: 'id_25',
+          state: 'SENT',
+          type: 'RESOLVE_INCIDENT',
+        },
+      ]);
+    },
+  );
 
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
