@@ -17,11 +17,19 @@ package io.camunda.zeebe.spring.client.configuration;
 
 import static org.springframework.util.StringUtils.hasText;
 
-import io.camunda.common.auth.*;
-import io.camunda.common.auth.identity.IdentityConfig;
-import io.camunda.common.json.JsonMapper;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.spring.client.properties.*;
+import io.camunda.zeebe.spring.common.auth.Authentication;
+import io.camunda.zeebe.spring.common.auth.DefaultNoopAuthentication;
+import io.camunda.zeebe.spring.common.auth.Product;
+import io.camunda.zeebe.spring.common.auth.identity.IdentityConfig;
+import io.camunda.zeebe.spring.common.auth.jwt.JwtConfig;
+import io.camunda.zeebe.spring.common.auth.jwt.JwtCredential;
+import io.camunda.zeebe.spring.common.auth.saas.SaaSAuthentication;
+import io.camunda.zeebe.spring.common.auth.selfmanaged.SelfManagedAuthentication;
+import io.camunda.zeebe.spring.common.auth.simple.SimpleAuthentication;
+import io.camunda.zeebe.spring.common.auth.simple.SimpleConfig;
+import io.camunda.zeebe.spring.common.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
