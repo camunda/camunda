@@ -1377,12 +1377,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.swagger.core.v3</groupId>
-        <artifactId>swagger-annotations</artifactId>
-        <version>${version.swagger-annotations}</version>
-      </dependency>
-
-      <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <version>${version.jakarta-annotation}</version>
