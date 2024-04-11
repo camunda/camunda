@@ -71,12 +71,15 @@ public class ILMPolicyUpdateOpenSearch extends ArchiverProperties implements ILM
   @Override
   public void removeIlmPolicyFromAllIndices() {
     final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX);
+    final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
     for (final String indexName : response) {
-      final IndexSettings settings =
-          new IndexSettings.Builder()
-              .settings(IndexSettings.of(s -> s.lifecycleName(null)))
-              .build();
-      retryOpenSearchClient.setIndexSettingsFor(settings, indexName);
+      if (indexNamePattern.matcher(indexName).matches()) {
+        final IndexSettings settings =
+            new IndexSettings.Builder()
+                .settings(IndexSettings.of(s -> s.lifecycleName(null)))
+                .build();
+        retryOpenSearchClient.setIndexSettingsFor(settings, indexName);
+      }
     }
   }
 }

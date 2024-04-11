@@ -68,10 +68,13 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Override
   public void removeIlmPolicyFromAllIndices() {
+    final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
     final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX);
     for (final String indexName : response) {
-      final Settings settings = Settings.builder().putNull(INDEX_LIFECYCLE_NAME).build();
-      retryElasticsearchClient.setIndexSettingsFor(settings, indexName);
+      if (indexNamePattern.matcher(indexName).matches()) {
+        final Settings settings = Settings.builder().putNull(INDEX_LIFECYCLE_NAME).build();
+        retryElasticsearchClient.setIndexSettingsFor(settings, indexName);
+      }
     }
   }
 }
