@@ -28,7 +28,7 @@ import {
   InlineErrorContainer,
   InlineNotification,
 } from './styled';
-import {TextInputSkeleton, Loading, Modal, Copy} from '@carbon/react';
+import {TextInputSkeleton, Loading, Modal, Copy, Layer} from '@carbon/react';
 import {Share} from '@carbon/react/icons';
 import {match} from 'ts-pattern';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
@@ -80,7 +80,7 @@ const FormModal: React.FC<Props> = ({
   };
 
   return createPortal(
-    <>
+    <Layer level={0}>
       <Modal
         aria-label={`Start process ${processDisplayName}`}
         modalHeading={
@@ -245,7 +245,7 @@ const FormModal: React.FC<Props> = ({
             .exhaustive()}
         </FormContainer>
       </Modal>
-    </>,
+    </Layer>,
     document.body,
   );
 };

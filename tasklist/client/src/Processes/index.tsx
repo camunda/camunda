@@ -367,18 +367,26 @@ const Processes: React.FC = observer(() => {
                 <Grid narrow as={Layer}>
                   {isInitialLoading
                     ? Array.from({length: 5}).map((_, index) => (
-                        <Column as={ProcessTileWrapper} sm={4} md={4} lg={5}>
-                          <TileSkeleton
-                            key={index}
-                            data-testid="process-skeleton"
-                          />
+                        <Column
+                          as={ProcessTileWrapper}
+                          sm={4}
+                          md={4}
+                          lg={5}
+                          key={index}
+                        >
+                          <TileSkeleton data-testid="process-skeleton" />
                         </Column>
                       ))
                     : processes.map((process, idx) => (
-                        <Column as={ProcessTileWrapper} sm={4} md={4} lg={5}>
+                        <Column
+                          as={ProcessTileWrapper}
+                          sm={4}
+                          md={4}
+                          lg={5}
+                          key={process.id}
+                        >
                           <ProcessTile
                             process={process}
-                            key={process.id}
                             isFirst={idx === 0}
                             isStartButtonDisabled={
                               (instance !== null &&

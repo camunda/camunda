@@ -132,7 +132,7 @@ declare module '@carbon/react' {
     >;
 
   export const Layer: <C extends React.ElementType = 'div'>(
-    props: StackProps<C>,
+    props: LayerProps<C>,
   ) => React.ReactElement | null;
 
   export const ActionableNotification: React.FunctionComponent<{
