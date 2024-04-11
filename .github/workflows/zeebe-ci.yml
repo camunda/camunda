@@ -678,7 +678,7 @@ jobs:
           FLAKY_UNIT_TESTS: ${{needs.test-summary.outputs.flakyUnitTests}}
           FLAKY_INTEGRATION_TESTS: ${{needs.test-summary.outputs.flakyIntegrationTests}}
   auto-merge:
-    # This workflow will auto merge a PR authored by backport-action or renovate[bot].
+    # This workflow will auto merge a PR authored by backport-action.
     # It runs only on open PRs ready for review.
     #
     # It will merge the PR only if it is authored by backport-action and all CI checks are successful
@@ -692,7 +692,7 @@ jobs:
     if: |
       github.repository == 'camunda/zeebe' &&
       github.event_name == 'pull_request' &&
-      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait')
+      (github.actor == 'backport-action' || github.actor == 'camundait')
     permissions:
       checks: read
       pull-requests: write
