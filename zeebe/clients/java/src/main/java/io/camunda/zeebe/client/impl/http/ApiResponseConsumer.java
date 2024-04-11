@@ -43,7 +43,7 @@ final class ApiResponseConsumer<T>
   @Override
   protected ApiResponse<T> buildResult(
       final HttpResponse response, final ApiEntity<T> entity, final ContentType contentType) {
-    return new ApiResponse<>(response.getCode(), response.getReasonPhrase(), entity);
+    return new ApiResponse<>(response.getCode(), entity);
   }
 
   @Override
@@ -53,8 +53,8 @@ final class ApiResponseConsumer<T>
 
     private final ApiEntity<T> entity;
 
-    ApiResponse(final int code, final String reasonPhrase, final ApiEntity<T> entity) {
-      super(code, reasonPhrase);
+    ApiResponse(final int code, final ApiEntity<T> entity) {
+      super(code);
       this.entity = entity;
     }
 

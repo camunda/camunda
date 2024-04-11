@@ -81,7 +81,7 @@
     <version.protobuf-common>2.37.1</version.protobuf-common>
     <version.micrometer>1.12.5</version.micrometer>
     <version.rocksdbjni>8.11.3</version.rocksdbjni>
-    <version.sbe>1.30.0</version.sbe>
+    <version.sbe>1.31.0</version.sbe>
     <version.scala>2.13.13</version.scala>
     <version.slf4j>2.0.12</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.37.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.26</version.awssdk>
+    <version.awssdk>2.25.28</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,8 +153,8 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
     <version.aws-java-sdk>1.12.697</version.aws-java-sdk>
-    <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
-    <postgres-test-container.version>1.17.6</postgres-test-container.version>
+    <elasticsearch-test-container.version>1.19.7</elasticsearch-test-container.version>
+    <postgres-test-container.version>1.19.7</postgres-test-container.version>
     <version.elasticsearch7>7.17.19</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
@@ -771,12 +771,6 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-client-common</artifactId>
         <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-spring</artifactId>
-        <version>${project.version}</version>
       </dependency>
 
       <dependency>
@@ -1537,7 +1531,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.6.4</version>
+        <version>3.6.5</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->

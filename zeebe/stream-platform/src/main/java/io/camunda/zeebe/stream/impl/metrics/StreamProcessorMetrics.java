@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl.metrics;
 
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
@@ -64,10 +65,40 @@ public final class StreamProcessorMetrics {
           .help("Time taken for startup and recovery of stream processor (in ms)")
           .labelNames(LABEL_NAME_PARTITION)
           .register();
+
+  private static final Gauge PROCESSOR_STATE =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_state")
+          .help("Describes the state of the stream processor, namely if it is active or paused.")
+          .labelNames(LABEL_NAME_PARTITION)
+          .register();
   private final String partitionIdLabel;
+  private final Gauge.Child processorState;
 
   public StreamProcessorMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
+    processorState = PROCESSOR_STATE.labels(partitionIdLabel);
+  }
+
+  public void setStreamProcessorInitial() {
+    processorState.set(0);
+  }
+
+  public void setStreamProcessorReplay() {
+    processorState.set(1);
+  }
+
+  public void setStreamProcessorProcessing() {
+    processorState.set(2);
+  }
+
+  public void setStreamProcessorFailed() {
+    processorState.set(3);
+  }
+
+  public void setStreamProcessorPaused() {
+    processorState.set(4);
   }
 
   private void event(final String action) {
@@ -113,5 +144,24 @@ public final class StreamProcessorMetrics {
 
   public void setLastProcessedPosition(final long position) {
     LAST_PROCESSED_POSITION.labels(partitionIdLabel).set(position);
+  }
+
+  public void initializeProcessorPhase(final Phase phase) {
+    switch (phase) {
+      case INITIAL:
+        setStreamProcessorInitial();
+        break;
+      case REPLAY:
+        setStreamProcessorReplay();
+        break;
+      case PROCESSING:
+        setStreamProcessorProcessing();
+        break;
+      case PAUSED:
+        setStreamProcessorPaused();
+        break;
+      default:
+        setStreamProcessorFailed();
+    }
   }
 }

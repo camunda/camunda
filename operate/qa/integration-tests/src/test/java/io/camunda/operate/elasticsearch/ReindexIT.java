@@ -64,7 +64,7 @@ public class ReindexIT extends OperateAbstractIT {
     schemaManager.deleteIndicesFor(idxName("index-*"));
   }
 
-  private String idxName(String name) {
+  private String idxName(final String name) {
     return indexPrefix + "-" + name;
   }
 
@@ -164,8 +164,8 @@ public class ReindexIT extends OperateAbstractIT {
         schemaManager.getIndexSettingsFor(
             idxName("index-1.2.3_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings)
-        .containsEntry(NUMBERS_OF_REPLICA, DatabaseInfo.isOpensearch() ? null : NO_REPLICA)
-        .containsEntry(REFRESH_INTERVAL, DatabaseInfo.isOpensearch() ? null : NO_REFRESH);
+        .containsEntry(NUMBERS_OF_REPLICA, NO_REPLICA)
+        .containsEntry(REFRESH_INTERVAL, NO_REFRESH);
     // Migrator uses this
     assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), "5"))
         .isEqualTo("5");
@@ -173,7 +173,7 @@ public class ReindexIT extends OperateAbstractIT {
         .isEqualTo("2");
   }
 
-  private void createIndex(final String indexName, List<Map<String, String>> documents)
+  private void createIndex(final String indexName, final List<Map<String, String>> documents)
       throws Exception {
     if (DatabaseInfo.isElasticsearch()) {
       final Map<String, ?> mapping =
@@ -184,7 +184,7 @@ public class ReindexIT extends OperateAbstractIT {
     if (documents.isEmpty() && DatabaseInfo.isOpensearch()) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), Map.of());
     }
-    for (var document : documents) {
+    for (final var document : documents) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), document);
     }
   }

@@ -7,18 +7,12 @@ on:
       - "stable/**"
       - "release/**"
     paths:
-      - "operate/client/**"
-      - "!.github/workflows/zeebe-*"
-      - "!dist/**"
-      - "!zeebe/**"
-      - "!spring-boot-starter-camunda-sdk/**"
+      - '.github/workflows/operate-playwright.yml'
+      - 'operate/client/**'
   pull_request:
     paths:
-      - "operate/client/**"
-      - "!.github/workflows/zeebe-*"
-      - "!dist/**"
-      - "!zeebe/**"
-      - "!spring-boot-starter-camunda-sdk/**"
+      - '.github/workflows/operate-playwright.yml'
+      - 'operate/client/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.

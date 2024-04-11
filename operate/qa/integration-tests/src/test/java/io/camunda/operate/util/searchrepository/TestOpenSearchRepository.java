@@ -47,8 +47,10 @@ import io.camunda.operate.util.MapPath;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -81,33 +83,36 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public boolean createIndex(String indexName, Map<String, ?> mapping) throws Exception {
+  public boolean createIndex(final String indexName, final Map<String, ?> mapping)
+      throws Exception {
     return true;
   }
 
   @Override
-  public boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data)
-      throws IOException {
+  public boolean createOrUpdateDocumentFromObject(
+      final String indexName, final String docId, final Object data) throws IOException {
     final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, docId, entityMap);
   }
 
   @Override
-  public String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException {
+  public String createOrUpdateDocumentFromObject(final String indexName, final Object data)
+      throws IOException {
     final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, entityMap);
   }
 
   @Override
-  public boolean createOrUpdateDocument(String indexName, String id, Map<String, ?> doc)
-      throws IOException {
+  public boolean createOrUpdateDocument(
+      final String indexName, final String id, final Map<String, ?> doc) throws IOException {
     return richOpenSearchClient
         .doc()
         .indexWithRetries(indexRequestBuilder(indexName).id(id).document(doc));
   }
 
   @Override
-  public String createOrUpdateDocument(String indexName, Map<String, ?> doc) throws IOException {
+  public String createOrUpdateDocument(final String indexName, final Map<String, ?> doc)
+      throws IOException {
     final String docId = UUID.randomUUID().toString();
     if (createOrUpdateDocument(indexName, UUID.randomUUID().toString(), doc)) {
       return docId;
@@ -117,12 +122,12 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public void deleteById(String index, String id) throws IOException {
+  public void deleteById(final String index, final String id) throws IOException {
     richOpenSearchClient.doc().delete(index, id);
   }
 
   @Override
-  public Set<String> getFieldNames(String indexName) throws IOException {
+  public Set<String> getFieldNames(final String indexName) throws IOException {
     final var requestBuilder = getIndexRequestBuilder(indexName);
     return richOpenSearchClient
         .index()
@@ -134,8 +139,8 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType)
-      throws IOException {
+  public boolean hasDynamicMapping(
+      final String indexName, final DynamicMappingType dynamicMappingType) throws IOException {
     final var osDynamicMappingType =
         switch (dynamicMappingType) {
           case Strict -> DynamicMapping.Strict;
@@ -150,7 +155,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public List<String> getAliasNames(String indexName) throws IOException {
+  public List<String> getAliasNames(final String indexName) throws IOException {
     final var requestBuilder = getIndexRequestBuilder(indexName);
     return richOpenSearchClient
         .index()
@@ -163,13 +168,14 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
+  public <R> List<R> searchAll(final String index, final Class<R> clazz) throws IOException {
     final var requestBuilder = searchRequestBuilder(index).query(matchAll());
     return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
   }
 
   @Override
-  public <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size)
+  public <T> List<T> searchJoinRelation(
+      final String index, final String joinRelation, final Class<T> clazz, final int size)
       throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(index)
@@ -180,21 +186,26 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size)
+  public <R> List<R> searchTerm(
+      final String index,
+      final String field,
+      final Object value,
+      final Class<R> clazz,
+      final int size)
       throws IOException {
     Query query = null;
 
-    if (value instanceof Long l) {
+    if (value instanceof final Long l) {
       query = term(field, l);
     }
 
-    if (value instanceof String s) {
+    if (value instanceof final String s) {
       query = term(field, s);
     }
 
     if (query == null) {
       throw new UnsupportedOperationException(
-          this.getClass().getName()
+          getClass().getName()
               + ".searchTerm is missing implementation for value type "
               + value.getClass().getName());
     }
@@ -205,7 +216,40 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size)
+  public <R> List<R> searchTerms(
+      final String index,
+      final Map<String, Object> fieldValueMap,
+      final Class<R> clazz,
+      final int size)
+      throws IOException {
+    final List<Query> queryList = new LinkedList<>();
+    fieldValueMap.forEach(
+        (field, value) -> {
+          Query query = null;
+
+          if (value instanceof final Long l) {
+            query = term(field, l);
+          }
+
+          if (value instanceof final String s) {
+            query = term(field, s);
+          }
+          queryList.add(query);
+        });
+    final var queryTerms = queryList.stream().filter(Objects::nonNull).toList();
+
+    if (!queryTerms.isEmpty()) {
+      final var requestBuilder = searchRequestBuilder(index).query(and(queryTerms)).size(size);
+
+      return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
+    } else {
+      return List.of();
+    }
+  }
+
+  @Override
+  public List<Long> searchIds(
+      final String index, final String idFieldName, final List<Long> ids, final int size)
       throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(index).query(longTerms(idFieldName, ids)).size(size);
@@ -216,13 +260,14 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public void deleteByTermsQuery(String index, String fieldName, List<Long> values)
-      throws IOException {
+  public void deleteByTermsQuery(
+      final String index, final String fieldName, final List<Long> values) throws IOException {
     richOpenSearchClient.doc().deleteByQuery(index, longTerms(fieldName, values));
   }
 
   @Override
-  public void update(String index, String id, Map<String, Object> fields) throws IOException {
+  public void update(final String index, final String id, final Map<String, Object> fields)
+      throws IOException {
     final Function<Exception, String> errorMessageSupplier =
         e ->
             String.format(
@@ -242,7 +287,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public List<VariableEntity> getVariablesByProcessInstanceKey(
-      String index, Long processInstanceKey) {
+      final String index, final Long processInstanceKey) {
     final var requestBuilder =
         searchRequestBuilder(index)
             .query(constantScore(term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)));
@@ -252,19 +297,22 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public void reindex(
-      String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams)
+      final String srcIndex,
+      final String dstIndex,
+      final String script,
+      final Map<String, Object> scriptParams)
       throws IOException {
     final var request = reindexRequestBuilder(srcIndex, dstIndex, script, scriptParams).build();
     richOpenSearchClient.index().reindexWithRetries(request);
   }
 
   @Override
-  public boolean ilmPolicyExists(String policyName) {
+  public boolean ilmPolicyExists(final String policyName) {
     return !richOpenSearchClient.ism().getPolicy(policyName).isEmpty();
   }
 
   @Override
-  public IndexSettings getIndexSettings(String indexName) throws IOException {
+  public IndexSettings getIndexSettings(final String indexName) throws IOException {
     final var settings = new MapPath(richOpenSearchClient.index().getIndexSettings(indexName));
     final String shards =
         settings
@@ -282,8 +330,8 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids)
-      throws IOException {
+  public List<BatchOperationEntity> getBatchOperationEntities(
+      final String indexName, final List<String> ids) throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(indexName)
             .query(constantScore(ids(toSafeArrayOfStrings(ids))))
@@ -296,7 +344,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstances(
-      String indexName, List<Long> ids) throws IOException {
+      final String indexName, final List<Long> ids) throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(indexName)
             .query(
@@ -313,7 +361,10 @@ public class TestOpenSearchRepository implements TestSearchRepository {
 
   @Override
   public Optional<List<Long>> getIds(
-      String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex)
+      final String indexName,
+      final String idFieldName,
+      final List<Long> ids,
+      final boolean ignoreAbsentIndex)
       throws IOException {
     try {
       final var searchRequestBuilder =
@@ -327,7 +378,7 @@ public class TestOpenSearchRepository implements TestSearchRepository {
               .toList();
 
       return Optional.of(indexIds);
-    } catch (OpenSearchException ex) {
+    } catch (final OpenSearchException ex) {
       if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
         throw ex;
       }

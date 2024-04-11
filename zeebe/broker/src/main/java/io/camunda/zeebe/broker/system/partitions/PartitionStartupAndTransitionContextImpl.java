@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -263,6 +264,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public boolean shouldExport() {
     return !partitionProcessingState.isExportingPaused();
+  }
+
+  @Override
+  public ExporterPhase getExporterPhase() {
+    return partitionProcessingState.getExporterPhase();
   }
 
   @Override

@@ -5,17 +5,13 @@ on:
       - "main"
       - "stable/**"
       - "release/**"
-    paths-ignore:
-      - ".github/workflows/zeebe-*"
-      - "dist/**"
-      - "zeebe/**"
-      - "spring-boot-starter-camunda-sdk/**"
+    paths:
+      - '.github/workflows/operate-a11y.yml'
+      - 'operate/client/**'
   pull_request:
-    paths-ignore:
-      - ".github/workflows/zeebe-*"
-      - "dist/**"
-      - "zeebe/**"
-      - "spring-boot-starter-camunda-sdk/**"
+    paths:
+      - '.github/workflows/operate-a11y.yml'
+      - 'operate/client/**'
 
 jobs:
   test:
