@@ -101,6 +101,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     final Map<String, String> indexSettings = new HashMap<>();
     indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
     indexSettings.put(REFRESH_INTERVAL, operateProperties.getElasticsearch().getRefreshInterval());
+
+    // Adds or removes policy
+    if (operateProperties.getArchiver().isIlmEnabled()) {
+      indexSettings.put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES);
+    } else {
+      retryElasticsearchClient.deleteIndexPolicyFor("*");
+    }
+
     final boolean success = setIndexSettingsFor(indexSettings, "*");
     if (success) {
       LOGGER.info("Successfully updated number of replicas for all indices");
@@ -108,13 +116,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
       LOGGER.warn("Failed to update number of replicas for for all indices");
     }
 
-    if (operateProperties.getArchiver().isIlmEnabled()) {
-      retryElasticsearchClient.setIndexSettingsFor(
-          Settings.builder().put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES).build(),
-          "*");
-    } else {
-      retryElasticsearchClient.deleteIndexPolicyFor("*");
-    }
+    //    if (operateProperties.getArchiver().isIlmEnabled()) {
+    //      retryElasticsearchClient.setIndexSettingsFor(
+    //          Settings.builder().put(INDEX_LIFECYCLE_NAME,
+    // OPERATE_DELETE_ARCHIVED_INDICES).build(),
+    //          "*");
+    //    } else {
+    //      retryElasticsearchClient.deleteIndexPolicyFor("*");
+    //    }
   }
 
   @Override

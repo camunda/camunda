@@ -125,14 +125,23 @@ public class OpensearchSchemaManager implements SchemaManager {
     } else {
       LOGGER.warn("Failed to update number of replicas for index for all indices");
     }
-    final Map<String, Object> allPolicies = richOpenSearchClient.ism().getAttachedPolicy("*");
-    getIndexNames("*")
-        .forEach(
-            index -> {
 
-              // Update Index policies based on ILM
-              updateRetentionPolicy((LinkedHashMap<String, String>) allPolicies.get(index), index);
-            });
+    if (operateProperties.getArchiver().isIlmEnabled()) {
+      LOGGER.info("Adding policy to all indices");
+      richOpenSearchClient.ism().addPolicyToIndex("*", OPERATE_DELETE_ARCHIVED_INDICES);
+    } else {
+      LOGGER.info("Removing policy from all indices");
+      richOpenSearchClient.ism().removePolicyFromIndex("*");
+    }
+    //    final Map<String, Object> allPolicies = richOpenSearchClient.ism().getAttachedPolicy("*");
+    //    getIndexNames("*")
+    //        .forEach(
+    //            index -> {
+    //
+    //              // Update Index policies based on ILM
+    //              updateRetentionPolicy((LinkedHashMap<String, String>) allPolicies.get(index),
+    // index);
+    //            });
   }
 
   @Override
@@ -605,18 +614,18 @@ public class OpensearchSchemaManager implements SchemaManager {
             });
   }
 
-  private void updateRetentionPolicy(
-      final LinkedHashMap<String, String> indexPolicy, final String index) {
-    if (operateProperties.getArchiver().isIlmEnabled()
-        && indexPolicy != null
-        && !indexPolicy.containsKey("policy_id")) {
-      LOGGER.info("Adding policy to index {}", index);
-      richOpenSearchClient.ism().addPolicyToIndex(index, OPERATE_DELETE_ARCHIVED_INDICES);
-    } else if (!operateProperties.getArchiver().isIlmEnabled()
-        && indexPolicy != null
-        && indexPolicy.containsKey("policy_id")) {
-      LOGGER.info("Removing policy from index {}", index);
-      richOpenSearchClient.ism().removePolicyFromIndex(index);
-    }
-  }
+  //  private void updateRetentionPolicy(
+  //      final LinkedHashMap<String, String> indexPolicy, final String index) {
+  //    if (operateProperties.getArchiver().isIlmEnabled()
+  //        && indexPolicy != null
+  //        && !indexPolicy.containsKey("policy_id")) {
+  //      LOGGER.info("Adding policy to index {}", index);
+  //      richOpenSearchClient.ism().addPolicyToIndex(index, OPERATE_DELETE_ARCHIVED_INDICES);
+  //    } else if (!operateProperties.getArchiver().isIlmEnabled()
+  //        && indexPolicy != null
+  //        && indexPolicy.containsKey("policy_id")) {
+  //      LOGGER.info("Removing policy from index {}", index);
+  //      richOpenSearchClient.ism().removePolicyFromIndex(index);
+  //    }
+  //  }
 }
