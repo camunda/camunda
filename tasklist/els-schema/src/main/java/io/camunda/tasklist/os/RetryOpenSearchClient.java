@@ -40,6 +40,7 @@ import net.jodah.failsafe.function.CheckedSupplier;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
+import org.opensearch.client.ResponseException;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -627,8 +628,15 @@ public class RetryOpenSearchClient {
     final Request request = new Request("GET", "/_plugins/_ism/policies/" + policyName);
     try {
       return opensearchRestClient.performRequest(request);
+    } catch (final ResponseException e) {
+      if (e.getResponse().getStatusLine().getStatusCode() == 404) {
+        return null;
+      } else {
+        throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+      }
     } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
+      // Handle other I/O errors
+      throw new TasklistRuntimeException("Communication error with OpenSearch", e);
     }
   }
 

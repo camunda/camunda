@@ -22,7 +22,6 @@ import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.apache.http.HttpStatus;
 import org.opensearch.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
     LOGGER.info("Applying ISM policy to all existent indices");
     final Response policyExists =
         retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES); // TDB - Test
-    if (policyExists.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+    if (policyExists == null) {
       LOGGER.info("ISM policy does not exist, creating it"); // TDB - Test
       schemaManager.createIndexLifeCycles();
     }
