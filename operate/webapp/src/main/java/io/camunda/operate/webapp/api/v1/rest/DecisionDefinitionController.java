@@ -144,7 +144,9 @@ public class DecisionDefinitionController extends ErrorController
                     description = "Filter by version and sort by decisionId"),
               }))
   @Override
-  public Results<DecisionDefinition> search(@RequestBody final Query<DecisionDefinition> query) {
+  public Results<DecisionDefinition> search(
+      @RequestBody(required = false) Query<DecisionDefinition> query) {
+    query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, DecisionDefinition.class, SEARCH_SORT_VALIDATOR);
     return decisionDefinitionDao.search(query);
   }
