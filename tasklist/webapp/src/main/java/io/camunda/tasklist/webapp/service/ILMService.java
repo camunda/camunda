@@ -20,16 +20,11 @@ import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistProperties;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ILMService {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ILMService.class);
-
   @Autowired private ILMPolicyUpdate ilmPolicyUpdate;
 
   @Autowired private TasklistProperties tasklistProperties;
@@ -44,12 +39,10 @@ public class ILMService {
   }
 
   private void applyIlmPolicyToAllIndices() throws IOException {
-    LOGGER.info("Applying ILM policy to all existent indices");
     ilmPolicyUpdate.applyIlmPolicyToAllIndices();
   }
 
   private void removeIlmPolicyFromAllIndices() throws IOException {
-    LOGGER.info("Removing ILM policy to all existent indices");
     ilmPolicyUpdate.removeIlmPolicyFromAllIndices();
   }
 }

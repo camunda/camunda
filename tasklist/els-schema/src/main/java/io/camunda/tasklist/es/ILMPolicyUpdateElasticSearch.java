@@ -46,6 +46,7 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Override
   public void applyIlmPolicyToAllIndices() {
+    LOGGER.info("Applying ILM policy to all existent indices");
     final GetLifecyclePolicyResponse policyExists =
         retryElasticsearchClient.getLifeCyclePolicy(
             new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
@@ -68,6 +69,7 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Override
   public void removeIlmPolicyFromAllIndices() {
+    LOGGER.info("Removing ILM policy to all existent indices");
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
     final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX);
     for (final String indexName : response) {

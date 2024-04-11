@@ -19,12 +19,11 @@ package io.camunda.tasklist.os;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
-import io.camunda.tasklist.property.ArchiverProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.apache.http.HttpStatus;
 import org.opensearch.client.Response;
-import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +32,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class ILMPolicyUpdateOpenSearch extends ArchiverProperties implements ILMPolicyUpdate {
+public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
   private static final String ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX =
@@ -47,10 +46,11 @@ public class ILMPolicyUpdateOpenSearch extends ArchiverProperties implements ILM
 
   @Override
   public void applyIlmPolicyToAllIndices() {
+    LOGGER.info("Applying ISM policy to all existent indices");
     final Response policyExists =
-        retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES);
-    if (policyExists == null) {
-      LOGGER.info("ILM policy does not exist, creating it");
+        retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES); // TDB - Test
+    if (policyExists.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+      LOGGER.info("ISM policy does not exist, creating it"); // TDB - Test
       schemaManager.createIndexLifeCycles();
     }
 
@@ -59,26 +59,19 @@ public class ILMPolicyUpdateOpenSearch extends ArchiverProperties implements ILM
     final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
-        final IndexSettings settings =
-            new IndexSettings.Builder()
-                .settings(IndexSettings.of(s -> s.lifecycleName(TASKLIST_DELETE_ARCHIVED_INDICES)))
-                .build();
-        retryOpenSearchClient.setIndexSettingsFor(settings, indexName);
+        retryOpenSearchClient.putLifeCyclePolicy(indexName, TASKLIST_DELETE_ARCHIVED_INDICES);
       }
     }
   }
 
   @Override
   public void removeIlmPolicyFromAllIndices() {
+    LOGGER.info("Removing ISM policy to all existent indices");
     final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX);
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
-        final IndexSettings settings =
-            new IndexSettings.Builder()
-                .settings(IndexSettings.of(s -> s.lifecycleName(null)))
-                .build();
-        retryOpenSearchClient.setIndexSettingsFor(settings, indexName);
+        retryOpenSearchClient.putLifeCyclePolicy(indexName, null);
       }
     }
   }

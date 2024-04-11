@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
+import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
@@ -623,7 +624,7 @@ public class RetryOpenSearchClient {
   }
 
   public Response getLifecyclePolicy(final String policyName) {
-    final Request request = new Request("GET", "_ilm/policy/" + policyName);
+    final Request request = new Request("GET", "/_plugins/_ism/policies/" + policyName);
     try {
       return opensearchRestClient.performRequest(request);
     } catch (final IOException e) {
@@ -631,18 +632,22 @@ public class RetryOpenSearchClient {
     }
   }
 
-  // TODO -check lifecycle for openSearch
-  /* public boolean putLifeCyclePolicy(final PutLifecyclePolicyRequest putLifecyclePolicyRequest) {
+  public Response putLifeCyclePolicy(final String indexName, final String policyName) {
+    final Request request = new Request("PUT", indexName + "/_settings");
 
-      openSearchClient.indices().
+    final JSONObject settings = new JSONObject();
+    final JSONObject indexSettings = new JSONObject();
+    indexSettings.put(
+        "plugins.index_state_management.policy_id",
+        Objects.requireNonNullElse(policyName, JSONObject.NULL));
+    settings.put("index", indexSettings);
 
-    return executeWithRetries(
-        String.format("Put LifeCyclePolicy %s ", putLifecyclePolicyRequest.getName()),
-        () ->
-            openSearchClient
-                .indexLifecycle()
-                .putLifecyclePolicy(putLifecyclePolicyRequest, requestOptions)
-                .isAcknowledged(),
-        null);
-  }*/
+    request.setJsonEntity(settings.toString());
+
+    try {
+      return opensearchRestClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
+  }
 }
