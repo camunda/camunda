@@ -15,18 +15,6 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {PoweredBy as BasePoweredBy} from 'modules/components/PoweredBy';
-import styled from 'styled-components';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const PoweredBy = styled(BasePoweredBy)`
-  min-height: 72px;
-  align-self: flex-end;
-  padding-right: var(--cds-spacing-06);
-`;
-
-export {Container, PoweredBy};
+.notification {
+  margin-top: var(--cds-spacing-03);
+}

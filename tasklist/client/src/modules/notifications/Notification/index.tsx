@@ -15,12 +15,13 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
+import {ActionableNotification, ToastNotification} from '@carbon/react';
 import {CSSTransition} from 'react-transition-group';
-import {ActionableNotification, ToastNotification} from './styled';
 import {Notification as NotificationType} from 'modules/stores/notifications';
 import {observer} from 'mobx-react-lite';
 import {useRef} from 'react';
 import {useRelativeDate} from './useRelativeDate';
+import styles from './styles.module.scss';
 
 type Props = {
   notification: NotificationType;
@@ -56,6 +57,7 @@ const Notification: React.FC<Props> = observer(
         <div ref={nodeRef}>
           {isActionable ? (
             <ActionableNotification
+              className={styles.notification}
               kind={kind}
               lowContrast={false}
               title={title}
@@ -71,6 +73,7 @@ const Notification: React.FC<Props> = observer(
             />
           ) : (
             <ToastNotification
+              className={styles.notification}
               kind={kind}
               lowContrast={false}
               title={title}

@@ -16,16 +16,6 @@
  */
 
 import {formatDate} from 'modules/utils/formatDate';
-import {
-  Aside,
-  AssignButtonContainer,
-  Container,
-  Content,
-  Header,
-  HeaderLeftContainer,
-  HeaderRightContainer,
-  StackCenterAligned,
-} from './styled';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
@@ -35,13 +25,21 @@ import {useState} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {BodyCompact, Label} from 'modules/components/FontTokens';
-import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
+import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
+import {
+  ContainedList,
+  ContainedListItem,
+  Section,
+  Stack,
+  Tag,
+} from '@carbon/react';
 import {Task, CurrentUser} from 'modules/types';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {CheckmarkFilled} from '@carbon/react/icons';
+import styles from './styles.module.scss';
 
 type AssignmentStatus =
   | 'off'
@@ -144,22 +142,30 @@ const Details: React.FC<Props> = ({
   }
 
   return (
-    <Container data-testid="details-info">
-      <Content level={4}>
+    <div className={styles.container} data-testid="details-info">
+      <Section className={styles.content} level={4}>
         <TurnOnNotificationPermission />
-        <Header as="header" title="Task details header">
-          <HeaderLeftContainer>
+        <TaskDetailsRow
+          className={styles.header}
+          as="header"
+          title="Task details header"
+        >
+          <div className={styles.headerLeftContainer}>
             <BodyCompact $variant="02">{name}</BodyCompact>
             <Label $color="secondary">{processName}</Label>
-          </HeaderLeftContainer>
-          <HeaderRightContainer>
+          </div>
+          <div className={styles.headerRightContainer}>
             {taskState === 'COMPLETED' ? (
               <Label
                 $color="secondary"
                 data-testid="completion-label"
                 title="Completed by"
               >
-                <StackCenterAligned orientation="horizontal" gap={2}>
+                <Stack
+                  className={styles.alignItemsCenter}
+                  orientation="horizontal"
+                  gap={2}
+                >
                   <CheckmarkFilled size={16} color="green" />
                   Completed
                   {assignee ? (
@@ -175,7 +181,7 @@ const Details: React.FC<Props> = ({
                       </Label>
                     </>
                   ) : null}
-                </StackCenterAligned>
+                </Stack>
               </Label>
             ) : (
               <Label $color="secondary" data-testid="assignee">
@@ -188,7 +194,7 @@ const Details: React.FC<Props> = ({
             )}
             {taskState === 'CREATED' && (
               <Restricted scopes={['write']}>
-                <AssignButtonContainer>
+                <span className={styles.assignButtonContainer}>
                   <AsyncActionButton
                     inlineLoadingProps={{
                       description:
@@ -218,14 +224,14 @@ const Details: React.FC<Props> = ({
                   >
                     {isAssigned ? 'Unassign' : 'Assign to me'}
                   </AsyncActionButton>
-                </AssignButtonContainer>
+                </span>
               </Restricted>
             )}
-          </HeaderRightContainer>
-        </Header>
+          </div>
+        </TaskDetailsRow>
         {children}
-      </Content>
-      <Aside aria-label="Task details right panel">
+      </Section>
+      <aside className={styles.aside} aria-label="Task details right panel">
         <ContainedList label="Details" kind="disclosed">
           <>
             {taskTenant === undefined ? null : (
@@ -275,8 +281,8 @@ const Details: React.FC<Props> = ({
             </ContainedListItem>
           ) : null}
         </ContainedList>
-      </Aside>
-    </Container>
+      </aside>
+    </div>
   );
 };
 

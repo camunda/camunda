@@ -14,49 +14,49 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
+@use '@carbon/layout';
 
-import styled from 'styled-components';
-
-const FormContainer = styled.div`
+.container {
   width: 100%;
-  background-color: var(--cds-layer);
-  padding: var(--cds-spacing-08) var(--cds-spacing-06);
-`;
-
-const Container = styled.div`
-  width: 100%;
-`;
-
-const SubmitButtonRow = styled.div`
-  min-height: 72px;
+  height: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--cds-spacing-04) var(--cds-spacing-06);
-`;
+  flex-direction: column;
+}
 
-const FormSkeletonContainer = styled.div`
+.header {
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(4, min-content);
-  grid-gap: var(--cds-spacing-04);
+  padding: var(--cds-spacing-04) var(--cds-spacing-05);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
 
-  & > :nth-child(1) {
-    grid-area: 1 / 1 / 2 / 2;
-  }
-  & > :nth-child(2) {
-    grid-area: 2 / 1 / 3 / 3;
-  }
-  & > :nth-child(3) {
-    grid-area: 3 / 1 / 4 / 2;
-  }
-  & > :nth-child(4) {
-    grid-area: 3 / 2 / 4 / 3;
-  }
-  & > :nth-child(5) {
-    grid-area: 4 / 1 / 5 / 3;
-  }
-`;
+.item {
+  width: 100%;
+  padding: var(--cds-spacing-04) var(--cds-spacing-05);
+  border-bottom: 1px solid var(--cds-border-subtle);
+  min-height: layout.to-rem(95px);
 
-export {Container, FormContainer, SubmitButtonRow, FormSkeletonContainer};
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.skeletonText {
+  margin: 0;
+}
+
+.itemContainer {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.message {
+  padding: var(--cds-spacing-05);
+  border: 1px solid var(--cds-border-subtle);
+  background-color: var(--cds-layer);
+  margin: var(--cds-spacing-05);
+}
+
+.icon {
+  margin-left: var(--cds-spacing-02);
+}

@@ -15,7 +15,6 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {GlobalStyle} from 'modules/theme/GlobalStyle';
 import styled, {
   ThemeProvider as StyledComponentThemeProvider,
 } from 'styled-components';
@@ -52,7 +51,6 @@ const ThemeProvider: React.FC<Props> = observer(({children}) => {
   return (
     <CarbonTheme>
       <StyledComponentThemeProvider theme={themes[THEME_TOKENS[actualTheme]]}>
-        <GlobalStyle />
         {children}
       </StyledComponentThemeProvider>
     </CarbonTheme>

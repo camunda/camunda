@@ -15,18 +15,43 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
+@use '@carbon/styles/scss/breakpoint';
 
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: var(--cds-text-primary);
-`;
+:global {
+  .fjs-container {
+    .fjs-form-field button[type='submit'],
+    .fjs-powered-by {
+      display: none;
+    }
+  }
 
-const Image = styled.img`
-  margin-bottom: var(--cds-spacing-08);
-`;
+  @include breakpoint.breakpoint('lg') {
+    .fjs-form {
+      margin-left: -8px;
+      margin-right: -8px;
+    }
+  }
+}
 
-export {Container, Image};
+.formRoot {
+  width: 100%;
+}
+
+.layer {
+  width: 100%;
+  max-width: 900px;
+}
+
+.warningFilled {
+  fill: var(--cds-support-error);
+}
+
+.validationMessage {
+  margin-block: var(--cds-spacing-06);
+}
+
+.hr {
+  border: 0;
+  height: 1px;
+  background: var(--cds-border-subtle);
+}

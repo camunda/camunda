@@ -14,100 +14,54 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
+@use '@carbon/type';
+@use '@carbon/layout';
 
-import {rem} from '@carbon/elements';
-import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
-import styled, {css} from 'styled-components';
-import {SkeletonText as BaseSkeletonText, Section, Stack} from '@carbon/react';
+@mixin textOverflowEllipsis {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
-const AssignButtonContainer = styled.span`
-  flex-shrink: 0;
+.container {
+  width: 100%;
+  height: 100%;
+  padding: var(--cds-spacing-05);
+  background: var(--cds-layer);
+}
+
+.content {
+  height: 100%;
+}
+
+.titleWrapper {
+  height: fit-content;
+}
+
+.title {
+  @include textOverflowEllipsis;
+  @include type.type-style('productive-heading-02');
+  color: var(--cds-text-primary);
+}
+
+.subtitle {
+  @include textOverflowEllipsis;
+  @include type.type-style('label-01');
+  min-height: layout.to-rem(16px);
+  margin-bottom: var(--cds-spacing-06);
+  color: var(--cds-text-secondary);
+}
+
+.buttonRow {
   display: flex;
-  align-items: center;
-`;
-
-const NotificationSection = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--cds-spacing-03);
-`;
-
-const Header = styled(TaskDetailsRow)`
-  display: flex;
+  flex-direction: row-reverse;
   flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 40px;
+  justify-content: flex-end;
   gap: var(--cds-spacing-05);
-`;
+  align-content: end;
 
-const HeaderLeftContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const HeaderRightContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--cds-spacing-05);
-  margin-left: auto;
-`;
-
-const Content = styled(Section)`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--cds-spacing-03);
-  align-items: center;
-  overflow-y: hidden;
-`;
-
-const Aside = styled.aside`
-  border-left: 1px solid var(--cds-border-subtle);
-  display: flex;
-  flex-direction: column;
-`;
-
-const Container = styled.div`
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: 1fr ${rem(300)};
-
-  ${Content}, ${Aside} {
-    padding-top: var(--cds-spacing-05);
+  & .startButton {
+    margin-right: auto;
   }
-`;
-
-const StackCenterAligned = styled(Stack)`
-  align-items: center;
-`;
-
-type SkeletonTextProps = {
-  $disabledMargin?: boolean;
-};
-
-const SkeletonText = styled(BaseSkeletonText)<SkeletonTextProps>`
-  ${({$disabledMargin = false}) =>
-    $disabledMargin
-      ? css`
-          margin: 0;
-        `
-      : undefined}
-`;
-
-export {
-  AssignButtonContainer,
-  Container,
-  Header,
-  HeaderLeftContainer,
-  HeaderRightContainer,
-  Content,
-  Aside,
-  SkeletonText,
-  NotificationSection,
-  StackCenterAligned,
-};
+}

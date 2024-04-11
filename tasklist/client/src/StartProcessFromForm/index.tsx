@@ -16,9 +16,9 @@
  */
 
 import {useStartProcessParams} from 'modules/routing';
-import {Content, FormContainer} from './styled';
 import {useExternalForm} from 'modules/queries/useExternalForm';
 import {useLayoutEffect, useState} from 'react';
+import {Content} from '@carbon/react';
 import {FormJS} from './FormJS';
 import {Skeleton} from './FormJS/Skeleton';
 import {useStartExternalProcess} from 'modules/mutations/useStartExternalProcess';
@@ -28,6 +28,7 @@ import CheckImage from 'modules/images/orange-check-mark.svg';
 import ErrorRobotImage from 'modules/images/error-robot.svg';
 import {Message} from './Message';
 import {match, Pattern} from 'ts-pattern';
+import styles from './styles.module.scss';
 
 const StartProcessFromForm: React.FC = () => {
   const [pageView, setPageView] = useState<
@@ -79,8 +80,13 @@ const StartProcessFromForm: React.FC = () => {
 
   return (
     <>
-      <Content id="main-content" tabIndex={-1} tagName="main">
-        <FormContainer>
+      <Content
+        id="main-content"
+        className={styles.content}
+        tabIndex={-1}
+        tagName="main"
+      >
+        <div className={styles.container}>
           {match({data, pageView})
             .with({pageView: 'form', data: undefined}, () => <Skeleton />)
             .with(
@@ -156,7 +162,7 @@ const StartProcessFromForm: React.FC = () => {
               />
             ))
             .exhaustive()}
-        </FormContainer>
+        </div>
       </Content>
     </>
   );

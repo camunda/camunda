@@ -16,7 +16,6 @@
  */
 
 import {useRef, useState} from 'react';
-import {Container, FormContainer, SubmitButtonRow} from './styled';
 import {FormManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
 import {InlineLoadingStatus} from '@carbon/react';
@@ -24,6 +23,7 @@ import {tracking} from 'modules/tracking';
 import {PoweredBy} from 'modules/components/PoweredBy';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
+import styles from './styles.module.scss';
 
 const SUBMIT_OPERATION_MESSAGE = {
   active: 'Submitting...',
@@ -57,8 +57,8 @@ const FormJS: React.FC<Props> = ({
   }
 
   return (
-    <Container>
-      <FormContainer>
+    <div className={styles.container}>
+      <div className={styles.formContainer}>
         {schema === null ? null : (
           <FormJSRenderer
             schema={schema}
@@ -90,8 +90,8 @@ const FormJS: React.FC<Props> = ({
             }}
           />
         )}
-      </FormContainer>
-      <SubmitButtonRow>
+      </div>
+      <div className={styles.submitButtonRow}>
         <AsyncActionButton
           inlineLoadingProps={{
             description: SUBMIT_OPERATION_MESSAGE[submissionState],
@@ -118,8 +118,8 @@ const FormJS: React.FC<Props> = ({
           Submit
         </AsyncActionButton>
         <PoweredBy />
-      </SubmitButtonRow>
-    </Container>
+      </div>
+    </div>
   );
 };
 

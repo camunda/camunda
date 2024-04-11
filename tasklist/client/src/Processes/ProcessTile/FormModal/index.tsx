@@ -21,18 +21,18 @@ import {Process, Variable} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {useRef, useState} from 'react';
 import {
-  FormCenterContainer,
-  FormContainer,
-  FormScrollContainer,
-  FormSkeletonContainer,
-  InlineErrorContainer,
+  TextInputSkeleton,
+  Loading,
+  Modal,
+  Copy,
   InlineNotification,
-} from './styled';
-import {TextInputSkeleton, Loading, Modal, Copy, Layer} from '@carbon/react';
+  Layer,
+} from '@carbon/react';
 import {Share} from '@carbon/react/icons';
 import {match} from 'ts-pattern';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 import {createPortal} from 'react-dom';
+import styles from './styles.module.scss';
 
 type Props = {
   process: Process;
@@ -85,7 +85,7 @@ const FormModal: React.FC<Props> = ({
         aria-label={`Start process ${processDisplayName}`}
         modalHeading={
           <>
-            {`Start process ${processDisplayName}`}
+            Start process {processDisplayName}
             <Copy
               feedback="Copied"
               onClick={() => {
@@ -124,21 +124,24 @@ const FormModal: React.FC<Props> = ({
         }
         size="lg"
       >
-        <FormContainer>
+        <div className={styles.formContainer}>
           {match({
             status,
             fetchStatus,
             isFormSchemaValid,
           })
             .with({fetchStatus: 'fetching'}, () => (
-              <FormSkeletonContainer data-testid="form-skeleton">
+              <div
+                className={styles.formSkeletonContainer}
+                data-testid="form-skeleton"
+              >
                 <TextInputSkeleton />
                 <TextInputSkeleton />
                 <TextInputSkeleton />
                 <TextInputSkeleton />
                 <TextInputSkeleton />
                 <TextInputSkeleton />
-              </FormSkeletonContainer>
+              </div>
             ))
             .with(
               {
@@ -147,8 +150,8 @@ const FormModal: React.FC<Props> = ({
               },
               () => (
                 <>
-                  <FormScrollContainer>
-                    <FormCenterContainer>
+                  <div className={styles.formScrollContainer}>
+                    <div className={styles.formCenterContainer}>
                       <FormJSRenderer
                         schema={schema!}
                         handleSubmit={onSubmit}
@@ -172,9 +175,9 @@ const FormModal: React.FC<Props> = ({
                           setIsSubmitting(false);
                         }}
                       />
-                    </FormCenterContainer>
-                  </FormScrollContainer>
-                  <InlineErrorContainer>
+                    </div>
+                  </div>
+                  <div className={styles.inlineErrorContainer}>
                     {match({
                       hasSubmissionFailed,
                       prioritizeTenantValidation,
@@ -202,6 +205,7 @@ const FormModal: React.FC<Props> = ({
                         },
                         () => (
                           <InlineNotification
+                            className={styles.inlineNotification}
                             kind="error"
                             role="alert"
                             hideCloseButton
@@ -218,7 +222,7 @@ const FormModal: React.FC<Props> = ({
                         () => null,
                       )
                       .exhaustive()}
-                  </InlineErrorContainer>
+                  </div>
                 </>
               ),
             )
@@ -243,7 +247,7 @@ const FormModal: React.FC<Props> = ({
               />
             ))
             .exhaustive()}
-        </FormContainer>
+        </div>
       </Modal>
     </Layer>,
     document.body,

@@ -75,7 +75,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable/i}),
@@ -93,6 +95,7 @@ describe('<FormModal />', () => {
       }),
     );
     vi.runOnlyPendingTimers();
+
     expect(
       screen.getByRole('button', {
         name: /start process/i,
@@ -101,7 +104,9 @@ describe('<FormModal />', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalled();
 
-    await waitForElementToBeRemoved(screen.queryByTestId('loading-spinner'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('loading-spinner'),
+    );
     vi.useRealTimers();
   });
 
@@ -127,7 +132,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -166,7 +173,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     expect(
       await within(await screen.findByRole('alert')).findByText(
@@ -200,7 +209,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     expect(
       within(screen.getByRole('alert')).getByText('Something went wrong'),
@@ -236,7 +247,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable/i}),
@@ -290,7 +303,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable/i}),
@@ -352,7 +367,9 @@ describe('<FormModal />', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     expect(mockSuccessOnSubmit).toHaveBeenCalled();
 
-    await waitForElementToBeRemoved(screen.queryByTestId('loading-spinner'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('loading-spinner'),
+    );
   });
 
   it('should hide submission when reopening modal', async () => {
@@ -379,7 +396,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     await user.type(
       screen.getByRole('textbox', {name: /my variable/i}),
@@ -433,7 +452,9 @@ describe('<FormModal />', () => {
       />,
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
   });
@@ -458,7 +479,9 @@ describe('<FormModal />', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('form-skeleton'),
+    );
 
     await user.click(
       screen.getByRole('button', {

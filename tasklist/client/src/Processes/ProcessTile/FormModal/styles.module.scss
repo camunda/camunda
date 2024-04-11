@@ -15,18 +15,65 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
-
-const Container = styled.div`
-  height: 100%;
-  padding: var(--cds-spacing-08);
-  background-color: var(--cds-background);
-`;
-
-const Content = styled.div`
-  padding: var(--cds-spacing-12);
+.formSkeletonContainer {
   width: 100%;
-  background-color: var(--cds-layer);
-`;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(4, min-content);
+  grid-gap: var(--cds-spacing-04);
+  grid-template-areas:
+    'a b'
+    'c c'
+    'd .'
+    'e f';
 
-export {Container, Content};
+  & > :nth-child(1) {
+    grid-area: a;
+  }
+  & > :nth-child(2) {
+    grid-area: b;
+  }
+  & > :nth-child(3) {
+    grid-area: c;
+  }
+  & > :nth-child(4) {
+    grid-area: d;
+  }
+  & > :nth-child(5) {
+    grid-area: e;
+  }
+  & > :nth-child(6) {
+    grid-area: f;
+  }
+}
+
+.inlineNotification {
+  width: 100%;
+}
+
+.formContainer {
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: hidden;
+}
+
+.formScrollContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.formCenterContainer {
+  width: inherit;
+  max-width: 900px;
+}
+
+.inlineErrorContainer {
+  padding-top: var(--cds-spacing-02);
+}

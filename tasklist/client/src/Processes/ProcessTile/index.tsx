@@ -21,14 +21,6 @@ import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useState} from 'react';
-import {
-  Container,
-  Content,
-  TitleWrapper,
-  Title,
-  Subtitle,
-  ButtonRow,
-} from './styled';
 import {useNavigate, useMatch, useLocation} from 'react-router-dom';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
@@ -38,6 +30,8 @@ import {Process, Task} from 'modules/types';
 import {FormModal} from './FormModal';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {ProcessTag} from './ProcessTag';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
@@ -98,6 +92,7 @@ const ProcessTile: React.FC<Props> = ({
   isFirst,
   isStartButtonDisabled,
   tenantId,
+  className,
   ...props
 }) => {
   const {mutateAsync: startProcess} = useStartProcess({
@@ -131,15 +126,15 @@ const ProcessTile: React.FC<Props> = ({
   const tags = getTags(process);
 
   return (
-    <Container {...props}>
-      <Stack as={Content} data-testid="process-tile-content">
-        <Stack as={TitleWrapper}>
-          <Title>{displayName}</Title>
-          <Subtitle>
+    <div className={cn(className, styles.container)} {...props}>
+      <Stack className={styles.content} data-testid="process-tile-content">
+        <Stack className={styles.titleWrapper}>
+          <h4 className={styles.title}>{displayName}</h4>
+          <span className={styles.subtitle}>
             {displayName === bpmnProcessId ? '' : bpmnProcessId}
-          </Subtitle>
+          </span>
         </Stack>
-        <ButtonRow>
+        <div className={styles.buttonRow}>
           <ul title="Process Attributes" aria-hidden={tags.length === 0}>
             {tags.map((type) => (
               <li key={type}>
@@ -214,7 +209,7 @@ const ProcessTile: React.FC<Props> = ({
           >
             Start process
           </AsyncActionButton>
-        </ButtonRow>
+        </div>
       </Stack>
 
       {startEventFormId === null ? null : (
@@ -243,7 +238,7 @@ const ProcessTile: React.FC<Props> = ({
           tenantId={tenantId}
         />
       )}
-    </Container>
+    </div>
   );
 };
 

@@ -15,14 +15,14 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Modal} from 'modules/components/Modal';
 import {useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import Placeholder from './placeholder.svg';
-import {Container, Image} from './styled';
+import {Modal} from 'modules/components/Modal';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
 import {tracking} from 'modules/tracking';
+import Placeholder from './placeholder.svg';
+import styles from './styles.module.scss';
 
 const FirstTimeModal: React.FC = () => {
   const location = useLocation();
@@ -69,8 +69,9 @@ const FirstTimeModal: React.FC = () => {
       size="md"
     >
       {isOpen ? (
-        <Container>
-          <Image
+        <div className={styles.container}>
+          <img
+            className={styles.image}
             src={Placeholder}
             alt=""
             data-testid="alpha-warning-modal-image"
@@ -87,7 +88,7 @@ const FirstTimeModal: React.FC = () => {
               directly start assigning these.
             </p>
           </div>
-        </Container>
+        </div>
       ) : null}
     </Modal>
   );

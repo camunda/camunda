@@ -15,20 +15,19 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
-import {
-  Button as BaseButton,
-  InlineLoading as BaseInlineLoading,
-} from '@carbon/react';
+.container {
+  width: 100%;
+  height: 100%;
+  background-color: var(--cds-background);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-const InlineLoading = styled(BaseInlineLoading)`
-  width: fit-content;
-`;
-
-const Button: typeof BaseButton = styled(BaseButton)`
-  &.hide {
-    display: none;
-  }
-`;
-
-export {Button, InlineLoading};
+.row {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  text-align: right;
+}

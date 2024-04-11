@@ -15,13 +15,14 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Modal} from 'modules/components/Modal';
 import {useEffect, useRef, useState} from 'react';
+import {observer} from 'mobx-react-lite';
 import {editor} from 'monaco-editor';
 import {isValidJSON} from 'modules/utils/isValidJSON';
-import {observer} from 'mobx-react-lite';
+import {Modal} from 'modules/components/Modal';
 import {themeStore} from 'modules/stores/theme';
-import {Editor, EditorPlaceholder} from './styled';
+import Editor from '@monaco-editor/react';
+import styles from './styles.module.scss';
 
 const options: React.ComponentProps<typeof Editor>['options'] = {
   minimap: {
@@ -95,6 +96,7 @@ const JSONEditorModal: React.FC<Props> = observer(
       >
         {isOpen ? (
           <Editor
+            className={styles.editor}
             options={options}
             language="json"
             value={editedValue}
@@ -116,7 +118,7 @@ const JSONEditorModal: React.FC<Props> = observer(
             }}
           />
         ) : (
-          <EditorPlaceholder />
+          <div className={styles.editor} />
         )}
       </Modal>
     );

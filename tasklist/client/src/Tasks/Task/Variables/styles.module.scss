@@ -14,33 +14,68 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
+@use '@carbon/layout';
 
-import {ButtonSkeleton, SkeletonText, TextAreaSkeleton} from '@carbon/react';
-import {SkeletonPoweredBy} from 'modules/components/PoweredBy';
-import styles from './styles.module.scss';
+.form {
+  width: 100%;
+  height: 100%;
+}
 
-const Skeleton: React.FC = () => {
-  return (
-    <div
-      className={styles.container}
-      data-testid="public-form-skeleton"
-      aria-busy="true"
-    >
-      <div className={styles.formContainer}>
-        <div className={styles.formSkeletonContainer}>
-          <SkeletonText heading />
-          <TextAreaSkeleton />
-          <TextAreaSkeleton />
-          <TextAreaSkeleton />
-          <TextAreaSkeleton />
-        </div>
-      </div>
-      <div className={styles.submitButtonRow}>
-        <ButtonSkeleton size="lg" />
-        <SkeletonPoweredBy />
-      </div>
-    </div>
-  );
-};
+.container {
+  padding: 0 0 var(--cds-spacing-05) 0;
+}
 
-export {Skeleton};
+.inlineIcon {
+  margin-right: var(--cds-spacing-01);
+}
+
+.list {
+  height: min-content;
+}
+
+.listCell {
+  vertical-align: middle;
+}
+
+.scrollableOuter {
+  height: min-content;
+  overflow-y: auto;
+}
+
+.scrollableInner {
+  max-height: 100px;
+  height: min(min-content, 100%);
+  overflow-y: auto;
+}
+
+.iconButtons {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-right: var(--cds-spacing-03);
+
+  &.extraPadding {
+    padding-right: calc(var(--cds-spacing-03) + 32px);
+  }
+}
+
+.cellName {
+  width: 200px;
+}
+
+.valueCell {
+  overflow-y: hidden;
+  word-break: break-all;
+  height: min(100px, min-content);
+}
+
+.controlsCell {
+  width: 80px;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: layout.to-rem(32px);
+}

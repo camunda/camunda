@@ -15,18 +15,19 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Container, TasksPanel, DetailsPanel} from './styled';
-import {Filters} from './Filters';
-import {AvailableTasks} from './AvailableTasks';
-import {Outlet, useLocation} from 'react-router-dom';
-import {useTasks} from 'modules/queries/useTasks';
-import {Options} from './Options';
 import {useEffect, useMemo, useState} from 'react';
+import {Outlet, useLocation} from 'react-router-dom';
+import {Stack} from '@carbon/react';
+import {observer} from 'mobx-react-lite';
+import {useTasks} from 'modules/queries/useTasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {useAutoSelectNextTask} from 'modules/auto-select-task/useAutoSelectNextTask';
-import {observer} from 'mobx-react-lite';
 import {autoSelectNextTaskStore} from 'modules/stores/autoSelectFirstTask';
 import {pages} from 'modules/routing';
+import {Options} from './Options';
+import {Filters} from './Filters';
+import {AvailableTasks} from './AvailableTasks';
+import styles from './styles.module.scss';
 
 function useAutoSelectNextTaskSideEffects() {
   const {enabled} = autoSelectNextTaskStore;
@@ -105,8 +106,8 @@ const Tasks: React.FC = observer(() => {
   };
 
   return (
-    <Container>
-      <TasksPanel aria-label="Left panel" forwardedAs="section">
+    <main className={styles.container}>
+      <Stack as="section" className={styles.tasksPanel} aria-label="Left panel">
         <Filters disabled={isLoading} />
         <AvailableTasks
           loading={isInitialLoading}
@@ -115,11 +116,11 @@ const Tasks: React.FC = observer(() => {
           tasks={tasks}
         />
         <Options onAutoSelectToggle={onAutoSelectToggle} />
-      </TasksPanel>
-      <DetailsPanel>
+      </Stack>
+      <section className={styles.detailsPanel}>
         <Outlet />
-      </DetailsPanel>
-    </Container>
+      </section>
+    </main>
   );
 });
 

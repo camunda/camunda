@@ -15,60 +15,14 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {rem} from '@carbon/elements';
-import styled, {css} from 'styled-components';
+.error {
+  fill: var(--cds-support-error);
+}
 
-const Container = styled.div`
-  width: 100%;
-  height: 100%;
-  padding: var(--cds-spacing-05);
-  background: var(--cds-layer);
-`;
+.secondary {
+  fill: var(--cds-icon-secondary);
+}
 
-const Content = styled.div`
-  height: 100%;
-`;
-
-const TitleWrapper = styled.div`
-  height: fit-content;
-`;
-
-const textOverflowEllipsis = css`
-  max-width: 100%;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-`;
-
-const Title = styled.h4`
-  ${({theme}) => css`
-    color: var(--cds-text-primary);
-    ${theme.productiveHeading02};
-    ${textOverflowEllipsis};
-  `}
-`;
-
-const Subtitle = styled.span`
-  ${({theme}) => css`
-    min-height: ${rem(16)};
-    margin-bottom: var(--cds-spacing-06);
-    color: var(--cds-text-secondary);
-    ${theme.label01};
-    ${textOverflowEllipsis};
-  `}
-`;
-
-const ButtonRow = styled.div`
-  display: flex;
-  flex-direction: row-reverse;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--cds-spacing-05);
-  align-content: end;
-
-  & .startButton {
-    margin-right: auto;
-  }
-`;
-
-export {Container, Content, TitleWrapper, Title, Subtitle, ButtonRow};
+.success {
+  fill: var(--cds-support-success);
+}
