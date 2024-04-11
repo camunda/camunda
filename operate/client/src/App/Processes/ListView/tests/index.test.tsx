@@ -355,4 +355,74 @@ describe('Instances', () => {
 
     locationSpy.mockRestore();
   });
+
+  it('should hide Operation State column when Operation Id filter is not set', async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}`),
+    });
+
+    expect(screen.queryByText('Operation State')).not.toBeInTheDocument();
+  });
+
+  it('should show Operation State column when Operation Id filter is set', async () => {
+    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+    const originalWindow = {...window};
+    const locationSpy = jest.spyOn(window, 'location', 'get');
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+
+    expect(screen.getByText('Operation State')).toBeInTheDocument();
+
+    locationSpy.mockRestore();
+  });
+
+  it('should show correct error message when error row is expanded', async () => {
+    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+    const originalWindow = {...window};
+    const locationSpy = jest.spyOn(window, 'location', 'get');
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
+    const {user} = render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
+    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+
+    expect(screen.getByText('0000000000000002')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Batch Operation Error Message'),
+    ).not.toBeVisible();
+
+    const withinRow = within(
+      screen.getByRole('row', {
+        name: /0000000000000002/i,
+      }),
+    );
+
+    const expandButton = withinRow.getByRole('button', {
+      name: 'Expand current row',
+    });
+    await user.click(expandButton);
+
+    expect(screen.getByText('Batch Operation Error Message')).toBeVisible();
+
+    locationSpy.mockRestore();
+  });
 });

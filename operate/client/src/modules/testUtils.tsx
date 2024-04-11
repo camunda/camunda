@@ -515,6 +515,19 @@ export const mockProcessInstances = {
       processId: '2251799813685592',
       state: 'CANCELED',
     }),
+    createInstance({
+      id: '0000000000000002',
+      processId: '2251799813685612',
+      state: 'ACTIVE',
+      operations: [
+        {
+          state: 'FAILED',
+          batchOperationId: 'f4be6304-a0e0-4976-b81b-7a07fb4e96e5',
+          errorMessage: 'Batch Operation Error Message',
+          type: 'MODIFY_PROCESS_INSTANCE',
+        },
+      ],
+    }),
   ],
   totalCount: 912,
 };

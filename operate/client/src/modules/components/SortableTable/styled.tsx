@@ -98,6 +98,10 @@ const TableContainer = styled(BaseTableContainer)`
       visibility: visible;
     }
 
+    &:not(.cds--expandable-row) + ${TableExpandedRow} {
+      visibility: hidden;
+    }
+
     // add parent error border (opened and closed)
     box-shadow: inset 3px 0 0 var(--cds-support-error) !important;
 
