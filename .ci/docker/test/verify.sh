@@ -51,20 +51,15 @@ if [ -z "${BASE_IMAGE}" ]; then
   exit 1
 fi
 
-# Check that the base image exists
-if ! baseImageInfo="$(docker manifest inspect "${BASE_IMAGE}")"; then
-  echo >&2 "No known Docker base image ${BASE_IMAGE} exists; did you pass the right name?"
-  exit 1
+DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../operate.Dockerfile")
+if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
+    DIGEST="${BASH_REMATCH[1]}"
+    echo "Digest found: $DIGEST"
+else
+    echo >&2 "Docker image digest can not be found in the Dockerfile"
+    exit 1
 fi
-
-echo "Checking for architecture ${ARCHITECTURE}"
-digestForArchitecture=$(echo "${baseImageInfo}" | jq '.manifests[] | select(.platform.architecture == "'"${ARCHITECTURE}"'") |
-.digest' )
-
-# Removing leading and trailing quotes
-digestForArchitecture="${digestForArchitecture%\"}"
-digestForArchitecture="${digestForArchitecture#\"}"
-echo "Expected base image digest from ${BASE_IMAGE} for ${ARCHITECTURE} is: ${digestForArchitecture}"
 
 imageName="${1}"
 # Iterate through all the images passed as parameter
@@ -96,7 +91,7 @@ do
         --arg REVISION "${REVISION}" \
         --arg DATE "${DATE}" \
         --arg BASE_IMAGE "${BASE_IMAGE}" \
-        --arg BASEDIGEST "${digestForArchitecture}" \
+        --arg BASEDIGEST "${DIGEST}" \
         "$(cat "${labelsGoldenFile}")"
     )
 
