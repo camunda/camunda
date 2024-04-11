@@ -24,7 +24,6 @@ component/operate:
         - '.github/renovate.json'
         - '.github/workflows/operate-*'
         - 'bom/*'
-        - 'distro/**'
         - 'operate.Dockerfile'
         - 'operate/**'
         - 'parent/*'

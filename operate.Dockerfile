@@ -8,7 +8,7 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
 WORKDIR /tmp/operate
 
 # download operate
-COPY dist/target/camunda-operate-*.tar.gz operate.tar.gz
+COPY dist/target/camunda-zeebe-*.tar.gz operate.tar.gz
 RUN tar xzvf operate.tar.gz --strip 1 && \
     rm operate.tar.gz
 COPY docker-notice.txt notice.txt
