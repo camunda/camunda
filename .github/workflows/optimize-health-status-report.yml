@@ -28,7 +28,6 @@ jobs:
           secrets: |
             secret/data/products/optimize/ci/camunda-optimize SLACK_API_KEY;
             secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
-            secret/data/products/optimize/ci/camunda-optimize SNYK_TOKEN;
 
       - name: Genetare config file
         run: |
@@ -39,8 +38,6 @@ jobs:
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
-          SNYK_ORG_ID: ${{ secrets.SNYK_ORG_ID }}
 
       - name: Get health status report
         uses: misiekhardcore/infra-report-action@04530752e217fa9b376f53656bcfb15258c8c8dc # v1.4.0
@@ -49,7 +46,6 @@ jobs:
           config_file_path: ${{ github.workspace }}/.github/scripts/healthStatusReport/config.json
           github_token: ${{ secrets.GITHUB_TOKEN }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-          snyk_token: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
       - name: Send report to slack channel
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0

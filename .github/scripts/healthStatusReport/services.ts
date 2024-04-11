@@ -9,11 +9,7 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import JSON5 from 'json5';
 
-export async function fetchUrl<T>(
-  url: string,
-  authHeader: string,
-  body?: Record<string, unknown>,
-): Promise<T> {
+export async function fetchUrl<T>(url: string, authHeader: string): Promise<T> {
   try {
     const response = await fetch(url, {
       headers: {Authorization: authHeader},
