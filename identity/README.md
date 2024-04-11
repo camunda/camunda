@@ -6,4 +6,3 @@ Identity is a component within the [Camunda self-managed](https://docs.camunda.i
 stack. It is responsible for authentication and authorization along with providing functionality to manage related aspects
 such as users, roles, permissions, and OAuth clients.
 
-
