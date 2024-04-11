@@ -19,11 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.common.json.SdkObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
-import io.camunda.zeebe.spring.client.CamundaAutoConfiguration;
+import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
+import io.camunda.zeebe.spring.common.json.SdkObjectMapper;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -119,7 +119,7 @@ public class ZeebeClientStarterAutoConfigurationCustomJsonMapperTest {
 
   public static class TestConfig {
     @Bean
-    public io.camunda.common.json.JsonMapper commonJsonMapper() {
+    public io.camunda.zeebe.spring.common.json.JsonMapper commonJsonMapper() {
       return new SdkObjectMapper();
     }
 
