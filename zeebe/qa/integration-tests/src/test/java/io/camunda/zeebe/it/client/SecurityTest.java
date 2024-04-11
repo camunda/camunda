@@ -46,7 +46,12 @@ public final class SecurityTest {
 
   @BeforeEach
   void setUp() {
-    testCluster.start().awaitCompleteTopology();
+    final var nodes = testCluster.nodes().values();
+    nodes.forEach(
+        node -> {
+          node.start();
+        });
+    testCluster.awaitCompleteTopology();
   }
 
   @ParameterizedTest
