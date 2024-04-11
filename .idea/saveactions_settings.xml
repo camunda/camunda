@@ -5,14 +5,10 @@
       <set>
         <option value="activate" />
         <option value="activateOnShortcut" />
-        <option value="fieldCanBeFinal" />
-        <option value="localCanBeFinal" />
-        <option value="localCanBeFinalExceptImplicit" />
         <option value="unqualifiedFieldAccess" />
         <option value="unqualifiedMethodAccess" />
         <option value="missingOverrideAnnotation" />
         <option value="useBlocks" />
-        <option value="generateSerialVersionUID" />
         <option value="unnecessaryThis" />
         <option value="finalPrivateMethod" />
         <option value="explicitTypeCanBeDiamond" />
