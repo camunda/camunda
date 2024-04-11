@@ -19,7 +19,6 @@ package io.camunda.tasklist.os;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.ArchiverProperties;
-import java.io.IOException;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -28,8 +27,8 @@ import org.springframework.stereotype.Component;
 public class ILMPolicyUpdateOpenSearch extends ArchiverProperties implements ILMPolicyUpdate {
 
   @Override
-  public void applyIlmPolicyToAllIndices(final String policyName) throws IOException {}
+  public void applyIlmPolicyToAllIndices() {}
 
   @Override
-  public void removeIlmPolicyFromAllIndices() throws IOException {}
+  public void removeIlmPolicyFromAllIndices() {}
 }

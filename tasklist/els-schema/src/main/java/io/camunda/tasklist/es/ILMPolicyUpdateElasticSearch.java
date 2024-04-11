@@ -18,11 +18,14 @@ package io.camunda.tasklist.es;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
-import io.camunda.tasklist.util.ArchiverPropertiesUtil;
-import java.io.IOException;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
+import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import java.util.Set;
+import java.util.regex.Pattern;
+import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
+import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyResponse;
+import org.elasticsearch.common.settings.Settings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -30,29 +33,44 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
+  public static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
+  public static final String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
+  public static final String ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX =
+      "^tasklist-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+  private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
-  private ArchiverPropertiesUtil archiverPropertiesUtils;
+  @Autowired private ElasticsearchSchemaManager schemaManager;
 
   @Override
-  public void applyIlmPolicyToAllIndices(final String policyName) throws IOException {
+  public void applyIlmPolicyToAllIndices() {
+    final GetLifecyclePolicyResponse policyExists =
+        retryElasticsearchClient.getLifeCyclePolicy(
+            new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
+    if (policyExists == null) {
+      LOGGER.info("ILM policy does not exist, creating it");
+      schemaManager.createIndexLifeCycles();
+    }
 
-    final Request request = new Request("PUT", "/_ilm/policy/" + policyName);
-    request.setJsonEntity(archiverPropertiesUtils.generateIlmPolicyJsonElasticSearch());
+    final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
 
-    final RestClient lowLevelClient = esClient.getLowLevelClient();
-    lowLevelClient.performRequest(request);
+    final Set<String> response = retryElasticsearchClient.getIndexNames("tasklist-*");
+    for (final String indexName : response) {
+      if (indexNamePattern.matcher(indexName).matches()) {
+        final Settings settings =
+            Settings.builder().put(INDEX_LIFECYCLE_NAME, TASKLIST_DELETE_ARCHIVED_INDICES).build();
+        retryElasticsearchClient.setIndexSettingsFor(settings, indexName);
+      }
+    }
   }
 
   @Override
-  public void removeIlmPolicyFromAllIndices() throws IOException {
-    final String jsonString = "{ \"index\": { \"lifecycle.name\": null }}";
-
-    final Request request = new Request("PUT", "/_all/_settings");
-    request.setJsonEntity(jsonString);
-
-    final RestClient lowLevelClient = esClient.getLowLevelClient();
-    lowLevelClient.performRequest(request);
+  public void removeIlmPolicyFromAllIndices() {
+    final Set<String> response = retryElasticsearchClient.getIndexNames("tasklist-*");
+    for (final String indexName : response) {
+      final Settings settings = Settings.builder().putNull(INDEX_LIFECYCLE_NAME).build();
+      retryElasticsearchClient.setIndexSettingsFor(settings, indexName);
+    }
   }
 }

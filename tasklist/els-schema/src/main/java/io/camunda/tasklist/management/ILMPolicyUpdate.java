@@ -20,7 +20,7 @@ import java.io.IOException;
 
 public interface ILMPolicyUpdate {
 
-  public void applyIlmPolicyToAllIndices(final String policyName) throws IOException;
+  void applyIlmPolicyToAllIndices() throws IOException;
 
-  public void removeIlmPolicyFromAllIndices() throws IOException;
+  void removeIlmPolicyFromAllIndices() throws IOException;
 }

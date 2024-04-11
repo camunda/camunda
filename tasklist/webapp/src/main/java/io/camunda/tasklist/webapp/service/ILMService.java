@@ -17,6 +17,7 @@
 package io.camunda.tasklist.webapp.service;
 
 import io.camunda.tasklist.management.ILMPolicyUpdate;
+import io.camunda.tasklist.property.TasklistProperties;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -31,26 +32,23 @@ public class ILMService {
 
   @Autowired private ILMPolicyUpdate ilmPolicyUpdate;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   @PostConstruct
   public void init() throws IOException {
-    if (true) {
-      applyIlmPolicyToAllIndices("tasklist_policy");
+    if (tasklistProperties.isArchiverEnabled() && tasklistProperties.getArchiver().isIlmEnabled()) {
+      applyIlmPolicyToAllIndices();
     } else {
       removeIlmPolicyFromAllIndices();
     }
   }
 
-  public void applyIlmPolicyToAllIndices(final String policyName) throws IOException {
+  private void applyIlmPolicyToAllIndices() throws IOException {
     LOGGER.info("Applying ILM policy to all existent indices");
-    try {
-      ilmPolicyUpdate.applyIlmPolicyToAllIndices(policyName);
-    } catch (final Exception e) {
-      LOGGER.error("Error applying ILM policy to all existent indices", e);
-    }
+    ilmPolicyUpdate.applyIlmPolicyToAllIndices();
   }
 
-  // Method to remove ILM policy from all indices
-  public void removeIlmPolicyFromAllIndices() throws IOException {
+  private void removeIlmPolicyFromAllIndices() throws IOException {
     LOGGER.info("Removing ILM policy to all existent indices");
     ilmPolicyUpdate.removeIlmPolicyFromAllIndices();
   }
