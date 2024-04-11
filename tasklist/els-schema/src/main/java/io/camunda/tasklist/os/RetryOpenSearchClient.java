@@ -37,6 +37,9 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
+import org.opensearch.client.Request;
+import org.opensearch.client.Response;
+import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
@@ -71,10 +74,10 @@ public class RetryOpenSearchClient {
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryOpenSearchClient.class);
+  @Autowired protected RestClient opensearchRestClient;
   @Autowired private OpenSearchClient openSearchClient;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
-
   @Autowired private OpenSearchInternalTask openSearchInternalTask;
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -84,7 +87,7 @@ public class RetryOpenSearchClient {
           openSearchClient.cluster().health(h -> h.timeout(t -> t.time("500ms")));
       final HealthStatus status = response.status();
       return !response.timedOut() && !status.equals(HealthStatus.Red);
-    } catch (IOException | OpenSearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       LOGGER.error(
           String.format(
               "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),
@@ -97,7 +100,7 @@ public class RetryOpenSearchClient {
     return numberOfRetries;
   }
 
-  public RetryOpenSearchClient setNumberOfRetries(int numberOfRetries) {
+  public RetryOpenSearchClient setNumberOfRetries(final int numberOfRetries) {
     this.numberOfRetries = numberOfRetries;
     return this;
   }
@@ -106,7 +109,7 @@ public class RetryOpenSearchClient {
     return delayIntervalInSeconds;
   }
 
-  public RetryOpenSearchClient setDelayIntervalInSeconds(int delayIntervalInSeconds) {
+  public RetryOpenSearchClient setDelayIntervalInSeconds(final int delayIntervalInSeconds) {
     this.delayIntervalInSeconds = delayIntervalInSeconds;
     return this;
   }
@@ -116,17 +119,17 @@ public class RetryOpenSearchClient {
         "Refresh " + indexPattern,
         () -> {
           try {
-            for (var index : getFilteredIndices(indexPattern)) {
+            for (final var index : getFilteredIndices(indexPattern)) {
               openSearchClient.indices().refresh(r -> r.index(List.of(index)));
             }
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new RuntimeException(e);
           }
           return true;
         });
   }
 
-  public long getNumberOfDocumentsFor(String... indexPatterns) {
+  public long getNumberOfDocumentsFor(final String... indexPatterns) {
     final CountResponse countResponse =
         executeWithRetries(
             "Count number of documents in " + Arrays.asList(indexPatterns),
@@ -135,7 +138,7 @@ public class RetryOpenSearchClient {
     return countResponse.count();
   }
 
-  public Set<String> getIndexNames(String namePattern) {
+  public Set<String> getIndexNames(final String namePattern) {
     return executeWithRetries(
         "Get indices for " + namePattern,
         () -> {
@@ -143,7 +146,7 @@ public class RetryOpenSearchClient {
             final GetIndexResponse response =
                 openSearchClient.indices().get(i -> i.index(List.of(namePattern)));
             return response.result().keySet();
-          } catch (OpenSearchException e) {
+          } catch (final OpenSearchException e) {
             if (e.status() == 404) {
               return Set.of();
             }
@@ -152,7 +155,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public boolean createIndex(CreateIndexRequest createIndexRequest) {
+  public boolean createIndex(final CreateIndexRequest createIndexRequest) {
     return executeWithRetries(
         "CreateIndex " + createIndexRequest.index(),
         () -> {
@@ -179,7 +182,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public boolean createOrUpdateDocument(String name, String id, Map source) {
+  public boolean createOrUpdateDocument(final String name, final String id, final Map source) {
     return executeWithRetries(
         () -> {
           final IndexResponse response =
@@ -189,7 +192,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public boolean documentExists(String name, String id) {
+  public boolean documentExists(final String name, final String id) {
     return executeWithGivenRetries(
         10,
         String.format("Exists document from %s with id %s", name, id),
@@ -197,7 +200,7 @@ public class RetryOpenSearchClient {
         null);
   }
 
-  public Map<String, Object> getDocument(String name, String id) {
+  public Map<String, Object> getDocument(final String name, final String id) {
     return (Map<String, Object>)
         executeWithGivenRetries(
             10,
@@ -214,7 +217,7 @@ public class RetryOpenSearchClient {
             null);
   }
 
-  public boolean deleteDocumentsByQuery(String indexName, Query query) {
+  public boolean deleteDocumentsByQuery(final String indexName, final Query query) {
     return executeWithRetries(
         () -> {
           final DeleteByQueryRequest request =
@@ -224,7 +227,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public boolean deleteDocument(String name, String id) {
+  public boolean deleteDocument(final String name, final String id) {
     return executeWithRetries(
         () -> {
           final DeleteResponse response =
@@ -238,7 +241,7 @@ public class RetryOpenSearchClient {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplate(PutIndexTemplateRequest request) {
+  public boolean createTemplate(final PutIndexTemplateRequest request) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
@@ -278,14 +281,14 @@ public class RetryOpenSearchClient {
     return executeWithRetries(
         "DeleteIndices " + indexPattern,
         () -> {
-          for (var index : getFilteredIndices(indexPattern)) {
+          for (final var index : getFilteredIndices(indexPattern)) {
             openSearchClient.indices().delete(d -> d.index(List.of(indexPattern)));
           }
           return true;
         });
   }
 
-  public IndexSettings getIndexSettingsFor(String indexName, String... fields) {
+  public IndexSettings getIndexSettingsFor(final String indexName, final String... fields) {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
@@ -296,7 +299,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
+  public String getOrDefaultRefreshInterval(final String indexName, final String defaultValue) {
     final IndexSettings settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
     String refreshInterval;
     if (settings.refreshInterval() == null) {
@@ -310,7 +313,7 @@ public class RetryOpenSearchClient {
     return refreshInterval;
   }
 
-  public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
+  public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
     final IndexSettings settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
 
     String numbersOfReplica;
@@ -325,7 +328,7 @@ public class RetryOpenSearchClient {
     return numbersOfReplica;
   }
 
-  public boolean setIndexSettingsFor(IndexSettings settings, String indexPattern) {
+  public boolean setIndexSettingsFor(final IndexSettings settings, final String indexPattern) {
     return executeWithRetries(
         "SetIndexSettings " + indexPattern,
         () ->
@@ -335,7 +338,7 @@ public class RetryOpenSearchClient {
                 .acknowledged());
   }
 
-  public boolean addPipeline(String name, List<String> processorDefinitions) {
+  public boolean addPipeline(final String name, final List<String> processorDefinitions) {
     return executeWithRetries(
         "AddPipeline " + name,
         () -> {
@@ -359,7 +362,7 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public boolean removePipeline(String name) {
+  public boolean removePipeline(final String name) {
     return executeWithRetries(
         "RemovePipeline " + name,
         () -> openSearchClient.ingest().deletePipeline(dp -> dp.id(name)).acknowledged());
@@ -376,7 +379,7 @@ public class RetryOpenSearchClient {
         (r) -> r.shards().failures().size() > 0);
   }
 
-  public void reindex(final ReindexRequest reindexRequest, boolean checkDocumentCount) {
+  public void reindex(final ReindexRequest reindexRequest, final boolean checkDocumentCount) {
     executeWithRetries(
         "Reindex "
             + Arrays.asList(reindexRequest.source().index())
@@ -417,7 +420,7 @@ public class RetryOpenSearchClient {
         done -> !done);
   }
 
-  private boolean waitUntilTaskIsCompleted(String taskId) {
+  private boolean waitUntilTaskIsCompleted(final String taskId) {
     return waitUntilTaskIsCompleted(taskId, null);
   }
 
@@ -427,7 +430,7 @@ public class RetryOpenSearchClient {
   // - If the response has a status with uncompleted flag and a sum of changed documents
   // (created,updated and deleted documents) not equal to to total documents
   //   we need to wait and poll again the task status
-  private boolean waitUntilTaskIsCompleted(String taskId, Long srcCount) {
+  private boolean waitUntilTaskIsCompleted(final String taskId, final Long srcCount) {
     final GetTasksResponse taskResponse =
         executeWithGivenRetries(
             Integer.MAX_VALUE,
@@ -450,7 +453,9 @@ public class RetryOpenSearchClient {
   }
 
   public <T> List<T> searchWithScroll(
-      SearchRequest searchRequest, Class<T> resultClass, ObjectMapper objectMapper) {
+      final SearchRequest searchRequest,
+      final Class<T> resultClass,
+      final ObjectMapper objectMapper) {
     final long totalHits =
         executeWithRetries(
             "Count search results",
@@ -461,7 +466,8 @@ public class RetryOpenSearchClient {
         resultList -> resultList.size() != totalHits);
   }
 
-  private <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper)
+  private <T> List<T> scroll(
+      final SearchRequest searchRequest, final Class<T> clazz, final ObjectMapper objectMapper)
       throws IOException {
     final List<T> results = new ArrayList<>();
     SearchResponse<T> response = openSearchClient.search(searchRequest, clazz);
@@ -483,21 +489,26 @@ public class RetryOpenSearchClient {
   }
 
   // ------------------- Retry part ------------------
-  private <T> T executeWithRetries(CheckedSupplier<T> supplier) {
+  private <T> T executeWithRetries(final CheckedSupplier<T> supplier) {
     return executeWithRetries("", supplier, null);
   }
 
-  private <T> T executeWithRetries(String operationName, CheckedSupplier<T> supplier) {
+  private <T> T executeWithRetries(final String operationName, final CheckedSupplier<T> supplier) {
     return executeWithRetries(operationName, supplier, null);
   }
 
   private <T> T executeWithRetries(
-      String operationName, CheckedSupplier<T> supplier, Predicate<T> retryPredicate) {
+      final String operationName,
+      final CheckedSupplier<T> supplier,
+      final Predicate<T> retryPredicate) {
     return executeWithGivenRetries(numberOfRetries, operationName, supplier, retryPredicate);
   }
 
   private <T> T executeWithGivenRetries(
-      int retries, String operationName, CheckedSupplier<T> operation, Predicate<T> predicate) {
+      final int retries,
+      final String operationName,
+      final CheckedSupplier<T> operation,
+      final Predicate<T> predicate) {
     try {
       final RetryPolicy<T> retryPolicy =
           new RetryPolicy<T>()
@@ -520,7 +531,7 @@ public class RetryOpenSearchClient {
         retryPolicy.handleResultIf(predicate);
       }
       return Failsafe.with(retryPolicy).get(operation);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(
           "Couldn't execute operation "
               + operationName
@@ -548,7 +559,7 @@ public class RetryOpenSearchClient {
   }
 
   protected Map<String, String> getComponentTemplateProperties(
-      String templatePattern, String... fields) {
+      final String templatePattern, final String... fields) {
     return executeWithRetries(
         "GetComponentTemplateSettings " + templatePattern,
         () -> {
@@ -556,7 +567,7 @@ public class RetryOpenSearchClient {
           final GetComponentTemplateResponse response =
               openSearchClient.cluster().getComponentTemplate(ct -> ct.name(templatePattern));
           if (response.componentTemplates().size() > 0) {
-            for (String field : fields) {
+            for (final String field : fields) {
               settings.put(
                   field,
                   response
@@ -574,7 +585,7 @@ public class RetryOpenSearchClient {
   }
 
   public String getOrDefaultComponentTemplateNumbersOfReplica(
-      String templatePattern, String defaultValue) {
+      final String templatePattern, final String defaultValue) {
     final Map<String, String> settings =
         getComponentTemplateProperties(templatePattern, NUMBERS_OF_REPLICA);
     String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
@@ -585,7 +596,7 @@ public class RetryOpenSearchClient {
   }
 
   public int doWithEachSearchResult(
-      SearchRequest.Builder searchRequest, Consumer<Hit> searchHitConsumer) {
+      final SearchRequest.Builder searchRequest, final Consumer<Hit> searchHitConsumer) {
     return executeWithRetries(
         () -> {
           int doneOnSearchHits = 0;
@@ -609,6 +620,15 @@ public class RetryOpenSearchClient {
           OpenSearchUtil.clearScroll(scrollId, openSearchClient);
           return doneOnSearchHits;
         });
+  }
+
+  public Response getLifecyclePolicy(final String policyName) {
+    final Request request = new Request("GET", "_ilm/policy/" + policyName);
+    try {
+      return opensearchRestClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
   }
 
   // TODO -check lifecycle for openSearch

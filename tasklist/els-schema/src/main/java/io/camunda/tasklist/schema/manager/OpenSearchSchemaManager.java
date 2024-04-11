@@ -80,7 +80,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     createIndices();
   }
 
-  private void createIndexLifeCycles() {
+  public void createIndexLifeCycles() {
     LOGGER.warn("ISM is not implemented in Opensearch Java client");
 
     final Request request =
@@ -123,7 +123,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     request.setJsonEntity(requestJson.toString());
     try {
       final Response response = opensearchRestClient.performRequest(request);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
@@ -208,18 +208,19 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private InputStream readJSONFile(final String filename) {
     final Map<String, Object> result;
-    try (InputStream inputStream = OpenSearchSchemaManager.class.getResourceAsStream(filename)) {
+    try (final InputStream inputStream =
+        OpenSearchSchemaManager.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         return inputStream;
       } else {
         throw new TasklistRuntimeException("Failed to find " + filename + " in classpath ");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException("Failed to load file " + filename + " from classpath ", e);
     }
   }
 
-  private void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
+  private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {
     final boolean created = retryOpenSearchClient.createIndex(createIndexRequest);
     if (created) {
       LOGGER.debug("Index [{}] was successfully created", indexName);
