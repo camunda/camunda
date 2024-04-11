@@ -1988,7 +1988,7 @@
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/icons-react@*", "@carbon/icons-react@^11.25.0", "@carbon/icons-react@^11.36.0":
+"@carbon/icons-react@^11.25.0", "@carbon/icons-react@^11.36.0":
   version "11.39.0"
   resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.39.0.tgz#3e27830a7f1e44a52e9ba49c8acefc55b10fb8a0"
   integrity sha512-tKWAo62mAMi5YE0B+LUPlD1dQFgOz+4Z5LMSgQUAoJuDnTw32uXl0BQrSCDP2fXGolIsun280rBTbmPKok/aow==
@@ -3209,13 +3209,6 @@
   integrity sha512-isGhjmBtLIxdHBDl2xGwUzEM8AOyOvWsADWq7rqirdi/ZQoHnLWErHvsThcEzTX8juDRiZtzp2Qkv5bgNh6mAg==
   dependencies:
     "@types/node" "*"
-
-"@types/carbon__icons-react@^11.26.1":
-  version "11.29.0"
-  resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.29.0.tgz#64b7d2bc01d1746a50fd971d99d1ace61d5aee28"
-  integrity sha512-flTM1afzTPyZRhcRBcHEGqlpYquhnokptdJvyUnWr8Qe9Ma1/FwS4VWyYs67Rc3qfBs+KqAQYAI66OsCswwXvQ==
-  dependencies:
-    "@carbon/icons-react" "*"
 
 "@types/cheerio@*":
   version "0.22.35"
