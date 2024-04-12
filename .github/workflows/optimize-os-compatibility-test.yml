@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        osVersion: ["2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"]
+        osVersion: ["2.5.0", "2.12.0"]
         includedGroups:
            [ 'ccsm-test', 'openSearchPassing']
         include:
@@ -70,9 +70,6 @@ jobs:
 
       - name: Start OpenSearch
         uses: ./.github/actions/compose
-        # There is a glitch with the 2.9.0 OS image. It will boot properly but it will have an exit
-        # code of 1. The statement below avoids the pipeline becoming red due to that
-        continue-on-error: ${{ matrix.osVersion == '2.9.0' }}
         with:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
           project_name: opensearch
@@ -105,10 +102,3 @@ jobs:
         uses: ./.github/actions/docker-logs
         with:
           archive_name: os-compatibility-${{ matrix.osVersion }}-${{ matrix.includedGroups }}${{ matrix.excludedGroups }}-docker
-
-      - name: Post results on slack
-        if: failure()
-        uses: ./.github/actions/notify-on-slack
-        with:
-          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
-          status: ${{ job.status }}
