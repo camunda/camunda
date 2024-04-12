@@ -52,7 +52,8 @@ if [ -z "${BASE_IMAGE}" ]; then
 fi
 
 DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
-DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../operate.Dockerfile")
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../operate.Dockerfile")
+echo $DOCKERFILE
 if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
     DIGEST="${BASH_REMATCH[1]}"
     echo "Digest found: $DIGEST"
@@ -62,44 +63,47 @@ else
 fi
 
 imageName="${1}"
-# Iterate through all the images passed as parameter
-for imageName in "$@"
-do
-    echo "Comparing image label values for ${imageName}..."
-    # Check that the image exists
-    if ! imageInfo="$(docker inspect "${imageName}")"; then
-      echo >&2 "No known Docker image ${imageName} exists; did you pass the right name?"
-      exit 1
-    fi
+arch="${2:-amd64}"
 
-    # Extract the actual labels from the info - make sure to sort keys so we always have the same
-    # ordering for maps to compare things properly
-    actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels')
+# Check that the image exists
+if ! imageInfo="$(docker inspect "${imageName}")"; then
+  echo >&2 "No known Docker image ${imageName} exists; did you pass the right name?"
+  exit 1
+fi
 
-    if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" == "[]" ]]; then
-      echo >&2 "No labels found in the given image ${imageName}; raw inspect output to follow"
-      printf >&2 "\n====\n%s\n====\n" "${imageInfo}"
-      echo >&2 "Are there any labels in the above? If so, the JSON query may need to be changed."
-      exit 1
-    fi
+actualArchitecture=$(echo "${imageInfo}" | jq '.[0].Architecture') 
+if [ "$actualArchitecture" != "\"$arch\"" ]; then 
+  echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected \"$arch\"." 
+  exit 1 
+fi 
 
-    # Generate the expected labels files with the dynamic properties substituted
-    labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
-    expectedLabels=$(
-      jq --sort-keys -n \
-        --arg VERSION "${VERSION}" \
-        --arg REVISION "${REVISION}" \
-        --arg DATE "${DATE}" \
-        --arg BASE_IMAGE "${BASE_IMAGE}" \
-        --arg BASEDIGEST "${DIGEST}" \
-        "$(cat "${labelsGoldenFile}")"
-    )
+# Extract the actual labels from the info - make sure to sort keys so we always have the same
+# ordering for maps to compare things properly
+actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels')
 
-    # Compare and output
-    if ! diff <(echo "${expectedLabels}") <(echo "${actualLabels}"); then
-      echo >&2 "Expected label values (marked by '<') do not match actual label values (marked by '>'); if you think this is wrong, update the golden file at ${labelsGoldenFile}"
-      exit 1
-    fi
-    echo "Check successful for ${imageName}"
-done
+if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" == "[]" ]]; then
+  echo >&2 "No labels found in the given image ${imageName}; raw inspect output to follow"
+  printf >&2 "\n====\n%s\n====\n" "${imageInfo}"
+  echo >&2 "Are there any labels in the above? If so, the JSON query may need to be changed."
+  exit 1
+fi
 
+# Generate the expected labels files with the dynamic properties substituted
+labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
+expectedLabels=$(
+  jq --sort-keys -n \
+    --arg VERSION "${VERSION}" \
+    --arg REVISION "${REVISION}" \
+    --arg DATE "${DATE}" \
+    --arg BASE_IMAGE "${BASE_IMAGE}" \
+    --arg BASEDIGEST "${DIGEST}" \
+    "$(cat "${labelsGoldenFile}")"
+)
+
+# Compare and output
+echo "Comparing image label values for ${imageName}..."
+if ! diff <(echo "${expectedLabels}") <(echo "${actualLabels}"); then
+  echo >&2 "Expected label values (marked by '<') do not match actual label values (marked by '>'); if you think this is wrong, update the golden file at ${labelsGoldenFile}"
+  exit 1
+fi
+echo "Check successful for ${imageName}"
