@@ -75,8 +75,8 @@
     "@typescript-eslint/eslint-plugin": "7.6.0",
     "@typescript-eslint/parser": "7.6.0",
     "@vitejs/plugin-react": "4.2.1",
-    "@vitest/coverage-istanbul": "1.4.0",
-    "@vitest/ui": "1.4.0",
+    "@vitest/coverage-istanbul": "1.5.0",
+    "@vitest/ui": "1.5.0",
     "axe-core": "4.9.0",
     "browserslist": "4.23.0",
     "browserslist-to-esbuild": "2.1.1",
@@ -101,7 +101,7 @@
     "vite": "5.2.8",
     "vite-plugin-svgr": "4.2.0",
     "vite-tsconfig-paths": "4.3.2",
-    "vitest": "1.4.0",
+    "vitest": "1.5.0",
     "zeebe-node": "8.3.2"
   },
   "lint-staged": {
