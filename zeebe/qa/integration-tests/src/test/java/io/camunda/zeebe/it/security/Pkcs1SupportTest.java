@@ -67,7 +67,7 @@ final class Pkcs1SupportTest {
 
       // then
       SslAssert.assertThat(
-              new·InetSocketAddress(zeebe.getExternalHost(),·zeebe.getMappedPort(8080)))
+              new InetSocketAddress(zeebe.getExternalHost(), zeebe.getMappedPort(8080)))
           .isSecuredBy(certificate);
       SslAssert.assertThat(
               new InetSocketAddress(
