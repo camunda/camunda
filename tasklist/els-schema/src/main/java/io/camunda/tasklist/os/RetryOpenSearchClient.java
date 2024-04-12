@@ -24,9 +24,14 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 import jakarta.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -657,5 +662,31 @@ public class RetryOpenSearchClient {
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
+  }
+
+  public JsonArray getIndexTemplateSettings(final String templatePattern) {
+    final Request request =
+        new Request("GET", "/_index_template/" + templatePattern); // Change PUT to GET
+    try {
+      final Response response = opensearchRestClient.performRequest(request);
+
+      // Parse the response entity into a JsonObject and extract the "index_templates" JsonArray
+      final InputStream responseStream = response.getEntity().getContent();
+      final JsonReader jsonReader = Json.createReader(responseStream);
+      final JsonObject responseObject = jsonReader.readObject();
+      jsonReader.close();
+
+      return responseObject.getJsonArray(
+          "index_templates"); // Ensure this is the correct key based on your API response
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
+  public void putIndexTemplateSettings(final String templateName, final String updateJson)
+      throws IOException {
+    final Request request = new Request("PUT", "/_index_template/" + templateName);
+    request.setJsonEntity(updateJson);
+    opensearchRestClient.performRequest(request);
   }
 }
