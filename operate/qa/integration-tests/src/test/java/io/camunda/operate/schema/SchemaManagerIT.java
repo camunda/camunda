@@ -49,11 +49,11 @@ public class SchemaManagerIT {
   @Autowired private OperateProperties operateProperties;
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private SchemaManager schemaManager;
-  private String indexPrefix;
+  private String uniquePrefix;
 
   @BeforeEach
   public void before() {
-    indexPrefix = UUID.randomUUID().toString();
+    uniquePrefix = UUID.randomUUID().toString();
     schemaManager.deleteIndicesFor(idxName("index-*"));
   }
 
@@ -63,7 +63,7 @@ public class SchemaManagerIT {
   }
 
   private String idxName(final String name) {
-    return indexPrefix + "-" + name;
+    return schemaManager.getIndexPrefix() + "-" + uniquePrefix + "-" + name;
   }
 
   @Test
