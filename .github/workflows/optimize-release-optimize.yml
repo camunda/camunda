@@ -153,19 +153,12 @@ jobs:
 
       # When it's neither a dry run nor a release candidate it means we are running the workflow from the proper branch.
       # Generating changelog and creating a draft release will only work on the proper branch.
-      - name: Get last tag on branch
+      - name: Generate changelog
         if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
-        run: |
-          echo "LAST_TAG=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
-
-      - name: Calculate changelog
-        if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
-        uses: dlavrenuek/conventional-changelog-action@86998ff61a0b14063262141358dbf2a4e6c630e7 # v1.2.4
+        uses: ./.github/actions/generate-changelog
         id: changelog
         with:
-          from: ${{ env.LAST_TAG }}
-          to: ${{ github.sha }}
-          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
+          branch: ${{ env.BRANCH }}
 
       - name: Login to prod Harbor docker registry
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
@@ -247,7 +240,7 @@ jobs:
           -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           https://api.github.com/repos/${{ github.repository }}/releases \
-          -d '{"tag_name":"${{ env.RELEASE_VERSION }}","target_commitish":"${{ github.sha }}","name":"${{ env.RELEASE_VERSION }}","body":${{ toJson(steps.changelog.outputs.body) }},"draft":true,"prerelease":${{ env.IS_ALPHA == 'true' }},"generate_release_notes":false,"make_latest":"${{ env.DOCKER_LATEST }}"}'
+          -d '{"tag_name":"${{ env.RELEASE_VERSION }}","target_commitish":"${{ github.sha }}","name":"${{ env.RELEASE_VERSION }}","body":${{ toJson(steps.changelog.outputs.changelog) }},"draft":true,"prerelease":${{ env.IS_ALPHA == 'true' }},"generate_release_notes":false,"make_latest":"${{ env.DOCKER_LATEST }}"}'
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
