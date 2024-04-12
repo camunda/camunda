@@ -30,7 +30,7 @@ type RemoteJobStream struct {
 
 type RemoteJobStreamMetadata struct {
 	Worker         string   `json:"worker"`
-	Timeout        int64    `json:"timeout"`
+	Timeout        string   `json:"timeout"`
 	FetchVariables []string `json:"fetchVariables"`
 }
 
