@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: optimize
+  name: performance-optimize-camunda-cloud
   namespace: ${NAMESPACE}
   labels:
     team: optimize
@@ -28,7 +28,7 @@ spec:
       volumes:
         - name: configuration
           configMap:
-            name: optimize
+            name: performance-optimize-camunda-cloud
             defaultMode: 0744
       containers:
         - name: optimize

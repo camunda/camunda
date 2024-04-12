@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: optimize
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: optimize
+  ports:
+    - protocol: TCP
+      port: 8090
+      targetPort: 8090
+      name: optimize-http

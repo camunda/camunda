@@ -1,0 +1,134 @@
+name: Optimize Import Static Dataset Performance Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      sql_dump:
+        description: SQL dump to use
+        type: "choice"
+        options:
+          - "optimize_data-medium.sqlc"
+          - "optimize_data-large.sqlc"
+          - "optimize_data-stage.sqlc"
+          - "optimize_data-e2e.sqlc"
+        default: "optimize_data-medium.sqlc"
+        required: false
+      es_refresh_interval:
+        description: Elasticsearch index refresh interval
+        default: 2s
+        required: false
+      es_num_nodes:
+        description: Number of Elasticsearch nodes in the cluster (not more than 5)
+        default: 1
+        required: false
+        type: number
+
+  schedule:
+    - cron: 0 1 * * 1-5
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  import-static-data-performance:
+    name: Import Static Dataset Performance Test
+    runs-on: gcp-core-32-longrunning-big-ssd
+    timeout-minutes: 60
+    env:
+      NAMESPACE: optimize-import-static-data-performance-test-${{ github.run_id }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Install extra Dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y netcat jq gettext postgresql-client
+
+      - name: Login to Google Cloud
+        uses: ./.github/actions/login-gcloud
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Get gcloud credentials
+        uses: "google-github-actions/get-gke-credentials@v1"
+        with:
+          cluster_name: "camunda-ci"
+          location: "europe-west1"
+
+      - name: Read pom.xml file
+        id: pom-info
+        uses: YunaBraska/java-info-action@main
+
+      - name: Run deployment
+        run: .github/podSpecs/performanceTests/deploy.sh $NAMESPACE ${{ inputs.sql_dump || 'optimize_data-medium.sqlc' }}  ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }} ${{ steps.pom-info.outputs.x_camunda_engine_version }} ${{ inputs.es_refresh_interval || '2s' }} false ${{ inputs.es_num_nodes || 1 }}
+
+      - name: Import test
+        run: |
+          .github/podSpecs/performanceTests/wait-for-import-to-finish.sh $NAMESPACE
+
+          curl -s -X POST "http://elasticsearch.$NAMESPACE:9200/_refresh"
+
+          # assert expected counts
+          # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
+          NUMBER_OF_PROCESS_INSTANCES=$(curl -s -X GET "http://elasticsearch.$NAMESPACE:9200/optimize-process-instance/_count" | jq ".count") || true
+          NUMBER_OF_ACTIVITY_INSTANCES=$(curl -s -X GET "http://elasticsearch.$NAMESPACE:9200/optimize-process-instance/_search" -H "Content-Type: application/json" -d "{\"size\": 0,\"aggs\": {\"flowNodes\": {\"nested\": {\"path\": \"flowNodeInstances\"}}}}" | jq ".aggregations.flowNodes.doc_count") || true
+          NUMBER_OF_USER_TASKS=$(curl -s -X GET "http://elasticsearch.$NAMESPACE:9200/optimize-process-instance/_search" -H "Content-Type: application/json" -d "{\"size\":0,\"aggs\":{\"flowNodes\":{\"nested\":{\"path\":\"flowNodeInstances\"},\"aggs\":{\"user_task_flow_nodes\":{\"filter\":{\"bool\":{\"must\":[{\"term\":{\"flowNodeInstances.flowNodeType\":{\"value\":\"userTask\",\"boost\":1.0}}}]}}}}}}}" | jq ".aggregations.flowNodes.user_task_flow_nodes.doc_count") || true
+          NUMBER_OF_INCOMPLETE_USER_TASKS=$(curl -s -X GET "http://elasticsearch.$NAMESPACE:9200/optimize-process-instance/_search" -H "Content-Type: application/json" -d "{\"size\":0,\"aggs\":{\"flowNodes\":{\"nested\":{\"path\":\"flowNodeInstances\"},\"aggs\":{\"user_task_incomplete_flow_nodes\":{\"filter\":{\"bool\":{\"must\":[{\"term\":{\"flowNodeInstances.flowNodeType\":{\"value\":\"userTask\",\"boost\":1.0}}}],\"must_not\":[{\"exists\":{\"field\":\"flowNodeInstances.flowNodeInstanceId\"}}],\"adjust_pure_negative\":true,\"boost\":1.0}}}}}}}" | jq ".aggregations.flowNodes.user_task_incomplete_flow_nodes.doc_count") || true
+          NUMBER_OF_VARIABLES=$(curl -s -X GET "http://elasticsearch.$NAMESPACE:9200/optimize-process-instance/_search" -H "Content-Type: application/json" -d "{\"size\": 0, \"aggs\": {\"variables\": {\"nested\": { \"path\": \"variables\" },  \"aggs\": { \"variable_count\": { \"value_count\": { \"field\": \"variables.id\" } } } } } }" | jq ".aggregations.variables.doc_count") || true
+          NUMBER_OF_DECISION_INSTANCES=$(curl -s -X GET "http://elasticsearch.$NAMESPACE:9200/optimize-decision-instance/_count" | jq ".count") || true
+
+
+          # note: each call here is followed by `|| true` to not let the whole script fail if one assert fails
+          # a final if block checks if there was an error and will let the script fail
+          EXPECTED_NUMBER_OF_PROCESS_INSTANCES=$(psql -qAt -h postgres.$NAMESPACE -U camunda -d engine -c "select count(*) from act_hi_procinst;") || true
+          EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=$(psql -qAt -h postgres.$NAMESPACE -U camunda -d engine -c "select count(*) from act_hi_actinst;") || true
+          EXPECTED_NUMBER_OF_USER_TASKS=$(psql -qAt -h postgres.$NAMESPACE -U camunda -d engine -c "select count(*) as total from act_hi_taskinst;") || true
+          EXPECTED_NUMBER_OF_VARIABLES=$(psql -qAt -h postgres.$NAMESPACE -U camunda -d engine -c "select count(*) from act_hi_varinst where CASE_INST_ID_  is  null;") || true
+          EXPECTED_NUMBER_OF_DECISION_INSTANCES=$(psql -qAt -h postgres.$NAMESPACE -U camunda -d engine -c "select count(*) from act_hi_decinst;") || true
+          echo ""
+
+          echo "NUMBER_OF_DECISION_INSTANCES=$NUMBER_OF_DECISION_INSTANCES EXPECTED_NUMBER_OF_DECISION_INSTANCES=$EXPECTED_NUMBER_OF_DECISION_INSTANCES"
+          test "$NUMBER_OF_DECISION_INSTANCES" = "${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true
+
+          echo "NUMBER_OF_PROCESS_INSTANCES=$NUMBER_OF_PROCESS_INSTANCES EXPECTED_NUMBER_OF_PROCESS_INSTANCES=$EXPECTED_NUMBER_OF_PROCESS_INSTANCES"
+          test "$NUMBER_OF_PROCESS_INSTANCES" = "${EXPECTED_NUMBER_OF_PROCESS_INSTANCES}" || error=true
+
+          echo "NUMBER_OF_ACTIVITY_INSTANCES=$NUMBER_OF_ACTIVITY_INSTANCES EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES"
+          test "$NUMBER_OF_ACTIVITY_INSTANCES" = "${EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES}" || error=true
+
+          echo "NUMBER_OF_VARIABLES=$NUMBER_OF_VARIABLES EXPECTED_NUMBER_OF_VARIABLES=$EXPECTED_NUMBER_OF_VARIABLES"
+          test "$NUMBER_OF_VARIABLES" -ge "${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
+
+          echo "NUMBER_OF_USER_TASKS=$NUMBER_OF_USER_TASKS EXPECTED_NUMBER_OF_USER_TASKS=$EXPECTED_NUMBER_OF_USER_TASKS"
+          test "$NUMBER_OF_USER_TASKS" = "${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true
+
+          echo "NUMBER_OF_INCOMPLETE_USER_TASKS=$NUMBER_OF_INCOMPLETE_USER_TASKS"
+          test "$NUMBER_OF_INCOMPLETE_USER_TASKS" = "0" || error=true
+
+          # Fail the build if there was an error
+          if [ $error ]
+          then
+            exit -1
+          fi
+
+      - name: Store ElasticSearch logs
+        if: always()
+        run: |
+          kubectl -n $NAMESPACE logs elasticsearch-0 -c elasticsearch > elasticsearch.log
+
+      - name: Cleanup
+        if: always()
+        run: .github/podSpecs/performanceTests/kill.sh $NAMESPACE
+
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        if: always()
+        with:
+          name: elasticsearch-logs
+          path: ./elasticsearch.log

@@ -1,0 +1,130 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: ${NAMESPACE}
+  labels:
+    app: elasticsearch
+    team: optimize
+spec:
+  serviceName: elasticsearch
+  replicas: ${ES_NUM_NODES}
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-stable
+      tolerations:
+        - key: "agents-n1-standard-8-netssd-stable"
+          operator: "Exists"
+          effect: "NoSchedule"
+      volumes:
+        - name: ssd-storage
+          emptyDir: {}
+      initContainers:
+        - name: init-sysctl-max-map-count
+          image: busybox
+          imagePullPolicy: Always
+          command: ["sysctl", "-w", "vm.max_map_count=262144"]
+          securityContext:
+            privileged: true
+        - name: init-sysctl-overcommit-mem
+          image: busybox
+          imagePullPolicy: Always
+          command: ["sysctl", "-w", "vm.overcommit_memory=2"]
+          securityContext:
+            privileged: true
+        - name: data-cleanup
+          image: busybox
+          imagePullPolicy: Always
+          command: ["/bin/sh","-c"]
+          args: ["rm -fr /usr/share/elasticsearch/data/* && rm -fr /usr/share/elasticsearch/logs/*"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: ssd-storage
+              mountPath: /usr/share/elasticsearch/data
+              subPath: data
+            - name: ssd-storage
+              mountPath: /usr/share/elasticsearch/logs
+              subPath: logs
+      containers:
+        - name: gcloud
+          image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+          imagePullPolicy: Always
+          command: ["cat"]
+          tty: true
+          resources:
+            requests:
+              cpu: 3
+              memory: 1Gi
+            limits:
+              cpu: 3
+              memory: 1Gi
+          volumeMounts:
+            - name: ssd-storage
+              mountPath: /db_dump/
+              subPath: gcloud
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}
+          securityContext:
+            privileged: true
+            capabilities:
+              add: ["IPC_LOCK"]
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health?local=true
+              port: http
+            initialDelaySeconds: 60
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health?local=true
+              port: http
+            initialDelaySeconds: 60
+          env:
+            - name: ES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: discovery.seed_hosts
+              value: "elasticsearch-discovery"
+            - name: discovery.find_peers_interval
+              value: "5s"
+            - name: cluster.initial_master_nodes
+              value: "elasticsearch-0"
+            - name: ES_JAVA_OPTS
+              value: "-Xms4g -Xmx4g"
+            - name: bootstrap.memory_lock
+              value: "false"
+            - name: xpack.security.enabled
+              value: "false"
+          resources:
+            requests:
+              cpu: 4
+              memory: 8Gi
+            limits:
+              cpu: 4
+              memory: 8Gi
+          ports:
+            - containerPort: 9200
+              name: http
+              protocol: TCP
+            - containerPort: 9300
+              name: transport
+              protocol: TCP
+            - containerPort: 5005
+              name: debug
+              protocol: TCP
+          volumeMounts:
+            - name: ssd-storage
+              mountPath: /usr/share/elasticsearch/data
+              subPath: data
+            - name: ssd-storage
+              mountPath: /usr/share/elasticsearch/logs
+              subPath: logs
