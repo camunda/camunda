@@ -6,6 +6,7 @@ on:
       - '.ci/**'
       - '.github/actions/**'
       - '.github/workflows/operate-*'
+      - '.github/workflows/tasklist-*'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'
       - 'bom/*'
@@ -18,6 +19,8 @@ on:
       - 'parent/*'
       - 'pom.xml'
       - 'spring-boot-starter-camunda-sdk/**'
+      - 'tasklist.Dockerfile'
+      - 'tasklist/**'
       - 'zeebe/**'
 
 jobs:
