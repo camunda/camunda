@@ -21,9 +21,9 @@ import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -52,6 +53,8 @@ import org.junit.Test;
 public class ActivatableJobsPushTest {
 
   private static final String PROCESS_ID = "process";
+  private static final Set<ValueType> JOB_AND_JOB_BATCH_TYPES =
+      Set.of(ValueType.JOB, ValueType.JOB_BATCH);
 
   private static final RecordingJobStreamer JOB_STREAMER = new RecordingJobStreamer();
 
@@ -64,9 +67,7 @@ public class ActivatableJobsPushTest {
       new RecordingExporterTestWatcher();
 
   private RecordingJobStream jobStream;
-  private JobActivationProperties jobActivationProperties;
   private String jobType;
-  private DirectBuffer jobTypeBuffer;
   private DirectBuffer worker;
   private Long timeout;
   private Map<String, Object> variables;
@@ -75,19 +76,17 @@ public class ActivatableJobsPushTest {
   @Before
   public void setUp() {
     jobType = Strings.newRandomValidBpmnId();
-    jobTypeBuffer = BufferUtil.wrapString(jobType);
     worker = BufferUtil.wrapString("test");
     variables = Map.of("a", "valA", "b", "valB", "c", "valC");
-    timeout = 30000L;
-
-    jobActivationProperties =
+    timeout = 30_000L;
+    final var jobActivationProperties =
         new JobActivationPropertiesImpl()
             .setWorker(worker, 0, worker.capacity())
             .setTimeout(timeout)
             .setTenantIds(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
             .setFetchVariables(
                 List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")));
-    jobStream = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationProperties);
+    jobStream = JOB_STREAMER.addJobStream(BufferUtil.wrapString(jobType), jobActivationProperties);
   }
 
   @After
@@ -100,7 +99,7 @@ public class ActivatableJobsPushTest {
 
   @Test
   public void shouldPushWhenJobCreated() {
-    // givan
+    // given
     final int activationCount = 1;
 
     // when
@@ -116,11 +115,12 @@ public class ActivatableJobsPushTest {
     assertThat(jobs).hasSize(1);
     assertThat(batch.getJobKeys()).contains(jobKey);
 
-    // assert event order
-    assertEventOrder(JobIntent.CREATED, JobBatchIntent.ACTIVATED);
-
-    // assert job stream
-    assertActivatedJob(jobKey, activationCount);
+    assertEventOrder(
+        "Expect that the job was activated",
+        JOB_AND_JOB_BATCH_TYPES,
+        JobIntent.CREATED,
+        JobBatchIntent.ACTIVATED);
+    assertActivatedJobsPushed(jobKey, activationCount);
   }
 
   @Test
@@ -131,18 +131,29 @@ public class ActivatableJobsPushTest {
 
     // then
     jobRecords(JobIntent.CREATED).withType(jobType).await();
-    final List<Record<JobBatchRecordValue>> batches =
-        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).asList();
-    assertThat(batches).hasSize(3);
     final List<Long> batchJobKeys =
-        batches.stream()
+        jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType(jobType)
+            .limit(numberOfJobs)
             .flatMap(record -> record.getValue().getJobKeys().stream())
             .collect(Collectors.toList());
-    assertThat(batchJobKeys).containsAnyElementsOf(jobKeys);
+    assertThat(batchJobKeys).isEqualTo(jobKeys);
+    assertEventOrder(
+        "Expect that 3 jobs were activated",
+        JOB_AND_JOB_BATCH_TYPES,
+        // 1-st job
+        JobIntent.CREATED,
+        JobBatchIntent.ACTIVATED,
+        // 2-nd job
+        JobIntent.CREATED,
+        JobBatchIntent.ACTIVATED,
+        // 3-d job
+        JobIntent.CREATED,
+        JobBatchIntent.ACTIVATED);
 
-    assertEventOrder(JobIntent.CREATED, JobBatchIntent.ACTIVATED);
-
-    jobStream.getActivatedJobs().stream()
+    // assert job stream
+    jobStream
+        .getActivatedJobs()
         .forEach(
             activatedJob -> {
               final JobRecord jobRecord = activatedJob.jobRecord();
@@ -165,9 +176,12 @@ public class ActivatableJobsPushTest {
     jobRecords(TIMED_OUT).withType(jobType).await();
 
     // then
-    assertJobActivations(activationCount);
-    assertEventOrder(JobIntent.TIME_OUT, JobIntent.TIMED_OUT, JobBatchIntent.ACTIVATED);
-    assertActivatedJob(jobKey, activationCount);
+    assertEventOrder(
+        "Expect that the job is re-activated after job was timed out",
+        JOB_AND_JOB_BATCH_TYPES,
+        JobIntent.TIMED_OUT,
+        JobBatchIntent.ACTIVATED);
+    assertActivatedJobsPushed(jobKey, activationCount);
   }
 
   @Test
@@ -182,9 +196,12 @@ public class ActivatableJobsPushTest {
 
     // then
     jobRecords(JobIntent.FAILED).withType(jobType).await();
-    assertJobActivations(activationCount);
-    assertEventOrder(JobIntent.FAIL, JobIntent.FAILED, JobBatchIntent.ACTIVATED);
-    assertActivatedJob(jobKey, activationCount);
+    assertEventOrder(
+        "Expect that the job is re-activated after job was failed",
+        JOB_AND_JOB_BATCH_TYPES,
+        JobIntent.FAILED,
+        JobBatchIntent.ACTIVATED);
+    assertActivatedJobsPushed(jobKey, activationCount);
   }
 
   @Test
@@ -200,10 +217,12 @@ public class ActivatableJobsPushTest {
 
     // then
     jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).await();
-    assertJobActivations(activationCount);
     assertEventOrder(
-        JobIntent.RECUR_AFTER_BACKOFF, JobIntent.RECURRED_AFTER_BACKOFF, JobBatchIntent.ACTIVATED);
-    assertActivatedJob(jobKey, activationCount);
+        "Expect that the job is re-activated after job was failed with backoff",
+        JOB_AND_JOB_BATCH_TYPES,
+        JobIntent.RECURRED_AFTER_BACKOFF,
+        JobBatchIntent.ACTIVATED);
+    assertActivatedJobsPushed(jobKey, activationCount);
   }
 
   @Test
@@ -221,9 +240,12 @@ public class ActivatableJobsPushTest {
 
     // then
     incidentRecords(IncidentIntent.RESOLVED).withJobKey(jobKey).await();
-    assertJobActivations(activationCount);
-    assertEventOrder(IncidentIntent.RESOLVE, IncidentIntent.RESOLVED, JobBatchIntent.ACTIVATED);
-    assertActivatedJob(jobKey, activationCount);
+    assertEventOrder(
+        "Expect that the job is re-activated after incident was resolved",
+        Set.of(ValueType.INCIDENT, ValueType.JOB_BATCH),
+        IncidentIntent.RESOLVED,
+        JobBatchIntent.ACTIVATED);
+    assertActivatedJobsPushed(jobKey, activationCount);
   }
 
   private List<Long> createJobs(final int amount) {
@@ -240,33 +262,30 @@ public class ActivatableJobsPushTest {
     return jobRecord.getKey();
   }
 
-  private void assertEventOrder(final Intent... eventOrder) {
-    for (final long piKey : activeProcessInstances) {
-      final var processInstanceRecordStream = records().betweenProcessInstance(piKey);
-      assertThat(processInstanceRecordStream)
-          .extracting(Record::getIntent)
-          .containsSequence(eventOrder);
-    }
+  private void assertEventOrder(
+      String description, final Set<ValueType> targetValueTypes, final Intent... expectedIntents) {
+    assertThat(
+            records()
+                .onlyEvents()
+                .filter(r -> targetValueTypes.contains(r.getValueType()))
+                .skipUntil(r -> r.getIntent() == expectedIntents[0])
+                .limit(expectedIntents.length))
+        .extracting(Record::getIntent)
+        .describedAs(description)
+        .containsExactly(expectedIntents);
   }
 
-  private void assertJobActivations(final int activationCount) {
-    final List<Record<JobBatchRecordValue>> batchRecord =
-        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).asList();
-    assertThat(batchRecord).hasSize(activationCount);
-  }
-
-  private void assertActivatedJob(final Long jobKey, final int activationCount) {
+  private void assertActivatedJobsPushed(final Long jobKey, final int activationCount) {
     final var activatedJobs = jobStream.getActivatedJobs();
     assertThat(activatedJobs).hasSize(activationCount);
-    activatedJobs.stream()
-        .forEach(
-            activatedJob -> {
-              assertThat(activatedJob.jobKey()).isEqualTo(jobKey);
+    activatedJobs.forEach(
+        activatedJob -> {
+          assertThat(activatedJob.jobKey()).isEqualTo(jobKey);
 
-              final JobRecord jobRecord = activatedJob.jobRecord();
-              assertThat(jobRecord.getWorkerBuffer()).isEqualTo(worker);
-              assertThat(jobRecord.getVariables()).isEqualTo(variables);
-              assertThat(jobRecord.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-            });
+          final JobRecord jobRecord = activatedJob.jobRecord();
+          assertThat(jobRecord.getWorkerBuffer()).isEqualTo(worker);
+          assertThat(jobRecord.getVariables()).isEqualTo(variables);
+          assertThat(jobRecord.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        });
   }
 }

@@ -11,7 +11,7 @@ on:
       - 'release/**'
     paths:
       - '.ci/**'
-      - '.github/workflows/actions/**'
+      - '.github/actions/**'
       - '.github/workflows/operate-*'
       - 'bom/*'
       - 'distro/**'
@@ -22,7 +22,7 @@ on:
   pull_request:
     paths:
       - '.ci/**'
-      - '.github/workflows/actions/**'
+      - '.github/actions/**'
       - '.github/workflows/operate-*'
       - 'bom/*'
       - 'distro/**'
