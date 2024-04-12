@@ -368,17 +368,17 @@
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/react@1.54.0":
-  version "1.54.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.54.0.tgz#3ccce048e37cf58ebc5d03e765f4d0e076b5a982"
-  integrity sha512-Vnv5z01ODK7GYZQ1MwRQ+43NFl//7X9r+k8HgxmgDnvIuGvRnma5qoGi3oJ7S9BG+rumXqC5PaTdtLZ2j43ltw==
+"@carbon/react@1.55.0":
+  version "1.55.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.55.0.tgz#0f5d2ea0483820fc25cdf38472794454ce1fea62"
+  integrity sha512-jr5PyKr6mZNtYKxmG7tEakWjhrRuk2TMQ9Dw445gATmnZ51TAqWFbP7hdDnQZBRS0B5PU37EPRf1tR61a6s1Qw==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.19.0"
     "@carbon/icons-react" "^11.39.0"
     "@carbon/layout" "^11.21.0"
-    "@carbon/styles" "^1.54.0"
-    "@floating-ui/react" "^0.25.4"
+    "@carbon/styles" "^1.55.0"
+    "@floating-ui/react" "^0.26.0"
     "@ibm/telemetry-js" "^1.2.1"
     classnames "2.5.1"
     copy-to-clipboard "^3.3.1"
@@ -397,10 +397,10 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.54.0":
-  version "1.54.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.54.0.tgz#f7d08203e8a4711dc1485becca550c2f0f1099b5"
-  integrity sha512-VXcx+o6q2ol2kcm3cfE8PaV2+EgbwVaSlZ9gH6VYorBN2MT4I9xypQAYzoyrNN0oV/Q92Xiyb3WejKuy74xFEg==
+"@carbon/styles@^1.55.0":
+  version "1.55.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.55.0.tgz#15aa6d4d3b21060bc31521c5898b2b4c33b8b373"
+  integrity sha512-SrLwB5vPGxg5GdtW32Zxe8qdUnxjz8eqAF/DsM2x/8VrgONLyy1HqUpRFV4dEnXue3CO/Prr7aCtAXsj3FjoGA==
   dependencies:
     "@carbon/colors" "^11.21.0"
     "@carbon/feature-flags" "^0.19.0"
@@ -666,26 +666,21 @@
     "@floating-ui/core" "^1.0.0"
     "@floating-ui/utils" "^0.2.0"
 
-"@floating-ui/react-dom@^2.0.2":
+"@floating-ui/react-dom@^2.0.0":
   version "2.0.8"
   resolved "https://registry.yarnpkg.com/@floating-ui/react-dom/-/react-dom-2.0.8.tgz#afc24f9756d1b433e1fe0d047c24bd4d9cefaa5d"
   integrity sha512-HOdqOt3R3OGeTKidaLvJKcgg75S6tibQ3Tif4eyd91QnIJWr0NLvoXFpJA/j8HqkFSL68GDca9AuyWEHlhyClw==
   dependencies:
     "@floating-ui/dom" "^1.6.1"
 
-"@floating-ui/react@^0.25.4":
-  version "0.25.4"
-  resolved "https://registry.yarnpkg.com/@floating-ui/react/-/react-0.25.4.tgz#82507e14460aee70f435ad2fd717ea182b6d5c61"
-  integrity sha512-lWRQ/UiTvSIBxohn0/2HFHEmnmOVRjl7j6XcRJuLH0ls6f/9AyHMWVzkAJFuwx0n9gaEeCmg9VccCSCJzbEJig==
+"@floating-ui/react@^0.26.0":
+  version "0.26.12"
+  resolved "https://registry.yarnpkg.com/@floating-ui/react/-/react-0.26.12.tgz#6908f774d8e3167d89b37fd83be975c7e5d8be99"
+  integrity sha512-D09o62HrWdIkstF2kGekIKAC0/N/Dl6wo3CQsnLcOmO3LkW6Ik8uIb3kw8JYkwxNCcg+uJ2bpWUiIijTBep05w==
   dependencies:
-    "@floating-ui/react-dom" "^2.0.2"
-    "@floating-ui/utils" "^0.1.1"
-    tabbable "^6.0.1"
-
-"@floating-ui/utils@^0.1.1":
-  version "0.1.6"
-  resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.1.6.tgz#22958c042e10b67463997bd6ea7115fe28cbcaf9"
-  integrity sha512-OfX7E2oUDYxtBvsuS4e/jSn4Q9Qb6DzgeYtsAdkPZ47znpoNsMgZw0+tVijiv3uGNR6dgNlty6r9rzIzHjtd/A==
+    "@floating-ui/react-dom" "^2.0.0"
+    "@floating-ui/utils" "^0.2.0"
+    tabbable "^6.0.0"
 
 "@floating-ui/utils@^0.2.0", "@floating-ui/utils@^0.2.1":
   version "0.2.1"
@@ -5412,7 +5407,7 @@ synckit@^0.8.6:
     "@pkgr/core" "^0.1.0"
     tslib "^2.6.2"
 
-tabbable@^6.0.1, tabbable@^6.2.0:
+tabbable@^6.0.0, tabbable@^6.2.0:
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/tabbable/-/tabbable-6.2.0.tgz#732fb62bc0175cfcec257330be187dcfba1f3b97"
   integrity sha512-Cat63mxsVJlzYvN51JmVXIgNoUokrIaT2zLclCXjRd8boZ0004U4KCs/sToJ75C6sdlByWxpYnb5Boif1VSFew==
