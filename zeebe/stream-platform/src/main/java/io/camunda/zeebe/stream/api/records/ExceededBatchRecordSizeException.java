@@ -22,7 +22,7 @@ public class ExceededBatchRecordSizeException extends RuntimeException {
       final int recordBatchEntriesSize,
       final int batchSize) {
     super(
-            """
+        """
             Can't append entry: '%s' with size: %d this would exceed the maximum batch size. \
             [ currentBatchEntryCount: %d, currentBatchSize: %d]"""
             .formatted(
