@@ -83,77 +83,57 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   public void applyIlmPolicyToIndexTemplate(final String templatePattern, final String policyId)
       throws IOException {
-    // Fetch existing templates as JsonArray
     final JsonArray templates = retryOpenSearchClient.getIndexTemplateSettings(templatePattern);
 
-    // Iterate over each template and update settings
     for (final JsonObject templateData : templates.getValuesAs(JsonObject.class)) {
       final String templateName = templateData.getString("name");
       final JsonObject template = templateData.getJsonObject("index_template");
 
-      // Extract the index patterns
       final JsonArray indexPatterns = template.getJsonArray("index_patterns");
 
-      // Fetch the entire inner template details (including mappings, aliases, etc.)
       final JsonObject innerTemplate = template.getJsonObject("template");
 
-      // Check if innerTemplate is not null and contains "settings", otherwise create an empty
-      // JsonObject
       final JsonObject existingSettings =
           (innerTemplate != null && innerTemplate.containsKey("settings"))
               ? innerTemplate.getJsonObject("settings")
               : Json.createObjectBuilder().build();
 
-      // Initialize a new JsonObjectBuilder with the existing settings
       final JsonObjectBuilder settingsBuilder = Json.createObjectBuilder();
 
-      // If existingSettings is not null, copy settings to the new builder
       if (existingSettings != null) {
         for (final String key : existingSettings.keySet()) {
           settingsBuilder.add(key, existingSettings.get(key));
         }
       }
 
-      // Add the new ISM policy to the settings
       settingsBuilder.add("plugins.index_state_management.policy_id", policyId);
 
-      // Build the new settings object with the new ISM policy added
       final JsonObject newSettings = settingsBuilder.build();
 
-      // Update the inner template with the new settings
       final JsonObjectBuilder updatedInnerTemplateBuilder =
           Json.createObjectBuilder().add("settings", newSettings);
 
-      // Preserve existing mappings, aliases, and any other details
       for (final String key : innerTemplate.keySet()) {
         if (!"settings".equals(key)) { // do not overwrite new settings
           updatedInnerTemplateBuilder.add(key, innerTemplate.get(key));
         }
       }
 
-      // Build the updated inner template
       final JsonObject updatedInnerTemplate = updatedInnerTemplateBuilder.build();
 
-      // Create the full updated template object
       final JsonObjectBuilder updatedTemplateBuilder =
           Json.createObjectBuilder()
               .add("index_patterns", indexPatterns)
               .add("template", updatedInnerTemplate);
 
-      // Optional: Copy other existing fields from the original template if necessary
       for (final String key : template.keySet()) {
         if (!"index_patterns".equals(key) && !"template".equals(key)) {
           updatedTemplateBuilder.add(key, template.get(key));
         }
       }
 
-      // Build the full updated template JSON object
       final String updatedTemplate = updatedTemplateBuilder.build().toString();
-
-      // Serialize the full updated template for the PUT request
       final String updateJson = updatedTemplate.toString();
-
-      // Send the updated JSON to OpenSearch
       retryOpenSearchClient.putIndexTemplateSettings(templateName, updateJson);
     }
   }
