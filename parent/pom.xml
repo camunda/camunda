@@ -39,7 +39,7 @@
     <version.agrona>1.21.1</version.agrona>
     <version.assertj>3.25.3</version.assertj>
     <version.awaitility>4.2.1</version.awaitility>
-    <version.bouncycastle>1.77</version.bouncycastle>
+    <version.bouncycastle>1.78</version.bouncycastle>
     <version.camunda>7.20.0</version.camunda>
     <version.checkstyle>10.15.0</version.checkstyle>
     <version.commons-lang>3.14.0</version.commons-lang>
@@ -80,8 +80,8 @@
     <version.protobuf>3.25.3</version.protobuf>
     <version.protobuf-common>2.37.1</version.protobuf-common>
     <version.micrometer>1.12.5</version.micrometer>
-    <version.rocksdbjni>8.11.3</version.rocksdbjni>
-    <version.sbe>1.31.0</version.sbe>
+    <version.rocksdbjni>8.11.4</version.rocksdbjni>
+    <version.sbe>1.31.1</version.sbe>
     <version.scala>2.13.13</version.scala>
     <version.slf4j>2.0.12</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
@@ -95,7 +95,7 @@
     <version.feel-scala>1.17.5</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
-    <version.spring>6.1.5</version.spring>
+    <version.spring>6.1.6</version.spring>
     <version.spring-security>6.2.3</version.spring-security>
     <version.spring-boot>3.2.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
@@ -115,7 +115,7 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.8.4</version.spotbugs>
-    <version.archunit>1.2.1</version.archunit>
+    <version.archunit>1.3.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.37.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.26</version.awssdk>
+    <version.awssdk>2.25.30</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -135,7 +135,7 @@
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.3</version.postgresql>
     <version.aws-signing>2.3.1</version.aws-signing>
-    <version.reactor-netty>1.1.17</version.reactor-netty>
+    <version.reactor-netty>1.1.18</version.reactor-netty>
     <version.tc-keycloak>3.3.0</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
@@ -152,10 +152,10 @@
     <version.node>v20.8.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.697</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.700</version.aws-java-sdk>
     <elasticsearch-test-container.version>1.19.7</elasticsearch-test-container.version>
     <postgres-test-container.version>1.19.7</postgres-test-container.version>
-    <version.elasticsearch7>7.17.19</version.elasticsearch7>
+    <version.elasticsearch7>7.17.20</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
@@ -207,7 +207,7 @@
     <plugin.version.versions>2.16.2</plugin.version.versions>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.21.0</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.22.0</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
@@ -528,13 +528,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_4</artifactId>
+        <artifactId>operate-importer-8_5</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_5</artifactId>
+        <artifactId>operate-importer-8_6</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -771,12 +771,6 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-client-common</artifactId>
         <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-spring</artifactId>
-        <version>${project.version}</version>
       </dependency>
 
       <dependency>

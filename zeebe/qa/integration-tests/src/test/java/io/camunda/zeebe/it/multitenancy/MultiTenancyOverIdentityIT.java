@@ -1615,7 +1615,7 @@ public class MultiTenancyOverIdentityIT {
       // Create access rule for service account
       try (final var resultSet =
           postgres.executeQuery(
-                  """
+              """
                   INSERT INTO access_rules \
                     (member_id, member_type, global) \
                   VALUES ('%s', 'APPLICATION', false) \
@@ -1634,7 +1634,7 @@ public class MultiTenancyOverIdentityIT {
       tenantIds.forEach(
           (tenantId) ->
               postgres.execute(
-                      """
+                  """
                       INSERT INTO tenants \
                         (name, tenant_id) \
                       VALUES ('%s', '%s') \
@@ -1645,7 +1645,7 @@ public class MultiTenancyOverIdentityIT {
       tenantIds.forEach(
           tenantId ->
               postgres.execute(
-                      """
+                  """
                       INSERT INTO access_rules_tenants \
                         (tenant_id, access_rule_id) \
                       VALUES ('%s', '%s') \

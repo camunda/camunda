@@ -26,53 +26,29 @@
     "enabled": true
   },
   "lockFileMaintenance": {
-    "enabled": true
+    "enabled": true,
+    "automerge": true,
+    "addLabels": ["automerge"]
   },
   "packageRules": [
     {
+      "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
         "/^stable\\/8\\..*/",
         "stable/operate-8.5"
       ],
-      "matchUpdateTypes": [
-        "minor",
-        "major"
-      ],
+      "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
     {
-      "matchPackagePrefixes": ["org.opensearch.client"],
-      "matchUpdateTypes": [
-        "minor",
-        "major"
-      ],
+      "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
+      "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
     {
-      "matchPackagePrefixes": ["org.elasticsearch"],
-      "matchUpdateTypes": [
-        "minor",
-        "major"
-      ],
-      "enabled": false
-    },
-    {
-      "matchPackagePrefixes": ["co.elastic"],
-      "matchUpdateTypes": [
-        "minor",
-        "major"
-      ],
-      "enabled": false
-    },
-    {
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "matchUpdateTypes": [
-        "major",
-        "minor",
-        "patch"
-      ],
+      "description": "Digest updates cover all use cases since they are used as base, so we disable other types.",
+      "matchManagers": ["dockerfile"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
       "enabled": false
     },
     {
@@ -80,14 +56,13 @@
       "allowedVersions": "!/0.8.9/"
     },
     {
-      "matchManagers": [
-        "maven"
-      ],
       "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
+      "matchManagers": ["maven"],
       "matchPackagePatterns": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
+      "description": "This additional prefix is used to skip Operate backend tests.",
       "matchManagers": ["npm", "nvm"],
       "additionalBranchPrefix": "fe-"
     },
@@ -111,12 +86,20 @@
       "groupSlug": "all-minor-patch"
     },
     {
+      "description": "Each digest update breaks release process verification, remove when https://github.com/camunda/zeebe/issues/17181 is done.",
       "matchFileNames": ["operate.Dockerfile"],
       "enabled": false
     },
     {
+      "description": "Both dependencies need to be updated at once for green CI.",
       "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
+    },
+    {
+      "description": "Automerge all updates with green CI.",
+      "matchPackagePatterns": ["*"],
+      "automerge": true,
+      "addLabels": ["automerge"]
     }
   ],
   "dockerfile": {

@@ -361,6 +361,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         with:
@@ -424,7 +426,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
@@ -458,6 +460,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         with:
@@ -560,6 +564,8 @@ jobs:
           docker-token: REGISTRY_HUB_DOCKER_COM_PSW
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         with:
@@ -672,7 +678,7 @@ jobs:
           FLAKY_UNIT_TESTS: ${{needs.test-summary.outputs.flakyUnitTests}}
           FLAKY_INTEGRATION_TESTS: ${{needs.test-summary.outputs.flakyIntegrationTests}}
   auto-merge:
-    # This workflow will auto merge a PR authored by backport-action or renovate[bot].
+    # This workflow will auto merge a PR authored by backport-action.
     # It runs only on open PRs ready for review.
     #
     # It will merge the PR only if it is authored by backport-action and all CI checks are successful
@@ -686,7 +692,7 @@ jobs:
     if: |
       github.repository == 'camunda/zeebe' &&
       github.event_name == 'pull_request' &&
-      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait')
+      (github.actor == 'backport-action' || github.actor == 'camundait')
     permissions:
       checks: read
       pull-requests: write
