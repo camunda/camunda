@@ -81,7 +81,7 @@
     <version.protobuf-common>2.37.1</version.protobuf-common>
     <version.micrometer>1.12.5</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
-    <version.sbe>1.31.0</version.sbe>
+    <version.sbe>1.31.1</version.sbe>
     <version.scala>2.13.13</version.scala>
     <version.slf4j>2.0.12</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
@@ -95,7 +95,7 @@
     <version.feel-scala>1.17.5</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
-    <version.spring>6.1.5</version.spring>
+    <version.spring>6.1.6</version.spring>
     <version.spring-security>6.2.3</version.spring-security>
     <version.spring-boot>3.2.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
@@ -115,7 +115,7 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.8.4</version.spotbugs>
-    <version.archunit>1.2.1</version.archunit>
+    <version.archunit>1.3.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.37.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.28</version.awssdk>
+    <version.awssdk>2.25.30</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -528,13 +528,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_4</artifactId>
+        <artifactId>operate-importer-8_5</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_5</artifactId>
+        <artifactId>operate-importer-8_6</artifactId>
         <version>${project.version}</version>
       </dependency>
 
