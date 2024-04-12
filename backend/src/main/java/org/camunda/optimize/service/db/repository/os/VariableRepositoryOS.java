@@ -6,11 +6,17 @@
 package org.camunda.optimize.service.db.repository.os;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.script;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -24,9 +30,12 @@ import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.MgetResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.opensearch.client.opensearch.core.get.GetResult;
+import org.opensearch.client.opensearch.core.mget.MultiGetResponseItem;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -77,7 +86,7 @@ public class VariableRepositoryOS implements VariableRepository {
     final UpdateRequest.Builder updateRequest =
         new UpdateRequest.Builder()
             .index(variableLabelIndexName)
-            .id(definitionVariableLabelsDto.getDefinitionKey().toLowerCase())
+            .id(definitionVariableLabelsDto.getDefinitionKey().toLowerCase(Locale.ENGLISH))
             .scriptedUpsert(true)
             .script(QueryDSL.script(scriptData.scriptString(), scriptData.params()))
             .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
@@ -100,5 +109,30 @@ public class VariableRepositoryOS implements VariableRepository {
   public void deleteVariablesForDefinition(
       final String variableLabelIndexName, final String processDefinitionKey) {
     osClient.delete(variableLabelIndexName, processDefinitionKey);
+  }
+
+  @Override
+  public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
+      final List<String> processDefinitionKeys) {
+    final Map<String, String> map = new HashMap<>();
+    processDefinitionKeys.forEach(
+        processDefinitionKey ->
+            map.put(VARIABLE_LABEL_INDEX_NAME, processDefinitionKey.toLowerCase(Locale.ENGLISH)));
+
+    final String errorMessage =
+        String.format(
+            "There was an error while fetching documents from the variable label index with keys %s.",
+            processDefinitionKeys);
+    final MgetResponse<DefinitionVariableLabelsDto> response =
+        osClient.mget(DefinitionVariableLabelsDto.class, errorMessage, map);
+
+    return response.docs().stream()
+        .map(MultiGetResponseItem::result)
+        .filter(GetResult::found)
+        .map(GetResult::source)
+        .filter(Objects::nonNull)
+        .peek(label -> label.setDefinitionKey(label.getDefinitionKey().toLowerCase(Locale.ENGLISH)))
+        .collect(
+            Collectors.toMap(DefinitionVariableLabelsDto::getDefinitionKey, Function.identity()));
   }
 }

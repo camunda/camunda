@@ -6,13 +6,20 @@
 package org.camunda.optimize.service.db.repository.es;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
@@ -25,6 +32,8 @@ import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCo
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
@@ -67,7 +76,7 @@ public class VariableRepositoryES implements VariableRepository {
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(variableLabelIndexName)
-              .id(definitionVariableLabelsDto.getDefinitionKey().toLowerCase())
+              .id(definitionVariableLabelsDto.getDefinitionKey().toLowerCase(Locale.ENGLISH))
               .upsert(
                   objectMapper.writeValueAsString(definitionVariableLabelsDto), XContentType.JSON)
               .script(updateEntityScript)
@@ -110,5 +119,47 @@ public class VariableRepositoryES implements VariableRepository {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
+
+  @Override
+  public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
+      final List<String> processDefinitionKeys) {
+    final MultiGetRequest multiGetRequest = new MultiGetRequest();
+    processDefinitionKeys.forEach(
+        processDefinitionKey ->
+            multiGetRequest.add(
+                new MultiGetRequest.Item(
+                    VARIABLE_LABEL_INDEX_NAME, processDefinitionKey.toLowerCase(Locale.ENGLISH))));
+    try {
+      return Arrays.stream(esClient.mget(multiGetRequest).getResponses())
+          .map(this::extractDefinitionLabelsDto)
+          .flatMap(Optional::stream)
+          .peek(
+              label -> label.setDefinitionKey(label.getDefinitionKey().toLowerCase(Locale.ENGLISH)))
+          .collect(
+              Collectors.toMap(DefinitionVariableLabelsDto::getDefinitionKey, Function.identity()));
+    } catch (final IOException e) {
+      final String errorMessage =
+          String.format(
+              "There was an error while fetching documents from the variable label index with keys %s.",
+              processDefinitionKeys);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  private Optional<DefinitionVariableLabelsDto> extractDefinitionLabelsDto(
+      final MultiGetItemResponse multiGetItemResponse) {
+    return Optional.ofNullable(multiGetItemResponse.getResponse().getSourceAsString())
+        .map(
+            json -> {
+              try {
+                return objectMapper.readValue(
+                    multiGetItemResponse.getResponse().getSourceAsString(),
+                    DefinitionVariableLabelsDto.class);
+              } catch (final IOException e) {
+                throw new OptimizeRuntimeException("Failed parsing response: " + json, e);
+              }
+            });
   }
 }

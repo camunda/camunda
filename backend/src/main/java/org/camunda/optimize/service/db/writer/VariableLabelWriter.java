@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
-import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.repository.VariableRepository;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.springframework.stereotype.Component;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class VariableLabelWriter {
   private final VariableRepository variableRepository;
-  private final DatabaseClient databaseClient;
 
   public void createVariableLabelUpsertRequest(
       final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
