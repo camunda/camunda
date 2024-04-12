@@ -38,12 +38,13 @@ public class OpensearchBatchRequest implements BatchRequest {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Override
-  public BatchRequest add(String index, OperateEntity entity) throws PersistenceException {
+  public BatchRequest add(final String index, final OperateEntity entity)
+      throws PersistenceException {
     return addWithId(index, entity.getId(), entity);
   }
 
   @Override
-  public BatchRequest addWithId(String index, String id, OperateEntity entity)
+  public BatchRequest addWithId(final String index, final String id, final OperateEntity entity)
       throws PersistenceException {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
 
@@ -56,7 +57,8 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest addWithRouting(String index, OperateEntity entity, String routing)
+  public BatchRequest addWithRouting(
+      final String index, final OperateEntity entity, final String routing)
       throws PersistenceException {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
@@ -77,7 +79,10 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsert(
-      String index, String id, OperateEntity entity, Map<String, Object> updateFields)
+      final String index,
+      final String id,
+      final OperateEntity entity,
+      final Map<String, Object> updateFields)
       throws PersistenceException {
     LOGGER.debug(
         "Add upsert request for index {} id {} entity {} and update fields {}",
@@ -101,11 +106,11 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithRouting(
-      String index,
-      String id,
-      OperateEntity entity,
-      Map<String, Object> updateFields,
-      String routing)
+      final String index,
+      final String id,
+      final OperateEntity entity,
+      final Map<String, Object> updateFields,
+      final String routing)
       throws PersistenceException {
     LOGGER.debug(
         "Add upsert request with routing {} for index {} id {} entity {} and update fields {}",
@@ -134,7 +139,46 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(String index, String id, Map<String, Object> updateFields)
+  public BatchRequest upsertWithScriptAndRouting(
+      final String index,
+      final String id,
+      final OperateEntity entity,
+      final String script,
+      final Map<String, Object> parameters,
+      final String routing)
+      throws PersistenceException {
+    LOGGER.debug(
+        "Add upsert request with routing {} for index {} id {} entity {} and script {} with parameters {} ",
+        routing,
+        index,
+        id,
+        entity,
+        script,
+        parameters);
+    withPersistenceException(
+        () ->
+            bulkRequestBuilder.operations(
+                op ->
+                    op.update(
+                        upd ->
+                            upd.index(index)
+                                .id(id)
+                                .upsert(entity)
+                                .script(script(script, parameters))
+                                .routing(routing)
+                                .retryOnConflict(UPDATE_RETRY_COUNT))),
+        String.format(
+            String.format(
+                "Error preparing the query to upsert [%s] of entity type [%s] with script and routing",
+                entity.getClass().getName(), entity),
+            index,
+            id));
+    return this;
+  }
+
+  @Override
+  public BatchRequest update(
+      final String index, final String id, final Map<String, Object> updateFields)
       throws PersistenceException {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
@@ -156,7 +200,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(String index, String id, OperateEntity entity)
+  public BatchRequest update(final String index, final String id, final OperateEntity entity)
       throws PersistenceException {
     withPersistenceException(
         () ->
@@ -176,7 +220,10 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest updateWithScript(
-      String index, String id, String script, Map<String, Object> parameters)
+      final String index,
+      final String id,
+      final String script,
+      final Map<String, Object> parameters)
       throws PersistenceException {
     LOGGER.debug("Add update with script request for index {} id {} ", index, id);
 
@@ -206,7 +253,7 @@ public class OpensearchBatchRequest implements BatchRequest {
     execute(true);
   }
 
-  private void execute(Boolean shouldRefresh) throws PersistenceException {
+  private void execute(final Boolean shouldRefresh) throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
     }
@@ -214,7 +261,7 @@ public class OpensearchBatchRequest implements BatchRequest {
     final BulkRequest bulkRequest;
     try {
       bulkRequest = bulkRequestBuilder.build();
-    } catch (MissingRequiredPropertyException e) {
+    } catch (final MissingRequiredPropertyException e) {
       if ("Missing required property 'BulkRequest.operations'".equals(e.getMessage())) {
         return;
       } else {

@@ -36,6 +36,8 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
   private String tenantId = DEFAULT_TENANT_ID;
 
+  private Long position;
+
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
@@ -126,8 +128,17 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return this;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public EventEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -147,7 +158,8 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
         && eventType == that.eventType
         && Objects.equals(dateTime, that.dateTime)
         && Objects.equals(metadata, that.metadata)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position);
   }
 
   @Override
@@ -163,6 +175,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
         eventType,
         dateTime,
         metadata,
-        tenantId);
+        tenantId,
+        position);
   }
 }

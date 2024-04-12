@@ -51,12 +51,13 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Autowired private RestHighLevelClient esClient;
 
   @Override
-  public BatchRequest add(String index, OperateEntity entity) throws PersistenceException {
+  public BatchRequest add(final String index, final OperateEntity entity)
+      throws PersistenceException {
     return addWithId(index, entity.getId(), entity);
   }
 
   @Override
-  public BatchRequest addWithId(String index, String id, OperateEntity entity)
+  public BatchRequest addWithId(final String index, final String id, final OperateEntity entity)
       throws PersistenceException {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
     try {
@@ -64,7 +65,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
           new IndexRequest(index)
               .id(id)
               .source(objectMapper.writeValueAsString(entity), XContentType.JSON));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to index [%s] of entity type [%s] ",
@@ -75,18 +76,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest addWithRouting(String index, OperateEntity entity, String routing)
+  public BatchRequest addWithRouting(
+      final String index, final OperateEntity entity, final String routing)
       throws PersistenceException {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
     try {
-      bulkRequest
-          .add(
-              new IndexRequest(index)
-                  .id(entity.getId())
-                  .source(objectMapper.writeValueAsString(entity), XContentType.JSON))
-          .routing(routing);
-    } catch (JsonProcessingException e) {
+      bulkRequest.add(
+          new IndexRequest(index)
+              .id(entity.getId())
+              .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
+              .routing(routing));
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to index [%s] of entity type [%s] with routing",
@@ -98,7 +99,10 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsert(
-      String index, String id, OperateEntity entity, Map<String, Object> updateFields)
+      final String index,
+      final String id,
+      final OperateEntity entity,
+      final Map<String, Object> updateFields)
       throws PersistenceException {
     LOGGER.debug(
         "Add upsert request for index {} id {} entity {} and update fields {}",
@@ -115,7 +119,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                   objectMapper.readValue(
                       objectMapper.writeValueAsString(updateFields), HashMap.class)) // empty
               .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to upsert [%s] of entity type [%s]",
@@ -127,14 +131,14 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithRouting(
-      String index,
-      String id,
-      OperateEntity entity,
-      Map<String, Object> updateFields,
-      String routing)
+      final String index,
+      final String id,
+      final OperateEntity entity,
+      final Map<String, Object> updateFields,
+      final String routing)
       throws PersistenceException {
     LOGGER.debug(
-        "Add upsert request with routing {} for index {} id {} entity {} and update fields ",
+        "Add upsert request with routing {} for index {} id {} entity {} and update fields {}",
         routing,
         index,
         id,
@@ -151,7 +155,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
               .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
               .routing(routing)
               .retryOnConflict(UPDATE_RETRY_COUNT));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to upsert [%s] of entity type [%s] with routing",
@@ -162,7 +166,44 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(String index, String id, Map<String, Object> updateFields)
+  public BatchRequest upsertWithScriptAndRouting(
+      final String index,
+      final String id,
+      final OperateEntity entity,
+      final String script,
+      final Map<String, Object> parameters,
+      final String routing)
+      throws PersistenceException {
+    LOGGER.debug(
+        "Add upsert request with routing {} for index {} id {} entity {} and script {} with parameters {} ",
+        routing,
+        index,
+        id,
+        entity,
+        script,
+        parameters);
+    try {
+      bulkRequest.add(
+          new UpdateRequest()
+              .index(index)
+              .id(id)
+              .script(getScriptWithParameters(script, parameters))
+              .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+              .routing(routing)
+              .retryOnConflict(UPDATE_RETRY_COUNT));
+    } catch (final JsonProcessingException e) {
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to upsert [%s] of entity type [%s] with script and routing",
+              entity.getClass().getName(), entity),
+          e);
+    }
+    return this;
+  }
+
+  @Override
+  public BatchRequest update(
+      final String index, final String id, final Map<String, Object> updateFields)
       throws PersistenceException {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
@@ -175,7 +216,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                   objectMapper.readValue(
                       objectMapper.writeValueAsString(updateFields), HashMap.class))
               .retryOnConflict(UPDATE_RETRY_COUNT));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to update index [%s] document with id [%s]", index, id),
@@ -185,21 +226,24 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(String index, String id, OperateEntity entity)
+  public BatchRequest update(final String index, final String id, final OperateEntity entity)
       throws PersistenceException {
     try {
       return update(
           index,
           id,
           objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
   public BatchRequest updateWithScript(
-      String index, String id, String script, Map<String, Object> parameters)
+      final String index,
+      final String id,
+      final String script,
+      final Map<String, Object> parameters)
       throws PersistenceException {
     LOGGER.debug("Add update with script request for index {} id {} ", index, id);
     final UpdateRequest updateRequest =
@@ -230,7 +274,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
   }
 
-  private Script getScriptWithParameters(String script, Map<String, Object> parameters)
+  private Script getScriptWithParameters(final String script, final Map<String, Object> parameters)
       throws PersistenceException {
     try {
       return new Script(
@@ -238,7 +282,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
           Script.DEFAULT_SCRIPT_LANG,
           script,
           objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new PersistenceException(e);
     }
   }

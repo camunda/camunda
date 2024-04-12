@@ -32,6 +32,15 @@ public interface BatchRequest {
       String routing)
       throws PersistenceException;
 
+  BatchRequest upsertWithScriptAndRouting(
+      String index,
+      String id,
+      OperateEntity entity,
+      String script,
+      Map<String, Object> parameters,
+      String routing)
+      throws PersistenceException;
+
   BatchRequest update(String index, String id, Map<String, Object> updateFields)
       throws PersistenceException;
 

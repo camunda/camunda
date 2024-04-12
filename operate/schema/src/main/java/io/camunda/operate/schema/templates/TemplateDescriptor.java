@@ -12,6 +12,7 @@ import io.camunda.operate.schema.indices.IndexDescriptor;
 public interface TemplateDescriptor extends IndexDescriptor {
 
   String PARTITION_ID = "partitionId";
+  String POSITION = "position";
 
   default String getTemplateName() {
     return getFullQualifiedName() + "template";
