@@ -15,11 +15,18 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
 import Logo from 'modules/icons/logo.svg?react';
+import styles from './CamundaLogo.module.scss';
+import cn from 'classnames';
 
-const CamundaLogo = styled(Logo)`
-  color: var(--cds-icon-primary);
-`;
+const CamundaLogo: React.FC<React.ComponentProps<typeof Logo>> = ({
+  children,
+  className,
+  ...rest
+}) => (
+  <Logo {...rest} className={cn(className, styles.logo)}>
+    {children}
+  </Logo>
+);
 
 export {CamundaLogo};

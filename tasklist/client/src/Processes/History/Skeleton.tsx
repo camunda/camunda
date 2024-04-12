@@ -15,17 +15,17 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Item, SkeletonText} from './styled';
-import {Stack} from '@carbon/react';
+import {SkeletonText, Stack} from '@carbon/react';
+import styles from './styles.module.scss';
 
 const Skeleton: React.FC = () => {
   return (
     <div data-testid="history-skeleton">
       {Array.from({length: 50}).map((_, index) => (
-        <Stack key={index} gap={3} as={Item}>
-          <SkeletonText width="225px" />
-          <SkeletonText width="175px" />
-          <SkeletonText width="200px" />
+        <Stack key={index} gap={3} className={styles.item}>
+          <SkeletonText className={styles.skeletonText} width="225px" />
+          <SkeletonText className={styles.skeletonText} width="175px" />
+          <SkeletonText className={styles.skeletonText} width="200px" />
         </Stack>
       ))}
     </div>

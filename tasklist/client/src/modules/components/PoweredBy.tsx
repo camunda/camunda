@@ -15,30 +15,10 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
 import {Link, SkeletonPlaceholder} from '@carbon/react';
-import {BodyCompact as BaseBodyCompact} from './FontTokens';
-import {CamundaLogo as BaseCamundaLogo} from 'modules/components/CamundaLogo';
-
-const BodyCompact = styled(BaseBodyCompact)`
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cds-spacing-03);
-`;
-
-const CamundaLogo = styled(BaseCamundaLogo)`
-  width: 70px;
-`;
-
-const SkeletonFooterText = styled(SkeletonPlaceholder)`
-  width: 75px;
-  height: 16px;
-`;
-
-const SkeletonLogo = styled(SkeletonPlaceholder)`
-  width: 70px;
-  height: 24px;
-`;
+import {CamundaLogo} from 'modules/components/CamundaLogo';
+import styles from './PoweredBy.module.scss';
+import cn from 'classnames';
 
 type PoweredByProps = {
   className?: string;
@@ -46,21 +26,21 @@ type PoweredByProps = {
 
 const PoweredBy: React.FC<PoweredByProps> = ({className}) => {
   return (
-    <BodyCompact as="p" className={className}>
+    <p className={cn(className, styles.body)}>
       Powered by{' '}
       <Link href="https://camunda.com/" target="_blank">
-        <CamundaLogo aria-label="Camunda" />
+        <CamundaLogo className={styles.logo} aria-label="Camunda" />
       </Link>
-    </BodyCompact>
+    </p>
   );
 };
 
 const SkeletonPoweredBy: React.FC = () => {
   return (
-    <BodyCompact>
-      <SkeletonFooterText />
-      <SkeletonLogo />
-    </BodyCompact>
+    <span className={styles.body}>
+      <SkeletonPlaceholder className={styles.skeletonFooter} />
+      <SkeletonPlaceholder className={styles.skeletonLogo} />
+    </span>
   );
 };
 

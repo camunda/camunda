@@ -15,22 +15,17 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Search, Grid, Column, Stack, Link, Layer} from '@carbon/react';
-import {ProcessTile} from './ProcessTile';
 import {
-  SplitPane,
-  Container,
-  Content,
-  ProcessTilesContainerInner,
-  SearchContainer,
-  SearchContainerInner,
-  SearchFieldWrapper,
-  ProcessTileWrapper,
-  ProcessTilesContainer,
-  TileSkeleton,
-  Aside,
+  Search,
+  Grid,
+  Column,
+  Stack,
+  Link,
+  Layer,
   Dropdown,
-} from './styled';
+  SkeletonPlaceholder,
+} from '@carbon/react';
+import {ProcessTile} from './ProcessTile';
 import debounce from 'lodash/debounce';
 import {
   useLocation,
@@ -57,6 +52,8 @@ import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
 import {useMultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown';
 import {MultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown/MultiTenancyDropdown';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type UseProcessesFilterParams = Omit<
   Parameters<typeof useProcesses>[0],
@@ -106,6 +103,7 @@ const FilterDropdown: React.FC<{
     <Dropdown
       id="process-filters"
       data-testid="process-filters"
+      className={styles.dropdown}
       hideLabel
       selectedItem={selected}
       titleText="Filter processes"
@@ -270,12 +268,12 @@ const Processes: React.FC = observer(() => {
   };
 
   return (
-    <SplitPane className="cds--content">
-      <Container>
+    <main className={cn('cds--content', styles.splitPane)}>
+      <div className={styles.container}>
         <NewProcessInstanceTasksPolling />
-        <Stack as={Content} gap={2}>
-          <SearchContainer>
-            <Stack as={SearchContainerInner} gap={6}>
+        <Stack className={styles.content} gap={2}>
+          <div className={styles.searchContainer}>
+            <Stack className={styles.searchContainerInner} gap={6}>
               <Grid narrow>
                 <Column sm={4} md={8} lg={16}>
                   <Stack gap={4}>
@@ -288,13 +286,28 @@ const Processes: React.FC = observer(() => {
               </Grid>
               {isMultiTenancyVisible ? (
                 <Grid narrow>
-                  <Column as={SearchFieldWrapper} sm={4} md={8} lg={10}>
+                  <Column
+                    className={styles.searchFieldWrapper}
+                    sm={4}
+                    md={8}
+                    lg={10}
+                  >
                     <Search {...processSearchProps} />
                   </Column>
-                  <Column as={SearchFieldWrapper} sm={2} md={4} lg={3}>
+                  <Column
+                    className={styles.searchFieldWrapper}
+                    sm={2}
+                    md={4}
+                    lg={3}
+                  >
                     <Filter />
                   </Column>
-                  <Column as={SearchFieldWrapper} sm={2} md={4} lg={2}>
+                  <Column
+                    className={styles.searchFieldWrapper}
+                    sm={2}
+                    md={4}
+                    lg={2}
+                  >
                     <MultiTenancyDropdown
                       initialSelectedItem={currentUser?.tenants.find(({id}) =>
                         [
@@ -316,19 +329,29 @@ const Processes: React.FC = observer(() => {
                 </Grid>
               ) : (
                 <Grid narrow>
-                  <Column as={SearchFieldWrapper} sm={4} md={5} lg={10}>
+                  <Column
+                    className={styles.searchFieldWrapper}
+                    sm={4}
+                    md={5}
+                    lg={10}
+                  >
                     <Search {...processSearchProps} />
                   </Column>
-                  <Column as={SearchFieldWrapper} sm={4} md={3} lg={5}>
+                  <Column
+                    className={styles.searchFieldWrapper}
+                    sm={4}
+                    md={3}
+                    lg={5}
+                  >
                     <Filter />
                   </Column>
                 </Grid>
               )}
             </Stack>
-          </SearchContainer>
+          </div>
 
-          <ProcessTilesContainer>
-            <ProcessTilesContainerInner>
+          <div className={styles.processTilesContainer}>
+            <div className={styles.processTilesContainerInner}>
               {!isInitialLoading && processes.length === 0 ? (
                 <Layer>
                   <C3EmptyState
@@ -367,18 +390,29 @@ const Processes: React.FC = observer(() => {
                 <Grid narrow as={Layer}>
                   {isInitialLoading
                     ? Array.from({length: 5}).map((_, index) => (
-                        <Column as={ProcessTileWrapper} sm={4} md={4} lg={5}>
-                          <TileSkeleton
-                            key={index}
+                        <Column
+                          className={styles.processTileWrapper}
+                          sm={4}
+                          md={4}
+                          lg={5}
+                          key={index}
+                        >
+                          <SkeletonPlaceholder
+                            className={styles.tileSkeleton}
                             data-testid="process-skeleton"
                           />
                         </Column>
                       ))
                     : processes.map((process, idx) => (
-                        <Column as={ProcessTileWrapper} sm={4} md={4} lg={5}>
+                        <Column
+                          className={styles.processTileWrapper}
+                          sm={4}
+                          md={4}
+                          lg={5}
+                          key={process.id}
+                        >
                           <ProcessTile
                             process={process}
-                            key={process.id}
                             isFirst={idx === 0}
                             isStartButtonDisabled={
                               (instance !== null &&
@@ -392,19 +426,19 @@ const Processes: React.FC = observer(() => {
                       ))}
                 </Grid>
               )}
-            </ProcessTilesContainerInner>
-          </ProcessTilesContainer>
+            </div>
+          </div>
         </Stack>
-      </Container>
+      </div>
 
       {IS_PROCESS_INSTANCES_ENABLED ? (
-        <Aside>
+        <aside className={styles.historyAside}>
           <History />
-        </Aside>
+        </aside>
       ) : null}
 
       <FirstTimeModal />
-    </SplitPane>
+    </main>
   );
 });
 

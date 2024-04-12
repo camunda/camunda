@@ -79,7 +79,7 @@ type Events =
     }
   | {
       eventName: 'info-bar';
-      link: 'documentation' | 'academy' | 'feedback' | 'slack';
+      link: 'documentation' | 'academy' | 'feedback' | 'forum';
     }
   | {
       eventName: 'user-side-bar';

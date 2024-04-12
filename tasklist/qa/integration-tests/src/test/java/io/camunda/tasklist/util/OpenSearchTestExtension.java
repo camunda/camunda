@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -39,6 +40,8 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
@@ -83,7 +86,7 @@ public class OpenSearchTestExtension
   private String indexPrefix;
 
   @Override
-  public void beforeEach(ExtensionContext extensionContext) {
+  public void beforeEach(final ExtensionContext extensionContext) {
     if (indexPrefix == null) {
       indexPrefix = TestUtil.createRandomString(10) + "-tasklist";
     }
@@ -97,14 +100,14 @@ public class OpenSearchTestExtension
   }
 
   @Override
-  public void handleTestExecutionException(ExtensionContext context, Throwable throwable)
-      throws Throwable {
-    this.failed = true;
+  public void handleTestExecutionException(
+      final ExtensionContext context, final Throwable throwable) throws Throwable {
+    failed = true;
     throw throwable;
   }
 
   @Override
-  public void afterEach(ExtensionContext extensionContext) {
+  public void afterEach(final ExtensionContext extensionContext) {
     if (!failed) {
       final String indexPrefix = tasklistProperties.getOpenSearch().getIndexPrefix();
       TestUtil.removeAllIndices(osClient, indexPrefix);
@@ -115,24 +118,27 @@ public class OpenSearchTestExtension
     assertMaxOpenScrollContexts(10);
   }
 
+  @Override
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
         .describedAs("There are too many open scroll contexts left.")
         .isLessThanOrEqualTo(maxOpenScrollContexts);
   }
 
+  @Override
   public void refreshIndexesInElasticsearch() {
     refreshZeebeIndices();
     refreshTasklistIndices();
   }
 
+  @Override
   public void refreshZeebeIndices() {
     try {
       zeebeOsClient
           .indices()
           .refresh(
               r -> r.index(List.of(tasklistProperties.getZeebeOpenSearch().getPrefix() + "*")));
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not refresh Zeebe OpenSearch indices", t);
     }
   }
@@ -143,32 +149,36 @@ public class OpenSearchTestExtension
       osClient
           .indices()
           .refresh(r -> r.index(tasklistProperties.getOpenSearch().getIndexPrefix() + "*"));
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not refresh Tasklist OpenSearch indices", t);
     }
   }
 
-  public void processAllRecordsAndWait(TestCheck testCheck, Object... arguments) {
+  @Override
+  public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(), testCheck, null, arguments);
   }
 
+  @Override
   public void processAllRecordsAndWait(
-      TestCheck testCheck, Supplier<Object> supplier, Object... arguments) {
+      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(), testCheck, supplier, arguments);
   }
 
+  @Override
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, TestCheck testCheck, Object... arguments) {
+      final ImportValueType importValueType, final TestCheck testCheck, final Object... arguments) {
     processRecordsAndWaitFor(getRecordsReaders(importValueType), testCheck, null, arguments);
   }
 
+  @Override
   public void processRecordsAndWaitFor(
-      Collection<RecordsReader> readers,
-      TestCheck testCheck,
-      Supplier<Object> supplier,
-      Object... arguments) {
+      final Collection<RecordsReader> readers,
+      final TestCheck testCheck,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     long shouldImportCount = 0;
     int waitingRound = 0;
     final int maxRounds = 50;
@@ -183,7 +193,7 @@ public class OpenSearchTestExtension
         }
         refreshIndexesInElasticsearch();
         shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
       }
       long imported = testImportListener.getImported();
@@ -194,7 +204,7 @@ public class OpenSearchTestExtension
         try {
           sleepFor(500);
           shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           waitingRound = 0;
           testImportListener.resetCounters();
           shouldImportCount = 0;
@@ -227,15 +237,16 @@ public class OpenSearchTestExtension
     }
   }
 
+  @Override
   public boolean areIndicesCreatedAfterChecks(
-      String indexPrefix, int minCountOfIndices, int maxChecks) {
+      final String indexPrefix, final int minCountOfIndices, final int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
       checks++;
       try {
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
-      } catch (Exception t) {
+      } catch (final Exception t) {
         LOGGER.error(
             "OpenSearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
@@ -248,7 +259,61 @@ public class OpenSearchTestExtension
     return areCreated;
   }
 
-  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
+  @Override
+  public List<RecordsReader> getRecordsReaders(final ImportValueType importValueType) {
+    return recordsReaderHolder.getAllRecordsReaders().stream()
+        .filter(rr -> rr.getImportValueType().equals(importValueType))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public int getOpenScrollcontextSize() {
+    int openContext = 0;
+    try {
+      final Set<Map.Entry<String, Stats>> nodesResult = osClient.nodes().stats().nodes().entrySet();
+      for (final Map.Entry<String, Stats> entryNodes : nodesResult) {
+        openContext += entryNodes.getValue().indices().search().openContexts().intValue();
+      }
+      return openContext;
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public <T> void deleteByTermsQuery(
+      final String index,
+      final String fieldName,
+      final Collection<T> values,
+      final Class<T> valueType)
+      throws IOException {
+    final Function<? super T, ? extends FieldValue> valueMapper;
+    if (valueType == String.class) {
+      valueMapper = v -> FieldValue.of((String) v);
+    } else if (valueType == Long.class) {
+      valueMapper = v -> FieldValue.of((Long) v);
+    } else {
+      throw new UnsupportedOperationException(
+          "Unsupported valueType: " + valueType + ". Please implement it.");
+    }
+    zeebeOsClient.deleteByQuery(
+        new DeleteByQueryRequest.Builder()
+            .index(index)
+            .query(
+                q ->
+                    q.terms(
+                        term ->
+                            term.field(fieldName)
+                                .terms(
+                                    terms ->
+                                        terms.value(
+                                            values.stream()
+                                                .map(valueMapper)
+                                                .collect(Collectors.toList())))))
+            .build());
+  }
+
+  private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
       throws IOException {
     final GetIndexResponse response =
         osClient
@@ -261,24 +326,5 @@ public class OpenSearchTestExtension
 
     final Set<String> indices = response.result().keySet();
     return indices != null && indices.size() >= minCountOfIndices;
-  }
-
-  public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
-    return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType))
-        .collect(Collectors.toList());
-  }
-
-  public int getOpenScrollcontextSize() {
-    int openContext = 0;
-    try {
-      final Set<Map.Entry<String, Stats>> nodesResult = osClient.nodes().stats().nodes().entrySet();
-      for (Map.Entry<String, Stats> entryNodes : nodesResult) {
-        openContext += entryNodes.getValue().indices().search().openContexts().intValue();
-      }
-      return openContext;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

@@ -14,47 +14,57 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.util;
+package io.camunda.tasklist.webapp.security;
 
-import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.RecordsReader;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Supplier;
-import org.junit.jupiter.api.extension.Extension;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 
-public interface DatabaseTestExtension extends Extension {
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.regex.Pattern;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
-  void assertMaxOpenScrollContexts(final int maxOpenScrollContexts);
+public class CsrfRequireMatcher implements RequestMatcher {
+  private static final Pattern ALLOWED_METHODS = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
 
-  void refreshIndexesInElasticsearch();
+  private static final Pattern ALLOWED_PATHS =
+      Pattern.compile(LOGIN_RESOURCE + "|" + LOGOUT_RESOURCE);
 
-  void refreshZeebeIndices();
+  @Override
+  public boolean matches(final HttpServletRequest request) {
+    // If request is from Allowed Methods, Login and Logout
+    if (ALLOWED_METHODS.matcher(request.getMethod()).matches()) {
+      return false;
+    }
+    if (ALLOWED_PATHS.matcher(request.getServletPath()).matches()) {
+      return false;
+    }
 
-  void refreshTasklistIndices();
+    // Check if the user is authenticated
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    final boolean isUserAuthenticated = authentication != null && authentication.isAuthenticated();
 
-  void processAllRecordsAndWait(TestCheck testCheck, Object... arguments);
+    if (!isUserAuthenticated) {
+      return false;
+    }
 
-  void processAllRecordsAndWait(
-      TestCheck testCheck, Supplier<Object> supplier, Object... arguments);
+    final String referer = request.getHeader("Referer");
 
-  void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, TestCheck testCheck, Object... arguments);
+    // If request is from Swagger UI
+    if (referer != null && referer.matches(".*/swagger-ui.*")) {
+      return false;
+    }
 
-  void processRecordsAndWaitFor(
-      Collection<RecordsReader> readers,
-      TestCheck testCheck,
-      Supplier<Object> supplier,
-      Object... arguments);
+    // If is authenticated from as API user using Barer Token
+    final String authorizationHeader = request.getHeader("Authorization");
+    final boolean isAuthorizationHeaderPresent =
+        authorizationHeader != null && authorizationHeader.startsWith("Bearer ");
+    if (isAuthorizationHeaderPresent) {
+      return false;
+    }
 
-  boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices, int maxChecks);
-
-  List<RecordsReader> getRecordsReaders(ImportValueType importValueType);
-
-  int getOpenScrollcontextSize();
-
-  <T> void deleteByTermsQuery(
-      String index, String fieldName, Collection<T> values, final Class<T> valueType)
-      throws IOException;
+    // otherwise, CSRF is required
+    return true;
+  }
 }

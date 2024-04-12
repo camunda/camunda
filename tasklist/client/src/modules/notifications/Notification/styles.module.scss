@@ -15,17 +15,6 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Link} from '@carbon/react';
-import styled from 'styled-components';
-
-const InlineLink = styled(Link)`
-  display: inline;
-  color: var(--cds-link-primary);
-
-  &:visited,
-  &:visited:hover {
-    color: var(--cds-link-primary);
-  }
-`;
-
-export {InlineLink};
+.notification {
+  margin-top: var(--cds-spacing-03);
+}

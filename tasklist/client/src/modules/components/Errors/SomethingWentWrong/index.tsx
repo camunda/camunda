@@ -17,12 +17,12 @@
 
 import {Button, Heading, Stack} from '@carbon/react';
 import {ErrorRobot} from 'modules/images/error-robot';
-import {Container, Content} from './styled';
+import styles from './styles.module.scss';
 
 const SomethingWentWrong: React.FC = () => {
   return (
-    <Container>
-      <Content>
+    <div className={styles.container}>
+      <div className={styles.content}>
         <Stack gap={6} orientation="horizontal">
           <ErrorRobot />
           <Stack gap={4}>
@@ -33,8 +33,8 @@ const SomethingWentWrong: React.FC = () => {
             </Button>
           </Stack>
         </Stack>
-      </Content>
-    </Container>
+      </div>
+    </div>
   );
 };
 

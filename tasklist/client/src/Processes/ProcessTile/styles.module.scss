@@ -14,13 +14,54 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
+@use '@carbon/type';
+@use '@carbon/layout';
 
-import {SkeletonText as BaseSkeletonText} from '@carbon/react';
-import styled from 'styled-components';
+@mixin textOverflowEllipsis {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
-const SkeletonText = styled(BaseSkeletonText)`
-  height: 19px;
-  margin-bottom: 0;
-`;
+.container {
+  width: 100%;
+  height: 100%;
+  padding: var(--cds-spacing-05);
+  background: var(--cds-layer);
+}
 
-export {SkeletonText};
+.content {
+  height: 100%;
+}
+
+.titleWrapper {
+  height: fit-content;
+}
+
+.title {
+  @include textOverflowEllipsis;
+  @include type.type-style('productive-heading-02');
+  color: var(--cds-text-primary);
+}
+
+.subtitle {
+  @include textOverflowEllipsis;
+  @include type.type-style('label-01');
+  min-height: layout.to-rem(16px);
+  margin-bottom: var(--cds-spacing-06);
+  color: var(--cds-text-secondary);
+}
+
+.buttonRow {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--cds-spacing-05);
+  align-content: end;
+
+  & .startButton {
+    margin-right: auto;
+  }
+}

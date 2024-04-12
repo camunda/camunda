@@ -82,7 +82,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginSuccess() {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAreSet(response, false);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -112,7 +112,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginFailedWithNoPermissions() {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAreSet(response, false);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -139,7 +139,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginFailedWithNoReadPermissions() {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAreSet(response, false);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -166,22 +166,23 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return testRestTemplate;
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", getCookiesAsString(response.getHeaders()));
     return new HttpEntity<>(new HashMap<>(), headers);
   }
 
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  protected void assertThatRequestIsRedirectedTo(
+      final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return "http://localhost:" + randomServerPort + path;
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 }

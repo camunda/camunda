@@ -16,21 +16,15 @@
  */
 
 import {
-  Aside,
-  Container,
-  Content,
-  Header,
-  HeaderLeftContainer,
-  HeaderRightContainer,
-  SkeletonText,
-} from './styled';
-import {
   ButtonSkeleton,
   StructuredListSkeleton,
   ContainedList,
   ContainedListItem,
+  Section,
+  SkeletonText,
 } from '@carbon/react';
 import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
+import styles from './styles.module.scss';
 
 type Props = {
   'data-testid'?: string;
@@ -38,28 +32,28 @@ type Props = {
 
 const DetailsSkeleton: React.FC<Props> = (props) => {
   return (
-    <Container data-testid={props['data-testid']}>
-      <Content>
-        <Header as="header">
-          <HeaderLeftContainer>
+    <div className={styles.container} data-testid={props['data-testid']}>
+      <Section className={styles.content}>
+        <TaskDetailsRow className={styles.header} as="header">
+          <div className={styles.headerLeftContainer}>
             <SkeletonText width="150px" />
-            <SkeletonText width="100px" $disabledMargin />
-          </HeaderLeftContainer>
-          <HeaderRightContainer>
-            <SkeletonText width="100px" $disabledMargin />
+            <SkeletonText width="100px" className={styles.margin0} />
+          </div>
+          <div className={styles.headerRightContainer}>
+            <SkeletonText width="100px" className={styles.margin0} />
             <ButtonSkeleton size="sm" />
-          </HeaderRightContainer>
-        </Header>
+          </div>
+        </TaskDetailsRow>
         <TaskDetailsRow>
-          <SkeletonText width="150px" heading $disabledMargin />
+          <SkeletonText width="150px" heading className={styles.margin0} />
         </TaskDetailsRow>
         <TaskDetailsRow $disabledSidePadding>
           <StructuredListSkeleton />
         </TaskDetailsRow>
-      </Content>
-      <Aside>
+      </Section>
+      <aside className={styles.aside}>
         <ContainedList
-          label={<SkeletonText width="100px" $disabledMargin />}
+          label={<SkeletonText width="100px" className={styles.margin0} />}
           kind="disclosed"
         >
           <ContainedListItem>
@@ -83,8 +77,8 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
             <SkeletonText width="125px" />
           </ContainedListItem>
         </ContainedList>
-      </Aside>
-    </Container>
+      </aside>
+    </div>
   );
 };
 

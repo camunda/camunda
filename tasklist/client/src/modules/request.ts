@@ -24,6 +24,10 @@ type RequestError = {
   networkError: unknown | null;
 };
 
+function getCsrfTokenFromStorage() {
+  return sessionStorage.getItem('X-CSRF-TOKEN');
+}
+
 async function request(
   input: RequestInfo,
   {skipSessionCheck} = {skipSessionCheck: false},
@@ -38,10 +42,29 @@ async function request(
     }
 > {
   try {
+    const csrfToken = getCsrfTokenFromStorage();
+    if (input instanceof Request) {
+      const method = input.method;
+
+      if (
+        csrfToken &&
+        method &&
+        ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())
+      ) {
+        input.headers.append('X-CSRF-TOKEN', csrfToken);
+      }
+    }
+
     const response = await fetch(input);
 
     if (response.ok) {
       authenticationStore.activateSession();
+      const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
+
+      // If the token is found in the response headers, use it
+      if (tokenFromResponse) {
+        sessionStorage.setItem('X-CSRF-TOKEN', tokenFromResponse);
+      }
     }
 
     if (!skipSessionCheck && response.status === 401) {

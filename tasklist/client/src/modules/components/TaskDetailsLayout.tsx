@@ -15,38 +15,51 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {rem} from '@carbon/elements';
-import styled, {css} from 'styled-components';
+import styles from './TaskDetailsLayout.module.scss';
+import cn from 'classnames';
 
-const ScrollableContent = styled.div`
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  scroll-behavior: smooth;
-`;
+const ScrollableContent: React.FC<React.ComponentProps<'div'>> = ({
+  children,
+  className,
+  ...rest
+}) => (
+  <div {...rest} className={cn(className, styles.scrollableContent)}>
+    {children}
+  </div>
+);
 
 type TaskDetailsRowProps = {
+  as?: React.ElementType;
   $disabledSidePadding?: boolean;
 };
 
-const TaskDetailsRow = styled.div<TaskDetailsRowProps>`
-  ${({$disabledSidePadding = false}) => css`
-    width: 100%;
-    max-width: ${rem(900)};
-    ${$disabledSidePadding
-      ? undefined
-      : css`
-          padding: 0 var(--cds-spacing-05);
-        `}
-  `}
-`;
+const TaskDetailsRow: React.FC<
+  React.ComponentProps<'div'> & TaskDetailsRowProps
+> = ({
+  as: Element = 'div',
+  children,
+  className,
+  $disabledSidePadding = false,
+  ...rest
+}) => (
+  <Element
+    {...rest}
+    className={cn(className, styles.row, {
+      [styles.sidePadding]: !$disabledSidePadding,
+    })}
+  >
+    {children}
+  </Element>
+);
 
-const TaskDetailsContainer = styled.div`
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-rows: minmax(max-content, calc(100% - ${rem(62)})) ${rem(62)};
-  justify-items: center;
-`;
+const TaskDetailsContainer: React.FC<React.ComponentProps<'div'>> = ({
+  children,
+  className,
+  ...rest
+}) => (
+  <div {...rest} className={cn(className, styles.container)}>
+    {children}
+  </div>
+);
 
 export {TaskDetailsContainer, TaskDetailsRow, ScrollableContent};

@@ -15,104 +15,14 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
-import styled, {css} from 'styled-components';
-import {IconButton} from './IconButton';
-import {
-  StructuredListWrapper as BaseStructuredListWrapper,
-  StructuredListCell as BaseStructuredListCell,
-} from '@carbon/react';
-import {rem} from '@carbon/elements';
-
-const Form = styled.form`
-  width: 100%;
-  height: 100%;
-`;
-
-const Container = styled(TaskDetailsRow)`
-  padding: 0;
-  padding-bottom: var(--cds-spacing-05);
-`;
-
-const EmptyFieldsInformationIcon = styled(IconButton)`
-  margin-right: var(--cds-spacing-01);
-`;
-
-const StructuredListWrapper = styled(BaseStructuredListWrapper)`
-  height: min-content;
-`;
-
-const StructuredListCell = styled(BaseStructuredListCell)`
-  vertical-align: middle;
-`;
-
-const OuterScrollableCellContent = styled.div`
-  height: min-content;
-  overflow-y: auto;
-`;
-
-const InnerScrollableCellContent = styled.div`
-  max-height: 100px;
-  height: min(min-content, 100%);
-  overflow-y: auto;
-`;
-
-const ScrollableCellContent: React.FC<{
-  children: React.ReactNode;
-}> = ({children}) => {
-  return (
-    <OuterScrollableCellContent>
-      <InnerScrollableCellContent>{children}</InnerScrollableCellContent>
-    </OuterScrollableCellContent>
-  );
-};
-
-type IconButtonsContainerProps = {
-  $showExtraPadding?: boolean;
-};
-
-const IconButtonsContainer = styled.div<IconButtonsContainerProps>`
-  ${({$showExtraPadding = false}) => css`
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-end;
-    padding-right: ${$showExtraPadding
-      ? css`calc(var(--cds-spacing-03) + 32px)`
-      : css`var(--cds-spacing-03)`};
-  `}
-`;
-
-const VariableNameCell = styled(StructuredListCell)`
-  width: 200px;
-`;
-
-const VariableValueCell = styled(StructuredListCell)`
-  overflow-y: hidden;
-  word-break: break-all;
-  height: min(100px, min-content);
-`;
-
-const ControlsCell = styled(StructuredListCell)`
-  width: 80px;
-`;
-
-const PanelHeader = styled(TaskDetailsRow)`
+.container {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  min-height: ${rem(32)};
-`;
+  color: var(--cds-text-primary);
+}
 
-export {
-  Form,
-  EmptyFieldsInformationIcon,
-  Container,
-  StructuredListWrapper,
-  StructuredListCell,
-  ScrollableCellContent,
-  IconButtonsContainer,
-  VariableNameCell,
-  VariableValueCell,
-  ControlsCell,
-  PanelHeader,
-};
+.image {
+  margin-bottom: var(--cds-spacing-08);
+}

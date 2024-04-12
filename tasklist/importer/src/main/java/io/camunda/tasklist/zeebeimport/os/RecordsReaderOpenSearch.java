@@ -70,77 +70,12 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
   @Qualifier("zeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
-  public RecordsReaderOpenSearch(int partitionId, ImportValueType importValueType, int queueSize) {
+  public RecordsReaderOpenSearch(
+      final int partitionId, final ImportValueType importValueType, final int queueSize) {
     super(partitionId, importValueType, queueSize);
   }
 
-  public ImportBatch readNextBatchBySequence(final Long fromSequence, final Long toSequence)
-      throws NoSuchIndexException {
-    final String aliasName =
-        importValueType.getAliasName(tasklistProperties.getZeebeOpenSearch().getPrefix());
-    final int batchSize = tasklistProperties.getZeebeOpenSearch().getBatchSize();
-    final long lessThanEqualsSequence;
-    final int maxNumberOfHits;
-
-    if (toSequence != null && toSequence > 0) {
-      // in worst case all the records are duplicated
-      maxNumberOfHits = (int) ((toSequence - fromSequence) * 2);
-      lessThanEqualsSequence = toSequence;
-      LOGGER.debug(
-          "Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
-          importValueType,
-          partitionId,
-          fromSequence,
-          toSequence,
-          maxNumberOfHits);
-    } else {
-      maxNumberOfHits = batchSize;
-      lessThanEqualsSequence = fromSequence + batchSize;
-    }
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .sort(
-                s ->
-                    s.field(
-                        FieldSort.of(
-                            f -> f.field(ImportPositionIndex.SEQUENCE).order(SortOrder.Asc))))
-            .query(
-                q ->
-                    q.range(
-                        range ->
-                            range
-                                .field(ImportPositionIndex.SEQUENCE)
-                                .gt(JsonData.of(fromSequence))
-                                .lte(JsonData.of(lessThanEqualsSequence))))
-            .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits)
-            .routing(String.valueOf(partitionId))
-            .requestCache(false)
-            .index(aliasName);
-
-    try {
-      final Hit[] hits =
-          withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
-      return createImportBatch(hits);
-    } catch (OpenSearchException ex) {
-      if (ex.getMessage().contains("no such index")) {
-        throw new NoSuchIndexException();
-      } else {
-        final String message =
-            String.format(
-                "Exception occurred, while obtaining next Zeebe records batch: %s",
-                ex.getMessage());
-        throw new TasklistRuntimeException(message, ex);
-      }
-    } catch (Exception e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  private Hit[] withTimerSearchHits(Callable<Hit[]> callable) throws Exception {
+  private Hit[] withTimerSearchHits(final Callable<Hit[]> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -151,7 +86,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
         .recordCallable(callable);
   }
 
-  private ImportBatch createImportBatch(SearchResponse searchResponse) {
+  private ImportBatch createImportBatch(final SearchResponse searchResponse) {
     final List<Hit> hits = searchResponse.hits().hits();
     String indexName = null;
     if (hits.size() > 0) {
@@ -160,7 +95,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     return new ImportBatchOpenSearch(partitionId, importValueType, hits, indexName);
   }
 
-  private ImportBatch createImportBatch(Hit[] hits) {
+  private ImportBatch createImportBatch(final Hit[] hits) {
     String indexName = null;
     if (hits.length > 0) {
       indexName = hits[hits.length - 1].index();
@@ -168,7 +103,8 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     return new ImportBatchOpenSearch(partitionId, importValueType, Arrays.asList(hits), indexName);
   }
 
-  private Hit[] read(SearchRequest.Builder searchRequest, boolean scrollNeeded) throws IOException {
+  private Hit[] read(final SearchRequest.Builder searchRequest, final boolean scrollNeeded)
+      throws IOException {
     String scrollId = null;
     try {
 
@@ -201,8 +137,9 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     }
   }
 
-  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo)
-      throws NoSuchIndexException {
+  @Override
+  public ImportBatch readNextBatchByPositionAndPartition(
+      final long positionFrom, final Long positionTo) throws NoSuchIndexException {
     final String aliasName =
         importValueType.getAliasName(tasklistProperties.getZeebeOpenSearch().getPrefix());
     try {
@@ -214,7 +151,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
 
       return createImportBatch(searchResponse);
 
-    } catch (OpenSearchException ex) {
+    } catch (final OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {
         LOGGER.warn("No index found for alias '{}'", aliasName);
         throw new NoSuchIndexException();
@@ -225,7 +162,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
                 aliasName, ex.getMessage());
         throw new TasklistRuntimeException(message, ex);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           String.format(
               "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
@@ -234,11 +171,96 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     }
   }
 
-  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
+  @Override
+  public ImportBatch readNextBatchBySequence(final Long fromSequence, final Long toSequence)
+      throws NoSuchIndexException {
+    final String aliasName =
+        importValueType.getAliasName(tasklistProperties.getZeebeOpenSearch().getPrefix());
+    final int batchSize = tasklistProperties.getZeebeOpenSearch().getBatchSize();
+    final long lessThanEqualsSequence;
+    final int maxNumberOfHits;
+
+    if (toSequence != null && toSequence > 0) {
+      // in worst case all the records are duplicated
+      maxNumberOfHits = (int) ((toSequence - fromSequence) * 2);
+      lessThanEqualsSequence = toSequence;
+      LOGGER.debug(
+          "Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
+          importValueType,
+          partitionId,
+          fromSequence,
+          toSequence,
+          maxNumberOfHits);
+    } else {
+      maxNumberOfHits = batchSize;
+      if (countEmptyRuns == tasklistProperties.getImporter().getMaxEmptyRuns()) {
+        lessThanEqualsSequence = maxPossibleSequence;
+        countEmptyRuns = 0;
+        LOGGER.debug(
+            "Max empty runs reached. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
+            importValueType,
+            partitionId,
+            fromSequence,
+            lessThanEqualsSequence,
+            maxNumberOfHits);
+      } else {
+        lessThanEqualsSequence = fromSequence + batchSize;
+      }
+    }
+
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .sort(
+                s ->
+                    s.field(
+                        FieldSort.of(
+                            f -> f.field(ImportPositionIndex.SEQUENCE).order(SortOrder.Asc))))
+            .query(
+                q ->
+                    q.range(
+                        range ->
+                            range
+                                .field(ImportPositionIndex.SEQUENCE)
+                                .gt(JsonData.of(fromSequence))
+                                .lte(JsonData.of(lessThanEqualsSequence))))
+            .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits)
+            .routing(String.valueOf(partitionId))
+            .requestCache(false)
+            .index(aliasName);
+
+    try {
+      final Hit[] hits =
+          withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
+      if (hits.length == 0) {
+        countEmptyRuns++;
+      } else {
+        countEmptyRuns = 0;
+      }
+      return createImportBatch(hits);
+    } catch (final OpenSearchException ex) {
+      if (ex.getMessage().contains("no such index")) {
+        throw new NoSuchIndexException();
+      } else {
+        final String message =
+            String.format(
+                "Exception occurred, while obtaining next Zeebe records batch: %s",
+                ex.getMessage());
+        throw new TasklistRuntimeException(message, ex);
+      }
+    } catch (final Exception e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  private SearchResponse withTimer(final Callable<SearchResponse> callable) throws Exception {
     return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
   }
 
-  private SearchRequest createSearchQuery(String aliasName, Long positionFrom, Long positionTo) {
+  private SearchRequest createSearchQuery(
+      final String aliasName, final Long positionFrom, final Long positionTo) {
     final RangeQuery.Builder rangeQuery = new RangeQuery.Builder();
     rangeQuery.field(ImportPositionIndex.POSITION).gt(JsonData.of(positionFrom));
     if (positionTo != null) {

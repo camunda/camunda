@@ -15,15 +15,15 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import BaseEditor, {EditorProps} from '@monaco-editor/react';
-import styled from 'styled-components';
+.container {
+  width: min(100%, 900px);
+  height: min-content;
+}
 
-const Editor = styled(BaseEditor)`
-  height: 60vh;
-` as React.FC<EditorProps>;
-
-const EditorPlaceholder = styled.div`
-  height: 60vh;
-`;
-
-export {Editor, EditorPlaceholder};
+.content {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+}

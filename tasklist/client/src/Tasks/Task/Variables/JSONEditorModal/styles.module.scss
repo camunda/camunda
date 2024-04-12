@@ -15,34 +15,6 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {rem} from '@carbon/elements';
-import styled, {css} from 'styled-components';
-import {Stack} from '@carbon/react';
-
-const Container = styled.main`
-  display: grid;
-  grid-template-columns: ${rem(300)} 1fr;
-  grid-template-rows: 100%;
-  height: 100%;
-  padding-top: ${rem(48)};
-  box-sizing: border-box;
-`;
-
-const TasksPanel = styled(Stack)`
-  ${() => css`
-    align-content: flex-start;
-    min-width: ${rem(300)};
-    max-width: ${rem(300)};
-    height: 100%;
-    grid-template-rows: min-content 1fr min-content;
-  `}
-`;
-
-const DetailsPanel = styled.section`
-  background-color: var(--cds-layer);
-  border-left: 1px solid var(--cds-border-subtle);
-  width: 100%;
-  height: 100%;
-`;
-
-export {Container, TasksPanel, DetailsPanel};
+.editor {
+  height: 60vh;
+}

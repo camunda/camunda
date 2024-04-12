@@ -32,6 +32,8 @@ public class ImportProperties {
 
   private static final int DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL = 10000;
 
+  private static final int DEFAULT_MAX_EMPTY_RUNS = 10;
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -57,11 +59,13 @@ public class ImportProperties {
 
   private int importPositionUpdateInterval = DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL;
 
+  private int maxEmptyRuns = DEFAULT_MAX_EMPTY_RUNS;
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
 
-  public void setStartLoadingDataOnStartup(boolean startLoadingDataOnStartup) {
+  public void setStartLoadingDataOnStartup(final boolean startLoadingDataOnStartup) {
     this.startLoadingDataOnStartup = startLoadingDataOnStartup;
   }
 
@@ -69,7 +73,7 @@ public class ImportProperties {
     return threadsCount;
   }
 
-  public void setThreadsCount(int threadsCount) {
+  public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
   }
 
@@ -86,7 +90,7 @@ public class ImportProperties {
     return queueSize;
   }
 
-  public void setQueueSize(int queueSize) {
+  public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
   }
 
@@ -94,7 +98,7 @@ public class ImportProperties {
     return readerBackoff;
   }
 
-  public void setReaderBackoff(int readerBackoff) {
+  public void setReaderBackoff(final int readerBackoff) {
     this.readerBackoff = readerBackoff;
   }
 
@@ -102,7 +106,7 @@ public class ImportProperties {
     return schedulerBackoff;
   }
 
-  public void setSchedulerBackoff(int schedulerBackoff) {
+  public void setSchedulerBackoff(final int schedulerBackoff) {
     this.schedulerBackoff = schedulerBackoff;
   }
 
@@ -119,7 +123,7 @@ public class ImportProperties {
     return importPositionUpdateInterval;
   }
 
-  public void setImportPositionUpdateInterval(int importPositionUpdateInterval) {
+  public void setImportPositionUpdateInterval(final int importPositionUpdateInterval) {
     this.importPositionUpdateInterval = importPositionUpdateInterval;
   }
 
@@ -127,8 +131,17 @@ public class ImportProperties {
     return useOnlyPosition;
   }
 
-  public ImportProperties setUseOnlyPosition(boolean useOnlyPosition) {
+  public ImportProperties setUseOnlyPosition(final boolean useOnlyPosition) {
     this.useOnlyPosition = useOnlyPosition;
+    return this;
+  }
+
+  public int getMaxEmptyRuns() {
+    return maxEmptyRuns;
+  }
+
+  public ImportProperties setMaxEmptyRuns(final int maxEmptyRuns) {
+    this.maxEmptyRuns = maxEmptyRuns;
     return this;
   }
 }
