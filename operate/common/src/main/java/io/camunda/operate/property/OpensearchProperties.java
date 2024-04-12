@@ -51,6 +51,7 @@ public class OpensearchProperties {
   private String password;
 
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
+  private boolean bulkRequestIgnoreNullIndex = false;
 
   @NestedConfigurationProperty private SslProperties ssl;
 
@@ -182,5 +183,13 @@ public class OpensearchProperties {
 
   public void setBulkRequestMaxSizeInBytes(final int bulkRequestMaxSizeInBytes) {
     this.bulkRequestMaxSizeInBytes = bulkRequestMaxSizeInBytes;
+  }
+
+  public boolean isBulkRequestIgnoreNullIndex() {
+    return bulkRequestIgnoreNullIndex;
+  }
+
+  public void setBulkRequestIgnoreNullIndex(boolean bulkRequestIgnoreNullIndex) {
+    this.bulkRequestIgnoreNullIndex = bulkRequestIgnoreNullIndex;
   }
 }

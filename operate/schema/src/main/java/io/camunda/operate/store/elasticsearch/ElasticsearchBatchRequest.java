@@ -225,7 +225,10 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public void execute() throws PersistenceException {
     LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.requests().size());
     ElasticsearchUtil.processBulkRequest(
-        esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+        esClient,
+        bulkRequest,
+        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+        operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
   }
 
   @Override
@@ -236,7 +239,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         esClient,
         bulkRequest,
         true,
-        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+        operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
   }
 
   private Script getScriptWithParameters(String script, Map<String, Object> parameters)
