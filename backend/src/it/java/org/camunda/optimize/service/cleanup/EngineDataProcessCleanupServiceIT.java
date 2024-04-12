@@ -186,7 +186,6 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testCleanupModeAll_camundaEventData_specificKeyTtl() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);

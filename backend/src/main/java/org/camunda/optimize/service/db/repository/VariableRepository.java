@@ -21,6 +21,8 @@ public interface VariableRepository {
 
   void deleteVariablesForDefinition(String variableLabelIndexName, String processDefinitionKey);
 
+  void deleteByProcessInstanceIds(List<String> processInstanceIds);
+
   Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       List<String> processDefinitionKeys);
 }

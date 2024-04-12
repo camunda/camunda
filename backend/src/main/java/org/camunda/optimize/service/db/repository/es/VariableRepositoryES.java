@@ -10,6 +10,8 @@ import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_I
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -24,9 +26,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.repository.VariableRepository;
 import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
 import org.camunda.optimize.service.db.schema.ScriptData;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -36,6 +41,7 @@ import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
@@ -119,6 +125,25 @@ public class VariableRepositoryES implements VariableRepository {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
+
+  @Override
+  public void deleteByProcessInstanceIds(List<String> processInstanceIds) {
+    final BoolQueryBuilder filterQuery =
+        boolQuery()
+            .filter(
+                termsQuery(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds));
+
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+        esClient,
+        filterQuery,
+        String.format("variable updates of %d process instances", processInstanceIds.size()),
+        false,
+        // use wildcarded index name to catch all indices that exist after potential rollover
+        esClient
+            .getIndexNameService()
+            .getOptimizeIndexNameWithVersionWithWildcardSuffix(
+                new VariableUpdateInstanceIndexES()));
   }
 
   @Override

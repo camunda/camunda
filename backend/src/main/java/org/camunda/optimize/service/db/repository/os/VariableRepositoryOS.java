@@ -23,10 +23,12 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import org.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
 import org.camunda.optimize.service.db.repository.VariableRepository;
 import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -134,5 +136,17 @@ public class VariableRepositoryOS implements VariableRepository {
         .peek(label -> label.setDefinitionKey(label.getDefinitionKey().toLowerCase(Locale.ENGLISH)))
         .collect(
             Collectors.toMap(DefinitionVariableLabelsDto::getDefinitionKey, Function.identity()));
+  }
+
+  @Override
+  public void deleteByProcessInstanceIds(List<String> processInstanceIds) {
+    osClient.deleteByQueryTask(
+        String.format("variable updates of %d process instances", processInstanceIds.size()),
+        QueryDSL.stringTerms(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds),
+        false,
+        osClient
+            .getIndexNameService()
+            .getOptimizeIndexNameWithVersionWithWildcardSuffix(
+                new VariableUpdateInstanceIndexOS()));
   }
 }
