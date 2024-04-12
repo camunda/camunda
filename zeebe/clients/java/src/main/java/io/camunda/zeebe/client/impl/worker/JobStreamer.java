@@ -30,12 +30,11 @@ interface JobStreamer extends AutoCloseable {
   void openStreamer(final Consumer<ActivatedJob> jobConsumer);
 
   static JobStreamer noop() {
-    return NoopJobStream.INSTANCE;
+    return NoopJobStream.Singleton.INSTANCE.stream;
   }
 
   @ThreadSafe
   final class NoopJobStream implements JobStreamer {
-    private static final NoopJobStream INSTANCE = new NoopJobStream();
 
     @Override
     public void close() {}
@@ -47,5 +46,16 @@ interface JobStreamer extends AutoCloseable {
 
     @Override
     public void openStreamer(final Consumer<ActivatedJob> jobConsumer) {}
+
+    private enum Singleton {
+      @SuppressWarnings("resource")
+      INSTANCE(new NoopJobStream());
+
+      private final NoopJobStream stream;
+
+      Singleton(final NoopJobStream stream) {
+        this.stream = stream;
+      }
+    }
   }
 }
