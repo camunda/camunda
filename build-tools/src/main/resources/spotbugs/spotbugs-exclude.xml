@@ -23,6 +23,9 @@
 
   <Match>
     <Annotation name="javax.annotation.processing.Generated"/>
+  </Match>
+
+  <Match>
     <Source name="~.*GatewayOuterClass\.java" />
   </Match>
 
