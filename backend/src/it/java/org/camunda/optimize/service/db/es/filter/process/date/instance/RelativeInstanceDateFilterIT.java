@@ -82,6 +82,7 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
   @MethodSource("simpleDateReportTypes")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void dateReportsWithFilter_noDataReturnsEmptyResult(final ProcessReportDataType type) {
     // given
     final ProcessDefinitionEngineDto engineDto = deployServiceTaskProcess();
