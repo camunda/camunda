@@ -25,78 +25,96 @@ spec:
           operator: "Exists"
           effect: "NoSchedule"
       volumes:
-      - name: postgres-config
-        configMap:
-          name: postgres-config
-      - name: ssd-storage
-        emptyDir: {}
-      initContainers:
-      - name: init-cleanup
-        image: busybox
-        command: ['sh', '-c', 'rm -fr /var/lib/postgresql/data/*']
-        volumeMounts:
-        - name: ssd-storage
-          mountPath: /var/lib/postgresql/data
-          subPath: pgdata
-      - name: init-sysctl
-        image: busybox
-        imagePullPolicy: Always
-        command: ["sysctl", "-w", "vm.overcommit_memory=2"]
-        securityContext:
-          privileged: true
-      containers:
-      - name: gcloud
-        image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-        imagePullPolicy: Always
-        command: ["cat"]
-        tty: true
-        resources:
-          limits:
-            cpu: 3
-            memory: 1Gi
-          requests:
-            cpu: 3
-            memory: 1Gi
-        volumeMounts:
-        - name: ssd-storage
-          mountPath: /db_dump/
-          subPath: gcloud
-      - name: postgresql
-        image: postgres:11.2
-        args: ["-c", "max_connections=200", "-c", "effective_cache_size=4GB", "-c", "shared_buffers=2GB", "-c", "synchronous_commit=off", "-c", "log_statement=none", "-c", "wal_buffers=32MB", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
-        env:
-        - name: POD_IP
-          valueFrom: {fieldRef: {fieldPath: status.podIP}}
-        ports:
-        - containerPort: 5432
-          name: psql
-          protocol: TCP
-        volumeMounts:
         - name: postgres-config
-          mountPath: /docker-entrypoint-initdb.d/init-user-db.sh
-          subPath: init-user-db.sh
+          configMap:
+            name: postgres-config
         - name: ssd-storage
-          mountPath: /var/lib/postgresql/data
-          subPath: pgdata
-        - name: ssd-storage
-          mountPath: /db_dump/
-          subPath: gcloud
-        livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - exec pg_isready -U "postgres" --host $POD_IP
-        readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - exec pg_isready -U "postgres" --host $POD_IP
-        resources:
-          limits:
-            cpu: 4
-            memory: 10Gi
-          requests:
-            cpu: 4
-            memory: 10Gi
+          emptyDir: {}
+      initContainers:
+        - name: init-cleanup
+          image: busybox
+          command: ["sh", "-c", "rm -fr /var/lib/postgresql/data/*"]
+          volumeMounts:
+            - name: ssd-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+        - name: init-sysctl
+          image: busybox
+          imagePullPolicy: Always
+          command: ["sysctl", "-w", "vm.overcommit_memory=2"]
+          securityContext:
+            privileged: true
+      containers:
+        - name: gcloud
+          image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+          imagePullPolicy: Always
+          command: ["cat"]
+          tty: true
+          resources:
+            limits:
+              cpu: 3
+              memory: 1Gi
+            requests:
+              cpu: 3
+              memory: 1Gi
+          volumeMounts:
+            - name: ssd-storage
+              mountPath: /db_dump/
+              subPath: gcloud
+        - name: postgresql
+          image: postgres:11.2
+          args:
+            [
+              "-c",
+              "max_connections=200",
+              "-c",
+              "effective_cache_size=4GB",
+              "-c",
+              "shared_buffers=2GB",
+              "-c",
+              "synchronous_commit=off",
+              "-c",
+              "log_statement=none",
+              "-c",
+              "wal_buffers=32MB",
+              "-c",
+              "checkpoint_timeout=600",
+              "-c",
+              "max_wal_size=30GB",
+            ]
+          env:
+            - name: POD_IP
+              valueFrom: { fieldRef: { fieldPath: status.podIP } }
+          ports:
+            - containerPort: 5432
+              name: psql
+              protocol: TCP
+          volumeMounts:
+            - name: postgres-config
+              mountPath: /docker-entrypoint-initdb.d/init-user-db.sh
+              subPath: init-user-db.sh
+            - name: ssd-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+            - name: ssd-storage
+              mountPath: /db_dump/
+              subPath: gcloud
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready -U "postgres" --host $POD_IP
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready -U "postgres" --host $POD_IP
+          resources:
+            limits:
+              cpu: 4
+              memory: 10Gi
+            requests:
+              cpu: 4
+              memory: 10Gi

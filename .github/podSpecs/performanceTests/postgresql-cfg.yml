@@ -7,9 +7,9 @@ spec:
   selector:
     app: postgresql
   ports:
-  - protocol: TCP
-    port: 5432
-    targetPort: 5432
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -22,7 +22,6 @@ data:
   init-user-db.sh: |
     #!/bin/bash
     set -e
-
     psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
       CREATE DATABASE "engine";
       CREATE USER camunda WITH ENCRYPTED PASSWORD 'camunda';

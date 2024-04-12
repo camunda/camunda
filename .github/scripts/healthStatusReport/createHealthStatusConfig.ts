@@ -58,6 +58,7 @@ async function createHealthStatusConfig() {
         'optimize-upgrade-data-performance',
         'optimize-import-dynamic-data-performance',
         'optimize-import-static-data-performance',
+        'optimize-history-cleanup-performance',
         'optimize-connect-to-secured-es',
         'optimize-cluster-test',
         'optimize-e2e-tests',

@@ -43,8 +43,11 @@ spec:
         - name: data-cleanup
           image: busybox
           imagePullPolicy: Always
-          command: ["/bin/sh","-c"]
-          args: ["rm -fr /usr/share/elasticsearch/data/* && rm -fr /usr/share/elasticsearch/logs/*"]
+          command: ["/bin/sh", "-c"]
+          args:
+            [
+              "rm -fr /usr/share/elasticsearch/data/* && rm -fr /usr/share/elasticsearch/logs/*",
+            ]
           securityContext:
             privileged: true
           volumeMounts:

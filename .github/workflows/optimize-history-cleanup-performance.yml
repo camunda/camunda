@@ -1,0 +1,112 @@
+name: Optimize History Cleanup Performance Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      sql_dump:
+        description: SQL dump to use
+        type: "choice"
+        options:
+          - "optimize_data-medium.sqlc"
+          - "optimize_data-large.sqlc"
+          - "optimize_data-stage.sqlc"
+          - "optimize_data-e2e.sqlc"
+        default: "optimize_data-medium.sqlc"
+        required: false
+      es_refresh_interval:
+        description: Elasticsearch index refresh interval
+        default: 5s
+        required: false
+      es_num_nodes:
+        description: Number of Elasticsearch nodes in the cluster (not more than 5)
+        default: 1
+        required: false
+        type: number
+      cleanup_timeout_minutes:
+        description: Time limit for a cleanup run to finish
+        default: 60
+        required: false
+        type: number
+  schedule:
+    - cron: 0 5 * * 1-5
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SQL_DUMP: ${{ github.event.inputs.sql_dump || 'optimize_data-medium.sqlc' }}
+  ES_REFRESH_INTERVAL: ${{ github.event.inputs.es_refresh_interval || '5s' }}
+  ES_NUM_NODES: ${{ github.event.inputs.es_num_nodes || 1 }}
+  CLEANUP_TIMEOUT_MINUTES: ${{ github.event.inputs.cleanup_timeout_minutes || 60 }}
+
+jobs:
+  history-cleanup-performance:
+    name: History Cleanup Performance Test
+    runs-on: gcp-core-32-longrunning-big-ssd
+    timeout-minutes: ${{ inputs.cleanup_timeout_minutes || 60 }}
+    env:
+      NAMESPACE: optimize-history-cleanup-performance-test-${{ github.run_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Install extra Dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install -y netcat jq gettext postgresql-client
+
+      - name: Login to Google Cloud
+        uses: ./.github/actions/login-gcloud
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Get gcloud credentials
+        uses: "google-github-actions/get-gke-credentials@v1"
+        with:
+          cluster_name: "camunda-ci"
+          location: "europe-west1"
+
+      - name: Read pom.xml file
+        id: pom-info
+        uses: YunaBraska/java-info-action@main
+
+      - name: Run deployment
+        shell: bash
+        run: .github/podSpecs/performanceTests/deploy.sh $NAMESPACE ${{ env.SQL_DUMP }}  ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }} ${{ steps.pom-info.outputs.x_camunda_engine_version }} ${{ env.ES_REFRESH_INTERVAL }} false ${{ env.ES_NUM_NODES }}
+
+      - name: Import
+        shell: bash
+        run: |
+          .github/podSpecs/performanceTests/wait-for-import-to-finish.sh $NAMESPACE
+          .github/podSpecs/performanceTests/scale-optimize-down.sh $NAMESPACE
+
+      - name: Run cleanup performance test
+        shell: bash
+        run: |
+          mvn -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install
+          mvn -Pengine-cleanup-performance -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.$NAMESPACE:5432/engine -Dengine.url=http://cambpm.$NAMESPACE:8080/engine-rest -Des.host=elasticsearch.$NAMESPACE -Dcleanup.timeout.minutes=${{ env.CLEANUP_TIMEOUT_MINUTES }}
+
+      - name: Pull Indices
+        if: always()
+        run: |
+          curl -s elasticsearch.$NAMESPACE:9200/_cat/indices?v
+
+      - name: Store elasticsearch logs
+        if: always()
+        run: kubectl -n $NAMESPACE logs elasticsearch-0 -c elasticsearch > elasticsearch.log
+
+      - name: Cleanup
+        if: always()
+        run: .github/podSpecs/performanceTests/kill.sh $NAMESPACE
+
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        if: always()
+        with:
+          name: elasticsearch-logs
+          path: ./elasticsearch.log

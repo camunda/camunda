@@ -1,5 +1,5 @@
 #!/bin/bash
-die () {
+die() {
     echo >&2 "$@"
     exit 1
 }
@@ -8,4 +8,4 @@ die () {
 
 NAMESPACE=$1
 
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .github/podSpecs/performanceTests/ns.yml | kubectl delete -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" <.github/podSpecs/performanceTests/ns.yml | kubectl delete -f -

@@ -5,13 +5,13 @@ api:
   accessToken: secret
 
 engines:
-  'camunda-bpm':
+  "camunda-bpm":
     name: default
-    rest: 'http://cambpm:8080/engine-rest'
+    rest: "http://cambpm:8080/engine-rest"
     authentication:
       enabled: false
     webapps:
-      endpoint: 'http://cambpm:8080/camunda'
+      endpoint: "http://cambpm:8080/camunda"
       enabled: true
     importEnabled: true
     eventImportEnabled: ${EVENT_IMPORT_ENABLED:false}
@@ -19,8 +19,8 @@ engines:
 es:
   connection:
     nodes:
-    - host: 'elasticsearch'
-      httpPort: 9200
+      - host: "elasticsearch"
+        httpPort: 9200
   settings:
     index:
       refresh_interval: ${ES_REFRESH_INTERVAL}
@@ -28,9 +28,9 @@ es:
 security:
   auth:
     token:
-      secret: 'test'
+      secret: "test"
 
 eventBasedProcess:
-  authorizedUserIds: ['demo']
+  authorizedUserIds: ["demo"]
   eventImport:
     enabled: ${EVENT_IMPORT_ENABLED:false}
