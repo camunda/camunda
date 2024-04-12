@@ -11,4 +11,4 @@ It is now possible to build reports evaluating up to 1024 data sources. This fea
 Duplicate reports easily directly on the dashboard. The new feature copies the selected report with all configurations and allows it to be positioned freely on the dashboard. This allows you to compare different data sets using the same report configuration quickly. Copying is not possible only for reports, but also for all other tiles on the dashboard.
 
 ## Display raw data in report builder
-Zeigen Sie Rohdaten im Report Builder an, um die Auswirkungen der für einen bestimmten Bericht definierten Filter besser zu verstehen. Beginnen Sie mit der Erstellung eines Berichts schneller, indem Sie die Daten nachschlagen, auf denen der Bericht basiert.
+Display the raw data in the report builder to better understand the impact of filters defined for a specific report. Start to build a report faster by looking up the data the report is based on.
