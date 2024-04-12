@@ -317,9 +317,12 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, long maxBulkRequestSizeInBytes)
+      RestHighLevelClient esClient,
+      BulkRequest bulkRequest,
+      long maxBulkRequestSizeInBytes,
+      boolean ignoreNullIndex)
       throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
+    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes, ignoreNullIndex);
   }
 
   /* EXECUTE QUERY */
@@ -328,7 +331,8 @@ public abstract class ElasticsearchUtil {
       RestHighLevelClient esClient,
       BulkRequest bulkRequest,
       boolean refreshImmediately,
-      long maxBulkRequestSizeInBytes)
+      long maxBulkRequestSizeInBytes,
+      boolean ignoreNullIndex)
       throws PersistenceException {
     if (bulkRequest.estimatedSizeInBytes() > maxBulkRequestSizeInBytes) {
       divideLargeBulkRequestAndProcess(

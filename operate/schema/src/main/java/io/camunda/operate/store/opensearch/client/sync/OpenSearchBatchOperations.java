@@ -20,28 +20,35 @@ import static io.camunda.operate.util.ExceptionHelper.withOperateRuntimeExceptio
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.store.BatchRequest;
 import java.io.IOException;
 import java.util.List;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.BeanFactory;
 
 public class OpenSearchBatchOperations extends OpenSearchSyncOperation {
   private final BeanFactory beanFactory;
+  private final OpensearchProperties opensearchProperties;
 
   public OpenSearchBatchOperations(
-      Logger logger, OpenSearchClient openSearchClient, BeanFactory beanFactory) {
+      Logger logger,
+      OpenSearchClient openSearchClient,
+      BeanFactory beanFactory,
+      OpensearchProperties opensearchProperties) {
     super(logger, openSearchClient);
     this.beanFactory = beanFactory;
+    this.opensearchProperties = opensearchProperties;
   }
 
   private void processBulkRequest(OpenSearchClient osClient, BulkRequest bulkRequest)
       throws PersistenceException {
-    if (bulkRequest.operations().size() > 0) {
+    if (!bulkRequest.operations().isEmpty()) {
       try {
         logger.debug("************* FLUSH BULK START *************");
         final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
@@ -69,6 +76,26 @@ public class OpenSearchBatchOperations extends OpenSearchSyncOperation {
             "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
       }
     }
+  }
+
+  private BulkRequest validateIndex(BulkRequest bulkRequest) {
+    for (BulkOperation operation : bulkRequest.operations()) {
+      String index = null;
+      if (operation.isIndex()) {
+        index = operation.index().index();
+      } else if (operation.isCreate()) {
+        index = operation.create().index();
+      } else if (operation.isUpdate()) {
+        index = operation.update().index();
+      } else if (operation.isDelete()) {
+        index = operation.delete().index();
+      }
+      if (index == null) {
+        if (opensearchProperties.isBulkRequestIgnoreNullIndex()) {}
+      }
+    }
+
+    return bulkRequest;
   }
 
   public void bulk(BulkRequest.Builder bulkRequestBuilder) {

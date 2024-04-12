@@ -168,7 +168,8 @@ public class DataMultiplicator implements CommandLineRunner {
       ElasticsearchUtil.processBulkRequest(
           esClient,
           bulkRequest,
-          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+          operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
       final int percentDone = Double.valueOf(100 * count / max).intValue();
       if (percentDone > 0 && percentDone % 20 == 0) {
         LOGGER.info(
