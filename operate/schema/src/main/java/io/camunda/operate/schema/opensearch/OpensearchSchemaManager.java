@@ -116,11 +116,13 @@ public class OpensearchSchemaManager implements SchemaManager {
     final Map<String, String> indexSettings = new HashMap<>();
     indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
     indexSettings.put(REFRESH_INTERVAL, operateProperties.getOpensearch().getRefreshInterval());
-    final boolean success = setIndexSettingsFor(indexSettings, "*");
+
+    final String indexPattern = operateProperties.getOpensearch().getIndexPrefix() + "*";
+    final boolean success = setIndexSettingsFor(indexSettings, indexPattern);
     if (success) {
-      LOGGER.info("Successfully updated number of replicas for all indices");
+      LOGGER.info("Successfully updated number of replicas for {}", indexPattern);
     } else {
-      LOGGER.warn("Failed to update number of replicas for index for all indices");
+      LOGGER.warn("Failed to update number of replicas for index for {}", indexPattern);
     }
   }
 

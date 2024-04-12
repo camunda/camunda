@@ -67,11 +67,11 @@ public class SchemaStartup {
         LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
         schemaManager.createSchema();
         LOGGER.info("SchemaStartup: update index mappings.");
+        schemaManager.checkAndUpdateIndices();
       } else {
         LOGGER.info(
             "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       }
-      schemaManager.checkAndUpdateIndices();
 
       if (!newFields.isEmpty()) {
         if (createSchema) {

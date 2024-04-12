@@ -101,11 +101,13 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     final Map<String, String> indexSettings = new HashMap<>();
     indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
     indexSettings.put(REFRESH_INTERVAL, operateProperties.getElasticsearch().getRefreshInterval());
-    final boolean success = setIndexSettingsFor(indexSettings, "*");
+
+    final String indexPattern = operateProperties.getElasticsearch().getIndexPrefix() + "*";
+    final boolean success = setIndexSettingsFor(indexSettings, indexPattern);
     if (success) {
-      LOGGER.info("Successfully updated number of replicas for all indices");
+      LOGGER.info("Successfully updated number of replicas for {}", indexPattern);
     } else {
-      LOGGER.warn("Failed to update number of replicas for for all indices");
+      LOGGER.warn("Failed to update number of replicas for for {}", indexPattern);
     }
   }
 

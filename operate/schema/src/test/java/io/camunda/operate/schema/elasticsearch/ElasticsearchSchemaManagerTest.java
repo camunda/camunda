@@ -57,13 +57,14 @@ public class ElasticsearchSchemaManagerTest {
     when(operateElasticsearchProperties.getNumberOfReplicas()).thenReturn(5);
     when(operateElasticsearchProperties.getRefreshInterval()).thenReturn("2s");
     when(operateProperties.getElasticsearch()).thenReturn(operateElasticsearchProperties);
+    when(operateElasticsearchProperties.getIndexPrefix()).thenReturn("test");
 
     final Map<String, String> updatedSettings = new HashMap<>();
     updatedSettings.put(NUMBERS_OF_REPLICA, "5");
     updatedSettings.put(REFRESH_INTERVAL, "2s");
 
     final Settings indexSettings = Settings.builder().loadFromMap(updatedSettings).build();
-    when(retryElasticsearchClient.setIndexSettingsFor(indexSettings, "*")).thenReturn(true);
+    when(retryElasticsearchClient.setIndexSettingsFor(indexSettings, "test*")).thenReturn(true);
 
     underTest.checkAndUpdateIndices();
 
