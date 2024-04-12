@@ -116,8 +116,14 @@ public class DecisionRequirementsControllerIT {
   }
 
   @Test
-  public void shouldAcceptEmptyQuery() throws Exception {
+  public void shouldAcceptEmptyJSONQuery() throws Exception {
     assertPostToWithSucceed(DecisionRequirementsController.URI + SEARCH, "{}");
+    verify(decisionRequirementsDao).search(new Query<>());
+  }
+
+  @Test
+  public void shouldAcceptEmptyQuery() throws Exception {
+    assertPostToWithSucceed(DecisionRequirementsController.URI + SEARCH, "");
     verify(decisionRequirementsDao).search(new Query<>());
   }
 
