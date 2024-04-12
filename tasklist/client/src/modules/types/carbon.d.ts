@@ -132,7 +132,7 @@ declare module '@carbon/react' {
     >;
 
   export const Layer: <C extends React.ElementType = 'div'>(
-    props: StackProps<C>,
+    props: LayerProps<C>,
   ) => React.ReactElement | null;
 
   export const ActionableNotification: React.FunctionComponent<{
@@ -378,6 +378,9 @@ declare module '@carbon/react/icons' {
   export const CircleDash: Icon;
   export const UserAvatar: Icon;
   export const UserAvatarFilled: Icon;
+  export const Calendar: Icon;
+  export const CheckmarkFilled: Icon;
+  export const Notification: Icon;
 }
 
 declare module '@carbon/elements' {

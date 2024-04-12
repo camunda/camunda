@@ -5,3 +5,4 @@ spring:
 graphql:
   tools:
     introspection-enabled: true
+

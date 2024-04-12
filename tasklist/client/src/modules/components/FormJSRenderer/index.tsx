@@ -15,16 +15,17 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {FormRoot, FormJSCustomStyling, Layer} from './styled';
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {Layer} from '@carbon/react';
 import {Variable} from 'modules/types';
 import {FormManager} from 'modules/formManager';
-import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
-import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 import {mergeVariables} from './mergeVariables';
 import {ValidationMessage} from './ValidationMessage';
 import {getFieldLabels} from './getFieldLabels';
 import {usePrefersReducedMotion} from 'modules/hooks/usePrefersReducedMotion';
+import styles from './styles.module.scss';
+import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
+import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
@@ -201,9 +202,8 @@ const FormJSRenderer: React.FC<Props> = ({
 
   return (
     <>
-      <FormJSCustomStyling />
-      <Layer>
-        <FormRoot ref={formContainerRef} />
+      <Layer className={styles.layer}>
+        <div ref={formContainerRef} className={styles.formRoot} />
       </Layer>
       {invalidFields !== undefined ? (
         <ValidationMessage

@@ -39,6 +39,67 @@ const orderedApps = [
   'optimize',
 ] as const;
 
+function getInfoSidebarItems(isPaidPlan: boolean) {
+  const BASE_INFO_SIDEBAR_ITEMS = [
+    {
+      key: 'docs',
+      label: 'Documentation',
+      onClick: () => {
+        tracking.track({
+          eventName: 'info-bar',
+          link: 'documentation',
+        });
+
+        window.open('https://docs.camunda.io/', '_blank');
+      },
+    },
+    {
+      key: 'academy',
+      label: 'Camunda Academy',
+      onClick: () => {
+        tracking.track({
+          eventName: 'info-bar',
+          link: 'academy',
+        });
+
+        window.open('https://academy.camunda.com/', '_blank');
+      },
+    },
+  ];
+  const FEEDBACK_AND_SUPPORT_ITEM = {
+    key: 'feedbackAndSupport',
+    label: 'Feedback and Support',
+    onClick: () => {
+      tracking.track({
+        eventName: 'info-bar',
+        link: 'feedback',
+      });
+
+      window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
+    },
+  } as const;
+  const COMMUNITY_FORUM_ITEM = {
+    key: 'communityForum',
+    label: 'Community Forum',
+    onClick: () => {
+      tracking.track({
+        eventName: 'info-bar',
+        link: 'forum',
+      });
+
+      window.open('https://forum.camunda.io', '_blank');
+    },
+  };
+
+  return isPaidPlan
+    ? [
+        ...BASE_INFO_SIDEBAR_ITEMS,
+        FEEDBACK_AND_SUPPORT_ITEM,
+        COMMUNITY_FORUM_ITEM,
+      ]
+    : [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
+}
+
 type AppSwitcherElementType = NonNullable<
   React.ComponentProps<typeof C3Navigation>['appBar']['elements']
 >[number];
@@ -190,66 +251,9 @@ const Header: React.FC = observer(() => {
         infoSideBar={{
           isOpen: false,
           ariaLabel: 'Info',
-          elements: [
-            {
-              key: 'docs',
-              label: 'Documentation',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'info-bar',
-                  link: 'documentation',
-                });
-
-                window.open('https://docs.camunda.io/', '_blank');
-              },
-            },
-            {
-              key: 'academy',
-              label: 'Camunda Academy',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'info-bar',
-                  link: 'academy',
-                });
-
-                window.open('https://academy.camunda.com/', '_blank');
-              },
-            },
-            {
-              key: 'feedbackAndSupport',
-              label: 'Feedback and Support',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'info-bar',
-                  link: 'feedback',
-                });
-
-                if (
-                  salesPlanType === 'paid-cc' ||
-                  salesPlanType === 'enterprise'
-                ) {
-                  window.open(
-                    'https://jira.camunda.com/projects/SUPPORT/queues',
-                    '_blank',
-                  );
-                } else {
-                  window.open('https://forum.camunda.io/', '_blank');
-                }
-              },
-            },
-            {
-              key: 'slackCommunityChannel',
-              label: 'Slack Community Channel',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'info-bar',
-                  link: 'slack',
-                });
-
-                window.open('https://camunda.com/slack', '_blank');
-              },
-            },
-          ],
+          elements: getInfoSidebarItems(
+            ['paid-cc', 'enterprise'].includes(salesPlanType!),
+          ),
         }}
         userSideBar={{
           ariaLabel: 'Settings',

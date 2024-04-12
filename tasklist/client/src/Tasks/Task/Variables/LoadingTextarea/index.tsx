@@ -15,9 +15,10 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {TextInput} from '../TextInput';
 import {useLayoutEffect, useRef} from 'react';
-import {LoadingStateContainer, Overlay, Spinner} from './styled';
+import {Loading} from '@carbon/react';
+import {TextInput} from '../TextInput';
+import styles from './styles.module.scss';
 
 type Props = React.ComponentProps<typeof TextInput> & {
   isLoading: boolean;
@@ -43,12 +44,15 @@ const LoadingTextarea: React.FC<Props> = ({
 
   if (isLoading) {
     return (
-      <LoadingStateContainer data-testid="textarea-loading-overlay">
-        <Overlay>
-          <Spinner withOverlay={false} />
-        </Overlay>
+      <div
+        className={styles.loadingStateContainer}
+        data-testid="textarea-loading-overlay"
+      >
+        <div className={styles.overlay}>
+          <Loading className={styles.loading} withOverlay={false} />
+        </div>
         <TextInput ref={inputRef} {...props} disabled />
-      </LoadingStateContainer>
+      </div>
     );
   }
 

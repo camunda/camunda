@@ -14,8 +14,8 @@
     <module>els-schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-840</module>
     <module>importer-850</module>
+    <module>importer-860</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
@@ -54,7 +54,7 @@
     <version.apache.httpclient5>5.3.1</version.apache.httpclient5>
     <version.aws-sdk>2.24.3</version.aws-sdk>
 
-    <version.node>v20.11.1</version.node>
+    <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>

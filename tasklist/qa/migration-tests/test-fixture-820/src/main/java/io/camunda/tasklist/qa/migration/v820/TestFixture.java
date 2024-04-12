@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TestFixture extends AbstractTestFixture {
 
-  public static final String VERSION = "8.2.0";
+  public static final String VERSION = "8.2.26";
 
   @Override
   public String getVersion() {

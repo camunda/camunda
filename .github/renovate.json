@@ -5,8 +5,8 @@
     ":rebaseStalePrs",
     ":semanticCommitTypeAll(chore)"
   ],
-  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile", "tasklist.Dockerfile", "pom.xml"],
-  "ignorePaths": ["client/pom.xml"],
+  "includePaths": ["tasklist/client/**", ".github/**", ".ci/**", "Dockerfile", "tasklist.Dockerfile", "tasklist/pom.xml"],
+  "ignorePaths": ["tasklist/client/pom.xml"],
   "helmv3": {
     "registryAliases": {
       "helm-camunda-io": "https://helm.camunda.io"

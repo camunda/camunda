@@ -16,31 +16,30 @@
  */
 
 import {ButtonSkeleton, SkeletonText, TextAreaSkeleton} from '@carbon/react';
-import {
-  Container,
-  FormContainer,
-  FormSkeletonContainer,
-  SubmitButtonRow,
-} from './styled';
 import {SkeletonPoweredBy} from 'modules/components/PoweredBy';
+import styles from './styles.module.scss';
 
 const Skeleton: React.FC = () => {
   return (
-    <Container data-testid="public-form-skeleton" aria-busy="true">
-      <FormContainer>
-        <FormSkeletonContainer>
+    <div
+      className={styles.container}
+      data-testid="public-form-skeleton"
+      aria-busy="true"
+    >
+      <div className={styles.formContainer}>
+        <div className={styles.formSkeletonContainer}>
           <SkeletonText heading />
           <TextAreaSkeleton />
           <TextAreaSkeleton />
           <TextAreaSkeleton />
           <TextAreaSkeleton />
-        </FormSkeletonContainer>
-      </FormContainer>
-      <SubmitButtonRow>
+        </div>
+      </div>
+      <div className={styles.submitButtonRow}>
         <ButtonSkeleton size="lg" />
         <SkeletonPoweredBy />
-      </SubmitButtonRow>
-    </Container>
+      </div>
+    </div>
   );
 };
 

@@ -14,6 +14,12 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
 package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
@@ -94,6 +100,7 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.cloud.permissionaudience=audience",
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
       "camunda.tasklist.cloud.consoleUrl=https://consoleUrl",
+      "camunda.tasklist.csrf-prevention-enabled=false",
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID,
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
@@ -132,7 +139,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     return List.of(AuthenticationIT::tokensWithOrgAsMapFrom);
   }
 
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+  private static Tokens tokensWithOrgAsMapFrom(final String claim, final String organization) {
     final String emptyJSONEncoded = toEncodedToken(Map.of());
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final Map<String, Object> orgMap = Map.of("id", organization);
@@ -159,15 +166,15 @@ public class AuthenticationIT implements AuthenticationTestable {
         5L);
   }
 
-  private static String toEncodedToken(Map<String, ?> map) {
+  private static String toEncodedToken(final Map<String, ?> map) {
     return toBase64(toJSON(map));
   }
 
-  private static String toBase64(String input) {
+  private static String toBase64(final String input) {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  private static String toJSON(Map<String, ?> map) {
+  private static String toJSON(final Map<String, ?> map) {
     return new JSONObject(map).toString();
   }
 
@@ -188,7 +195,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLoginSuccess(BiFunction<String, String, Tokens> orgExtractor) throws Exception {
+  public void testLoginSuccess(final BiFunction<String, String, Tokens> orgExtractor)
+      throws Exception {
     final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
     final ResponseEntity<String> response = get(ROOT, cookies);
 
@@ -204,8 +212,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLoginFailedWithNoPermissions(BiFunction<String, String, Tokens> orgExtractor)
-      throws Exception {
+  public void testLoginFailedWithNoPermissions(
+      final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockPermissionAllowed();
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
@@ -236,8 +244,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLoginFailedWithNoReadPermissions(BiFunction<String, String, Tokens> orgExtractor)
-      throws Exception {
+  public void testLoginFailedWithNoReadPermissions(
+      final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockNoReadPermission();
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
@@ -271,7 +279,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   @ParameterizedTest
   @MethodSource("orgExtractors")
   public void testLoginSucceedWithNoWritePermissions(
-      BiFunction<String, String, Tokens> orgExtractor) throws Exception {
+      final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockNoWritePermission();
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
@@ -333,7 +341,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLogout(BiFunction<String, String, Tokens> orgExtractor) throws Throwable {
+  public void testLogout(final BiFunction<String, String, Tokens> orgExtractor) throws Throwable {
     // Step 1 Login
     final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
     // Step 3 Now we should have access to root
@@ -355,7 +363,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   @ParameterizedTest
   @MethodSource("orgExtractors")
   @DirtiesContext
-  public void testLoginAndUsageOfGraphQlApi(BiFunction<String, String, Tokens> orgExtractor)
+  public void testLoginAndUsageOfGraphQlApi(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     // Step 1: try to access current user
     final ResponseEntity<String> currentUserResponse =
@@ -419,7 +427,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   @ParameterizedTest
   @MethodSource("orgExtractors")
   @DirtiesContext
-  public void testLoginAndUsageOfRestApi(BiFunction<String, String, Tokens> orgExtractor)
+  public void testLoginAndUsageOfRestApi(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     // Step 1: try to access current user
     final ResponseEntity<String> currentUserResponse =
@@ -478,34 +486,36 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(response.getBody()).contains("No permission for Tasklist");
   }
 
-  private void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  private void assertThatRequestIsRedirectedTo(final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private void assertThatUnauthorizedIsReturned(ResponseEntity<?> response) {
+  private void assertThatUnauthorizedIsReturned(final ResponseEntity<?> response) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return "http://localhost:" + randomServerPort + path;
   }
 
-  private HttpEntity<?> loginWithSSO(BiFunction<String, String, Tokens> orgExtractor)
+  private HttpEntity<?> loginWithSSO(final BiFunction<String, String, Tokens> orgExtractor)
       throws IdentityVerificationException {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAreSet(response, false);
+
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
     response = get(LOGIN_RESOURCE, cookies);
+
     assertThat(redirectLocationIn(response))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
@@ -525,7 +535,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     return cookies;
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
     if (response.getHeaders().containsKey(HttpHeaders.SET_COOKIE)) {
       headers.add(
@@ -540,8 +550,9 @@ public class AuthenticationIT implements AuthenticationTestable {
     return testRestTemplate;
   }
 
+  @Override
   public HttpEntity<Map<String, ?>> prepareRequestWithCookies(
-      HttpHeaders httpHeaders, String graphQlQuery) {
+      final HttpHeaders httpHeaders, final String graphQlQuery) {
 
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);

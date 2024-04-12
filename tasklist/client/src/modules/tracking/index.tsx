@@ -19,6 +19,7 @@ import {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
 import {CurrentUser} from 'modules/types';
 import {TaskFilters} from 'modules/hooks/useTaskFilters';
+import Hotjar from '@hotjar/browser';
 
 const EVENT_PREFIX = 'tasklist:';
 type Events =
@@ -78,7 +79,7 @@ type Events =
     }
   | {
       eventName: 'info-bar';
-      link: 'documentation' | 'academy' | 'feedback' | 'slack';
+      link: 'documentation' | 'academy' | 'feedback' | 'forum';
     }
   | {
       eventName: 'user-side-bar';
@@ -189,6 +190,12 @@ class Tracking {
     return Boolean(window.Osano?.cm?.analytics);
   };
 
+  #loadHotjar = () => {
+    Hotjar.init(4937911, 6);
+
+    return Promise.resolve();
+  };
+
   #loadMixpanel = (): Promise<void> => {
     return import('mixpanel-browser').then(({default: mixpanel}) => {
       mixpanel.init(
@@ -250,7 +257,11 @@ class Tracking {
     }
 
     return this.#loadOsano().then(() =>
-      Promise.all([this.#loadMixpanel(), this.#loadAppCues()]).then(() => {
+      Promise.all([
+        this.#loadMixpanel(),
+        this.#loadAppCues(),
+        this.#loadHotjar(),
+      ]).then(() => {
         window.Osano?.cm?.addEventListener(
           'osano-cm-consent-saved',
           ({ANALYTICS}) => {

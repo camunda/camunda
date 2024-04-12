@@ -59,15 +59,20 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
   }
 
   @Override
-  protected void applyOAuth2Settings(HttpSecurity http) throws Exception {
+  protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
 
   @Override
   protected void applySecurityFilterSettings(
-      HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
-    http.csrf((csrf) -> csrf.disable())
-        .authorizeRequests(
+      final HttpSecurity http, final HandlerMappingIntrospector introspector) throws Exception {
+    if (tasklistProperties.isCsrfPreventionEnabled()) {
+      logger.info("CSRF Protection Enabled");
+      configureCSRF(http);
+    } else {
+      http.csrf((csrf) -> csrf.disable());
+    }
+    http.authorizeRequests(
             (authorize) -> {
               authorize
                   .requestMatchers(getAuthWhitelist(introspector))
@@ -87,7 +92,7 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
   }
 
   protected void authenticationEntry(
-      HttpServletRequest req, HttpServletResponse res, AuthenticationException ex)
+      final HttpServletRequest req, final HttpServletResponse res, final AuthenticationException ex)
       throws IOException {
 
     String requestedUrl = req.getRequestURI();

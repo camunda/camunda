@@ -13,12 +13,11 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>test-fixture-100</module>
-		<module>test-fixture-800</module>
 		<module>test-fixture-810</module>
 		<module>test-fixture-820</module>
 		<module>test-fixture-830</module>
 		<module>test-fixture-840</module>
+		<module>test-fixture-850</module>
 		<module>migration-test</module>
 	</modules>
 

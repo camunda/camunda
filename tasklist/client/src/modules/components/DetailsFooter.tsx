@@ -15,25 +15,8 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
-import {TaskDetailsRow as BaseTaskDetailsRow} from './TaskDetailsLayout';
-
-const Container = styled.div`
-  width: 100%;
-  height: 100%;
-  background-color: var(--cds-background);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const TaskDetailsRow = styled(BaseTaskDetailsRow)`
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: end;
-  text-align: right;
-`;
+import {TaskDetailsRow} from './TaskDetailsLayout';
+import styles from './DetailsFooter.module.scss';
 
 type Props = {
   children: React.ReactNode;
@@ -41,9 +24,9 @@ type Props = {
 
 const DetailsFooter: React.FC<Props> = ({children}) => {
   return (
-    <Container>
-      <TaskDetailsRow>{children}</TaskDetailsRow>
-    </Container>
+    <div className={styles.container}>
+      <TaskDetailsRow className={styles.row}>{children}</TaskDetailsRow>
+    </div>
   );
 };
 

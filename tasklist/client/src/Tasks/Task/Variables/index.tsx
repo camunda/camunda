@@ -22,19 +22,6 @@ import intersection from 'lodash/intersection';
 import get from 'lodash/get';
 import arrayMutators from 'final-form-arrays';
 import {
-  Form as StyledForm,
-  EmptyFieldsInformationIcon,
-  Container,
-  StructuredListCell,
-  StructuredListWrapper,
-  ScrollableCellContent,
-  IconButtonsContainer,
-  VariableNameCell,
-  VariableValueCell,
-  ControlsCell,
-  PanelHeader,
-} from './styled';
-import {
   validateNameCharacters,
   validateNameComplete,
   validateDuplicateNames,
@@ -65,6 +52,8 @@ import {
   StructuredListBody,
   Heading,
   Layer,
+  StructuredListWrapper,
+  StructuredListCell,
 } from '@carbon/react';
 import {Information, Close, Popup, Add} from '@carbon/react/icons';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
@@ -79,6 +68,8 @@ import {Separator} from 'modules/components/Separator';
 import {useAllVariables} from 'modules/queries/useAllVariables';
 import {match, Pattern} from 'ts-pattern';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
@@ -212,7 +203,7 @@ const Variables: React.FC<Props> = ({
         hasValidationErrors,
       }) => (
         <>
-          <PanelHeader>
+          <TaskDetailsRow className={styles.panelHeader}>
             <Heading>Variables</Heading>
             {taskState !== 'COMPLETED' && (
               <Button
@@ -233,10 +224,11 @@ const Variables: React.FC<Props> = ({
                 Add Variable
               </Button>
             )}
-          </PanelHeader>
+          </TaskDetailsRow>
           <Separator />
           <ScrollableContent>
-            <StyledForm
+            <form
+              className={styles.form}
               onSubmit={handleSubmit}
               data-testid="variables-table"
               ref={formRef}
@@ -290,22 +282,46 @@ const Variables: React.FC<Props> = ({
                       },
                     ),
                     () => (
-                      <Container data-testid="variables-form-table" as={Layer}>
-                        <StructuredListWrapper isCondensed>
+                      <TaskDetailsRow
+                        className={styles.container}
+                        data-testid="variables-form-table"
+                        as={Layer}
+                        $disabledSidePadding
+                      >
+                        <StructuredListWrapper
+                          className={styles.list}
+                          isCondensed
+                        >
                           <StructuredListHead>
                             <StructuredListRow head>
-                              <StructuredListCell head>Name</StructuredListCell>
-                              <StructuredListCell head>
+                              <StructuredListCell
+                                className={styles.listCell}
+                                head
+                              >
+                                Name
+                              </StructuredListCell>
+                              <StructuredListCell
+                                className={styles.listCell}
+                                head
+                              >
                                 Value
                               </StructuredListCell>
-                              <StructuredListCell head />
+                              <StructuredListCell
+                                className={styles.listCell}
+                                head
+                              />
                             </StructuredListRow>
                           </StructuredListHead>
                           <StructuredListBody>
                             {variables.map((variable) =>
                               canCompleteTask ? (
                                 <StructuredListRow key={variable.name}>
-                                  <VariableNameCell>
+                                  <StructuredListCell
+                                    className={cn(
+                                      styles.listCell,
+                                      styles.cellName,
+                                    )}
+                                  >
                                     <label
                                       htmlFor={createVariableFieldName(
                                         variable.name,
@@ -313,8 +329,13 @@ const Variables: React.FC<Props> = ({
                                     >
                                       {variable.name}
                                     </label>
-                                  </VariableNameCell>
-                                  <VariableValueCell>
+                                  </StructuredListCell>
+                                  <StructuredListCell
+                                    className={cn(
+                                      styles.listCell,
+                                      styles.valueCell,
+                                    )}
+                                  >
                                     <Field
                                       name={createVariableFieldName(
                                         variable.name,
@@ -347,9 +368,19 @@ const Variables: React.FC<Props> = ({
                                         />
                                       )}
                                     </Field>
-                                  </VariableValueCell>
-                                  <ControlsCell>
-                                    <IconButtonsContainer $showExtraPadding>
+                                  </StructuredListCell>
+                                  <StructuredListCell
+                                    className={cn(
+                                      styles.listCell,
+                                      styles.controlsCell,
+                                    )}
+                                  >
+                                    <div
+                                      className={cn(
+                                        styles.iconButtons,
+                                        styles.extraPadding,
+                                      )}
+                                    >
                                       <IconButton
                                         label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
                                         onClick={() => {
@@ -366,22 +397,39 @@ const Variables: React.FC<Props> = ({
                                       >
                                         <Popup />
                                       </IconButton>
-                                    </IconButtonsContainer>
-                                  </ControlsCell>
+                                    </div>
+                                  </StructuredListCell>
                                 </StructuredListRow>
                               ) : (
                                 <StructuredListRow key={variable.name}>
-                                  <VariableNameCell>
+                                  <StructuredListCell
+                                    className={cn(
+                                      styles.listCell,
+                                      styles.cellName,
+                                    )}
+                                  >
                                     {variable.name}
-                                  </VariableNameCell>
-                                  <VariableValueCell>
-                                    <ScrollableCellContent>
-                                      {variable.isValueTruncated
-                                        ? `${variable.previewValue}...`
-                                        : variable.value}
-                                    </ScrollableCellContent>
-                                  </VariableValueCell>
-                                  <ControlsCell />
+                                  </StructuredListCell>
+                                  <StructuredListCell
+                                    className={cn(
+                                      styles.listCell,
+                                      styles.valueCell,
+                                    )}
+                                  >
+                                    <div className={styles.scrollableOuter}>
+                                      <div className={styles.scrollableInner}>
+                                        {variable.isValueTruncated
+                                          ? `${variable.previewValue}...`
+                                          : variable.value}
+                                      </div>
+                                    </div>
+                                  </StructuredListCell>
+                                  <StructuredListCell
+                                    className={cn(
+                                      styles.listCell,
+                                      styles.controlsCell,
+                                    )}
+                                  />
                                 </StructuredListRow>
                               ),
                             )}
@@ -401,7 +449,12 @@ const Variables: React.FC<Props> = ({
                                   {({fields}) =>
                                     fields.map((variable, index) => (
                                       <StructuredListRow key={variable}>
-                                        <VariableNameCell>
+                                        <StructuredListCell
+                                          className={cn(
+                                            styles.listCell,
+                                            styles.cellName,
+                                          )}
+                                        >
                                           <DelayedErrorField
                                             name={createNewVariableFieldName(
                                               variable,
@@ -435,8 +488,13 @@ const Variables: React.FC<Props> = ({
                                               />
                                             )}
                                           </DelayedErrorField>
-                                        </VariableNameCell>
-                                        <VariableValueCell>
+                                        </StructuredListCell>
+                                        <StructuredListCell
+                                          className={cn(
+                                            styles.listCell,
+                                            styles.valueCell,
+                                          )}
+                                        >
                                           <DelayedErrorField
                                             name={createNewVariableFieldName(
                                               variable,
@@ -465,9 +523,14 @@ const Variables: React.FC<Props> = ({
                                               />
                                             )}
                                           </DelayedErrorField>
-                                        </VariableValueCell>
-                                        <ControlsCell>
-                                          <IconButtonsContainer>
+                                        </StructuredListCell>
+                                        <StructuredListCell
+                                          className={cn(
+                                            styles.listCell,
+                                            styles.controlsCell,
+                                          )}
+                                        >
+                                          <div className={styles.iconButtons}>
                                             <IconButton
                                               label={
                                                 CODE_EDITOR_BUTTON_TOOLTIP_LABEL
@@ -490,8 +553,8 @@ const Variables: React.FC<Props> = ({
                                             >
                                               <Close />
                                             </IconButton>
-                                          </IconButtonsContainer>
-                                        </ControlsCell>
+                                          </div>
+                                        </StructuredListCell>
                                       </StructuredListRow>
                                     ))
                                   }
@@ -500,19 +563,20 @@ const Variables: React.FC<Props> = ({
                             ) : null}
                           </StructuredListBody>
                         </StructuredListWrapper>
-                      </Container>
+                      </TaskDetailsRow>
                     ),
                   )
                   .otherwise(() => null)}
 
                 <DetailsFooter>
                   {hasEmptyNewVariable(values) && (
-                    <EmptyFieldsInformationIcon
+                    <IconButton
+                      className={styles.inlineIcon}
                       label="You first have to fill all fields"
                       align="top"
                     >
                       <Information size={20} />
-                    </EmptyFieldsInformationIcon>
+                    </IconButton>
                   )}
 
                   <AsyncActionButton
@@ -569,7 +633,7 @@ const Variables: React.FC<Props> = ({
                   value={isModalOpen ? get(values, editingVariable) : ''}
                 />
               </Suspense>
-            </StyledForm>
+            </form>
           </ScrollableContent>
         </>
       )}

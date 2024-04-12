@@ -11,6 +11,10 @@
   <name>Tasklist Importer 850</name>
   <artifactId>tasklist-importer-850</artifactId>
 
+  <properties>
+    <version.zeebe>8.5.0</version.zeebe>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -24,7 +28,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
-      <version>${version.zeebe}</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
 

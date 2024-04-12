@@ -15,26 +15,56 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
+import {
+  Icon,
+  Error,
+  CheckmarkOutline,
+  RadioButtonChecked,
+  WarningFilled,
+} from '@carbon/react/icons';
+import {match} from 'ts-pattern';
 import {ProcessInstance} from 'modules/types';
-import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
-import {Icon, Error} from '@carbon/react/icons';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
-const stateIconsMap = {
-  incident: WarningFilled,
-  active: RadioButtonChecked,
-  completed: CheckmarkOutline,
-  canceled: Error,
-  terminated: Error,
-} as const;
-
-type Props = {
+type Props = React.ComponentProps<Icon> & {
   state: ProcessInstance['state'];
-  size: React.ComponentProps<Icon>['size'];
 };
 
-const ProcessInstanceStateIcon: React.FC<Props> = ({state, ...props}) => {
-  const TargetComponent = stateIconsMap[state];
-  return <TargetComponent data-testid={`${state}-icon`} {...props} />;
+const ProcessInstanceStateIcon: React.FC<Props> = ({
+  state,
+  className,
+  ...rest
+}) => {
+  return match({state})
+    .with({state: 'incident'}, () => (
+      <WarningFilled
+        {...rest}
+        data-testid="incident-icon"
+        className={cn(className, styles.error)}
+      />
+    ))
+    .with({state: 'active'}, () => (
+      <RadioButtonChecked
+        {...rest}
+        data-testid="active-icon"
+        className={cn(className, styles.success)}
+      />
+    ))
+    .with({state: 'completed'}, () => (
+      <CheckmarkOutline
+        {...rest}
+        data-testid="completed-icon"
+        className={cn(className, styles.secondary)}
+      />
+    ))
+    .with({state: 'canceled'}, () => (
+      <Error {...rest} data-testid="canceled-icon" className={className} />
+    ))
+    .with({state: 'terminated'}, () => (
+      <Error {...rest} data-testid="terminated-icon" className={className} />
+    ))
+    .exhaustive();
 };
 
 export {ProcessInstanceStateIcon};

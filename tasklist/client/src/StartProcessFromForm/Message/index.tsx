@@ -16,16 +16,17 @@
  */
 
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import {Container, PoweredBy} from './styled';
+import styles from './styles.module.scss';
+import {PoweredBy} from 'modules/components/PoweredBy';
 
 type Props = React.ComponentProps<typeof C3EmptyState>;
 
 const Message: React.FC<Props> = (props) => {
   return (
-    <Container>
+    <div className={styles.container}>
       <C3EmptyState {...props} />
-      <PoweredBy />
-    </Container>
+      <PoweredBy className={styles.poweredBy} />
+    </div>
   );
 };
 

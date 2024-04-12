@@ -16,35 +16,29 @@
  */
 
 import {useProcessInstances} from 'modules/queries/useProcessInstances';
-import {
-  Container,
-  Message,
-  Header,
-  Item,
-  ItemContainer,
-  ProcessInstanceStateIcon,
-} from './styled';
 import {BodyCompact, BodyLong, Label} from 'modules/components/FontTokens';
 import capitalize from 'lodash/capitalize';
 import {formatDate} from 'modules/utils/formatDate';
 import {Skeleton} from './Skeleton';
 import {match} from 'ts-pattern';
 import {Stack, Layer} from '@carbon/react';
+import styles from './styles.module.scss';
+import {ProcessInstanceStateIcon} from './ProcessInstanceStateIcon';
 
 const History: React.FC = () => {
   const {data: processInstances, status} = useProcessInstances();
 
   return (
-    <Container>
-      <Label $color="secondary" as={Header}>
+    <div className={styles.container}>
+      <Label $color="secondary" className={styles.header}>
         History
       </Label>
-      <ItemContainer>
+      <div className={styles.itemContainer}>
         {match({status})
           .with({status: 'loading'}, () => <Skeleton />)
           .with({status: 'error'}, () => (
             <Layer>
-              <Stack gap={3} as={Message}>
+              <Stack gap={3} className={styles.message}>
                 <BodyCompact $variant="02">
                   Oops! Something went wrong while fetching the history
                 </BodyCompact>
@@ -62,7 +56,7 @@ const History: React.FC = () => {
               processInstances === undefined ||
               processInstances.length === 0 ? (
                 <Layer>
-                  <Stack gap={3} as={Message}>
+                  <Stack gap={3} className={styles.message}>
                     <BodyCompact $variant="02">
                       No history entries found
                     </BodyCompact>
@@ -74,7 +68,7 @@ const History: React.FC = () => {
                 </Layer>
               ) : (
                 processInstances.map(({id, process, creationDate, state}) => (
-                  <Stack key={id} gap={3} as={Item}>
+                  <Stack key={id} gap={3} className={styles.item}>
                     <BodyCompact $showEllipsisOnOverflow>
                       {process.name ?? process.bpmnProcessId}
                     </BodyCompact>
@@ -83,15 +77,19 @@ const History: React.FC = () => {
                     </BodyCompact>
                     <Label $color="secondary">
                       {formatDate(creationDate)} - {capitalize(state)}
-                      <ProcessInstanceStateIcon state={state} size={16} />
+                      <ProcessInstanceStateIcon
+                        className={styles.icon}
+                        state={state}
+                        size={16}
+                      />
                     </Label>
                   </Stack>
                 ))
               ),
           )
           .exhaustive()}
-      </ItemContainer>
-    </Container>
+      </div>
+    </div>
   );
 };
 

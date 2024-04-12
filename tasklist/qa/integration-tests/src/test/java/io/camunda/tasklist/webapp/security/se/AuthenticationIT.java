@@ -80,7 +80,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAreSet(response, true);
     assertThatClientConfigContains("\"canLogout\":true");
   }
 
@@ -100,7 +100,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(loginResponse);
+    assertThatCookiesAreSet(loginResponse, true);
     // when
     final ResponseEntity<String> logoutResponse = logout(loginResponse);
 
@@ -131,7 +131,8 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
   public void shouldReturnCurrentUser() {
     // given authenticated user
     final ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
-    assertThatCookiesAreSet(loginResponse);
+    assertThatCookiesAreSet(loginResponse, true);
+
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(

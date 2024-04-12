@@ -1,11 +1,22 @@
 name: Tasklist a11y tests
-on: push
+on:
+  push:
+    branches:
+      - "master"
+      - "stable/**"
+    paths:
+      - ".github/workflows/tasklist-a11y.yml"
+      - "tasklist/client/**"
+  pull_request:
+    paths:
+      - ".github/workflows/tasklist-a11y.yml"
+      - "tasklist/client/**"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.40.1
+      image: mcr.microsoft.com/playwright:v1.43.0
       options: --user 1001:1000
     steps:
       - name: Check out repository code

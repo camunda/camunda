@@ -16,11 +16,8 @@
  */
 
 import {Stack} from '@carbon/react';
-import {
-  HorizontalRule,
-  ValidationMessageContainer,
-  WarningFilled,
-} from './styled';
+import {Warning} from '@carbon/react/icons';
+import styles from './styles.module.scss';
 
 const ValidationMessage: React.FC<{
   fieldIds: string[];
@@ -66,15 +63,15 @@ const ValidationMessage: React.FC<{
 
   return (
     <>
-      <HorizontalRule />
+      <hr className={styles.hr} />
       <Stack
         orientation="horizontal"
         gap={3}
-        as={ValidationMessageContainer}
+        className={styles.validationMessage}
         role="alert"
         aria-label={screenReaderMessage}
       >
-        <WarningFilled aria-hidden />
+        <Warning aria-hidden className={styles.warningFilled} />
         <div aria-hidden>{readableMessage}</div>
       </Stack>
     </>

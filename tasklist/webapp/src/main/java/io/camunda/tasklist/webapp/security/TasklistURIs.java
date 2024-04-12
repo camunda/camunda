@@ -50,10 +50,12 @@ public final class TasklistURIs {
   public static final String COOKIE_JSESSIONID = "TASKLIST-SESSION";
   public static final String START_PUBLIC_PROCESS = "/new/";
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
+  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
 
   private TasklistURIs() {}
 
-  public static final RequestMatcher[] getAuthWhitelist(HandlerMappingIntrospector introspector) {
+  public static final RequestMatcher[] getAuthWhitelist(
+      final HandlerMappingIntrospector introspector) {
     final RequestMatcher[] requestMatchers = {
       AntPathRequestMatcher.antMatcher("/webjars/**"),
       AntPathRequestMatcher.antMatcher(CLIENT_CONFIG_RESOURCE),

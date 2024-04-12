@@ -17,14 +17,13 @@
 
 import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {CurrentUser} from 'modules/types';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 describe('Info bar', () => {
-  it('should render with correct links', async () => {
+  it('should render links without a plan', async () => {
     const originalWindowOpen = window.open;
     const mockOpenFn = vi.fn();
     window.open = mockOpenFn;
@@ -53,73 +52,231 @@ describe('Info bar', () => {
       }),
     );
 
-    await user.click(
-      await screen.findByRole('button', {name: 'Documentation'}),
-    );
+    await user.click(screen.getByRole('button', {name: 'Documentation'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://docs.camunda.io/',
       '_blank',
     );
 
-    await user.click(screen.getByText('Camunda Academy'));
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank',
     );
 
-    await user.click(screen.getByText('Slack Community Channel'));
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Feedback and Support'}),
+    ).not.toBeInTheDocument();
+
+    window.open = originalWindowOpen;
+  });
+
+  it('should render links for free plan', async () => {
+    const originalWindowOpen = window.open;
+    const mockOpenFn = vi.fn();
+    window.open = mockOpenFn;
+
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json({
+            ...userMocks.currentUser,
+            salesPlanType: 'free',
+          });
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
+    const {user} = render(<Header />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Documentation'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
-      'https://camunda.com/slack',
+      'https://docs.camunda.io/',
+      '_blank',
+    );
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://academy.camunda.com/',
+      '_blank',
+    );
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Feedback and Support'}),
+    ).not.toBeInTheDocument();
+
+    window.open = originalWindowOpen;
+  });
+
+  it('should render links for paid plan', async () => {
+    const originalWindowOpen = window.open;
+    const mockOpenFn = vi.fn();
+    window.open = mockOpenFn;
+
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json({
+            ...userMocks.currentUser,
+            salesPlanType: 'paid-cc',
+          });
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
+    const {user} = render(<Header />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Documentation'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://docs.camunda.io/',
+      '_blank',
+    );
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://academy.camunda.com/',
+      '_blank',
+    );
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: 'Feedback and Support'}),
+    );
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://jira.camunda.com/projects/SUPPORT/queues',
       '_blank',
     );
 
     window.open = originalWindowOpen;
   });
 
-  it.each<[CurrentUser['salesPlanType'], string]>([
-    ['free', 'https://forum.camunda.io/'],
-    ['enterprise', 'https://jira.camunda.com/projects/SUPPORT/queues'],
-    ['paid-cc', 'https://jira.camunda.com/projects/SUPPORT/queues'],
-  ])(
-    'should render correct links for feedback and support - %p',
-    async (salesPlanType, link) => {
-      nodeMockServer.use(
-        http.get(
-          '/v1/internal/users/current',
-          () => {
-            return HttpResponse.json({
-              ...userMocks.currentUser,
-              salesPlanType,
-            });
-          },
-          {
-            once: true,
-          },
-        ),
-      );
+  it('should render links for enterprise plan', async () => {
+    const originalWindowOpen = window.open;
+    const mockOpenFn = vi.fn();
+    window.open = mockOpenFn;
 
-      const originalWindowOpen = window.open;
-      const mockOpenFn = vi.fn();
-      window.open = mockOpenFn;
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json({
+            ...userMocks.currentUser,
+            salesPlanType: 'enterprise',
+          });
+        },
+        {
+          once: true,
+        },
+      ),
+    );
 
-      const {user} = render(<Header />, {
-        wrapper: getWrapper(),
-      });
+    const {user} = render(<Header />, {
+      wrapper: getWrapper(),
+    });
 
-      expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-      await user.click(
-        await screen.findByRole('button', {
-          name: /info/i,
-        }),
-      );
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
 
-      await user.click(
-        screen.getByRole('button', {name: 'Feedback and Support'}),
-      );
-      expect(mockOpenFn).toHaveBeenLastCalledWith(link, '_blank');
+    await user.click(screen.getByRole('button', {name: 'Documentation'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://docs.camunda.io/',
+      '_blank',
+    );
 
-      window.open = originalWindowOpen;
-    },
-  );
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://academy.camunda.com/',
+      '_blank',
+    );
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: 'Feedback and Support'}),
+    );
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://jira.camunda.com/projects/SUPPORT/queues',
+      '_blank',
+    );
+
+    window.open = originalWindowOpen;
+  });
 });

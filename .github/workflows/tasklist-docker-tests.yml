@@ -1,6 +1,25 @@
 ---
 name: Tasklist Docker Tests
-on: push
+on:
+  push:
+    branches:
+      - 'master'
+      - 'stable/**'
+    paths:
+      - '.'
+      - '.github/actions/*-tasklist-*/*'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+  pull_request:
+    paths:
+      - '.'
+      - '.github/actions/*-tasklist-*/*'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.

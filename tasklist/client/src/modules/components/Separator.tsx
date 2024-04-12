@@ -15,15 +15,17 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import styled from 'styled-components';
+import styles from './Separator.module.scss';
+import cn from 'classnames';
 
-const Separator = styled.hr`
-  width: 100%;
-  max-height: 1px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-bottom: 1px solid var(--cds-border-subtle);
-`;
+const Separator: React.FC<React.ComponentProps<'hr'>> = ({
+  children,
+  className,
+  ...rest
+}) => (
+  <hr {...rest} className={cn(className, styles.separator)}>
+    {children}
+  </hr>
+);
 
 export {Separator};

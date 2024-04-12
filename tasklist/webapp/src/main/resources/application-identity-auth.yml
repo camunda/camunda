@@ -16,3 +16,4 @@ camunda:
     clientSecret: ${camunda.tasklist.identity.clientSecret:${CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET:}}
     audience: ${camunda.tasklist.identity.audience:}
     baseUrl: ${camunda.tasklist.identity.baseUrl:}
+

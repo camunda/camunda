@@ -16,7 +16,7 @@
  */
 
 import {forwardRef} from 'react';
-import {Calendar} from '@carbon/icons-react';
+import {Calendar} from '@carbon/react/icons';
 import {
   Stack as BaseStack,
   PopoverContent as BasePopoverContent,

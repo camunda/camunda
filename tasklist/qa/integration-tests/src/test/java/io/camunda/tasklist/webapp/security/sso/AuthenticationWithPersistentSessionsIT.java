@@ -91,6 +91,7 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.cloud.permissionaudience=audience",
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
       "camunda.tasklist.persistentSessionsEnabled = true",
+      "camunda.tasklist.csrf-prevention-enabled= false",
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
       "camunda.tasklist.cloud.consoleUrl=https://consoleUrl",
       "camunda.tasklist.importer.startLoadingDataOnStartup = false",
@@ -122,7 +123,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return List.of(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
   }
 
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+  private static Tokens tokensWithOrgAsMapFrom(final String claim, final String organization) {
     final String emptyJSONEncoded = toEncodedToken(Map.of());
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final Map<String, Object> orgMap = Map.of("id", organization);
@@ -149,15 +150,15 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         5L);
   }
 
-  private static String toEncodedToken(Map<String, ?> map) {
+  private static String toEncodedToken(final Map<String, ?> map) {
     return toBase64(toJSON(map));
   }
 
-  private static String toBase64(String input) {
+  private static String toBase64(final String input) {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  private static String toJSON(Map<String, ?> map) {
+  private static String toJSON(final Map<String, ?> map) {
     return new JSONObject(map).toString();
   }
 
@@ -178,7 +179,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLoginSuccess(BiFunction<String, String, Tokens> orgExtractor) throws Exception {
+  public void testLoginSuccess(final BiFunction<String, String, Tokens> orgExtractor)
+      throws Exception {
     final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
     final ResponseEntity<String> response = get(ROOT, cookies);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -186,8 +188,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLoginFailedWithNoPermissions(BiFunction<String, String, Tokens> orgExtractor)
-      throws Exception {
+  public void testLoginFailedWithNoPermissions(
+      final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
@@ -243,7 +245,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLogout(BiFunction<String, String, Tokens> orgExtractor) throws Throwable {
+  public void testLogout(final BiFunction<String, String, Tokens> orgExtractor) throws Throwable {
     // Step 1 Login
     final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
     // Step 3 Now we should have access to root
@@ -262,13 +264,13 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
   }
 
-  private void assertThatUnauthorizedIsReturned(ResponseEntity<?> response) {
+  private void assertThatUnauthorizedIsReturned(final ResponseEntity<?> response) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  public void testLoginToAPIResource(BiFunction<String, String, Tokens> orgExtractor)
+  public void testLoginToAPIResource(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     // Step 1: try to access current user
     ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
@@ -333,20 +335,20 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(response.getBody()).contains("No permission for Tasklist");
   }
 
-  private void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  private void assertThatRequestIsRedirectedTo(final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return "http://localhost:" + randomServerPort + path;
   }
 
-  private HttpEntity<?> loginWithSSO(BiFunction<String, String, Tokens> orgExtractor)
+  private HttpEntity<?> loginWithSSO(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
@@ -377,7 +379,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return cookies;
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
     if (response.getHeaders().containsKey("Set-Cookie")) {
       headers.add(COOKIE_KEY, response.getHeaders().get("Set-Cookie").get(0));
@@ -390,8 +392,9 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return testRestTemplate;
   }
 
+  @Override
   public HttpEntity<Map<String, ?>> prepareRequestWithCookies(
-      HttpHeaders httpHeaders, String graphQlQuery) {
+      final HttpHeaders httpHeaders, final String graphQlQuery) {
 
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);

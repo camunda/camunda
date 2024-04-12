@@ -18,19 +18,21 @@
 import {
   ButtonDefaultProps,
   ButtonKindProps,
-  InlineLoading as OriginalInlineLoading,
+  InlineLoading,
+  Button,
 } from '@carbon/react';
 import {useEffect} from 'react';
-import {Button, InlineLoading} from './styled';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type Props = {
   inlineLoadingProps?: Omit<
-    React.ComponentProps<typeof OriginalInlineLoading>,
+    React.ComponentProps<typeof InlineLoading>,
     'status' | 'successDelay'
   >;
   buttonProps?: ButtonDefaultProps & ButtonKindProps;
   children?: React.ReactNode;
-  status: React.ComponentProps<typeof OriginalInlineLoading>['status'];
+  status: React.ComponentProps<typeof InlineLoading>['status'];
   onError?: () => void;
 };
 
@@ -68,9 +70,18 @@ const AsyncActionButton: React.FC<Props> = ({
   }, [onSuccess, status]);
 
   return status === 'inactive' ? (
-    <Button {...buttonProps}>{children}</Button>
+    <Button
+      {...buttonProps}
+      className={cn(buttonProps?.className, styles.button)}
+    >
+      {children}
+    </Button>
   ) : (
-    <InlineLoading {...restInlineLoadingProps} status={status} />
+    <InlineLoading
+      {...restInlineLoadingProps}
+      className={cn(restInlineLoadingProps.className, styles.fitContent)}
+      status={status}
+    />
   );
 };
 
