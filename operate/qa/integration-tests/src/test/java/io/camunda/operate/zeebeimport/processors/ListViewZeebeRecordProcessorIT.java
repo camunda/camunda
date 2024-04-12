@@ -45,7 +45,6 @@ import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
-import io.camunda.operate.zeebeimport.v8_5.processors.ListViewZeebeRecordProcessor;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
