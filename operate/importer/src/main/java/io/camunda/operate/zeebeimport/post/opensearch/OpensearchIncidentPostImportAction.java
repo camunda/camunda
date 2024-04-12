@@ -653,8 +653,18 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
       throw new OperateRuntimeException(
           "One and only one of 'doc' or 'script' must be provided for the update request");
     }
-    if (index == null && operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
-      return;
+    if (index == null) {
+      final String reason =
+          String.format(
+              "Cannot create update request for document with id [%s]: index is null. This suggests possible data loss.",
+              id);
+      if (operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
+        LOGGER.error(reason + " Ignoring document...");
+        return;
+      } else {
+        throw new OperateRuntimeException(
+            reason + " Note: PostImporter can be configured to ignore missing data.");
+      }
     }
     requestMap.put(
         id,
