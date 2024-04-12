@@ -63,7 +63,6 @@ else
 fi
 
 imageName="${1}"
-arch="${2:-amd64}"
 
 # Check that the image exists
 if ! imageInfo="$(docker inspect "${imageName}")"; then
@@ -72,7 +71,7 @@ if ! imageInfo="$(docker inspect "${imageName}")"; then
 fi
 
 actualArchitecture=$(echo "${imageInfo}" | jq '.[0].Architecture') 
-if [ "$actualArchitecture" != "\"$arch\"" ]; then 
+if [ "$actualArchitecture" != "\"$ARCHITECTURE\"" ]; then 
   echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected \"$arch\"." 
   exit 1 
 fi 
