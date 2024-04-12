@@ -44,7 +44,7 @@ jobs:
   history-cleanup-performance:
     name: History Cleanup Performance Test
     runs-on: gcp-core-32-longrunning-big-ssd
-    timeout-minutes: ${{ inputs.cleanup_timeout_minutes || 60 }}
+    timeout-minutes: ${{ fromJson(inputs.cleanup_timeout_minutes || 60) }}
     env:
       NAMESPACE: optimize-history-cleanup-performance-test-${{ github.run_id }}
     steps:
