@@ -276,15 +276,17 @@ public class ElasticsearchTestExtension
   }
 
   @Override
-  public <T> void deleteByTermsQuery(
+  public <T> long deleteByTermsQuery(
       final String index,
       final String fieldName,
       final Collection<T> values,
       final Class<T> valueType)
       throws IOException {
-    zeebeEsClient.deleteByQuery(
-        new DeleteByQueryRequest(index).setQuery(QueryBuilders.termsQuery(fieldName, values)),
-        RequestOptions.DEFAULT);
+    return zeebeEsClient
+        .deleteByQuery(
+            new DeleteByQueryRequest(index).setQuery(QueryBuilders.termsQuery(fieldName, values)),
+            RequestOptions.DEFAULT)
+        .getDeleted();
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)

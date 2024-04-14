@@ -60,7 +60,7 @@ public class ZeebeImportWithMissedDataIT extends TasklistZeebeIntegrationTest {
   public void testTasksAreImported() throws Exception {
     // having
     final String processId = "demoProcess";
-    final String flowNodeBpmnId = "flowNodeId";
+    final String flowNodeBpmnId = "utFlowNode";
     tester.createAndDeploySimpleProcess(processId, flowNodeBpmnId).waitUntil().processIsDeployed();
     final List<Long> processInstanceKeys =
         IntStream.range(0, 20)
@@ -75,7 +75,7 @@ public class ZeebeImportWithMissedDataIT extends TasklistZeebeIntegrationTest {
             .collect(Collectors.groupingBy(k -> Protocol.decodePartitionId(k)));
 
     // wait for Zeebe to export data
-    Thread.sleep(3000L);
+    Thread.sleep(10000L);
 
     // split processInstanceKeys by batch size and remove "middle part" of Zeebe data
     final List<Long> keysForDeletion = new ArrayList<>();
