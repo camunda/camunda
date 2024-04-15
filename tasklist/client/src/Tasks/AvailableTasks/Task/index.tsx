@@ -187,59 +187,71 @@ const Task = React.forwardRef<HTMLElement, Props>(
                 </DateLabelWithPopover>
               ) : null}
               {showFollowupDate ? (
-                <Label
-                  $variant="primary"
-                  title={`Follow-up at ${formatDate(followUpDate!, false)}`}
-                >
-                  <Stack orientation="vertical" gap={1}>
-                    <Label $variant="secondary">Follow-up</Label>
-                    <Stack orientation="horizontal" gap={2}>
-                      <Notification color="blue" />
-                      {formatDate(followUpDate!, false)}
+                <DateLabelWithPopover
+                  title={`Follow-up on ${formatDate(followUpDate!, false)}`}
+                  popoverContent={
+                    <Stack orientation="vertical" gap={2}>
+                      <HeadingCompact>Follow-up on</HeadingCompact>
+                      <BodyCompact>
+                        {formatDate(followUpDate!, false)}
+                      </BodyCompact>
                     </Stack>
+                  }
+                  align="top-left"
+                >
+                  <Stack orientation="horizontal" gap={2}>
+                    <Notification color="blue" />
+                    {formatDate(followUpDate!, false)}
                   </Stack>
-                </Label>
+                </DateLabelWithPopover>
               ) : null}
               {showDueDate ? (
-                <Label
-                  $variant="primary"
+                <DateLabelWithPopover
                   title={
                     isOverdue
-                      ? `Overdue at ${formatDate(dueDate!, false)}`
-                      : `Due at ${formatDate(dueDate!, false)}`
+                      ? `Overdue on ${formatDate(dueDate!, false)}`
+                      : `Due on ${formatDate(dueDate!, false)}`
                   }
+                  popoverContent={
+                    <Stack orientation="vertical" gap={2}>
+                      <HeadingCompact>
+                        {isOverdue ? 'Overdue' : 'Due on'}
+                      </HeadingCompact>
+                      <BodyCompact>{formatDate(dueDate!, false)}</BodyCompact>
+                    </Stack>
+                  }
+                  align="top-left"
                 >
                   <Stack orientation="vertical" gap={1}>
                     {isOverdue ? (
-                      <>
-                        <Label $variant="secondary">Overdue</Label>
-                        <Stack orientation="horizontal" gap={2}>
-                          <Warning color="red" />
-                          {formatDate(dueDate!, false)}
-                        </Stack>
-                      </>
-                    ) : (
-                      <>
-                        <Label $variant="secondary">Due</Label>
+                      <Stack orientation="horizontal" gap={2}>
+                        <Warning color="red" />
                         {formatDate(dueDate!, false)}
-                      </>
+                      </Stack>
+                    ) : (
+                      formatDate(dueDate!, false)
                     )}
                   </Stack>
-                </Label>
+                </DateLabelWithPopover>
               ) : null}
               {showCompletionDate ? (
-                <Label
-                  $variant="primary"
-                  title={`Completed at ${formatDate(completionDate!, false)}`}
-                >
-                  <Stack orientation="vertical" gap={1}>
-                    <Label $variant="secondary">Completed</Label>
-                    <Stack orientation="horizontal" gap={2}>
-                      <CheckmarkFilled color="green" />
-                      {formatDate(completionDate!, false)}
+                <DateLabelWithPopover
+                  title={`Completed on ${formatDate(completionDate!, false)}`}
+                  popoverContent={
+                    <Stack orientation="vertical" gap={2}>
+                      <HeadingCompact>Completed on</HeadingCompact>
+                      <BodyCompact>
+                        {formatDate(completionDate!, false)}
+                      </BodyCompact>
                     </Stack>
+                  }
+                  align="top-left"
+                >
+                  <Stack orientation="horizontal" gap={2}>
+                    <CheckmarkFilled color="green" />
+                    {formatDate(completionDate!, false)}
                   </Stack>
-                </Label>
+                </DateLabelWithPopover>
               ) : null}
             </Row>
           </Stack>
