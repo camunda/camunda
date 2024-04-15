@@ -73,7 +73,7 @@ public class BackupRestoreTest {
 
   private ZeebeClient zeebeClient;
 
-  private TestContainerUtil testContainerUtil = new TestContainerUtil();
+  private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private BackupRestoreTestContext testContext;
   private List<String> snapshots;
 
@@ -113,11 +113,12 @@ public class BackupRestoreTest {
     tasklistContainer =
         testContainerUtil
             .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
-            .withLogConsumer(new Slf4jLogConsumer(LOGGER));
-    tasklistContainer.withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
-    final String tasklistDatabase =
-        TasklistPropertiesUtil.isOpenSearchDatabase() ? "opensearch" : "elasticsearch";
-    tasklistContainer.withEnv("CAMUNDA_TASKLIST_DATABASE", tasklistDatabase);
+            .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+            .withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME)
+            .withEnv(
+                "CAMUNDA_TASKLIST_DATABASE",
+                TasklistPropertiesUtil.isOpenSearchDatabase() ? "opensearch" : "elasticsearch")
+            .withEnv("CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED", "false");
 
     startTasklist();
   }
@@ -190,7 +191,7 @@ public class BackupRestoreTest {
                 .restore(
                     new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot).waitForCompletion(true),
                     RequestOptions.DEFAULT);
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new TasklistRuntimeException(
                 "Exception occurred while restoring the backup: " + e.getMessage(), e);
           }
@@ -206,7 +207,7 @@ public class BackupRestoreTest {
                 .snapshot()
                 .restore(
                     r -> r.repository(REPOSITORY_NAME).snapshot(snapshot).waitForCompletion(true));
-          } catch (IOException | OpenSearchException e) {
+          } catch (final IOException | OpenSearchException e) {
             throw new TasklistRuntimeException(
                 "Exception occurred while restoring the backup: " + e.getMessage(), e);
           }
@@ -229,7 +230,7 @@ public class BackupRestoreTest {
       testContext.getOsClient().indices().delete(dir -> dir.index(ZEEBE_INDEX_PREFIX + "*"));
       tasklistAPICaller.checkIndicesAreDeleted(testContext.getOsClient());
       LOGGER.info("************ Tasklist OpenSearch indices deleted ************");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(
           "Exception occurred while removing Tasklist and Zeebe indices: " + e.getMessage(), e);
     }
@@ -249,13 +250,13 @@ public class BackupRestoreTest {
           .delete(new DeleteIndexRequest(ZEEBE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
       tasklistAPICaller.checkIndicesAreDeleted(testContext.getEsClient());
       LOGGER.info("************ Tasklist ElasticSearch indices deleted ************");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(
           "Exception occurred while removing Tasklist and Zeebe indices: " + e.getMessage(), e);
     }
   }
 
-  private void createElsSnapshotRepository(BackupRestoreTestContext testContext)
+  private void createElsSnapshotRepository(final BackupRestoreTestContext testContext)
       throws IOException {
     testContext
         .getEsClient()
@@ -267,7 +268,8 @@ public class BackupRestoreTest {
             RequestOptions.DEFAULT);
   }
 
-  private void createOsSnapshotRepository(BackupRestoreTestContext testContext) throws IOException {
+  private void createOsSnapshotRepository(final BackupRestoreTestContext testContext)
+      throws IOException {
     testContext
         .getOsClient()
         .snapshot()
@@ -279,7 +281,7 @@ public class BackupRestoreTest {
                         .settings(s -> s.location(REPOSITORY_NAME))));
   }
 
-  private ZeebeClient createZeebeClient(String zeebeGateway) {
+  private ZeebeClient createZeebeClient(final String zeebeGateway) {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(zeebeGateway)
