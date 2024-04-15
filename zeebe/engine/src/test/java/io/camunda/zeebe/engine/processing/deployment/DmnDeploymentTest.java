@@ -118,7 +118,8 @@ public final class DmnDeploymentTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
 
     assertThat(deploymentEvent.getRejectionReason())
-        .contains("FEEL unary-tests: failed to parse expression");
+        .contains(
+            "'/dmn/decision-table-with-invalid-expression.dmn': FEEL unary-tests: failed to parse expression");
   }
 
   @Test
