@@ -86,11 +86,6 @@
       "groupSlug": "all-minor-patch"
     },
     {
-      "description": "Each digest update breaks release process verification, remove when https://github.com/camunda/zeebe/issues/17181 is done.",
-      "matchFileNames": ["operate.Dockerfile"],
-      "enabled": false
-    },
-    {
       "description": "Both dependencies need to be updated at once for green CI.",
       "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
