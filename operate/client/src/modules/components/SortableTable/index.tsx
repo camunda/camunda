@@ -42,7 +42,6 @@ import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {EmptyMessage} from '../EmptyMessage';
 import {ErrorMessage} from '../ErrorMessage';
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 
 const NUMBER_OF_SKELETON_ROWS = 10;
 
@@ -51,6 +50,11 @@ type HeaderColumn = {
   sortKey?: string;
   isDisabled?: boolean;
 } & DataTableHeader;
+
+type RowOperationError = {
+  batchOperationId: string | undefined;
+  errorMessage: string | null;
+};
 
 type Props = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
@@ -61,7 +65,7 @@ type Props = {
   onSelectAll?: () => void;
   onSelect?: (rowId: string) => void;
   checkIsRowSelected?: (rowId: string) => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
-  rowOperationError?: (rowId: string) => string | null; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
+  rowOperationError?: (rowId: string) => RowOperationError; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
@@ -173,20 +177,21 @@ const SortableTable: React.FC<Props> = ({
                   <tbody aria-live="polite" data-testid="data-list">
                     {rows.map((row) => {
                       const isSelected = checkIsRowSelected?.(row.id) ?? false;
-                      const operationErrorMessage =
-                        rowOperationError?.(row.id) || null;
-
-                      const {batchOperationId} =
-                        getProcessInstancesRequestFilters();
+                      const errorMessageAndFilterState = rowOperationError?.(
+                        row.id,
+                      );
 
                       const expandRowStyleClasses = () => {
-                        if (operationErrorMessage) {
+                        if (errorMessageAndFilterState?.errorMessage) {
                           return 'errorRow';
-                        } else if (!operationErrorMessage && batchOperationId) {
+                        } else if (
+                          !errorMessageAndFilterState?.errorMessage &&
+                          errorMessageAndFilterState?.batchOperationId
+                        ) {
                           return 'successRow';
-                        } else {
-                          return '';
                         }
+
+                        return '';
                       };
 
                       return (
@@ -225,9 +230,9 @@ const SortableTable: React.FC<Props> = ({
                               </TableCell>
                             ))}
                           </TableExpandRow>
-                          {operationErrorMessage && (
+                          {errorMessageAndFilterState?.errorMessage && (
                             <TableExpandedRow colSpan={headers.length + 2}>
-                              {operationErrorMessage}
+                              {errorMessageAndFilterState.errorMessage}
                             </TableExpandedRow>
                           )}
                         </React.Fragment>
