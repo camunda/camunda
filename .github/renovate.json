@@ -67,6 +67,10 @@
       "additionalBranchPrefix": "fe-"
     },
     {
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
+      "additionalBranchPrefix": "fe-"
+    },
+    {
       "matchPackagePrefixes": ["@types/"],
       "groupName": "definitelyTyped"
     },
@@ -87,7 +91,7 @@
     },
     {
       "description": "Both dependencies need to be updated at once for green CI.",
-      "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
     },
     {
