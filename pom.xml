@@ -24,7 +24,7 @@
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.version>7.17.18</elasticsearch.version>
+    <elasticsearch.version>7.17.20</elasticsearch.version>
     <opensearch.version>2.10.0</opensearch.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
@@ -49,7 +49,7 @@
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
     <netty.version>4.1.108.Final</netty.version>
     <lombok.version>1.18.32</lombok.version>
-    <logback.version>1.5.3</logback.version>
+    <logback.version>1.5.4</logback.version>
     <slf4j.version>2.0.12</slf4j.version>
     <commons.io.version>2.16.1</commons.io.version>
 
@@ -166,7 +166,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
-            <version>3.3.0</version>
+            <version>3.3.1</version>
             <executions>
               <execution>
                 <id>attach-sources</id>
