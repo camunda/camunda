@@ -70,7 +70,7 @@
         "io.camunda:operate-parent",
         "io.camunda:operate-qa",
         "io.camunda:operate-qa-migration-tests-parent",
-        "net.jcip:jcip-annotations",
+        "net.jcip:jcip-annotations"
       ],
       "enabled": false
     },
