@@ -41,6 +41,7 @@
       "enabled": false
     },
     {
+      "matchManagers": ["maven"],
       "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
@@ -52,6 +53,7 @@
       "enabled": false
     },
     {
+      "matchManagers": ["maven"],
       "matchPackagePrefixes": ["org.jacoco"],
       "allowedVersions": "!/0.8.9/"
     },
@@ -60,6 +62,17 @@
       "matchManagers": ["maven"],
       "matchPackagePatterns": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
+    },
+    {
+      "description" : "Exclude internal Maven modules and Maven dependencies lacking metadata.",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": [
+        "io.camunda:operate-parent",
+        "io.camunda:operate-qa",
+        "io.camunda:operate-qa-migration-tests-parent",
+        "net.jcip:jcip-annotations",
+      ],
+      "enabled": false
     },
     {
       "description": "This additional prefix is used to skip Operate backend tests.",
