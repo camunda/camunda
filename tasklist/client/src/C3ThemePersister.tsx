@@ -15,95 +15,18 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-/* istanbul ignore file */
-
+import {useC3Profile} from '@camunda/camunda-composite-components';
+import {themeStore} from 'modules/stores/theme';
 import {useEffect} from 'react';
-import {
-  Outlet,
-  Route,
-  RouterProvider,
-  createBrowserRouter,
-  createRoutesFromElements,
-} from 'react-router-dom';
-import {ErrorBoundary} from 'react-error-boundary';
-import {Notifications} from 'modules/notifications';
-import {NetworkStatusWatcher} from './NetworkStatusWatcher';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {SessionWatcher} from './SessionWatcher';
-import {TrackPagination} from 'modules/tracking/TrackPagination';
-import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
-import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
-import {tracking} from 'modules/tracking';
-import {C3Provider} from 'C3Provider';
 
-const Wrapper: React.FC = () => {
-  return (
-    <>
-      <SessionWatcher />
-      <TrackPagination />
-      <Outlet />
-    </>
-  );
-};
+const C3ThemePersister: React.FC = () => {
+  const {theme} = useC3Profile();
 
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route path="/" element={<Wrapper />}>
-      <Route path="login" lazy={() => import('./Login')} />
-      <Route
-        path="new/:bpmnProcessId"
-        lazy={() => import('./StartProcessFromForm')}
-      />
-      <Route path="/" lazy={() => import('./Layout')}>
-        <Route path="processes">
-          <Route index lazy={() => import('./Processes')} />
-          <Route
-            path=":bpmnProcessId/start"
-            lazy={() => import('./Processes')}
-            ErrorBoundary={ErrorWithinLayout}
-          />
-        </Route>
-        <Route path="/" lazy={() => import('./Tasks')}>
-          <Route
-            index
-            lazy={() => import('./Tasks/EmptyPage')}
-            ErrorBoundary={ErrorWithinLayout}
-          />
-          <Route
-            path=":id"
-            lazy={() => import('./Tasks/Task')}
-            ErrorBoundary={ErrorWithinLayout}
-          />
-        </Route>
-      </Route>
-    </Route>,
-  ),
-  {
-    basename: window.clientConfig?.contextPath ?? '/',
-  },
-);
-
-const App: React.FC = () => {
   useEffect(() => {
-    tracking.track({
-      eventName: 'app-loaded',
-      osNotificationPermission: Notification.permission,
-    });
-  }, []);
+    themeStore.changeTheme(theme);
+  }, [theme]);
 
-  return (
-    <ErrorBoundary FallbackComponent={FallbackErrorPage}>
-      <C3Provider>
-        <ThemeProvider>
-          <ReactQueryProvider>
-            <Notifications />
-            <NetworkStatusWatcher />
-            <RouterProvider router={router} />
-          </ReactQueryProvider>
-        </ThemeProvider>
-      </C3Provider>
-    </ErrorBoundary>
-  );
+  return null;
 };
 
-export {App};
+export {C3ThemePersister};

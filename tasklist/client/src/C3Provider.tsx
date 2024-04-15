@@ -15,95 +15,66 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-/* istanbul ignore file */
+import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
+import {C3ThemePersister} from 'C3ThemePersister';
+import {api} from 'modules/api';
+import {getStage} from 'modules/utils/getStage';
+import {useEffect, useState} from 'react';
 
-import {useEffect} from 'react';
-import {
-  Outlet,
-  Route,
-  RouterProvider,
-  createBrowserRouter,
-  createRoutesFromElements,
-} from 'react-router-dom';
-import {ErrorBoundary} from 'react-error-boundary';
-import {Notifications} from 'modules/notifications';
-import {NetworkStatusWatcher} from './NetworkStatusWatcher';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {SessionWatcher} from './SessionWatcher';
-import {TrackPagination} from 'modules/tracking/TrackPagination';
-import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
-import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
-import {tracking} from 'modules/tracking';
-import {C3Provider} from 'C3Provider';
+const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+const STAGE = getStage(window.location.host);
 
-const Wrapper: React.FC = () => {
-  return (
-    <>
-      <SessionWatcher />
-      <TrackPagination />
-      <Outlet />
-    </>
-  );
+async function fetchToken() {
+  try {
+    const response = await fetch(api.getSaasUserToken());
+
+    if (!response.ok) {
+      console.error('Failed to fetch user token', response);
+      return '';
+    }
+
+    const token = await response.json();
+    return token;
+  } catch (error) {
+    console.error('Failed to fetch user token', error);
+    return '';
+  }
+}
+
+type Props = {
+  children: React.ReactNode;
 };
 
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route path="/" element={<Wrapper />}>
-      <Route path="login" lazy={() => import('./Login')} />
-      <Route
-        path="new/:bpmnProcessId"
-        lazy={() => import('./StartProcessFromForm')}
-      />
-      <Route path="/" lazy={() => import('./Layout')}>
-        <Route path="processes">
-          <Route index lazy={() => import('./Processes')} />
-          <Route
-            path=":bpmnProcessId/start"
-            lazy={() => import('./Processes')}
-            ErrorBoundary={ErrorWithinLayout}
-          />
-        </Route>
-        <Route path="/" lazy={() => import('./Tasks')}>
-          <Route
-            index
-            lazy={() => import('./Tasks/EmptyPage')}
-            ErrorBoundary={ErrorWithinLayout}
-          />
-          <Route
-            path=":id"
-            lazy={() => import('./Tasks/Task')}
-            ErrorBoundary={ErrorWithinLayout}
-          />
-        </Route>
-      </Route>
-    </Route>,
-  ),
-  {
-    basename: window.clientConfig?.contextPath ?? '/',
-  },
-);
-
-const App: React.FC = () => {
+const C3Provider: React.FC<Props> = ({children}) => {
+  const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
-    tracking.track({
-      eventName: 'app-loaded',
-      osNotificationPermission: Notification.permission,
-    });
+    async function init() {
+      if (IS_SAAS) {
+        setToken(await fetchToken());
+      }
+    }
+
+    init();
   }, []);
 
+  if (token === null) {
+    return children;
+  }
+
   return (
-    <ErrorBoundary FallbackComponent={FallbackErrorPage}>
-      <C3Provider>
-        <ThemeProvider>
-          <ReactQueryProvider>
-            <Notifications />
-            <NetworkStatusWatcher />
-            <RouterProvider router={router} />
-          </ReactQueryProvider>
-        </ThemeProvider>
-      </C3Provider>
-    </ErrorBoundary>
+    <C3UserConfigurationProvider
+      activeOrganizationId={window.clientConfig?.organizationId ?? ''}
+      userToken={token}
+      getNewUserToken={fetchToken}
+      currentClusterUuid={window.clientConfig?.clusterId ?? ''}
+      currentApp="tasklist"
+      stage={STAGE === 'unknown' ? 'dev' : STAGE}
+      handleTheme
+    >
+      <C3ThemePersister />
+      {children}
+    </C3UserConfigurationProvider>
   );
 };
 
-export {App};
+export {C3Provider};

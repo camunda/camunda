@@ -294,6 +294,15 @@ const api = {
       },
     );
   },
+  getSaasUserToken: () => {
+    return new Request(getFullURL('/v1/internal/users/token'), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
 } as const;
 
 export {api};

@@ -31,6 +31,7 @@ import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
@@ -103,7 +104,9 @@ public class SSOUserReader implements UserReader {
   @Override
   public Optional<String> getUserToken(final Authentication authentication) {
     if (authentication instanceof TokenAuthentication) {
-      return Optional.of(((TokenAuthentication) authentication).getNewTokenByRefreshToken());
+      return Optional.of(
+          JSONObject.valueToString(
+              ((TokenAuthentication) authentication).getNewTokenByRefreshToken()));
     } else {
       throw new UnsupportedOperationException(
           "Not supported for token class: " + authentication.getClass().getName());

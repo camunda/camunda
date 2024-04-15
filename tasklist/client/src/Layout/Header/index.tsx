@@ -16,7 +16,6 @@
  */
 
 import {useEffect, useState} from 'react';
-import capitalize from 'lodash/capitalize';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
 import {Link} from '@carbon/react';
@@ -30,14 +29,6 @@ import {themeStore} from 'modules/stores/theme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally} from 'modules/utils/localStorage';
 import styles from './styles.module.scss';
-
-const orderedApps = [
-  'console',
-  'modeler',
-  'tasklist',
-  'operate',
-  'optimize',
-] as const;
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -100,10 +91,6 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     : [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
 }
 
-type AppSwitcherElementType = NonNullable<
-  React.ComponentProps<typeof C3Navigation>['appBar']['elements']
->[number];
-
 const Header: React.FC = observer(() => {
   const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
   const IS_ENTERPRISE = window.clientConfig?.isEnterprise === true;
@@ -112,31 +99,10 @@ const Header: React.FC = observer(() => {
     matchPath(pages.processes(), location.pathname) !== null;
   const {data: currentUser} = useCurrentUser();
   const {selectedTheme, changeTheme} = themeStore;
-  const {displayName, salesPlanType, c8Links} = currentUser ?? {
+  const {displayName, salesPlanType} = currentUser ?? {
     displayName: null,
     salesPlanType: null,
-    c8Links: [],
   };
-  const parsedC8Links = c8Links
-    .filter(({name}) => orderedApps.includes(name))
-    .reduce((acc, {name, link}) => ({...acc, [name]: link}), {}) as Record<
-    (typeof orderedApps)[number],
-    string
-  >;
-  const switcherElements = orderedApps
-    .map<AppSwitcherElementType | undefined>((appName) =>
-      parsedC8Links[appName] === undefined
-        ? undefined
-        : {
-            key: appName,
-            label: capitalize(appName),
-            href: parsedC8Links[appName],
-            active: appName === 'tasklist',
-            routeProps:
-              appName === 'tasklist' ? {to: pages.initial} : undefined,
-          },
-    )
-    .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
 
   const [isTermsConditionModalOpen, setTermsConditionModalOpen] =
     useState(false);
@@ -150,6 +116,18 @@ const Header: React.FC = observer(() => {
   return (
     <>
       <C3Navigation
+        notificationSideBar={IS_SAAS ? {} : undefined}
+        appBar={{
+          ariaLabel: 'App Panel',
+          isOpen: false,
+          elementClicked: (app: string) => {
+            tracking.track({
+              eventName: 'app-switcher-item-clicked',
+              app,
+            });
+          },
+          appTeaserRouteProps: IS_SAAS ? {} : undefined,
+        }}
         app={{
           ariaLabel: 'Camunda Tasklist',
           name: 'Tasklist',
@@ -236,17 +214,6 @@ const Header: React.FC = observer(() => {
                     },
                   },
                 ],
-        }}
-        appBar={{
-          ariaLabel: 'App Panel',
-          isOpen: false,
-          elements: IS_SAAS ? switcherElements : [],
-          elementClicked: (app: string) => {
-            tracking.track({
-              eventName: 'app-switcher-item-clicked',
-              app,
-            });
-          },
         }}
         infoSideBar={{
           isOpen: false,

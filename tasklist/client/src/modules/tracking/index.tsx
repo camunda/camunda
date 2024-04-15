@@ -16,7 +16,7 @@
  */
 
 import {Mixpanel} from 'mixpanel-browser';
-import {getStage} from './getStage';
+import {getStage} from 'modules/utils/getStage';
 import {CurrentUser} from 'modules/types';
 import {TaskFilters} from 'modules/hooks/useTaskFilters';
 import Hotjar from '@hotjar/browser';

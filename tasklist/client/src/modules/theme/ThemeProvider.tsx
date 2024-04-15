@@ -39,13 +39,7 @@ const ThemeProvider: React.FC<Props> = observer(({children}) => {
   const prefix = usePrefix();
 
   useLayoutEffect(() => {
-    const body = document.body;
-
-    Object.values(THEME_TOKENS).forEach((theme) => {
-      body.classList.remove(`${prefix}--${theme}`);
-    });
-
-    body.classList.add(`${prefix}--${THEME_TOKENS[actualTheme]}`);
+    document.documentElement.dataset.carbonTheme = THEME_TOKENS[actualTheme];
   }, [actualTheme, prefix]);
 
   return (

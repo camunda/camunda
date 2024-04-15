@@ -36,11 +36,15 @@
   )
 );
 
-.cds--g10 {
+:root {
   @include theme.theme(themes.$g10);
 }
 
-.cds--g100 {
+[data-carbon-theme='g10'] {
+  @include theme.theme(themes.$g10);
+}
+
+[data-carbon-theme='g100'] {
   @include theme.theme(themes.$g100);
 }
 
