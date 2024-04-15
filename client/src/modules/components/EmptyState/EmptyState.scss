@@ -28,12 +28,12 @@
 
   .content {
     margin-top: 5px;
+    padding-bottom: 5px;
 
     .title {
       font-weight: 500;
       font-size: 1.125rem;
       color: var(--cds-text-primary);
-      line-height: 1.75rem;
     }
 
     .description {
@@ -46,7 +46,6 @@
 
     .actions {
       display: flex;
-      margin-bottom: 1rem;
     }
   }
 }

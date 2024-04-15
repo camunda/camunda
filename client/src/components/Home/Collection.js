@@ -20,7 +20,7 @@ import {
   SkeletonText,
   SkeletonIcon,
 } from '@carbon/react';
-import {CopyFile, Edit, Folder, Save, TrashCan} from '@carbon/icons-react';
+import {DocumentProtected, CopyFile, Edit, Folder, Save, TrashCan} from '@carbon/icons-react';
 
 import {format} from 'dates';
 import {t} from 'translation';
@@ -193,7 +193,7 @@ export class Collection extends Component {
               )}
               {!collection && isLoading && (
                 <>
-                  <SkeletonText className="skeletonText" heading width="200px" />
+                  <SkeletonText className="skeletonText" heading />
                   <SkeletonIcon />
                   <TagSkeleton />
                 </>
@@ -230,7 +230,11 @@ export class Collection extends Component {
                         }
                       />
                     ) : (
-                      <EmptyState title={t('home.empty')} description={t('home.contactManager')} />
+                      <EmptyState
+                        icon={<DocumentProtected />}
+                        title={t('home.empty')}
+                        description={t('home.contactManager')}
+                      />
                     )
                   }
                   action={
