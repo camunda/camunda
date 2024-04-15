@@ -18,7 +18,7 @@
 
 .container {
   display: grid;
-  grid-template-columns: layout.to-rem(300px) 1fr;
+  grid-template-columns: layout.to-rem(312px) 1fr;
   grid-template-rows: 100%;
   height: 100%;
   padding-top: layout.to-rem(48px);
@@ -27,8 +27,8 @@
 
 .tasksPanel {
   align-content: flex-start;
-  min-width: layout.to-rem(300px);
-  max-width: layout.to-rem(300px);
+  min-width: layout.to-rem(312px);
+  max-width: layout.to-rem(312px);
   height: 100%;
   grid-template-rows: min-content 1fr min-content;
 }

@@ -281,7 +281,7 @@ public class OpenSearchTestExtension
   }
 
   @Override
-  public <T> void deleteByTermsQuery(
+  public <T> long deleteByTermsQuery(
       final String index,
       final String fieldName,
       final Collection<T> values,
@@ -296,21 +296,24 @@ public class OpenSearchTestExtension
       throw new UnsupportedOperationException(
           "Unsupported valueType: " + valueType + ". Please implement it.");
     }
-    zeebeOsClient.deleteByQuery(
-        new DeleteByQueryRequest.Builder()
-            .index(index)
-            .query(
-                q ->
-                    q.terms(
-                        term ->
-                            term.field(fieldName)
-                                .terms(
-                                    terms ->
-                                        terms.value(
-                                            values.stream()
-                                                .map(valueMapper)
-                                                .collect(Collectors.toList())))))
-            .build());
+    return zeebeOsClient
+        .deleteByQuery(
+            new DeleteByQueryRequest.Builder()
+                .index(index)
+                .waitForCompletion(true)
+                .query(
+                    q ->
+                        q.terms(
+                            term ->
+                                term.field(fieldName)
+                                    .terms(
+                                        terms ->
+                                            terms.value(
+                                                values.stream()
+                                                    .map(valueMapper)
+                                                    .collect(Collectors.toList())))))
+                .build())
+        .deleted();
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)

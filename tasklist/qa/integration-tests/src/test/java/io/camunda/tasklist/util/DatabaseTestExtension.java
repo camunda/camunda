@@ -54,7 +54,7 @@ public interface DatabaseTestExtension extends Extension {
 
   int getOpenScrollcontextSize();
 
-  <T> void deleteByTermsQuery(
+  <T> long deleteByTermsQuery(
       String index, String fieldName, Collection<T> values, final Class<T> valueType)
       throws IOException;
 }

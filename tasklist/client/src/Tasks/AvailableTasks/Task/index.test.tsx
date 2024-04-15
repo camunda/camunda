@@ -197,7 +197,7 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Due at 29 May 2025')).toBeInTheDocument();
+    expect(screen.getByTitle('Due on 29 May 2025')).toBeInTheDocument();
   });
 
   it('should render a task with due date when filtered by due date', async () => {
@@ -220,9 +220,9 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Due at 29 May 2025')).toBeInTheDocument();
-    expect(screen.queryByText('Follow-up at')).not.toBeInTheDocument();
-    expect(screen.queryByText('Completed at')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Due on 29 May 2025')).toBeInTheDocument();
+    expect(screen.queryByText('Follow-up on')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completed on')).not.toBeInTheDocument();
   });
 
   it('should render a task with follow-up date when filtered by follow-up date', async () => {
@@ -245,9 +245,9 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Follow-up at 29 May 2025')).toBeInTheDocument();
-    expect(screen.queryByText('Due at')).not.toBeInTheDocument();
-    expect(screen.queryByText('Completed at')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Follow-up on 29 May 2025')).toBeInTheDocument();
+    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completed on')).not.toBeInTheDocument();
   });
 
   it('should render a task with completion date', async () => {
@@ -270,8 +270,8 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Completed at 28 May 2025')).toBeInTheDocument();
-    expect(screen.queryByText('Due at')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Completed on 28 May 2025')).toBeInTheDocument();
+    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
   });
 
   it('should render a task with overdue date', async () => {
@@ -299,8 +299,8 @@ describe('<Task />', () => {
     );
 
     expect(
-      screen.getByTitle(`Overdue at ${formattedDate}`),
+      screen.getByTitle(`Overdue on ${formattedDate}`),
     ).toBeInTheDocument();
-    expect(screen.queryByText('Due at')).not.toBeInTheDocument();
+    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
   });
 });
