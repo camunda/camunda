@@ -81,7 +81,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   public void createIndexLifeCycles() {
-    LOGGER.warn("ISM is not implemented in Opensearch Java client");
+    LOGGER.info("Creating ISM Policy for deleting archived indices");
 
     final Request request =
         new Request("PUT", "_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);

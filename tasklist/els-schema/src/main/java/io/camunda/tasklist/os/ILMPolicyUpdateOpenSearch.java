@@ -58,7 +58,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
       schemaManager.createIndexLifeCycles();
     }
     // Apply the ISM policy to the index templates
-    applyIlmPolicyToIndexTemplate(TASKLIST_PREFIX, TASKLIST_DELETE_ARCHIVED_INDICES);
+    applyIlmPolicyToIndexTemplate(TASKLIST_PREFIX, TASKLIST_DELETE_ARCHIVED_INDICES, true);
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
 
     final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX);
@@ -70,9 +70,10 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
   }
 
   @Override
-  public void removeIlmPolicyFromAllIndices() {
+  public void removeIlmPolicyFromAllIndices() throws IOException {
     LOGGER.info("Removing ISM policy to all existent indices");
     final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX);
+    applyIlmPolicyToIndexTemplate(TASKLIST_PREFIX, TASKLIST_DELETE_ARCHIVED_INDICES, false);
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
@@ -81,7 +82,8 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
     }
   }
 
-  public void applyIlmPolicyToIndexTemplate(final String templatePattern, final String policyId)
+  private void applyIlmPolicyToIndexTemplate(
+      final String templatePattern, final String policyId, final boolean applyPolicy)
       throws IOException {
     final JsonArray templates = retryOpenSearchClient.getIndexTemplateSettings(templatePattern);
 
@@ -106,7 +108,12 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
         }
       }
 
-      settingsBuilder.add("plugins.index_state_management.policy_id", policyId);
+      if (applyPolicy) {
+        settingsBuilder.add(
+            "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
+      } else {
+        settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
+      }
 
       final JsonObject newSettings = settingsBuilder.build();
 
@@ -133,8 +140,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
       }
 
       final String updatedTemplate = updatedTemplateBuilder.build().toString();
-      final String updateJson = updatedTemplate.toString();
-      retryOpenSearchClient.putIndexTemplateSettings(templateName, updateJson);
+      retryOpenSearchClient.putIndexTemplateSettings(templateName, updatedTemplate);
     }
   }
 }
