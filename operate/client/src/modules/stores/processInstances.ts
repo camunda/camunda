@@ -179,24 +179,17 @@ class ProcessInstances extends NetworkReconnectionHandler {
   getProcessInstanceOperationError = (
     selectedId: ProcessInstanceEntity['id'],
   ) => {
-    const instance = this.state.processInstances.find(({id, operations}) => {
-      const isMatchedId = id === selectedId;
-      const hasFailedOperation = operations.find(
-        ({state}) => state === 'FAILED',
-      );
-
-      return isMatchedId && hasFailedOperation;
-    });
     const {batchOperationId} = getProcessInstancesRequestFilters();
-    const hasOperationIdFilterActive = instance?.operations.find(
-      ({batchOperationId: batchId}) => batchId === batchOperationId,
+
+    const instance = this.state.processInstances.find(
+      (processInstance) => processInstance.id === selectedId,
     );
 
-    if (!!hasOperationIdFilterActive) {
-      return instance?.operations[0]?.errorMessage ?? null;
-    }
-
-    return null;
+    return (
+      instance?.operations.find(
+        (operation) => operation.batchOperationId === batchOperationId,
+      )?.errorMessage || null
+    );
   };
 
   shouldFetchPreviousInstances = () => {

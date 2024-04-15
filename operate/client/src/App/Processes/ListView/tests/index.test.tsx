@@ -426,4 +426,33 @@ describe('Instances', () => {
 
     locationSpy.mockRestore();
   });
+
+  it('should display correct operation from process instance with multiple operations', async () => {
+    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
+    const originalWindow = {...window};
+    const locationSpy = jest.spyOn(window, 'location', 'get');
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
+    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+
+    const withinRow = within(
+      screen.getByRole('row', {
+        name: /0000000000000002/i,
+      }),
+    );
+
+    expect(withinRow.getByText('FAILED')).toBeInTheDocument();
+    expect(withinRow.queryByText('COMPLETED')).not.toBeInTheDocument();
+
+    locationSpy.mockRestore();
+  });
 });

@@ -532,6 +532,12 @@ export const mockProcessInstancesWithOperation = {
           errorMessage: 'Batch Operation Error Message',
           type: 'MODIFY_PROCESS_INSTANCE',
         },
+        {
+          state: 'COMPLETED',
+          batchOperationId: 'c4be6304-a0e0-4976-b81b-7a07fb4e96e5',
+          errorMessage: '',
+          type: 'MODIFY_PROCESS_INSTANCE',
+        },
       ],
     }),
   ],

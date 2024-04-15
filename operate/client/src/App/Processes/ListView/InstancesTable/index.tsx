@@ -219,7 +219,10 @@ const InstancesTable: React.FC = observer(() => {
               </ProcessName>
             ),
             instanceOperationState: isOperationStateColumnVisible
-              ? instance.operations?.[0]?.state || '--'
+              ? instance.operations?.find(
+                  (operation) =>
+                    operation.batchOperationId === batchOperationId,
+                )?.state || '--'
               : undefined,
             processInstanceKey: (
               <Link
