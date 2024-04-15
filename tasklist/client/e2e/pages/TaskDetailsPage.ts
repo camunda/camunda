@@ -134,29 +134,5 @@ class TaskDetailsPage {
     await this.getNthVariableNameInput(1).fill(name);
     await this.getNthVariableValueInput(1).fill(value);
   }
-
-  async fillDate(date: string) {
-    await this.dateInput.click();
-    await this.dateInput.fill(date);
-    await this.dateInput.press('Enter');
-  }
-
-  async enterTime(time: string) {
-    await this.timeInput.click();
-    await this.page.getByText(time).click();
-  }
-
-  async selectDropdownValue(value: string) {
-    await this.selectDropdown.click();
-    await this.page.getByText(value).click();
-  }
-
-  async selectTaglistValues(values: string[]) {
-    await this.tagList.click();
-
-    for (const value of values) {
-      await this.page.getByText(value, {exact: true}).click();
-    }
-  }
 }
 export {TaskDetailsPage};
