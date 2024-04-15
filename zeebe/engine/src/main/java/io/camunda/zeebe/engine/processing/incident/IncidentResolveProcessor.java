@@ -29,6 +29,8 @@ import io.camunda.zeebe.util.Either;
 
 public final class IncidentResolveProcessor implements TypedRecordProcessor<IncidentRecord> {
 
+  public static final String NO_RETRIES_LEFT_MSG =
+      "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident";
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
@@ -72,10 +74,17 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       return;
     }
 
+    final long jobKey = incident.getJobKey();
+    if (isJobRelatedIncident(jobKey) && jobState.getJob(jobKey).getRetries() <= 0) {
+      final var errorMessage = String.format(NO_RETRIES_LEFT_MSG, key, jobKey);
+      rejectResolveCommand(command, errorMessage, RejectionType.INVALID_STATE);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
-    publishIncidentRelatedJob(incident.getJobKey());
+    publishIncidentRelatedJob(jobKey);
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);
@@ -93,9 +102,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command, final IncidentRecord incident) {
     final long jobKey = incident.getJobKey();
-    final boolean isJobIncident = jobKey > 0;
 
-    if (isJobIncident) {
+    if (isJobRelatedIncident(jobKey)) {
       return;
     }
 
@@ -143,10 +151,13 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   }
 
   private void publishIncidentRelatedJob(final long jobKey) {
-    final boolean isJobRelatedIncident = jobKey > 0;
-    if (isJobRelatedIncident) {
+    if (isJobRelatedIncident(jobKey)) {
       final JobRecord failedJobRecord = jobState.getJob(jobKey);
       jobActivationBehavior.publishWork(jobKey, failedJobRecord);
     }
+  }
+
+  private static boolean isJobRelatedIncident(final long jobKey) {
+    return jobKey > 0;
   }
 }
