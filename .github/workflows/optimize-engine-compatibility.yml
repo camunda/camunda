@@ -124,7 +124,7 @@ jobs:
           archive_name: engine-compatibility-${{ matrix.cambpm }}-${{ matrix.includedGroups }}${{ matrix.excludedGroups }}-docker
 
       - name: Post results on slack
-        if: failure()
+        if: failure() && github.event_name != 'schedule'
         uses: ./.github/actions/notify-on-slack
         with:
           slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}

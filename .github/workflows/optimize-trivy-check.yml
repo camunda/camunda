@@ -158,7 +158,7 @@ jobs:
 
   post-results-on-slack:
     name: Post results on slack
-    if: failure()
+    if: failure() && github.event_name != 'schedule'
     needs:
       - trivy-check
     runs-on: ubuntu-latest
