@@ -41,7 +41,7 @@ public final class MainSupport {
    * module, with sane defaults.
    */
   public static SpringApplicationBuilder createDefaultApplicationBuilder() {
-    return new SpringApplicationBuilder().web(WebApplicationType.REACTIVE).logStartupInfo(true);
+    return new SpringApplicationBuilder().web(WebApplicationType.SERVLET).logStartupInfo(true);
   }
 
   /**

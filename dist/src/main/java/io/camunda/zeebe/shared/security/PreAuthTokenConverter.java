@@ -7,35 +7,37 @@
  */
 package io.camunda.zeebe.shared.security;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.Optional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
+import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
 @Component
-public final class PreAuthTokenConverter implements ServerAuthenticationConverter {
+public final class PreAuthTokenConverter implements AuthenticationConverter {
   private static final NoToken EMPTY_TOKEN = new NoToken();
 
   @Override
-  public Mono<Authentication> convert(final ServerWebExchange exchange) {
-    return Mono.just(
-        getTokenFromHeader(exchange.getRequest().getHeaders())
-            .<Authentication>map(PreAuthToken::new)
-            .orElse(EMPTY_TOKEN));
+  public Authentication convert(final HttpServletRequest request) {
+    return getTokenFromHeader(request).<Authentication>map(PreAuthToken::new).orElse(EMPTY_TOKEN);
   }
 
-  private Optional<String> getTokenFromHeader(final HttpHeaders headers) {
-    final var values = headers.getOrEmpty(HttpHeaders.AUTHORIZATION);
-    if (values.isEmpty()) {
+  private Optional<String> getTokenFromHeader(final HttpServletRequest request) {
+    final var values = request.getHeaders(HttpHeaders.AUTHORIZATION);
+    if (values == null) {
       return Optional.empty();
     }
 
-    final var token = values.get(0).strip().replaceFirst("^Bearer ", "");
+    final var iterator = values.asIterator();
+    if (!iterator.hasNext()) {
+      return Optional.empty();
+    }
+
+    final var auth = iterator.next().strip();
+    final var token = auth.replaceFirst("^Bearer ", "");
     return token.isBlank() ? Optional.empty() : Optional.of(token);
   }
 

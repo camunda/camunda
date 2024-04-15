@@ -1003,4 +1003,30 @@ public class UserTaskControllerTest {
 
     Assertions.assertThat(argumentCaptor.getValue().getIntent()).isEqualTo(UserTaskIntent.ASSIGN);
   }
+
+  @Test
+  public void shouldReturnProblemDetailWithRequestBodyMissing() {
+    // given
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST, "Required request body is missing");
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create("/" + USER_TASKS_BASE_URL + "/1/assignment"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
+  }
 }
