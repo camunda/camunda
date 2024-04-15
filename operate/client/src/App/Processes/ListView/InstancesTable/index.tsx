@@ -101,8 +101,15 @@ const InstancesTable: React.FC = observer(() => {
       return;
     }
 
+    const processInstanceFilters = getProcessInstanceFilters(location.search);
+    const filteredIds = processInstanceFilters.ids?.split(/[\s,]+/);
+    const ids = ['EXCLUDE', 'ALL'].includes(selectionMode)
+      ? filteredIds ?? []
+      : selectedProcessInstanceIds;
+
     const requestFilterParameters = {
-      ids: selectedProcessInstanceIds,
+      ...processInstanceFilters,
+      ids,
       excludeIds: excludedProcessInstanceIds,
       finished: false,
       completed: false,
@@ -117,6 +124,7 @@ const InstancesTable: React.FC = observer(() => {
     excludedProcessInstanceIds,
     isBatchModificationEnabled,
     selectionMode,
+    location.search,
   ]);
 
   const getEmptyListMessage = () => {
