@@ -112,6 +112,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
         settingsBuilder.add(
             "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
       } else {
+        // With Policy ID is null, any policy will be executed (but its explicit set)
         settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
       }
 
