@@ -66,6 +66,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -634,7 +635,7 @@ public class RetryOpenSearchClient {
     try {
       return opensearchRestClient.performRequest(request);
     } catch (final ResponseException e) {
-      if (e.getResponse().getStatusLine().getStatusCode() == 404) {
+      if (e.getResponse().getStatusLine().getStatusCode() == HttpStatus.NOT_FOUND.value()) {
         return null;
       } else {
         throw new TasklistRuntimeException("Communication error with OpenSearch", e);
@@ -678,8 +679,15 @@ public class RetryOpenSearchClient {
 
       return responseObject.getJsonArray(
           "index_templates"); // Ensure this is the correct key based on your API response
+    } catch (final ResponseException e) {
+      if (e.getResponse().getStatusLine().getStatusCode() == HttpStatus.NOT_FOUND.value()) {
+        return null;
+      } else {
+        throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+      }
     } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
+      // Handle other I/O errors
+      throw new TasklistRuntimeException("Communication error with OpenSearch", e);
     }
   }
 

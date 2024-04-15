@@ -52,9 +52,9 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
   public void applyIlmPolicyToAllIndices() throws IOException {
     LOGGER.info("Applying ISM policy to all existent indices");
     final Response policyExists =
-        retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES); // TDB - Test
+        retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES);
     if (policyExists == null) {
-      LOGGER.info("ISM policy does not exist, creating it"); // TDB - Test
+      LOGGER.info("ISM policy does not exist, creating it");
       schemaManager.createIndexLifeCycles();
     }
     // Apply the ISM policy to the index templates
@@ -85,63 +85,66 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
   private void applyIlmPolicyToIndexTemplate(
       final String templatePattern, final String policyId, final boolean applyPolicy)
       throws IOException {
+    LOGGER.info("Applying ISM policy to index templates");
     final JsonArray templates = retryOpenSearchClient.getIndexTemplateSettings(templatePattern);
+    // Integration tests are not creating the templates, so we need to check if they exist
+    if (templates != null) {
+      for (final JsonObject templateData : templates.getValuesAs(JsonObject.class)) {
+        final String templateName = templateData.getString("name");
+        final JsonObject template = templateData.getJsonObject("index_template");
 
-    for (final JsonObject templateData : templates.getValuesAs(JsonObject.class)) {
-      final String templateName = templateData.getString("name");
-      final JsonObject template = templateData.getJsonObject("index_template");
+        final JsonArray indexPatterns = template.getJsonArray("index_patterns");
 
-      final JsonArray indexPatterns = template.getJsonArray("index_patterns");
+        final JsonObject innerTemplate = template.getJsonObject("template");
 
-      final JsonObject innerTemplate = template.getJsonObject("template");
+        final JsonObject existingSettings =
+            (innerTemplate != null && innerTemplate.containsKey("settings"))
+                ? innerTemplate.getJsonObject("settings")
+                : Json.createObjectBuilder().build();
 
-      final JsonObject existingSettings =
-          (innerTemplate != null && innerTemplate.containsKey("settings"))
-              ? innerTemplate.getJsonObject("settings")
-              : Json.createObjectBuilder().build();
+        final JsonObjectBuilder settingsBuilder = Json.createObjectBuilder();
 
-      final JsonObjectBuilder settingsBuilder = Json.createObjectBuilder();
-
-      if (existingSettings != null) {
-        for (final String key : existingSettings.keySet()) {
-          settingsBuilder.add(key, existingSettings.get(key));
+        if (existingSettings != null) {
+          for (final String key : existingSettings.keySet()) {
+            settingsBuilder.add(key, existingSettings.get(key));
+          }
         }
-      }
 
-      if (applyPolicy) {
-        settingsBuilder.add(
-            "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
-      } else {
-        // With Policy ID is null, any policy will be executed (but its explicit set)
-        settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
-      }
-
-      final JsonObject newSettings = settingsBuilder.build();
-
-      final JsonObjectBuilder updatedInnerTemplateBuilder =
-          Json.createObjectBuilder().add("settings", newSettings);
-
-      for (final String key : innerTemplate.keySet()) {
-        if (!"settings".equals(key)) { // do not overwrite new settings
-          updatedInnerTemplateBuilder.add(key, innerTemplate.get(key));
+        if (applyPolicy) {
+          settingsBuilder.add(
+              "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
+        } else {
+          // With Policy ID is null, any policy will be executed (but its explicit set)
+          settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
         }
-      }
 
-      final JsonObject updatedInnerTemplate = updatedInnerTemplateBuilder.build();
+        final JsonObject newSettings = settingsBuilder.build();
 
-      final JsonObjectBuilder updatedTemplateBuilder =
-          Json.createObjectBuilder()
-              .add("index_patterns", indexPatterns)
-              .add("template", updatedInnerTemplate);
+        final JsonObjectBuilder updatedInnerTemplateBuilder =
+            Json.createObjectBuilder().add("settings", newSettings);
 
-      for (final String key : template.keySet()) {
-        if (!"index_patterns".equals(key) && !"template".equals(key)) {
-          updatedTemplateBuilder.add(key, template.get(key));
+        for (final String key : innerTemplate.keySet()) {
+          if (!"settings".equals(key)) { // do not overwrite new settings
+            updatedInnerTemplateBuilder.add(key, innerTemplate.get(key));
+          }
         }
-      }
 
-      final String updatedTemplate = updatedTemplateBuilder.build().toString();
-      retryOpenSearchClient.putIndexTemplateSettings(templateName, updatedTemplate);
+        final JsonObject updatedInnerTemplate = updatedInnerTemplateBuilder.build();
+
+        final JsonObjectBuilder updatedTemplateBuilder =
+            Json.createObjectBuilder()
+                .add("index_patterns", indexPatterns)
+                .add("template", updatedInnerTemplate);
+
+        for (final String key : template.keySet()) {
+          if (!"index_patterns".equals(key) && !"template".equals(key)) {
+            updatedTemplateBuilder.add(key, template.get(key));
+          }
+        }
+
+        final String updatedTemplate = updatedTemplateBuilder.build().toString();
+        retryOpenSearchClient.putIndexTemplateSettings(templateName, updatedTemplate);
+      }
     }
   }
 }
