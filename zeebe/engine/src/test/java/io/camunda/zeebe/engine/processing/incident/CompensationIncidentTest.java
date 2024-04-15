@@ -119,6 +119,12 @@ public class CompensationIncidentTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(COMPENSATION_HANDLER_JOB_TYPE).fail();
 
     // then
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(COMPENSATION_HANDLER_JOB_TYPE)
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).resolve();
     ENGINE.job().ofInstance(processInstanceKey).withType(COMPENSATION_HANDLER_JOB_TYPE).complete();
 

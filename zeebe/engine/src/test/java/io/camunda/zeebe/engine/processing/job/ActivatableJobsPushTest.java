@@ -217,6 +217,7 @@ public class ActivatableJobsPushTest {
         RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // when an incident is resolved
+    ENGINE.job().withKey(jobKey).withType(jobType).withRetries(1).updateRetries();
     ENGINE.incident().ofInstance(incident.getValue().getProcessInstanceKey()).resolve();
 
     // then

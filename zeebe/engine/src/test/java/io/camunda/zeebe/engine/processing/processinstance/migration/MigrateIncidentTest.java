@@ -100,6 +100,7 @@ public class MigrateIncidentTest {
         .hasTenantId(incident.getValue().getTenantId());
 
     // after resolving the incident, job can be completed and the process should continue
+    ENGINE.job().ofInstance(processInstanceKey).withType("jobTypeA").withRetries(1).updateRetries();
     final Record<IncidentRecordValue> incidentRecord =
         ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
