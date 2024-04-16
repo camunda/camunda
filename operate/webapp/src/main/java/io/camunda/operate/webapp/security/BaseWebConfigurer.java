@@ -26,6 +26,8 @@ import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.WebSecurityProperties;
 import jakarta.json.Json;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -33,12 +35,19 @@ import java.io.PrintWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 public abstract class BaseWebConfigurer {
 
@@ -47,6 +56,8 @@ public abstract class BaseWebConfigurer {
   @Autowired protected OperateProperties operateProperties;
 
   @Autowired OperateProfileService errorMessageService;
+
+  final CookieCsrfTokenRepository cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
 
   public static void sendJSONErrorMessage(final HttpServletResponse response, final String message)
       throws IOException {
@@ -106,8 +117,13 @@ public abstract class BaseWebConfigurer {
   }
 
   private void defaultFilterSettings(final HttpSecurity http) throws Exception {
-    http.csrf((csrf) -> csrf.disable())
-        .authorizeRequests(
+    if (operateProperties.isCsrfPreventionEnabled()) {
+      logger.info("CSRF Protection is enabled");
+      configureCSRF(http);
+    } else {
+      http.csrf((csrf) -> csrf.disable());
+    }
+    http.authorizeRequests(
             (authorize) -> {
               authorize
                   .requestMatchers(AUTH_WHITELIST)
@@ -129,7 +145,7 @@ public abstract class BaseWebConfigurer {
                   .logoutUrl(LOGOUT_RESOURCE)
                   .logoutSuccessHandler(this::logoutSuccessHandler)
                   .permitAll()
-                  .deleteCookies(COOKIE_JSESSIONID)
+                  .deleteCookies(COOKIE_JSESSIONID, X_CSRF_TOKEN)
                   .clearAuthentication(true)
                   .invalidateHttpSession(true);
             })
@@ -182,7 +198,53 @@ public abstract class BaseWebConfigurer {
       final HttpServletRequest request,
       final HttpServletResponse response,
       final Authentication authentication) {
-    response.setStatus(NO_CONTENT.value());
+    addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
+  }
+
+  protected void configureCSRF(final HttpSecurity http) throws Exception {
+    cookieCsrfTokenRepository.setHeaderName(X_CSRF_TOKEN);
+    cookieCsrfTokenRepository.setCookieHttpOnly(true);
+    cookieCsrfTokenRepository.setCookieName(X_CSRF_TOKEN);
+    http.csrf(
+            (csrf) ->
+                csrf.csrfTokenRepository(cookieCsrfTokenRepository)
+                    .requireCsrfProtectionMatcher(new CsrfRequireMatcher())
+                    .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class)))
+        .addFilterAfter(getCSRFHeaderFilter(), CsrfFilter.class);
+  }
+
+  protected OncePerRequestFilter getCSRFHeaderFilter() {
+    return new OncePerRequestFilter() {
+      @Override
+      protected void doFilterInternal(
+          final HttpServletRequest request,
+          final HttpServletResponse response,
+          final FilterChain filterChain)
+          throws ServletException, IOException {
+        filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
+      }
+    };
+  }
+
+  protected HttpServletResponse addCSRFTokenWhenAvailable(
+      final HttpServletRequest request, final HttpServletResponse response) {
+    if (shouldAddCSRF(request)) {
+      final CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      if (token != null) {
+        response.setHeader(X_CSRF_TOKEN, token.getToken());
+      }
+    }
+    return response;
+  }
+
+  boolean shouldAddCSRF(final HttpServletRequest request) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    final String path = request.getRequestURI();
+    final String method = request.getMethod();
+    return auth != null
+        && auth.isAuthenticated()
+        && (path == null || !path.contains("logout"))
+        && ("GET".equalsIgnoreCase(method) || (path != null && path.contains("login")));
   }
 
   protected void sendError(
