@@ -602,7 +602,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
                 Expected to migrate process instance '%s' \
                 but active element with id 'A' has one or more boundary events of types 'TIMER'. \
                 Migrating active elements with boundary events of these types is not possible yet."""
@@ -728,7 +728,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' \
             but target element with id 'A' has one or more boundary events of types 'TIMER'. \
             Migrating target elements with boundary events of these types is not possible yet."""
@@ -852,7 +852,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' but active element with id 'A' attempts to \
             subscribe to a message it is already subscribed to with name 'message'. Migrating \
             active elements that subscribe to a message they are already subscribed to is not \
@@ -919,7 +919,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' but active element with id 'A' is mapped to \
             element with id 'A' that must be subscribed to mapped catch event with id 'boundary'. \
             Migrating active elements with mapped catch events is not possible yet."""
@@ -1152,7 +1152,7 @@ public class MigrateProcessInstanceRejectionTest {
         .describedAs("Expect that the message boundary event could not be subscribed")
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' but active element with id 'A' \
             is mapped to element with id 'B' that must be subscribed to a message catch event. \
             Failed to extract the correlation key for 'key': The value must be either a string or \

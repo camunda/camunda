@@ -1,0 +1,70 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v3
+---
+name: Build Tasklist Docker Image
+description: Builds the Tasklist Docker image
+
+inputs:
+  tags:
+    description: 'Docker image tags'
+    required: true
+  revision:
+    description: 'The revision of the source the content of this image is based on.'
+    required: false
+  push:
+    description: 'If true, will push the image'
+    required: false
+    default: 'false'
+  platforms:
+    # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
+    description: 'Comma separated-list of platforms to build the image for; defaults to linux/amd64,linux/arm64'
+    required: false
+    default: 'linux/arm64,linux/amd64'
+  dockerfile:
+    description: 'The used dockerfile name'
+    required: false
+    default: 'tasklist.Dockerfile'
+
+outputs:
+  date:
+    description: "The ISO 8601 date at which the image was created"
+    value: ${{ steps.get-date.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up multi-platform support
+      uses: docker/setup-qemu-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        # to be able to push to local registry, which we use in our tests, we need to use host network
+        driver-opts: network=host
+    - name: Create context
+      shell: bash
+      run: |
+        docker buildx create --use
+    - name: Set image build label from ISO 8601 DATE
+      id: get-date
+      shell: bash
+      run: echo "result=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
+    - name: "Read Java / Version Info"
+      id: "pom-info"
+      uses: YunaBraska/java-info-action@main
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        tags: ${{ inputs.tags }}
+        load: ${{ inputs.push != 'true' }}
+        push: ${{ inputs.push }}
+        cache-from: type=gha,ignore-error=true
+        cache-to: type=gha,mode=max,ignore-error=true
+        no-cache-filters: build,distball,dist
+        provenance: false
+        platforms: ${{ inputs.platforms }}
+        build-args: |
+          DATE=${{ steps.get-date.outputs.result }}
+          REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
+          VERSION=${{ steps.pom-info.outputs.project_version }}
+        target: app
+        file: ${{ inputs.dockerfile }}

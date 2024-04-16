@@ -16,9 +16,9 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.common.json.SdkObjectMapper;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.spring.common.json.SdkObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -44,7 +44,7 @@ public class JsonMapperConfiguration {
 
   @Bean(name = "commonJsonMapper")
   @ConditionalOnMissingBean
-  public io.camunda.common.json.JsonMapper commonJsonMapper() {
+  public io.camunda.zeebe.spring.common.json.JsonMapper commonJsonMapper() {
     if (objectMapper == null) {
       return new SdkObjectMapper();
     }

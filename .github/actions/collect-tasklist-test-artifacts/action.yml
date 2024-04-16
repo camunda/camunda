@@ -1,0 +1,40 @@
+---
+name: Collect Tasklist test artifacts
+
+description: Collects test outputs and uploads them as artifact
+
+inputs:
+  name:
+    description: 'Name of the test artifact.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+
+    # MacOS sed is not compatible with the remove script, we need gnu sed instead
+    - name: Install GNU sed
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        brew install gnu-sed
+        echo "SED_BIN=gsed" >> $GITHUB_ENV
+
+      # Mitigate to large test output files by deleting the system-out element using sed
+      # Note: we cannot use XML tools like xmlstarlet as they all suffer the same libxml2 limitation
+      # Related to https://github.com/camunda/zeebe/issues/9959
+    - name: Remove system-out from test xml files
+      shell: bash
+      run: |
+        find . -iname TEST-*.xml -print0 | xargs -0 -r ${SED_BIN:-sed} '/<system-out>/,/<\/system-out>/d' -i
+
+    - name: Archive Test Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: Test results for ${{ inputs.name  }}
+        path: |
+          **/target/failsafe-reports/
+          **/target/surefire-reports/
+          **/hs_err_*.log
+        retention-days: 7
+        if-no-files-found: ignore

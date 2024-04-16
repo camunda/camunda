@@ -34,3 +34,13 @@ component/identity:
       - any-glob-to-any-file:
           - '.github/workflows/identity-*'
           - 'identity/**'
+component/tasklist:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/ISSUE_TEMPLATE/tasklist-*'
+          - '.github/actions/**'
+          - '.github/renovate.json'
+          - '.github/workflows/tasklist-*'
+          - 'tasklist/**'
+          - 'tasklist-distro/**'
+          - 'tasklist.Dockerfile'

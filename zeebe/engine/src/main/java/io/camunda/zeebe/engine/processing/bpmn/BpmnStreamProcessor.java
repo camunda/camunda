@@ -136,7 +136,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             };
         incidentBehavior.createIncident(
             new Failure(
-                    """
+                """
                     Expected to process element '%s', but exceeded MAX_MESSAGE_SIZE limitation. \
                     If you have large or many variables consider reducing these."""
                     .formatted(BufferUtil.bufferAsString(transitionedContext.getElementId())),

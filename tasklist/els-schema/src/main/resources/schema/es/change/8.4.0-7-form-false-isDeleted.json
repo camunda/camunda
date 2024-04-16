@@ -1,0 +1,8 @@
+{
+  "description": "Set isDeleted flag as false",
+  "@type": "processorStep",
+  "indexName": "form",
+  "version": "8.4.0",
+  "order": 7,
+  "content": "{\"set\": {\"field\": \"isDeleted\", \"value\": \"false\"}}"
+}

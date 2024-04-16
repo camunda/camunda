@@ -1,0 +1,8 @@
+{
+  "description": "Set true for isEmbedded for 'process' index",
+  "@type": "processorStep",
+  "indexName": "process",
+  "version": "8.4.0",
+  "order": 3,
+  "content": "{\"set\": {\"field\": \"isFormEmbedded\", \"value\": \"true\"}}"
+}

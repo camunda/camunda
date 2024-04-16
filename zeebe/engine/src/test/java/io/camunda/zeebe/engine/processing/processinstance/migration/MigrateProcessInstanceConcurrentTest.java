@@ -871,8 +871,7 @@ public class MigrateProcessInstanceConcurrentTest {
 
   private static String createMigrationRejectionDueMissingMappingReason(
       final long processInstanceKey) {
-    return
-        """
+    return """
         Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
         Elements cannot be migrated without a mapping."""
         .formatted(processInstanceKey);
