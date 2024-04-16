@@ -51,11 +51,6 @@ type HeaderColumn = {
   isDisabled?: boolean;
 } & DataTableHeader;
 
-type RowOperationError = {
-  batchOperationId: string | undefined;
-  errorMessage: string | null;
-};
-
 type Props = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   selectionType?: 'checkbox' | 'row' | 'none';
@@ -65,11 +60,12 @@ type Props = {
   onSelectAll?: () => void;
   onSelect?: (rowId: string) => void;
   checkIsRowSelected?: (rowId: string) => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
-  rowOperationError?: (rowId: string) => RowOperationError; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
+  rowOperationError?: (rowId: string) => string | null; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
+  batchOperationId?: string;
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -90,6 +86,7 @@ const SortableTable: React.FC<Props> = ({
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
+  batchOperationId,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -140,7 +137,9 @@ const SortableTable: React.FC<Props> = ({
             <Table {...getTableProps()} isSortable>
               <TableHead>
                 <TableHeadRow>
-                  <TableExpandHeader aria-label="expand row" />
+                  {batchOperationId && (
+                    <TableExpandHeader aria-label="expand row" />
+                  )}
                   {selectionType === 'checkbox' && (
                     <TableSelectAll
                       {...getSelectionProps()}
@@ -177,19 +176,11 @@ const SortableTable: React.FC<Props> = ({
                   <tbody aria-live="polite" data-testid="data-list">
                     {rows.map((row) => {
                       const isSelected = checkIsRowSelected?.(row.id) ?? false;
-                      const errorMessageAndFilterState = rowOperationError?.(
-                        row.id,
-                      );
+                      const errorMessage = rowOperationError?.(row.id);
 
                       const expandRowStyleClasses = () => {
-                        if (errorMessageAndFilterState?.errorMessage) {
-                          return 'errorRow';
-                        } else if (
-                          !errorMessageAndFilterState?.errorMessage &&
-                          errorMessageAndFilterState?.batchOperationId
-                        ) {
-                          return 'successRow';
-                        }
+                        if (batchOperationId)
+                          return errorMessage ? 'errorRow' : 'successRow';
 
                         return '';
                       };
@@ -230,9 +221,9 @@ const SortableTable: React.FC<Props> = ({
                               </TableCell>
                             ))}
                           </TableExpandRow>
-                          {errorMessageAndFilterState?.errorMessage && (
+                          {errorMessage && (
                             <TableExpandedRow colSpan={headers.length + 2}>
-                              {errorMessageAndFilterState.errorMessage}
+                              {errorMessage}
                             </TableExpandedRow>
                           )}
                         </React.Fragment>

@@ -361,6 +361,7 @@ const InstancesTable: React.FC = observer(() => {
               ]
             : []),
         ]}
+        batchOperationId={batchOperationId}
       />
       {batchModificationStore.state.isEnabled && <BatchModificationFooter />}
     </Container>
