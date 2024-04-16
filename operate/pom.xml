@@ -14,6 +14,22 @@
 
   <name>Operate Parent</name>
 
+
+  <modules>
+    <module>client</module>
+    <module>common</module>
+    <module>schema</module>
+    <module>data-generator</module>
+    <module>importer-common</module>
+    <module>importer-8_5</module>
+    <module>importer-8_6</module>
+    <module>importer</module>
+    <module>archiver</module>
+    <module>webapp</module>
+    <module>mvc-auth-commons</module>
+    <module>../distro</module>
+  </modules>
+
   <properties>
 
     <!-- release parent settings -->
@@ -32,6 +48,7 @@
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/*5IT.java</excludeITNames>
   </properties>
+
 
   <build>
     <pluginManagement>
@@ -242,45 +259,18 @@
       </build>
     </profile>
 
+    <!-- 
+      Integration tests are run per default, but having it in a profile allows us to exclude it easily.
+      That is useful for example for creating releases.
+       -->
     <profile>
-      <id>all</id>
+      <id>integration-tests</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
       <modules>
-        <module>client</module>
-        <module>common</module>
-        <module>schema</module>
-        <module>data-generator</module>
-        <module>importer-common</module>
-        <module>importer-8_5</module>
-        <module>importer-8_6</module>
-        <module>importer</module>
-        <module>archiver</module>
-        <module>webapp</module>
         <module>qa</module>
-        <module>mvc-auth-commons</module>
-        <module>../distro</module>
-      </modules>
-    </profile>
-
-    <profile>
-      <id>release</id>
-      <modules>
-        <module>client</module>
-        <module>common</module>
-        <module>schema</module>
-        <module>data-generator</module>
-        <module>importer-common</module>
-        <module>importer-8_5</module>
-        <module>importer-8_6</module>
-        <module>importer</module>
-        <module>archiver</module>
-        <module>webapp</module>
-        <module>mvc-auth-commons</module>
-        <module>../distro</module>
       </modules>
     </profile>
   </profiles>
-
 </project>

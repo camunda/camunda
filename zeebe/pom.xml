@@ -49,7 +49,6 @@
     <module>dmn</module>
     <module>snapshot</module>
     <module>journal</module>
-    <module>qa</module>
     <module>benchmarks/project</module>
     <module>scheduler</module>
     <module>backup</module>
@@ -61,4 +60,20 @@
     <module>restore</module>
     <module>topology</module>
   </modules>
+
+  <profiles>
+    <!-- 
+      Integration tests are run per default, but having it in a profile allows us to exclude it easily.
+      That is useful for example for creating releases.
+      -->
+    <profile>
+      <id>integration-tests</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>qa</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
