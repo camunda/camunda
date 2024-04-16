@@ -38,7 +38,7 @@ public class OperateProperties {
   private boolean persistentSessionsEnabled = false;
 
   /** Indicates, whether CSRF prevention is enabled. */
-  @Deprecated private boolean csrfPreventionEnabled = true;
+  private boolean csrfPreventionEnabled = true;
 
   /** Standard user data */
   private String userId = "demo";
@@ -135,12 +135,10 @@ public class OperateProperties {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
-  @Deprecated
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
 
-  @Deprecated
   public void setCsrfPreventionEnabled(final boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }

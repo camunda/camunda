@@ -12,6 +12,7 @@ import static io.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDP
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -44,6 +45,15 @@ public interface AuthenticationTestable {
       Pattern.compile(
           "^" + OperateURIs.COOKIE_JSESSIONID + "=[0-9A-Z]{32}$", Pattern.CASE_INSENSITIVE);
   String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
+
+  default HttpHeaders getHeaderWithCSRF(final HttpHeaders responseHeaders) {
+    final HttpHeaders headers = new HttpHeaders();
+    if (responseHeaders.containsKey(X_CSRF_TOKEN)) {
+      final String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
+      headers.set(X_CSRF_TOKEN, csrfToken);
+    }
+    return headers;
+  }
 
   default HttpEntity<Map<String, String>> prepareRequestWithCookies(
       final ResponseEntity<?> response) {

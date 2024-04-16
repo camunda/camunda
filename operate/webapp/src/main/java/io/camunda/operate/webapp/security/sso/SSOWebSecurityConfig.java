@@ -43,8 +43,13 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
 
   @Override
   protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
-    http.csrf((csrf) -> csrf.disable())
-        .authorizeRequests(
+    if (operateProperties.isCsrfPreventionEnabled()) {
+      logger.info("CSRF Protection enabled");
+      configureCSRF(http);
+    } else {
+      http.csrf((csrf) -> csrf.disable());
+    }
+    http.authorizeRequests(
             (authorize) -> {
               authorize
                   .requestMatchers(AUTH_WHITELIST)
