@@ -1,0 +1,8 @@
+{
+  "description": "Set true for embedded for 'form' index",
+  "@type": "processorStep",
+  "indexName": "form",
+  "version": "8.4.0",
+  "order": 1,
+  "content": "{\"set\": {\"field\": \"embedded\", \"value\": \"true\"}}"
+}

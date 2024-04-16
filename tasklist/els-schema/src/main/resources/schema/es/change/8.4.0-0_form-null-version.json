@@ -1,0 +1,8 @@
+{
+  "description": "Set version null for 'form' index",
+  "@type": "processorStep",
+  "indexName": "form",
+  "version": "8.4.0",
+  "order": 0,
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.version = null;\"}}"
+}

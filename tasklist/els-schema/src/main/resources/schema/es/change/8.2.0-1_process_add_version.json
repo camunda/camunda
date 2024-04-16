@@ -1,0 +1,8 @@
+{
+  "description": "Add field version ",
+  "@type": "processorStep",
+  "indexName": "process",
+  "version": "8.2.1",
+  "order": 0,
+  "content": "{\"set\": {\"field\": \"version\", \"value\": \"\"}}"
+}

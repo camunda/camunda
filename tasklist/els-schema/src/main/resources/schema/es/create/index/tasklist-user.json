@@ -1,0 +1,22 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "password": {
+        "type": "keyword"
+      },
+      "roles": {
+        "type": "keyword"
+      },
+      "userId": {
+        "type": "keyword"
+      },
+      "displayName": {
+        "type": "keyword"
+      }
+    }
+  }
+}

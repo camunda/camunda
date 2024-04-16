@@ -1,0 +1,8 @@
+{
+  "description": "Migrate fields username to userId, firstname+lastname to displayName ",
+  "@type": "processorStep",
+  "indexName": "user",
+  "version": "1.4.0",
+  "order": 0,
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.userId = ctx.username; ctx.displayName = (ctx.firstname == null?'':ctx.firstname) + (ctx.lastname == null?'': (' ' + ctx.lastname))\"}}"
+}

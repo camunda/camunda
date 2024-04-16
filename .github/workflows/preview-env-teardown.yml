@@ -1,0 +1,67 @@
+---
+name: Tasklist teardown-preview-env
+on:
+  delete:
+    branches:
+      - "stable/**"
+  pull_request:
+    types: [ unlabeled, closed ]
+
+jobs:
+  teardown:
+    # check whether it's a branch delete stable || check whether it's unlabled || check whether the PR was closed / merged
+    if: contains( github.event.ref, 'stable/' ) || github.event.label.name == 'deploy-preview' || (github.event.action == 'closed' && contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
+    name: teardown-${{ github.head_ref || github.event.ref }} # env is not yet available here
+    runs-on: ubuntu-22.04
+    env:
+      BRANCH_NAME: ${{ github.head_ref || github.event.ref }} # head_ref = branch on PR, event.ref stable/**
+    steps:
+      #########################################################################
+      # Setup: import secrets from vault
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@a727ce205a9e187cf179d30796762854cac9c231
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/tasklist/ci/tasklist ARGOCD_TOKEN;
+      #########################################################################
+      # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ env.BRANCH_NAME }}
+          max_length: '15'
+      - name: Set GitHub environment variables
+        run: |
+          if [ "${{ env.BRANCH_NAME }}" == 'master' ]; then
+          echo "APP_NAME='stage'" >> $GITHUB_ENV
+          elif [[ "${{ env.BRANCH_NAME }}" == stable/* ]]; then
+          echo "APP_NAME=${{ steps.sanitize.outputs.branch_name }}" >> $GITHUB_ENV
+          else
+          echo "APP_NAME=${{ steps.sanitize.outputs.branch_name }}-app" >> $GITHUB_ENV
+          fi
+      #########################################################################
+      # Setup: checkout code. This is required because we are using
+      # composite actions and deployment manifests.
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      #########################################################################
+      # Tear down preview environment
+      - name: Tear down Preview Environment
+        uses: camunda/infra-global-github-actions/preview-env/destroy@main
+        with:
+          app_name: tasklist-${{ env.APP_NAME }}
+          revision: ${{ env.BRANCH_NAME }}
+          argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+  clean:
+    if: always() && needs.teardown.result != 'skipped'
+    uses: camunda/tasklist/.github/workflows/preview-env-clean.yml@master
+    needs:
+    - teardown
+    secrets: inherit
+    with:
+      pull-request: ${{ github.event.pull_request.number }}
