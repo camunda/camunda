@@ -78,7 +78,7 @@ public class CustomerOnboardingDataImportService {
       final String processDefinition,
       final String pathToProcessInstances,
       final int batchSize,
-      OptimizeProfile optimizeProfile) {
+      final OptimizeProfile optimizeProfile) {
     DataSourceDto dataSource;
     final boolean isC7mode = optimizeProfile.equals(OptimizeProfile.PLATFORM);
     if (isC7mode) {
@@ -137,7 +137,7 @@ public class CustomerOnboardingDataImportService {
   }
 
   private void readProcessInstanceJson(
-      final String pathToProcessInstances, final int batchSize, DataSourceDto dataSourceDto) {
+      final String pathToProcessInstances, final int batchSize, final DataSourceDto dataSourceDto) {
     List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
     try {
       try (InputStream customerOnboardingProcessInstances =
@@ -151,13 +151,17 @@ public class CustomerOnboardingDataImportService {
             if (processInstance != null) {
               Optional<Long> processInstanceDuration =
                   Optional.ofNullable(processInstance.getDuration());
-              if (processInstance.getProcessDefinitionKey() != null
-                  && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
-                processInstanceDtos.add(processInstance);
-              }
               if (dataSourceDto != null) {
                 processInstance.setDataSource(dataSourceDto);
                 processInstance.setTenantId(null);
+                processInstance
+                    .getFlowNodeInstances()
+                    .forEach(flowNodeInstanceDto -> flowNodeInstanceDto.setTenantId(null));
+                processInstance.getIncidents().forEach(incident -> incident.setTenantId(null));
+              }
+              if (processInstance.getProcessDefinitionKey() != null
+                  && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
+                processInstanceDtos.add(processInstance);
               }
             } else {
               log.error("Process instance not loaded correctly. Please check your json file.");
@@ -176,7 +180,7 @@ public class CustomerOnboardingDataImportService {
   }
 
   private void loadProcessInstancesToDatabase(
-      List<ProcessInstanceDto> rawProcessInstanceDtos, int batchSize) {
+      final List<ProcessInstanceDto> rawProcessInstanceDtos, final int batchSize) {
     List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
     Optional<OffsetDateTime> maxOfEndAndStartDate =
         rawProcessInstanceDtos.stream()
@@ -199,7 +203,8 @@ public class CustomerOnboardingDataImportService {
     }
   }
 
-  private void insertProcessInstancesToDatabase(List<ProcessInstanceDto> processInstanceDtos) {
+  private void insertProcessInstancesToDatabase(
+      final List<ProcessInstanceDto> processInstanceDtos) {
     List<ProcessInstanceDto> completedProcessInstances =
         processInstanceDtos.stream()
             .filter(processInstanceDto -> processInstanceDto.getEndDate() != null)
