@@ -42,3 +42,13 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
+
+  test-summary:
+    # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
+    # https://github.com/orgs/community/discussions/26251
+    # This name is hard-coded in the branch rules; remember to update that if this name changes
+    name: Test summary
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0
