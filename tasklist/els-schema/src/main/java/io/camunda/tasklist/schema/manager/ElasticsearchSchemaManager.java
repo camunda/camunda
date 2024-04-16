@@ -79,6 +79,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Autowired private List<TemplateDescriptor> templateDescriptors;
 
+  @Override
   public void createSchema() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
       createIndexLifeCycles();
@@ -122,7 +123,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     retryElasticsearchClient.createComponentTemplate(request);
   }
 
-  private void createIndexLifeCycles() {
+  public void createIndexLifeCycles() {
     final TimeValue timeValue =
         TimeValue.parseTimeValue(
             tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
@@ -190,26 +191,27 @@ public class ElasticsearchSchemaManager implements SchemaManager {
               templateDescriptor.getAlias(),
               AliasMetadata.builder(templateDescriptor.getAlias()).build());
       return new Template(ptr.settings(), new CompressedXContent(ptr.mappings()), aliases);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
   private Map<String, Object> readJSONFileToMap(final String filename) {
     final Map<String, Object> result;
-    try (InputStream inputStream = ElasticsearchSchemaManager.class.getResourceAsStream(filename)) {
+    try (final InputStream inputStream =
+        ElasticsearchSchemaManager.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         result = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
       } else {
         throw new TasklistRuntimeException("Failed to find " + filename + " in classpath ");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException("Failed to load file " + filename + " from classpath ", e);
     }
     return result;
   }
 
-  private void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
+  private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {
     final boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
     if (created) {
       LOGGER.debug("Index [{}] was successfully created", indexName);
