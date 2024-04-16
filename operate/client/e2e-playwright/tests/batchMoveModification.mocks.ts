@@ -15,49 +15,24 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {createPortal} from 'react-dom';
+import {deployProcess, createInstances} from '../setup-utils';
 
-import {Container} from './styled';
-import {
-  CheckmarkOutline,
-  Error,
-  RadioButtonChecked,
-  WarningFilled,
-} from '@carbon/react/icons';
-import {observer} from 'mobx-react';
-import {currentTheme} from 'modules/stores/currentTheme';
+const setup = async () => {
+  const deployProcessResponse = await deployProcess(['orderProcess_v_1.bpmn']);
 
-type Props = {
-  state: FlowNodeState | DecisionInstanceEntityState;
-  container: HTMLElement;
-  count?: number;
-  isFaded?: boolean;
-  testId?: string;
+  if (deployProcessResponse.processes[0] === undefined) {
+    throw new Error('Error deploying process');
+  }
+
+  const {version, processDefinitionKey, bpmnProcessId} =
+    deployProcessResponse.processes[0];
+
+  return {
+    processInstances: await createInstances('orderProcess', version, 10),
+    processDefinitionKey,
+    bpmnProcessId,
+    version,
+  };
 };
 
-const StateOverlay: React.FC<Props> = observer(
-  ({state, container, count, isFaded = false, testId = 'state-overlay'}) => {
-    const showStatistic = count !== undefined;
-
-    return createPortal(
-      <Container
-        data-testid={testId}
-        $theme={currentTheme.theme}
-        $state={state}
-        $isFaded={isFaded}
-        orientation="horizontal"
-        gap={3}
-        $showStatistic={showStatistic}
-      >
-        {['FAILED', 'incidents'].includes(state) && <WarningFilled />}
-        {state === 'active' && <RadioButtonChecked />}
-        {['EVALUATED', 'completed'].includes(state) && <CheckmarkOutline />}
-        {state === 'canceled' && <Error />}
-        {showStatistic && <span>{count}</span>}
-      </Container>,
-      container,
-    );
-  },
-);
-
-export {StateOverlay};
+export {setup};
