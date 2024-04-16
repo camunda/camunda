@@ -7,43 +7,57 @@ package org.camunda.optimize.service.schema;
 
 import static jakarta.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.ApplicationContextProvider.getBean;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
-import static org.camunda.optimize.service.db.DatabaseConstants.REFRESH_INTERVAL_SETTING;
 import static org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import org.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
+import org.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.report.SingleDecisionReportIndexOS;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndexOS;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
-import org.elasticsearch.common.settings.Settings;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.integration.ClientAndServer;
+import org.opensearch.client.json.JsonpSerializable;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.indices.GetFieldMappingRequest;
+import org.opensearch.client.opensearch.indices.GetFieldMappingResponse;
+import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
-import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
+import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
+import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
+import org.opensearch.client.opensearch.indices.PutIndicesSettingsResponse;
+import org.opensearch.client.opensearch.indices.get_field_mapping.TypeFieldMappings;
 
 // We can unfortunately not use constants in this expression, so it needs to be the literal text
 // "opensearch".
-// TODO resolve with OPT-7455 #10085
 @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "opensearch")
+@Tag(OPENSEARCH_PASSING)
 public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 
   @Test
@@ -83,7 +97,7 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     for (IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }
-    final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
+    final GetIndicesSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
     assertMappingSettings(mappings, getSettingsResponse);
   }
 
@@ -119,17 +133,17 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     initializeSchema();
 
     // then the settings contain values from configuration
-    final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
+    final GetIndicesSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
     assertMappingSettings(mappings, getSettingsResponse);
   }
 
   @Test
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void indexExistCheckIsPerformedInBatches() {
     // given
     final int expectedExistQueryBatchExecutionCount =
         (int) Math.ceil((double) getSchemaManager().getMappings().size() / INDEX_EXIST_BATCH_SIZE);
     assertThat(expectedExistQueryBatchExecutionCount).isGreaterThan(1);
-    // TODO fix with OPT-7455
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
@@ -188,14 +202,19 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     initializeSchema();
 
     // then the settings contain the updated dynamic values
-    final GetSettingsResponse getSettingsResponse =
+    final GetIndicesSettingsResponse getSettingsResponse =
         getIndexSettingsFor(Collections.singletonList(new ProcessDefinitionIndexOS()));
     final String indexName =
         indexNameService.getOptimizeIndexNameWithVersion(new ProcessDefinitionIndexOS());
-    final Settings settings = getSettingsResponse.getIndexToSettings().get(indexName);
-    assertThat(settings.get("index." + REFRESH_INTERVAL_SETTING)).isEqualTo("100s");
-    assertThat(settings.getAsInt("index." + NUMBER_OF_REPLICAS_SETTING, 111)).isEqualTo(2);
-    assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
+    final IndexSettings settings =
+        Objects.requireNonNull(getSettingsResponse.result().get(indexName).settings()).index();
+    assert settings != null;
+    assert settings.refreshInterval() != null;
+    assertThat(settings.refreshInterval()._toJsonString()).isEqualTo("100s");
+    assertThat(settings.numberOfReplicas()).isEqualTo("2");
+    assert settings.mapping() != null;
+    assert settings.mapping().nestedObjects() != null;
+    assertThat(settings.mapping().nestedObjects().limit()).isEqualTo(10L);
 
     // cleanup
     embeddedOptimizeExtension
@@ -253,15 +272,20 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     initializeSchema();
 
     // then the settings contain the updated dynamic values
-    final ProcessInstanceIndex dynamicIndex =
-        new ProcessInstanceIndexES(processInstanceEngineDto.getProcessDefinitionKey());
-    final GetSettingsResponse getSettingsResponse =
+    final ProcessInstanceIndex<IndexSettings.Builder> dynamicIndex =
+        new ProcessInstanceIndexOS(processInstanceEngineDto.getProcessDefinitionKey());
+    final GetIndicesSettingsResponse getSettingsResponse =
         getIndexSettingsFor(Collections.singletonList(dynamicIndex));
     final String indexName = indexNameService.getOptimizeIndexNameWithVersion(dynamicIndex);
-    final Settings settings = getSettingsResponse.getIndexToSettings().get(indexName);
-    assertThat(settings.get("index." + REFRESH_INTERVAL_SETTING)).isEqualTo("100s");
-    assertThat(settings.getAsInt("index." + NUMBER_OF_REPLICAS_SETTING, 111)).isEqualTo(2);
-    assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
+    final IndexSettings settings =
+        Objects.requireNonNull(getSettingsResponse.result().get(indexName).settings()).index();
+    assert settings != null;
+    assert settings.refreshInterval() != null;
+    assertThat(settings.refreshInterval()._toJsonString()).isEqualTo("100s");
+    assertThat(settings.numberOfReplicas()).isEqualTo("2");
+    assert settings.mapping() != null;
+    assert settings.mapping().nestedObjects() != null;
+    assertThat(settings.mapping().nestedObjects().limit()).isEqualTo(10L);
 
     // cleanup
     embeddedOptimizeExtension
@@ -280,6 +304,7 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void dynamicSettingsAreUpdatedForExistingIndexesWhenNewIndexesAreCreated()
       throws IOException {
     // given schema exists
@@ -294,14 +319,13 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     embeddedOptimizeExtension
         .getOptimizeDatabaseClient()
         .deleteIndex(
-            indexNameService.getOptimizeIndexAliasForIndex(new SingleDecisionReportIndexES()));
+            indexNameService.getOptimizeIndexAliasForIndex(new SingleDecisionReportIndexOS()));
 
     // when
     initializeSchema();
 
     // then the settings contain values from configuration
-    final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
-
+    final GetIndicesSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
     assertMappingSettings(mappings, getSettingsResponse);
   }
 
@@ -315,21 +339,13 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     return OpenSearchException.class;
   }
 
-  private static Settings buildStaticSettings(
+  private static IndexSettings buildStaticSettings(
       IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
       ConfigurationService configurationService)
       throws IOException {
-    // TODO fix with OPT-7455
-    throw new NotImplementedException("Will be implemented with OPT-7455");
-    //    IndexSettings.Builder builder = jsonBuilder();
-    //    // @formatter:off
-    //    builder
-    //      .startObject();
-    //    indexMappingCreator.getStaticSettings(builder, configurationService)
-    //      .endObject();
-    //    // @formatter:on
-    //    return Settings.builder().loadFromSource(Strings.toString(builder),
-    // XContentType.JSON).build();
+    IndexSettings.Builder builder = new IndexSettings.Builder();
+    builder = indexMappingCreator.getStaticSettings(builder, configurationService);
+    return builder.build();
   }
 
   protected OpenSearchSchemaManager getSchemaManager() {
@@ -339,96 +355,169 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
   private void assertThatNewFieldExists() throws IOException {
     final String aliasForIndex =
         indexNameService.getOptimizeIndexAliasForIndex(METADATA_INDEX_NAME);
-    // TODO fix with OPT-7455
-    throw new NotImplementedException("Will be implemented with OPT-7455");
-
-    //    GetFieldMappingsRequest request = new GetFieldMappingsRequest()
-    //      .indices(aliasForIndex)
-    //      .fields(MyUpdatedEventIndex.MY_NEW_FIELD);
-    //    GetFieldMappingsResponse response =
-    //      prefixAwareDatabaseClient.getHighLevelClient()
-    //        .indices()
-    //        .getFieldMapping(request, prefixAwareDatabaseClient.requestOptions());
-    //
-    //    final MyUpdatedEventIndex updatedEventType = new MyUpdatedEventIndex();
-    //    final GetFieldMappingsResponse.FieldMappingMetadata fieldEntry =
-    //      response.fieldMappings(
-    //        indexNameService.getOptimizeIndexNameWithVersion(updatedEventType),
-    //        MyUpdatedEventIndex.MY_NEW_FIELD
-    //      );
-    //
-    //    assertThat(fieldEntry).isNotNull();
+    GetFieldMappingRequest.Builder request =
+        new GetFieldMappingRequest.Builder()
+            .index(aliasForIndex)
+            .fields(MyUpdatedEventIndexOS.MY_NEW_FIELD);
+    GetFieldMappingResponse response =
+        getOpenSearchOptimizeClient()
+            .getOpenSearchClient()
+            .indices()
+            .getFieldMapping(request.build());
+    final MyUpdatedEventIndex<Builder> updatedEventType = new MyUpdatedEventIndexOS();
+    TypeFieldMappings mapping =
+        response.result().get(indexNameService.getOptimizeIndexNameWithVersion(updatedEventType));
+    assertThat(mapping.mappings().get(MyUpdatedEventIndex.MY_NEW_FIELD)).isNotNull();
   }
 
   private void assertMappingSettings(
       final List<IndexMappingCreator<IndexSettings.Builder>> mappings,
-      final GetSettingsResponse getSettingsResponse)
+      final GetIndicesSettingsResponse getSettingsResponse)
       throws IOException {
-    // TODO fix with OPT-7455
-    throw new NotImplementedException("Will be implemented with OPT-7455");
-    //    for (IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
-    //      Settings dynamicSettings = OpenSearchIndexSettingsBuilder.buildDynamicSettings(
-    //        embeddedOptimizeExtension.getConfigurationService());
-    //      dynamicSettings.names().forEach(
-    //        settingName -> {
-    //          final String setting = getSettingsResponse.getSetting(
-    //            indexNameService.getOptimizeIndexNameWithVersion(mapping),
-    //            "index." + settingName
-    //          );
-    //          assertThat(setting)
-    //            .as("Dynamic setting %s of index %s", settingName, mapping.getIndexName())
-    //            .isEqualTo(dynamicSettings.get(settingName));
-    //        });
-    //      Settings staticSettings =
-    //        buildStaticSettings(mapping, embeddedOptimizeExtension.getConfigurationService());
-    //      staticSettings.keySet().forEach(
-    //        settingName -> {
-    //          final String setting = getSettingsResponse.getSetting(
-    //            indexNameService.getOptimizeIndexNameWithVersion(mapping),
-    //            "index." + settingName
-    //          );
-    //          assertThat(setting)
-    //            .as("Static setting %s of index %s", settingName, mapping.getIndexName())
-    //            .isEqualTo(staticSettings.get(settingName));
-    //        });
-    //    }
+    for (IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
+      IndexSettings dynamicSettings =
+          OpenSearchIndexSettingsBuilder.buildDynamicSettings(
+              embeddedOptimizeExtension.getConfigurationService());
+      List<String> dynamicFieldsToCheck = getNonNullFieldNames(dynamicSettings);
+      IndexSettings dynamicSettingsForIndex =
+          Objects.requireNonNull(
+                  getSettingsResponse
+                      .get(indexNameService.getOptimizeIndexNameWithVersion(mapping))
+                      .settings())
+              .index();
+      dynamicFieldsToCheck.forEach(
+          settingName -> {
+            assertThat(settingIsEqual(dynamicSettings, dynamicSettingsForIndex, settingName))
+                .as("Dynamic setting %s of index %s", settingName, mapping.getIndexName())
+                .isTrue();
+          });
+
+      IndexSettings staticSettings =
+          buildStaticSettings(mapping, embeddedOptimizeExtension.getConfigurationService());
+      List<String> staticFieldsToCheck = getNonNullFieldNames(staticSettings);
+      IndexSettings staticSettingsForIndex =
+          Objects.requireNonNull(
+                  getSettingsResponse
+                      .get(indexNameService.getOptimizeIndexNameWithVersion(mapping))
+                      .settings())
+              .index();
+      staticFieldsToCheck.forEach(
+          settingName -> {
+            assertThat(settingIsEqual(staticSettings, staticSettingsForIndex, settingName))
+                .as("Static setting %s of index %s", settingName, mapping.getIndexName())
+                .isTrue();
+          });
+    }
   }
 
-  private GetSettingsResponse getIndexSettingsFor(
+  private GetIndicesSettingsResponse getIndexSettingsFor(
       final List<IndexMappingCreator<IndexSettings.Builder>> mappings) throws IOException {
-    // TODO fix with OPT-7455
-    throw new NotImplementedException("Will be implemented with OPT-7455");
-    //    final String indices = mappings.stream()
-    //      .map(indexNameService::getOptimizeIndexNameWithVersion)
-    //      .collect(Collectors.joining(","));
-    //
-    //    Response response = prefixAwareDatabaseClient.getLowLevelClient().performRequest(
-    //      new Request(HttpGet.METHOD_NAME, "/" + indices + "/_settings")
-    //    );
-    //    return GetSettingsResponse.fromXContent(JsonXContent.jsonXContent.createParser(
-    //      NamedXContentRegistry.EMPTY,
-    //      DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-    //      response.getEntity().getContent()
-    //    ));
+    final String indices =
+        mappings.stream()
+            .map(indexNameService::getOptimizeIndexNameWithVersion)
+            .collect(Collectors.joining(","));
+
+    return getOpenSearchOptimizeClient()
+        .getOpenSearchClient()
+        .indices()
+        .getSettings(s -> s.index(indices));
   }
 
   private void modifyDynamicIndexSetting(
       final List<IndexMappingCreator<IndexSettings.Builder>> mappings) throws IOException {
-    // TODO fix with OPT-7455
-    throw new NotImplementedException("Will be implemented with OPT-7455");
-  }
+    for (IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
+      final String indexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
 
-  //    for (IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
-  //      final String indexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
-  //      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
-  //      updateSettingsRequest.settings(Settings.builder().put(MAX_NGRAM_DIFF, "10").build());
-  //      prefixAwareDatabaseClient.getHighLevelClient()
-  //        .indices().putSettings(updateSettingsRequest,
-  // prefixAwareDatabaseClient.requestOptions());
-  //    }
-  //  }
+      final PutIndicesSettingsRequest indexUpdateRequest =
+          new PutIndicesSettingsRequest.Builder()
+              .index(indexName)
+              .settings(new IndexSettings.Builder().maxNgramDiff(10).build())
+              .build();
+      final PutIndicesSettingsResponse response;
+      response =
+          getOpenSearchOptimizeClient()
+              .getOpenSearchClient()
+              .indices()
+              .putSettings(indexUpdateRequest);
+      assert (response.acknowledged());
+    }
+  }
 
   private OptimizeOpenSearchClient getOpenSearchOptimizeClient() {
     return (OptimizeOpenSearchClient) prefixAwareDatabaseClient;
+  }
+
+  private static List<String> getNonNullFieldNames(Object object) {
+    List<String> nonNullFields = new ArrayList<>();
+    if (object == null) {
+      return nonNullFields; // Return an empty list if the object is null
+    }
+
+    Class<?> clazz = object.getClass(); // Get the object's class
+
+    while (clazz != null) { // Iterate through all fields in the class and its superclasses
+      Field[] fields = clazz.getDeclaredFields(); // Get all fields defined in the class
+      for (Field field : fields) {
+        field.setAccessible(true); // Set the field accessible to read private fields
+        try {
+          Object value = field.get(object); // Get the value of the field
+          if (value != null) {
+            nonNullFields.add(field.getName()); // Add the field name if the value is not null
+          }
+        } catch (IllegalAccessException e) {
+          throw new RuntimeException("Unable to access field value", e);
+        }
+      }
+      clazz = clazz.getSuperclass(); // Move to the superclass to check its fields
+    }
+
+    return nonNullFields;
+  }
+
+  private static Object getFieldValue(Object object, String fieldName) {
+    if (object == null) {
+      throw new IllegalArgumentException("The object provided is null");
+    }
+    try {
+      Class<?> clazz = object.getClass(); // Get the class of the object
+      Field field = clazz.getDeclaredField(fieldName); // Get the field by name
+      field.setAccessible(true); // Set the field accessible to read private fields
+      return field.get(object); // Return the value of the field
+    } catch (NoSuchFieldException e) {
+      System.err.println("Field not found: " + fieldName);
+    } catch (IllegalAccessException e) {
+      System.err.println("Cannot access the field: " + fieldName);
+    }
+    return null; // Return null if field not found or if there is an access problem
+  }
+
+  public static boolean settingIsEqual(
+      IndexSettings expectedSettings, IndexSettings actualSettings, String settingName) {
+    Object expected = getFieldValue(expectedSettings, settingName);
+    Object actual = getFieldValue(actualSettings, settingName);
+    // This handles the case for primitive types and strings
+    if ((expected == null && actual == null) || (expected != null && expected.equals(actual))) {
+      return true;
+    }
+    // If this is reached, expected cannot be null
+    if (actual == null) {
+      return false;
+    }
+    if (expected instanceof JsonpSerializable expectedJsonp) {
+      if (actual instanceof JsonpSerializable actualJsonp) {
+        ObjectMapper mapper = OPTIMIZE_MAPPER;
+        try {
+          mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+          String json1 = mapper.writeValueAsString(expectedJsonp);
+          String json2 = mapper.writeValueAsString(actualJsonp);
+          return json1.equalsIgnoreCase(json2);
+        } catch (JsonProcessingException e) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    }
+    return false;
   }
 }
