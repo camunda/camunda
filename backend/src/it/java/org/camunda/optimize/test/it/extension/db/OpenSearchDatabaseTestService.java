@@ -715,10 +715,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
             .aliases(aliasData)
             .build();
     final boolean created =
-        getOptimizeOpenSearchClient()
-            .getRichOpenSearchClient()
-            .index()
-            .createIndexWithRetries(request);
+        getOptimizeOpenSearchClient().getRichOpenSearchClient().index().createIndex(request);
     if (!created) {
       throw new IOException("Could not create index " + optimizeIndexNameWithVersion);
     }

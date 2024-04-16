@@ -21,6 +21,7 @@ import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.indices.AnalyzeRequest;
 import org.opensearch.client.opensearch.indices.AnalyzeResponse;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
@@ -33,9 +34,8 @@ import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 
 @Slf4j
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
-  public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
+
   public static final String NO_REPLICA = "0";
-  public static final String REFRESH_INTERVAL = "index.refresh_interval";
   public static final String NO_REFRESH = "-1";
 
   public OpenSearchIndexOperations(
@@ -65,22 +65,14 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         });
   }
 
-  public boolean createIndexWithRetries(CreateIndexRequest createIndexRequest) {
-    return executeWithRetries(
-        "CreateIndex " + createIndexRequest.index(),
-        () -> {
-          if (!indicesExist(createIndexRequest.index())) {
-            return openSearchClient.indices().create(createIndexRequest).acknowledged();
-          }
-          return true;
-        });
+  public boolean createIndex(CreateIndexRequest createIndexRequest) throws IOException {
+    return openSearchClient.indices().create(createIndexRequest).acknowledged();
   }
 
-  private boolean indicesExist(final String indexPattern) throws IOException {
-    return openSearchClient
-        .indices()
-        .exists(e -> e.index(List.of(indexPattern)).ignoreUnavailable(true).allowNoIndices(false))
-        .value();
+  public boolean indicesExist(List<String> unprefixedIndexes) throws IOException {
+    List<String> indexes = applyIndexPrefix(unprefixedIndexes.toArray(new String[0]));
+    ExistsRequest.Builder existsRequest = new ExistsRequest.Builder().index(indexes);
+    return openSearchClient.indices().exists(existsRequest.build()).value();
   }
 
   public long getNumberOfDocumentsWithRetries(String... unprefixedIndexPatterns) {

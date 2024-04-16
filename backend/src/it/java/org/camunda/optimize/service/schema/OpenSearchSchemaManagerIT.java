@@ -138,7 +138,6 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void indexExistCheckIsPerformedInBatches() {
     // given
     final int expectedExistQueryBatchExecutionCount =
@@ -304,7 +303,6 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void dynamicSettingsAreUpdatedForExistingIndexesWhenNewIndexesAreCreated()
       throws IOException {
     // given schema exists
@@ -450,19 +448,19 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
   private static List<String> getNonNullFieldNames(Object object) {
     List<String> nonNullFields = new ArrayList<>();
     if (object == null) {
-      return nonNullFields; // Return an empty list if the object is null
+      return nonNullFields;
     }
 
-    Class<?> clazz = object.getClass(); // Get the object's class
+    Class<?> clazz = object.getClass();
 
     while (clazz != null) { // Iterate through all fields in the class and its superclasses
-      Field[] fields = clazz.getDeclaredFields(); // Get all fields defined in the class
+      Field[] fields = clazz.getDeclaredFields();
       for (Field field : fields) {
         field.setAccessible(true); // Set the field accessible to read private fields
         try {
-          Object value = field.get(object); // Get the value of the field
+          Object value = field.get(object);
           if (value != null) {
-            nonNullFields.add(field.getName()); // Add the field name if the value is not null
+            nonNullFields.add(field.getName());
           }
         } catch (IllegalAccessException e) {
           throw new RuntimeException("Unable to access field value", e);
@@ -479,10 +477,10 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
       throw new IllegalArgumentException("The object provided is null");
     }
     try {
-      Class<?> clazz = object.getClass(); // Get the class of the object
-      Field field = clazz.getDeclaredField(fieldName); // Get the field by name
+      Class<?> clazz = object.getClass();
+      Field field = clazz.getDeclaredField(fieldName);
       field.setAccessible(true); // Set the field accessible to read private fields
-      return field.get(object); // Return the value of the field
+      return field.get(object);
     } catch (NoSuchFieldException e) {
       System.err.println("Field not found: " + fieldName);
     } catch (IllegalAccessException e) {
