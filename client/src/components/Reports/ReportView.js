@@ -9,7 +9,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Link, Redirect, useLocation} from 'react-router-dom';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
-import {Download, Edit, Share, TrashCan} from '@carbon/icons-react';
+import {Edit, Share, TrashCan} from '@carbon/icons-react';
 
 import {
   ShareEntity,
@@ -26,7 +26,6 @@ import {
 } from 'components';
 import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
-import {withUser} from 'HOC';
 import {t} from 'translation';
 import {track} from 'tracking';
 
@@ -35,7 +34,7 @@ import {CollapsibleContainer} from './CollapsibleContainer';
 
 import './ReportView.scss';
 
-export function ReportView({report, error, user, loadReport}) {
+export default function ReportView({report, error, loadReport}) {
   const [deleting, setDeletting] = useState(null);
   const [sharingEnabled, setSharingEnabled] = useState(false);
   const [optimizeProfile, setOptimizeProfile] = useState(null);
@@ -150,13 +149,11 @@ export function ReportView({report, error, user, loadReport}) {
             )}
             {shouldShowCSVDownload() && (
               <DownloadButton
-                href={constructCSVDownloadLink()}
-                totalCount={calculateTotalEntries(report)}
-                user={user}
                 kind="ghost"
                 iconDescription={t('report.downloadCSV')}
                 hasIconOnly
-                renderIcon={Download}
+                href={constructCSVDownloadLink()}
+                totalCount={calculateTotalEntries(report)}
               />
             )}
             {!isInstantPreview && currentUserRole === 'editor' && (
@@ -207,8 +204,6 @@ export function ReportView({report, error, user, loadReport}) {
     </div>
   );
 }
-
-export default withUser(ReportView);
 
 function calculateTotalEntries({result}) {
   switch (result.type) {

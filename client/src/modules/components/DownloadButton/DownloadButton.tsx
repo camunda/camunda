@@ -7,8 +7,9 @@
 
 import {useState, useEffect, ComponentPropsWithoutRef} from 'react';
 import {Button} from '@carbon/react';
+import {Download} from '@carbon/icons-react';
 
-import {Modal, Button as LegacyButton} from 'components';
+import {Modal} from 'components';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
@@ -81,11 +82,10 @@ export function DownloadButton({
     return null;
   }
 
-  const Trigger = 'kind' in props ? Button : LegacyButton;
-
   return (
     <>
-      <Trigger
+      <Button
+        renderIcon={Download}
         {...props}
         onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
       />

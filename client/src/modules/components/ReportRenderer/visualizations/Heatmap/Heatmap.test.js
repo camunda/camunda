@@ -12,7 +12,7 @@ import update from 'immutability-helper';
 import {DownloadButton, HeatmapOverlay} from 'components';
 import {formatters, loadRawData, getTooltipText, processResult} from 'services';
 
-import {Heatmap} from './Heatmap';
+import Heatmap from './Heatmap';
 import {calculateTargetValueHeat} from './service';
 
 const {convertToMilliseconds} = formatters;
@@ -73,7 +73,6 @@ const report = {
 
 const props = {
   report,
-  user: {authorizations: ['csv_export']},
 };
 
 beforeEach(() => {
@@ -305,11 +304,9 @@ it('should hide to the download csv button in share mode', async () => {
   };
 
   formatters.duration.mockReturnValueOnce('1ms').mockReturnValueOnce('2ms');
-  const user = {authorizations: []};
   const node = shallow(
     <Heatmap
       {...props}
-      user={user}
       context="shared"
       report={update(report, {
         data: {
