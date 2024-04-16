@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.common.auth;
 
-/** Enum for different C8 Products */
+/** Enum for supported C8 Products */
 public enum Product {
   ZEEBE
 }

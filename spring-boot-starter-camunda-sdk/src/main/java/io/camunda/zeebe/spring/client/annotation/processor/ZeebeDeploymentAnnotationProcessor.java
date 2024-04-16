@@ -21,7 +21,6 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.spring.client.annotation.Deployment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeDeploymentValue;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
-import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -33,12 +32,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-/**
- * Always created by {@link AnnotationProcessorConfiguration}
- *
- * <p>Loop throgh @{@link Deployment} annotations to deploy resources to Zeebe once the {@link
- * io.camunda.zeebe.spring.client.lifecycle.ZeebeClientLifecycle} was initialized.
- */
 public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationProcessor {
 
   private static final Logger LOGGER =

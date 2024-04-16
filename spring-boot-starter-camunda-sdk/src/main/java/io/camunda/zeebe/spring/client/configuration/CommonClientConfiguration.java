@@ -15,20 +15,14 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import static org.springframework.util.StringUtils.hasText;
-
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.spring.client.properties.*;
 import io.camunda.zeebe.spring.common.auth.Authentication;
 import io.camunda.zeebe.spring.common.auth.DefaultNoopAuthentication;
 import io.camunda.zeebe.spring.common.auth.Product;
-import io.camunda.zeebe.spring.common.auth.identity.IdentityConfig;
 import io.camunda.zeebe.spring.common.auth.jwt.JwtConfig;
 import io.camunda.zeebe.spring.common.auth.jwt.JwtCredential;
 import io.camunda.zeebe.spring.common.auth.saas.SaaSAuthentication;
 import io.camunda.zeebe.spring.common.auth.selfmanaged.SelfManagedAuthentication;
-import io.camunda.zeebe.spring.common.auth.simple.SimpleAuthentication;
-import io.camunda.zeebe.spring.common.auth.simple.SimpleConfig;
 import io.camunda.zeebe.spring.common.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -49,64 +43,26 @@ public class CommonClientConfiguration {
   @Autowired(required = false)
   ZeebeSelfManagedProperties zeebeSelfManagedProperties;
 
-  @Autowired(required = false)
-  private IdentityConfiguration identityConfigurationFromProperties;
-
   @Bean
   public Authentication authentication(final JsonMapper jsonMapper) {
 
-    // TODO: Refactor
-    if (zeebeClientConfigurationProperties != null) {
-      // check if Zeebe has clusterId provided, then must be SaaS
-      if (zeebeClientConfigurationProperties.getCloud().getClusterId() != null) {
-        return SaaSAuthentication.builder()
-            .withJwtConfig(configureJwtConfig())
-            .withJsonMapper(jsonMapper)
-            .build();
-      } else if (zeebeClientConfigurationProperties.getBroker().getGatewayAddress() != null
-          || zeebeSelfManagedProperties.getGatewayAddress() != null) {
-        // figure out if Self-Managed JWT or Self-Managed Basic
-        // Identity props take priority
-        if (identityConfigurationFromProperties != null
-            && hasText(identityConfigurationFromProperties.getClientId())) {
-          final JwtConfig jwtConfig = configureJwtConfig();
-          final IdentityConfig identityConfig = configureIdentities();
-          return SelfManagedAuthentication.builder()
-              .withJwtConfig(jwtConfig)
-              .withIdentityConfig(identityConfig)
-              .build();
-        }
-
-        // Fallback to common props
-        if (commonConfigurationProperties != null
-            && commonConfigurationProperties.getKeycloak().getUrl() != null) {
-          final JwtConfig jwtConfig = configureJwtConfig();
-          final IdentityConfig identityConfig = configureIdentities();
-          return SelfManagedAuthentication.builder()
-              .withJwtConfig(jwtConfig)
-              .withIdentityConfig(identityConfig)
-              .build();
-        }
-        if (commonConfigurationProperties != null
-            && commonConfigurationProperties.getKeycloak().getTokenUrl() != null) {
-          final JwtConfig jwtConfig = configureJwtConfig();
-          final IdentityConfig identityConfig = configureIdentities();
-          return SelfManagedAuthentication.builder()
-              .withJwtConfig(jwtConfig)
-              .withIdentityConfig(identityConfig)
-              .build();
-        }
-        if (commonConfigurationProperties != null
-            && commonConfigurationProperties.getUsername() != null
-            && commonConfigurationProperties.getPassword() != null) {
-          final SimpleConfig simpleConfig = new SimpleConfig();
-          return SimpleAuthentication.builder()
-              .withSimpleConfig(simpleConfig)
-              .withSimpleUrl(commonConfigurationProperties.getUrl())
-              .build();
-        }
-      }
+    if (zeebeClientConfigurationProperties == null) {
+      return new DefaultNoopAuthentication();
     }
+
+    if (zeebeClientConfigurationProperties.getCloud().getClusterId() != null) {
+      return SaaSAuthentication.builder()
+          .withJwtConfig(configureJwtConfig())
+          .withJsonMapper(jsonMapper)
+          .build();
+    }
+
+    if (zeebeClientConfigurationProperties.getBroker().getGatewayAddress() != null
+        || zeebeSelfManagedProperties.getGatewayAddress() != null) {
+      final JwtConfig jwtConfig = configureJwtConfig();
+      return SelfManagedAuthentication.builder().withJwtConfig(jwtConfig).build();
+    }
+
     return new DefaultNoopAuthentication();
   }
 
@@ -142,10 +98,5 @@ public class CommonClientConfiguration {
     }
 
     return jwtConfig;
-  }
-
-  private IdentityConfig configureIdentities() {
-    final IdentityConfig identityConfig = new IdentityConfig();
-    return identityConfig;
   }
 }

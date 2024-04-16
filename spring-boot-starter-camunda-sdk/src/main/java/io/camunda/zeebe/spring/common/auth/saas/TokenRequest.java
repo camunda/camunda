@@ -19,10 +19,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TokenRequest {
 
-  private String grantType;
-  private String audience;
-  private String clientId;
-  private String clientSecret;
+  private final String grantType;
+  private final String audience;
+  private final String clientId;
+  private final String clientSecret;
 
   TokenRequest(final String audience, final String clientId, final String clientSecret) {
     grantType = "client_credentials";
@@ -36,17 +36,9 @@ public class TokenRequest {
     return grantType;
   }
 
-  public void setGrantType(final String grantType) {
-    this.grantType = grantType;
-  }
-
   @JsonProperty("audience")
   public String getAudience() {
     return audience;
-  }
-
-  public void setAudience(final String audience) {
-    this.audience = audience;
   }
 
   @JsonProperty("client_id")
@@ -54,16 +46,8 @@ public class TokenRequest {
     return clientId;
   }
 
-  public void setClientId(final String clientId) {
-    this.clientId = clientId;
-  }
-
   @JsonProperty("client_secret")
   public String getClientSecret() {
     return clientSecret;
-  }
-
-  public void setClientSecret(final String clientSecret) {
-    this.clientSecret = clientSecret;
   }
 }
