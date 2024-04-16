@@ -12,15 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -50,6 +53,19 @@ class MetricsExporterTest {
             .withTimestamp(1651505728460L)
             .withKey(Protocol.encodePartitionId(1, 1))
             .build());
+
+    // pass a job batch activated to simulate the full lifetime
+    final var jobBatch = new JobBatchRecord();
+    jobBatch.jobKeys().add().setValue(Protocol.encodePartitionId(1, 1));
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB_BATCH)
+            .withIntent(JobBatchIntent.ACTIVATED)
+            .withTimestamp(1651505728465L)
+            .withKey(-1)
+            .withValue(jobBatch)
+            .build());
     exporter.export(
         ImmutableRecord.builder()
             .withRecordType(RecordType.EVENT)
@@ -66,6 +82,13 @@ class MetricsExporterTest {
         .map(s -> s.value)
         .describedAs("Expected exactly 1 observed job_life_time sample counted")
         .containsExactly(1d);
+    assertThat(metrics.getJobLifeTime().collect())
+        .flatMap(x -> x.samples)
+        .filteredOn(s -> s.name.equals("zeebe_job_life_time_bucket"))
+        .filteredOn(s -> s.value == 1)
+        .map(s -> s.labelValues)
+        .describedAs("Expected exactly 1 observed job_life_time sample within bounds")
+        .contains(List.of("0", "2.5"));
   }
 
   @Test
