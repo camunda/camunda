@@ -14,7 +14,6 @@
 
   <name>Operate Parent</name>
 
-
   <modules>
     <module>client</module>
     <module>common</module>
@@ -48,7 +47,6 @@
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/*5IT.java</excludeITNames>
   </properties>
-
 
   <build>
     <pluginManagement>
