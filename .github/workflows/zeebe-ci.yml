@@ -215,7 +215,8 @@ jobs:
         with:
           name: "unit tests"
 
-      - run: |
+      - if: always()
+        run: |
           echo "$RUNNER_ARCH"
           echo "$RUNNER_NAME"
           echo "$RUNNER_OS"
@@ -227,7 +228,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/submit-build-status@main
         if: always()
         with:
-          build_status: "${{ contains(steps.*.outcome, 'success') && 'success' || 'failure' }}"
+          build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
           gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
 
   smoke-tests:
