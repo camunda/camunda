@@ -768,12 +768,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-client-common</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
