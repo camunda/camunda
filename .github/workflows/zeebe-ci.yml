@@ -159,6 +159,19 @@ jobs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
       - name: Install and allow strace tests
         run: |
           sudo apt-get -qq update && sudo apt-get install -y strace
@@ -199,6 +212,22 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: "unit tests"
+
+      - run: |
+          echo "$RUNNER_ARCH"
+          echo "$RUNNER_NAME"
+          echo "$RUNNER_OS"
+          echo "${{ contains(steps.*.outcome, 'success') }}"
+          echo "${{ contains(steps.*.outcome, 'failure') }}"
+          echo "${{ contains(steps.*.outcome, 'cancelled') }}"
+          echo "${{ contains(steps.*.outcome, 'success') && 'success' || 'failure' }}"
+
+      - uses: camunda/infra-global-github-actions/submit-build-status@main
+        if: always()
+        with:
+          build_status: "${{ contains(steps.*.outcome, 'success') && 'success' || 'failure' }}"
+          gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
