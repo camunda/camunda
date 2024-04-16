@@ -22,7 +22,7 @@ jobs:
       # that is being administrated by infra.
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@a727ce205a9e187cf179d30796762854cac9c231
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
