@@ -51,7 +51,7 @@ services:
     depends_on:
     - postgres
   postgres:
-    image: postgres:16.2@sha256:6b841c8f6a819884207402f1209a8116844365df15fca8cf556fc54a24c70800
+    image: postgres:16.2@sha256:5c587078ef86f4b5fd24c9ed4394429e59035ead421873c14135d5b57c117908
     container_name: postgres
     command: ["postgres", "-c", "max_connections=200", "-c", "effective_cache_size=4GB", "-c", "shared_buffers=2GB", "-c", "synchronous_commit=off", "-c", "log_statement=none", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
     environment:
