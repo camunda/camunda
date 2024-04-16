@@ -15,36 +15,40 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {SkeletonText, Stack} from '@carbon/react';
-import {BodyCompact} from 'modules/components/FontTokens';
+import {Popover, PopoverContent} from '@carbon/react';
+import {ReactNode, useCallback, useState} from 'react';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 
-const TaskSkeleton: React.FC = () => {
+const LabelWithPopover: React.FC<{
+  title: string;
+  popoverContent: ReactNode;
+  children: ReactNode;
+  align: React.ComponentProps<typeof Popover>['align'];
+}> = ({title, popoverContent, children, align}) => {
+  const [popOverOpen, setPopOverOpen] = useState(false);
+  const onMouseEnter = useCallback(() => {
+    setPopOverOpen(true);
+  }, []);
+  const onMouseLeave = useCallback(() => {
+    setPopOverOpen(false);
+  }, []);
   return (
-    <article className={styles.taskSkeleton}>
-      <Stack gap={3}>
-        <div className={cn(styles.flex, styles.flexColumn)}>
-          <BodyCompact>
-            <SkeletonText width="250px" />
-          </BodyCompact>
-          <span className={styles.label}>
-            <SkeletonText width="200px" />
-          </span>
-        </div>
-        <div className={cn(styles.flex, styles.flexColumn)}>
-          <span className={styles.label}>
-            <SkeletonText width="50px" />
-          </span>
-        </div>
-        <div className={cn(styles.flex, styles.flexColumn)}>
-          <span className={styles.label}>
-            <SkeletonText width="100px" />
-          </span>
-        </div>
-      </Stack>
-    </article>
+    <Popover
+      open={popOverOpen}
+      align={align}
+      caret
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <span className={cn(styles.label, styles.labelPrimary)} title={title}>
+        {children}
+      </span>
+      <PopoverContent className={styles.popoverContent}>
+        {popoverContent}
+      </PopoverContent>
+    </Popover>
   );
 };
 
-export {TaskSkeleton};
+export {LabelWithPopover};

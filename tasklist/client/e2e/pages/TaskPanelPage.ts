@@ -17,6 +17,14 @@
 
 import {Page, Locator} from '@playwright/test';
 
+type FilterParam =
+  | 'all-open'
+  | 'unassigned'
+  | 'assigned-to-me'
+  | 'completed'
+  | 'custom';
+type SortByParam = 'creation' | 'follow-up' | 'due' | 'completion';
+
 class TaskPanelPage {
   private page: Page;
   readonly availableTasks: Locator;
@@ -28,8 +36,25 @@ class TaskPanelPage {
     this.filterOptions = page.getByRole('combobox', {name: 'Filter options'});
   }
 
+  async goto(params?: {filter?: FilterParam; sortBy?: SortByParam}) {
+    if (params === undefined) {
+      await this.page.goto('/', {
+        waitUntil: 'networkidle',
+      });
+    } else {
+      const searchParams = new URLSearchParams(params ?? {});
+      await this.page.goto(`/?${searchParams.toString()}`, {
+        waitUntil: 'networkidle',
+      });
+    }
+  }
+
+  task(name: string) {
+    return this.availableTasks.getByLabel(name).nth(0);
+  }
+
   async openTask(name: string) {
-    await this.availableTasks.getByText(name, {exact: true}).nth(0).click();
+    await this.task(name).click();
   }
 
   async filterBy(

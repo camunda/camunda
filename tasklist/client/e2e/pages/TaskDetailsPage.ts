@@ -103,6 +103,12 @@ class TaskDetailsPage {
     this.tagList = page.getByPlaceholder('Search');
   }
 
+  async goto(id: string) {
+    await this.page.goto(`/${id}`, {
+      waitUntil: 'networkidle',
+    });
+  }
+
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
     await this.page.getByTitle(name).clear();
