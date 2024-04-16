@@ -39,7 +39,7 @@
 		"sass": "^1.69.3",
 		"sass-loader": "^14.1.1",
 		"storybook": "^8.0.4",
-		"typescript": "5.4.4"
+		"typescript": "5.4.5"
 	},
 	"peerDependencies": {
 		"@carbon/react": "^1.39.0",
