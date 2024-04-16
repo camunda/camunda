@@ -162,7 +162,7 @@ public class MetricsExporter implements Exporter {
     if (currentIntent == JobBatchIntent.ACTIVATED) {
       final var value = (JobBatchRecordValue) record.getValue();
       for (final long jobKey : value.getJobKeys()) {
-        final var creationTime = jobCache.remove(jobKey);
+        final var creationTime = jobCache.get(jobKey);
         executionLatencyMetrics.observeJobActivationTime(
             partitionId, creationTime, record.getTimestamp());
       }
