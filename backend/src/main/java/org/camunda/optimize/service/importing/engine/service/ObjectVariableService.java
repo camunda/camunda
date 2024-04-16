@@ -8,8 +8,10 @@ package org.camunda.optimize.service.importing.engine.service;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DATE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_SERIALIZATION_DATA_FORMAT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_JSON;
@@ -82,7 +84,7 @@ public class ObjectVariableService {
     return variables.stream()
         .filter(
             variable ->
-                (!isNonNullNativeJsonVariable(variable) && !isNonNullObjectVariable(variable)))
+                !isNonNullNativeJsonVariable(variable) && !isNonNullObjectVariable(variable))
         .map(
             variable ->
                 createSkeletonVariableDto(variable)
@@ -116,20 +118,21 @@ public class ObjectVariableService {
     }
   }
 
+  @SuppressWarnings(UNCHECKED_CAST)
   private boolean isPrimitiveOrListOfPrimitives(final Object jsonObject) {
-    boolean isListOfPrimitives = false;
     if (jsonObject instanceof ArrayList && !((ArrayList<?>) jsonObject).isEmpty()) {
-      @SuppressWarnings(UNCHECKED_CAST)
-      final Object firstItem = ((ArrayList<Object>) jsonObject).get(0);
-      isListOfPrimitives =
-          firstItem instanceof String
-              || firstItem instanceof Number
-              || firstItem instanceof Boolean;
+      return ((ArrayList<Object>) jsonObject)
+          .stream()
+              .filter(Objects::nonNull)
+              .findFirst()
+              .map(
+                  item ->
+                      item instanceof String || item instanceof Number || item instanceof Boolean)
+              .orElse(true);
     }
     return jsonObject instanceof String
         || jsonObject instanceof Number
-        || jsonObject instanceof Boolean
-        || isListOfPrimitives;
+        || jsonObject instanceof Boolean;
   }
 
   private void flattenJsonObjectVariableAndAddToResult(
@@ -149,7 +152,7 @@ public class ObjectVariableService {
 
   private List<ProcessVariableDto> mapToFlattenedVariable(
       final String name, final Object value, final ProcessVariableUpdateDto origin) {
-    if (value == null || String.valueOf(value).isEmpty()) {
+    if (value == null || String.valueOf(value).isEmpty() || isEmptyListVariable(value)) {
       log.debug(
           "Variable attribute '{}' of '{}' is null or empty and won't be imported",
           name,
@@ -168,11 +171,11 @@ public class ObjectVariableService {
           Collections.singletonList(String.valueOf(((JsonifyArrayList<?>) value).size())));
       addVariableForListProperty(name, value, origin, resultList);
     } else if (value instanceof String) {
-      parseStringOrDateVariable(value, Collections.singletonList(value), newVariable);
+      parseStringOrDateVariableAndSet(value, Collections.singletonList(value), newVariable);
     } else if (value instanceof Boolean) {
-      parseBooleanVariable(Collections.singletonList(value), newVariable);
+      parseBooleanVariableAndSet(Collections.singletonList(value), newVariable);
     } else if (value instanceof Number) {
-      parseNumberVariable(Collections.singletonList(value), newVariable);
+      parseNumberVariableAndSet(Collections.singletonList(value), newVariable);
     } else {
       log.debug(
           "Variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
@@ -200,21 +203,56 @@ public class ObjectVariableService {
     addNameToSkeletonVariable(name, newListVar, origin);
     addIdToSkeletonVariable(name, newListVar, origin);
 
-    final Object firstItem = originList.get(0);
-    if (firstItem instanceof String) {
-      parseStringOrDateVariable(firstItem, originList, newListVar);
-    } else if (firstItem instanceof Boolean) {
-      parseBooleanVariable(originList, newListVar);
-    } else if (firstItem instanceof Number) {
-      parseNumberVariable(originList, newListVar);
-    } else {
-      log.debug(
-          "List variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
-          name,
-          origin.getName(),
-          firstItem.getClass().getSimpleName());
-    }
+    determineListVariableType(name, origin, originList)
+        .ifPresent(
+            type -> {
+              switch (type) {
+                case STRING:
+                  parseStringVariableAndSet(originList, newListVar);
+                  break;
+                case DATE:
+                  parseDateVariableAndSet(originList, newListVar);
+                  break;
+                case DOUBLE:
+                  parseNumberVariableAndSet(originList, newListVar);
+                  break;
+                case BOOLEAN:
+                  parseBooleanVariableAndSet(originList, newListVar);
+                  break;
+                default:
+              }
+            });
     resultList.add(newListVar);
+  }
+
+  private Optional<VariableType> determineListVariableType(
+      final String name, final ProcessVariableUpdateDto origin, final List<Object> listVariable) {
+    return listVariable.stream()
+        .filter(Objects::nonNull)
+        .findFirst()
+        .map(
+            nonNullItem -> {
+              if (nonNullItem instanceof String) {
+                final Optional<OffsetDateTime> optDate =
+                    parsePossibleDate(String.valueOf(nonNullItem));
+                if (optDate.isPresent()) {
+                  return DATE;
+                } else {
+                  return STRING;
+                }
+              } else if (nonNullItem instanceof Boolean) {
+                return BOOLEAN;
+              } else if (nonNullItem instanceof Number) {
+                return DOUBLE;
+              } else {
+                log.debug(
+                    "List variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
+                    name,
+                    origin.getName(),
+                    nonNullItem.getClass().getSimpleName());
+              }
+              return null;
+            });
   }
 
   private ProcessVariableDto createSkeletonVariableDto(final ProcessVariableUpdateDto origin) {
@@ -263,31 +301,41 @@ public class ObjectVariableService {
     }
   }
 
-  private void parseStringOrDateVariable(
+  private void parseStringOrDateVariableAndSet(
       final Object firstValue, final List<Object> valueList, final ProcessVariableDto newVariable) {
     final Optional<OffsetDateTime> optDate = parsePossibleDate(String.valueOf(firstValue));
     if (optDate.isPresent()) {
-      newVariable.setType(VariableType.DATE.getId());
-      newVariable.setValue(
-          valueList.stream()
-              .map(item -> parsePossibleDate(String.valueOf(item)).orElse(null))
-              .filter(Objects::nonNull)
-              .map(OPTIMIZE_DATE_TIME_FORMATTER::format)
-              .collect(toList()));
+      parseDateVariableAndSet(valueList, newVariable);
     } else {
-      newVariable.setType(VariableType.STRING.getId());
-      newVariable.setValue(valueList.stream().map(String::valueOf).collect(toList()));
+      parseStringVariableAndSet(valueList, newVariable);
     }
   }
 
-  private void parseBooleanVariable(
+  private void parseStringVariableAndSet(
+      final List<Object> valueList, final ProcessVariableDto newVariable) {
+    newVariable.setType(VariableType.STRING.getId());
+    newVariable.setValue(valueList.stream().map(String::valueOf).collect(toList()));
+  }
+
+  private void parseDateVariableAndSet(
+      final List<Object> valueList, final ProcessVariableDto newVariable) {
+    newVariable.setType(VariableType.DATE.getId());
+    newVariable.setValue(
+        valueList.stream()
+            .map(item -> parsePossibleDate(String.valueOf(item)).orElse(null))
+            .filter(Objects::nonNull)
+            .map(OPTIMIZE_DATE_TIME_FORMATTER::format)
+            .collect(toList()));
+  }
+
+  private void parseBooleanVariableAndSet(
       final List<Object> valueList, final ProcessVariableDto newVariable) {
     newVariable.setType(BOOLEAN.getId());
     newVariable.setValue(
         valueList.stream().map(item -> ((Boolean) item).toString()).collect(toList()));
   }
 
-  private void parseNumberVariable(
+  private void parseNumberVariableAndSet(
       final List<Object> valueList, final ProcessVariableDto newVariable) {
     newVariable.setType(DOUBLE.getId());
     newVariable.setValue(
@@ -304,6 +352,11 @@ public class ObjectVariableService {
   private boolean isNonNullObjectVariable(final ProcessVariableUpdateDto originVariable) {
     return originVariable.getValue() != null
         && VARIABLE_TYPE_OBJECT.equalsIgnoreCase(originVariable.getType());
+  }
+
+  private boolean isEmptyListVariable(final Object value) {
+    return value instanceof JsonifyArrayList<?>
+        && ((JsonifyArrayList<?>) value).stream().allMatch(Objects::isNull);
   }
 
   private boolean isSupportedSerializationFormat(final ProcessVariableUpdateDto originVariable) {
