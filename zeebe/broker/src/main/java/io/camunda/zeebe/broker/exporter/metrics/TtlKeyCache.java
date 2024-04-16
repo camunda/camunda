@@ -42,7 +42,7 @@ final class TtlKeyCache {
    */
   TtlKeyCache(final int maxCapacity, final long nullValue) {
     this.maxCapacity = maxCapacity;
-    this.keyToTimestamp = new Long2LongHashMap(nullValue);
+    keyToTimestamp = new Long2LongHashMap(nullValue);
   }
 
   void store(final long key, final long timestamp) {
@@ -52,6 +52,20 @@ final class TtlKeyCache {
 
     keyToTimestamp.put(key, timestamp);
     timestampToKeys.computeIfAbsent(timestamp, ignored -> new LongArrayList()).add(key);
+  }
+
+  long get(final long key) {
+    final var timestamp = keyToTimestamp.get(key);
+    final var keys = timestampToKeys.get(timestamp);
+
+    if (keys != null) {
+      keys.remove(key);
+      if (keys.isEmpty()) {
+        timestampToKeys.remove(timestamp);
+      }
+    }
+
+    return timestamp;
   }
 
   long remove(final long key) {

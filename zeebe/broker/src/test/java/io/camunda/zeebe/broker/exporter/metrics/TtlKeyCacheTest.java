@@ -128,4 +128,17 @@ final class TtlKeyCacheTest {
     // then
     assertThat(timestamp).isEqualTo(3L);
   }
+
+  @Test
+  void shouldGetTimestampByKey() {
+    // given
+    final var cache = new TtlKeyCache();
+    cache.store(1L, 10L);
+
+    // when
+    final var timestamp = cache.get(1L);
+
+    // then
+    assertThat(timestamp).isEqualTo(10L);
+  }
 }
