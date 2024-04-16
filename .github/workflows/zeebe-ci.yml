@@ -172,6 +172,8 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
+      - run: exit 1
+
       - name: Install and allow strace tests
         run: |
           sudo apt-get -qq update && sudo apt-get install -y strace
