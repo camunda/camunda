@@ -49,7 +49,7 @@ type SimpleEditorProps = {
 type RichEditorProps = {
   simpleEditor?: never;
   onChange?: (value: SerializedEditorState) => void;
-  initialValue?: SerializedEditorState;
+  initialValue?: SerializedEditorState | null;
   limit?: number;
 };
 

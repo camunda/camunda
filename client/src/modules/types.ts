@@ -26,7 +26,7 @@ interface Report<Data> {
   id: string;
   owner: string;
   lastModified: string;
-  collectionId?: string | null;
+  collectionId: string | null;
   created: string;
   lastModifier: string;
   data: Data;
@@ -383,7 +383,7 @@ export type SingleDecisionReport = Report<SingleDecisionReportData> & {combined:
 
 export type GenericReport = CombinedReport | SingleDecisionReport | SingleProcessReport;
 
-export interface DashboardTile {
+type DashboardTileCommonProps = {
   id: string;
   position: {
     x: number;
@@ -393,9 +393,24 @@ export interface DashboardTile {
     width: number;
     height: number;
   };
-  type: 'optimize_report' | 'external_url' | 'text';
-  configuration: {external?: string; text?: SerializedEditorState};
+};
+
+export interface OptimizeReportTile extends DashboardTileCommonProps {
+  type: 'optimize_report';
+  configuration: GenericReport['data']['configuration'];
 }
+
+export interface ExternalTile extends DashboardTileCommonProps {
+  type: 'external_url';
+  configuration: {external: string};
+}
+
+export interface TextTile extends DashboardTileCommonProps {
+  type: 'text';
+  configuration: {text: SerializedEditorState | null};
+}
+
+export type DashboardTile = OptimizeReportTile | ExternalTile | TextTile;
 
 export interface Definition {
   identifier: string;

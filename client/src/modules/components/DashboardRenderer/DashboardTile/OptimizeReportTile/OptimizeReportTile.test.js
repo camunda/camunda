@@ -5,21 +5,35 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {useHistory} from 'react-router-dom';
 
-import {OptimizeReportTile} from './OptimizeReportTile';
 import {ReportRenderer} from 'components';
+import {useErrorHandling} from 'hooks';
+
+import OptimizeReportTile from './OptimizeReportTile';
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useHistory: jest.fn(() => ({push: jest.fn()})),
+}));
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  })),
+}));
 
 const loadTile = jest.fn().mockReturnValue({id: 'a'});
 
 const props = {
   tile: {
+    type: 'optimize_report',
     id: 'a',
   },
   filter: [{type: 'runningInstancesOnly', data: null}],
   loadTile,
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 beforeEach(() => {
@@ -29,27 +43,38 @@ beforeEach(() => {
 it('should load the report provided by id', () => {
   shallow(<OptimizeReportTile {...props} />);
 
+  runAllEffects();
+
   expect(loadTile).toHaveBeenCalledWith(props.tile.id, props.filter, {});
 });
 
 it('should render the ReportRenderer if data is loaded', async () => {
   loadTile.mockReturnValueOnce('data');
 
-  const node = await shallow(<OptimizeReportTile {...props} />);
+  const node = shallow(<OptimizeReportTile {...props} />);
+
+  runAllEffects();
+  await flushPromises();
 
   expect(node.find(ReportRenderer)).toExist();
 });
 
 it('should contain the report name', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name'});
-  const node = await shallow(<OptimizeReportTile {...props} />);
+  const node = shallow(<OptimizeReportTile {...props} />);
+
+  runAllEffects();
+  await flushPromises();
 
   expect(node.find('EntityName').children()).toIncludeText('Report Name');
 });
 
 it('should provide a link to the report', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a'});
-  const node = await shallow(<OptimizeReportTile {...props} />);
+  const node = shallow(<OptimizeReportTile {...props} />);
+
+  runAllEffects();
+  await flushPromises();
 
   expect(node.find('EntityName').children()).toIncludeText('Report Name');
   expect(node.find('EntityName')).toHaveProp('linkTo', 'report/a/');
@@ -57,16 +82,20 @@ it('should provide a link to the report', async () => {
 
 it('should use the customizeTileLink prop to get the link if specified', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a'});
-  const node = await shallow(
-    <OptimizeReportTile {...props} customizeTileLink={(id) => `test/${id}/`} />
-  );
+  const node = shallow(<OptimizeReportTile {...props} customizeTileLink={(id) => `test/${id}/`} />);
+
+  runAllEffects();
+  await flushPromises();
 
   expect(node.find('EntityName')).toHaveProp('linkTo', 'test/a/');
 });
 
 it('should not provide a link to the report when link is disabled', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name'});
-  const node = await shallow(<OptimizeReportTile {...props} disableNameLink />);
+  const node = shallow(<OptimizeReportTile {...props} disableNameLink />);
+
+  runAllEffects();
+  await flushPromises();
 
   expect(node.find('EntityName')).toHaveProp('linkTo', false);
   expect(node.find('EntityName').children()).toIncludeText('Report Name');
@@ -76,13 +105,16 @@ it('should display the name of a failing report', async () => {
   loadTile.mockReturnValueOnce({
     reportDefinition: {name: 'Failing Name'},
   });
-  const node = await shallow(
-    <OptimizeReportTile
-      {...props}
-      mightFail={(data, success, fail) => fail(data)}
-      disableNameLink
-    />
-  );
+
+  useErrorHandling.mockReturnValueOnce({
+    mightFail: (data, success, fail) => fail(data),
+  });
+
+  const node = shallow(<OptimizeReportTile {...props} disableNameLink />);
+
+  runAllEffects();
+  await flushPromises();
+
   expect(node.find('EntityName').children()).toIncludeText('Failing Name');
 });
 
@@ -94,29 +126,43 @@ it('should pass an error message if there is an error and no report is returned'
   };
   loadTile.mockReturnValueOnce(error);
 
-  const node = await shallow(
+  const mightFail = jest.fn((data, success, fail) => fail(data));
+  useErrorHandling.mockReturnValueOnce({
+    mightFail,
+  });
+  const node = shallow(
     <OptimizeReportTile
       {...props}
-      mightFail={(data, success, fail) => fail(data)}
       disableNameLink
+      children={({onTileUpdate}) => (
+        <button onClick={onTileUpdate} className="EditTile">
+          edit
+        </button>
+      )}
     />
   );
 
+  runAllEffects();
+  await flushPromises();
+
   expect(node.find(ReportRenderer).prop('error')).toEqual(error);
 
-  node.setProps({mightFail: props.mightFail});
-  await node.instance().loadTile();
+  node.find('.EditTile').simulate('click');
+
+  runAllEffects();
+  await flushPromises();
 
   expect(node.find(ReportRenderer).prop('error')).toEqual(null);
 });
 
 it('should reload the report if the filter changes', async () => {
-  const node = await shallow(
-    <OptimizeReportTile {...props} filter={[{type: 'runningInstancesOnly'}]} />
-  );
+  const node = shallow(<OptimizeReportTile {...props} filter={[{type: 'runningInstancesOnly'}]} />);
 
   loadTile.mockClear();
   node.setProps({filter: [{type: 'suspendedInstancesOnly', data: null}]});
+
+  runAllEffects();
+  await flushPromises();
 
   expect(loadTile).toHaveBeenCalledWith(
     props.tile.id,
@@ -128,7 +174,11 @@ it('should reload the report if the filter changes', async () => {
 it('should navigate to the report when clicked', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a', data: {visualization: 'number'}});
   const redirectSpy = jest.fn();
-  const node = await shallow(<OptimizeReportTile {...props} history={{push: redirectSpy}} />);
+  useHistory.mockReturnValue({push: redirectSpy});
+  const node = shallow(<OptimizeReportTile {...props} />);
+
+  runAllEffects();
+  await flushPromises();
 
   node.find('.OptimizeReportTile').simulate('click', {target: document.createElement('div')});
 
@@ -138,9 +188,11 @@ it('should navigate to the report when clicked', async () => {
 it('should not navigate to the report if disableNameLink is specified', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a', data: {visualization: 'number'}});
   const redirectSpy = jest.fn();
-  const node = await shallow(
-    <OptimizeReportTile {...props} history={{push: redirectSpy}} disableNameLink />
-  );
+  useHistory.mockReturnValueOnce({push: redirectSpy});
+  const node = shallow(<OptimizeReportTile {...props} disableNameLink />);
+
+  runAllEffects();
+  await flushPromises();
 
   node.find('.OptimizeReportTile').simulate('click', {target: document.createElement('div')});
 
@@ -150,7 +202,11 @@ it('should not navigate to the report if disableNameLink is specified', async ()
 it('should not navigate to the report when clicking on button element', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a', data: {visualization: 'number'}});
   const redirectSpy = jest.fn();
-  const node = await shallow(<OptimizeReportTile {...props} history={{push: redirectSpy}} />);
+  useHistory.mockReturnValueOnce({push: redirectSpy});
+  const node = shallow(<OptimizeReportTile {...props} />);
+
+  runAllEffects();
+  await flushPromises();
 
   node.find('.OptimizeReportTile').simulate('click', {target: document.createElement('button')});
 
@@ -160,7 +216,11 @@ it('should not navigate to the report when clicking on button element', async ()
 it('should not navigate to the report when clicking on an href element', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a', data: {visualization: 'table'}});
   const redirectSpy = jest.fn();
-  const node = await shallow(<OptimizeReportTile {...props} history={{push: redirectSpy}} />);
+  useHistory.mockReturnValueOnce({push: redirectSpy});
+  const node = shallow(<OptimizeReportTile {...props} />);
+
+  runAllEffects();
+  await flushPromises();
 
   node.find('.OptimizeReportTile').simulate('click', {target: document.createElement('a')});
 
@@ -170,7 +230,11 @@ it('should not navigate to the report when clicking on an href element', async (
 it('should not navigate to the report when clicking on table visualization', async () => {
   loadTile.mockReturnValueOnce({name: 'Report Name', id: 'a', data: {visualization: 'table'}});
   const redirectSpy = jest.fn();
-  const node = await shallow(<OptimizeReportTile {...props} history={{push: redirectSpy}} />);
+  useHistory.mockReturnValueOnce({push: redirectSpy});
+  const node = shallow(<OptimizeReportTile {...props} />);
+
+  runAllEffects();
+  await flushPromises();
 
   const tableVisualization = document.createElement('div');
   tableVisualization.classList.add('visualization');

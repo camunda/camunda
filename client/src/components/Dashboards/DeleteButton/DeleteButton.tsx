@@ -5,25 +5,30 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {Button} from '@carbon/react';
-import {Edit} from '@carbon/icons-react';
+import {Close} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import './EditButton.scss';
+import {DashboardTile} from 'types';
 
-export default function EditButton({tile, onClick}) {
+import './DeleteButton.scss';
+
+interface DeleteButtonProps {
+  tile: DashboardTile;
+  onTileDelete: (tile: DashboardTile) => void;
+}
+
+export default function DeleteButton({tile, onTileDelete}: DeleteButtonProps) {
   return (
-    <div className="editButton">
+    <div className="DeleteButton">
       <Button
         size="sm"
         kind="ghost"
         hasIconOnly
-        iconDescription={t('common.edit')}
-        renderIcon={Edit}
+        iconDescription={t('common.delete').toString()}
+        renderIcon={Close}
         tooltipPosition="bottom"
-        className="EditButton"
-        onClick={() => onClick(tile)}
+        onClick={() => onTileDelete(tile)}
       />
     </div>
   );

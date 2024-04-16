@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {withRouter} from 'react-router';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {useHistory} from 'react-router-dom';
 import classnames from 'classnames';
 import {Filter} from '@carbon/icons-react';
+import deepEqual from 'fast-deep-equal';
 
 import {
   ReportRenderer,
@@ -18,160 +19,142 @@ import {
   InstanceCount,
   Popover,
 } from 'components';
-import {withErrorHandling} from 'HOC';
-import deepEqual from 'fast-deep-equal';
+import {useErrorHandling} from 'hooks';
 import {track} from 'tracking';
 import {t} from 'translation';
 
-import {themed} from 'theme';
-
 import './OptimizeReportTile.scss';
 
-export class OptimizeReportTile extends React.Component {
-  constructor(props) {
-    super(props);
+export default function OptimizeReportTile({
+  tile,
+  loadTile,
+  disableNameLink,
+  customizeTileLink = (id) => `report/${id}/`,
+  filter,
+  children,
+}) {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState();
+  const [error, setError] = useState(null);
+  const [lastParams, setLastParams] = useState({});
+  const {mightFail} = useErrorHandling();
+  const history = useHistory();
+  const prevTile = useRef(tile);
+  const prevFilter = useRef(filter);
 
-    this.state = {
-      loading: true,
-      data: undefined,
-      error: null,
-      lastParams: {},
-    };
-  }
-
-  async componentDidMount() {
-    await this.loadInitialTile();
-  }
-
-  componentDidUpdate(prevProps) {
-    if (
-      !deepEqual(prevProps.tile, this.props.tile) ||
-      !deepEqual(prevProps.filter, this.props.filter)
-    ) {
-      this.loadInitialTile();
-    }
-  }
-
-  loadInitialTile = async () => {
-    this.setState({loading: true});
-    await this.loadTile({});
-    this.setState({loading: false});
-  };
-
-  loadTile = (params) => {
-    this.setState({lastParams: params});
-    return new Promise((resolve) => {
-      this.props.mightFail(
-        this.props.loadTile(
-          this.props.tile.id ?? this.props.tile.report,
-          this.props.filter,
-          params
-        ),
-        (data) => this.setState({data, error: null}, resolve),
-        (error) => {
-          this.setState(
-            {
-              data: error.reportDefinition,
-              error,
-            },
-            resolve
-          );
-        }
-      );
-    });
-  };
-
-  refreshTile = () => this.loadTile(this.state.lastParams);
-
-  exitDarkmode = () => {
-    if (this.props.theme === 'dark') {
-      this.props.toggleTheme();
-    }
-  };
-
-  render() {
-    const {loading, data, error} = this.state;
-
-    if (loading) {
-      return <LoadingIndicator />;
-    }
-
-    const {
-      disableNameLink,
-      customizeTileLink = (id) => `report/${id}/`,
-      filter,
-      children = () => {},
-    } = this.props;
-
-    const tileLink = customizeTileLink(data?.id);
-
-    let tileProps = {
-      className: 'OptimizeReportTile DashboardTile__wrapper',
-    };
-
-    if (!disableNameLink) {
-      const visualization = data?.data?.visualization;
-      const canOnlyClickTitle = visualization === 'pie' || visualization === 'table';
-      tileProps = {
-        role: 'link',
-        className: classnames(tileProps.className, {canOnlyClickTitle}),
-        onClick: (evt) => {
-          if (
-            !evt.target.closest('.DropdownOption') &&
-            !evt.target.closest('a') &&
-            !evt.target.closest('button') &&
-            !(evt.target.closest('.visualization') && canOnlyClickTitle)
-          ) {
-            track('drillDownToReport');
-            this.props.history.push(tileLink);
+  const loadTileData = useCallback(
+    (params) => {
+      setLastParams(params);
+      return new Promise((resolve) => {
+        mightFail(
+          loadTile(tile.id ?? tile.report, filter, params),
+          (data) => {
+            setData(data);
+            setError(null);
+            resolve();
+          },
+          (error) => {
+            setData(error.reportDefinition);
+            setError(error);
+            resolve();
           }
-        },
-      };
-    }
+        );
+      });
+    },
+    [mightFail, loadTile, tile, filter]
+  );
 
-    return (
-      <div {...tileProps}>
-        {data && (
-          <div className="titleBar" tabIndex="-1">
-            <EntityName
-              linkTo={!disableNameLink && tileLink}
-              details={<ReportDetails report={data} />}
-              onClick={() => {
-                track('drillDownToReport');
-              }}
-            >
-              {data.name}
-            </EntityName>
-            <InstanceCount
-              key="instanceCount"
-              trigger={
-                <Popover.Button
-                  size="sm"
-                  kind="ghost"
-                  hasIconOnly
-                  iconDescription={t('common.filter.label').toString()}
-                  renderIcon={Filter}
-                  tooltipPosition="bottom"
-                />
-              }
-              report={data}
-              additionalFilter={filter}
-              showHeader
-            />
-          </div>
-        )}
-        <div className="visualization">
-          <ReportRenderer
-            error={error}
+  const loadInitialTile = useCallback(async () => {
+    setLoading(true);
+    await loadTileData({});
+    setLoading(false);
+  }, [loadTileData]);
+
+  useEffect(() => {
+    if (!deepEqual(tile, prevTile.current) || !deepEqual(filter, prevFilter.current)) {
+      prevTile.current = tile;
+      prevFilter.current = filter;
+      loadInitialTile();
+    }
+  }, [tile, filter, loadInitialTile]);
+
+  useEffect(() => {
+    loadInitialTile();
+    // When we put loadTileData into the dependency array,
+    // it causes weird behavior when you click on a tile the first time.
+    // For example clicking on copy button will not work with the first click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (loading) {
+    return <LoadingIndicator />;
+  }
+
+  const refreshTile = () => loadTileData(lastParams);
+  const tileLink = customizeTileLink(data?.id);
+  let tileProps = {
+    className: 'OptimizeReportTile DashboardTile',
+  };
+
+  if (!disableNameLink) {
+    const visualization = data?.data?.visualization;
+    const canOnlyClickTitle = visualization === 'pie' || visualization === 'table';
+    tileProps = {
+      role: 'link',
+      className: classnames(tileProps.className, {canOnlyClickTitle}),
+      onClick: (evt) => {
+        if (
+          !evt.target.closest('.DropdownOption') &&
+          !evt.target.closest('a') &&
+          !evt.target.closest('button') &&
+          !(evt.target.closest('.visualization') && canOnlyClickTitle)
+        ) {
+          track('drillDownToReport');
+          history.push(tileLink);
+        }
+      },
+    };
+  }
+
+  return (
+    <div {...tileProps}>
+      {data && (
+        <div className="titleBar" tabIndex={-1}>
+          <EntityName
+            linkTo={!disableNameLink && tileLink}
+            details={<ReportDetails report={data} />}
+            onClick={() => {
+              track('drillDownToReport');
+            }}
+          >
+            {data.name}
+          </EntityName>
+          <InstanceCount
+            key="instanceCount"
+            trigger={
+              <Popover.Button
+                size="sm"
+                kind="ghost"
+                hasIconOnly
+                iconDescription={t('common.filter.label').toString()}
+                renderIcon={Filter}
+                tooltipPosition="bottom"
+              />
+            }
             report={data}
-            context="dashboard"
-            loadReport={this.loadTile}
+            additionalFilter={filter}
+            showHeader
           />
         </div>
-        {children({loadTileData: this.refreshTile})}
+      )}
+      <div className="visualization">
+        <ReportRenderer error={error} report={data} context="dashboard" loadReport={loadTileData} />
       </div>
-    );
-  }
+      {children?.({loadTileData: refreshTile})}
+    </div>
+  );
 }
 
-export default themed(withErrorHandling(withRouter(OptimizeReportTile)));
+OptimizeReportTile.isTileOfType = function (tile) {
+  return tile.type === 'optimize_report';
+};

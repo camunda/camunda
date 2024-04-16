@@ -45,11 +45,10 @@ export default function FiltersEdit({
       <div className="filtersContainer">
         {availableFilters.map(({type, data}, idx) => {
           const deleter = (
-            <div className="deleteButton">
+            <div className="DeleteButton">
               <Button
                 size="sm"
                 kind="ghost"
-                className="DeleteButton"
                 hasIconOnly
                 renderIcon={Close}
                 onClick={() => removeFilter(idx)}
@@ -111,11 +110,10 @@ export default function FiltersEdit({
                     }
                   }}
                 >
-                  <div className="editButton">
+                  <div className="EditButton">
                     <Button
                       size="sm"
                       kind="ghost"
-                      className="EditButton"
                       hasIconOnly
                       renderIcon={Edit}
                       iconDescription={t('common.edit')}
@@ -147,11 +145,10 @@ export default function FiltersEdit({
                     }
                   }}
                 >
-                  <div className="editButton">
+                  <div className="EditButton">
                     <Button
                       size="sm"
                       kind="ghost"
-                      className="EditButton"
                       icon
                       disabled={!reports || reports.length === 0}
                       onClick={() => {

@@ -5,19 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
 import update from 'immutability-helper';
-import {Button} from '@carbon/react';
-import {Edit} from '@carbon/icons-react';
+import {SerializedEditorState} from 'lexical';
 
 import {TextEditor} from 'components';
-import {t} from 'translation';
+import {DashboardTile, TextTile as TTextTile} from 'types';
+
+import {DashboardTileProps} from '../types';
 
 import TextTileEditModal from './TextTileEditModal';
 
 import './TextTile.scss';
 
-export default function TextTile({tile, children = () => {}, onTileUpdate}) {
+export default function TextTile({tile, children, onTileUpdate}: DashboardTileProps) {
   const [reloadState, setReloadState] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -25,50 +26,35 @@ export default function TextTile({tile, children = () => {}, onTileUpdate}) {
     setReloadState((prevReloadState) => prevReloadState + 1);
   };
 
-  const handleEdit = () => {
+  const openEditModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  const onConfirm = (text) => {
+  const handleTileUpdate = (text: SerializedEditorState | null) => {
     onTileUpdate(update(tile, {configuration: {text: {$set: text}}}));
   };
 
-  if (!tile?.configuration?.text) {
+  if (!TextTile.isTileOfType(tile)) {
     return null;
   }
 
   return (
     <>
-      <div className="TextTile DashboardTile__wrapper">
+      <div className="TextTile DashboardTile">
         <TextEditor key={reloadState} initialValue={tile.configuration.text} />
-        {children({loadTileData: reloadTile})}
-        {children && (
-          <div className="editButton editTextTile">
-            <Button
-              key="editTextTile"
-              kind="ghost"
-              size="sm"
-              hasIconOnly
-              iconDescription={t('common.edit')}
-              renderIcon={Edit}
-              tooltipPosition="bottom"
-              className="EditTextTile"
-              onClick={handleEdit}
-            />
-          </div>
-        )}
+        {children?.({loadTileData: reloadTile, onTileUpdate: openEditModal})}
       </div>
       {isModalOpen && (
         <TextTileEditModal
           initialValue={tile.configuration.text}
           onClose={() => setIsModalOpen(false)}
-          onConfirm={onConfirm}
+          onConfirm={handleTileUpdate}
         />
       )}
     </>
   );
 }
 
-TextTile.isTextTile = function (tile) {
-  return !!tile.configuration?.text;
+TextTile.isTileOfType = function (tile: Pick<DashboardTile, 'configuration'>): tile is TTextTile {
+  return !!tile.configuration && 'text' in tile.configuration;
 };

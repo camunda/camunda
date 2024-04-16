@@ -13,20 +13,26 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 import {copyEntity} from 'services';
 import {useErrorHandling} from 'hooks';
+import {DashboardTile} from 'types';
 
 import './CopyButton.scss';
 
-export default function CopyButton({tile, addTile}) {
+interface CopyButtonProps {
+  tile: DashboardTile;
+  onTileAdd: (tile: DashboardTile) => void;
+}
+
+export default function CopyButton({tile, onTileAdd}: CopyButtonProps) {
   const {mightFail} = useErrorHandling();
   const [loading, setloading] = useState(false);
 
-  function copyTile(tile) {
+  function copyTile(tile: DashboardTile) {
     if (tile.type === 'optimize_report' && tile.id) {
       setloading(true);
       mightFail(
         copyEntity('report', tile.id),
         (newId) => {
-          addTile({
+          onTileAdd({
             ...tile,
             position: {x: 0, y: 0},
             id: newId,
@@ -36,7 +42,7 @@ export default function CopyButton({tile, addTile}) {
         () => setloading(false)
       );
     } else {
-      addTile({
+      onTileAdd({
         ...tile,
         position: {x: 0, y: 0},
       });
@@ -49,7 +55,7 @@ export default function CopyButton({tile, addTile}) {
         size="sm"
         kind="ghost"
         hasIconOnly
-        iconDescription={t('common.copy')}
+        iconDescription={t('common.copy').toString()}
         renderIcon={Copy}
         tooltipPosition="bottom"
         onClick={() => copyTile(tile)}

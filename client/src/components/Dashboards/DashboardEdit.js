@@ -18,11 +18,11 @@ import {showPrompt} from 'prompt';
 import {track} from 'tracking';
 
 import {AddButton} from './AddButton';
+import {EditButton} from './EditButton';
+import {CopyButton} from './CopyButton';
 import {DeleteButton} from './DeleteButton';
 import DragOverlay from './DragOverlay';
-import EditButton from './EditButton';
 import {AutoRefreshSelect} from './AutoRefresh';
-import {CopyButton} from './CopyButton';
 
 import {FiltersEdit, AddFiltersButton} from './filters';
 import {convertFilterToDefaultValues, getDefaultFilter} from './service';
@@ -166,20 +166,26 @@ export class DashboardEdit extends React.Component {
   };
 
   updateTile = (tile) => {
-    this.setState(({tiles}) => {
-      const newTiles = tiles.map((oldTile) => {
-        if (tile.position.x === oldTile.position.x && tile.position.y === oldTile.position.y) {
-          return tile;
-        }
-        return oldTile;
-      });
+    // if the tile is an optimize report, we need to handle it differently because it is a separate entity
+    // All the other tiles are not real entities and are just a part of dashboard configuration
+    if (tile.type === 'optimize_report') {
+      this.updateOptimizeReportTile(tile);
+    } else {
+      this.setState(({tiles}) => {
+        const newTiles = tiles.map((oldTile) => {
+          if (tile.position.x === oldTile.position.x && tile.position.y === oldTile.position.y) {
+            return tile;
+          }
+          return oldTile;
+        });
 
-      track(getEventName('update', tile.type), {entityId: tile.id});
-      return {tiles: newTiles};
-    });
+        track(getEventName('update', tile.type), {entityId: tile.id});
+        return {tiles: newTiles};
+      });
+    }
   };
 
-  deleteTile = ({tile: tileToRemove}) => {
+  deleteTile = (tileToRemove) => {
     this.setState({
       tiles: this.state.tiles.filter((tile) => tile !== tileToRemove),
     });
@@ -249,7 +255,7 @@ export class DashboardEdit extends React.Component {
     });
   };
 
-  editOptimizeReportTile = (tile) => {
+  updateOptimizeReportTile = (tile) => {
     const {history, location} = this.props;
     if (isDirty()) {
       showPrompt(
@@ -328,15 +334,12 @@ export class DashboardEdit extends React.Component {
             disableTileInteractions
             tiles={tiles}
             filter={filter}
+            addons={[<DragOverlay />, <EditButton />, <CopyButton />, <DeleteButton />]}
             loadTile={evaluateReport}
-            addons={[
-              <DragOverlay key="DragOverlay" />,
-              <EditButton key="EditButton" onClick={this.editOptimizeReportTile} />,
-              <CopyButton key="CopyButton" addTile={this.addTile} />,
-              <DeleteButton key="DeleteButton" deleteTile={this.deleteTile} />,
-            ]}
-            onLayoutChange={this.updateLayout}
+            onTileAdd={this.addTile}
             onTileUpdate={this.updateTile}
+            onTileDelete={this.deleteTile}
+            onLayoutChange={this.updateLayout}
           />
         </div>
       </div>

@@ -14,9 +14,9 @@ import {isTextTileValid} from 'services';
 import {t} from 'translation';
 
 interface TextTileEditModalProps {
-  initialValue: SerializedEditorState;
+  initialValue: SerializedEditorState | null;
   onClose: () => void;
-  onConfirm: (value: SerializedEditorState) => void;
+  onConfirm: (value: SerializedEditorState | null) => void;
 }
 
 export default function TextTileEditModal({

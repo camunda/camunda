@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {runAllEffects} from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {copyEntity} from 'services';
+import {DashboardTile} from 'types';
 
 import CopyButton from './CopyButton';
 
@@ -20,7 +21,7 @@ jest.mock('services', () => ({
 jest.mock('prompt', () => ({}));
 
 const props = {
-  addTile: jest.fn(),
+  onTileAdd: jest.fn(),
 };
 
 it('should invoke copyEntity when copying optimize report with an id already assigned', async () => {
@@ -29,7 +30,7 @@ it('should invoke copyEntity when copying optimize report with an id already ass
     dimensions: {height: 2, width: 2},
     type: 'optimize_report',
     id: '1',
-  };
+  } as DashboardTile;
 
   const node = shallow(<CopyButton tile={report} {...props} />);
 
@@ -39,7 +40,7 @@ it('should invoke copyEntity when copying optimize report with an id already ass
   await flushPromises();
 
   expect(copyEntity).toHaveBeenCalledWith('report', '1');
-  expect(props.addTile).toHaveBeenCalledWith({
+  expect(props.onTileAdd).toHaveBeenCalledWith({
     dimensions: {height: 2, width: 2},
     id: 'id',
     position: {x: 0, y: 0},
@@ -52,13 +53,14 @@ it('should simply copy tile when it does not have an id', async () => {
     position: {x: 0, y: 0},
     dimensions: {height: 2, width: 2},
     type: 'text',
-    configuration: {text: 'text'},
-  };
+    configuration: {text: null},
+    id: '',
+  } as DashboardTile;
 
   const node = shallow(<CopyButton tile={report} {...props} />);
 
   node.find('Button').simulate('click');
 
   expect(copyEntity).not.toHaveBeenCalled();
-  expect(props.addTile).toHaveBeenCalledWith(report);
+  expect(props.onTileAdd).toHaveBeenCalledWith(report);
 });

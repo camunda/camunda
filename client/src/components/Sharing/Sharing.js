@@ -91,7 +91,7 @@ export class Sharing extends React.Component {
           loadTile={createLoadReportCallback(this.getId())}
           tiles={this.state.evaluationResult.tiles}
           filter={filter && JSON.parse(filter)}
-          addons={[<DiagramScrollLock key="diagramScrollLock" />]}
+          addons={[<DiagramScrollLock />]}
           disableNameLink
         />
       );
