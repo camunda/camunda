@@ -140,5 +140,7 @@ final class TtlKeyCacheTest {
 
     // then
     assertThat(timestamp).isEqualTo(10L);
+    assertThat(cache.get(1L)).isEqualTo(10L); // assert it's still there
+    assertThat(cache.size()).isOne();
   }
 }
