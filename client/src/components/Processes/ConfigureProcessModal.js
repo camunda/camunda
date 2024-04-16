@@ -6,9 +6,9 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {ActionableNotification, Button, Stack} from '@carbon/react';
 
-import {Icon, Labeled, MessageBox, Modal, Switch, Tooltip, UserTypeahead} from 'components';
+import {Icon, Labeled, Modal, Switch, Tooltip, UserTypeahead} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile, isEmailEnabled} from 'config';
 import {useDocs} from 'hooks';
@@ -46,59 +46,63 @@ export function ConfigureProcessModal({
     <Modal open onClose={onClose} className="ConfigureProcessModal" isOverflowVisible>
       <Modal.Header>{t('processes.configureProcess')}</Modal.Header>
       <Modal.Content>
-        {!emailEnabled && (
-          <MessageBox type="warning">
-            {t('alert.emailWarning', {
-              docsLink: generateDocsLink(
-                'self-managed/optimize-deployment/configuration/system-configuration/#email'
-              ),
-            })}
-          </MessageBox>
-        )}
-        <Labeled
-          label={
-            <div className="infoContainer">
-              {t('processes.processOwner')}{' '}
-              <Tooltip align="center" content={t('processes.ownerInfo')}>
-                <Icon type="info" />
-              </Tooltip>
-            </div>
-          }
-        >
-          <UserTypeahead
-            key={selectedUser?.id}
-            users={selectedUser ? [selectedUser] : []}
-            onChange={(users) => {
-              const newSelection = users[users.length - 1];
-              setSelectedUser(newSelection);
-              if (!newSelection) {
+        <Stack gap={4}>
+          {!emailEnabled && (
+            <ActionableNotification
+              kind="warning"
+              subtitle={t('alert.emailWarning', {
+                docsLink: generateDocsLink(
+                  'self-managed/optimize-deployment/configuration/system-configuration/#email'
+                ),
+              })}
+              className="emailWarning"
+            />
+          )}
+          <Labeled
+            label={
+              <div className="infoContainer">
+                {t('processes.processOwner')}{' '}
+                <Tooltip align="center" content={t('processes.ownerInfo')}>
+                  <Icon type="info" />
+                </Tooltip>
+              </div>
+            }
+          >
+            <UserTypeahead
+              key={selectedUser?.id}
+              users={selectedUser ? [selectedUser] : []}
+              onChange={(users) => {
+                const newSelection = users[users.length - 1];
+                setSelectedUser(newSelection);
+                if (!newSelection) {
+                  setDigestEnabled(false);
+                }
+              }}
+              excludeGroups
+              optionsOnly={optimizeProfile === 'cloud'}
+            />
+          </Labeled>
+          <Switch
+            className="digestSwitch"
+            disabled={!selectedUser}
+            label={
+              <div className="infoContainer">
+                {t('processes.emailDigest')}{' '}
+                <Tooltip align="center" content={t('processes.digestInfo')}>
+                  <Icon type="info" />
+                </Tooltip>
+              </div>
+            }
+            checked={digestEnabled}
+            onChange={({target}) => {
+              if (target.checked && selectedUser) {
+                setDigestEnabled(true);
+              } else {
                 setDigestEnabled(false);
               }
             }}
-            excludeGroups
-            optionsOnly={optimizeProfile === 'cloud'}
           />
-        </Labeled>
-        <Switch
-          className="digestSwitch"
-          disabled={!selectedUser}
-          label={
-            <div className="infoContainer">
-              {t('processes.emailDigest')}{' '}
-              <Tooltip align="center" content={t('processes.digestInfo')}>
-                <Icon type="info" />
-              </Tooltip>
-            </div>
-          }
-          checked={digestEnabled}
-          onChange={({target}) => {
-            if (target.checked && selectedUser) {
-              setDigestEnabled(true);
-            } else {
-              setDigestEnabled(false);
-            }
-          }}
-        />
+        </Stack>
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="close" onClick={onClose}>

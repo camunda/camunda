@@ -7,10 +7,11 @@
 
 import {useState, useCallback, useEffect, useRef} from 'react';
 import classnames from 'classnames';
+import {InlineNotification} from '@carbon/react';
 
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {BPMNDiagram, HeatmapOverlay, MessageBox, PageTitle} from 'components';
+import {BPMNDiagram, HeatmapOverlay, PageTitle} from 'components';
 import {loadProcessDefinitionXml, getFlowNodeNames, incompatibleFilters} from 'services';
 import {useErrorHandling} from 'hooks';
 import {track} from 'tracking';
@@ -202,7 +203,12 @@ export default function TaskAnalysis() {
       <PageTitle pageName={t('analysis.task.label')} />
       <OutlierControlPanel {...config} onChange={updateConfig} xml={xml} />
       {config.filters && incompatibleFilters(config.filters) && (
-        <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+        <InlineNotification
+          kind="warning"
+          hideCloseButton
+          subtitle={t('common.filter.incompatibleFilters')}
+          className="incompatibleFiltersWarning"
+        />
       )}
       {hasData && <h2>{t('analysis.task.result', {count: matchingInstancesCount})}</h2>}
       <div className={classnames('TaskAnalysis__diagram', {empty})}>

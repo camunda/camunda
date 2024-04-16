@@ -8,9 +8,9 @@
 import React from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
-import {ComboBox} from '@carbon/react';
+import {ComboBox, FormLabel} from '@carbon/react';
 
-import {Message, BPMNDiagram, LoadingIndicator, Popover, TenantInfo} from 'components';
+import {BPMNDiagram, LoadingIndicator, Popover, TenantInfo} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
@@ -408,23 +408,23 @@ export class DefinitionSelection extends React.Component {
             <div className="info">
               {displayVersionWarning &&
                 (!selectedDefinitions || selectedDefinitions.length === 1) && (
-                  <Message>{t('common.definitionSelection.versionWarning')}</Message>
+                  <FormLabel>{t('common.definitionSelection.versionWarning')}</FormLabel>
                 )}
               {collectionId && noDefinitions && (
-                <Message>{t('common.definitionSelection.noSourcesWarning')}</Message>
+                <FormLabel>{t('common.definitionSelection.noSourcesWarning')}</FormLabel>
               )}
               {selectedDefinitions?.length >= this.state.reportDataSourceLimit && (
-                <Message error>
+                <FormLabel className="error">
                   {t('common.definitionSelection.limitReached', {
                     maxNumProcesses: this.state.reportDataSourceLimit,
                   })}
-                </Message>
+                </FormLabel>
               )}
               {selectedDefinitions?.length > 1 && (
-                <Message>{t('templates.disabledMessage.editReport')}</Message>
+                <FormLabel>{t('templates.disabledMessage.editReport')}</FormLabel>
               )}
 
-              {this.props.infoMessage && <Message>{this.props.infoMessage}</Message>}
+              {this.props.infoMessage && <FormLabel>{this.props.infoMessage}</FormLabel>}
             </div>
           </div>
           {this.canRenderDiagram() && (

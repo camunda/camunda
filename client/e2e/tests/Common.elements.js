@@ -13,7 +13,7 @@ export const editButton = Selector('.edit-button');
 export const confirmButton = Selector('button.confirm');
 export const modalConfirmButton = Selector('.Modal.is-visible')
   .nth(-1)
-  .find('.cds--modal-footer .cds--btn:last-child');
+  .find('.cds--modal-footer .cds--btn:last-child:not([disabled])');
 export const descriptionField = Selector('.EntityDescription');
 export const descriptionParagraph = descriptionField.find('p');
 export const addDescriptionButton = descriptionField.find('button');

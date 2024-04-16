@@ -57,7 +57,7 @@ it('should show a warning message when there are incompatible filter ', async ()
     />
   );
 
-  expect(node.find('MessageBox').children()).toIncludeText(
+  expect(node.find('InlineNotification').prop('subtitle')).toMatch(
     'No data shown due to incompatible filters'
   );
 });
@@ -82,7 +82,7 @@ it('should show a warning when running node status filter is added on a grouped 
     />
   );
 
-  expect(node.find('MessageBox').children()).toIncludeText(
+  expect(node.find('InlineNotification').prop('subtitle')).toMatch(
     "Only completed flow nodes are considered when grouping by end date. Therefore, adding 'running' flow node status filter will show no results"
   );
 });

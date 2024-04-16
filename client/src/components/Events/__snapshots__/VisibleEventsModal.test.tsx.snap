@@ -28,8 +28,10 @@ exports[`should match snapshot 1`] = `
         onChange={[Function]}
       />
     </FormGroup>
-    <MessageBox
-      type="warning"
+    <ActionableNotification
+      className="eventListChangeWarning"
+      hideCloseButton={true}
+      kind="warning"
     >
       Changing the event list may add or remove events. Existing event mappings may be removed.
        
@@ -38,7 +40,7 @@ exports[`should match snapshot 1`] = `
       >
         Learn more
       </DocsLink>
-    </MessageBox>
+    </ActionableNotification>
   </ForwardRef(Stack)>
 </Form>
 `;

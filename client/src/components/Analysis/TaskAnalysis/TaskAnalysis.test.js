@@ -286,5 +286,5 @@ it('should show a warning message when there are incompatible filters', async ()
   runAllEffects();
   await flushPromises();
 
-  expect(node.find('MessageBox')).toExist();
+  expect(node.find('InlineNotification')).toExist();
 });

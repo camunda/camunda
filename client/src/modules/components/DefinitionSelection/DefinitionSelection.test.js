@@ -250,11 +250,11 @@ it('should show a note if more than one version is selected', async () => {
   );
   await flushPromises();
 
-  expect(node.find('Message')).toMatchSnapshot();
+  expect(node.find('FormLabel')).toMatchSnapshot();
   await node.find(VersionPopover).simulate('change', ['1', '2']);
-  expect(node.find('Message')).toExist();
+  expect(node.find('FormLabel')).toExist();
   await node.find(VersionPopover).simulate('change', ['1']);
-  expect(node.find('Message')).not.toExist();
+  expect(node.find('FormLabel')).not.toExist();
 });
 
 it('should show an info message to add sources', async () => {
@@ -272,7 +272,7 @@ it('should show an info message if specified by props', async () => {
   );
   await flushPromises();
 
-  expect(node.find('Message').props().children).toBe('test message');
+  expect(node.find('FormLabel').props().children).toBe('test message');
 });
 
 it('should pass an id for every entry to the typeahead', async () => {
@@ -485,5 +485,5 @@ it('should display an info message about version selection when loading multiple
 
   await flushPromises();
 
-  expect(node.find('Message').children()).toIncludeText('To change the version selection');
+  expect(node.find('FormLabel').children()).toIncludeText('To change the version selection');
 });

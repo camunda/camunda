@@ -7,8 +7,9 @@
 
 import React from 'react';
 import equal from 'fast-deep-equal';
+import {InlineNotification} from '@carbon/react';
 
-import {BPMNDiagram, MessageBox, PageTitle} from 'components';
+import {BPMNDiagram, PageTitle} from 'components';
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withDocs, withErrorHandling} from 'HOC';
@@ -62,7 +63,12 @@ export class BranchAnalysis extends React.Component {
           xml={xml}
         />
         {config.filters && incompatibleFilters(config.filters) && (
-          <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+          <InlineNotification
+            kind="warning"
+            hideCloseButton
+            subtitle={t('common.filter.incompatibleFilters')}
+            className="incompatibleFiltersWarning"
+          />
         )}
         <div className="content">
           <div className="BranchAnalysis__diagram">

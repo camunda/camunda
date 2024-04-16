@@ -6,9 +6,9 @@
  */
 
 import {useState} from 'react';
-import {Button, Checkbox, Form, FormGroup, Stack} from '@carbon/react';
+import {ActionableNotification, Button, Checkbox, Form, FormGroup, Stack} from '@carbon/react';
 
-import {Modal, MessageBox, DocsLink} from 'components';
+import {Modal, DocsLink} from 'components';
 import {t} from 'translation';
 
 interface VisibleEventsModalProps {
@@ -34,7 +34,7 @@ export default function VisibleEventsModal({
   const updateSource = () => scope.length > 0 && onConfirm(scope);
 
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={onClose} className="VisibleEventsModal">
       <Modal.Header>{t('events.sources.editScope')}</Modal.Header>
       <Modal.Content>
         <Form>
@@ -59,12 +59,16 @@ export default function VisibleEventsModal({
                 onChange={() => toggleScopeItem('all')}
               />
             </FormGroup>
-            <MessageBox type="warning">
+            <ActionableNotification
+              kind="warning"
+              hideCloseButton
+              className="eventListChangeWarning"
+            >
               {t('events.sources.eventListChangeWarning')}{' '}
               <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
                 {t('events.sources.learnMore')}
               </DocsLink>
-            </MessageBox>
+            </ActionableNotification>
           </Stack>
         </Form>
       </Modal.Content>

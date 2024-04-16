@@ -10,7 +10,6 @@ import classnames from 'classnames';
 import {Button} from '@carbon/react';
 import {Close, Edit, Warning} from '@carbon/icons-react';
 
-import {Message} from 'components';
 import {t} from 'translation';
 
 import './ActionItem.scss';
@@ -60,9 +59,10 @@ export default function ActionItem({
         {props.children}
       </div>
       {warning && (
-        <Message error>
-          <Warning /> {warning}
-        </Message>
+        <span className="warning">
+          {warning}
+          <Warning />
+        </span>
       )}
     </div>
   );

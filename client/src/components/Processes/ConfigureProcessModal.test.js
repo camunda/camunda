@@ -105,5 +105,5 @@ it('should show warning that email is not configured', async () => {
   isEmailEnabled.mockReturnValueOnce(false);
   const node = shallow(<ConfigureProcessModal {...props} />);
 
-  expect(node.find('MessageBox').exists()).toBe(true);
+  expect(node.find('ActionableNotification').exists()).toBe(true);
 });

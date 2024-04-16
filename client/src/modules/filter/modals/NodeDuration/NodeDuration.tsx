@@ -7,7 +7,7 @@
 
 import {Component} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, InlineNotification} from '@carbon/react';
+import {Button, InlineNotification, Stack} from '@carbon/react';
 
 import {
   Modal,
@@ -211,7 +211,7 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
           {loading ? (
             <Loading />
           ) : (
-            <>
+            <Stack gap={4}>
               <div className="diagramContainer">
                 <BPMNDiagram xml={xml}>
                   <ClickBehavior
@@ -228,12 +228,12 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
                 values={values}
                 onChange={(values) => this.setState({values})}
               />
-            </>
-          )}
-          {!this.areAllFieldsNumbers() && !loading && (
-            <InlineNotification kind="error" hideCloseButton>
-              {t('report.heatTarget.invalidValue')}
-            </InlineNotification>
+              {!this.areAllFieldsNumbers() && (
+                <InlineNotification kind="error" hideCloseButton>
+                  {t('report.heatTarget.invalidValue')}
+                </InlineNotification>
+              )}
+            </Stack>
           )}
         </Modal.Content>
         <Modal.Footer>

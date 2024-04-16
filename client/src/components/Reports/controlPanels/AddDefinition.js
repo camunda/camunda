@@ -7,10 +7,10 @@
 
 import {useState, useEffect} from 'react';
 import {withRouter} from 'react-router-dom';
-import {Button} from '@carbon/react';
+import {Button, InlineNotification} from '@carbon/react';
 import {Add} from '@carbon/icons-react';
 
-import {Modal, MessageBox, Checklist} from 'components';
+import {Modal, Checklist} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
@@ -81,11 +81,14 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
         </Modal.Header>
         <Modal.Content>
           {isDefinitionLimitReached && (
-            <MessageBox type="warning">
-              {t('common.definitionSelection.limitReached', {
+            <InlineNotification
+              hideCloseButton
+              kind="warning"
+              subtitle={t('common.definitionSelection.limitReached', {
                 maxNumProcesses: reportDataSourceLimit,
               })}
-            </MessageBox>
+              className="definitionLimitReachedWarning"
+            />
           )}
           <Checklist
             hideSelectAllInView

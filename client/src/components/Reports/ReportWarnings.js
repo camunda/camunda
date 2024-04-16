@@ -5,12 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {InlineNotification} from '@carbon/react';
 
-import {MessageBox} from 'components';
 import {t} from 'translation';
-
 import {incompatibleFilters} from 'services';
+
+import './ReportWarnings.scss';
 
 export default function ReportWarnings({
   report: {
@@ -20,13 +20,23 @@ export default function ReportWarnings({
   return (
     <>
       {incompatibleFilters(filter, view) && (
-        <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+        <InlineNotification
+          kind="warning"
+          hideCloseButton
+          subtitle={t('common.filter.incompatibleFilters')}
+          className="incompatibleFiltersWarning"
+        />
       )}
 
       {['userTask', 'flowNode'].includes(view.entity) &&
         groupBy?.type === 'endDate' &&
         filter?.some(({type}) => type === 'runningFlowNodesOnly') && (
-          <MessageBox type="warning">{t('report.runningEndedFlowNodeWarning')}</MessageBox>
+          <InlineNotification
+            kind="warning"
+            hideCloseButton
+            subtitle={t('report.runningEndedFlowNodeWarning')}
+            className="runningEndedFlowNodeWarning"
+          />
         )}
     </>
   );

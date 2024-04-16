@@ -185,3 +185,9 @@ a[disabled] {
 iframe#webpack-dev-server-client-overlay {
   display: none;
 }
+
+// By default the notification component has some max width set, but we want it to take the full
+.cds--actionable-notification,
+.cds--inline-notification {
+  max-inline-size: 100%;
+}
