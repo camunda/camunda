@@ -50,6 +50,7 @@
               <exclude>**/target/**/*.md</exclude>
               <exclude>clients/go/vendor/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
+              <exclude>tasklist/client/**/*.md</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>

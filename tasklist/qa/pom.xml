@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>tasklist-parent</artifactId>
+    <version>8.6.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <properties>
+    <license.header>${project.baseUri}/../../../license/license-header</license.header>
+
+    <version.zeebe.docker.current>${version.zeebe}</version.zeebe.docker.current>
+    <version.identity.docker.current>SNAPSHOT</version.identity.docker.current>
+  </properties>
+
+  <name>Tasklist QA</name>
+  <artifactId>tasklist-qa</artifactId>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>util</module>
+    <module>integration-tests</module>
+    <module>migration-tests</module>
+    <module>backup-restore-tests</module>
+  </modules>
+
+</project>

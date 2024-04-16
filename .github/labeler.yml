@@ -29,3 +29,13 @@ component/operate:
         - 'operate/**'
         - 'parent/*'
         - 'pom.xml'
+component/tasklist:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/ISSUE_TEMPLATE/tasklist-*'
+          - '.github/actions/**'
+          - '.github/renovate.json'
+          - '.github/workflows/tasklist-*'
+          - 'tasklist/**'
+          - 'tasklist-distro/**'
+          - 'tasklist.Dockerfile'

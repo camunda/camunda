@@ -1,0 +1,32 @@
+name: Tasklist Frontend
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tasklist/client/**"
+  pull_request:
+    paths:
+      - "tasklist/client/**"
+jobs:
+  linting-and-testing:
+    name: Linting & Testing
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn ts-check
+        name: Type checks
+      - run: yarn eslint
+        name: ESLint
+      - run: yarn test:ci
+        name: Unit & Integration tests

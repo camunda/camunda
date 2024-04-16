@@ -1,0 +1,44 @@
+# This GitHub Actions (GHA) workflow performs a scheduled dry-run of the release process for `main` and last 3 `stable` branches.
+#
+# The workflow is scheduled to run at 03:00 from Monday through Friday, according to the cron format.
+#
+# For each run, it iterates over a matrix of branches and their associated release versions.
+#
+# Each iteration invokes the reusable release workflow (./.github/workflows/tasklist-release-reusable.yml)
+# in dry-run mode (no changes or artifacts are pushed).
+#
+# This dry-run scheduled workflow is designed to provide an assurance check that the release process will execute as expected when performed live.
+
+
+name: Tasklist Release dry-run scheduled
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs at 03:00 on every day-of-week from Monday through Friday. See: https://crontab.guru/#0_3_*_*_1-5
+    - cron: '0 3 * * 1-5'
+
+jobs:
+  dry-run-release:
+    name: "dry run release v${{ matrix.releaseVersion }}"
+    uses: ./.github/workflows/tasklist-release-reusable.yml
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: main
+            releaseVersion: 99.0.0
+          - branch: stable/8.0
+            releaseVersion: 90.0.0
+          - branch: stable/8.1
+            releaseVersion: 91.0.0
+          - branch: stable/8.2
+            releaseVersion: 92.0.0
+    with:
+      branch: ${{ matrix.branch }}
+      releaseVersion: ${{ matrix.releaseVersion }}
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      dryRun: true
+      githubUploadRelease: false
+      isLatest: false
