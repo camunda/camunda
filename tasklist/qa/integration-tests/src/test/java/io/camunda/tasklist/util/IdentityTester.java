@@ -34,6 +34,7 @@ import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationToken
 import io.camunda.zeebe.client.impl.util.Environment;
 import java.util.Collections;
 import java.util.Map;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -221,7 +222,8 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
       String entityType,
       String resourceKey,
       String resourceType,
-      String permission) {
+      String permission)
+      throws JSONException {
     final JSONObject obj = new JSONObject();
 
     obj.put("entityId", entityId);

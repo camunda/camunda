@@ -21,25 +21,34 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-data-generator</artifactId>
-      <version>${project.version}</version>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
-      <version>${project.version}</version>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-archiver</artifactId>
-      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-webjar</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-els-schema</artifactId>
     </dependency>
 
     <!-- ZEEBE -->
@@ -96,16 +105,19 @@
       <artifactId>jakarta.json</artifactId>
     </dependency>
 
-    <!-- WEBJAR -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-webjar</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.elasticsearch.client</groupId>
+          <artifactId>transport</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Micrometer Prometheus -->
@@ -118,7 +130,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-mvc-auth-commons</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!-- OAuth2 token authorization -->
@@ -147,28 +158,326 @@
     <!-- GraphQL -->
     <dependency>
       <groupId>com.graphql-java-kickstart</groupId>
-      <artifactId>graphql-spring-boot-starter</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.graphql-java-kickstart</groupId>
       <artifactId>graphql-java-tools</artifactId>
     </dependency>
 
-    <!-- TEST -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sts</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
+      <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-test</artifactId>
-      <scope>test</scope>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf</artifactId>
+    </dependency>
 
+<dependency>
+  <groupId>org.apache.tomcat.embed</groupId>
+  <artifactId>tomcat-embed-websocket</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.graphql-java</groupId>
+  <artifactId>graphql-java</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.opensearch.client</groupId>
+  <artifactId>opensearch-java</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-annotations</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.fasterxml.jackson.datatype</groupId>
+  <artifactId>jackson-datatype-jdk8</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.session</groupId>
+  <artifactId>spring-session-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.elasticsearch</groupId>
+  <artifactId>elasticsearch-x-content</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.camunda.bpm.model</groupId>
+  <artifactId>camunda-xml-model</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<dependency>
+  <groupId>com.graphql-java</groupId>
+  <artifactId>java-dataloader</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.security</groupId>
+  <artifactId>spring-security-web</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.apache.httpcomponents.core5</groupId>
+  <artifactId>httpcore5</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-webmvc</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-context</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-test</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<dependency>
+  <groupId>org.junit.jupiter</groupId>
+  <artifactId>junit-jupiter-api</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<dependency>
+  <groupId>com.graphql-java-kickstart</groupId>
+  <artifactId>graphql-java-servlet</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-web</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>io.swagger.core.v3</groupId>
+  <artifactId>swagger-annotations</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.auth0</groupId>
+  <artifactId>java-jwt</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.graphql-java-kickstart</groupId>
+  <artifactId>graphql-java-kickstart</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.security</groupId>
+  <artifactId>spring-security-crypto</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.auth0</groupId>
+  <artifactId>auth0</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-databind</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.elasticsearch.client</groupId>
+  <artifactId>elasticsearch-rest-client</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-actuator</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>io.grpc</groupId>
+  <artifactId>grpc-api</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.google.code.findbugs</groupId>
+  <artifactId>jsr305</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springdoc</groupId>
+  <artifactId>springdoc-openapi-starter-common</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>net.jodah</groupId>
+  <artifactId>failsafe</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot</artifactId>
+</dependency>
+
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.tomcat</groupId>
+          <artifactId>tomcat-annotations-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+<dependency>
+  <groupId>jakarta.servlet</groupId>
+  <artifactId>jakarta.servlet-api</artifactId>
+  <scope>runtime</scope>
+</dependency>
+
+
+<dependency>
+  <groupId>org.mockito</groupId>
+  <artifactId>mockito-junit-jupiter</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<dependency>
+  <groupId>org.elasticsearch</groupId>
+  <artifactId>elasticsearch</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-beans</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.assertj</groupId>
+  <artifactId>assertj-core</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<dependency>
+  <groupId>jakarta.annotation</groupId>
+  <artifactId>jakarta.annotation-api</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.security</groupId>
+  <artifactId>spring-security-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.apache.commons</groupId>
+  <artifactId>commons-lang3</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-api</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>com.fasterxml.jackson.datatype</groupId>
+  <artifactId>jackson-datatype-jsr310</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>io.swagger.core.v3</groupId>
+  <artifactId>swagger-models-jakarta</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-autoconfigure</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.hamcrest</groupId>
+  <artifactId>hamcrest</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<dependency>
+  <groupId>org.junit.jupiter</groupId>
+  <artifactId>junit-jupiter-params</artifactId>
+  <scope>test</scope>
+</dependency>
+
+<dependency>
+  <groupId>org.apache.commons</groupId>
+  <artifactId>commons-collections4</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-aop</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.security</groupId>
+  <artifactId>spring-security-config</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.security</groupId>
+  <artifactId>spring-security-oauth2-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.json</groupId>
+  <artifactId>json</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>io.camunda</groupId>
+  <artifactId>identity-sdk</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.apache.lucene</groupId>
+  <artifactId>lucene-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.mockito</groupId>
+  <artifactId>mockito-core</artifactId>
+  <scope>test</scope>
+</dependency>
+
+    <!-- TEST -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
@@ -179,17 +488,54 @@
       <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
-      <dependency>
-          <groupId>org.jetbrains</groupId>
-          <artifactId>annotations</artifactId>
-          <version>RELEASE</version>
-          <scope>compile</scope>
-      </dependency>
+    <dependency>
+      <groupId>org.jetbrains</groupId>
+       <artifactId>annotations</artifactId>
+       <scope>compile</scope>
+    </dependency>
 
   </dependencies>
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <dependency>io.camunda:tasklist-data-generator</dependency>
+            <dependency>io.camunda:tasklist-importer</dependency>
+            <dependency>io.camunda:tasklist-archiver</dependency>
+            <dependency>io.camunda:tasklist-webjar</dependency>
+            <dependency>io.camunda:identity-spring-boot-starter</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-log4j2</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-security</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-oauth2-resource-server</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-thymeleaf</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
+            <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
+            <dependency>org.springframework.session:spring-session-data-redis</dependency>
+            <dependency>org.thymeleaf:thymeleaf</dependency>
+            <dependency>jakarta.json:jakarta.json-api</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
+     classes on the classpath in order to resolve the AWS credentials -->
+            <dependency>software.amazon.awssdk:sts</dependency>
+          </usedDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>jakarta.servlet:jakarta.servlet-api</dep>
+            <dep>jakarta.annotation:jakarta.annotation-api</dep>
+            <dep>com.nimbusds:nimbus-jose-jwt</dep>
+          </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dependency>
+            <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
 
       <!-- LICENSE PLUGIN -->
       <plugin>

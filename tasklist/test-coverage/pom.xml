@@ -22,21 +22,18 @@
         <dependency>
             <groupId>io.camunda</groupId>
             <artifactId>tasklist-webapp</artifactId>
-            <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
 
         <dependency>
             <groupId>io.camunda</groupId>
             <artifactId>tasklist-common</artifactId>
-            <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
 
         <dependency>
             <groupId>io.camunda</groupId>
             <artifactId>tasklist-it-tests</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -56,6 +53,17 @@
                     </execution>
                 </executions>
             </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <dependency>io.camunda:tasklist-webapp</dependency>
+            <dependency>io.camunda:tasklist-common</dependency>
+            <dependency>io.camunda:tasklist-it-tests</dependency>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
         </plugins>
     </build>
 
