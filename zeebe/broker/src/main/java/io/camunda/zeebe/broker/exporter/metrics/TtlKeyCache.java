@@ -55,17 +55,7 @@ final class TtlKeyCache {
   }
 
   long get(final long key) {
-    final var timestamp = keyToTimestamp.get(key);
-    final var keys = timestampToKeys.get(timestamp);
-
-    if (keys != null) {
-      keys.remove(key);
-      if (keys.isEmpty()) {
-        timestampToKeys.remove(timestamp);
-      }
-    }
-
-    return timestamp;
+    return keyToTimestamp.get(key);
   }
 
   long remove(final long key) {
