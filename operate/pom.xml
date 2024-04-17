@@ -232,7 +232,7 @@
       <properties>
         <includeITNames>**/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
-        <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
+        <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
