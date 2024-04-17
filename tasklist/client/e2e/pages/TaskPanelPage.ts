@@ -50,7 +50,7 @@ class TaskPanelPage {
   }
 
   task(name: string) {
-    return this.availableTasks.getByLabel(name).nth(0)
+    return this.availableTasks.getByLabel(name).nth(0);
   }
 
   async openTask(name: string) {
