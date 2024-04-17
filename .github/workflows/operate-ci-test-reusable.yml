@@ -76,11 +76,11 @@ jobs:
       # Run integration tests in parallel
       - name: Backend - Stage 1 Integration Tests
         run: |
-          mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,itStage1 -B -Dfailsafe.rerunFailingTestsCount=2
+          mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateStage1It -B -Dfailsafe.rerunFailingTestsCount=2
 
       - name: Backend - Stage 2 Integration Tests
         run: |
-          mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,itStage2 -B -Dfailsafe.rerunFailingTestsCount=2
+          mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateStage2It -B -Dfailsafe.rerunFailingTestsCount=2
 
       # Reports: publish test metrics results
       - name: Publish Test Results

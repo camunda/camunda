@@ -26,7 +26,7 @@ import java.util.Objects;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
+public class UserTaskZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private UserTaskReader userTaskReader;
 

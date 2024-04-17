@@ -61,7 +61,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
+public class ImportMidnightZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Rule
   public SearchTestRule searchTestRule =
@@ -150,7 +150,8 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
         .isAfterOrEqualTo(OffsetDateTime.ofInstant(secondDate, ZoneOffset.systemDefault()));
   }
 
-  private void duplicateRecords(Instant firstDate, Instant secondDate) throws IOException {
+  private void duplicateRecords(final Instant firstDate, final Instant secondDate)
+      throws IOException {
     final DateTimeFormatter dateTimeFormatter =
         DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat())
             .withZone(ZoneId.systemDefault());
@@ -188,7 +189,7 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
 
               @Override
               public ImportBatch readNextBatchByPositionAndPartition(
-                  long positionFrom, Long positionTo) throws NoSuchIndexException {
+                  final long positionFrom, final Long positionTo) throws NoSuchIndexException {
                 if (calledOnce) {
                   return processInstanceRecordsReader.readNextBatchByPositionAndPartition(
                       positionFrom, positionTo);
@@ -200,7 +201,7 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
             });
   }
 
-  public void fillIndicesWithData(String processId, Instant firstDate) {
+  public void fillIndicesWithData(final String processId, final Instant firstDate) {
     // two instances for two partitions
     long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");

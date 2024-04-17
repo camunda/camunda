@@ -38,7 +38,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-public class MetricWithMockedImporterZeebeIT extends OperateZeebeAbstractIT {
+public class ImporterMetricsMockedZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private ZeebeImporter zeebeImporter;
 
@@ -48,6 +48,7 @@ public class MetricWithMockedImporterZeebeIT extends OperateZeebeAbstractIT {
   @Qualifier("importThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
 
+  @Override
   @Before
   public void before() {
     super.before();

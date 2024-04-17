@@ -16,68 +16,53 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
-import java.io.IOException;
-import java.util.ArrayList;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.Test;
 
-public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
-
-  @Autowired private IncidentTemplate incidentTemplate;
+public class InclusiveGatewayZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Test
-  public void shouldImportMigratedIncident() throws IOException {
+  public void shouldImportIntermediateThrowEvent() {
+
+    final String bpmnProcessId = "inclusiveGateway";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .inclusiveGateway("gateway")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .conditionExpression("= list contains(flows,\"1\")")
+            .endEvent()
+            .moveToLastGateway()
+            .conditionExpression("= list contains(flows,\"2\")")
+            .endEvent()
+            .done();
 
     // given
-    final String bpmnSource = "double-task-incident.bpmn";
-    final String bpmnTarget = "double-task.bpmn";
-    final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
-    final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
-    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
+    tester
+        .deployProcess(instance, "inclusiveGateway.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .then()
+        .startProcessInstance(bpmnProcessId, "{\"flows\": [1,2]}")
+        .waitUntil()
+        .processInstanceIsFinished();
 
     // when
-    final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
-    operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
-
-    final MigrationPlan migrationPlan =
-        new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
-    List.of("taskA", "taskB")
-        .forEach(
-            item ->
-                migrationPlan
-                    .getMappingInstructions()
-                    .add(new MigrationPlanBuilderImpl.MappingInstruction(item + "Incident", item)));
-    zeebeClient
-        .newMigrateProcessInstanceCommand(processInstanceKey)
-        .migrationPlan(migrationPlan)
-        .send()
-        .join();
-
-    operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
-    final List<IncidentEntity> incidents =
-        testSearchRepository.searchTerm(
-            incidentTemplate.getAlias(),
-            IncidentTemplate.PROCESS_INSTANCE_KEY,
-            processInstanceKey,
-            IncidentEntity.class,
-            1);
-
+    final List<FlowNodeInstanceEntity> flowNodes =
+        tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
     // then
-    assertThat(incidents.size()).isEqualTo(1);
-    assertThat(incidents.get(0).getState()).isEqualTo(IncidentState.ACTIVE);
-    assertThat(incidents.get(0).getBpmnProcessId()).isEqualTo("doubleTask");
-    assertThat(incidents.get(0).getProcessDefinitionKey()).isEqualTo(processDefinitionKeyTarget);
-    assertThat(incidents.get(0).getFlowNodeId()).isEqualTo("taskA");
+    assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
+        .isEqualTo(
+            List.of(
+                FlowNodeType.START_EVENT, FlowNodeType.INCLUSIVE_GATEWAY, FlowNodeType.END_EVENT));
   }
 }
