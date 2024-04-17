@@ -39,7 +39,7 @@ function useCurrentUser() {
 
       throw error ?? new Error('Could not fetch current user');
     },
-    cacheTime: Infinity,
+    gcTime: Infinity,
     staleTime: Infinity,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,

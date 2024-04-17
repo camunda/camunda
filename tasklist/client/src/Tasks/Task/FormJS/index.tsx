@@ -145,7 +145,7 @@ const FormJS: React.FC<Props> = ({
               .with(
                 {
                   schema: Pattern.not(null),
-                  status: Pattern.union('loading', 'success'),
+                  status: Pattern.union('pending', 'success'),
                 },
                 ({schema}) => (
                   <FormJSRenderer

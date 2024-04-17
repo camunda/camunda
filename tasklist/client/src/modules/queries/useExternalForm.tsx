@@ -35,7 +35,7 @@ function useExternalForm(bpmnProcessId: string) {
       throw error ?? new Error('Could not fetch external form');
     },
     staleTime: Infinity,
-    cacheTime: Infinity,
+    gcTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });

@@ -36,7 +36,7 @@ function useProcesses(
   params: Params,
   options: Pick<
     UseQueryOptions<Data, RequestError>,
-    'refetchInterval' | 'enabled' | 'keepPreviousData'
+    'refetchInterval' | 'enabled' | 'placeholderData'
   > = {},
 ) {
   const {query, tenantId, isStartedByForm} = params;
@@ -48,20 +48,19 @@ function useProcesses(
       );
 
       if (response !== null) {
+        const processes = await response.json();
+        tracking.track({
+          eventName: 'processes-loaded',
+          filter: query ?? '',
+          count: processes.length,
+        });
         return {
-          processes: await response.json(),
+          processes,
           query,
         };
       }
 
       throw error ?? new Error('Failed to fetch processes');
-    },
-    onSuccess: (data) => {
-      tracking.track({
-        eventName: 'processes-loaded',
-        filter: data.query ?? '',
-        count: data.processes.length,
-      });
     },
     ...options,
   });
