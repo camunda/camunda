@@ -19,7 +19,6 @@ package io.camunda.tasklist.os;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
-import io.camunda.tasklist.property.OpenSearchProperties;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import jakarta.json.Json;
