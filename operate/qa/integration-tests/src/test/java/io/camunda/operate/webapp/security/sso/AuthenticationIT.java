@@ -24,6 +24,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
+import static io.camunda.operate.webapp.security.OperateURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -41,10 +42,14 @@ import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
+import io.camunda.operate.webapp.api.v1.rest.ProcessDefinitionController;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
+import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -52,6 +57,7 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,6 +82,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
@@ -97,7 +104,9 @@ import org.springframework.web.client.RestTemplate;
       RolePermissionService.class,
       OperateURIs.class,
       OperateProperties.class,
-      OperateProfileService.class
+      OperateProfileService.class,
+      ProcessRestService.class,
+      ProcessDefinitionController.class
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,
@@ -137,7 +146,12 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @MockBean private IndicesCheck probes;
 
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+  @MockBean private ProcessReader processReader;
+  @MockBean private ProcessInstanceReader processInstanceReader;
+  @MockBean private BatchOperationWriter batchOperationWriter;
+  @MockBean private ProcessDefinitionDao processDefinitionDao;
+
+  private static Tokens tokensWithOrgAsMapFrom(final String claim, final String organization) {
     final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final Map<String, Object> orgMap = Map.of("id", organization);
@@ -160,15 +174,15 @@ public class AuthenticationIT implements AuthenticationTestable {
         5L);
   }
 
-  private static String toEncodedToken(Map map) {
+  private static String toEncodedToken(final Map map) {
     return toBase64(toJSON(map));
   }
 
-  private static String toBase64(String input) {
+  private static String toBase64(final String input) {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  private static String toJSON(Map map) {
+  private static String toJSON(final Map map) {
     return new JSONObject(map).toString();
   }
 
@@ -259,6 +273,125 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   @Test
+  public void testAccessToInternalAPIWithoutCSRF() throws Exception {
+    mockPermissionAllowed();
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
+    // Step 3 Call back uri with valid userinfos
+    // mock building tokens
+    given(authenticationController.handle(isNotNull(), isNotNull()))
+        .willReturn(
+            orgExtractor.apply(
+                operateProperties.getAuth0().getClaimName(),
+                operateProperties.getCloud().getOrganizationId()));
+
+    response = get(SSO_CALLBACK_URI, cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
+
+    final var headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    // Set session cookie - otherwise you get an 401 UNAUTHORIZED
+    headers.add("Cookie", cookies.getHeaders().get("Cookie").getFirst());
+    final var request = new HttpEntity<>("{}", headers);
+    final var internalAPIresponse =
+        testRestTemplate.postForEntity("/api/processes/grouped", request, Object.class);
+    assertThat(internalAPIresponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+  }
+
+  @Test
+  public void testAccessToInternalAPIWithCSRF() throws Exception {
+    mockPermissionAllowed();
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
+    // Step 3 Call back uri with valid userinfos
+    // mock building tokens
+    given(authenticationController.handle(isNotNull(), isNotNull()))
+        .willReturn(
+            orgExtractor.apply(
+                operateProperties.getAuth0().getClaimName(),
+                operateProperties.getCloud().getOrganizationId()));
+
+    response = get(SSO_CALLBACK_URI, cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
+    response = get(ROOT, cookies);
+
+    final var headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    // Set session cookie - otherwise you get an 401 UNAUTHORIZED
+    headers.add("Cookie", cookies.getHeaders().get("Cookie").getFirst());
+    // Add CSRF token as cookie - otherwise you get an 403 FORBIDDEN
+    getCsrfCookie(response).ifPresent(csrfCookie -> headers.add("Cookie", csrfCookie));
+    // Add CSRF token also as header - otherwise you get an 403 FORBIDDEN
+    headers.set(X_CSRF_TOKEN, response.getHeaders().get(X_CSRF_TOKEN).getFirst());
+    final var request = new HttpEntity<>("{}", headers);
+    final var internalAPIresponse =
+        testRestTemplate.postForEntity("/api/processes/grouped", request, Object.class);
+    assertThat(internalAPIresponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
+  public void requestToPublicAPIShouldSucceedWithoutCSRF() throws Exception {
+    mockPermissionAllowed();
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
+    // Step 3 Call back uri with valid userinfos
+    // mock building tokens
+    given(authenticationController.handle(isNotNull(), isNotNull()))
+        .willReturn(
+            orgExtractor.apply(
+                operateProperties.getAuth0().getClaimName(),
+                operateProperties.getCloud().getOrganizationId()));
+
+    response = get(SSO_CALLBACK_URI, cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
+
+    final var headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.add("Cookie", cookies.getHeaders().get("Cookie").getFirst());
+    headers.setBearerAuth("bearerToken");
+    final var request = new HttpEntity<>("{}", headers);
+    final var publicAPIresponse =
+        testRestTemplate.postForEntity("/v1/process-definitions/search", request, Object.class);
+    assertThat(publicAPIresponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
   public void testLoginFailedWithNoReadPermissions() throws Exception {
     mockNoReadPermission();
     // Step 1 try to access document root
@@ -319,7 +452,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     final TokenAuthentication authentication =
         new TokenAuthentication(
             operateProperties.getAuth0(), operateProperties.getCloud().getOrganizationId());
-    assertThat(authentication.getPermissions().contains(Permission.WRITE)).isEqualTo(false);
+    assertThat(authentication.getPermissions()).isEmpty();
 
     // successfully redirect to root even without write permission
     response = get(ROOT, cookies);
@@ -407,7 +540,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             "logout",
             operateProperties.getAuth0().getClientId(),
             urlFor(ROOT));
-    // Redirected to Login
+    // Redirected to Log in
     response = get(ROOT);
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
   }
@@ -475,14 +608,15 @@ public class AuthenticationIT implements AuthenticationTestable {
         objectMapper.readValue(jsonResponse, ClusterMetadata[].class);
 
     // then
-    assertThat(clusterMetadatas.length).isEqualTo(1);
-    assertThat(clusterMetadatas[0].getUrls().get(ClusterMetadata.AppName.CONNECTORS))
-        .isEqualTo("http://connectors-url");
+    assertThat(clusterMetadatas).hasSize(1);
+    assertThat(clusterMetadatas[0].getUrls())
+        .containsKey(ClusterMetadata.AppName.CONNECTORS)
+        .containsValue("http://connectors-url");
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
-    headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
+    headers.add("Cookie", response.getHeaders().get("Set-Cookie").getFirst());
     return new HttpEntity<>(new HashMap<>(), headers);
   }
 
@@ -492,16 +626,17 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(response.getBody()).contains("No permission for Operate");
   }
 
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  protected void assertThatRequestIsRedirectedTo(
+      final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
   }
 
@@ -520,7 +655,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
     when(restTemplate.exchange(
-            eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
+            eq("https://permissionurl/3"), eq(HttpMethod.GET), any(), (Class) any()))
         .thenReturn(clusterInfoResponseEntity);
   }
 
@@ -534,7 +669,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
     when(restTemplate.exchange(
-            eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
+            eq("https://permissionurl/3"), eq(HttpMethod.GET), any(), (Class) any()))
         .thenReturn(clusterInfoResponseEntity);
   }
 
@@ -567,7 +702,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     when(restTemplate.exchange(
             eq("https://consoleUrl/external/organizations/3/clusters"),
             eq(HttpMethod.GET),
-            (HttpEntity) any(),
+            any(),
             eq(ClusterMetadata[].class)))
         .thenReturn(new ResponseEntity<>(clusterMetadatas, HttpStatus.OK));
   }

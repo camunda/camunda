@@ -121,6 +121,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @Autowired private TestRestTemplate testRestTemplate;
 
+  @Autowired private OperateProperties operateProperties;
+
   @MockBean private IdentityService identityService;
 
   @Test
@@ -136,7 +138,6 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginSuccess() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAndSecurityHeadersAreSet(response);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -159,6 +160,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
     // Step 5  check if access to url possible
     response = get(ROOT, cookies);
+    assertThatCookiesAndSecurityHeadersAreSet(
+        response, operateProperties.isCsrfPreventionEnabled());
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
@@ -166,7 +169,6 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginFailedWithNoPermissions() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAndSecurityHeadersAreSet(response);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -193,7 +195,6 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginFailedWithNoReadPermissions() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAndSecurityHeadersAreSet(response);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -222,7 +223,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
-    headers.add("Cookie", getCookies(response).get(0));
+    headers.add("Cookie", getCookies(response).getFirst());
     return new HttpEntity<>(new HashMap<>(), headers);
   }
 
