@@ -19,6 +19,9 @@ on:
         description: "The branch name to be used for the workflow"
         required: true
         type: string
+      pushDocker:
+        description: "whether the built docker images are pushed to camunda registry"
+        default: true
 
 defaults:
   run:
@@ -114,7 +117,7 @@ jobs:
         uses: ./.github/actions/build-operate-docker
         with:
           tags: ${{ steps.meta.outputs.tags }}
-          push: true
+          push: ${{ inputs.pushDocker }}
 
       #########################################################################
       # Docker login for snapshot deployment
