@@ -227,11 +227,12 @@ jobs:
           echo "${{ contains(steps.*.outcome, 'cancelled') }}"
           echo "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
 
-      - uses: camunda/infra-global-github-actions/submit-build-status@main
+      - uses: camunda/infra-global-github-actions/submit-build-status@poc-observability
         if: always()
         with:
           build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
           gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+          big_query_table_name: "ci-30-162810:dev_ci_analytics.build_status_v2"
 
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
