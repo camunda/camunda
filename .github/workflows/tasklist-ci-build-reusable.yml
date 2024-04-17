@@ -117,6 +117,7 @@ jobs:
         with:
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ inputs.pushDocker }}
+          platforms: ${{ inputs.pushDocker && 'linux/arm64,linux/amd64' || 'linux/amd64' }}
 
       #########################################################################
       # Docker login for snapshot deployment
