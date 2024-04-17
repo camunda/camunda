@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonFormat.Feature;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
@@ -128,7 +126,8 @@ public final class JobStreamEndpoint {
     return new Metadata(
         BufferUtil.bufferAsString(properties.worker()),
         Duration.ofMillis(properties.timeout()),
-        properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList());
+        properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList(),
+        properties.tenantIds());
   }
 
   /** View model for the combined list of all remote and client job streams. */
@@ -151,13 +150,9 @@ public final class JobStreamEndpoint {
   /** View model for the {@link JobActivationProperties} of a job stream. */
   public record Metadata(
       String worker,
-      @JsonFormat(
-              without = {
-                Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS,
-                Feature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS
-              })
-          Duration timeout,
-      Collection<String> fetchVariables) {}
+      Duration timeout,
+      Collection<String> fetchVariables,
+      Collection<String> tenantIds) {}
 
   /** View model for a remote job stream ID */
   public record RemoteStreamId(UUID id, String receiver) {}
