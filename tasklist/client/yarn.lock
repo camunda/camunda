@@ -249,15 +249,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.8.3":
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.3.tgz#8457869147a175be67cacc053d65d9b16481035a"
-  integrity sha512-OBuGlmR1QXPHrB4T5QpRyYp2Pfiq0PYHwIzIlDh77j0LVbWJDQwR+uG8ovRKo2S/Em4tatNia9Qy416E25CUMg==
+"@bpmn-io/form-js-carbon-styles@1.8.4":
+  version "1.8.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.4.tgz#0b67527d6a352f01a9457077f87f7174772c3721"
+  integrity sha512-fDxzJ5/CfyMlina3sGVUrZSnK/aomOS7zHVnKI8TAAejDXoNDkvTjmeqjyk8N0347DynUqaWVOB7IUJsohyJgw==
 
-"@bpmn-io/form-js-viewer@1.8.3":
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.3.tgz#0d47d01ceaa6ee7b4a9a3f33c87910e7b5249fbb"
-  integrity sha512-maD2ryMHMj4frd5/6ESc6aEmh9/eCrxOy7n9Cb75iMEZq4n+xi0uQAnXFiVR6H6Yj4Ldu8BVTOdoQoP2/gg4JQ==
+"@bpmn-io/form-js-viewer@1.8.4":
+  version "1.8.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.4.tgz#9af77b06dae70593076040ee44a923b71a78788a"
+  integrity sha512-eyEjf5LK7xKwkGmSzY9JKwBNP5iOYpl5xUoYH7TlhN2zExOZCI//2WPYn2cQ2VceCwEPNIrLIg8F8rRmZMtT0g==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -4244,10 +4244,10 @@ ms@2.1.2:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-msw@2.2.13:
-  version "2.2.13"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-2.2.13.tgz#2fd9f554e77a1f99ef803d94008f5aef5c59b9fa"
-  integrity sha512-ljFf1xZsU0b4zv1l7xzEmC6OZA6yD06hcx0H+dc8V0VypaP3HGYJa1rMLjQbBWl32ptGhcfwcPCWDB1wjmsftw==
+msw@2.2.14:
+  version "2.2.14"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-2.2.14.tgz#ed16b89f99ffc105a84b0295a6fcae2ee99f5c62"
+  integrity sha512-64i8rNCa1xzDK8ZYsTrVMli05D687jty8+Th+PU5VTbJ2/4P7fkQFVyDQ6ZFT5FrNR8z2BHhbY47fKNvfHrumA==
   dependencies:
     "@bundled-es-modules/cookie" "^2.0.0"
     "@bundled-es-modules/statuses" "^1.0.1"
