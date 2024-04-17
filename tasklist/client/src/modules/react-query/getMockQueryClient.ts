@@ -19,14 +19,14 @@ import {QueryClient} from '@tanstack/react-query';
 
 function getMockQueryClient() {
   return new QueryClient({
-    logger: {
-      log: console.log,
-      warn: console.warn,
-      error: () => {},
-    },
     defaultOptions: {
       queries: {
         retry: false,
+        gcTime: Infinity,
+      },
+      mutations: {
+        retry: false,
+        gcTime: Infinity,
       },
     },
   });

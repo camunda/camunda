@@ -90,10 +90,10 @@ const Details: React.FC<Props> = ({
   const isAssigned = assignee !== null;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
-  const {mutateAsync: assignTask, isLoading: assignIsLoading} = useAssignTask();
-  const {mutateAsync: unassignTask, isLoading: unassignIsLoading} =
+  const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
+  const {mutateAsync: unassignTask, isPending: unassignIsPending} =
     useUnassignTask();
-  const isLoading = (assignIsLoading || unassignIsLoading) ?? false;
+  const isLoading = (assignIsPending || unassignIsPending) ?? false;
 
   const handleClick = async () => {
     try {

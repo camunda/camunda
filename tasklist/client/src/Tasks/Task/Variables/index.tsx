@@ -245,7 +245,7 @@ const Variables: React.FC<Props> = ({
                     {
                       variablesLength: Pattern.number.lte(0),
                       newVariablesLength: Pattern.number.lte(0),
-                      status: Pattern.union('loading', 'success'),
+                      status: Pattern.union('pending', 'success'),
                     },
                     () => (
                       <TaskDetailsRow as={Layer}>
