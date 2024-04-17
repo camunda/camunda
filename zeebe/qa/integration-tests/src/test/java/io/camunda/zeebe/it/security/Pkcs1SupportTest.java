@@ -49,6 +49,10 @@ final class Pkcs1SupportTest {
                 containerCertPath)
             .withCopyFileToContainer(
                 MountableFile.forHostPath(pkcs1Key.toPath(), 511), containerKeyPath)
+            .withAdditionalExposedPort(8080)
+            .withEnv("SERVER_SSL_ENABLED", "true")
+            .withEnv("SERVER_SSL_CERTIFICATE", containerCertPath)
+            .withEnv("SERVER_SSL_CERTIFICATEPRIVATEKEY", containerKeyPath)
             .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_ENABLED", "true")
             .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH", containerCertPath)
             .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH", containerKeyPath)
@@ -62,6 +66,9 @@ final class Pkcs1SupportTest {
       zeebe.start();
 
       // then
+      SslAssert.assertThat(
+              new InetSocketAddress(zeebe.getExternalHost(), zeebe.getMappedPort(8080)))
+          .isSecuredBy(certificate);
       SslAssert.assertThat(
               new InetSocketAddress(
                   zeebe.getExternalHost(), zeebe.getMappedPort(ZeebePort.INTERNAL.getPort())))
