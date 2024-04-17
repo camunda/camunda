@@ -668,6 +668,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Passes generally, but flaky on pipeline
   public void evaluateInvalidReportById() {
     // given
     final ProcessReportDataDto reportData =
@@ -855,6 +857,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Passes generally, but flaky on pipeline
   public void evaluateReportWithoutViewById(final ReportType reportType) {
     // given
     final String id;
