@@ -67,7 +67,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Get gcloud credentials
-        uses: "google-github-actions/get-gke-credentials@v1"
+        uses: "google-github-actions/get-gke-credentials@35ab0d2b2d48792c19f09325413bd185c8d44394" # v1
         with:
           cluster_name: "camunda-ci"
           location: "europe-west1"
