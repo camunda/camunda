@@ -114,6 +114,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.commons.codec>1.16.0</version.commons.codec>
     <version.swagger.annotations>2.2.20</version.swagger.annotations>
+    <version.json>20231013</version.json>
   </properties>
 
   <dependencyManagement>
@@ -364,7 +365,7 @@
       <dependency>
         <groupId>org.json</groupId>
         <artifactId>json</artifactId>
-        <version>20231013</version>
+        <version>${version.json}</version>
       </dependency>
 
       <!-- End Opensearch  -->

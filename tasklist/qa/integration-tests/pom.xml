@@ -122,6 +122,11 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
+        <!-- Tasklist depends on org.json:json -->
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -635,7 +640,6 @@
 	          <ignoredUsedUndeclaredDependencies>
 	            <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
 	            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-	            <dependency>com.vaadin.external.google:android-json</dependency>
 	          </ignoredUsedUndeclaredDependencies>
 	          <ignoredUnusedDeclaredDependencies>
 	            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
