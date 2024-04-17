@@ -27,7 +27,6 @@
     <module>webapp</module>
     <module>qa</module>
     <module>mvc-auth-commons</module>
-    <module>../distro</module>
   </modules>
 
   <properties>

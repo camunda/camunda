@@ -28,6 +28,24 @@
       <source>${maven.multiModuleProjectDirectory}/NOTICE.txt</source>
       <outputDirectory>/</outputDirectory>
     </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/OPERATE_README.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory>/</outputDirectory>
+    </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/OPERATE_LICENSE.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory>/</outputDirectory>
+    </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/OPERATE_NOTICE.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory>/</outputDirectory>
+    </file>
   </files>
 
 </assembly>

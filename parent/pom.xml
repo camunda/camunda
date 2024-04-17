@@ -175,6 +175,7 @@
     <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
     <version.keycloak>23.0.7</version.keycloak>
     <version.jna>5.14.0</version.jna>
+    <version.jopt-simple>5.0.4</version.jopt-simple>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -1377,12 +1378,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.swagger.core.v3</groupId>
-        <artifactId>swagger-annotations</artifactId>
-        <version>${version.swagger-annotations}</version>
-      </dependency>
-
-      <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <version>${version.jakarta-annotation}</version>
@@ -1764,6 +1759,13 @@
         <groupId>com.unboundid</groupId>
         <artifactId>unboundid-ldapsdk</artifactId>
         <version>${version.unboundid-ldapsdk}</version>
+      </dependency>
+
+      <!-- between org.elasticsearch:elasticsearch-cli and org.openjdk.jmh:jmh-core -->
+      <dependency>
+        <groupId>net.sf.jopt-simple</groupId>
+        <artifactId>jopt-simple</artifactId>
+        <version>${version.jopt-simple}</version>
       </dependency>
 
     </dependencies>

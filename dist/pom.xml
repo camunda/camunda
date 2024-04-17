@@ -115,6 +115,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-webapp</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
     </dependency>
 
@@ -259,7 +270,7 @@
 
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
-      <artifactId>swagger-annotations</artifactId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
     <dependency>
@@ -413,6 +424,14 @@
               <id>restore</id>
               <mainClass>io.camunda.zeebe.restore.RestoreApp</mainClass>
             </program>
+            <program>
+              <id>operate</id>
+              <mainClass>io.camunda.operate.Application</mainClass>
+            </program>
+            <program>
+              <id>migrate</id>
+              <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -495,6 +514,8 @@
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
+
+            <dependency>io.camunda:operate-webapp</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
