@@ -172,7 +172,7 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
-      - run: sleep 30 && exit 1
+      - run: exit 1
 
       - name: Install and allow strace tests
         run: |
@@ -221,11 +221,11 @@ jobs:
           echo "$RUNNER_NAME"
           echo "$RUNNER_OS"
           echo "$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT"
-          echo "${{ github.base_ref || github.event.merge_group.base_ref }}"
+          echo "${{ github.base_ref && format('refs/heads/{0}', github.base_ref) || github.event.merge_group.base_ref }}"
           echo "${{ contains(steps.*.outcome, 'success') }}"
           echo "${{ contains(steps.*.outcome, 'failure') }}"
           echo "${{ contains(steps.*.outcome, 'cancelled') }}"
-          echo "${{ contains(steps.*.outcome, 'failure') && 'failure' || (contains(steps.*.outcome, 'cancelled') && 'cancelled' || 'success') }}"
+          echo "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
 
       - uses: camunda/infra-global-github-actions/submit-build-status@main
         if: always()
