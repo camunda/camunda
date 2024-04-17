@@ -157,6 +157,7 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
       queryBuilders.add(buildTermQuery(ProcessInstance.VERSION, filter.getProcessVersion()));
       queryBuilders.add(buildTermQuery(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
       queryBuilders.add(buildTermQuery(ProcessInstance.STATE, filter.getState()));
+      queryBuilders.add(buildTermQuery(ProcessInstance.INCIDENT, filter.getIncident()));
       queryBuilders.add(buildTermQuery(ProcessInstance.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildMatchDateQuery(ProcessInstance.START_DATE, filter.getStartDate()));
       queryBuilders.add(buildMatchDateQuery(ProcessInstance.END_DATE, filter.getEndDate()));
