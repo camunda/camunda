@@ -105,6 +105,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @Autowired private PasswordEncoder encoder;
 
+  @Autowired private OperateProperties operateProperties;
+
   @MockBean private UserStore userStore;
 
   @Before
@@ -127,7 +129,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAndSecurityHeadersAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(
+        response, operateProperties.isCsrfPreventionEnabled());
   }
 
   @Test
@@ -147,7 +150,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAndSecurityHeadersAreSet(loginResponse);
+    assertThatCookiesAndSecurityHeadersAreSet(
+        loginResponse, operateProperties.isCsrfPreventionEnabled());
     // when
     final ResponseEntity<?> logoutResponse = logout(loginResponse);
 

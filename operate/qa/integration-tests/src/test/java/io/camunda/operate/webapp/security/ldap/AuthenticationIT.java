@@ -88,7 +88,8 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginSuccess() {
     final ResponseEntity<?> response = login("fry", "fry");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAndSecurityHeadersAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(
+        response, operateProperties.isCsrfPreventionEnabled());
   }
 
   @Test
@@ -122,7 +123,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   static class Initializer
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-    public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
+    @Override
+    public void initialize(final ConfigurableApplicationContext configurableApplicationContext) {
       TestPropertyValues.of(
               "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
               String.format(

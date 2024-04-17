@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.security.es;
 
 import static io.camunda.operate.util.CollectionUtil.map;
+import static io.camunda.operate.webapp.security.OperateURIs.X_CSRF_TOKEN;
 import static io.camunda.operate.webapp.security.Permission.READ;
 import static io.camunda.operate.webapp.security.Permission.WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +22,12 @@ import io.camunda.operate.store.UserStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
+import io.camunda.operate.webapp.api.v1.rest.ProcessDefinitionController;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
+import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
@@ -34,6 +40,7 @@ import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -75,10 +82,13 @@ import org.springframework.test.context.junit4.SpringRunner;
       ElasticsearchTaskStore.class,
       RetryElasticsearchClient.class,
       OperateProfileService.class,
-      ElasticsearchConnector.class
+      ElasticsearchConnector.class,
+      ProcessRestService.class,
+      ProcessDefinitionController.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
+      "camunda.operate.csrf-prevention-enabled=true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers,usage-metrics",
       "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID
     })
@@ -94,7 +104,14 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @Autowired private PasswordEncoder encoder;
 
+  @Autowired private OperateProperties operateProperties;
+
   @MockBean private UserStore userStore;
+
+  @MockBean private ProcessReader processReader;
+  @MockBean private ProcessInstanceReader processInstanceReader;
+  @MockBean private BatchOperationWriter batchOperationWriter;
+  @MockBean private ProcessDefinitionDao processDefinitionDao;
 
   @Before
   public void setUp() {
@@ -109,14 +126,62 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   @Test
-  public void shouldSetCookie() {
+  public void requestToInternalAPIShouldFailWithoutCSRF() {
+    final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
+    final var headers = new HttpHeaders();
+    getSessionCookie(loginResponse)
+        .ifPresent(sessionCookie -> headers.add("Cookie", sessionCookie));
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    final var request = new HttpEntity<>("{}", headers);
+    final var response =
+        testRestTemplate.postForEntity("/api/processes/grouped", request, Object.class);
+    assertThat(response.getStatusCode())
+        .isEqualTo(
+            operateProperties.isCsrfPreventionEnabled() ? HttpStatus.FORBIDDEN : HttpStatus.OK);
+  }
+
+  @Test
+  public void requestToInternalAPIShouldSucceedWithCSRF() {
+    final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
+    final var headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    // Set session cookie - otherwise you get an 401 UNAUTHORIZED
+    getSessionCookie(loginResponse)
+        .ifPresent(sessionCookie -> headers.add("Cookie", sessionCookie));
+    // Add CSRF token as cookie - otherwise you get an 403 FORBIDDEN
+    getCsrfCookie(loginResponse).ifPresent(csrfCookie -> headers.add("Cookie", csrfCookie));
+    // Add CSRF token also as header - otherwise you get an 403 FORBIDDEN
+    headers.set(X_CSRF_TOKEN, loginResponse.getHeaders().get(X_CSRF_TOKEN).getFirst());
+    final var request = new HttpEntity<>("{}", headers);
+    final var response =
+        testRestTemplate.postForEntity("/api/processes/grouped", request, Object.class);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
+  public void requestToPublicAPIShouldSucceedWithoutCSRF() {
+    final ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
+    final var headers = new HttpHeaders();
+    getSessionCookie(loginResponse)
+        .ifPresent(sessionCookie -> headers.add("Cookie", sessionCookie));
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.setBearerAuth("bearerToken");
+    final var request = new HttpEntity<>("{}", headers);
+    final var response =
+        testRestTemplate.postForEntity("/v1/process-definitions/search", request, Object.class);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
+  public void shouldSetCookieAndHeaders() {
     // given
     // when
     final ResponseEntity<Void> response = login(USER_ID, PASSWORD);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAndSecurityHeadersAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(
+        response, operateProperties.isCsrfPreventionEnabled());
   }
 
   @Test
@@ -136,7 +201,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAndSecurityHeadersAreSet(loginResponse);
+    assertThatCookiesAndSecurityHeadersAreSet(
+        loginResponse, operateProperties.isCsrfPreventionEnabled());
     // when
     final ResponseEntity<?> logoutResponse = logout(loginResponse);
 
@@ -189,12 +255,12 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testCanAccessMetricsEndpoint() {
     final ResponseEntity<String> response =
         testRestTemplate.getForEntity("/actuator", String.class);
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).contains("actuator/info");
 
     final ResponseEntity<String> prometheusResponse =
         testRestTemplate.getForEntity("/actuator/prometheus", String.class);
-    assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
+    assertThat(prometheusResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }
 
@@ -202,7 +268,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
     ResponseEntity<String> response =
         testRestTemplate.getForEntity("/actuator/loggers/io.camunda.operate", String.class);
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"DEBUG\"");
 
     final HttpHeaders headers = new HttpHeaders();
@@ -212,10 +278,10 @@ public class AuthenticationIT implements AuthenticationTestable {
     response =
         testRestTemplate.postForEntity(
             "/actuator/loggers/io.camunda.operate", request, String.class);
-    assertThat(response.getStatusCodeValue()).isEqualTo(204);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
     response = testRestTemplate.getForEntity("/actuator/loggers/io.camunda.operate", String.class);
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"TRACE\"");
   }
 
