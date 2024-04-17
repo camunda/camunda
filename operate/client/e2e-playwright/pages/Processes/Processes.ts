@@ -57,6 +57,7 @@ export class Processes {
   readonly variableValueFilter: Locator;
   readonly deleteResourceButton: Locator;
   readonly migrateButton: Locator;
+  readonly moveButton: Locator;
   readonly processInstancesTable: Locator;
 
   constructor(page: Page) {
@@ -125,12 +126,16 @@ export class Processes {
       name: 'Delete Process Definition',
     });
 
-    this.migrateButton = page.getByRole('button', {
+    this.processInstancesTable = page.getByRole('region', {
+      name: /process instances panel/i,
+    });
+
+    this.migrateButton = this.processInstancesTable.getByRole('button', {
       name: 'Migrate',
     });
 
-    this.processInstancesTable = page.getByRole('region', {
-      name: /process instances panel/i,
+    this.moveButton = this.processInstancesTable.getByRole('button', {
+      name: 'Move',
     });
   }
 
