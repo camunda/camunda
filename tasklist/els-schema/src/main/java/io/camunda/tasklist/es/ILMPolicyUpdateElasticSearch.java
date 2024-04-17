@@ -33,24 +33,25 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class ILMPolicyUpdateElasticSearch extends TasklistElasticsearchProperties
-    implements ILMPolicyUpdate {
+public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
   private static final String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
-  private static final String ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX =
-      "^"
-          + TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX
-          + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
-  private static final String TASKLIST_PREFIX_WILDCARD =
-      TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX + "-*";
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
   @Autowired private ElasticsearchSchemaManager schemaManager;
 
+  @Autowired private TasklistElasticsearchProperties tasklistElasticsearchProperties;
+
   @Override
   public void applyIlmPolicyToAllIndices() {
+    final String taskListIndexWildCard = tasklistElasticsearchProperties.getIndexPrefix() + "-*";
+    final String archiveTemplatePatterndNameRegex =
+        "^"
+            + tasklistElasticsearchProperties.getIndexPrefix()
+            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ILM policy to all existent indices");
     final GetLifecyclePolicyResponse policyExists =
         retryElasticsearchClient.getLifeCyclePolicy(
@@ -60,9 +61,9 @@ public class ILMPolicyUpdateElasticSearch extends TasklistElasticsearchPropertie
       schemaManager.createIndexLifeCycles();
     }
 
-    final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
+    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
 
-    final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
+    final Set<String> response = retryElasticsearchClient.getIndexNames(taskListIndexWildCard);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
         final Settings settings =
@@ -74,9 +75,14 @@ public class ILMPolicyUpdateElasticSearch extends TasklistElasticsearchPropertie
 
   @Override
   public void removeIlmPolicyFromAllIndices() {
+    final String taskListIndexWildCard = tasklistElasticsearchProperties.getIndexPrefix() + "-*";
+    final String archiveTemplatePatterndNameRegex =
+        "^"
+            + tasklistElasticsearchProperties.getIndexPrefix()
+            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Removing ILM policy to all existent indices");
-    final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
-    final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
+    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
+    final Set<String> response = retryElasticsearchClient.getIndexNames(taskListIndexWildCard);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
         final Settings settings = Settings.builder().putNull(INDEX_LIFECYCLE_NAME).build();

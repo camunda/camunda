@@ -16,6 +16,9 @@
  */
 package io.camunda.tasklist.property;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "tasklist";
@@ -32,7 +35,7 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
     return indexPrefix;
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
@@ -56,11 +59,11 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
     this.numberOfReplicas = numberOfReplicas;
   }
 
-  public void setRefreshInterval(String refreshInterval) {
-    this.refreshInterval = refreshInterval;
-  }
-
   public String getRefreshInterval() {
     return refreshInterval;
+  }
+
+  public void setRefreshInterval(final String refreshInterval) {
+    this.refreshInterval = refreshInterval;
   }
 }

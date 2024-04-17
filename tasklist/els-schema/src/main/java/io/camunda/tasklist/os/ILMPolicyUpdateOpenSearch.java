@@ -19,6 +19,7 @@ package io.camunda.tasklist.os;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
+import io.camunda.tasklist.property.OpenSearchProperties;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import jakarta.json.Json;
@@ -26,6 +27,8 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import java.io.IOException;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.opensearch.client.Response;
@@ -37,14 +40,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class ILMPolicyUpdateOpenSearch extends TasklistOpenSearchProperties
-    implements ILMPolicyUpdate {
+public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
-  private static final String ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX =
-      "^"
-          + TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX
-          + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
   private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
   private static final String TASKLIST_PREFIX_WILDCARD =
       TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX + "-*";
@@ -53,8 +51,15 @@ public class ILMPolicyUpdateOpenSearch extends TasklistOpenSearchProperties
 
   @Autowired private OpenSearchSchemaManager schemaManager;
 
+  @Autowired private TasklistOpenSearchProperties tasklistOpenSearchProperties;
+
   @Override
   public void applyIlmPolicyToAllIndices() throws IOException {
+    final String taskListIndexWildCard = tasklistOpenSearchProperties.getIndexPrefix() + "-*";
+    final String archiveTemplatePatterndNameRegex =
+        "^"
+            + tasklistOpenSearchProperties.getIndexPrefix()
+            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ISM policy to all existent indices");
     final Response policyExists =
         retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES);
@@ -64,9 +69,9 @@ public class ILMPolicyUpdateOpenSearch extends TasklistOpenSearchProperties
     }
     // Apply the ISM policy to the index templates
     applyIlmPolicyToIndexTemplate(true);
-    final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
+    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
 
-    final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
+    final Set<String> response = retryOpenSearchClient.getIndexNames(taskListIndexWildCard);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
         retryOpenSearchClient.putLifeCyclePolicy(indexName, TASKLIST_DELETE_ARCHIVED_INDICES);
@@ -76,10 +81,16 @@ public class ILMPolicyUpdateOpenSearch extends TasklistOpenSearchProperties
 
   @Override
   public void removeIlmPolicyFromAllIndices() throws IOException {
+    final String taskListIndexWildCard = tasklistOpenSearchProperties.getIndexPrefix() + "-*";
+    final String archiveTemplatePatterndNameRegex =
+        "^"
+            + tasklistOpenSearchProperties.getIndexPrefix()
+            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+
     LOGGER.info("Removing ISM policy to all existent indices");
     final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
     applyIlmPolicyToIndexTemplate(false);
-    final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
+    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
         retryOpenSearchClient.putLifeCyclePolicy(indexName, null);
@@ -88,9 +99,9 @@ public class ILMPolicyUpdateOpenSearch extends TasklistOpenSearchProperties
   }
 
   private void applyIlmPolicyToIndexTemplate(final boolean applyPolicy) throws IOException {
+    final String taskListIndexWildCard = tasklistOpenSearchProperties.getIndexPrefix() + "-*";
     final JsonArray templates =
-        retryOpenSearchClient.getIndexTemplateSettings(
-            ILMPolicyUpdateOpenSearch.TASKLIST_PREFIX_WILDCARD);
+        retryOpenSearchClient.getIndexTemplateSettings(taskListIndexWildCard);
     // Integration tests are not creating the templates, so we need to check if they exist
     if (templates != null) {
       for (final JsonObject templateData : templates.getValuesAs(JsonObject.class)) {
@@ -160,19 +171,19 @@ public class ILMPolicyUpdateOpenSearch extends TasklistOpenSearchProperties
 
   private static boolean isPolicyAlreadyApplied(
       final JsonObject existingSettings, final String requiredPolicyId) {
-    final JsonObject indexSettings = existingSettings.getJsonObject("index");
-    if (indexSettings != null) {
-      final JsonObject pluginsSettings = indexSettings.getJsonObject("plugins");
-      if (pluginsSettings != null) {
-        final JsonObject ismSettings = pluginsSettings.getJsonObject("index_state_management");
-        if (ismSettings != null && ismSettings.containsKey("policy_id")) {
-          if (requiredPolicyId == null) {
-            return ismSettings.isNull("policy_id");
-          }
-          return requiredPolicyId.equals(ismSettings.getString("policy_id", null));
-        }
-      }
+    // Attempt to navigate to the nested 'policy_id' directly, reducing depth
+    final JsonObject ismSettings =
+        Optional.ofNullable(existingSettings.getJsonObject("index"))
+            .map(index -> index.getJsonObject("plugins"))
+            .map(plugins -> plugins.getJsonObject("index_state_management"))
+            .orElse(null);
+
+    if (ismSettings == null || !ismSettings.containsKey("policy_id")) {
+      return false;
     }
-    return false;
+
+    // Simplified check for null and comparison in one line
+    final String currentPolicyId = ismSettings.getString("policy_id", null);
+    return Objects.equals(requiredPolicyId, currentPolicyId);
   }
 }
