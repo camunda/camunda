@@ -220,6 +220,7 @@ jobs:
           echo "$RUNNER_ARCH"
           echo "$RUNNER_NAME"
           echo "$RUNNER_OS"
+          echo "$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT"
           echo "${{ contains(steps.*.outcome, 'success') }}"
           echo "${{ contains(steps.*.outcome, 'failure') }}"
           echo "${{ contains(steps.*.outcome, 'cancelled') }}"
