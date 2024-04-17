@@ -2,7 +2,7 @@ name: Operate merge queue CI
 
 on:
   merge_group: { }
-  pull_request: { }    
+  pull_request: { }
   workflow_dispatch: { }
 
 
@@ -13,6 +13,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+      pushDocker: false
 
   operate-ci-test-summary:
     # Used by the merge queue to check all jobs.
