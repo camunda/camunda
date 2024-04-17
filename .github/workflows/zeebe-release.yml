@@ -103,10 +103,10 @@ jobs:
           echo "${RELEASE_VERSION}" > data/VERSION
 
           git commit -am "build(project): update go embedded version data"
-      - name: Build Go Client & Zeebe
+      - name: Build Go Client
         uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          java: false
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
