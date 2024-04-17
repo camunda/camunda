@@ -46,7 +46,7 @@
     "prepare": "cd ../.. && husky",
     "analyze-bundle": "yarn build && source-map-explorer 'build/assets/*.js'",
     "playwright": "playwright test",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.43.0 /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.43.1 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "VITE_VERSION=0.0.0-SNAPSHOT yarn build"
   },
@@ -58,7 +58,7 @@
   ],
   "devDependencies": {
     "@axe-core/playwright": "4.9.0",
-    "@playwright/test": "1.43.0",
+    "@playwright/test": "1.43.1",
     "@tanstack/react-query-devtools": "4.36.1",
     "@testing-library/jest-dom": "6.4.2",
     "@testing-library/react": "15.0.2",
