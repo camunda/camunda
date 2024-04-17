@@ -152,7 +152,7 @@
     <version.node>v20.8.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.702</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.703</version.aws-java-sdk>
     <elasticsearch-test-container.version>1.19.7</elasticsearch-test-container.version>
     <postgres-test-container.version>1.19.7</postgres-test-container.version>
     <version.elasticsearch7>7.17.20</version.elasticsearch7>
