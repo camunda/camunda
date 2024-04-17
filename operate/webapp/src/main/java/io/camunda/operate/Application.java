@@ -66,6 +66,9 @@ public class Application {
     System.setProperty(
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
+    // Hack for the moment to allow serving static resources in Operate.
+    // Must be removed with the single application.
+    System.setProperty("spring.web.resources.add-mappings", "true");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
     springApplication.addListeners(new ApplicationErrorListener());
@@ -96,6 +99,8 @@ public class Application {
     return Map.of(
         "server.servlet.session.cookie.name",
         "OPERATE-SESSION",
+        "spring.thymeleaf.check-template-location",
+        "true",
         SPRING_THYMELEAF_PREFIX_KEY,
         SPRING_THYMELEAF_PREFIX_VALUE,
         "spring.mvc.pathmatch.matching-strategy",

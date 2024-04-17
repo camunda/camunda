@@ -67,7 +67,7 @@
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@playwright/test": "1.43.0",
     "@testing-library/jest-dom": "6.4.2",
-    "@testing-library/react": "14.3.1",
+    "@testing-library/react": "15.0.2",
     "@testing-library/react-hooks": "8.0.1",
     "@testing-library/user-event": "14.5.2",
     "@types/carbon-components-react": "7.55.10",
@@ -122,6 +122,6 @@
   },
   "resolutions": {
     "react-scripts/postcss-preset-env/postcss-custom-properties": "^13.0.0",
-    "@testing-library/dom": "9.3.4"
+    "@testing-library/dom": "10.0.0"
   }
 }

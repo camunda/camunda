@@ -13,7 +13,6 @@ on:
       - 'build-tools/**'
       - 'clients/**'
       - 'dist/**'
-      - 'distro/**'
       - 'operate.Dockerfile'
       - 'operate/**'
       - 'parent/*'
