@@ -21,6 +21,7 @@ on:
         type: string
       pushDocker:
         description: "whether the built docker images are pushed to camunda registry"
+        type: boolean
         default: true
 
 defaults:
