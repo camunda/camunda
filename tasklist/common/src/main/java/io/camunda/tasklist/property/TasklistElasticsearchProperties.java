@@ -18,7 +18,6 @@ package io.camunda.tasklist.property;
 
 import org.springframework.stereotype.Component;
 
-@Component
 public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "tasklist";

@@ -18,7 +18,7 @@ package io.camunda.tasklist.es;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
-import io.camunda.tasklist.property.TasklistElasticsearchProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -43,14 +43,14 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Autowired private ElasticsearchSchemaManager schemaManager;
 
-  @Autowired private TasklistElasticsearchProperties tasklistElasticsearchProperties;
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Override
   public void applyIlmPolicyToAllIndices() {
-    final String taskListIndexWildCard = tasklistElasticsearchProperties.getIndexPrefix() + "-*";
+    final String taskListIndexWildCard = tasklistProperties.getElasticsearch().getIndexPrefix() + "-*";
     final String archiveTemplatePatterndNameRegex =
         "^"
-            + tasklistElasticsearchProperties.getIndexPrefix()
+            + tasklistProperties.getElasticsearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ILM policy to all existent indices");
     final GetLifecyclePolicyResponse policyExists =
@@ -75,10 +75,10 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Override
   public void removeIlmPolicyFromAllIndices() {
-    final String taskListIndexWildCard = tasklistElasticsearchProperties.getIndexPrefix() + "-*";
+    final String taskListIndexWildCard = tasklistProperties.getElasticsearch().getIndexPrefix() + "-*";
     final String archiveTemplatePatterndNameRegex =
         "^"
-            + tasklistElasticsearchProperties.getIndexPrefix()
+            + tasklistProperties.getElasticsearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Removing ILM policy to all existent indices");
     final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);

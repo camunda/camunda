@@ -20,6 +20,7 @@ import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -43,21 +44,19 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
   private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
-  private static final String TASKLIST_PREFIX_WILDCARD =
-      TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX + "-*";
 
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
   @Autowired private OpenSearchSchemaManager schemaManager;
 
-  @Autowired private TasklistOpenSearchProperties tasklistOpenSearchProperties;
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Override
   public void applyIlmPolicyToAllIndices() throws IOException {
-    final String taskListIndexWildCard = tasklistOpenSearchProperties.getIndexPrefix() + "-*";
+    final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
     final String archiveTemplatePatterndNameRegex =
         "^"
-            + tasklistOpenSearchProperties.getIndexPrefix()
+            + tasklistProperties.getOpenSearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ISM policy to all existent indices");
     final Response policyExists =
@@ -80,14 +79,14 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   @Override
   public void removeIlmPolicyFromAllIndices() throws IOException {
-    final String taskListIndexWildCard = tasklistOpenSearchProperties.getIndexPrefix() + "-*";
+    final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
     final String archiveTemplatePatterndNameRegex =
         "^"
-            + tasklistOpenSearchProperties.getIndexPrefix()
+            + tasklistProperties.getOpenSearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
 
     LOGGER.info("Removing ISM policy to all existent indices");
-    final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
+    final Set<String> response = retryOpenSearchClient.getIndexNames(taskListIndexWildCard);
     applyIlmPolicyToIndexTemplate(false);
     final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
     for (final String indexName : response) {
@@ -98,7 +97,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
   }
 
   private void applyIlmPolicyToIndexTemplate(final boolean applyPolicy) throws IOException {
-    final String taskListIndexWildCard = tasklistOpenSearchProperties.getIndexPrefix() + "-*";
+    final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
     final JsonArray templates =
         retryOpenSearchClient.getIndexTemplateSettings(taskListIndexWildCard);
     // Integration tests are not creating the templates, so we need to check if they exist

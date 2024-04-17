@@ -18,7 +18,6 @@ package io.camunda.tasklist.property;
 
 import org.springframework.stereotype.Component;
 
-@Component
 public class TasklistOpenSearchProperties extends OpenSearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "tasklist";
