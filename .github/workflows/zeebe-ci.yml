@@ -227,6 +227,7 @@ jobs:
           echo "${{ contains(steps.*.outcome, 'cancelled') }}"
           echo "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
 
+
       - uses: camunda/infra-global-github-actions/submit-build-status@poc-observability
         if: always()
         with:
