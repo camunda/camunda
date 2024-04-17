@@ -261,7 +261,7 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     await waitFor(() => expect(handleFetchErrorSpy).toHaveBeenCalled());
-    expect(screen.queryByTestId('state-overlay')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
   });
 
   it('should render statistics', async () => {
@@ -280,7 +280,7 @@ describe('DiagramPanel', () => {
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(await screen.findByTestId('state-overlay')).toBeInTheDocument();
+    expect(await screen.findByTestId(/^state-overlay/)).toBeInTheDocument();
   });
 
   it('should clear statistics before fetching new statistics', async () => {
@@ -299,7 +299,7 @@ describe('DiagramPanel', () => {
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(await screen.findByTestId('state-overlay')).toBeInTheDocument();
+    expect(await screen.findByTestId(/^state-overlay/)).toBeInTheDocument();
 
     mockFetchProcessInstancesStatistics().withServerError();
 
@@ -307,7 +307,7 @@ describe('DiagramPanel', () => {
       await processStatisticsStore.fetchProcessStatistics();
     });
 
-    expect(screen.queryByTestId('state-overlay')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
   });
 
   it('should render batch modification notification', async () => {
