@@ -13,7 +13,6 @@ import jakarta.servlet.DispatcherType;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -24,7 +23,6 @@ import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesCons
 import org.camunda.optimize.service.util.configuration.security.ResponseHeadersConfiguration;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.websocket.StatusWebSocketServlet;
-import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -132,7 +130,7 @@ public class JettyConfig {
     // If no ALPN support, use http/1.1 as a fallback. http2 will be preferred protocol still
     alpn.setDefaultProtocol(http11.getProtocol());
 
-    final SslContextFactory.Server sslContextFactory = setupSslContextFactory(true);
+    final SslContextFactory.Server sslContextFactory = setupSslContextFactory();
 
     final SslConnectionFactory tls =
         new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
@@ -145,7 +143,7 @@ public class JettyConfig {
   private ServerConnector initHttpsConnector(final Server server) {
     final HttpConfiguration https = getHttpsConfiguration(configurationService);
 
-    final SslContextFactory.Server sslContextFactory = setupSslContextFactory(false);
+    final SslContextFactory.Server sslContextFactory = setupSslContextFactory();
 
     final ServerConnector sslConnector =
         new ServerConnector(
@@ -188,7 +186,7 @@ public class JettyConfig {
     sslConnector.setHost(host);
   }
 
-  private SslContextFactory.Server setupSslContextFactory(final boolean isHttp2) {
+  private SslContextFactory.Server setupSslContextFactory() {
     final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
     sslContextFactory.setKeyStorePath(configurationService.getContainerKeystoreLocation());
     sslContextFactory.setKeyStorePassword(configurationService.getContainerKeystorePassword());
@@ -196,13 +194,6 @@ public class JettyConfig {
     // not relevant for server setup but otherwise we get a warning on startup
     // see https://github.com/eclipse/jetty.project/issues/3049
     sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-
-    if (isHttp2) {
-      // Configure the JDK with the Conscrypt provider.
-      Security.addProvider(new OpenSSLProvider());
-
-      sslContextFactory.setProvider("Conscrypt");
-    }
 
     return sslContextFactory;
   }
