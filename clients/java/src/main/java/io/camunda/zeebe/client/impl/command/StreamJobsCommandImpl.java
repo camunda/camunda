@@ -157,7 +157,6 @@ public final class StreamJobsCommandImpl
   public StreamJobsCommandStep3 tenantIds(final List<String> tenantIds) {
     customTenantIds.clear();
     customTenantIds.addAll(tenantIds);
-    System.out.println("Tenants: " + customTenantIds);
     return this;
   }
 
