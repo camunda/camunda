@@ -70,7 +70,12 @@ test.describe('process page', () => {
     await expect(processesPage.processTile).toContainText('User_Process');
   });
 
-  test('start process instance', async ({page, mainPage, processesPage}) => {
+  test('start process instance', async ({
+    page,
+    mainPage,
+    processesPage,
+    taskDetailsPage,
+  }) => {
     await mainPage.clickProcessesTab();
     await expect(page).toHaveURL('/processes');
     await processesPage.clickContinueButton();
@@ -82,7 +87,7 @@ test.describe('process page', () => {
     await expect(page.getByText('Process has started')).toBeVisible();
     await expect(processesPage.startProcessButton).not.toBeVisible();
     await expect(page.getByText('Waiting for tasks...')).toBeVisible();
-    await expect(processesPage.startProcessButton).toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
   });
 
   test('complete task started by process instance', async ({
