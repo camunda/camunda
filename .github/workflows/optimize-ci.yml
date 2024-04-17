@@ -464,6 +464,9 @@ jobs:
       - migration
       - integration-tests
       - integration-tests-os
+      - unit-tests
+      - data-upgrade-test
+      - deploy-artifacts
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
     steps:
