@@ -225,7 +225,7 @@ jobs:
           echo "${{ contains(steps.*.outcome, 'success') }}"
           echo "${{ contains(steps.*.outcome, 'failure') }}"
           echo "${{ contains(steps.*.outcome, 'cancelled') }}"
-          echo "${{ contains(steps.*.outcome, 'success') && 'success' || 'failure' }}"
+          echo "${{ contains(steps.*.outcome, 'failure') && 'failure' || (contains(steps.*.outcome, 'cancelled') && 'cancelled' || 'success') }}"
 
       - uses: camunda/infra-global-github-actions/submit-build-status@main
         if: always()
