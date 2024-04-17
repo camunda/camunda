@@ -170,7 +170,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+            secret/data/products/zeebe/ci/ci-analytics-dev gcloud_sa_key;
 
       - run: exit 1
 
