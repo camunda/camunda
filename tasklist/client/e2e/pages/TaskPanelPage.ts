@@ -49,12 +49,8 @@ class TaskPanelPage {
     }
   }
 
-  task(name: string) {
-    return this.availableTasks.getByLabel(name).nth(0);
-  }
-
   async openTask(name: string) {
-    await this.task(name).click();
+    await this.availableTasks.getByText(name, {exact: true}).nth(0).click();
   }
 
   async filterBy(
