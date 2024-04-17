@@ -47,7 +47,8 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Override
   public void applyIlmPolicyToAllIndices() {
-    final String taskListIndexWildCard = tasklistProperties.getElasticsearch().getIndexPrefix() + "-*";
+    final String taskListIndexWildCard =
+        tasklistProperties.getElasticsearch().getIndexPrefix() + "-*";
     final String archiveTemplatePatterndNameRegex =
         "^"
             + tasklistProperties.getElasticsearch().getIndexPrefix()
@@ -75,7 +76,8 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
   @Override
   public void removeIlmPolicyFromAllIndices() {
-    final String taskListIndexWildCard = tasklistProperties.getElasticsearch().getIndexPrefix() + "-*";
+    final String taskListIndexWildCard =
+        tasklistProperties.getElasticsearch().getIndexPrefix() + "-*";
     final String archiveTemplatePatterndNameRegex =
         "^"
             + tasklistProperties.getElasticsearch().getIndexPrefix()
