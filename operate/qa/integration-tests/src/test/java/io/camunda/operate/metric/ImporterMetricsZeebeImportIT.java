@@ -35,7 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ImporterMetricsZeebeImporterIT extends OperateZeebeAbstractIT {
+public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 

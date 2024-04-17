@@ -26,7 +26,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class MultiProcessImportIT extends OperateZeebeSearchAbstractIT {
+public class MultiProcessZeebeImportIT extends OperateZeebeSearchAbstractIT {
 
   @Autowired private ProcessIndex processIndex;
 
