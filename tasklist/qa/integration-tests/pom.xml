@@ -506,6 +506,23 @@
         </executions>
       </plugin>
 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
+            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+          </ignoredUsedUndeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
+            <dependency>org.glassfish:jakarta.json</dependency>
+            <dependency>org.json:json</dependency>
+            <dependency>io.camunda:tasklist-importer-850</dependency>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -632,24 +649,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-resources-plugin</artifactId>
           </plugin>
-
-	      <plugin>
-	        <groupId>org.apache.maven.plugins</groupId>
-	        <artifactId>maven-dependency-plugin</artifactId>
-	        <configuration>
-	          <ignoredUsedUndeclaredDependencies>
-	            <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
-	            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-	          </ignoredUsedUndeclaredDependencies>
-	          <ignoredUnusedDeclaredDependencies>
-	            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-	            <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
-	            <dependency>org.glassfish:jakarta.json</dependency>
-	            <dependency>org.json:json</dependency>
-	            <dependency>io.camunda:tasklist-importer-850</dependency>
-	          </ignoredUnusedDeclaredDependencies>
-	        </configuration>
-	      </plugin>
         </plugins>
       </build>
     </profile>
