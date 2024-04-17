@@ -1,0 +1,26 @@
+{
+  "dynamic": "strict",
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "name": {
+      "type": "keyword"
+    },
+    "createdBy": {
+      "type": "keyword"
+    },
+    "filter" : {
+      "type": "keyword"
+    },
+    "candidateGroups": {
+      "type": "keyword"
+    },
+    "candidateUsers": {
+      "type": "keyword"
+    },
+    "tenantId": {
+      "type": "keyword"
+    }
+  }
+}
