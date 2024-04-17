@@ -18,6 +18,7 @@ package io.camunda.tasklist.es;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
+import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -32,13 +33,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
+public class ILMPolicyUpdateElasticSearch extends TasklistElasticsearchProperties
+    implements ILMPolicyUpdate {
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
   private static final String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
   private static final String ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX =
-      "^tasklist-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+      "^"
+          + TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX
+          + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
   private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
-  private static final String TASKLIST_PREFIX = "tasklist-*";
+  private static final String TASKLIST_PREFIX_WILDCARD =
+      TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX + "-*";
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
@@ -57,7 +62,7 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
 
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
 
-    final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX);
+    final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
         final Settings settings =
@@ -71,7 +76,7 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
   public void removeIlmPolicyFromAllIndices() {
     LOGGER.info("Removing ILM policy to all existent indices");
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
-    final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX);
+    final Set<String> response = retryElasticsearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
         final Settings settings = Settings.builder().putNull(INDEX_LIFECYCLE_NAME).build();

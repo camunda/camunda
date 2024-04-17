@@ -19,6 +19,7 @@ package io.camunda.tasklist.os;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
+import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -36,13 +37,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
+public class ILMPolicyUpdateOpenSearch extends TasklistOpenSearchProperties
+    implements ILMPolicyUpdate {
 
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
   private static final String ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX =
-      "^tasklist-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+      "^"
+          + TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX
+          + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
   private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
-  private static final String TASKLIST_PREFIX = "tasklist-*";
+  private static final String TASKLIST_PREFIX_WILDCARD =
+      TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX + "-*";
 
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
@@ -58,10 +63,10 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
       schemaManager.createIndexLifeCycles();
     }
     // Apply the ISM policy to the index templates
-    applyIlmPolicyToIndexTemplate(TASKLIST_PREFIX, TASKLIST_DELETE_ARCHIVED_INDICES, true);
+    applyIlmPolicyToIndexTemplate(true);
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
 
-    final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX);
+    final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
         retryOpenSearchClient.putLifeCyclePolicy(indexName, TASKLIST_DELETE_ARCHIVED_INDICES);
@@ -72,8 +77,8 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
   @Override
   public void removeIlmPolicyFromAllIndices() throws IOException {
     LOGGER.info("Removing ISM policy to all existent indices");
-    final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX);
-    applyIlmPolicyToIndexTemplate(TASKLIST_PREFIX, TASKLIST_DELETE_ARCHIVED_INDICES, false);
+    final Set<String> response = retryOpenSearchClient.getIndexNames(TASKLIST_PREFIX_WILDCARD);
+    applyIlmPolicyToIndexTemplate(false);
     final Pattern indexNamePattern = Pattern.compile(ARCHIVE_TEMPLATE_PATTERN_NAME_REGEX);
     for (final String indexName : response) {
       if (indexNamePattern.matcher(indexName).matches()) {
@@ -82,11 +87,10 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
     }
   }
 
-  private void applyIlmPolicyToIndexTemplate(
-      final String templatePattern, final String policyId, final boolean applyPolicy)
-      throws IOException {
-    LOGGER.info("Applying ISM policy to index templates");
-    final JsonArray templates = retryOpenSearchClient.getIndexTemplateSettings(templatePattern);
+  private void applyIlmPolicyToIndexTemplate(final boolean applyPolicy) throws IOException {
+    final JsonArray templates =
+        retryOpenSearchClient.getIndexTemplateSettings(
+            ILMPolicyUpdateOpenSearch.TASKLIST_PREFIX_WILDCARD);
     // Integration tests are not creating the templates, so we need to check if they exist
     if (templates != null) {
       for (final JsonObject templateData : templates.getValuesAs(JsonObject.class)) {
@@ -108,43 +112,67 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
           for (final String key : existingSettings.keySet()) {
             settingsBuilder.add(key, existingSettings.get(key));
           }
-        }
 
-        if (applyPolicy) {
-          settingsBuilder.add(
-              "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
-        } else {
-          // With Policy ID is null, any policy will be executed (but its explicit set)
-          settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
-        }
-
-        final JsonObject newSettings = settingsBuilder.build();
-
-        final JsonObjectBuilder updatedInnerTemplateBuilder =
-            Json.createObjectBuilder().add("settings", newSettings);
-
-        for (final String key : innerTemplate.keySet()) {
-          if (!"settings".equals(key)) { // do not overwrite new settings
-            updatedInnerTemplateBuilder.add(key, innerTemplate.get(key));
+          if (applyPolicy) {
+            settingsBuilder.add(
+                "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
+          } else {
+            settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
           }
-        }
 
-        final JsonObject updatedInnerTemplate = updatedInnerTemplateBuilder.build();
+          final String requiredPolicyId = applyPolicy ? TASKLIST_DELETE_ARCHIVED_INDICES : null;
 
-        final JsonObjectBuilder updatedTemplateBuilder =
-            Json.createObjectBuilder()
-                .add("index_patterns", indexPatterns)
-                .add("template", updatedInnerTemplate);
-
-        for (final String key : template.keySet()) {
-          if (!"index_patterns".equals(key) && !"template".equals(key)) {
-            updatedTemplateBuilder.add(key, template.get(key));
+          if (isPolicyAlreadyApplied(existingSettings, requiredPolicyId)) {
+            LOGGER.info("ISM policy already applied to index template {}", templateName);
+            continue;
           }
-        }
 
-        final String updatedTemplate = updatedTemplateBuilder.build().toString();
-        retryOpenSearchClient.putIndexTemplateSettings(templateName, updatedTemplate);
+          final JsonObject newSettings = settingsBuilder.build();
+
+          final JsonObjectBuilder updatedInnerTemplateBuilder =
+              Json.createObjectBuilder().add("settings", newSettings);
+
+          for (final String key : innerTemplate.keySet()) {
+            if (!"settings".equals(key)) { // do not overwrite new settings
+              updatedInnerTemplateBuilder.add(key, innerTemplate.get(key));
+            }
+          }
+
+          final JsonObject updatedInnerTemplate = updatedInnerTemplateBuilder.build();
+
+          final JsonObjectBuilder updatedTemplateBuilder =
+              Json.createObjectBuilder()
+                  .add("index_patterns", indexPatterns)
+                  .add("template", updatedInnerTemplate);
+
+          for (final String key : template.keySet()) {
+            if (!"index_patterns".equals(key) && !"template".equals(key)) {
+              updatedTemplateBuilder.add(key, template.get(key));
+            }
+          }
+
+          final String updatedTemplate = updatedTemplateBuilder.build().toString();
+          retryOpenSearchClient.putIndexTemplateSettings(templateName, updatedTemplate);
+        }
       }
     }
+  }
+
+  private static boolean isPolicyAlreadyApplied(
+      final JsonObject existingSettings, final String requiredPolicyId) {
+    final JsonObject indexSettings = existingSettings.getJsonObject("index");
+    if (indexSettings != null) {
+      final JsonObject pluginsSettings = indexSettings.getJsonObject("plugins");
+      if (pluginsSettings != null) {
+        final JsonObject ismSettings = pluginsSettings.getJsonObject("index_state_management");
+        if (ismSettings != null && ismSettings.containsKey("policy_id")) {
+          if (requiredPolicyId == null) {
+            return ismSettings.isNull("policy_id");
+          }
+          return requiredPolicyId.equals(ismSettings.getString("policy_id", null));
+        }
+      }
+    }
+    return false;
   }
 }
