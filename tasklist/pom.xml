@@ -693,8 +693,8 @@
 
       <dependency>
         <groupId>org.jetbrains</groupId>
-         <artifactId>annotations</artifactId>
-         <version>${version.jetbrains}</version>
+        <artifactId>annotations</artifactId>
+        <version>${version.jetbrains}</version>
       </dependency>
 
       <!-- between graphql-spring-boot and thymeleaf -->
@@ -968,7 +968,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration/>
             </execution>
           </executions>
         </plugin>
@@ -998,7 +998,7 @@
                 <exclude>**/node_modules/**/*.md</exclude>
                 <exclude>**/client/**/*.md</exclude>
               </excludes>
-              <flexmark />
+              <flexmark/>
             </markdown>
           </configuration>
           <dependencies>
@@ -1224,8 +1224,12 @@
 
   <scm>
     <url>https://github.com/camunda/tasklist</url>
-    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git</developerConnection>
+    <connection>
+      scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git
+    </connection>
+    <developerConnection>
+      scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git
+    </developerConnection>
     <tag>HEAD</tag>
   </scm>
 

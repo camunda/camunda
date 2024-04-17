@@ -141,78 +141,78 @@
       <scope>test</scope>
     </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-test</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.commons</groupId>
-  <artifactId>commons-lang3</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>com.fasterxml.jackson.core</groupId>
-  <artifactId>jackson-core</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>com.graphql-java-kickstart</groupId>
-  <artifactId>graphql-spring-boot-test</artifactId>
-  <scope>test</scope>
-  <exclusions>
-    <!-- Tasklist depends on org.json:json -->
-    <exclusion>
-      <groupId>com.vaadin.external.google</groupId>
-      <artifactId>android-json</artifactId>
-    </exclusion>
-  </exclusions>
-</dependency>
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-spring-boot-test</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <!-- Tasklist depends on org.json:json -->
+        <exclusion>
+          <groupId>com.vaadin.external.google</groupId>
+          <artifactId>android-json</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
 
-<dependency>
-  <groupId>org.junit.jupiter</groupId>
-  <artifactId>junit-jupiter-api</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>com.jayway.jsonpath</groupId>
-  <artifactId>json-path</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-test</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.httpcomponents.core5</groupId>
-  <artifactId>httpcore5</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-core</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.opensearch.client</groupId>
-  <artifactId>opensearch-java</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 

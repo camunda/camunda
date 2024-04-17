@@ -85,95 +85,95 @@
       <artifactId>spring-aspects</artifactId>
     </dependency>
 
-<dependency>
-  <groupId>org.testcontainers</groupId>
-  <artifactId>testcontainers</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.github.docker-java</groupId>
-  <artifactId>docker-java-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.github.docker-java</groupId>
+      <artifactId>docker-java-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>junit</groupId>
-  <artifactId>junit</artifactId>
-</dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>jakarta.ws.rs</groupId>
-  <artifactId>jakarta.ws.rs-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-web</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.elasticsearch</groupId>
-  <artifactId>elasticsearch</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.httpcomponents</groupId>
-  <artifactId>httpcore</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-beans</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>jakarta.annotation</groupId>
-  <artifactId>jakarta.annotation-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.opensearch.client</groupId>
-  <artifactId>opensearch-java</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.httpcomponents.client5</groupId>
-  <artifactId>httpclient5</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.keycloak</groupId>
-  <artifactId>keycloak-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.keycloak</groupId>
+      <artifactId>keycloak-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.slf4j</groupId>
-  <artifactId>slf4j-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>io.camunda</groupId>
-  <artifactId>zeebe-bpmn-model</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.elasticsearch.client</groupId>
-  <artifactId>elasticsearch-rest-client</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.httpcomponents.core5</groupId>
-  <artifactId>httpcore5</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+    </dependency>
 
   </dependencies>
   <build>

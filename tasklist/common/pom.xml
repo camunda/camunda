@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-	<modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>io.camunda</groupId>
-		<artifactId>tasklist-parent</artifactId>
-		<version>8.6.0-SNAPSHOT</version>
-		<relativePath>../pom.xml</relativePath>
-	</parent>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>tasklist-parent</artifactId>
+    <version>8.6.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
 
-	<name>Tasklist Common</name>
-	<artifactId>tasklist-common</artifactId>
+  <name>Tasklist Common</name>
+  <artifactId>tasklist-common</artifactId>
 
-	<dependencies>
+  <dependencies>
 
     <!-- ZEEBE -->
     <dependency>
@@ -85,7 +85,7 @@
       <artifactId>opensearch-java</artifactId>
     </dependency>
 
-	<dependency>
+    <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
     </dependency>
@@ -98,8 +98,8 @@
     </dependency>
 
     <dependency>
-	  <groupId>software.amazon.awssdk</groupId>
-	  <artifactId>netty-nio-client</artifactId>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>netty-nio-client</artifactId>
     </dependency>
 
     <dependency>
@@ -208,7 +208,7 @@
     </dependency>
 
     <dependency>
-	  <groupId>io.swagger.core.v3</groupId>
+      <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations</artifactId>
     </dependency>
 
@@ -251,31 +251,31 @@
       <scope>test</scope>
     </dependency>
 
-	</dependencies>
+  </dependencies>
 
-	<build>
-		<plugins>
-			<!-- LICENSE PLUGIN -->
-			<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-			</plugin>
+  <build>
+    <plugins>
+      <!-- LICENSE PLUGIN -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+      </plugin>
 
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
-			</plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+      </plugin>
 
-		</plugins>
-		<!--
-			Enabled setting of schema version
-		 -->
-		<resources>
-			<resource>
-				<directory>src/main/resources/</directory>
-				<filtering>true</filtering>
-			</resource>
-		</resources>
-	</build>
+    </plugins>
+    <!--
+      Enabled setting of schema version
+     -->
+    <resources>
+      <resource>
+        <directory>src/main/resources/</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
 
 </project>

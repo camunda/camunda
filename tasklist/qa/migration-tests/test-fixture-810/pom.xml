@@ -38,45 +38,45 @@
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
     </dependency>
 
-<dependency>
-  <groupId>io.camunda</groupId>
-  <artifactId>zeebe-client-java</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.elasticsearch</groupId>
-  <artifactId>elasticsearch</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.slf4j</groupId>
-  <artifactId>slf4j-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>io.camunda</groupId>
-  <artifactId>zeebe-bpmn-model</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-beans</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.elasticsearch.client</groupId>
-  <artifactId>elasticsearch-rest-client</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-context</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
 
 
   </dependencies>

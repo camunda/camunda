@@ -177,168 +177,168 @@
       <artifactId>thymeleaf</artifactId>
     </dependency>
 
-<dependency>
-  <groupId>org.apache.tomcat.embed</groupId>
-  <artifactId>tomcat-embed-websocket</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-websocket</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.graphql-java</groupId>
-  <artifactId>graphql-java</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.graphql-java</groupId>
+      <artifactId>graphql-java</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.opensearch.client</groupId>
-  <artifactId>opensearch-java</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.fasterxml.jackson.core</groupId>
-  <artifactId>jackson-annotations</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.fasterxml.jackson.datatype</groupId>
-  <artifactId>jackson-datatype-jdk8</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.session</groupId>
-  <artifactId>spring-session-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.elasticsearch</groupId>
-  <artifactId>elasticsearch-x-content</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.fasterxml.jackson.core</groupId>
-  <artifactId>jackson-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.camunda.bpm.model</groupId>
-  <artifactId>camunda-xml-model</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>com.graphql-java</groupId>
-  <artifactId>java-dataloader</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.graphql-java</groupId>
+      <artifactId>java-dataloader</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.security</groupId>
-  <artifactId>spring-security-web</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-web</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.httpcomponents.core5</groupId>
-  <artifactId>httpcore5</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-webmvc</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-context</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-test</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.junit.jupiter</groupId>
-  <artifactId>junit-jupiter-api</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>com.graphql-java-kickstart</groupId>
-  <artifactId>graphql-java-servlet</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-java-servlet</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-web</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>io.swagger.core.v3</groupId>
-  <artifactId>swagger-annotations</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.auth0</groupId>
-  <artifactId>java-jwt</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>java-jwt</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.graphql-java-kickstart</groupId>
-  <artifactId>graphql-java-kickstart</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-java-kickstart</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.security</groupId>
-  <artifactId>spring-security-crypto</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.auth0</groupId>
-  <artifactId>auth0</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>auth0</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.fasterxml.jackson.core</groupId>
-  <artifactId>jackson-databind</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.elasticsearch.client</groupId>
-  <artifactId>elasticsearch-rest-client</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-actuator</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>io.grpc</groupId>
-  <artifactId>grpc-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.google.code.findbugs</groupId>
-  <artifactId>jsr305</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springdoc</groupId>
-  <artifactId>springdoc-openapi-starter-common</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-common</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>net.jodah</groupId>
-  <artifactId>failsafe</artifactId>
-</dependency>
+    <dependency>
+      <groupId>net.jodah</groupId>
+      <artifactId>failsafe</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
@@ -351,127 +351,127 @@
       </exclusions>
     </dependency>
 
-<dependency>
-  <groupId>jakarta.servlet</groupId>
-  <artifactId>jakarta.servlet-api</artifactId>
-  <scope>runtime</scope>
-</dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
 
-<dependency>
-  <groupId>org.mockito</groupId>
-  <artifactId>mockito-junit-jupiter</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.elasticsearch</groupId>
-  <artifactId>elasticsearch</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-beans</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.assertj</groupId>
-  <artifactId>assertj-core</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>jakarta.annotation</groupId>
-  <artifactId>jakarta.annotation-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.security</groupId>
-  <artifactId>spring-security-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.commons</groupId>
-  <artifactId>commons-lang3</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.slf4j</groupId>
-  <artifactId>slf4j-api</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>com.fasterxml.jackson.datatype</groupId>
-  <artifactId>jackson-datatype-jsr310</artifactId>
-</dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>io.swagger.core.v3</groupId>
-  <artifactId>swagger-models-jakarta</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-models-jakarta</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-autoconfigure</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.hamcrest</groupId>
-  <artifactId>hamcrest</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.junit.jupiter</groupId>
-  <artifactId>junit-jupiter-params</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.commons</groupId>
-  <artifactId>commons-collections4</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework</groupId>
-  <artifactId>spring-aop</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.security</groupId>
-  <artifactId>spring-security-config</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-config</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.springframework.security</groupId>
-  <artifactId>spring-security-oauth2-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.json</groupId>
-  <artifactId>json</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>io.camunda</groupId>
-  <artifactId>identity-sdk</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-core</artifactId>
-</dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+    </dependency>
 
-<dependency>
-  <groupId>org.mockito</groupId>
-  <artifactId>mockito-core</artifactId>
-  <scope>test</scope>
-</dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- TEST -->
     <dependency>
@@ -486,8 +486,8 @@
     </dependency>
     <dependency>
       <groupId>org.jetbrains</groupId>
-       <artifactId>annotations</artifactId>
-       <scope>compile</scope>
+      <artifactId>annotations</artifactId>
+      <scope>compile</scope>
     </dependency>
 
   </dependencies>
@@ -509,7 +509,8 @@
             <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-log4j2</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-security</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-oauth2-resource-server</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-oauth2-resource-server
+            </dependency>
             <dependency>org.springframework.boot:spring-boot-starter-thymeleaf</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
             <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
