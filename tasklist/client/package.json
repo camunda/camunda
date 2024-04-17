@@ -10,6 +10,7 @@
     "@carbon/elements": "11.43.0",
     "@carbon/react": "1.55.0",
     "@monaco-editor/react": "4.6.0",
+    "@tanstack/eslint-plugin-query": "5.28.11",
     "@tanstack/react-query": "5.29.2",
     "classnames": "^2.5.1",
     "date-fns": "3.6.0",
