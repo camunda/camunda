@@ -17,6 +17,7 @@ import {
 } from 'components';
 import {loadRawData, formatters, getTooltipText, processResult} from 'services';
 import {t} from 'translation';
+import {useUser} from 'hooks';
 
 import {getConfig, calculateTargetValueHeat} from './service';
 
@@ -24,7 +25,7 @@ import './Heatmap.scss';
 
 export default function Heatmap({report, context}) {
   const [selectedMeasure, setSelectedMeasure] = useState(0);
-
+  const {user} = useUser();
   const {
     name,
     result,
@@ -113,6 +114,7 @@ export default function Heatmap({report, context}) {
                     }) + '.csv'
                   }
                   totalCount={result.instanceCount}
+                  user={user}
                 >
                   {t('common.instanceIds')}
                 </DownloadButton>

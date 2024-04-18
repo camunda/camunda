@@ -13,7 +13,8 @@ import {Modal} from 'components';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
-import {useErrorHandling, useUser, useDocs} from 'hooks';
+import {useErrorHandling, useDocs} from 'hooks';
+import {User} from 'HOC';
 
 import {t} from 'translation';
 
@@ -26,6 +27,8 @@ type RetrieverProps = {
 
 interface CommonProps extends ComponentPropsWithoutRef<typeof Button> {
   totalCount: number;
+  // We take user as a prop instead of using the hook because user context is not accesigble in HeatmapOverlay
+  user: User | undefined;
 }
 
 export type DownloadButtonProps = CommonProps & (LinkProps | RetrieverProps);
@@ -35,11 +38,11 @@ export function DownloadButton({
   fileName,
   retriever,
   totalCount,
+  user,
   ...props
 }: DownloadButtonProps) {
   const [exportLimit, setExportLimit] = useState(1000);
   const [modalOpen, setModalOpen] = useState(false);
-  const {user} = useUser();
   const {mightFail} = useErrorHandling();
   const {generateDocsLink} = useDocs();
 

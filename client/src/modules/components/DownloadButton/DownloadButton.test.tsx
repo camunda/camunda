@@ -9,7 +9,7 @@ import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {get} from 'request';
-import {useUser} from 'hooks';
+import {User} from 'HOC';
 
 import {DownloadButton, DownloadButtonProps} from './DownloadButton';
 
@@ -25,7 +25,6 @@ jest.mock('hooks', () => ({
   useErrorHandling: jest.fn(() => ({
     mightFail: jest.fn((data, cb) => cb(data)),
   })),
-  useUser: jest.fn().mockReturnValue({user: {authorizations: ['csv_export']}}),
   useDocs: jest.fn(() => ({
     generateDocsLink: () => '',
   })),
@@ -34,6 +33,7 @@ jest.mock('hooks', () => ({
 const props: DownloadButtonProps = {
   href: '',
   totalCount: 0,
+  user: {authorizations: ['csv_export']} as unknown as User,
 };
 
 beforeAll(() => {
@@ -76,8 +76,9 @@ it('should display a modal if total download count is more than csv limit', asyn
 });
 
 it('should not display the button if the user is not authorized to export csv data', () => {
-  (useUser as jest.Mock).mockReturnValue({user: {authorizations: []}});
-  const node = shallow(<DownloadButton fileName="testName" {...props} />);
+  const node = shallow(
+    <DownloadButton fileName="testName" {...props} user={{authorizations: []} as unknown as User} />
+  );
 
   runAllEffects();
 

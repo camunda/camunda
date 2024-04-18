@@ -28,6 +28,7 @@ import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
 import {t} from 'translation';
 import {track} from 'tracking';
+import {useUser} from 'hooks';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 import {CollapsibleContainer} from './CollapsibleContainer';
@@ -45,6 +46,7 @@ export default function ReportView({report, error, loadReport}) {
   // The height value has to be in pixel to make the animation work.
   const reportContainerRef = useRef();
   const [showReportRenderer, setShowReportRenderer] = useState(true);
+  const {user} = useUser();
 
   useEffect(() => {
     (async () => {
@@ -154,6 +156,7 @@ export default function ReportView({report, error, loadReport}) {
                 hasIconOnly
                 href={constructCSVDownloadLink()}
                 totalCount={calculateTotalEntries(report)}
+                user={user}
               />
             )}
             {!isInstantPreview && currentUserRole === 'editor' && (

@@ -8,6 +8,7 @@
 import {DownloadButton} from 'components';
 import {loadRawData, formatters} from 'services';
 import {t} from 'translation';
+import {useUser} from 'hooks';
 
 import {AnalysisProcessDefinitionParameters} from './service';
 
@@ -21,6 +22,8 @@ interface InstancesButtonProps {
 
 export function InstancesButton({id, name, config, value, totalCount}: InstancesButtonProps) {
   const {filters, ...restConfig} = config;
+  const {user} = useUser();
+
   return (
     <DownloadButton
       kind="tertiary"
@@ -50,6 +53,7 @@ export function InstancesButton({id, name, config, value, totalCount}: Instances
         '.csv'
       }
       totalCount={totalCount}
+      user={user}
     >
       {t('common.processInstanceIds')}
     </DownloadButton>
