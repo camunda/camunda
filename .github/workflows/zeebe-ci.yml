@@ -228,7 +228,7 @@ jobs:
           echo "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
 
 
-      - uses: camunda/infra-global-github-actions/submit-build-status@poc-observability
+      - uses: camunda/infra-global-github-actions/submit-build-status@new-build-status-metadata-runner
         if: always()
         with:
           build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
