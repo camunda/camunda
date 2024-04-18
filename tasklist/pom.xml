@@ -37,7 +37,7 @@
     <version.opensearch>2.8.0</version.opensearch>
     <version.spring.boot>3.2.4</version.spring.boot>
     <version.spring>6.1.6</version.spring>
-    <version.spring-security>6.2.3</version.spring-security>
+    <version.spring-security>6.2.4</version.spring-security>
     <version.log4j>2.19.0</version.log4j>
     <version.junit>5.9.3</version.junit>
     <version.jakarta.json>2.0.1</version.jakarta.json>
