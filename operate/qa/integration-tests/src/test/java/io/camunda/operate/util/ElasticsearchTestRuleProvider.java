@@ -382,7 +382,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
           esClient,
           bulkRequest,
           true,
-          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+          operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
     } catch (Exception ex) {
       throw new PersistenceException(ex);
     }
