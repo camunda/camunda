@@ -40,12 +40,12 @@ public class DbFormState implements MutableFormState {
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>> tenantAwareIdAndVersionKey;
   private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedForm>
       formByIdAndVersionColumnFamily;
-//  private final Object2ObjectHashMap<TenantIdAndFormId, PersistedForm> formByTenantAndIdCache;
   private final Cache<TenantIdAndFormId, PersistedForm> formsByTenantIdAndIdCache;
 
   public DbFormState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext, final
-      EngineConfiguration config) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final EngineConfiguration config) {
     tenantIdKey = new DbString();
     dbFormKey = new DbLong();
     tenantAwareFormKey = new DbTenantAwareKey<>(tenantIdKey, dbFormKey, PlacementType.PREFIX);
@@ -71,9 +71,7 @@ public class DbFormState implements MutableFormState {
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.FORM_VERSION, transactionContext);
 
     formsByTenantIdAndIdCache =
-        CacheBuilder.newBuilder()
-            .maximumSize(config.getFormCacheCapacity())
-            .build();
+        CacheBuilder.newBuilder().maximumSize(config.getFormCacheCapacity()).build();
   }
 
   @Override
@@ -129,8 +127,7 @@ public class DbFormState implements MutableFormState {
   public Optional<PersistedForm> findLatestFormById(
       final DirectBuffer formId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    final Optional<PersistedForm> cachedForm =
-        getFormFromCache(tenantId, formId);
+    final Optional<PersistedForm> cachedForm = getFormFromCache(tenantId, formId);
     if (cachedForm.isPresent()) {
       return cachedForm;
     }
@@ -165,15 +162,18 @@ public class DbFormState implements MutableFormState {
     dbFormId.wrapBuffer(formId);
     final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
     formVersion.wrapLong(latestVersion);
-    final PersistedForm persistedForm = formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey);
+    final PersistedForm persistedForm =
+        formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey);
     if (persistedForm == null) {
       return null;
     }
     return persistedForm.copy();
   }
 
-  private Optional<PersistedForm> getFormFromCache(final String tenantId, final DirectBuffer formId) {
-    return Optional.ofNullable(formsByTenantIdAndIdCache.getIfPresent(new TenantIdAndFormId(tenantId, formId)));
+  private Optional<PersistedForm> getFormFromCache(
+      final String tenantId, final DirectBuffer formId) {
+    return Optional.ofNullable(
+        formsByTenantIdAndIdCache.getIfPresent(new TenantIdAndFormId(tenantId, formId)));
   }
 
   private record TenantIdAndFormId(String tenantId, DirectBuffer formId) {}
