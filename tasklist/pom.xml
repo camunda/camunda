@@ -71,7 +71,7 @@
     <version.grpc-api>1.62.2</version.grpc-api>
     <version.jna>5.14.0</version.jna>
     <version.opentest4j>1.3.0</version.opentest4j>
-    <version.keycloak>23.0.6</version.keycloak>
+    <version.keycloak>23.0.7</version.keycloak>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.bouncycastle>1.78</version.bouncycastle>
 
@@ -83,7 +83,6 @@
     <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
     <postgres-test-container.version>1.19.4</postgres-test-container.version>
     <testcontainers.version>1.19.4</testcontainers.version>
-    <keycloak-client.version>23.0.7</keycloak-client.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -443,7 +442,7 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-admin-client</artifactId>
-        <version>${keycloak-client.version}</version>
+        <version>${version.keycloak}</version>
       </dependency>
 
       <dependency>
