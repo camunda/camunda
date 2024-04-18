@@ -57,11 +57,11 @@ public class OpensearchSchemaManagerTest {
     when(abstractIndexDescriptor1.getIndexName()).thenReturn("index1");
     when(abstractIndexDescriptor2.getIndexName()).thenReturn("index2");
     when(abstractIndexDescriptor3.getIndexName()).thenReturn("index3");
-    when(abstractIndexDescriptor1.getFullQualifiedName()).thenReturn("index1*");
-    when(abstractIndexDescriptor2.getFullQualifiedName()).thenReturn("index2*");
-    when(abstractIndexDescriptor3.getFullQualifiedName()).thenReturn("index3*");
-    when(abstractIndexDescriptor2.getAlias()).thenReturn("index2_alias");
-    when(abstractIndexDescriptor3.getAlias()).thenReturn("index3_alias");
+    when(abstractIndexDescriptor2.getDerivedIndexNamePattern()).thenReturn("index2*");
+    when(abstractIndexDescriptor3.getDerivedIndexNamePattern()).thenReturn("index3*");
+    when(abstractIndexDescriptor1.getFullQualifiedName()).thenReturn("index1");
+    when(abstractIndexDescriptor2.getFullQualifiedName()).thenReturn("index2");
+    when(abstractIndexDescriptor3.getFullQualifiedName()).thenReturn("index3");
 
     final TemplateDescriptor templateDescriptor1 = mock(TemplateDescriptor.class);
     when(templateDescriptor1.getAlias()).thenReturn("template1_alias");
@@ -100,9 +100,9 @@ public class OpensearchSchemaManagerTest {
     when(openSearchTemplateOperations.createTemplateWithRetries(any(), anyBoolean()))
         .thenReturn(true);
     when(richOpenSearchClient.index()).thenReturn(openSearchIndexOperations);
-    when(openSearchIndexOperations.getIndexSettingsWithRetries("index1*")).thenReturn(settings1);
-    when(openSearchIndexOperations.getIndexSettingsWithRetries("index2*")).thenReturn(settings2);
-    when(openSearchIndexOperations.getIndexSettingsWithRetries("index3*")).thenReturn(settings3);
+    when(openSearchIndexOperations.getIndexSettingsWithRetries("index1")).thenReturn(settings1);
+    when(openSearchIndexOperations.getIndexSettingsWithRetries("index2")).thenReturn(settings2);
+    when(openSearchIndexOperations.getIndexSettingsWithRetries("index3")).thenReturn(settings3);
     when(openSearchIndexOperations.setIndexSettingsFor(any(), anyString()))
         .thenReturn(true)
         .thenReturn(false);

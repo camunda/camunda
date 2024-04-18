@@ -55,11 +55,11 @@ public class ElasticsearchSchemaManagerTest {
     when(abstractIndexDescriptor1.getIndexName()).thenReturn("index1");
     when(abstractIndexDescriptor2.getIndexName()).thenReturn("index2");
     when(abstractIndexDescriptor3.getIndexName()).thenReturn("index3");
-    when(abstractIndexDescriptor1.getFullQualifiedName()).thenReturn("index1*");
-    when(abstractIndexDescriptor2.getFullQualifiedName()).thenReturn("index2*");
-    when(abstractIndexDescriptor3.getFullQualifiedName()).thenReturn("index3*");
-    when(abstractIndexDescriptor2.getAlias()).thenReturn("index2_alias");
-    when(abstractIndexDescriptor3.getAlias()).thenReturn("index3_alias");
+    when(abstractIndexDescriptor2.getDerivedIndexNamePattern()).thenReturn("index2*");
+    when(abstractIndexDescriptor3.getDerivedIndexNamePattern()).thenReturn("index3*");
+    when(abstractIndexDescriptor1.getFullQualifiedName()).thenReturn("index1");
+    when(abstractIndexDescriptor2.getFullQualifiedName()).thenReturn("index2");
+    when(abstractIndexDescriptor3.getFullQualifiedName()).thenReturn("index3");
 
     final TemplateDescriptor templateDescriptor1 = mock(TemplateDescriptor.class);
     when(templateDescriptor1.getAlias()).thenReturn("template1_alias");
@@ -83,11 +83,11 @@ public class ElasticsearchSchemaManagerTest {
     when(operateProperties.getElasticsearch()).thenReturn(operateElasticsearchProperties);
     when(operateElasticsearchProperties.getNumberOfReplicas()).thenReturn(3);
     when(operateElasticsearchProperties.getNumberOfShards()).thenReturn(5);
-    when(retryElasticsearchClient.getIndexSettingsFor("index1*", NUMBERS_OF_REPLICA))
+    when(retryElasticsearchClient.getIndexSettingsFor("index1", NUMBERS_OF_REPLICA))
         .thenReturn(Map.of(NUMBERS_OF_REPLICA, "1"));
-    when(retryElasticsearchClient.getIndexSettingsFor("index2*", NUMBERS_OF_REPLICA))
+    when(retryElasticsearchClient.getIndexSettingsFor("index2", NUMBERS_OF_REPLICA))
         .thenReturn(Map.of(NUMBERS_OF_REPLICA, "3"));
-    when(retryElasticsearchClient.getIndexSettingsFor("index3*", NUMBERS_OF_REPLICA))
+    when(retryElasticsearchClient.getIndexSettingsFor("index3", NUMBERS_OF_REPLICA))
         .thenReturn(Map.of(NUMBERS_OF_REPLICA, "2"));
     when(retryElasticsearchClient.setIndexSettingsFor(any(), anyString()))
         .thenReturn(true)
