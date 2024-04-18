@@ -114,7 +114,7 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public ZeebeFuture<ActivateJobsResponse> send() {
-
+    builder.clearTenantIds();
     if (customTenantIds.isEmpty()) {
       builder.addAllTenantIds(defaultTenantIds);
     } else {
