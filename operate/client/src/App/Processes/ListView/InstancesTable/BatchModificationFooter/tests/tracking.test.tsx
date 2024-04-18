@@ -19,6 +19,16 @@ import {render, screen} from 'modules/testing-library';
 import {BatchModificationFooter} from '..';
 import {tracking} from 'modules/tracking';
 
+jest.mock('modules/hooks/useCallbackPrompt', () => {
+  return {
+    useCallbackPrompt: () => ({
+      shouldInterrupt: false,
+      confirmNavigation: jest.fn(),
+      cancelNavigation: jest.fn(),
+    }),
+  };
+});
+
 describe('BatchModificationFooter - tracking', () => {
   const trackSpy = jest.spyOn(tracking, 'track');
 
