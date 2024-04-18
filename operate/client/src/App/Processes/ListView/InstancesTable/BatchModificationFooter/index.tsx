@@ -102,7 +102,10 @@ const BatchModificationFooter: React.FC = observer(() => {
           open={isNavigationInterrupted || isModalVisible}
           modalHeading="Exit batch modification mode"
           preventCloseOnClickOutside
-          onRequestClose={cancelNavigation}
+          onRequestClose={() => {
+            cancelNavigation();
+            setIsModalVisible(false);
+          }}
           secondaryButtonText="Cancel"
           primaryButtonText="Exit"
           onRequestSubmit={() => {

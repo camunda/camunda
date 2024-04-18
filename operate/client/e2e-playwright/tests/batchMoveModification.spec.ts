@@ -205,6 +205,7 @@ test.beforeAll(async ({request}) => {
       await exitModal.getByRole('button', {name: /cancel/i}).click();
 
       // Expect to be still in modification mode
+      await expect(exitModal).not.toBeVisible();
       await expect(page.getByText(/batch modification mode/i)).toBeVisible();
 
       // Try to navigate to Dashboard page
