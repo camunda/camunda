@@ -317,9 +317,12 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, long maxBulkRequestSizeInBytes)
+      RestHighLevelClient esClient,
+      BulkRequest bulkRequest,
+      long maxBulkRequestSizeInBytes,
+      boolean ignoreNullIndex)
       throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
+    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes, ignoreNullIndex);
   }
 
   /* EXECUTE QUERY */
@@ -328,14 +331,63 @@ public abstract class ElasticsearchUtil {
       RestHighLevelClient esClient,
       BulkRequest bulkRequest,
       boolean refreshImmediately,
-      long maxBulkRequestSizeInBytes)
+      long maxBulkRequestSizeInBytes,
+      boolean ignoreNullIndex)
       throws PersistenceException {
+    bulkRequest = validateIndices(bulkRequest, ignoreNullIndex);
     if (bulkRequest.estimatedSizeInBytes() > maxBulkRequestSizeInBytes) {
       divideLargeBulkRequestAndProcess(
           esClient, bulkRequest, refreshImmediately, maxBulkRequestSizeInBytes);
     } else {
       processLimitedBulkRequest(esClient, bulkRequest, refreshImmediately);
     }
+  }
+
+  private static BulkRequest validateIndices(BulkRequest bulkRequest, boolean ignoreNullIndex)
+      throws PersistenceException {
+    final List<DocWriteRequest<?>> invalidRequests =
+        bulkRequest.requests().stream().filter(ElasticsearchUtil::isIndexMissing).toList();
+    if (invalidRequests.isEmpty()) {
+      return bulkRequest;
+    }
+
+    final String requestsError =
+        invalidRequests.stream()
+            .map(r -> "- request: " + r.toString())
+            .collect(Collectors.joining(System.lineSeparator()));
+    if (ignoreNullIndex) {
+      LOGGER.warn(
+          String.format(
+              "Bulk request has %d requests with missing index. Ignoring invalid requests:%s%s",
+              invalidRequests.size(), System.lineSeparator(), requestsError));
+      final BulkRequest newBulkRequest = new BulkRequest();
+      bulkRequest
+          .requests()
+          .forEach(
+              request -> {
+                if (!isIndexMissing(request)) {
+                  newBulkRequest.add(request);
+                }
+              });
+      newBulkRequest.pipeline(bulkRequest.pipeline());
+      newBulkRequest.requireAlias(bulkRequest.requireAlias());
+      newBulkRequest.routing(bulkRequest.routing());
+      newBulkRequest.setParentTask(bulkRequest.getParentTask());
+      newBulkRequest.setRefreshPolicy(bulkRequest.getRefreshPolicy());
+      newBulkRequest.timeout(bulkRequest.timeout());
+      newBulkRequest.waitForActiveShards(bulkRequest.waitForActiveShards());
+      return newBulkRequest;
+    }
+
+    throw new PersistenceException(
+        String.format(
+            "Bulk request has %d requests with missing index:%s%s",
+            invalidRequests.size(), System.lineSeparator(), requestsError));
+  }
+
+  private static boolean isIndexMissing(final DocWriteRequest<?> request) {
+    final boolean isMissing = (request.index() == null) || request.index().isEmpty();
+    return isMissing;
   }
 
   private static void divideLargeBulkRequestAndProcess(

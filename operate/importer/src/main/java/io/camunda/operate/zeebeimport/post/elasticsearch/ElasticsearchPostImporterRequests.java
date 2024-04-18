@@ -76,7 +76,10 @@ public class ElasticsearchPostImporterRequests {
     incidentRequests.values().stream().forEach(bulkRequest::add);
 
     ElasticsearchUtil.processBulkRequest(
-        esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+        esClient,
+        bulkRequest,
+        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+        operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
 
     ThreadUtil.sleepFor(3000L);
 
