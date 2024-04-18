@@ -14,53 +14,13 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.property;
+package io.camunda.tasklist.management;
 
-public class TasklistElasticsearchProperties extends ElasticsearchProperties {
+import java.io.IOException;
 
-  public static final String DEFAULT_INDEX_PREFIX = "tasklist";
-  private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
-  private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
-  private static final String DEFAULT_REFRESH_INTERVAL = "1s";
-  private String indexPrefix = DEFAULT_INDEX_PREFIX;
-  private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
-  private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
+public interface ILMPolicyUpdate {
 
-  private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
+  void applyIlmPolicyToAllIndices() throws IOException;
 
-  public String getIndexPrefix() {
-    return indexPrefix;
-  }
-
-  public void setIndexPrefix(final String indexPrefix) {
-    this.indexPrefix = indexPrefix;
-  }
-
-  public void setDefaultIndexPrefix() {
-    setIndexPrefix(DEFAULT_INDEX_PREFIX);
-  }
-
-  public int getNumberOfShards() {
-    return numberOfShards;
-  }
-
-  public void setNumberOfShards(final int numberOfShards) {
-    this.numberOfShards = numberOfShards;
-  }
-
-  public int getNumberOfReplicas() {
-    return numberOfReplicas;
-  }
-
-  public void setNumberOfReplicas(final int numberOfReplicas) {
-    this.numberOfReplicas = numberOfReplicas;
-  }
-
-  public String getRefreshInterval() {
-    return refreshInterval;
-  }
-
-  public void setRefreshInterval(final String refreshInterval) {
-    this.refreshInterval = refreshInterval;
-  }
+  void removeIlmPolicyFromAllIndices() throws IOException;
 }

@@ -36,7 +36,7 @@ $ENTRY_FOCUSED_BORDER_WIDTH: 2px;
     -webkit-line-clamp: 3;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: normal;
+    white-space: pre;
   }
 }
 
@@ -78,7 +78,7 @@ $ENTRY_FOCUSED_BORDER_WIDTH: 2px;
   box-sizing: border-box;
 }
 
-.stack {
+.fullWidthAndHeight {
   width: 100%;
   height: 100%;
 }
@@ -157,12 +157,18 @@ $ENTRY_FOCUSED_BORDER_WIDTH: 2px;
   }
 }
 
-.dateLabel {
-  padding: var(--cds-spacing-01);
-}
-
 .popoverContent {
   padding: var(--cds-spacing-03);
+}
+
+.popoverHeading {
+  color: var(--cds-text-primary);
+  @include type.type-style('heading-01');
+}
+
+.popoverBody {
+  color: var(--cds-text-primary);
+  @include type.type-style('body-short-01');
 }
 
 .inlineIcon {
