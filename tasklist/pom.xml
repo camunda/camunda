@@ -31,7 +31,7 @@
 
     <version.zeebe>8.5.0</version.zeebe>
     <version.identity>8.5.0</version.identity>
-    <version.elasticsearch>7.17.19</version.elasticsearch>
+    <version.elasticsearch>7.17.20</version.elasticsearch>
     <version.lucene>8.11.3</version.lucene>
     <version.elasticsearch-client>8.10.4</version.elasticsearch-client>
     <version.opensearch>2.8.0</version.opensearch>
@@ -41,9 +41,9 @@
     <version.log4j>2.19.0</version.log4j>
     <version.junit>5.9.3</version.junit>
     <version.jakarta.json>2.0.1</version.jakarta.json>
-    <version.micrometer>1.12.2</version.micrometer>
+    <version.micrometer>1.12.5</version.micrometer>
     <version.mockito>5.0.0</version.mockito>
-    <version.byte.buddy>1.14.11</version.byte.buddy>
+    <version.byte.buddy>1.14.13</version.byte.buddy>
     <version.assertj-core>3.25.3</version.assertj-core>
     <version.jackson>2.17.0</version.jackson>
     <version.graphql>15.1.0</version.graphql>
@@ -57,8 +57,8 @@
     <version.guava>33.0.0-jre</version.guava>
     <version.httpclient>4.5.14</version.httpclient>
     <version.apache.httpclient5>5.3.1</version.apache.httpclient5>
-    <version.awssdk>2.25.32</version.awssdk>
-    <version.aws-java-sdk>1.12.702</version.aws-java-sdk>
+    <version.awssdk>2.25.33</version.awssdk>
+    <version.aws-java-sdk>1.12.703</version.aws-java-sdk>
     <version.joda-time>2.12.7</version.joda-time>
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
     <version.commons-logging>1.3.1</version.commons-logging>
@@ -83,7 +83,7 @@
     <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
     <postgres-test-container.version>1.19.4</postgres-test-container.version>
     <testcontainers.version>1.19.4</testcontainers.version>
-    <keycloak-client.version>23.0.6</keycloak-client.version>
+    <keycloak-client.version>23.0.7</keycloak-client.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -111,7 +111,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.commons.lang>3.14.0</version.commons.lang>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.commons.codec>1.16.0</version.commons.codec>
+    <version.commons.codec>1.16.1</version.commons.codec>
     <version.swagger.annotations>2.2.21</version.swagger.annotations>
     <version.json>20231013</version.json>
   </properties>
@@ -300,7 +300,7 @@
       <dependency>
         <groupId>org.eclipse.parsson</groupId>
         <artifactId>parsson</artifactId>
-        <version>1.1.5</version>
+        <version>1.1.6</version>
         <scope>compile</scope>
         <exclusions>
           <exclusion>
@@ -1006,7 +1006,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.11</version>
+          <version>0.8.12</version>
         </plugin>
 
         <plugin>

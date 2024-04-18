@@ -43,7 +43,7 @@ function useTask(
 
       throw error ?? new Error('Could not fetch task');
     },
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 }
 

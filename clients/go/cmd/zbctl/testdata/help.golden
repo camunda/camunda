@@ -44,5 +44,6 @@ Flags:
       --insecure                  Specify if zbctl should use an unsecured connection. If omitted, will read from the environment variable 'ZEEBE_INSECURE_CONNECTION'
       --port string               Specify the port part of the gateway address. If omitted, will read from the environment variable 'ZEEBE_PORT' (default '26500')
       --requestTimeout duration   Specify the default timeout for all requests. Example values: 300ms, 50s or 1m (default 10s)
+      --scope string              Optionally specify the client token scope used when fetching credentials. If omitted, will read from the environment variable 'ZEEBE_TOKEN_SCOPE'
 
 Use "zbctl [command] --help" for more information about a command.

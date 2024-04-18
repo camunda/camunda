@@ -9,7 +9,8 @@
     "plugin:@typescript-eslint/recommended",
     "plugin:react-hooks/recommended",
     "plugin:prettier/recommended",
-    "plugin:testing-library/react"
+    "plugin:testing-library/react",
+    "plugin:@tanstack/eslint-plugin-query/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": [
@@ -39,6 +40,9 @@
         "ignoreRestSiblings": true
       }
     ],
-    "license-header/header": [ "error", "./resources/license-header.js" ]
+    "license-header/header": [
+      "error",
+      "./resources/license-header.js"
+    ]
   }
 }

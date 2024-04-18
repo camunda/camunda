@@ -155,7 +155,7 @@ const Processes: React.FC = observer(() => {
           (opt) => opt.searchParamValue === startFormFilterSearchParam,
         )
       : undefined) ?? START_FORM_FILTER_OPTIONS[0];
-  const {data, error, isInitialLoading} = useProcesses(
+  const {data, error, isLoading} = useProcesses(
     {
       query: searchParams.get('search') ?? undefined,
       tenantId: selectedTenantId,
@@ -163,7 +163,7 @@ const Processes: React.FC = observer(() => {
     },
     {
       refetchInterval: 5000,
-      keepPreviousData: true,
+      placeholderData: (previousData) => previousData,
     },
   );
   const debouncedNavigate = useRef(debounce(updateSearchParams, 500)).current;
@@ -192,7 +192,7 @@ const Processes: React.FC = observer(() => {
   }, [error]);
 
   useEffect(() => {
-    if (match === null || isInitialLoading) {
+    if (match === null || isLoading) {
       return;
     }
 
@@ -216,7 +216,7 @@ const Processes: React.FC = observer(() => {
         pathname: `/${pages.processes()}`,
       });
     }
-  }, [match, data, isInitialLoading, navigate, location]);
+  }, [match, data, isLoading, navigate, location]);
 
   useEffect(() => {
     if (searchParams.get('tenantId') === null && initialTenantId !== null) {
@@ -249,7 +249,7 @@ const Processes: React.FC = observer(() => {
         value: event.target.value,
       });
     },
-    disabled: isInitialLoading,
+    disabled: isLoading,
   } as const;
 
   const Filter = () => {
@@ -352,7 +352,7 @@ const Processes: React.FC = observer(() => {
 
           <div className={styles.processTilesContainer}>
             <div className={styles.processTilesContainerInner}>
-              {!isInitialLoading && processes.length === 0 ? (
+              {!isLoading && processes.length === 0 ? (
                 <Layer>
                   <C3EmptyState
                     icon={
@@ -388,7 +388,7 @@ const Processes: React.FC = observer(() => {
                 </Layer>
               ) : (
                 <Grid narrow as={Layer}>
-                  {isInitialLoading
+                  {isLoading
                     ? Array.from({length: 5}).map((_, index) => (
                         <Column
                           className={styles.processTileWrapper}

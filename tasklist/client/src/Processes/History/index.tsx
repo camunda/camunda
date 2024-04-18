@@ -35,7 +35,7 @@ const History: React.FC = () => {
       </Label>
       <div className={styles.itemContainer}>
         {match({status})
-          .with({status: 'loading'}, () => <Skeleton />)
+          .with({status: 'pending'}, () => <Skeleton />)
           .with({status: 'error'}, () => (
             <Layer>
               <Stack gap={3} className={styles.message}>

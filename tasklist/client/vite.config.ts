@@ -62,7 +62,7 @@ export default defineConfig(({mode}) => ({
         'build/**',
         'src/modules/mockServer/startBrowserMocking.tsx',
       ],
-      reporters: ['html', 'default'],
+      reporters: ['html', 'default', 'hanging-process'],
       all: true,
       lines: 80,
       functions: 80,

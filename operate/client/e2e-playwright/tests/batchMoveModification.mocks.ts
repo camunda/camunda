@@ -15,66 +15,24 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {useQuery, UseQueryOptions} from '@tanstack/react-query';
-import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
-import {tracking} from 'modules/tracking';
-import {Process} from 'modules/types';
+import {deployProcess, createInstances} from '../setup-utils';
 
-type Data = {
-  processes: Process[];
-  query?: string;
-};
+const setup = async () => {
+  const deployProcessResponse = await deployProcess(['orderProcess_v_1.bpmn']);
 
-type Params = {
-  query?: string;
-  tenantId?: string;
-  isStartedByForm?: boolean;
-};
+  if (deployProcessResponse.processes[0] === undefined) {
+    throw new Error('Error deploying process');
+  }
 
-function useProcesses(
-  params: Params,
-  options: Pick<
-    UseQueryOptions<Data, RequestError>,
-    'refetchInterval' | 'enabled' | 'placeholderData'
-  > = {},
-) {
-  const {query, tenantId, isStartedByForm} = params;
-  return useQuery<Data, RequestError>({
-    queryKey: ['processes', query, tenantId, isStartedByForm],
-    queryFn: async () => {
-      const {response, error} = await request(
-        api.getProcesses({query, tenantId, isStartedByForm}),
-      );
+  const {version, processDefinitionKey, bpmnProcessId} =
+    deployProcessResponse.processes[0];
 
-      if (response !== null) {
-        const processes = await response.json();
-        tracking.track({
-          eventName: 'processes-loaded',
-          filter: query ?? '',
-          count: processes.length,
-        });
-        return {
-          processes,
-          query,
-        };
-      }
-
-      throw error ?? new Error('Failed to fetch processes');
-    },
-    ...options,
-  });
-}
-
-function createMockProcess(id: string): Process {
   return {
-    id,
-    name: `Process ${id}`,
-    bpmnProcessId: `bpmn-process-id-${id}`,
-    startEventFormId: `form-id-${id}`,
-    sortValues: ['1'],
-    version: 1,
+    processInstances: await createInstances('orderProcess', version, 10),
+    processDefinitionKey,
+    bpmnProcessId,
+    version,
   };
-}
+};
 
-export {useProcesses, createMockProcess};
+export {setup};
