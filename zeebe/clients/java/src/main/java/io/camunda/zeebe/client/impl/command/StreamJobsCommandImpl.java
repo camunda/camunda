@@ -82,7 +82,7 @@ public final class StreamJobsCommandImpl
 
   @Override
   public ZeebeFuture<StreamJobsResponse> send() {
-
+    builder.clearTenantIds();
     if (customTenantIds.isEmpty()) {
       builder.addAllTenantIds(defaultTenantIds);
     } else {

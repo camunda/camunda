@@ -33,6 +33,7 @@ const defaultTimeout = 10 * time.Second
 var client zbc.Client
 
 var addressFlag string
+var scopeFlag string
 var hostFlag string
 var portFlag string
 var caCertPathFlag string
@@ -78,6 +79,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().StringVar(&scopeFlag, "scope", "", fmt.Sprintf("Optionally specify the client token scope used when fetching credentials. If omitted, will read from the environment variable '%s'", zbc.OAuthTokenScopeEnvVar))
 	rootCmd.PersistentFlags().StringVar(&hostFlag, "host", "", fmt.Sprintf("Specify the host part of the gateway address. If omitted, will read from the environment variable '%s' (default '%s')", zbc.GatewayHostEnvVar, zbc.DefaultAddressHost))
 	rootCmd.PersistentFlags().StringVar(&portFlag, "port", "", fmt.Sprintf("Specify the port part of the gateway address. If omitted, will read from the environment variable '%s' (default '%s')", zbc.GatewayPortEnvVar, zbc.DefaultAddressPort))
 	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. If omitted, will read from the environment variable '"+zbc.GatewayAddressEnvVar+"' (default '"+fmt.Sprintf("%s:%s", zbc.DefaultAddressHost, zbc.DefaultAddressPort)+"')")
@@ -154,6 +156,10 @@ func setSecurityParamsAsEnv() (err error) {
 	}
 	if clientIDFlag != "" {
 		setEnv(zbc.OAuthClientIdEnvVar, clientIDFlag)
+	}
+
+	if scopeFlag != "" {
+		setEnv(zbc.OAuthTokenScopeEnvVar, scopeFlag)
 	}
 	if clientSecretFlag != "" {
 		setEnv(zbc.OAuthClientSecretEnvVar, clientSecretFlag)

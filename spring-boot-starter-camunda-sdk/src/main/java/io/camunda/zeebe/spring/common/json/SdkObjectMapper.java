@@ -17,22 +17,13 @@ package io.camunda.zeebe.spring.common.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.zeebe.spring.common.exception.SdkException;
 import java.io.IOException;
-import java.util.Map;
 
 public class SdkObjectMapper implements JsonMapper {
-
-  private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
-      new TypeReference<>() {};
-
-  private static final TypeReference<Map<String, String>> STRING_MAP_TYPE_REFERENCE =
-      new TypeReference<>() {};
 
   private final ObjectMapper objectMapper;
 
@@ -55,42 +46,6 @@ public class SdkObjectMapper implements JsonMapper {
     } catch (final IOException e) {
       throw new SdkException(
           String.format("Failed to deserialize json '%s' to class '%s'", json, typeClass), e);
-    }
-  }
-
-  @Override
-  public <T, U> T fromJson(
-      final String json, final Class<T> resultType, final Class<U> parameterType) {
-    try {
-      final JavaType javaType =
-          objectMapper.getTypeFactory().constructParametricType(resultType, parameterType);
-      return objectMapper.readValue(json, javaType);
-    } catch (final IOException e) {
-      throw new SdkException(
-          String.format(
-              "Failed to deserialize json '%s' to class '%s' with parameter '%s",
-              json, resultType, parameterType),
-          e);
-    }
-  }
-
-  @Override
-  public Map<String, Object> fromJsonAsMap(final String json) {
-    try {
-      return objectMapper.readValue(json, MAP_TYPE_REFERENCE);
-    } catch (final IOException e) {
-      throw new SdkException(
-          String.format("Failed to deserialize json '%s' to 'Map<String, Object>'", json), e);
-    }
-  }
-
-  @Override
-  public Map<String, String> fromJsonAsStringMap(final String json) {
-    try {
-      return objectMapper.readValue(json, STRING_MAP_TYPE_REFERENCE);
-    } catch (final IOException e) {
-      throw new SdkException(
-          String.format("Failed to deserialize json '%s' to 'Map<String, String>'", json), e);
     }
   }
 

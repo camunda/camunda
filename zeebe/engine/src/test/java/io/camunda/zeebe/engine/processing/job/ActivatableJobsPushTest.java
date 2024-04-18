@@ -14,6 +14,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobBatchRecord
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -55,6 +56,8 @@ public class ActivatableJobsPushTest {
   private static final String PROCESS_ID = "process";
   private static final Set<ValueType> JOB_AND_JOB_BATCH_TYPES =
       Set.of(ValueType.JOB, ValueType.JOB_BATCH);
+  private static final Duration MAX_WAIT_TIME_FOR_ACTIVATED_JOBS =
+      Duration.ofMillis(RecordingExporter.DEFAULT_MAX_WAIT_TIME);
 
   private static final RecordingJobStreamer JOB_STREAMER = new RecordingJobStreamer();
 
@@ -276,16 +279,21 @@ public class ActivatableJobsPushTest {
   }
 
   private void assertActivatedJobsPushed(final Long jobKey, final int activationCount) {
-    final var activatedJobs = jobStream.getActivatedJobs();
-    assertThat(activatedJobs).hasSize(activationCount);
-    activatedJobs.forEach(
-        activatedJob -> {
-          assertThat(activatedJob.jobKey()).isEqualTo(jobKey);
+    await("waiting for the expected number of jobs to be activated")
+        .atMost(MAX_WAIT_TIME_FOR_ACTIVATED_JOBS)
+        .pollInterval(Duration.ofMillis(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(activationCount));
 
-          final JobRecord jobRecord = activatedJob.jobRecord();
-          assertThat(jobRecord.getWorkerBuffer()).isEqualTo(worker);
-          assertThat(jobRecord.getVariables()).isEqualTo(variables);
-          assertThat(jobRecord.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-        });
+    jobStream
+        .getActivatedJobs()
+        .forEach(
+            activatedJob -> {
+              assertThat(activatedJob.jobKey()).isEqualTo(jobKey);
+
+              final JobRecord jobRecord = activatedJob.jobRecord();
+              assertThat(jobRecord.getWorkerBuffer()).isEqualTo(worker);
+              assertThat(jobRecord.getVariables()).isEqualTo(variables);
+              assertThat(jobRecord.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            });
   }
 }

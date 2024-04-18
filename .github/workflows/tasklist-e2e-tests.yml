@@ -1,0 +1,128 @@
+---
+name: Tasklist E2E Tests
+on:
+  push:
+    branches:
+      - 'main'
+      - 'stable/**'
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+  pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+
+# This will limit the workflow to 1 concurrent run per ref (branch / PR).
+# If a new commits occurs, the current run will be canceled to save costs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.9.2
+        env:
+          discovery.type: single-node
+          cluster.name: docker-cluster
+          bootstrap.memory_lock: true
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+          action.destructive_requires_name: false
+        ports:
+          - 9200:9200
+          - 9300:9300
+      zeebe:
+        image: camunda/zeebe:8.5.0
+        env:
+          JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
+          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
+          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
+          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE: 1
+          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
+        ports:
+          - 26500:26500
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Setup yarn
+        run: npm install -g yarn
+      - name: Install node dependencies
+        working-directory: ./tasklist/client
+        run: yarn install
+      - name: Add Yarn binaries to Path
+        working-directory: ./tasklist/client
+        run: |
+          echo "$(yarn bin)" >> $GITHUB_PATH
+          echo "$(yarn global bin)" >> $GITHUB_PATH
+      - name: Install Playwright
+        run: yarn exec playwright install -- --with-deps chromium
+        working-directory: ./tasklist/client
+      - name: Build frontend
+        working-directory: ./tasklist/client
+        run: yarn build
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: "3.9.6"
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        run: mvn -f tasklist clean install -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Start Tasklist
+        run: mvn -q -B spring-boot:start -f tasklist/webapp/pom.xml -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Run tests
+        working-directory: ./tasklist/client
+        run: yarn run test:e2e:ci
+        env:
+          ZEEBE_GATEWAY_ADDRESS: localhost:26500
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Playwright report
+          path: tasklist/client/playwright-report/
+          retention-days: 30

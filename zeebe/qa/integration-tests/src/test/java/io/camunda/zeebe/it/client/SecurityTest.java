@@ -46,7 +46,18 @@ public final class SecurityTest {
 
   @BeforeEach
   void setUp() {
-    testCluster.start().awaitCompleteTopology();
+    // When starting a node with SSL enabled, Tomcat will initialize
+    // a static map of cipher aliases in OpenSSLCipherConfigurationParser.
+    // When starting multiple nodes simultaneously, it may fail because
+    // they modify the static map concurrently.
+    // To avoid the concurrent initialization of the static map, the nodes
+    // must be started one by one.
+    final var nodes = testCluster.nodes().values();
+    nodes.forEach(
+        node -> {
+          node.start();
+        });
+    testCluster.awaitCompleteTopology();
   }
 
   @ParameterizedTest

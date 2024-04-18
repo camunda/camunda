@@ -27,7 +27,6 @@
     <module>webapp</module>
     <module>qa</module>
     <module>mvc-auth-commons</module>
-    <module>../distro</module>
   </modules>
 
   <properties>
@@ -46,7 +45,7 @@
     <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
 
     <includeITNames>**/*IT.java</includeITNames>
-    <excludeITNames>**/*5IT.java</excludeITNames>
+    <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
   </properties>
 
   <build>
@@ -220,20 +219,30 @@
 
   <profiles>
     <profile>
-      <id>itStage1</id>
+      <id>operateItStage1</id>
       <properties>
         <includeITNames>**/*IT.java</includeITNames>
-        <excludeITNames>**/*ZeebeIT.java</excludeITNames>
+        <excludeITNames>**/*ZeebeIT.java, **/*ZeebeImportIT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
         <failsafeForkCount>1</failsafeForkCount>
       </properties>
     </profile>
 
     <profile>
-      <id>itStage2</id>
+      <id>operateItStage2</id>
       <properties>
         <includeITNames>**/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
-        <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
+        <failsafeForkCount>1</failsafeForkCount>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateItImport</id>
+      <properties>
+        <includeITNames>**/*ZeebeImportIT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
+        <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>

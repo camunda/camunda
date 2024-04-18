@@ -41,6 +41,7 @@
       "enabled": false
     },
     {
+      "matchManagers": ["maven"],
       "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
@@ -52,6 +53,7 @@
       "enabled": false
     },
     {
+      "matchManagers": ["maven"],
       "matchPackagePrefixes": ["org.jacoco"],
       "allowedVersions": "!/0.8.9/"
     },
@@ -62,8 +64,25 @@
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
+      "description" : "Exclude internal Maven modules and Maven dependencies lacking metadata.",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": [
+        "io.camunda:operate-parent",
+        "io.camunda:operate-qa",
+        "io.camunda:operate-qa-migration-tests-parent",
+        "io.camunda:tasklist-qa",
+        "io.camunda:tasklist-qa-migration-tests-parent",
+        "net.jcip:jcip-annotations"
+      ],
+      "enabled": false
+    },
+    {
       "description": "This additional prefix is used to skip Operate backend tests.",
       "matchManagers": ["npm", "nvm"],
+      "additionalBranchPrefix": "fe-"
+    },
+    {
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
       "additionalBranchPrefix": "fe-"
     },
     {
@@ -86,13 +105,8 @@
       "groupSlug": "all-minor-patch"
     },
     {
-      "description": "Each digest update breaks release process verification, remove when https://github.com/camunda/zeebe/issues/17181 is done.",
-      "matchFileNames": ["operate.Dockerfile"],
-      "enabled": false
-    },
-    {
       "description": "Both dependencies need to be updated at once for green CI.",
-      "matchPackagePatterns": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
     },
     {

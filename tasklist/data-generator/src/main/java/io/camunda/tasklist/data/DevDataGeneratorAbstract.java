@@ -1,0 +1,266 @@
+/*
+ * Copyright Camunda Services GmbH
+ *
+ * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
+ * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
+ *
+ * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
+ * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
+ * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
+ * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
+ *
+ * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
+ *
+ * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ */
+package io.camunda.tasklist.data;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.UserEntity;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.indices.FormIndex;
+import io.camunda.tasklist.schema.indices.UserIndex;
+import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.util.PayloadUtil;
+import io.camunda.tasklist.util.ZeebeTestUtil;
+import io.camunda.zeebe.client.ZeebeClient;
+import jakarta.annotation.PreDestroy;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+public abstract class DevDataGeneratorAbstract implements DataGenerator {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
+
+  @Autowired protected TasklistProperties tasklistProperties;
+  @Autowired protected UserIndex userIndex;
+  protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+  @Autowired private ZeebeClient zeebeClient;
+
+  @Autowired private FormIndex formIndex;
+
+  @Autowired private TaskTemplate taskTemplate;
+
+  @Autowired private PayloadUtil payloadUtil;
+
+  private final Random random = new Random();
+
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+  @Autowired private ObjectMapper objectMapper;
+
+  private boolean shutdown = false;
+
+  @Override
+  public void createZeebeDataAsync() {
+    if (shouldCreateData()) {
+      executor.submit(
+          () -> {
+            boolean created = false;
+            while (!created && !shutdown) {
+              try {
+                createDemoUsers();
+                Thread.sleep(10_000);
+                createZeebeData();
+                created = true;
+              } catch (final Exception ex) {
+                LOGGER.error("Demo data was not generated, will retry", ex);
+              }
+            }
+          });
+    }
+  }
+
+  @Override
+  public void createDemoUsers() {
+    createUser("john", "John", "Doe");
+    createUser("jane", "Jane", "Doe");
+    createUser("joe", "Average", "Joe");
+    for (int i = 0; i < 5; i++) {
+      final String firstname = NameGenerator.getRandomFirstName();
+      final String lastname = NameGenerator.getRandomLastName();
+      createUser(firstname + "." + lastname, firstname, lastname);
+    }
+  }
+
+  protected String userEntityToJSONString(final UserEntity aUser) throws JsonProcessingException {
+    return objectMapper.writeValueAsString(aUser);
+  }
+
+  private void createZeebeData() {
+    deployProcesses();
+    startProcessInstances();
+  }
+
+  private void startProcessInstances() {
+    final int instancesCount = random.nextInt(20) + 20;
+    for (int i = 0; i < instancesCount; i++) {
+      startOrderProcess();
+      startFlightRegistrationProcess();
+      startSimpleProcess();
+      startBigFormProcess();
+      startCarForRentProcess();
+      startTwoUserTasks();
+    }
+  }
+
+  private void startSimpleProcess() {
+    String payload = null;
+    final int choice = random.nextInt(3);
+    if (choice == 0) {
+      payload =
+          "{\"stringVar\":\"varValue"
+              + random.nextInt(100)
+              + "\", "
+              + " \"intVar\": 123, "
+              + " \"boolVar\": true, "
+              + " \"emptyStringVar\": \"\", "
+              + " \"objectVar\": "
+              + "   {\"testVar\":555, \n"
+              + "   \"testVar2\": \"dkjghkdg\"}}";
+    } else if (choice == 1) {
+      payload = payloadUtil.readJSONStringFromClasspath("/large-payload.json");
+    }
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "simpleProcess", payload);
+  }
+
+  private void startBigFormProcess() {
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "bigFormProcess", null);
+  }
+
+  private void startCarForRentProcess() {
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "registerCarForRent", null);
+  }
+
+  private void startTwoUserTasks() {
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "twoUserTasks", null);
+  }
+
+  private void startMultipleVersionsProcess() {
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "multipleVersions", null);
+  }
+
+  private void startOrderProcess() {
+    final float price1 = Math.round(random.nextFloat() * 100000) / 100;
+    final float price2 = Math.round(random.nextFloat() * 10000) / 100;
+    ZeebeTestUtil.startProcessInstance(
+        zeebeClient,
+        "orderProcess",
+        "{\n"
+            + "  \"clientNo\": \"CNT-1211132-02\",\n"
+            + "  \"orderNo\": \"CMD0001-01\",\n"
+            + "  \"items\": [\n"
+            + "    {\n"
+            + "      \"code\": \"123.135.625\",\n"
+            + "      \"name\": \"Laptop Lenovo ABC-001\",\n"
+            + "      \"quantity\": 1,\n"
+            + "      \"price\": "
+            + Double.valueOf(price1)
+            + "\n"
+            + "    },\n"
+            + "    {\n"
+            + "      \"code\": \"111.653.365\",\n"
+            + "      \"name\": \"Headset Sony QWE-23\",\n"
+            + "      \"quantity\": 2,\n"
+            + "      \"price\": "
+            + Double.valueOf(price2)
+            + "\n"
+            + "    }\n"
+            + "  ],\n"
+            + "  \"mwst\": "
+            + Double.valueOf((price1 + price2) * 0.19)
+            + ",\n"
+            + "  \"total\": "
+            + Double.valueOf((price1 + price2))
+            + ",\n"
+            + "  \"orderStatus\": \"NEW\"\n"
+            + "}");
+  }
+
+  private void startFlightRegistrationProcess() {
+    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+
+    final Calendar calendar = Calendar.getInstance();
+    calendar.setTime(new Date());
+
+    calendar.add(Calendar.DATE, 5);
+    final String dueDate = sdf.format(calendar.getTime());
+
+    calendar.add(Calendar.DATE, 1);
+    final String followUpDate = sdf.format(calendar.getTime());
+
+    final String payload =
+        "{\"candidateGroups\": [\"group1\", \"group2\"],"
+            + "\"assignee\": \"demo\", "
+            + "\"taskDueDate\" : \""
+            + dueDate
+            + "\", "
+            + "\"taskFollowUpDate\" : \""
+            + followUpDate
+            + "\"}";
+
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "flightRegistration", payload);
+  }
+
+  private void deployProcesses() {
+    // Deploy Forms
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV2.form")
+        .send()
+        .join();
+
+    // Deploy Processes
+    ZeebeTestUtil.deployProcess(zeebeClient, "startedByLinkedForm.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "formIdProcessDeployed.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "orderProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "registerPassenger.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "simpleProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "bigFormProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "registerCarForRent.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "twoUserTasks.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "multipleVersions.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "multipleVersions-v2.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "startedByFormProcessWithoutPublic.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "requestAnnualLeave.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "two_processes.bpmn");
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    LOGGER.info("Shutdown DataGenerator");
+    shutdown = true;
+    if (executor != null && !executor.isShutdown()) {
+      executor.shutdown();
+      try {
+        if (!executor.awaitTermination(200, TimeUnit.MILLISECONDS)) {
+          executor.shutdownNow();
+        }
+      } catch (final InterruptedException e) {
+        executor.shutdownNow();
+      }
+    }
+  }
+}

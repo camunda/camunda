@@ -27,8 +27,6 @@ import org.slf4j.LoggerFactory;
 
 public class DefaultCommandExceptionHandlingStrategy implements CommandExceptionHandlingStrategy {
 
-  public static final Set<Status.Code> SUCCESS_CODES =
-      EnumSet.of(Status.Code.OK, Status.Code.ALREADY_EXISTS);
   public static final Set<Status.Code> RETRIABLE_CODES =
       EnumSet.of(
           Status.Code.CANCELLED,

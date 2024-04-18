@@ -1,0 +1,26 @@
+name: Tasklist Update Browserlist DB
+on:
+  schedule:
+    - cron: "0 10 * * MON"
+
+jobs:
+  update:
+    name: "Update"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - run: npx update-browserslist-db@latest --yes
+        name: Update DB
+      - uses: stefanzweifel/git-auto-commit-action@4b8a201e31cadd9829df349894b28c54e6c19fe6
+        with:
+          commit_message: "chore: Update Browserlist DB"

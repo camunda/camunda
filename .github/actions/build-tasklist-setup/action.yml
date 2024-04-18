@@ -1,0 +1,46 @@
+# This action does configure Java, Maven, settings.xml
+---
+name: Build Tasklist setup
+description: configure Java, Maven, settings.xml
+
+inputs:
+  javaVersion:
+    description: "The version of Java to be used to build the service"
+    required: false
+    type: number
+    default: 21
+  nexusUsername:
+    required: true
+    type: string
+  nexusPassword:
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+    # Setup: configure Java, Maven, settings.xml
+    - name: Setup Java ${{ inputs.javaVersion }}
+      uses: actions/setup-java@v4
+      with:
+        distribution: "adopt"
+        java-version: ${{ inputs.javaVersion }}
+        cache: "maven"
+
+    - name: Setup Maven
+      uses: stCarolas/setup-maven@v4.5
+      with:
+        maven-version: 3.8.6
+
+    # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+    - name: Create Maven settings.xml
+      uses: s4u/maven-settings-action@v3.0.0
+      with:
+        githubServer: false
+        servers: |
+          [{
+            "id": "camunda-nexus",
+            "username": "${{ inputs.nexusUsername }}",
+            "password": "${{ inputs.nexusPassword }}"
+          }]
+        mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'

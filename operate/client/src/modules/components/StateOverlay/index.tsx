@@ -32,15 +32,16 @@ type Props = {
   container: HTMLElement;
   count?: number;
   isFaded?: boolean;
+  testId?: string;
 };
 
 const StateOverlay: React.FC<Props> = observer(
-  ({state, container, count, isFaded = false}) => {
+  ({state, container, count, isFaded = false, testId = 'state-overlay'}) => {
     const showStatistic = count !== undefined;
 
     return createPortal(
       <Container
-        data-testid="state-overlay"
+        data-testid={testId}
         $theme={currentTheme.theme}
         $state={state}
         $isFaded={isFaded}

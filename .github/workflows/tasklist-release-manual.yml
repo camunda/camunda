@@ -1,0 +1,72 @@
+# This GitHub Actions (GHA) workflow is used to manually trigger a release for `tasklist` application.
+#
+# It takes several inputs:
+# - 'branch': the branch from which to build the release.
+# - 'releaseVersion': the version number to apply to the release (in pom.xml and the Git tag).
+# - 'nextDevelopmentVersion': the version to use after the release.
+# - 'dryRun': if true, the release is built but no changes are made or artifacts (Docker, Maven) are pushed. Defaults to `true`.
+# - 'githubUploadRelease': if true, the release will be uploaded to GitHub. Defaults to `false`.
+# - 'isLatest': if true, the Docker image will be tagged with the 'latest' tag. Defaults to `false`.
+# - 'javaVersion': the Java version to use to build the release. Defaults to `21`.
+#
+# The workflow leverages a reusable workflow (./.github/workflows/tasklist-release-reusable.yml)
+# to perform the actual release process.
+#
+# It allows you to manually dispatch the workflow with custom input parameters to control the release process.
+# This can be done through GitHub's UI by navigating to the "Actions" tab of the `tasklist` repository, then clicking on the
+# "Run workflow" dropdown, selecting the workflow, filling in the input fields and clicking "Run workflow".
+#
+# Link to Release manual workflow: https://github.com/camunda/tasklist/actions/workflows/release-manual.yml
+
+
+name: Tasklist Release manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch name to build release from."
+        type: string
+        required: true
+      releaseVersion:
+        description: "Version to release (applied to pom.xml and Git tag)."
+        type: string
+        required: true
+      nextDevelopmentVersion:
+        description: "Next development version."
+        type: string
+        required: true
+      dryRun:
+        description: "Whether to perform a dry release, where no changes or artifacts(Docker, Maven) are pushed, defaults to `true`."
+        type: boolean
+        required: false
+        default: true
+      githubUploadRelease:
+        description: "Should upload the release to GitHub."
+        type: boolean
+        required: false
+        default: false
+      isLatest:
+        description: "Should tag the docker image with 'latest' tag."
+        type: boolean
+        required: false
+        default: false
+      javaVersion:
+        description: "The version of Java to be used to build the release."
+        type: number
+        required: false
+        default: 21
+
+jobs:
+  release:
+    name: "release manually v${{ inputs.releaseVersion }}"
+    uses: ./.github/workflows/tasklist-release-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ inputs.branch }}
+      releaseVersion: ${{ inputs.releaseVersion }}
+      nextDevelopmentVersion: ${{ inputs.nextDevelopmentVersion }}
+      dryRun: ${{ inputs.dryRun }}
+      githubUploadRelease: ${{ inputs.githubUploadRelease }}
+      isLatest: ${{ inputs.isLatest }}
+      javaVersion: ${{ inputs.javaVersion }}

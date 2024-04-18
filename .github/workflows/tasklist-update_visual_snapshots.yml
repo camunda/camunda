@@ -1,0 +1,40 @@
+name: Tasklist Update Visual Regression Snapshots
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+
+jobs:
+  update-snapshots:
+    if: github.event.pull_request.state != 'closed' && (github.event.label.name == 'update-snapshots' || contains( github.event.pull_request.labels.*.name, 'update-snapshots'))
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.43.1
+      options: --user 1001:1000
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Setup yarn cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - name: Install node dependencies
+        working-directory: ./tasklist/client
+        run: yarn
+      - name: Build frontend
+        working-directory: ./tasklist/client
+        run: yarn build:visual-regression
+      - name: Start server
+        working-directory: ./tasklist/client
+        run: yarn start:visual-regression &
+      - name: Update snapshots
+        working-directory: ./tasklist/client
+        run: yarn playwright e2e/visual --update-snapshots
+      - name: Commit screenshots
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: updated snapshots"
+          file_pattern: "tasklist/client/**/*.png"

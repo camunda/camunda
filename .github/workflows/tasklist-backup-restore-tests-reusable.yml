@@ -1,0 +1,101 @@
+# This is a reusable workflow for running 'Backup and Restore' tests.
+name: Tasklist Backup and restore tests (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      database:
+        description: "Database name ('elasticsearch' or 'opensearch')"
+        required: true
+        type: string
+
+# define constants for later use
+env:
+  JAVA_VERSION: "21"
+
+jobs:
+  build-and-test:
+    name: "with '${{ inputs.database }}'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Setup: checkout
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      # Setup: import secrets from vault
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+            secret/data/products/tasklist/ci/tasklist TASKLIST_CI_ALERT_WEBHOOK_URL;
+
+      # Setup: configure Java, Maven, settings.xml
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: "maven"
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.8.6
+
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: Create Maven settings.xml
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
+      # Build: maven artifacts
+      - name: Build backend
+        run: |
+          mvn -f tasklist -B -DskipTests -P skipFrontendBuild clean install
+
+      # Tests: run backup and restore tests
+      - name: Run backup and restore tests
+        run: |
+          mvn -B -f tasklist/qa/backup-restore-tests -DtasklistDatabase=${{ inputs.database }} -P -docker,-skipTests verify
+
+      # Reports: publish test results
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
+        if: always()
+        with:
+          check_name: "BackupRestore test results with '${{ inputs.database }}'"
+          comment_mode: off
+          report_individual_runs: true
+          report_suite_logs: error
+          files: |
+            **/target/surefire-reports/*.xml
+
+      # Notify: send Slack notification on tests failure
+      - name: Send Slack notification on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "workflow_name": "Backup and restore tests",
+              "github_run_url": "https://github.com/camunda/tasklist/actions/runs/${{ github.run_id }}",
+              "branch": "${{ github.head_ref || github.ref_name }}"
+            }

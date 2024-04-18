@@ -19,6 +19,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PROCESS_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
@@ -107,6 +108,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
     final ProcessInstance result = dao.byKey(singleTaskProcessInstanceKey);
     assertThat(result.getKey()).isEqualTo(singleTaskProcessInstanceKey);
     assertThat(result.getBpmnProcessId()).isEqualTo("process");
+    assertThat(result.getIncident()).isEqualTo(false);
   }
 
   @Test
@@ -234,5 +236,19 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
     assertThat(results.getItems())
         .extracting(BPMN_PROCESS_ID)
         .containsExactlyInAnyOrder("CallActivityProcess", "CalledProcess");
+  }
+
+  @Test
+  public void shouldFilterByIncident() {
+
+    final Results<ProcessInstance> resultsWithIncident =
+        dao.search(new Query<ProcessInstance>().setFilter(new ProcessInstance().setIncident(true)));
+
+    final Results<ProcessInstance> resultsWithoutIncident =
+        dao.search(
+            new Query<ProcessInstance>().setFilter(new ProcessInstance().setIncident(false)));
+
+    assertTrue(resultsWithIncident.getItems().isEmpty());
+    assertThat(resultsWithoutIncident.getItems().size()).isEqualTo(3);
   }
 }

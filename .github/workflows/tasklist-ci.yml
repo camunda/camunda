@@ -1,0 +1,54 @@
+# This GitHub Actions workflow that is triggered on push to `main` and `stable/**` branch or on any pull request creation
+# and invokes `ci-build-reusable` and `ci-test-reusable` workflows.
+---
+name: Tasklist CI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+      - 'stable/**'
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+  pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+
+# This will limit the workflow to 1 concurrent run per ref (branch / PR).
+# If a new commits occurs, the current run will be canceled to save costs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-build:
+    name: run-build
+    uses: ./.github/workflows/tasklist-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+
+  run-tests:
+    name: run-tests
+    uses: ./.github/workflows/tasklist-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+
+  test-summary:
+    # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
+    # https://github.com/orgs/community/discussions/26251
+    # This name is hard-coded in the branch rules; remember to update that if this name changes
+    name: Test summary
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0

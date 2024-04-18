@@ -18,6 +18,7 @@ package io.camunda.operate.property;
 
 public class ZeebeProperties {
 
+  private String brokerContactPoint;
   private String gatewayAddress = "localhost:26500";
   private boolean isSecure = false;
   private String certificatePath = null;
@@ -42,12 +43,12 @@ public class ZeebeProperties {
 
   @Deprecated
   public String getBrokerContactPoint() {
-    return gatewayAddress;
+    return brokerContactPoint;
   }
 
   @Deprecated
-  public void setBrokerContactPoint(String brokerContactPoint) {
-    this.gatewayAddress = brokerContactPoint;
+  public void setBrokerContactPoint(final String brokerContactPoint) {
+    this.brokerContactPoint = brokerContactPoint;
   }
 
   public String getGatewayAddress() {

@@ -1,0 +1,28 @@
+name: Tasklist merge queue CI
+
+on:
+  merge_group: { }
+  pull_request: { }
+  workflow_dispatch: { }
+
+
+jobs:
+  run-build:
+    name: run-build
+    uses: ./.github/workflows/tasklist-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+      pushDocker: false
+
+  tasklist-ci-test-summary:
+    # Used by the merge queue to check all jobs.
+    # New test jobs must be added to the `needs` lists!
+    # This name is hard-coded in the branch rules; remember to update that if this name changes
+    name: Tasklist CI test summary
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - run-build
+    steps:
+      - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}

@@ -1,0 +1,47 @@
+name: Tasklist Visual regression tests
+on:
+  push:
+    branches:
+      - "main"
+      - "stable/**"
+    paths:
+      - ".github/workflows/tasklist-playwright.yml"
+      - "tasklist/client/**"
+  pull_request:
+    paths:
+      - ".github/workflows/tasklist-playwright.yml"
+      - "tasklist/client/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.43.1
+      options: --user 1001:1000
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Setup yarn cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - name: Install node dependencies
+        working-directory: ./tasklist/client
+        run: yarn
+      - name: Build frontend
+        working-directory: ./tasklist/client
+        run: yarn build:visual-regression
+      - name: Start server
+        working-directory: ./tasklist/client
+        run: yarn start:visual-regression &
+      - name: Run Playwright tests
+        working-directory: ./tasklist/client
+        run: yarn playwright e2e/visual
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Playwright report
+          path: tasklist/client/playwright-report/
+          retention-days: 30

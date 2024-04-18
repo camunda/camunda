@@ -1,0 +1,59 @@
+# This GitHub Actions (GHA) workflow performs a release process in response to a repository dispatch event of type 'trigger_tasklist_release'.
+#
+# The workflow listens for dispatch events and triggers a release using the reusable release workflow (./.github/workflows/tasklist-release-reusable.yml).
+#
+# It takes several parameters that should be provided through the dispatch event payload.
+# - 'branch': the branch from which to build the release.
+# - 'releaseVersion': the version number to apply to the release (in pom.xml and the Git tag).
+# - 'nextDevelopmentVersion': the version to use after the release.
+# - 'dryRun': if `true`, the release is built but no changes are made or artifacts (Docker, Maven) pushed.
+# - 'githubUploadRelease': if `true`, the release will be uploaded to GitHub.
+# - 'isLatest': if `true`, the Docker image will be tagged with the 'latest' tag.
+# - 'javaVersion': the Java version to use to build the release. Defaults to `21`.
+# This setup enables external systems to trigger a release in this repository by sending a dispatch event with the required parameters.
+#
+# This event is typically dispatched by a POST request
+# to the GitHub API '/repos/camunda/tasklist/dispatches'.
+#
+# To invoke this workflow, you can execute the following command:
+#
+# curl -XPOST -H "Authorization: token <your_github_token>" \
+#     -H "Accept: application/vnd.github.everest-preview+json" \
+#     -H "Content-Type: application/json" \
+#     --data '{
+#       "event_type": "trigger_tasklist_release",
+#       "client_payload": {
+#         "branch": "<branch_name>",
+#         "releaseVersion": "<release_version>",
+#         "nextDevelopmentVersion": "<next_dev_version>",
+#         "dryRun": <true_or_false>,
+#         "githubUploadRelease": <true_or_false>,
+#         "isLatest": <true_or_false>,
+#         "javaVersion": <java_version>,
+#       }
+#     }' \
+#     https://api.github.com/repos/camunda/tasklist/dispatches
+#
+# Replace '<your_github_token>' with a GitHub token that has the necessary permissions to create a 'repository_dispatch' event.
+# Replace '<branch_name>', '<release_version>', '<next_dev_version>' and '<java_version>' with your actual values.
+# Replace '<true_or_false>' with the respective boolean values for 'dryRun', 'githubUploadRelease', and 'isLatest'.
+
+name: Tasklist Release dispatch
+
+on:
+  repository_dispatch:
+    types: [trigger_tasklist_release]
+    
+jobs:
+  release:
+    name: "release v${{ github.event.client_payload.releaseVersion }}"
+    uses: ./.github/workflows/tasklist-release-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.event.client_payload.branch }}
+      releaseVersion: ${{ github.event.client_payload.releaseVersion }}
+      nextDevelopmentVersion: ${{ github.event.client_payload.nextDevelopmentVersion }}
+      dryRun: ${{ github.event.client_payload.dryRun }}
+      githubUploadRelease: ${{ github.event.client_payload.githubUploadRelease }}
+      isLatest: ${{ github.event.client_payload.isLatest }}
+      javaVersion: ${{ github.event.client_payload.javaVersion || 21 }}

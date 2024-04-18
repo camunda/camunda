@@ -19,6 +19,10 @@ on:
         description: "The branch name to be used for the workflow"
         required: true
         type: string
+      pushDocker:
+        description: "whether the built docker images are pushed to camunda registry"
+        type: boolean
+        default: true
 
 defaults:
   run:
@@ -35,6 +39,7 @@ jobs:
   build:
     name: Build
     runs-on: ${{ (github.event_name == 'pull_request' && (startsWith(inputs.branch, 'fe-') || (startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')))) && 'ubuntu-latest' || 'gcp-core-16-default' }}
+    timeout-minutes: 20
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -113,7 +118,8 @@ jobs:
         uses: ./.github/actions/build-operate-docker
         with:
           tags: ${{ steps.meta.outputs.tags }}
-          push: true
+          push: ${{ inputs.pushDocker }}
+          platforms: ${{ inputs.pushDocker && 'linux/arm64,linux/amd64' || 'linux/amd64' }}
 
       #########################################################################
       # Docker login for snapshot deployment

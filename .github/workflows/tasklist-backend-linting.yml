@@ -1,0 +1,36 @@
+name: Tasklist Backend linting
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - '!tasklist/client/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+  pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - '!tasklist/client/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+jobs:
+  linting:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '21'
+      - run: mvn -f tasklist -q checkstyle:check
+        name: Check style
+      - run: mvn -f tasklist -q license:check -Dlicense.header=license/license-header
+        name: Check license header
+      - run: mvn -f tasklist -q spotless:check
+        name: Check Google Java codestyle

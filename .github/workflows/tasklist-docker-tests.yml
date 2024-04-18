@@ -1,0 +1,103 @@
+---
+name: Tasklist Docker Tests
+on:
+  push:
+    branches:
+      - 'main'
+      - 'stable/**'
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+  pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'tasklist/**'
+      - 'tasklist-distro/**'
+      - 'tasklist.Dockerfile'
+
+# This will limit the workflow to 1 concurrent run per ref (branch / PR).
+# If a new commits occurs, the current run will be canceled to save costs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-tests:
+    name: Docker container tests
+    runs-on: gcp-core-2-default
+    timeout-minutes: 20
+    env:
+      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Test Dockerfile with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          ignore: DL3018 # redundant when pinning the base image
+          dockerfile: tasklist.Dockerfile
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: "3.9.6"
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        run: mvn -f tasklist clean install -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+      - name: Build and push to local registry
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          cache-from: type=gha,ignore-error=true
+          cache-to: type=gha,mode=max,ignore-error=true
+          no-cache-filters: build,distball,dist
+          file: tasklist.Dockerfile
+      - name: Run Docker tests
+        run: mvn -f tasklist/qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+      - name: Upload Test Report
+        if: failure()
+        uses: ./.github/actions/collect-tasklist-test-artifacts
+        with:
+          name: "docker tests"

@@ -1,0 +1,231 @@
+# This is a reusable GHA workflow for performing releases for `tasklist` application.
+#
+# It takes several inputs:
+# - 'branch': the branch from which to build the release.
+# - 'releaseVersion': the version number to apply to the release (in pom.xml and the Git tag).
+# - 'nextDevelopmentVersion': the version to use after the release.
+# - 'dryRun': if `true`, the release is built but no changes are made or artifacts (Docker, Maven) pushed. Defaults to `true`.
+# - 'githubUploadRelease': if `true`, the release will be uploaded to GitHub. Defaults to `false`.
+# - 'isLatest': if `true`, the Docker image will be tagged with the 'latest' tag. Defaults to `false`.
+# - 'javaVersion': the Java version to use to build the release. Defaults to `21`.
+#
+# The workflow does the following:
+# - Checks out the specified branch.
+# - Configures the GitHub user for Git operations.
+# - Imports necessary secrets from Vault.
+# - Configures Java and Maven for the build.
+# - Runs the Maven release process, including preparing and performing the release.
+#
+# - If specified, uploads the release to GitHub.
+# - If specified, uploads the Docker image to the Docker registry.
+# - If the release process fails, sends a notification to a (#tasklist-release-alerts) Slack channel.
+
+name: Tasklist Release (reusable workflow)
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "The branch name to build release from."
+        type: string
+        required: true
+      releaseVersion:
+        description: "Version to release (applied to pom.xml and Git tag)."
+        type: string
+        required: true
+      nextDevelopmentVersion:
+        description: "Next development version."
+        type: string
+        required: true
+      dryRun:
+        description: "Whether to perform a dry release, where no changes or artifacts(Docker, Maven) are pushed, defaults to `true`."
+        type: boolean
+        required: false
+        default: true
+      githubUploadRelease:
+        description: "Should upload the release to GitHub."
+        type: boolean
+        required: false
+        default: false
+      isLatest:
+        description: "Should tag the docker image with 'latest' tag."
+        type: boolean
+        required: false
+        default: false
+      javaVersion:
+        description: "The version of Java to be used to build the release."
+        type: number
+        required: false
+        default: 21
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  JAVA_VERSION: ${{ inputs.javaVersion }}
+  LIMITS_CPU: 2
+  RELEASE_VERSION: ${{ inputs.releaseVersion }}
+
+jobs:
+  release:
+    name: "'${{ inputs.branch }}' branch"
+    runs-on: ubuntu-latest
+    steps:
+      #########################################################################
+      # Setup: checkout branch
+      - name: "Checkout '${{ inputs.branch }}' branch"
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0 # fetches all history for all branches and tags
+
+      # Setup: configure GitHub user
+      - name: Configure GitHub user
+        run: |
+          git config --global user.email "ci@tasklist.camunda.cloud"
+          git config --global user.name "github-tasklist-app"
+
+      # Setup: import secrets from vault
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/tasklist/ci/tasklist TASKLIST_RELEASE_ALERT_WEBHOOK_URL;
+            secret/data/products/tasklist/ci/tasklist GITHUB_TASKLIST_APP_ID;
+            secret/data/products/tasklist/ci/tasklist GITHUB_TASKLIST_APP_PRIVATE_KEY;
+
+      # Setup: configure Java, Maven, settings.xml
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: "maven"
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.8.6
+
+      # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: Create Maven settings.xml
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
+      #########################################################################
+      # Release: run Maven release
+      - name: Maven release
+        env:
+          PUSH_CHANGES: ${{ inputs.dryRun == false }}
+          SKIP_DEPLOY: ${{ inputs.dryRun }}
+        run: |
+          mvn -f tasklist release:prepare release:perform -P -docker \
+          -DpushChanges=${{ env.PUSH_CHANGES }} \
+          -DlocalCheckout=true \
+          -DskipTests=true -B -T${{ env.LIMITS_CPU }} --fail-at-end \
+          -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+          -Dtag=${{ env.RELEASE_VERSION }} \
+          -DreleaseVersion=${{ env.RELEASE_VERSION }} \
+          -DdevelopmentVersion=${{ inputs.nextDevelopmentVersion }} \
+          -Darguments='-Dmaven.deploy.skip=${{ env.SKIP_DEPLOY }} -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=${{ env.SKIP_DEPLOY }} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+
+      # Setup: Generate token for 'Upload to GitHub Release' step
+      - name: Generate GitHub token
+        id: generate_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ steps.secrets.outputs.GITHUB_TASKLIST_APP_ID }}
+          private_key: ${{ steps.secrets.outputs.GITHUB_TASKLIST_APP_PRIVATE_KEY }}
+
+      # Upload: Upload to GitHub Release
+      - name: Upload to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          ARTIFACT="camunda-tasklist"
+          ZEEBE_VERSION=$(mvn -f tasklist help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
+
+          cd target/checkout/tasklist-distro/target
+
+          # create checksums
+          sha1sum ${ARTIFACT}-${{ env.RELEASE_VERSION }}.tar.gz > ${ARTIFACT}-${{ env.RELEASE_VERSION }}.tar.gz.sha1sum
+          sha1sum ${ARTIFACT}-${{ env.RELEASE_VERSION }}.zip > ${ARTIFACT}-${{ env.RELEASE_VERSION }}.zip.sha1sum
+
+          # upload to github release
+          curl -sL https://github.com/github-release/github-release/releases/download/v0.10.0/linux-amd64-github-release.bz2 | bzip2 -fd - > github-release
+          chmod +x github-release
+          for f in ${ARTIFACT}-${{ env.RELEASE_VERSION }}.{tar.gz,zip}{,.sha1sum}; do
+            if ${{ inputs.dryRun }}; then
+              echo "'${f}' file was created, skip upload in dryRun mode"
+            elif ${{ inputs.githubUploadRelease }}; then
+              echo "Uploading '${f}' file to zeebe repo on GitHub"
+              ./github-release upload --user camunda --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
+            else
+              echo "'${f}' file was created, skip upload"
+            fi
+          done
+
+      # Upload: Upload Docker Image
+      - name: Set DOCKER_FILE_NAME env variable
+        run: |
+          echo "DOCKER_FILE_NAME=$(if [ -f tasklist.Dockerfile ]; then echo tasklist.Dockerfile; else echo Dockerfile; fi)" >> $GITHUB_ENV
+      - name: Login to docker hub
+        if: ${{ inputs.dryRun == false }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            camunda/tasklist
+          tags: |
+            ${{ inputs.releaseVersion }}
+            latest,enable=${{ inputs.isLatest }}
+      - name: Upload Docker image
+        if: ${{ inputs.dryRun == false }}
+        uses: ./.github/actions/build-tasklist-docker
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          dockerfile: ${{ env.DOCKER_FILE_NAME }}
+          push: true
+
+
+      #########################################################################
+      # Notify: send Slack notification of release failure
+      - name: Send Slack notification on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.25.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_RELEASE_ALERT_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "github_run_url": "https://github.com/camunda/tasklist/actions/runs/${{ github.run_id }}",
+              "dry_run": "${{ inputs.dryRun }}",
+              "release_version": "${{ inputs.releaseVersion }}",
+              "branch": "${{ inputs.branch }}"
+            }

@@ -295,8 +295,17 @@ final class StreamProcessorReplayTest {
             .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .key(1)
             .causedBy((int) positionInSnapshot));
-    // starting the stream processor awaits until replay is completed
+
     streamPlatform.startStreamProcessor();
+    // Ensure that the last processed position is updated before taking a snapshot. This is
+    // necessary to ensure that after restarting the processor, it can recover from a non-zero
+    // processed position.
+    Awaitility.await("Last written position has to be updated before taking snapshot")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join())
+                    .isEqualTo(positionInSnapshot));
     streamPlatform.snapshot();
 
     // write more events to make sure that the processor is paused in replay phase after recovery

@@ -84,6 +84,36 @@ describe('<InstancesTable /> - batch modification selection', () => {
     });
   });
 
+  it('should fetch statistics when all instances are selected (with id filter)', async () => {
+    const {user} = render(<InstancesTable />, {
+      wrapper: getWrapper(
+        `/?ids=${mockProcessInstances.processInstances[0]?.id}`,
+      ),
+    });
+    const fetchProcessStatisticsSpy = jest.spyOn(
+      processStatisticsBatchModificationStore,
+      'fetchProcessStatistics',
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /enable batch modification mode/i}),
+    );
+
+    mockFetchProcessInstancesStatistics().withSuccess([]);
+    await user.click(
+      await screen.findByRole('checkbox', {name: /select all rows/i}),
+    );
+
+    expect(fetchProcessStatisticsSpy).toHaveBeenCalledTimes(1);
+    expect(fetchProcessStatisticsSpy).toHaveBeenCalledWith({
+      canceled: false,
+      completed: false,
+      excludeIds: [],
+      finished: false,
+      ids: [mockProcessInstances.processInstances[0]?.id],
+    });
+  });
+
   it('should fetch statistics when two instances are selected', async () => {
     const {user} = render(<InstancesTable />, {wrapper: getWrapper()});
     const fetchProcessStatisticsSpy = jest.spyOn(
@@ -191,6 +221,57 @@ describe('<InstancesTable /> - batch modification selection', () => {
       ids: [],
     });
     expect(fetchProcessStatisticsSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('should fetch statistics when one instance is excluded (with id filter)', async () => {
+    const [firstInstance, secondInstance] =
+      mockProcessInstances.processInstances;
+
+    const {user} = render(<InstancesTable />, {
+      wrapper: getWrapper(`/?ids=${firstInstance?.id},${secondInstance?.id}`),
+    });
+
+    const fetchProcessStatisticsSpy = jest.spyOn(
+      processStatisticsBatchModificationStore,
+      'fetchProcessStatistics',
+    );
+
+    mockFetchProcessInstancesStatistics().withSuccess([]);
+    await user.click(
+      screen.getByRole('button', {name: /enable batch modification mode/i}),
+    );
+
+    // wait for process instances to be fetched
+    expect(
+      await screen.findByText(/process instances .* results/i),
+    ).toBeInTheDocument();
+
+    const [firstInstanceCheckbox] = screen.getAllByRole('checkbox', {
+      name: /select row/i,
+    });
+
+    mockFetchProcessInstancesStatistics().withSuccess([]);
+    await user.click(
+      await screen.findByRole('checkbox', {name: /select all rows/i}),
+    );
+    expect(fetchProcessStatisticsSpy).toHaveBeenNthCalledWith(1, {
+      canceled: false,
+      completed: false,
+      excludeIds: [],
+      finished: false,
+      ids: [firstInstance?.id, secondInstance?.id],
+    });
+
+    mockFetchProcessInstancesStatistics().withSuccess([]);
+    await user.click(firstInstanceCheckbox!);
+
+    expect(fetchProcessStatisticsSpy).toHaveBeenNthCalledWith(2, {
+      canceled: false,
+      completed: false,
+      excludeIds: [firstInstance?.id],
+      finished: false,
+      ids: [firstInstance?.id, secondInstance?.id],
+    });
   });
 
   it('should reset statistics when no instance is selected', async () => {

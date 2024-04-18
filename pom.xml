@@ -23,6 +23,7 @@
     <module>spring-boot-starter-camunda-sdk</module>
     <module>zeebe</module>
     <module>operate</module>
+    <module>identity</module>
   </modules>
 
   <scm>
@@ -50,6 +51,7 @@
               <exclude>**/target/**/*.md</exclude>
               <exclude>clients/go/vendor/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
+              <exclude>tasklist/client/**/*.md</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>

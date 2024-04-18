@@ -1,0 +1,8 @@
+{
+  "description": "Add field version ",
+  "@type": "processorStep",
+  "indexName": "task",
+  "version": "8.2.2",
+  "order": 1,
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.dueDate = null;\"}}"
+}
