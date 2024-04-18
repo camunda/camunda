@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {ProcessFilter, SingleProcessReportData} from 'types';
+import {FilterType, ProcessFilter, SingleProcessReportData} from 'types';
 
-export interface defaultProcessFilter extends Omit<ProcessFilter, 'appliedTo'> {
+export interface DefaultProcessFilter<T extends FilterType = FilterType>
+  extends Omit<ProcessFilter<T>, 'appliedTo'> {
   label: string;
   description: string;
 }
@@ -20,6 +21,6 @@ export interface KpiTemplate {
     configuration?: Partial<SingleProcessReportData['configuration']>;
   };
   uiConfig: {
-    filters: defaultProcessFilter[];
+    filters: DefaultProcessFilter[];
   };
 }

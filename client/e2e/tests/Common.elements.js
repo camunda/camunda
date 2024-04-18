@@ -77,7 +77,7 @@ export const overflowMenuOption = (text) => overflowMenuOptions.find('button').w
 export const toggleElement = (text) => Selector('.cds--toggle__label').withText(text);
 export const radioButton = (text) => Selector('.cds--radio-button-wrapper').withText(text);
 export const checkbox = (text) => Selector('.cds--checkbox-label').withText(text);
-export const kpiFilterButton = Selector('.filterTile button');
+export const kpiFilterButton = Selector('.filterTile .actions > button');
 export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
 export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
 export const oldListItem = Selector('.ListItem');

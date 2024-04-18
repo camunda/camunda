@@ -21,23 +21,14 @@ import NodeListPreview from './NodeListPreview';
 
 import './NodeFilter.scss';
 
-interface NodeFilterProps
-  extends WithErrorHandlingProps,
-    FilterProps<{
-      values?: string[];
-      operator?: string;
-    }> {
-  filterLevel: 'instance';
-  filterType: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
-}
-
 export function NodeFilter({
   filterData,
   definitions,
   mightFail,
   close,
   addFilter,
-}: NodeFilterProps) {
+}: FilterProps<'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes'> &
+  WithErrorHandlingProps) {
   const [selectedNodes, setSelectedNodes] = useState<(string | ModdleElement)[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
     const validDefinitions = definitions.filter(

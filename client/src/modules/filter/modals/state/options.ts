@@ -7,7 +7,7 @@
 
 import {t} from 'translation';
 
-import {FlowNodeStateFilterType, IncidentFilterType, InstanceStateFilterType} from '../types';
+import {FlowNodeStateFilterType, IncidentFilterType, InstanceStateFilterType} from 'types';
 
 export default function getMapping(type: string):
   | {

@@ -31,13 +31,6 @@ import NodesTable from './NodesTable';
 
 import './NodeDuration.scss';
 
-interface NodeDurationProps
-  extends WithErrorHandlingProps,
-    FilterProps<Record<string, FilterData>> {
-  filterLevel: 'instance';
-  filterType: 'flowNodeDuration';
-}
-
 interface NodeDurationState {
   focus: string | null;
   values: Record<string, FilterData>;
@@ -47,7 +40,10 @@ interface NodeDurationState {
   xml: string | null;
 }
 
-export class NodeDuration extends Component<NodeDurationProps, NodeDurationState> {
+export class NodeDuration extends Component<
+  FilterProps<'flowNodeDuration'> & WithErrorHandlingProps,
+  NodeDurationState
+> {
   state: NodeDurationState = {
     focus: null,
     values: {},
@@ -83,7 +79,10 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
     });
   }
 
-  async componentDidUpdate(prevProps: NodeDurationProps, prevState: NodeDurationState) {
+  async componentDidUpdate(
+    prevProps: FilterProps<'flowNodeDuration'>,
+    prevState: NodeDurationState
+  ) {
     if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
       this.setState({loading: true});
 

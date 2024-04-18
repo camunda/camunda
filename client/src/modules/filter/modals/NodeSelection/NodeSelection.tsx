@@ -35,10 +35,7 @@ export default function NodeSelection({
   addFilter,
   modalTitle = t('common.filter.types.flowNodeSelection'),
   className,
-}: FilterProps<{
-  values?: string[];
-  operator?: string;
-}>) {
+}: FilterProps<'executedFlowNodes'>) {
   const [allFlowNodes, setAllFlowNodes] = useState<string[]>([]);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [applyTo, setApplyTo] = useState(() => {

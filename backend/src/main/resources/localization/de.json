@@ -394,20 +394,21 @@
       "step": "Schritt {count}",
       "selectKpi": "Prozess-KPI auswählen",
       "automationRate": "Automatisierungsrate",
-      "automationRate-description": "Die Automatisierungsrate misst, wie viel Prozent des Prozesses ohne menschliche Interaktion ausgeführt werden.",
-      "automationRate-filter1": "Wählen Sie die End-Events aus, die einen vollautomatischen Prozess hinweisen",
-      "automationRate-filter2": "Wählen Sie den Zeitraum, für den die Automatisierungsrate bewertet werden soll",
       "preview": "Vorschau",
       "setTargetAndFilters": "Ziel und Filter einstellen",
-      "throughput": "Durchlaufzeit",
-      "throughput-description": "Die Durchlaufzeit gibt an, wie lange ein Prozess auf dem glücklichen Weg im Durchschnitt braucht, um zu enden",
-      "throughput-filter1": "Wählen Sie die End-Events aus, die einen vollautomatischen Prozess hinweisen",
-      "throughput-filter2": "Wählen Sie den Zeitrahmen, für den der Durchsatz bewertet werden soll",
-      "mandatoryFilters": "Obligatorische Filter",
+      "mandatoryFields": "Pflichtfelder",
+      "filtersLabel": "Filters",
       "filters": {
         "nodeSelection": "Event Ende auswählen",
         "endDate": "Zeitrahmen wählen"
-      }
+      },
+      "automationRate-description": "Die Automatisierungsrate misst, wie viel Prozent des Prozesses ohne menschliche Interaktion ausgeführt werden.",
+      "automationRate-filter1": "Wählen Sie die End-Events aus, die einen vollautomatischen Prozess hinweisen",
+      "automationRate-filter2": "Wählen Sie den Zeitraum, für den die Automatisierungsrate bewertet werden soll",
+      "throughput": "Durchlaufzeit",
+      "throughput-description": "Die Durchlaufzeit gibt an, wie lange ein Prozess auf dem glücklichen Weg im Durchschnitt braucht, um zu enden",
+      "throughput-filter1": "Wählen Sie die End-Events aus, die einen vollautomatischen Prozess hinweisen",
+      "throughput-filter2": "Wählen Sie den Zeitrahmen, für den der Durchsatz bewertet werden soll"
     },
     "instanceCount": {
       "appliedFilters": "Angewandte Filter",

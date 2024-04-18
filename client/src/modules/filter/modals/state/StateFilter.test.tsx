@@ -28,7 +28,7 @@ jest.mock('./options', () => () => ({
 const props: ComponentProps<typeof StateFilter> = {
   close: jest.fn(),
   definitions: [],
-  filterType: 'instanceState',
+  filterType: 'runningInstancesOnly',
   filterLevel: 'instance',
   addFilter: jest.fn(),
 };

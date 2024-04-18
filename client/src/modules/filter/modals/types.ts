@@ -7,7 +7,7 @@
 
 import {ReactNode} from 'react';
 
-import {Definition, FilterData, ProcessFilter, Variable} from 'types';
+import {Definition, FilterType, ProcessFilter, Variable} from 'types';
 
 export type MultipleVarialbeFilterConfig = {
   getValues: (
@@ -21,63 +21,15 @@ export type MultipleVarialbeFilterConfig = {
 };
 export type FilterLevel = 'instance' | 'view';
 
-export type InstanceFilterType =
-  | 'instanceState'
-  | 'instanceStartDate'
-  | 'instanceEndDate'
-  | 'flowNodeStartDate'
-  | 'flowNodeEndDate'
-  | 'processInstanceDuration'
-  | 'flowNodeDuration'
-  | 'executedFlowNodes'
-  | 'incidentInstances'
-  | 'assignee'
-  | 'candidateGroup'
-  | 'multipleVariable'
-  | 'executingFlowNodes'
-  | 'canceledFlowNodes';
-
-export type ViewFilterType =
-  | 'flowNodeStatus'
-  | 'flowNodeStartDate'
-  | 'flowNodeEndDate'
-  | 'flowNodeDuraion'
-  | 'incident'
-  | 'assignee'
-  | 'candidateGroup'
-  | 'executedFlowNodes'
-  | 'executingFlowNodes'
-  | 'canceledFlowNodes';
-
-export type InstanceStateFilterType =
-  | 'runningInstancesOnly'
-  | 'completedInstancesOnly'
-  | 'canceledInstancesOnly'
-  | 'nonCanceledInstancesOnly'
-  | 'suspendedInstancesOnly'
-  | 'nonSuspendedInstancesOnly';
-
-export type FlowNodeStateFilterType =
-  | 'runningFlowNodesOnly'
-  | 'completedFlowNodesOnly'
-  | 'canceledFlowNodesOnly'
-  | 'completedOrCanceledFlowNodesOnly';
-
-export type IncidentFilterType =
-  | 'includesOpenIncident'
-  | 'includesResolvedIncident'
-  | 'includesClosedIncident'
-  | 'doesNotIncludeIncident';
-
-export interface FilterProps<DATA = FilterData> {
-  addFilter: (filter: FilterProps<DATA>['filterData']) => void;
+export interface FilterProps<T extends FilterType> {
+  addFilter: (filter: FilterProps<T>['filterData']) => void;
   className?: string;
   close: () => void;
   config?: MultipleVarialbeFilterConfig | undefined;
   definitions: Definition[];
   filterLevel: FilterLevel;
-  filterType: ProcessFilter['type'];
-  filterData?: Omit<ProcessFilter<DATA>, 'filterLevel'>;
+  filterType: ProcessFilter<T>['type'];
+  filterData?: Omit<ProcessFilter<T>, 'filterLevel'>;
   reportIds?: string[];
   forceEnabled?: (...args: any[]) => boolean;
   getPretext?: (...args: any[]) => ReactNode;

@@ -393,21 +393,22 @@
       "create": "Create process KPI",
       "step": "Step {count}",
       "selectKpi": "Select process KPI",
+      "preview": "Preview",
+      "setTargetAndFilters": "Set target and filters",
+      "mandatoryFields": "Mandatory Fields",
+      "filtersLabel": "Filters",
+      "filters": {
+        "nodeSelection": "Select end event",
+        "endDate": "Select timeframe"
+      },
       "automationRate": "Automation rate",
       "automationRate-description": "The automation rate measures which percentage of the process is executed without human interaction.",
       "automationRate-filter1": "Select the end events that indicate a fully automated process",
       "automationRate-filter2": "Select the timeframe for which to evaluate automation rate",
-      "preview": "Preview",
-      "setTargetAndFilters": "Set target and filters",
       "throughput": "Throughput time",
       "throughput-description": "The throughput time indicates how long a process on the happy path needs in average to end",
       "throughput-filter1": "Select the end events that indicate a fully automated process",
-      "throughput-filter2": "Select the timeframe for which to evaluate throughput",
-      "mandatoryFilters": "Mandatory Filters",
-      "filters": {
-        "nodeSelection": "Select end event",
-        "endDate": "Select timeframe"
-      }
+      "throughput-filter2": "Select the timeframe for which to evaluate throughput"
     },
     "instanceCount": {
       "appliedFilters": "Applied filters",

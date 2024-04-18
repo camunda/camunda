@@ -248,14 +248,14 @@ test('create new KPI report', async (t) => {
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
   await t.click(Common.modalConfirmButton);
 
-  await t.click(Common.kpiFilterButton.nth(0));
+  await t.click(Common.kpiFilterButton);
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));
   await t.click(Report.flowNode('prepareBankTransfer'));
   await t.click(Common.modalConfirmButton);
 
-  await t.click(Common.kpiFilterButton.nth(1));
+  await t.click(Common.kpiFilterButton);
 
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.menuOption('This...'));

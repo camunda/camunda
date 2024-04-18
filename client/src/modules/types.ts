@@ -19,58 +19,67 @@ export type GenericEntity<D extends Record<string, unknown> = Record<string, unk
   data: D;
 };
 
-type ReportType = 'process' | 'decision';
-
-interface Report<Data> {
-  name: string;
-  id: string;
-  owner: string;
-  lastModified: string;
-  collectionId: string | null;
-  created: string;
-  lastModifier: string;
-  data: Data;
-  combined: boolean;
-  reportType: ReportType;
-  description: string | null;
-  result?: unknown;
-}
-
 type FilterFilterApplicationLevel = 'instance' | 'view';
 
-export interface ProcessFilter<DATA = unknown> {
-  type:
-    | 'assignee'
-    | 'canceledFlowNodes'
-    | 'canceledFlowNodesOnly'
-    | 'canceledInstancesOnly'
-    | 'candidateGroup'
-    | 'completedFlowNodesOnly'
-    | 'completedInstancesOnly'
-    | 'completedOrCanceledFlowNodesOnly'
-    | 'includesClosedIncident'
-    | 'processInstanceDuration'
-    | 'executedFlowNodes'
-    | 'executingFlowNodes'
-    | 'flowNodeDuration'
-    | 'flowNodeEndDate'
-    | 'flowNodeStartDate'
-    | 'instanceEndDate'
-    | 'instanceStartDate'
-    | 'multipleVariable'
-    | 'doesNotIncludeIncident'
-    | 'nonCanceledInstancesOnly'
-    | 'nonSuspendedInstancesOnly'
-    | 'includesOpenIncident'
-    | 'includesResolvedIncident'
-    | 'runningFlowNodesOnly'
-    | 'runningInstancesOnly'
-    | 'suspendedInstancesOnly'
-    | 'UserTaskFlowNodesOnlyFilterDto'
-    | 'variable';
-  data: DATA;
+export type InstanceStateFilterType =
+  | 'runningInstancesOnly'
+  | 'completedInstancesOnly'
+  | 'canceledInstancesOnly'
+  | 'nonCanceledInstancesOnly'
+  | 'suspendedInstancesOnly'
+  | 'nonSuspendedInstancesOnly';
+
+export type FlowNodeStateFilterType =
+  | 'runningFlowNodesOnly'
+  | 'completedFlowNodesOnly'
+  | 'canceledFlowNodesOnly'
+  | 'completedOrCanceledFlowNodesOnly';
+
+export type IncidentFilterType =
+  | 'includesOpenIncident'
+  | 'includesResolvedIncident'
+  | 'includesClosedIncident'
+  | 'doesNotIncludeIncident';
+
+export type FilterDataProps = {
+  flowNodeDuration: Record<string, FilterData>;
+  runningInstancesOnly: boolean | null;
+  processInstanceDuration: FilterData;
+} & {
+  [key in 'instanceStartDate' | 'instanceEndDate']: Partial<DateFilterType>;
+} & {
+  [key in 'flowNodeStartDate' | 'flowNodeEndDate']: Partial<
+    DateFilterType & {flowNodeIds: string[] | null}
+  >;
+} & {
+  [key in 'assignee' | 'candidateGroup']: {
+    values?: (string | null)[];
+    operator?: string;
+  };
+} & {
+  [key in InstanceStateFilterType | FlowNodeStateFilterType | IncidentFilterType]:
+    | FilterData
+    | undefined;
+} & {
+  [key in 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes']: {
+    values?: string[];
+    operator?: string;
+  };
+};
+
+export type FilterType = keyof FilterDataProps;
+
+export interface ProcessFilter<T extends FilterType = FilterType> {
+  type: T;
+  data: FilterDataProps[T];
   filterLevel: FilterFilterApplicationLevel;
   appliedTo: string[];
+}
+
+export interface FilterData {
+  value: string | number;
+  unit: string;
+  operator?: string;
 }
 
 interface DecisionFilter<DATA> {
@@ -363,25 +372,41 @@ interface CombinedReportData {
   };
 }
 
-type CombinedReport = Report<CombinedReportData> & {
-  combined: true;
-  result: {
-    data: Record<
-      string,
-      {
-        data: {
-          view: {
-            properties: string[];
-          };
+type CombinedReportResult = {
+  data: Record<
+    string,
+    {
+      data: {
+        view: {
+          properties: string[];
         };
-      }
-    >;
-  };
+      };
+    }
+  >;
 };
-export type SingleProcessReport = Report<SingleProcessReportData> & {combined: false};
-export type SingleDecisionReport = Report<SingleDecisionReportData> & {combined: false};
 
-export type GenericReport = CombinedReport | SingleDecisionReport | SingleProcessReport;
+export type ReportType = 'process' | 'decision';
+
+export interface Report<T extends ReportType = 'process', C extends boolean = false> {
+  reportType: T;
+  combined: C;
+  name: string;
+  id: string;
+  owner: string;
+  lastModified: string;
+  collectionId?: string | null;
+  created: string;
+  lastModifier: string;
+  description: string | null;
+  data: C extends true
+    ? CombinedReportData
+    : T extends 'process'
+      ? SingleProcessReportData
+      : SingleDecisionReportData;
+  result: C extends true ? CombinedReportResult : unknown | undefined;
+}
+
+export type GenericReport = Report<'process'> | Report<'decision'> | Report<'process', true>;
 
 type DashboardTileCommonProps = {
   id: string;
@@ -433,12 +458,6 @@ export type Source = {
 
 export type Variable = {id?: string; name: string; type: string; label?: string | null};
 
-export interface FilterData {
-  value: string | number;
-  unit: string;
-  operator?: string;
-}
-
 type CommonFilter = {includeUndefined?: boolean; excludeUndefined?: boolean; name?: string};
 
 type FixedFilter = {
@@ -460,7 +479,7 @@ type OtherFilter = {
   end: string | null;
 };
 
-export type Filter = CommonFilter & (FixedFilter | RollingFilter | OtherFilter);
+export type DateFilterType = CommonFilter & (FixedFilter | RollingFilter | OtherFilter);
 
 interface CommonFilterState {
   type: string;
