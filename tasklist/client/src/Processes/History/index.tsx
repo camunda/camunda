@@ -16,7 +16,6 @@
  */
 
 import {useProcessInstances} from 'modules/queries/useProcessInstances';
-import {BodyCompact, BodyLong, Label} from 'modules/components/FontTokens';
 import capitalize from 'lodash/capitalize';
 import {formatDate} from 'modules/utils/formatDate';
 import {Skeleton} from './Skeleton';
@@ -30,21 +29,19 @@ const History: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <Label $color="secondary" className={styles.header}>
-        History
-      </Label>
+      <span className={styles.header}>History</span>
       <div className={styles.itemContainer}>
         {match({status})
           .with({status: 'pending'}, () => <Skeleton />)
           .with({status: 'error'}, () => (
             <Layer>
               <Stack gap={3} className={styles.message}>
-                <BodyCompact $variant="02">
+                <span className={styles.messageHeading}>
                   Oops! Something went wrong while fetching the history
-                </BodyCompact>
-                <BodyLong $color="secondary">
+                </span>
+                <span className={styles.messageBody}>
                   Please check your internet connection and try again.
-                </BodyLong>
+                </span>
               </Stack>
             </Layer>
           ))
@@ -57,32 +54,30 @@ const History: React.FC = () => {
               processInstances.length === 0 ? (
                 <Layer>
                   <Stack gap={3} className={styles.message}>
-                    <BodyCompact $variant="02">
+                    <span className={styles.messageHeading}>
                       No history entries found
-                    </BodyCompact>
-                    <BodyLong $color="secondary">
+                    </span>
+                    <span className={styles.messageBody}>
                       There is no history to display. Start a new process to see
                       it here.
-                    </BodyLong>
+                    </span>
                   </Stack>
                 </Layer>
               ) : (
                 processInstances.map(({id, process, creationDate, state}) => (
                   <Stack key={id} gap={3} className={styles.item}>
-                    <BodyCompact $showEllipsisOnOverflow>
+                    <span className={styles.itemName}>
                       {process.name ?? process.bpmnProcessId}
-                    </BodyCompact>
-                    <BodyCompact $color="secondary" $showEllipsisOnOverflow>
-                      {id}
-                    </BodyCompact>
-                    <Label $color="secondary">
+                    </span>
+                    <span className={styles.itemId}>{id}</span>
+                    <span className={styles.itemDetails}>
                       {formatDate(creationDate)} - {capitalize(state)}
                       <ProcessInstanceStateIcon
                         className={styles.icon}
                         state={state}
                         size={16}
                       />
-                    </Label>
+                    </span>
                   </Stack>
                 ))
               ),

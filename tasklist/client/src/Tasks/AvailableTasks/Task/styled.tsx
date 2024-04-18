@@ -101,16 +101,6 @@ const Container: React.FC<
   </article>
 );
 
-const SkeletonContainer: React.FC<React.ComponentProps<'article'>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <article {...rest} className={cn(className, styles.taskSkeleton)}>
-    {children}
-  </article>
-);
-
 const DateLabel: React.FC<React.ComponentProps<typeof Label>> = ({
   className = '',
   children,
@@ -142,7 +132,6 @@ export {
   TaskLink,
   Stack,
   Container,
-  SkeletonContainer,
   DateLabel,
   PopoverContent,
   InlineCalender,
