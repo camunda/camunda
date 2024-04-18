@@ -15,7 +15,26 @@
  */
 package io.camunda.zeebe.spring.common.auth;
 
+import java.util.Arrays;
+
 /** Enum for supported C8 Products */
 public enum Product {
-  ZEEBE
+  ZEEBE(true);
+
+  private final boolean covered;
+
+  Product(final boolean covered) {
+    this.covered = covered;
+  }
+
+  public static Product[] coveredProducts() {
+    return Arrays.stream(Product.values())
+        .filter(Product::covered)
+        .toList()
+        .toArray(new Product[0]);
+  }
+
+  public boolean covered() {
+    return covered;
+  }
 }
