@@ -80,8 +80,9 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
               });
 
     } else {
-      final var failure = new Failure(parsedDrg.getFailureMessage());
-      return Either.left(failure);
+      final var failure =
+          String.format("'%s': %s", resource.getResourceName(), parsedDrg.getFailureMessage());
+      return Either.left(new Failure(failure));
     }
   }
 
