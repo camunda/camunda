@@ -98,6 +98,19 @@ public class OpensearchSchemaManager implements SchemaManager {
             .toList();
   }
 
+  private static String readTemplateJson(final String classPathResourceName) {
+    try {
+      // read settings and mappings
+      final InputStream description =
+          OpensearchSchemaManager.class.getResourceAsStream(classPathResourceName);
+      final String json = StreamUtils.copyToString(description, StandardCharsets.UTF_8);
+      return json;
+    } catch (final Exception e) {
+      throw new OperateRuntimeException(
+          "Exception occurred when reading template JSON: " + e.getMessage(), e);
+    }
+  }
+
   @Override
   public void createSchema() {
     if (operateProperties.getArchiver().isIlmEnabled()) {
@@ -110,20 +123,72 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public void checkAndUpdateIndices() {
-    final String currentConfigNumberOfReplicas =
-        String.valueOf(operateProperties.getOpensearch().getNumberOfReplicas());
+    LOGGER.info("Updating Indices with currently-configured number of replicas...");
+    final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
+    indexDescriptors.forEach(
+        descriptor -> {
+          final Integer configuratedNumberOfReplicas =
+              osConfig
+                  .getNumberOfReplicasForIndices()
+                  .getOrDefault(descriptor.getIndexName(), osConfig.getNumberOfReplicas());
 
-    final Map<String, String> indexSettings = new HashMap<>();
-    indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-    indexSettings.put(REFRESH_INTERVAL, operateProperties.getOpensearch().getRefreshInterval());
+          final Map<String, String> indexSettings =
+              getIndexSettingsFor(
+                  descriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
 
-    final String indexPattern = operateProperties.getOpensearch().getIndexPrefix() + "*";
-    final boolean success = setIndexSettingsFor(indexSettings, indexPattern);
-    if (success) {
-      LOGGER.info("Successfully updated number of replicas for {}", indexPattern);
-    } else {
-      LOGGER.warn("Failed to update number of replicas for index for {}", indexPattern);
-    }
+          if (!String.valueOf(configuratedNumberOfReplicas)
+              .equals(indexSettings.get(NUMBERS_OF_REPLICA))) {
+            final String refreshInterval =
+                indexSettings.get(REFRESH_INTERVAL) != null
+                    ? indexSettings.get(REFRESH_INTERVAL)
+                    : operateProperties.getOpensearch().getRefreshInterval();
+            final boolean success =
+                setIndexSettingsFor(
+                    Map.of(
+                        NUMBERS_OF_REPLICA,
+                        String.valueOf(configuratedNumberOfReplicas),
+                        REFRESH_INTERVAL,
+                        refreshInterval),
+                    descriptor.getDerivedIndexNamePattern());
+
+            if (success) {
+              LOGGER.info(
+                  "Successfully updated number of replicas for {}",
+                  descriptor.getDerivedIndexNamePattern());
+            } else {
+              LOGGER.warn(
+                  "Failed to update number of replicas for for {}",
+                  descriptor.getDerivedIndexNamePattern());
+            }
+          }
+        });
+
+    // Updates templates with new defaults
+    final Map<String, String> updatedSettings = new HashMap<>();
+    updatedSettings.put(NUMBERS_OF_REPLICA, String.valueOf(osConfig.getNumberOfReplicas()));
+    updatedSettings.put(REFRESH_INTERVAL, osConfig.getRefreshInterval());
+
+    templateDescriptors.forEach(
+        templateDescriptor -> {
+          setIndexSettingsFor(updatedSettings, templateDescriptor.getAlias());
+          //              final PutComposableIndexTemplateRequest request =
+          //                      prepareComposableTemplateRequest(template, null);
+          //              putIndexTemplate(request, true);
+          final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
+          final PutIndexTemplateRequest indexTemplateRequest =
+              prepareIndexTemplateRequest(templateDescriptor, json);
+          putIndexTemplate(indexTemplateRequest, true);
+        });
+
+    // Updates component template with new defaults
+    final IndexSettings componentTemplateSettings = getDefaultIndexSettings();
+    richOpenSearchClient
+        .template()
+        .createComponentTemplateWithRetries(
+            new PutComponentTemplateRequest.Builder()
+                .name(settingsTemplateName())
+                .template(t -> t.settings(componentTemplateSettings))
+                .build());
   }
 
   @Override
@@ -389,13 +454,17 @@ public class OpensearchSchemaManager implements SchemaManager {
         operateProperties
             .getOpensearch()
             .getNumberOfShardsForIndices()
-            .get(indexDescriptor.getIndexName());
+            .getOrDefault(
+                indexDescriptor.getIndexName(),
+                operateProperties.getOpensearch().getNumberOfShards());
 
     final var replicas =
         operateProperties
             .getOpensearch()
             .getNumberOfReplicasForIndices()
-            .get(indexDescriptor.getIndexName());
+            .getOrDefault(
+                indexDescriptor.getIndexName(),
+                operateProperties.getOpensearch().getNumberOfReplicas());
 
     if (shards != null || replicas != null) {
       final var indexSettingsBuilder = new IndexSettings.Builder();
@@ -431,19 +500,6 @@ public class OpensearchSchemaManager implements SchemaManager {
             Map.of(templateDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build()),
             getIndexSettings(templateDescriptor.getIndexName()));
     createIndex(request, indexName);
-  }
-
-  private static String readTemplateJson(final String classPathResourceName) {
-    try {
-      // read settings and mappings
-      final InputStream description =
-          OpensearchSchemaManager.class.getResourceAsStream(classPathResourceName);
-      final String json = StreamUtils.copyToString(description, StandardCharsets.UTF_8);
-      return json;
-    } catch (final Exception e) {
-      throw new OperateRuntimeException(
-          "Exception occurred when reading template JSON: " + e.getMessage(), e);
-    }
   }
 
   private PutIndexTemplateRequest prepareIndexTemplateRequest(

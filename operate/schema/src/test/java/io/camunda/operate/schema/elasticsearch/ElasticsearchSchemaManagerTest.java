@@ -16,8 +16,7 @@
  */
 package io.camunda.operate.schema.elasticsearch;
 
-import static io.camunda.operate.schema.SchemaManager.NUMBERS_OF_REPLICA;
-import static io.camunda.operate.schema.SchemaManager.REFRESH_INTERVAL;
+import static io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -30,15 +29,13 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.elasticsearch.common.settings.Settings;
+import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchSchemaManagerTest {
@@ -52,22 +49,56 @@ public class ElasticsearchSchemaManagerTest {
 
   @Test
   public void testCheckAndUpdateIndices() {
+    final AbstractIndexDescriptor abstractIndexDescriptor1 = mock(AbstractIndexDescriptor.class);
+    final AbstractIndexDescriptor abstractIndexDescriptor2 = mock(AbstractIndexDescriptor.class);
+    final AbstractIndexDescriptor abstractIndexDescriptor3 = mock(AbstractIndexDescriptor.class);
+    when(abstractIndexDescriptor1.getIndexName()).thenReturn("index1");
+    when(abstractIndexDescriptor2.getIndexName()).thenReturn("index2");
+    when(abstractIndexDescriptor3.getIndexName()).thenReturn("index3");
+    when(abstractIndexDescriptor1.getFullQualifiedName()).thenReturn("index1*");
+    when(abstractIndexDescriptor2.getFullQualifiedName()).thenReturn("index2*");
+    when(abstractIndexDescriptor3.getFullQualifiedName()).thenReturn("index3*");
+    when(abstractIndexDescriptor2.getAlias()).thenReturn("index2_alias");
+    when(abstractIndexDescriptor3.getAlias()).thenReturn("index3_alias");
+
+    final TemplateDescriptor templateDescriptor1 = mock(TemplateDescriptor.class);
+    when(templateDescriptor1.getAlias()).thenReturn("template1_alias");
+    when(templateDescriptor1.getTemplateName()).thenReturn("template1_template");
+    when(templateDescriptor1.getIndexPattern()).thenReturn("template1_*");
+
+    when(templateDescriptor1.getSchemaClasspathFilename())
+        .thenReturn("/schema/elasticsearch/create/template/operate-batch-operation.json");
+
+    ReflectionTestUtils.setField(
+        underTest, "templateDescriptors", Collections.singletonList(templateDescriptor1));
+
+    ReflectionTestUtils.setField(
+        underTest,
+        "indexDescriptors",
+        Arrays.asList(
+            abstractIndexDescriptor1, abstractIndexDescriptor2, abstractIndexDescriptor3));
+
     final OperateElasticsearchProperties operateElasticsearchProperties =
         mock(OperateElasticsearchProperties.class);
-    when(operateElasticsearchProperties.getNumberOfReplicas()).thenReturn(5);
-    when(operateElasticsearchProperties.getRefreshInterval()).thenReturn("2s");
     when(operateProperties.getElasticsearch()).thenReturn(operateElasticsearchProperties);
-    when(operateElasticsearchProperties.getIndexPrefix()).thenReturn("test");
-
-    final Map<String, String> updatedSettings = new HashMap<>();
-    updatedSettings.put(NUMBERS_OF_REPLICA, "5");
-    updatedSettings.put(REFRESH_INTERVAL, "2s");
-
-    final Settings indexSettings = Settings.builder().loadFromMap(updatedSettings).build();
-    when(retryElasticsearchClient.setIndexSettingsFor(indexSettings, "test*")).thenReturn(true);
+    when(operateElasticsearchProperties.getNumberOfReplicas()).thenReturn(3);
+    when(operateElasticsearchProperties.getNumberOfShards()).thenReturn(5);
+    when(retryElasticsearchClient.getIndexSettingsFor("index1*", NUMBERS_OF_REPLICA))
+        .thenReturn(Map.of(NUMBERS_OF_REPLICA, "1"));
+    when(retryElasticsearchClient.getIndexSettingsFor("index2*", NUMBERS_OF_REPLICA))
+        .thenReturn(Map.of(NUMBERS_OF_REPLICA, "3"));
+    when(retryElasticsearchClient.getIndexSettingsFor("index3*", NUMBERS_OF_REPLICA))
+        .thenReturn(Map.of(NUMBERS_OF_REPLICA, "2"));
+    when(retryElasticsearchClient.setIndexSettingsFor(any(), anyString()))
+        .thenReturn(true)
+        .thenReturn(false);
+    final Map<String, Integer> replicasMap = new HashMap<>();
+    replicasMap.put("index1", 1);
+    replicasMap.put("index2", 2);
+    when(operateElasticsearchProperties.getNumberOfReplicasForIndices()).thenReturn(replicasMap);
 
     underTest.checkAndUpdateIndices();
 
-    verify(retryElasticsearchClient, times(1)).setIndexSettingsFor(any(), anyString());
+    verify(retryElasticsearchClient, times(3)).setIndexSettingsFor(any(), anyString());
   }
 }

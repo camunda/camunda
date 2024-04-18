@@ -16,7 +16,6 @@
  */
 package io.camunda.operate.schema;
 
-import static io.camunda.operate.schema.SchemaManager.NO_REPLICA;
 import static io.camunda.operate.schema.SchemaManager.NUMBERS_OF_REPLICA;
 import static io.camunda.operate.schema.SchemaManager.REFRESH_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,9 +27,10 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,32 +45,39 @@ import org.springframework.boot.test.context.SpringBootTest;
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class SchemaManagerIT {
   @Autowired private OperateProperties operateProperties;
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private SchemaManager schemaManager;
-  private String uniquePrefix;
 
-  @BeforeEach
-  public void before() {
-    uniquePrefix = UUID.randomUUID().toString();
-    schemaManager.deleteIndicesFor(idxName("index-*"));
+  @BeforeAll
+  public void init() throws Exception {
+    createIndex(idxName("index1"), List.of(Map.of("test_name1", "test_value1")));
+    createIndex(idxName("index2"), List.of(Map.of("test_name2", "test_value2")));
+    createIndex(idxName("index3"), List.of(Map.of("test_name3", "test_value3")));
   }
 
-  @AfterEach
+  @AfterAll
   public void tearDown() {
-    schemaManager.deleteIndicesFor(idxName("index-*"));
+    schemaManager.deleteIndicesFor(idxName("index*"));
   }
 
   private String idxName(final String name) {
-    return schemaManager.getIndexPrefix() + "-" + uniquePrefix + "-" + name;
+    return "operate-decision-8.3.0_" + name;
   }
 
   @Test
   public void testCheckAndUpdateIndices() throws Exception {
 
-    final int defaultNumberofReplicas = 3;
+    int defaultNumberofReplicas = 4;
     final String defaultRefreshInterval = "4s";
+
+    final Map<String, String> currentSettings =
+        schemaManager.getIndexSettingsFor(idxName(""), NUMBERS_OF_REPLICA);
+    if (Integer.parseInt(currentSettings.get(NUMBERS_OF_REPLICA)) == defaultNumberofReplicas) {
+      defaultNumberofReplicas++;
+    }
     if (DatabaseInfo.isOpensearch()) {
       operateProperties.getOpensearch().setNumberOfReplicas(defaultNumberofReplicas);
       operateProperties.getOpensearch().setRefreshInterval(defaultRefreshInterval);
@@ -79,59 +86,47 @@ public class SchemaManagerIT {
       operateProperties.getElasticsearch().setRefreshInterval(defaultRefreshInterval);
     }
 
-    createIndex(idxName("index-1.2.3_"), List.of(Map.of("test_name1", "test_value1")));
-    createIndex(idxName("index-2.3.4_"), List.of(Map.of("test_name2", "test_value2")));
-    createIndex(idxName("index-3.4.5_"), List.of(Map.of("test_name3", "test_value3")));
-
-    // set reindex settings
-    schemaManager.setIndexSettingsFor(
-        Map.of(NUMBERS_OF_REPLICA, NO_REPLICA, REFRESH_INTERVAL, "2s"), idxName("index-1.2.3_"));
-    schemaManager.setIndexSettingsFor(
-        Map.of(NUMBERS_OF_REPLICA, 3, REFRESH_INTERVAL, "2s"), idxName("index-2.3.4_"));
-    schemaManager.setIndexSettingsFor(
-        Map.of(NUMBERS_OF_REPLICA, "5", REFRESH_INTERVAL, "2s"), idxName("index-3.4.5_"));
-
     // update number of replicas for each index
     schemaManager.checkAndUpdateIndices();
 
     final Map<String, String> reindexSettings1 =
-        schemaManager.getIndexSettingsFor(
-            idxName("index-1.2.3_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+        schemaManager.getIndexSettingsFor(idxName("index1"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings1)
         .containsEntry(NUMBERS_OF_REPLICA, String.valueOf(defaultNumberofReplicas))
-        .containsEntry(REFRESH_INTERVAL, defaultRefreshInterval);
+        .containsEntry(
+            REFRESH_INTERVAL, DatabaseInfo.isElasticsearch() ? null : defaultRefreshInterval);
 
     final Map<String, String> reindexSettings2 =
-        schemaManager.getIndexSettingsFor(
-            idxName("index-2.3.4_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+        schemaManager.getIndexSettingsFor(idxName("index2"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings2)
         .containsEntry(NUMBERS_OF_REPLICA, String.valueOf(defaultNumberofReplicas))
-        .containsEntry(REFRESH_INTERVAL, defaultRefreshInterval);
+        .containsEntry(
+            REFRESH_INTERVAL, DatabaseInfo.isElasticsearch() ? null : defaultRefreshInterval);
 
     final Map<String, String> reindexSettings3 =
-        schemaManager.getIndexSettingsFor(
-            idxName("index-3.4.5_"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+        schemaManager.getIndexSettingsFor(idxName("index3"), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
     assertThat(reindexSettings3)
         .containsEntry(NUMBERS_OF_REPLICA, String.valueOf(defaultNumberofReplicas))
-        .containsEntry(REFRESH_INTERVAL, defaultRefreshInterval);
+        .containsEntry(
+            REFRESH_INTERVAL, DatabaseInfo.isElasticsearch() ? null : defaultRefreshInterval);
 
-    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-1.2.3_"), "2"))
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index1"), "2"))
         .isEqualTo(Integer.toString(defaultNumberofReplicas));
 
-    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-1.2.3_"), "1s"))
-        .isEqualTo(defaultRefreshInterval);
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index1"), "1s"))
+        .isEqualTo(DatabaseInfo.isElasticsearch() ? "1s" : defaultRefreshInterval);
 
-    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-2.3.4_"), "2"))
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index2"), "2"))
         .isEqualTo(Integer.toString(defaultNumberofReplicas));
 
-    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-2.3.4_"), "1s"))
-        .isEqualTo(defaultRefreshInterval);
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index2"), "1s"))
+        .isEqualTo(DatabaseInfo.isElasticsearch() ? "1s" : defaultRefreshInterval);
 
-    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index-3.4.5_"), "2"))
+    assertThat(schemaManager.getOrDefaultNumbersOfReplica(idxName("index3"), "2"))
         .isEqualTo(Integer.toString(defaultNumberofReplicas));
 
-    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index-3.4.5_"), "1s"))
-        .isEqualTo(defaultRefreshInterval);
+    assertThat(schemaManager.getOrDefaultRefreshInterval(idxName("index3"), "1s"))
+        .isEqualTo(DatabaseInfo.isElasticsearch() ? "1s" : defaultRefreshInterval);
   }
 
   private void createIndex(final String indexName, final List<Map<String, String>> documents)

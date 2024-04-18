@@ -95,20 +95,58 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Override
   public void checkAndUpdateIndices() {
     LOGGER.info("Updating Indices with currently-configured number of replicas...");
-    final String currentConfigNumberOfReplicas =
-        String.valueOf(operateProperties.getElasticsearch().getNumberOfReplicas());
+    final OperateElasticsearchProperties esConfig = operateProperties.getElasticsearch();
+    indexDescriptors.forEach(
+        descriptor -> {
+          final Integer configuratedNumberOfReplicas =
+              esConfig
+                  .getNumberOfReplicasForIndices()
+                  .getOrDefault(descriptor.getIndexName(), esConfig.getNumberOfReplicas());
 
-    final Map<String, String> indexSettings = new HashMap<>();
-    indexSettings.put(NUMBERS_OF_REPLICA, currentConfigNumberOfReplicas);
-    indexSettings.put(REFRESH_INTERVAL, operateProperties.getElasticsearch().getRefreshInterval());
+          final Map<String, String> indexSettings =
+              getIndexSettingsFor(descriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA);
 
-    final String indexPattern = operateProperties.getElasticsearch().getIndexPrefix() + "*";
-    final boolean success = setIndexSettingsFor(indexSettings, indexPattern);
-    if (success) {
-      LOGGER.info("Successfully updated number of replicas for {}", indexPattern);
-    } else {
-      LOGGER.warn("Failed to update number of replicas for for {}", indexPattern);
-    }
+          if (!String.valueOf(configuratedNumberOfReplicas)
+              .equals(indexSettings.get(NUMBERS_OF_REPLICA))) {
+            final boolean success =
+                setIndexSettingsFor(
+                    Map.of(NUMBERS_OF_REPLICA, String.valueOf(configuratedNumberOfReplicas)),
+                    descriptor.getDerivedIndexNamePattern());
+
+            if (success) {
+              LOGGER.info(
+                  "Successfully updated number of replicas for {}",
+                  descriptor.getDerivedIndexNamePattern());
+            } else {
+              LOGGER.warn(
+                  "Failed to update number of replicas for for {}",
+                  descriptor.getDerivedIndexNamePattern());
+            }
+          }
+        });
+
+    // Updates templates with new defaults
+    final Map<String, String> updatedSettings = new HashMap<>();
+    updatedSettings.put(NUMBERS_OF_REPLICA, String.valueOf(esConfig.getNumberOfReplicas()));
+
+    templateDescriptors.forEach(
+        template -> {
+          setIndexSettingsFor(updatedSettings, template.getAlias());
+          final PutComposableIndexTemplateRequest request =
+              prepareComposableTemplateRequest(template, null);
+          putIndexTemplate(request, true);
+        });
+
+    // Updates component template with new defaults
+    final Settings componentTemplateSettings = getDefaultIndexSettings();
+    final Template template = new Template(componentTemplateSettings, null, null);
+    final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
+    final PutComponentTemplateRequest request =
+        new PutComponentTemplateRequest()
+            .name(settingsTemplateName())
+            .componentTemplate(componentTemplate);
+
+    retryElasticsearchClient.updateComponentTemplate(request);
   }
 
   @Override

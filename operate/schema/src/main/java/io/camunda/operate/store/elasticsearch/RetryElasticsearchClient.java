@@ -388,6 +388,12 @@ public class RetryElasticsearchClient {
         });
   }
 
+  public boolean updateComponentTemplate(final PutComponentTemplateRequest request) {
+    return executeWithRetries(
+        "UpdateComponentTemplate " + request.name(),
+        () -> esClient.cluster().putComponentTemplate(request, requestOptions).isAcknowledged());
+  }
+
   public boolean createTemplate(final PutComposableIndexTemplateRequest request) {
     return createTemplate(request, false);
   }

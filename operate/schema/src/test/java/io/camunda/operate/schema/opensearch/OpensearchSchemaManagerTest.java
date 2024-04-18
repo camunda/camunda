@@ -16,8 +16,7 @@
  */
 package io.camunda.operate.schema.opensearch;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,16 +24,20 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import java.util.List;
+import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class OpensearchSchemaManagerTest {
@@ -48,20 +51,69 @@ public class OpensearchSchemaManagerTest {
 
   @Test
   public void testCheckAndUpdateIndices() {
+    final AbstractIndexDescriptor abstractIndexDescriptor1 = mock(AbstractIndexDescriptor.class);
+    final AbstractIndexDescriptor abstractIndexDescriptor2 = mock(AbstractIndexDescriptor.class);
+    final AbstractIndexDescriptor abstractIndexDescriptor3 = mock(AbstractIndexDescriptor.class);
+    when(abstractIndexDescriptor1.getIndexName()).thenReturn("index1");
+    when(abstractIndexDescriptor2.getIndexName()).thenReturn("index2");
+    when(abstractIndexDescriptor3.getIndexName()).thenReturn("index3");
+    when(abstractIndexDescriptor1.getFullQualifiedName()).thenReturn("index1*");
+    when(abstractIndexDescriptor2.getFullQualifiedName()).thenReturn("index2*");
+    when(abstractIndexDescriptor3.getFullQualifiedName()).thenReturn("index3*");
+    when(abstractIndexDescriptor2.getAlias()).thenReturn("index2_alias");
+    when(abstractIndexDescriptor3.getAlias()).thenReturn("index3_alias");
+
+    final TemplateDescriptor templateDescriptor1 = mock(TemplateDescriptor.class);
+    when(templateDescriptor1.getAlias()).thenReturn("template1_alias");
+    when(templateDescriptor1.getTemplateName()).thenReturn("template1_template");
+    when(templateDescriptor1.getIndexPattern()).thenReturn("template1_*");
+
+    when(templateDescriptor1.getSchemaClasspathFilename())
+        .thenReturn("/schema/opensearch/create/template/operate-batch-operation.json");
+
+    ReflectionTestUtils.setField(
+        underTest, "templateDescriptors", Collections.singletonList(templateDescriptor1));
+
+    ReflectionTestUtils.setField(
+        underTest,
+        "indexDescriptors",
+        Arrays.asList(
+            abstractIndexDescriptor1, abstractIndexDescriptor2, abstractIndexDescriptor3));
+
     final OperateOpensearchProperties operateOpensearchProperties =
         mock(OperateOpensearchProperties.class);
-    when(operateOpensearchProperties.getNumberOfReplicas()).thenReturn(5);
-    when(operateOpensearchProperties.getRefreshInterval()).thenReturn("2s");
     when(operateProperties.getOpensearch()).thenReturn(operateOpensearchProperties);
+    when(operateOpensearchProperties.getNumberOfReplicas()).thenReturn(3);
+    when(operateOpensearchProperties.getRefreshInterval()).thenReturn("5s");
 
+    final IndexSettings settings1 = mock(IndexSettings.class);
+    final IndexSettings settings2 = mock(IndexSettings.class);
+    final IndexSettings settings3 = mock(IndexSettings.class);
+    when(settings1.numberOfReplicas()).thenReturn("1");
+    when(settings2.numberOfReplicas()).thenReturn("3");
+    when(settings3.numberOfReplicas()).thenReturn("2");
     final OpenSearchIndexOperations openSearchIndexOperations =
         mock(OpenSearchIndexOperations.class);
+    final OpenSearchTemplateOperations openSearchTemplateOperations =
+        mock(OpenSearchTemplateOperations.class);
+    when(richOpenSearchClient.template()).thenReturn(openSearchTemplateOperations);
+    when(openSearchTemplateOperations.createTemplateWithRetries(any(), anyBoolean()))
+        .thenReturn(true);
     when(richOpenSearchClient.index()).thenReturn(openSearchIndexOperations);
-
-    when(openSearchIndexOperations.setIndexSettingsFor(any(), anyString())).thenReturn(true);
+    when(openSearchIndexOperations.getIndexSettingsWithRetries("index1*")).thenReturn(settings1);
+    when(openSearchIndexOperations.getIndexSettingsWithRetries("index2*")).thenReturn(settings2);
+    when(openSearchIndexOperations.getIndexSettingsWithRetries("index3*")).thenReturn(settings3);
+    when(openSearchIndexOperations.setIndexSettingsFor(any(), anyString()))
+        .thenReturn(true)
+        .thenReturn(false);
+    final Map<String, Integer> replicasMap = new HashMap<>();
+    replicasMap.put("index1", 1);
+    replicasMap.put("index2", 2);
+    when(operateOpensearchProperties.getNumberOfReplicasForIndices()).thenReturn(replicasMap);
 
     underTest.checkAndUpdateIndices();
 
-    verify(openSearchIndexOperations, times(1)).setIndexSettingsFor(any(), anyString());
+    verify(openSearchIndexOperations, times(3)).setIndexSettingsFor(any(), anyString());
+    verify(openSearchTemplateOperations, times(1)).createTemplateWithRetries(any(), anyBoolean());
   }
 }
