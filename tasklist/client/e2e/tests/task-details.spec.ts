@@ -18,6 +18,12 @@
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {createInstances, deploy} from '../zeebeClient';
+import {
+  fillDate,
+  selectDropdownValue,
+  enterTime,
+  selectTaglistValues,
+} from '../pages/UtilitiesPage';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -297,8 +303,8 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('Date and Time Task');
     await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.fillDate('1/1/3000');
-    await taskDetailsPage.enterTime('12:00 PM');
+    await fillDate('1/1/3000');
+    await enterTime('12:00 PM');
     await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
@@ -338,7 +344,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
-    await taskDetailsPage.selectDropdownValue('Value');
+    await selectDropdownValue('Value');
     await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
@@ -399,7 +405,7 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('Tag list Task');
     await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.selectTaglistValues(['Value 2', 'Value']);
+    await selectTaglistValues(['Value 2', 'Value']);
     await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
