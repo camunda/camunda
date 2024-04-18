@@ -58,10 +58,10 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.4</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.7</elasticsearch-test-container.version>
     <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
-    <postgres-test-container.version>1.19.4</postgres-test-container.version>
-    <testcontainers.version>1.19.4</testcontainers.version>
+    <postgres-test-container.version>1.19.7</postgres-test-container.version>
+    <testcontainers.version>1.19.7</testcontainers.version>
     <keycloak-client.version>23.0.7</keycloak-client.version>
 
     <maven.compiler.target>17</maven.compiler.target>
