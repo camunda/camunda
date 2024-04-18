@@ -16,7 +16,7 @@
  */
 package io.camunda.tasklist.webapp.config;
 
-import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
