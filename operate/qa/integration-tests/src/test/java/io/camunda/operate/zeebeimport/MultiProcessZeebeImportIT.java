@@ -17,73 +17,61 @@
 package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.util.ZeebeTestUtil;
-import org.junit.After;
-import org.junit.Test;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import java.io.IOException;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-public class ProcessCacheZeebeIT extends OperateZeebeAbstractIT {
+public class MultiProcessZeebeImportIT extends OperateZeebeSearchAbstractIT {
 
-  @SpyBean private ProcessCache processCache;
-
-  @After
-  public void after() {
-    // clean the cache
-    processCache.clearCache();
-    super.after();
-  }
+  @Autowired private ProcessIndex processIndex;
 
   @Test
-  public void testProcessDoesNotExist() {
-    final String processNameDefault =
-        processCache.getProcessNameOrDefaultValue(2L, "default_value");
-    assertThat(processNameDefault).isEqualTo("default_value");
-  }
+  public void shouldReadFromMultiProcessDiagram() throws IOException {
 
-  @Test
-  public void testProcessVersionAndNameReturnedAndReused() {
-    final Long processDefinitionKey1 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    final Long processDefinitionKey2 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
+    // given
+    final String bpmnFile = "multi-process.bpmn";
+    operateTester.deployProcessAndWait(bpmnFile);
 
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+    // when
+    final List<ProcessEntity> processEntities =
+        testSearchRepository.searchAll(processIndex.getAlias(), ProcessEntity.class);
+    final ProcessEntity process1 =
+        processEntities.stream()
+            .filter(x -> "process1".equals(x.getBpmnProcessId()))
+            .findAny()
+            .orElse(null);
+    final ProcessEntity process2 =
+        processEntities.stream()
+            .filter(x -> "process2".equals(x.getBpmnProcessId()))
+            .findAny()
+            .orElse(null);
 
-    String demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
-    assertThat(demoProcessName).isNotNull();
+    // then
+    assertThat(processEntities).hasSize(2);
 
-    // request once again, the cache should be used
-    demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
-    assertThat(demoProcessName).isNotNull();
+    assertThat(process1).isNotNull();
+    assertThat(process1.getName()).isEqualTo("Process 1");
+    assertThat(process1.getResourceName()).isEqualTo(bpmnFile);
+    assertThat(process1.getFlowNodes())
+        .extracting("id")
+        .containsExactlyInAnyOrder("startEvent1", "task1", "endEvent1");
+    assertThat(process1.getFlowNodes())
+        .extracting("name")
+        .containsExactlyInAnyOrder("Start Event 1", "Task 1", "End Event 1");
 
-    verify(processCache, times(1)).putToCache(any(), any());
-  }
-
-  @Test
-  public void testProcessFlowNodeNameReturnedAndReused() {
-    final Long processDefinitionKey1 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    final Long processDefinitionKey2 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
-
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
-
-    String flowNodeName =
-        processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
-    assertThat(flowNodeName).isEqualTo("start");
-
-    // request once again, the cache should be used
-    flowNodeName = processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
-    assertThat(flowNodeName).isEqualTo("start");
-
-    verify(processCache, times(1)).putToCache(any(), any());
+    assertThat(process2).isNotNull();
+    assertThat(process2.getName()).isEqualTo("Process 2");
+    assertThat(process2.getResourceName()).isEqualTo(bpmnFile);
+    assertThat(process2.getFlowNodes())
+        .extracting("id")
+        .containsExactlyInAnyOrder("startEvent2", "task2", "endEvent2");
+    assertThat(process2.getFlowNodes())
+        .extracting("name")
+        .containsExactlyInAnyOrder("Start Event 2", "Task 2", "End Event 2");
   }
 }

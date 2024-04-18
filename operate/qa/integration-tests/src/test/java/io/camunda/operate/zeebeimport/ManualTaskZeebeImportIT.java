@@ -26,7 +26,7 @@ import java.util.List;
 import org.junit.Test;
 import org.springframework.test.annotation.IfProfileValue;
 
-public class ManualTaskZeebeIT extends OperateZeebeAbstractIT {
+public class ManualTaskZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Test
   @IfProfileValue(name = "spring.profiles.active", value = "test")

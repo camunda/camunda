@@ -35,7 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class MetricZeebeIT extends OperateZeebeAbstractIT {
+public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
@@ -47,6 +47,7 @@ public class MetricZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private ModelMetricProvider modelMetricProvider;
 
+  @Override
   @Before
   public void before() {
     super.before();

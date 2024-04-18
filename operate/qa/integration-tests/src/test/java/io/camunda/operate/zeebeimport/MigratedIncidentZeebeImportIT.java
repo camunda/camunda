@@ -16,67 +16,68 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.MigrationPlan;
+import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
+import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import org.junit.Test;
-import org.springframework.test.web.servlet.MvcResult;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-public class SequenceFlowZeebeIT extends OperateZeebeAbstractIT {
+public class MigratedIncidentZeebeImportIT extends OperateZeebeSearchAbstractIT {
 
-  protected String getSequenceFlowURL(Long processInstanceKey) {
-    return String.format(PROCESS_INSTANCE_URL + "/%s/sequence-flows", processInstanceKey);
-  }
+  @Autowired private IncidentTemplate incidentTemplate;
 
   @Test
-  public void testSequenceFlowsAreLoaded() throws Exception {
-    // having
-    final String processId = "demoProcess";
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .sequenceFlowId("sf1")
-            .serviceTask("task1")
-            .zeebeJobType("task1")
-            .sequenceFlowId("sf2")
-            .serviceTask("task2")
-            .zeebeJobType("task2")
-            .endEvent()
-            .done();
-    deployProcess(process, processId + ".bpmn");
+  public void shouldImportMigratedIncident() throws IOException {
 
-    final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(
-            zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
-    ZeebeTestUtil.completeTask(zeebeClient, "task1", getWorkerName(), null);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
+    // given
+    final String bpmnSource = "double-task-incident.bpmn";
+    final String bpmnTarget = "double-task.bpmn";
+    final Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
+    final Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
+    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
 
     // when
-    final List<SequenceFlowDto> sequenceFlows = getSequenceFlows(processInstanceKey);
+    final Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
+    operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
 
-    assertThat(sequenceFlows)
-        .extracting(SequenceFlowTemplate.ACTIVITY_ID)
-        .containsExactlyInAnyOrder("sf1", "sf2");
-  }
+    final MigrationPlan migrationPlan =
+        new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
+    List.of("taskA", "taskB")
+        .forEach(
+            item ->
+                migrationPlan
+                    .getMappingInstructions()
+                    .add(new MigrationPlanBuilderImpl.MappingInstruction(item + "Incident", item)));
+    zeebeClient
+        .newMigrateProcessInstanceCommand(processInstanceKey)
+        .migrationPlan(migrationPlan)
+        .send()
+        .join();
 
-  private List<SequenceFlowDto> getSequenceFlows(Long processInstanceKey) throws Exception {
-    final MvcResult mvcResult =
-        mockMvc
-            .perform(get(getSequenceFlowURL(processInstanceKey)))
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-            .andReturn();
-    return mockMvcTestRule.listFromResponse(mvcResult, SequenceFlowDto.class);
+    operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
+    final List<IncidentEntity> incidents =
+        testSearchRepository.searchTerm(
+            incidentTemplate.getAlias(),
+            IncidentTemplate.PROCESS_INSTANCE_KEY,
+            processInstanceKey,
+            IncidentEntity.class,
+            1);
+
+    // then
+    assertThat(incidents.size()).isEqualTo(1);
+    assertThat(incidents.get(0).getState()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incidents.get(0).getBpmnProcessId()).isEqualTo("doubleTask");
+    assertThat(incidents.get(0).getProcessDefinitionKey()).isEqualTo(processDefinitionKeyTarget);
+    assertThat(incidents.get(0).getFlowNodeId()).isEqualTo("taskA");
   }
 }

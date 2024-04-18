@@ -58,9 +58,10 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
-public class ImportSeveralVersionsIT extends OperateAbstractIT {
+public class ImportSeveralVersionsZeebeImportIT extends OperateAbstractIT {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImportSeveralVersionsIT.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ImportSeveralVersionsZeebeImportIT.class);
   private static final int TIMEOUT_IN_SECONDS = 5 * 60; // 5 minutes
   private static final int TIMEOUT_IN_MILLIS = TIMEOUT_IN_SECONDS * 1000; // 5 minutes
 

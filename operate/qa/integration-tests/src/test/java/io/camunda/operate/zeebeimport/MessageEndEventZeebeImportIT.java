@@ -16,37 +16,41 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
-import io.camunda.operate.zeebe.ImportValueType;
-import java.util.function.Predicate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import static io.camunda.operate.util.CollectionUtil.map;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Tests that even if the Zeebe data is imported twice, in Operate Elasticsearch is is still
- * consistent.
- */
-@SpringBootTest(
-    classes = {ZeebeImportIdempotencyTestConfig.class, TestApplication.class},
-    properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.main.allow-bean-definition-overriding=true",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
-    })
-public class ZeebeImportIdempotencyZeebeIT extends ZeebeImportZeebeIT {
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import java.util.List;
+import org.junit.Test;
+import org.springframework.test.annotation.IfProfileValue;
 
-  @Autowired
-  private ZeebeImportIdempotencyTestConfig.CustomElasticsearchBulkProcessor
-      elasticsearchBulkProcessor;
+public class MessageEndEventZeebeImportIT extends OperateZeebeAbstractIT {
 
-  @Override
-  protected void processImportTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
-    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-    elasticsearchBulkProcessor.cancelAttempts();
+  @Test
+  @IfProfileValue(name = "spring.profiles.active", value = "test")
+  public void shouldImportMessageEndEvent() {
+    final String flowNodeId = "messageEndEvent";
+    final String jobKey = "taskDefinition";
+    // given
+    tester
+        .deployProcess("message-end-event.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .then()
+        .startProcessInstance("message-end-event-process", null)
+        .flowNodeIsActive(flowNodeId)
+        .then()
+        .completeTask(flowNodeId, jobKey)
+        .waitUntil()
+        .processInstanceIsFinished();
+
+    // when
+    final List<FlowNodeInstanceEntity> flowNodes =
+        tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
+    // then
+    assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
+        .isEqualTo(List.of(FlowNodeType.START_EVENT, FlowNodeType.END_EVENT));
   }
 }

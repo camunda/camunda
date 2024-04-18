@@ -14,7 +14,7 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.it;
+package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.util.ElasticsearchUtil.requestOptionsFor;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,14 +32,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
+public class ImportFieldsZeebeImportIT extends OperateZeebeAbstractIT {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImportFieldsZeebeIT.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ImportFieldsZeebeImportIT.class);
 
   @Autowired private PayloadUtil payloadUtil;
 
   @Autowired private UpdateVariableHandler updateVariableHandler;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -140,7 +141,7 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
     ElasticsearchUtil.setRequestOptions(RequestOptions.DEFAULT);
   }
 
-  protected String buildStringWithLengthOf(int length) {
+  protected String buildStringWithLengthOf(final int length) {
     final StringBuilder result = new StringBuilder();
     final String fillChar = "a";
     for (int i = 0; i < length; i++) {
