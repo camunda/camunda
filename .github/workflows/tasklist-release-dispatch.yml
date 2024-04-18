@@ -9,7 +9,7 @@
 # - 'dryRun': if `true`, the release is built but no changes are made or artifacts (Docker, Maven) pushed.
 # - 'githubUploadRelease': if `true`, the release will be uploaded to GitHub.
 # - 'isLatest': if `true`, the Docker image will be tagged with the 'latest' tag.
-# - 'javaVersion': the Java version to use to build the release. Defaults to `17`.
+# - 'javaVersion': the Java version to use to build the release. Defaults to `21`.
 # This setup enables external systems to trigger a release in this repository by sending a dispatch event with the required parameters.
 #
 # This event is typically dispatched by a POST request
@@ -56,4 +56,4 @@ jobs:
       dryRun: ${{ github.event.client_payload.dryRun }}
       githubUploadRelease: ${{ github.event.client_payload.githubUploadRelease }}
       isLatest: ${{ github.event.client_payload.isLatest }}
-      javaVersion: ${{ github.event.client_payload.javaVersion || 17 }}
+      javaVersion: ${{ github.event.client_payload.javaVersion || 21 }}

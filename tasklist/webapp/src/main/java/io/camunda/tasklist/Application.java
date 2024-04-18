@@ -61,7 +61,7 @@ public class Application {
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
   private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     // Workaround for https://github.com/spring-projects/spring-boot/issues/26627
@@ -148,7 +148,7 @@ public class Application {
       implements ApplicationListener<ApplicationFailedEvent> {
 
     @Override
-    public void onApplicationEvent(ApplicationFailedEvent event) {
+    public void onApplicationEvent(final ApplicationFailedEvent event) {
       event.getApplicationContext().close();
       System.exit(-1);
     }

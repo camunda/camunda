@@ -24,7 +24,6 @@ import {tracking} from 'modules/tracking';
 import {useState} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
-import {BodyCompact, Label} from 'modules/components/FontTokens';
 import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import {
   ContainedList,
@@ -90,10 +89,10 @@ const Details: React.FC<Props> = ({
   const isAssigned = assignee !== null;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
-  const {mutateAsync: assignTask, isLoading: assignIsLoading} = useAssignTask();
-  const {mutateAsync: unassignTask, isLoading: unassignIsLoading} =
+  const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
+  const {mutateAsync: unassignTask, isPending: unassignIsPending} =
     useUnassignTask();
-  const isLoading = (assignIsLoading || unassignIsLoading) ?? false;
+  const isLoading = (assignIsPending || unassignIsPending) ?? false;
 
   const handleClick = async () => {
     try {
@@ -151,13 +150,13 @@ const Details: React.FC<Props> = ({
           title="Task details header"
         >
           <div className={styles.headerLeftContainer}>
-            <BodyCompact $variant="02">{name}</BodyCompact>
-            <Label $color="secondary">{processName}</Label>
+            <span className={styles.taskName}>{name}</span>
+            <span className={styles.processName}>{processName}</span>
           </div>
           <div className={styles.headerRightContainer}>
             {taskState === 'COMPLETED' ? (
-              <Label
-                $color="secondary"
+              <span
+                className={styles.taskStatus}
                 data-testid="completion-label"
                 title="Completed by"
               >
@@ -172,25 +171,28 @@ const Details: React.FC<Props> = ({
                     <>
                       {' '}
                       by
-                      <Label $color="secondary" data-testid="assignee">
+                      <span
+                        className={styles.taskAssignee}
+                        data-testid="assignee"
+                      >
                         <AssigneeTag
                           currentUser={user}
                           assignee={assignee}
                           isShortFormat={true}
                         />
-                      </Label>
+                      </span>
                     </>
                   ) : null}
                 </Stack>
-              </Label>
+              </span>
             ) : (
-              <Label $color="secondary" data-testid="assignee">
+              <span className={styles.taskAssignee} data-testid="assignee">
                 <AssigneeTag
                   currentUser={user}
                   assignee={assignee}
                   isShortFormat={false}
                 />
-              </Label>
+              </span>
             )}
             {taskState === 'CREATED' && (
               <Restricted scopes={['write']}>
@@ -236,22 +238,22 @@ const Details: React.FC<Props> = ({
           <>
             {taskTenant === undefined ? null : (
               <ContainedListItem>
-                <BodyCompact $color="secondary">Tenant</BodyCompact>
+                <span className={styles.itemHeading}>Tenant</span>
                 <br />
-                <BodyCompact>{taskTenant.name}</BodyCompact>
+                <span className={styles.itemBody}>{taskTenant.name}</span>
               </ContainedListItem>
             )}
           </>
           <ContainedListItem>
-            <BodyCompact $color="secondary">Creation date</BodyCompact>
+            <span className={styles.itemHeading}>Creation date</span>
             <br />
-            <BodyCompact>{formatDate(creationDate)}</BodyCompact>
+            <span className={styles.itemBody}>{formatDate(creationDate)}</span>
           </ContainedListItem>
           <ContainedListItem>
-            <BodyCompact $color="secondary">Candidates</BodyCompact>
+            <span className={styles.itemHeading}>Candidates</span>
             <br />
             {candidates.length === 0 ? (
-              <BodyCompact>No candidates</BodyCompact>
+              <span className={styles.itemBody}>No candidates</span>
             ) : null}
             {candidates.map((candidate) => (
               <Tag size="sm" type="gray" key={candidate}>
@@ -261,23 +263,27 @@ const Details: React.FC<Props> = ({
           </ContainedListItem>
           {completionDate ? (
             <ContainedListItem>
-              <BodyCompact $color="secondary">Completion date</BodyCompact>
+              <span className={styles.itemHeading}>Completion date</span>
               <br />
-              <BodyCompact>{formatDate(completionDate)}</BodyCompact>
+              <span className={styles.itemBody}>
+                {formatDate(completionDate)}
+              </span>
             </ContainedListItem>
           ) : null}
           <ContainedListItem>
-            <BodyCompact $color="secondary">Due date</BodyCompact>
+            <span className={styles.itemHeading}>Due date</span>
             <br />
-            <BodyCompact>
+            <span className={styles.itemBody}>
               {dueDate ? formatDate(dueDate) : 'No due date'}
-            </BodyCompact>
+            </span>
           </ContainedListItem>
           {followUpDate ? (
             <ContainedListItem>
-              <BodyCompact $color="secondary">Follow up date</BodyCompact>
+              <span className={styles.itemHeading}>Follow up date</span>
               <br />
-              <BodyCompact>{formatDate(followUpDate)}</BodyCompact>
+              <span className={styles.itemBody}>
+                {formatDate(followUpDate)}
+              </span>
             </ContainedListItem>
           ) : null}
         </ContainedList>

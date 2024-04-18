@@ -127,7 +127,7 @@ describe('<StartProcessFromForm />', () => {
       ),
     );
 
-    render(<Component />, {
+    const {user} = render(<Component />, {
       wrapper: getWrapper({
         initialEntries: ['/new/foo'],
       }),
@@ -137,7 +137,9 @@ describe('<StartProcessFromForm />', () => {
       screen.queryByTestId('public-form-skeleton'),
     );
 
-    fireEvent.click(
+    await user.type(screen.getByRole('textbox', {name: /is cool/i}), 'var1');
+
+    await user.click(
       screen.getByRole('button', {
         name: 'Submit',
       }),

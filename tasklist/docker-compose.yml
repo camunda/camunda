@@ -87,7 +87,7 @@ services:
     image: camunda/zeebe:8.5.0
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_BROKER_NETWORK_HOST=zeebe
+      - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
       - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
       - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL=http://opensearch:9200

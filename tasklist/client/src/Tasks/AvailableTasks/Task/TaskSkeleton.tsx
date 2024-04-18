@@ -16,7 +16,6 @@
  */
 
 import {SkeletonText, Stack} from '@carbon/react';
-import {BodyCompact} from 'modules/components/FontTokens';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 
@@ -25,9 +24,9 @@ const TaskSkeleton: React.FC = () => {
     <article className={styles.taskSkeleton}>
       <Stack gap={3}>
         <div className={cn(styles.flex, styles.flexColumn)}>
-          <BodyCompact>
+          <span className={styles.name}>
             <SkeletonText width="250px" />
-          </BodyCompact>
+          </span>
           <span className={styles.label}>
             <SkeletonText width="200px" />
           </span>

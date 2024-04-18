@@ -403,7 +403,7 @@ describe('<FormJS />', () => {
   });
 
   // TODO: #3957
-  it.skip('should render a prefilled dynamic form', async () => {
+  it('should render a prefilled dynamic form', async () => {
     nodeMockServer.use(
       http.get('/v1/forms/:formId', () => {
         return HttpResponse.json(formMocks.dynamicForm);

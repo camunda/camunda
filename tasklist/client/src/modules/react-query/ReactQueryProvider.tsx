@@ -21,7 +21,7 @@ import {lazy, useEffect, useState, Suspense} from 'react';
 import {reactQueryClient} from './reactQueryClient';
 
 const ReactQueryDevtoolsProduction = lazy(() =>
-  import('@tanstack/react-query-devtools/build/lib/index.prod.js').then(
+  import('@tanstack/react-query-devtools/build/modern/production.js').then(
     (module) => ({
       default: module.ReactQueryDevtools,
     }),
@@ -42,10 +42,10 @@ const ReactQueryProvider: React.FC<Props> = ({children}) => {
   return (
     <QueryClientProvider client={reactQueryClient}>
       {children}
-      <ReactQueryDevtools position="bottom-right" />
+      <ReactQueryDevtools buttonPosition="bottom-right" />
       {isProdDevtoolsOpen ? (
         <Suspense fallback={null}>
-          <ReactQueryDevtoolsProduction position="bottom-right" />
+          <ReactQueryDevtoolsProduction buttonPosition="bottom-right" />
         </Suspense>
       ) : null}
     </QueryClientProvider>

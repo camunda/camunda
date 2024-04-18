@@ -64,11 +64,11 @@ function useTasks(
     pageSize: MAX_TASKS_PER_REQUEST,
   });
   const client = useQueryClient();
-  const result = useInfiniteQuery<Task[], RequestError | Error, Task[]>({
+  const result = useInfiniteQuery<Task[], RequestError | Error>({
     queryKey: getQueryKey(Object.values(payload)),
-    queryFn: async ({pageParam}: PageParam) => {
+    queryFn: async ({pageParam}) => {
       const {response, error} = await request(
-        api.searchTasks({...payload, ...pageParam}),
+        api.searchTasks({...payload, ...(pageParam as PageParam)}),
       );
 
       if (response !== null) {
@@ -77,11 +77,12 @@ function useTasks(
 
       throw error ?? new Error('Could not fetch tasks');
     },
-    keepPreviousData: true,
+    initialPageParam: undefined,
+    placeholderData: (previousData) => previousData,
     refetchInterval: refetchInterval ?? POLLING_INTERVAL,
     getNextPageParam: (lastPage) => {
       if (lastPage.length < MAX_TASKS_PER_REQUEST) {
-        return undefined;
+        return null;
       }
 
       const lastTask = lastPage[lastPage.length - 1];
@@ -92,13 +93,13 @@ function useTasks(
     },
     getPreviousPageParam: (firstPage) => {
       if (firstPage.length < MAX_TASKS_PER_REQUEST) {
-        return undefined;
+        return null;
       }
 
       const firstTask = firstPage[0];
 
       if (firstTask.isFirst) {
-        return undefined;
+        return null;
       }
 
       return {

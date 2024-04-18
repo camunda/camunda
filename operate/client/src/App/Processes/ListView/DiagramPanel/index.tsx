@@ -237,6 +237,7 @@ const DiagramPanel: React.FC = observer(() => {
 
               return (
                 <StateOverlay
+                  testId={`state-overlay-${overlay.flowNodeId}-${payload.flowNodeState}`}
                   key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
                   state={payload.flowNodeState}
                   count={payload.count}
