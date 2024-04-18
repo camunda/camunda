@@ -23,6 +23,7 @@
     <module>spring-boot-starter-camunda-sdk</module>
     <module>zeebe</module>
     <module>operate</module>
+    <module>identity</module>
   </modules>
 
   <scm>
