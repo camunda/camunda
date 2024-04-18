@@ -51,6 +51,7 @@ class IdentityAuthenticationTest {
   @Mock private Identity identity;
   @InjectMocks private IdentityAuthentication identityAuthentication;
   @Mock private ApplicationContext context;
+  @Mock private Object details;
   private final long futureTime = System.currentTimeMillis() + 100000L;
   private final long pastTime = System.currentTimeMillis() - 100000L;
 

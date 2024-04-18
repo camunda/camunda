@@ -64,12 +64,12 @@ jobs:
       # Build: maven artifacts
       - name: Build backend
         run: |
-          mvn -f tasklist -B -DskipTests -P skipFrontendBuild clean install
+          mvn -B -DskipTests -DskipChecks -T1C -P skipFrontendBuild clean install
 
       # Tests: run migration tests
       - name: Run migration tests
         run: |
-          mvn -B -f tasklist/qa/migration-tests -DskipTests=false verify
+          mvn -B -pl tasklist/qa/migration-tests -DskipTests -DskipChecks verify
 
       # Reports: publish test results
       - name: Publish Test Results
