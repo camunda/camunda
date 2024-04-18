@@ -7,7 +7,8 @@ on:
         description: "Branch to use"
         required: true
         default: "master"
-
+      from:
+        description: "Tag Name or Commit SHA of previous release (optional)"
 jobs:
   generate-changelog:
     name: Generate changelog
@@ -22,6 +23,7 @@ jobs:
         id: changelog
         with:
           branch: ${{ inputs.branch }}
+          from: ${{ github.event.inputs.from }}
       - name: Print changelog
         run: |
           echo "${{ steps.changelog.outputs.changelog }}"
