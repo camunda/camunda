@@ -665,8 +665,18 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
       throw new OperateRuntimeException(
           "One and only one of 'doc' or 'script' must be provided for the update request");
     }
-    if (index == null && operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
-      return;
+    if (index == null) {
+      final String reason =
+          String.format(
+              "Cannot create update request for document with id [%s]: index is null. This suggests possible data loss.",
+              id);
+      if (operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
+        LOGGER.error(reason + " Ignoring document...");
+        return;
+      } else {
+        throw new OperateRuntimeException(
+            reason + " Note: PostImporter can be configured to ignore missing data.");
+      }
     }
     final UpdateRequest updateRequest =
         new UpdateRequest(index, id).retryOnConflict(UPDATE_RETRY_COUNT);
