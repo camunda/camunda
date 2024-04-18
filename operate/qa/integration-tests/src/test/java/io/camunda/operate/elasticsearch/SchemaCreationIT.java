@@ -16,7 +16,6 @@
  */
 package io.camunda.operate.elasticsearch;
 
-import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -24,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
@@ -32,28 +30,25 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.schema.templates.EventTemplate;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.util.SearchTestRule;
+import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class SchemaCreationIT extends OperateAbstractIT {
+@ExtendWith(MockitoExtension.class)
+public class SchemaCreationIT extends OperateSearchAbstractIT {
 
   private static final Consumer<OperateProperties> OPERATE_PROPERTIES_CUSTOMIZER =
       operateProperties -> {
-        operateProperties.getArchiver().setIlmEnabled(true);
-        operateProperties.getArchiver().setIlmMinAgeForDeleteArchivedIndices("5m");
         final var numberOfShardsForIndices =
             Map.of(
                 ListViewTemplate.INDEX_NAME, 3,
@@ -69,25 +64,24 @@ public class SchemaCreationIT extends OperateAbstractIT {
             .getElasticsearch()
             .setNumberOfReplicasForIndices(numberOfReplicasForIndices);
       };
-  @Rule public SearchTestRule searchTestRule = new SearchTestRule(OPERATE_PROPERTIES_CUSTOMIZER);
-  @Autowired private TestSearchRepository testSearchRepository;
-  @Autowired private SchemaManager schemaManager;
-  @Autowired private IncidentTemplate processInstanceTemplate;
+
   @Autowired private EventTemplate eventTemplate;
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private ProcessIndex processIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private IndicesCheck indicesCheck;
+  @Autowired private OperateProperties operateProperties;
 
-  @Test
-  @Ignore("For some reason fails on CI, so skipping")
-  public void testIlmPolicyCreation() throws IOException {
-    assertTrue(testSearchRepository.ilmPolicyExists(OPERATE_DELETE_ARCHIVED_INDICES));
+  @BeforeAll
+  @Override
+  public void beforeAllSetup() throws Exception {
+    OPERATE_PROPERTIES_CUSTOMIZER.accept(operateProperties);
+    super.beforeAllSetup();
   }
 
   @Test
-  public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {
+  public void testIndexCreation() throws IOException {
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertIndexAndAlias(indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias());
     }
@@ -171,20 +165,22 @@ public class SchemaCreationIT extends OperateAbstractIT {
     }
   }
 
-  private IndexDescriptor getIndexDescriptorBy(String name) {
+  private IndexDescriptor getIndexDescriptorBy(final String name) {
     return filter(indexDescriptors, indexDescriptor -> indexDescriptor.getIndexName().equals(name))
         .get(0);
   }
 
   private void assertThatIndexHasDynamicMappingOf(
-      IndexDescriptor indexDescriptor, TestSearchRepository.DynamicMappingType dynamicMappingType)
+      final IndexDescriptor indexDescriptor,
+      final TestSearchRepository.DynamicMappingType dynamicMappingType)
       throws IOException {
     assertTrue(
         testSearchRepository.hasDynamicMapping(
             indexDescriptor.getFullQualifiedName(), dynamicMappingType));
   }
 
-  private void assertIndexAndAlias(String indexName, String aliasName) throws IOException {
+  private void assertIndexAndAlias(final String indexName, final String aliasName)
+      throws IOException {
     final List<String> aliaseNames = testSearchRepository.getAliasNames(indexName);
 
     assertThat(aliaseNames).hasSize(1);
