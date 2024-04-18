@@ -575,7 +575,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
       ElasticsearchUtil.processBulkRequest(
           esClient,
           bulkRequest,
-          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+          operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
     } catch (Exception e) {
       throw new OperateRuntimeException(
           String.format(

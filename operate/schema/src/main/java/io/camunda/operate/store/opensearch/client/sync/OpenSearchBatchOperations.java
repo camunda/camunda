@@ -20,28 +20,42 @@ import static io.camunda.operate.util.ExceptionHelper.withOperateRuntimeExceptio
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.store.BatchRequest;
+import jakarta.json.stream.JsonGenerator;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.BeanFactory;
 
 public class OpenSearchBatchOperations extends OpenSearchSyncOperation {
   private final BeanFactory beanFactory;
+  private final OpensearchProperties opensearchProperties;
 
   public OpenSearchBatchOperations(
-      Logger logger, OpenSearchClient openSearchClient, BeanFactory beanFactory) {
+      Logger logger,
+      OpenSearchClient openSearchClient,
+      BeanFactory beanFactory,
+      OpensearchProperties opensearchProperties) {
     super(logger, openSearchClient);
     this.beanFactory = beanFactory;
+    this.opensearchProperties = opensearchProperties;
   }
 
   private void processBulkRequest(OpenSearchClient osClient, BulkRequest bulkRequest)
       throws PersistenceException {
-    if (bulkRequest.operations().size() > 0) {
+    if (!bulkRequest.operations().isEmpty()) {
+      bulkRequest =
+          validateIndices(bulkRequest, opensearchProperties.isBulkRequestIgnoreNullIndex());
       try {
         logger.debug("************* FLUSH BULK START *************");
         final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
@@ -69,6 +83,77 @@ public class OpenSearchBatchOperations extends OpenSearchSyncOperation {
             "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
       }
     }
+  }
+
+  private BulkRequest validateIndices(BulkRequest bulkRequest, boolean ignoreNullIndex)
+      throws PersistenceException {
+    final List<BulkOperation> invalidRequests =
+        bulkRequest.operations().stream().filter(this::isIndexMissing).toList();
+    if (invalidRequests.isEmpty()) {
+      return bulkRequest;
+    }
+
+    final String requestsError =
+        invalidRequests.stream()
+            .map(r -> "- request: " + toJsonString(r))
+            .collect(Collectors.joining(System.lineSeparator()));
+    if (ignoreNullIndex) {
+      logger.warn(
+          String.format(
+              "Bulk request has %d requests with missing index. Ignoring invalid requests:%s%s",
+              invalidRequests.size(), System.lineSeparator(), requestsError));
+      final BulkRequest.Builder builder = new BulkRequest.Builder();
+      final List<BulkOperation> operations =
+          bulkRequest.operations().stream().filter(o -> !isIndexMissing(o)).toList();
+      final BulkRequest newBulkRequest =
+          builder
+              .index(bulkRequest.index())
+              .operations(operations)
+              .pipeline(bulkRequest.pipeline())
+              .refresh(bulkRequest.refresh())
+              .routing(bulkRequest.routing())
+              .requireAlias(bulkRequest.requireAlias())
+              .source(bulkRequest.source())
+              .sourceExcludes(bulkRequest.sourceExcludes())
+              .sourceIncludes(bulkRequest.sourceIncludes())
+              .timeout(bulkRequest.timeout())
+              .waitForActiveShards(bulkRequest.waitForActiveShards())
+              .build();
+      return newBulkRequest;
+    }
+
+    throw new PersistenceException(
+        String.format(
+            "Bulk request has %d requests with missing index:%s%s",
+            invalidRequests.size(), System.lineSeparator(), requestsError));
+  }
+
+  private boolean isIndexMissing(final BulkOperation operation) {
+    String index = null;
+    if (operation.isIndex()) {
+      index = operation.index().index();
+    } else if (operation.isCreate()) {
+      index = operation.create().index();
+    } else if (operation.isUpdate()) {
+      index = operation.update().index();
+    } else if (operation.isDelete()) {
+      index = operation.delete().index();
+    }
+    final boolean isMissing = (index == null) || index.isEmpty();
+    return isMissing;
+  }
+
+  private String toJsonString(final BulkOperation operation) {
+    final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    try (final JsonGenerator generator =
+        openSearchClient
+            ._transport()
+            .jsonpMapper()
+            .jsonProvider()
+            .createGenerator(byteArrayOutputStream)) {
+      operation.serialize(generator, new JsonbJsonpMapper());
+    }
+    return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
   }
 
   public void bulk(BulkRequest.Builder bulkRequestBuilder) {

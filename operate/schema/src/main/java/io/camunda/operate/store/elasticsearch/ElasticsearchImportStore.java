@@ -120,7 +120,8 @@ public class ElasticsearchImportStore implements ImportStore {
             ElasticsearchUtil.processBulkRequest(
                 esClient,
                 bulkRequest,
-                operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+                operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+                operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
             return null;
           });
 

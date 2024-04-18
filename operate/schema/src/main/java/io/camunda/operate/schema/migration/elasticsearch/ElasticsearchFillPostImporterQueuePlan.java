@@ -158,7 +158,8 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
                 ElasticsearchUtil.processBulkRequest(
                     esClient,
                     bulkRequest,
-                    operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+                    operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
+                    operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
               }),
           esClient,
           migrationProperties.getScrollKeepAlive());
