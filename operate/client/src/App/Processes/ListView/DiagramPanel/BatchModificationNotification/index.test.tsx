@@ -95,4 +95,41 @@ describe('DiagramPanel', () => {
     expect(await screen.findByText(notificationText2)).toBeInTheDocument();
     expect(screen.queryByText(notificationText1)).not.toBeInTheDocument();
   });
+
+  it('should render Undo button if target is selected', async () => {
+    const undoMock = jest.fn();
+
+    const {user} = render(
+      <BatchModificationNotification
+        sourceFlowNodeId="userTask"
+        targetFlowNodeId="endEvent"
+        onUndoClick={undoMock}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /Fetch modification statistics/i}),
+    );
+
+    expect(await screen.findByText(notificationText2)).toBeInTheDocument();
+    expect(screen.queryByText(notificationText1)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /undo/i}));
+
+    expect(undoMock).toHaveBeenCalled();
+  });
+
+  it('should not render Undo button if no target is selected', async () => {
+    render(<BatchModificationNotification sourceFlowNodeId="userTask" />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(screen.getByText(notificationText1)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /undo/i}),
+    ).not.toBeInTheDocument();
+  });
 });

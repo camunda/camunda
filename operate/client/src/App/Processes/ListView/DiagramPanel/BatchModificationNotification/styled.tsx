@@ -16,7 +16,20 @@
  */
 
 import styled from 'styled-components';
-import {InlineNotification as BaseInlineNotification} from '@carbon/react';
+import {
+  InlineNotification as BaseInlineNotification,
+  Button as BaseButton,
+} from '@carbon/react';
+
+const Button: typeof BaseButton = styled(BaseButton)`
+  position: absolute;
+  top: 0;
+  right: 0;
+`;
+
+const Container = styled.div`
+  position: relative;
+`;
 
 // custom styling to set height to 32px
 const InlineNotification = styled(BaseInlineNotification)`
@@ -37,4 +50,4 @@ const InlineNotification = styled(BaseInlineNotification)`
   }
 `;
 
-export {InlineNotification};
+export {InlineNotification, Container, Button};
