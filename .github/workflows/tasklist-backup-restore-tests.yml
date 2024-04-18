@@ -13,7 +13,7 @@ on:
 
 # define constants for later use
 env:
-  JAVA_VERSION: "17"
+  JAVA_VERSION: "21"
 
 jobs:
   elasticsearch:

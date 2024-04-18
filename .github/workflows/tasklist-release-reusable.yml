@@ -7,7 +7,7 @@
 # - 'dryRun': if `true`, the release is built but no changes are made or artifacts (Docker, Maven) pushed. Defaults to `true`.
 # - 'githubUploadRelease': if `true`, the release will be uploaded to GitHub. Defaults to `false`.
 # - 'isLatest': if `true`, the Docker image will be tagged with the 'latest' tag. Defaults to `false`.
-# - 'javaVersion': the Java version to use to build the release. Defaults to `17`.
+# - 'javaVersion': the Java version to use to build the release. Defaults to `21`.
 #
 # The workflow does the following:
 # - Checks out the specified branch.
@@ -56,7 +56,7 @@ on:
         description: "The version of Java to be used to build the release."
         type: number
         required: false
-        default: 17
+        default: 21
 
 defaults:
   run:
