@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.clustering;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -20,7 +21,11 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -166,6 +171,53 @@ final class JobStreamLifecycleIT {
                       .remoteStreams()
                       .haveConsumerCount(1, jobType, 1));
     }
+  }
+
+  @RegressionTest("https://github.com/camunda/zeebe/issues/17513")
+  void shouldAggregateStreamsEvenAcrossRestarts() {
+    // given - many logically equivalent streams
+    final List<JobWorker> workers = new ArrayList<>();
+    for (int i = 0; i < 100; i++) {
+      workers.add(
+          client
+              .newWorker()
+              .jobType(jobType)
+              .handler((c, j) -> {})
+              .fetchVariables("foo", "bar")
+              .timeout(Duration.ofMillis(500))
+              .name("command")
+              .streamEnabled(true)
+              .open());
+    }
+    Awaitility.await("until streams are registered")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveJobType(100, jobType));
+
+    // when - trigger stream restarts by restarting the gateway
+    gateway.stop().start();
+    CLUSTER.awaitCompleteTopology();
+    Awaitility.await("until streams are re-registered")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
+                    .clientStreams()
+                    .haveJobType(100, jobType));
+
+    // then - only one stream is registered on each broker as it is aggregated per gateway
+    for (int nodeId = 0; nodeId < 2; nodeId++) {
+      final var actuator = brokerActuator(nodeId);
+      Awaitility.await("until stream is registered on broker '%d'".formatted(nodeId))
+          .untilAsserted(
+              () ->
+                  JobStreamActuatorAssert.assertThat(actuator)
+                      .remoteStreams()
+                      .haveConsumerCount(1, jobType, 1));
+    }
+    CloseHelper.quietCloseAll(workers);
   }
 
   @Test
