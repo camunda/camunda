@@ -14,6 +14,7 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch
       - bootstrap.memory_lock=true # along with the mem lock settings below, disables swapping
       - "OPENSEARCH_JAVA_OPTS=-Xms1G -Xmx1G" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
     ulimits:
       memlock:
         soft: -1
