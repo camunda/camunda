@@ -37,13 +37,15 @@ public class ZeebeConnector {
 
   @Bean // will be closed automatically
   public ZeebeClient zeebeClient() {
-    return newZeebeClient(operateProperties.getZeebe());
+    final var properties = operateProperties.getZeebe();
+    return newZeebeClient(properties);
   }
 
   public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
+    final var gatewayAdress = getGatewayAddress(zeebeProperties);
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
-            .gatewayAddress(zeebeProperties.getGatewayAddress())
+            .gatewayAddress(gatewayAdress)
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
@@ -53,5 +55,20 @@ public class ZeebeConnector {
       LOGGER.info("Use plaintext connection to zeebe");
     }
     return builder.build();
+  }
+
+  private String getGatewayAddress(final ZeebeProperties properties) {
+    final String address;
+
+    final var deprecatedBrokerContactPoint = properties.getBrokerContactPoint();
+    final var gatewayAddress = properties.getGatewayAddress();
+
+    if (deprecatedBrokerContactPoint != null) {
+      address = deprecatedBrokerContactPoint;
+    } else {
+      address = gatewayAddress;
+    }
+
+    return address;
   }
 }
