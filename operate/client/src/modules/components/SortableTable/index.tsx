@@ -132,7 +132,7 @@ const SortableTable: React.FC<Props> = ({
           getSelectionProps,
           getTableProps,
         }) => (
-          <TableContainer>
+          <TableContainer $hasError={!!batchOperationId}>
             {state === 'loading' && <Loading data-testid="data-table-loader" />}
             <Table {...getTableProps()} isSortable>
               <TableHead>

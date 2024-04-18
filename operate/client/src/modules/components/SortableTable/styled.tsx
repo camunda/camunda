@@ -55,15 +55,28 @@ const TableExpandRow = styled(BaseTableExpandRow)<TableExpandRowProps>`
     border-block-start: none !important;
   }
 
-  // hide expand button on non-error rows
-  &:not(.errorRow) {
-    .cds--table-expand__button {
-      visibility: hidden;
+  &:not(.errorRow):not(.successRow) {
+    // hide expand button when batchOperationId filter is NOT set
+    .cds--table-expand {
+      display: none;
+    }
+
+    // fix spacing after checkbox when batchOperationId filter is NOT set
+    .cds--table-column-checkbox {
+      padding-inline-start: 1rem;
+      + td {
+        padding-inline-start: 1rem;
+      }
     }
   }
 
-  // add success border
   &.successRow {
+    // hide button to expand row on success rows
+    .cds--table-expand button {
+      visibility: hidden;
+    }
+
+    // add success border
     box-shadow: inset 3px 0 0 var(--cds-support-success);
   }
 
@@ -86,10 +99,38 @@ const TableExpandedRow = styled(BaseTableExpandedRow)`
   }
 `;
 
-const TableContainer = styled(BaseTableContainer)`
+type TableContainerProps = {
+  $hasError: boolean;
+};
+
+const TableContainer = styled(BaseTableContainer)<TableContainerProps>`
   height: 100%;
   .cds--data-table-content {
     overflow-x: inherit;
+  }
+
+  // set bottom border for header row as transparent
+  * {
+    border-block-start-color: transparent !important;
+  }
+
+  // fix spacing between checkbox and next cell in header row
+  th.cds--table-column-checkbox + th {
+    padding-inline-start: 0 !important;
+
+    button {
+      padding-left: ${({$hasError}) => ($hasError ? '0.5rem' : '1rem')};
+    }
+  }
+
+  // fix spacing before checkbox when batchOperationId filter is set
+  tr.errorRow,
+  tr.successRow {
+    .cds--table-column-checkbox {
+      + td {
+        padding-inline-start: 0.375rem;
+      }
+    }
   }
 
   tr.errorRow {
