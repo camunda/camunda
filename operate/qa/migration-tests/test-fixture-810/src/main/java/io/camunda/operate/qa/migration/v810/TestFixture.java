@@ -24,6 +24,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.migration.AbstractTestFixture;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -53,6 +54,7 @@ public class TestFixture extends AbstractTestFixture {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestFixture.class);
   @Autowired protected ListViewTemplate listViewTemplate;
   @Autowired protected IncidentTemplate incidentTemplate;
+  @Autowired protected OperateProperties operateProperties;
   @Autowired private RestHighLevelClient esClient;
 
   @Override
@@ -98,7 +100,10 @@ public class TestFixture extends AbstractTestFixture {
           "Post importer queue preparation completed. Number of processed incidents: {}",
           bulkRequest.requests().size());
       ElasticsearchUtil.processBulkRequest(
-          esClient, bulkRequest, BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
+          esClient,
+          bulkRequest,
+          BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT,
+          operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
       esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
     } catch (IOException | PersistenceException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
