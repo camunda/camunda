@@ -22,7 +22,9 @@ public final class CachesCfg implements ConfigurationEntry {
     this.drgCacheCapacity = drgCacheCapacity;
   }
 
-  public int getFormCacheCapacity() {return formCacheCapacity;}
+  public int getFormCacheCapacity() {
+    return formCacheCapacity;
+  }
 
   public void setFormCacheCapacity(final int formCacheCapacity) {
     this.formCacheCapacity = formCacheCapacity;
@@ -30,9 +32,11 @@ public final class CachesCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-    return "CachesCfg{" +
-        "drgCacheCapacity=" + drgCacheCapacity +
-        ", formCacheCapacity=" + formCacheCapacity +
-        '}';
+    return "CachesCfg{"
+        + "drgCacheCapacity="
+        + drgCacheCapacity
+        + ", formCacheCapacity="
+        + formCacheCapacity
+        + '}';
   }
 }
