@@ -64,7 +64,6 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
       LOGGER.info("ISM policy does not exist, creating it");
       schemaManager.createIndexLifeCycles();
     }
-    // Apply the ISM policy to the index templates
     applyIlmPolicyToIndexTemplate(true);
     final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
 
@@ -168,7 +167,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   private static boolean isPolicyAlreadyApplied(
       final JsonObject existingSettings, final String requiredPolicyId) {
-    // Attempt to navigate to the nested 'policy_id' directly, reducing depth
+
     final JsonObject ismSettings =
         Optional.ofNullable(existingSettings.getJsonObject("index"))
             .map(index -> index.getJsonObject("plugins"))
@@ -178,8 +177,6 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
     if (ismSettings == null || !ismSettings.containsKey("policy_id")) {
       return false;
     }
-
-    // Simplified check for null and comparison in one line
     final String currentPolicyId = ismSettings.getString("policy_id", null);
     return Objects.equals(requiredPolicyId, currentPolicyId);
   }
