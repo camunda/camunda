@@ -22,7 +22,6 @@ import {MemoryRouter} from 'react-router-dom';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {LocationLog} from 'modules/utils/LocationLog';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import {format, subDays} from 'date-fns';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<
@@ -123,7 +122,7 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTestId('creation-time')).toBeEmptyDOMElement();
+    expect(screen.getByTestId('dates')).toBeEmptyDOMElement();
   });
 
   it('should navigate to task detail on click', () => {
@@ -197,7 +196,7 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Due on 29 May 2025')).toBeInTheDocument();
+    expect(screen.getByTitle('Due on 29th of May, 2025')).toBeInTheDocument();
   });
 
   it('should render a task with due date when filtered by due date', async () => {
@@ -220,9 +219,9 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Due on 29 May 2025')).toBeInTheDocument();
-    expect(screen.queryByText('Follow-up on')).not.toBeInTheDocument();
-    expect(screen.queryByText('Completed on')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Due on 29th of May, 2025')).toBeInTheDocument();
+    expect(screen.queryByText('Follow-up')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completed')).not.toBeInTheDocument();
   });
 
   it('should render a task with follow-up date when filtered by follow-up date', async () => {
@@ -245,9 +244,11 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Follow-up on 29 May 2025')).toBeInTheDocument();
-    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
-    expect(screen.queryByText('Completed on')).not.toBeInTheDocument();
+    expect(
+      screen.getByTitle('Follow-up on 29th of May, 2025'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Due')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completed')).not.toBeInTheDocument();
   });
 
   it('should render a task with completion date', async () => {
@@ -270,15 +271,13 @@ describe('<Task />', () => {
       },
     );
 
-    expect(screen.getByTitle('Completed on 28 May 2025')).toBeInTheDocument();
-    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
+    expect(
+      screen.getByTitle('Completed on 28th of May, 2025'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Due')).not.toBeInTheDocument();
   });
 
   it('should render a task with overdue date', async () => {
-    const todaysDate = new Date().toISOString();
-    const yesterdaysDate = subDays(todaysDate, 1).toISOString();
-    const formattedDate = format(yesterdaysDate, 'dd MMM yyyy');
-
     render(
       <Task
         taskId="1"
@@ -288,7 +287,7 @@ describe('<Task />', () => {
         context="My Task"
         assignee={currentUser.userId}
         followUpDate={null}
-        dueDate={yesterdaysDate}
+        dueDate="2024-05-29T00:00:00.000Z"
         completionDate={null}
         currentUser={userMocks.currentUser}
         position={0}
@@ -298,9 +297,7 @@ describe('<Task />', () => {
       },
     );
 
-    expect(
-      screen.getByTitle(`Overdue on ${formattedDate}`),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Due on')).not.toBeInTheDocument();
+    expect(screen.getByTitle(`Overdue Yesterday`)).toBeInTheDocument();
+    expect(screen.queryByText('Due')).not.toBeInTheDocument();
   });
 });

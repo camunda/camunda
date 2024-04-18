@@ -181,6 +181,7 @@ function formatDate(time: Date, now?: Date) {
     },
   );
   return {
+    date: time,
     relative: {
       resolution: resolution.type,
       text,
@@ -220,6 +221,7 @@ function formatDateTime(time: Date, now?: Date) {
     },
   );
   return {
+    date: time,
     relative: {
       resolution: resolution.type,
       text,

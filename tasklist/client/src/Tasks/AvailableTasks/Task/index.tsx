@@ -16,25 +16,28 @@
  */
 
 import React, {useMemo} from 'react';
-import {pages} from 'modules/routing';
-import {formatDate} from 'modules/utils/formatDate';
-import {formatISODateTime} from 'modules/utils/formatDateRelative';
-import {CurrentUser, Task as TaskType} from 'modules/types';
-import {useLocation, useMatch} from 'react-router-dom';
-import {useTaskFilters} from 'modules/hooks/useTaskFilters';
-import {BodyCompact, HeadingCompact} from 'modules/components/FontTokens';
-import {encodeTaskOpenedRef} from 'modules/utils/reftags';
-import {AssigneeTag} from 'Tasks/AssigneeTag';
+import {NavLink, useLocation, useMatch} from 'react-router-dom';
+import {isBefore} from 'date-fns';
+import {Stack} from '@carbon/react';
 import {
   Calendar,
   CheckmarkFilled,
   Warning,
   Notification,
-} from '@carbon/react/icons';
-import {compareAsc} from 'date-fns';
+} from '@carbon/icons-react';
+import {pages} from 'modules/routing';
+import {
+  formatISODate,
+  formatISODateTime,
+} from 'modules/utils/formatDateRelative';
 import {unraw} from 'modules/utils/unraw';
-import {Row, Label, TaskLink, Stack, Container} from './styled';
-import {DateLabelWithPopover} from './DateLabelWithPopover';
+import {CurrentUser, Task as TaskType} from 'modules/types';
+import {TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
+import {encodeTaskOpenedRef} from 'modules/utils/reftags';
+import {AssigneeTag} from 'Tasks/AssigneeTag';
+import {DateLabel} from './DateLabel';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type Props = {
   taskId: TaskType['id'];
@@ -50,7 +53,65 @@ type Props = {
   position: number;
 };
 
-const Task = React.forwardRef<HTMLElement, Props>(
+function getNavLinkLabel({
+  name,
+  assigneeId,
+  currentUserId,
+}: {
+  name: string;
+  assigneeId: string | null;
+  currentUserId: string;
+}) {
+  const isAssigned = assigneeId !== null;
+  const isAssignedToCurrentUser = assigneeId === currentUserId;
+  if (isAssigned) {
+    if (isAssignedToCurrentUser) {
+      return `Task assigned to me: ${name}`;
+    } else {
+      return `Assigned task: ${name}`;
+    }
+  } else {
+    return `Unassigned task: ${name}`;
+  }
+}
+
+function getSecondaryDate({
+  completionDate,
+  dueDate,
+  followUpDate,
+  sortBy,
+}: {
+  completionDate: ReturnType<typeof formatISODate>;
+  dueDate: ReturnType<typeof formatISODate>;
+  followUpDate: ReturnType<typeof formatISODate>;
+  sortBy: TaskFilters['sortBy'];
+}) {
+  const now = Date.now();
+  const isOverdue = !completionDate && dueDate && isBefore(dueDate.date, now);
+  const isFollowupBeforeDueDate =
+    dueDate && followUpDate && isBefore(followUpDate.date, dueDate.date);
+
+  if (sortBy === 'creation' && completionDate) {
+    return {completionDate};
+  } else if (
+    sortBy === 'creation' &&
+    followUpDate &&
+    !isOverdue &&
+    isFollowupBeforeDueDate
+  ) {
+    return {followUpDate};
+  } else if (sortBy === 'completion' && completionDate) {
+    return {completionDate};
+  } else if (sortBy === 'follow-up' && followUpDate) {
+    return {followUpDate};
+  } else if (dueDate) {
+    return isOverdue ? {overDueDate: dueDate} : {dueDate};
+  } else {
+    return {};
+  }
+}
+
+const Task = React.forwardRef<HTMLDivElement, Props>(
   (
     {
       taskId,
@@ -59,48 +120,32 @@ const Task = React.forwardRef<HTMLElement, Props>(
       context,
       assignee,
       creationDate: creationDateString,
-      followUpDate,
-      dueDate,
-      completionDate,
+      followUpDate: followUpDateString,
+      dueDate: dueDateString,
+      completionDate: completionDateString,
       currentUser,
       position,
     },
     ref,
   ) => {
-    const {userId} = currentUser;
-    const isAssigned = assignee !== null;
-    const isAssignedToCurrentUser = assignee === userId;
     const match = useMatch('/:id');
     const location = useLocation();
     const isActive = match?.params?.id === taskId;
     const {filter, sortBy} = useTaskFilters();
-    const creationDate = formatISODateTime(creationDateString);
-    const hasCompletionDate =
-      completionDate !== null && formatDate(completionDate) !== '';
-    const hasDueDate = dueDate !== null && formatDate(dueDate) !== '';
-    const hasFollowupDate =
-      followUpDate !== null && formatDate(followUpDate) !== '';
-    const todaysDate = new Date().toISOString();
-    const isOverdue =
-      !hasCompletionDate &&
-      hasDueDate &&
-      compareAsc(dueDate, todaysDate) === -1;
-    const isFollowupBeforeDueDate =
-      hasDueDate && hasFollowupDate && compareAsc(dueDate, followUpDate) === 1;
+    const creationDate = useMemo(
+      () => formatISODateTime(creationDateString),
+      [creationDateString],
+    );
 
-    const showCompletionDate =
-      hasCompletionDate && sortBy !== 'due' && sortBy !== 'follow-up';
-    const showFollowupDate =
-      !showCompletionDate &&
-      hasFollowupDate &&
-      sortBy !== 'due' &&
-      sortBy !== 'completion' &&
-      (sortBy === 'follow-up' || (!isOverdue && isFollowupBeforeDueDate));
-    const showDueDate =
-      !showCompletionDate &&
-      !showFollowupDate &&
-      hasDueDate &&
-      sortBy !== 'follow-up';
+    const completionDate = formatISODate(completionDateString);
+    const dueDate = formatISODate(dueDateString);
+    const followUpDate = formatISODate(followUpDateString);
+    const secondaryDate = getSecondaryDate({
+      completionDate,
+      dueDate,
+      followUpDate,
+      sortBy,
+    });
 
     const searchWithRefTag = useMemo(() => {
       const params = new URLSearchParams(location.search);
@@ -122,141 +167,106 @@ const Task = React.forwardRef<HTMLElement, Props>(
     );
 
     return (
-      <Container $active={isActive}>
-        <TaskLink
+      <article className={cn(styles.container, {[styles.active]: isActive})}>
+        <NavLink
+          className={styles.taskLink}
           to={{
             ...location,
             pathname: pages.taskDetails(taskId),
             search: searchWithRefTag.toString(),
           }}
-          aria-label={`${
-            isAssigned
-              ? isAssignedToCurrentUser
-                ? 'Task assigned to me'
-                : 'Assigned task'
-              : 'Unassigned task'
-          }: ${name}`}
+          aria-label={getNavLinkLabel({
+            name,
+            assigneeId: assignee,
+            currentUserId: currentUser.userId,
+          })}
         >
-          <Stack data-testid={`task-${taskId}`} gap={3} ref={ref}>
-            <Row>
-              <BodyCompact $variant="02">{name}</BodyCompact>
-              <Label $variant="secondary">{processName}</Label>
-            </Row>
-
-            {decodedContext === null ? null : (
-              <Row>
-                <Label $variant="secondary" $shouldWrap title={decodedContext}>
+          <Stack
+            className={styles.fullWidthAndHeight}
+            data-testid={`task-${taskId}`}
+            gap={3}
+            ref={ref}
+          >
+            <div className={cn(styles.flex, styles.flexColumn)}>
+              <span className={styles.name}>{name}</span>
+              <span className={styles.label}>{processName}</span>
+            </div>
+            {decodedContext !== null && (
+              <div className={cn(styles.flex, styles.flexColumn)}>
+                <div
+                  className={cn(styles.label, styles.contextWrap)}
+                  title={decodedContext}
+                >
                   {decodedContext.split('\n').map((line, index) => (
                     <div key={index}>{line}</div>
                   ))}
-                </Label>
-              </Row>
+                </div>
+              </div>
             )}
 
-            <Row>
-              <Label $variant="secondary">
+            <div className={cn(styles.flex, styles.flexColumn)}>
+              <span>
                 <AssigneeTag currentUser={currentUser} assignee={assignee} />
-              </Label>
-            </Row>
-            <Row
-              data-testid="creation-time"
-              $direction="row"
-              $alignItems="flex-end"
+              </span>
+            </div>
+            <div
+              data-testid="dates"
+              className={cn(styles.flex, styles.flexRow, styles.alignItemsEnd)}
             >
               {creationDate ? (
-                <DateLabelWithPopover
-                  title={
-                    ['week', 'months', 'years'].includes(
-                      creationDate.relative.resolution,
-                    )
-                      ? `Created on ${creationDate.relative.speech}`
-                      : `Created ${creationDate.relative.speech}`
-                  }
-                  popoverContent={
-                    <Stack orientation="vertical" gap={2}>
-                      <HeadingCompact>Created on</HeadingCompact>
-                      <BodyCompact>{creationDate.absolute.text}</BodyCompact>
-                    </Stack>
-                  }
-                  align="top-left"
-                >
-                  <Calendar
-                    style={{verticalAlign: 'text-bottom', marginRight: '4px'}}
-                  />
-                  {creationDate.relative.text}
-                </DateLabelWithPopover>
+                <DateLabel
+                  date={creationDate}
+                  relativeLabel="Created"
+                  absoluteLabel="Created on"
+                  icon={<Calendar className={styles.inlineIcon} />}
+                />
               ) : null}
-              {showFollowupDate ? (
-                <DateLabelWithPopover
-                  title={`Follow-up on ${formatDate(followUpDate!, false)}`}
-                  popoverContent={
-                    <Stack orientation="vertical" gap={2}>
-                      <HeadingCompact>Follow-up on</HeadingCompact>
-                      <BodyCompact>
-                        {formatDate(followUpDate!, false)}
-                      </BodyCompact>
-                    </Stack>
+              {secondaryDate.followUpDate !== undefined ? (
+                <DateLabel
+                  date={secondaryDate.followUpDate}
+                  relativeLabel="Follow-up"
+                  absoluteLabel="Follow-up on"
+                  icon={
+                    <Notification className={styles.inlineIcon} color="blue" />
                   }
-                  align="top-left"
-                >
-                  <Stack orientation="horizontal" gap={2}>
-                    <Notification color="blue" />
-                    {formatDate(followUpDate!, false)}
-                  </Stack>
-                </DateLabelWithPopover>
+                  align="top-right"
+                />
               ) : null}
-              {showDueDate ? (
-                <DateLabelWithPopover
-                  title={
-                    isOverdue
-                      ? `Overdue on ${formatDate(dueDate!, false)}`
-                      : `Due on ${formatDate(dueDate!, false)}`
-                  }
-                  popoverContent={
-                    <Stack orientation="vertical" gap={2}>
-                      <HeadingCompact>
-                        {isOverdue ? 'Overdue' : 'Due on'}
-                      </HeadingCompact>
-                      <BodyCompact>{formatDate(dueDate!, false)}</BodyCompact>
-                    </Stack>
-                  }
-                  align="top-left"
-                >
-                  <Stack orientation="vertical" gap={1}>
-                    {isOverdue ? (
-                      <Stack orientation="horizontal" gap={2}>
-                        <Warning color="red" />
-                        {formatDate(dueDate!, false)}
-                      </Stack>
-                    ) : (
-                      formatDate(dueDate!, false)
-                    )}
-                  </Stack>
-                </DateLabelWithPopover>
+              {secondaryDate.overDueDate !== undefined ? (
+                <DateLabel
+                  date={secondaryDate.overDueDate}
+                  relativeLabel="Overdue"
+                  absoluteLabel="Overdue"
+                  icon={<Warning className={styles.inlineIcon} color="red" />}
+                  align="top-right"
+                />
               ) : null}
-              {showCompletionDate ? (
-                <DateLabelWithPopover
-                  title={`Completed on ${formatDate(completionDate!, false)}`}
-                  popoverContent={
-                    <Stack orientation="vertical" gap={2}>
-                      <HeadingCompact>Completed on</HeadingCompact>
-                      <BodyCompact>
-                        {formatDate(completionDate!, false)}
-                      </BodyCompact>
-                    </Stack>
-                  }
-                  align="top-left"
-                >
-                  <Stack orientation="horizontal" gap={2}>
-                    <CheckmarkFilled color="green" />
-                    {formatDate(completionDate!, false)}
-                  </Stack>
-                </DateLabelWithPopover>
+              {secondaryDate.dueDate !== undefined ? (
+                <DateLabel
+                  date={secondaryDate.dueDate}
+                  relativeLabel="Due"
+                  absoluteLabel="Due on"
+                  align="top-right"
+                />
               ) : null}
-            </Row>
+              {secondaryDate.completionDate !== undefined ? (
+                <DateLabel
+                  date={secondaryDate.completionDate}
+                  relativeLabel="Completed"
+                  absoluteLabel="Completed on"
+                  icon={
+                    <CheckmarkFilled
+                      className={styles.inlineIcon}
+                      color="green"
+                    />
+                  }
+                  align="top-right"
+                />
+              ) : null}
+            </div>
           </Stack>
-        </TaskLink>
-      </Container>
+        </NavLink>
+      </article>
     );
   },
 );

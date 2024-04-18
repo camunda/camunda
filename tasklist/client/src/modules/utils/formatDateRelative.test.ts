@@ -32,6 +32,7 @@ describe('format', () => {
   describe('formatDate', () => {
     it('shows now when date is the same', () => {
       expect(formatDate(now, now)).to.be.toEqual({
+        date: new Date(Date.parse('2024-01-10T12:00:00Z')),
         relative: {
           resolution: 'now',
           text: 'Now',
@@ -42,6 +43,7 @@ describe('format', () => {
     });
     it('shows minutes when date is within one hour', () => {
       expect(formatDate(sub(now, {minutes: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T11:59:00Z')),
         relative: {
           resolution: 'minutes',
           text: '1 minute ago',
@@ -50,6 +52,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(sub(now, {minutes: 10}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T11:50:00Z')),
         relative: {
           resolution: 'minutes',
           text: '10 minutes ago',
@@ -58,6 +61,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(sub(now, {minutes: 60}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T11:00:00Z')),
         relative: {
           resolution: 'minutes',
           text: '60 minutes ago',
@@ -66,6 +70,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(sub(now, {minutes: 61}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-10T10:59:00Z')),
         relative: {
           resolution: 'minutes',
           text: '61 minutes ago',
@@ -74,6 +79,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(add(now, {minutes: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T12:01:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 1 minute',
@@ -82,6 +88,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(add(now, {minutes: 10}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T12:10:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 10 minutes',
@@ -90,6 +97,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(add(now, {minutes: 60}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T13:00:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 60 minutes',
@@ -98,6 +106,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(add(now, {minutes: 61}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-10T13:01:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 61 minutes',
@@ -108,6 +117,7 @@ describe('format', () => {
     });
     it('shows Today when day is the same', () => {
       expect(formatDate(sub(now, {minutes: 61}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T10:59:00Z')),
         relative: {
           resolution: 'days',
           text: 'Today',
@@ -116,6 +126,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024'},
       });
       expect(formatDate(add(now, {minutes: 61}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T13:01:00Z')),
         relative: {
           resolution: 'days',
           text: 'Today',
@@ -126,6 +137,7 @@ describe('format', () => {
     });
     it('shows Tomorrow when day is the next day', () => {
       expect(formatDate(add(now, {days: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-11T12:00:00Z')),
         relative: {
           resolution: 'days',
           text: 'Tomorrow',
@@ -136,6 +148,7 @@ describe('format', () => {
     });
     it('shows Yesterday when day is the previous day', () => {
       expect(formatDate(sub(now, {days: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-09T12:00:00Z')),
         relative: {
           resolution: 'days',
           text: 'Yesterday',
@@ -146,6 +159,7 @@ describe('format', () => {
     });
     it('shows day of week when day is beyond the previous or next day', () => {
       expect(formatDate(sub(now, {days: 4}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-06T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Saturday',
@@ -154,6 +168,7 @@ describe('format', () => {
         absolute: {text: '6 Jan 2024'},
       });
       expect(formatDate(sub(now, {days: 3}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-07T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Sunday',
@@ -162,6 +177,7 @@ describe('format', () => {
         absolute: {text: '7 Jan 2024'},
       });
       expect(formatDate(sub(now, {days: 2}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-08T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Monday',
@@ -170,6 +186,7 @@ describe('format', () => {
         absolute: {text: '8 Jan 2024'},
       });
       expect(formatDate(add(now, {days: 2}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-12T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Friday',
@@ -178,6 +195,7 @@ describe('format', () => {
         absolute: {text: '12 Jan 2024'},
       });
       expect(formatDate(add(now, {days: 3}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-13T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Saturday',
@@ -186,6 +204,7 @@ describe('format', () => {
         absolute: {text: '13 Jan 2024'},
       });
       expect(formatDate(add(now, {days: 4}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-14T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Sunday',
@@ -196,6 +215,7 @@ describe('format', () => {
     });
     it('shows date when day is beyond the current week', () => {
       expect(formatDate(sub(now, {days: 4}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-06T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '6 Jan',
@@ -204,6 +224,7 @@ describe('format', () => {
         absolute: {text: '6 Jan 2024'},
       });
       expect(formatDate(add(now, {days: 4}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-14T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '14 Jan',
@@ -214,6 +235,7 @@ describe('format', () => {
     });
     it('shows date and year when day is beyond the current week', () => {
       expect(formatDate(sub(now, {days: 10}), now)).toEqual({
+        date: new Date(Date.parse('2023-12-31T12:00:00Z')),
         relative: {
           resolution: 'years',
           text: '31 Dec 2023',
@@ -222,6 +244,7 @@ describe('format', () => {
         absolute: {text: '31 Dec 2023'},
       });
       expect(formatDate(sub(now, {days: 9}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-01T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '1 Jan',
@@ -230,6 +253,7 @@ describe('format', () => {
         absolute: {text: '1 Jan 2024'},
       });
       expect(formatDate(add(now, {days: 356}), now)).toEqual({
+        date: new Date(Date.parse('2024-12-31T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '31 Dec',
@@ -238,6 +262,7 @@ describe('format', () => {
         absolute: {text: '31 Dec 2024'},
       });
       expect(formatDate(add(now, {days: 357}), now)).toEqual({
+        date: new Date(Date.parse('2025-01-01T12:00:00Z')),
         relative: {
           resolution: 'years',
           text: '1 Jan 2025',
@@ -250,6 +275,7 @@ describe('format', () => {
   describe('formatDateTime', () => {
     it('shows now when date is the same', () => {
       expect(formatDateTime(now, now)).to.be.toEqual({
+        date: new Date(Date.parse('2024-01-10T12:00:00Z')),
         relative: {
           resolution: 'now',
           text: 'Now',
@@ -260,6 +286,7 @@ describe('format', () => {
     });
     it('shows minutes when date is within one hour', () => {
       expect(formatDateTime(sub(now, {minutes: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T11:59:00Z')),
         relative: {
           resolution: 'minutes',
           text: '1 minute ago',
@@ -268,6 +295,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 11:59'},
       });
       expect(formatDateTime(sub(now, {minutes: 10}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T11:50:00Z')),
         relative: {
           resolution: 'minutes',
           text: '10 minutes ago',
@@ -276,6 +304,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 11:50'},
       });
       expect(formatDateTime(sub(now, {minutes: 60}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T11:00:00Z')),
         relative: {
           resolution: 'minutes',
           text: '60 minutes ago',
@@ -284,6 +313,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 11:00'},
       });
       expect(formatDateTime(sub(now, {minutes: 61}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-10T10:59:00Z')),
         relative: {
           resolution: 'minutes',
           text: '61 minutes ago',
@@ -292,6 +322,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 10:59'},
       });
       expect(formatDateTime(add(now, {minutes: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T12:01:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 1 minute',
@@ -300,6 +331,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 12:01'},
       });
       expect(formatDateTime(add(now, {minutes: 10}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T12:10:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 10 minutes',
@@ -308,6 +340,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 12:10'},
       });
       expect(formatDateTime(add(now, {minutes: 60}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T13:00:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 60 minutes',
@@ -316,6 +349,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 13:00'},
       });
       expect(formatDateTime(add(now, {minutes: 61}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-10T13:01:00Z')),
         relative: {
           resolution: 'minutes',
           text: 'In 61 minutes',
@@ -326,6 +360,7 @@ describe('format', () => {
     });
     it('shows Today when day is the same', () => {
       expect(formatDateTime(sub(now, {minutes: 61}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T10:59:00Z')),
         relative: {
           resolution: 'days',
           text: 'Today, 10:59',
@@ -334,6 +369,7 @@ describe('format', () => {
         absolute: {text: '10 Jan 2024, 10:59'},
       });
       expect(formatDateTime(add(now, {minutes: 61}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-10T13:01:00Z')),
         relative: {
           resolution: 'days',
           text: 'Today, 13:01',
@@ -344,6 +380,7 @@ describe('format', () => {
     });
     it('shows Tomorrow when day is the next day', () => {
       expect(formatDateTime(add(now, {days: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-11T12:00:00Z')),
         relative: {
           resolution: 'days',
           text: 'Tomorrow, 12:00',
@@ -354,6 +391,7 @@ describe('format', () => {
     });
     it('shows Yesterday when day is the previous day', () => {
       expect(formatDateTime(sub(now, {days: 1}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-09T12:00:00Z')),
         relative: {
           resolution: 'days',
           text: 'Yesterday, 12:00',
@@ -364,6 +402,7 @@ describe('format', () => {
     });
     it('shows day of week when day is beyond the previous or next day', () => {
       expect(formatDateTime(sub(now, {days: 4}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-06T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Saturday, 12:00',
@@ -372,6 +411,7 @@ describe('format', () => {
         absolute: {text: '6 Jan 2024, 12:00'},
       });
       expect(formatDateTime(sub(now, {days: 3}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-07T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Sunday, 12:00',
@@ -380,6 +420,7 @@ describe('format', () => {
         absolute: {text: '7 Jan 2024, 12:00'},
       });
       expect(formatDateTime(sub(now, {days: 2}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-08T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Monday, 12:00',
@@ -388,6 +429,7 @@ describe('format', () => {
         absolute: {text: '8 Jan 2024, 12:00'},
       });
       expect(formatDateTime(add(now, {days: 2}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-12T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Friday, 12:00',
@@ -396,6 +438,7 @@ describe('format', () => {
         absolute: {text: '12 Jan 2024, 12:00'},
       });
       expect(formatDateTime(add(now, {days: 3}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-13T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Saturday, 12:00',
@@ -404,6 +447,7 @@ describe('format', () => {
         absolute: {text: '13 Jan 2024, 12:00'},
       });
       expect(formatDateTime(add(now, {days: 4}), now)).not.toEqual({
+        date: new Date(Date.parse('2024-01-14T12:00:00Z')),
         relative: {
           resolution: 'week',
           text: 'Sunday, 12:00',
@@ -414,6 +458,7 @@ describe('format', () => {
     });
     it('shows date when day is beyond the current week', () => {
       expect(formatDateTime(sub(now, {days: 4}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-06T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '6 Jan, 12:00',
@@ -422,6 +467,7 @@ describe('format', () => {
         absolute: {text: '6 Jan 2024, 12:00'},
       });
       expect(formatDateTime(add(now, {days: 4}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-14T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '14 Jan, 12:00',
@@ -432,6 +478,7 @@ describe('format', () => {
     });
     it('shows date and year when day is beyond the current week', () => {
       expect(formatDateTime(sub(now, {days: 10}), now)).toEqual({
+        date: new Date(Date.parse('2023-12-31T12:00:00Z')),
         relative: {
           resolution: 'years',
           text: '31 Dec 2023, 12:00',
@@ -440,6 +487,7 @@ describe('format', () => {
         absolute: {text: '31 Dec 2023, 12:00'},
       });
       expect(formatDateTime(sub(now, {days: 9}), now)).toEqual({
+        date: new Date(Date.parse('2024-01-01T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '1 Jan, 12:00',
@@ -448,6 +496,7 @@ describe('format', () => {
         absolute: {text: '1 Jan 2024, 12:00'},
       });
       expect(formatDateTime(add(now, {days: 356}), now)).toEqual({
+        date: new Date(Date.parse('2024-12-31T12:00:00Z')),
         relative: {
           resolution: 'months',
           text: '31 Dec, 12:00',
@@ -456,6 +505,7 @@ describe('format', () => {
         absolute: {text: '31 Dec 2024, 12:00'},
       });
       expect(formatDateTime(add(now, {days: 357}), now)).toEqual({
+        date: new Date(Date.parse('2025-01-01T12:00:00Z')),
         relative: {
           resolution: 'years',
           text: '1 Jan 2025, 12:00',

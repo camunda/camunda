@@ -15,124 +15,40 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {forwardRef} from 'react';
-import {Calendar} from '@carbon/react/icons';
-import {
-  Stack as BaseStack,
-  PopoverContent as BasePopoverContent,
-} from '@carbon/react';
-import {NavLink} from 'react-router-dom';
+import {Popover, PopoverContent} from '@carbon/react';
+import {ReactNode, useCallback, useState} from 'react';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 
-type LabelProps = {
-  $variant: 'primary' | 'secondary';
-  $shouldWrap?: boolean;
+const LabelWithPopover: React.FC<{
+  title: string;
+  popoverContent: ReactNode;
+  children: ReactNode;
+  align: React.ComponentProps<typeof Popover>['align'];
+}> = ({title, popoverContent, children, align}) => {
+  const [popOverOpen, setPopOverOpen] = useState(false);
+  const onMouseEnter = useCallback(() => {
+    setPopOverOpen(true);
+  }, []);
+  const onMouseLeave = useCallback(() => {
+    setPopOverOpen(false);
+  }, []);
+  return (
+    <Popover
+      open={popOverOpen}
+      align={align}
+      caret
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <span className={cn(styles.label, styles.labelPrimary)} title={title}>
+        {children}
+      </span>
+      <PopoverContent className={styles.popoverContent}>
+        {popoverContent}
+      </PopoverContent>
+    </Popover>
+  );
 };
 
-const Label: React.FC<React.ComponentProps<'span'> & LabelProps> = ({
-  className = '',
-  children,
-  $variant,
-  $shouldWrap,
-  ...rest
-}) => (
-  <span
-    {...rest}
-    className={cn(className, styles.label, {
-      [styles.labelPrimary]: $variant === 'primary',
-      [styles.contextWrap]: $shouldWrap,
-    })}
-  >
-    {children}
-  </span>
-);
-
-type RowProps = {
-  $direction?: 'row' | 'column';
-  $alignItems?: 'flex-end';
-};
-
-const Row: React.FC<React.ComponentProps<'div'> & RowProps> = ({
-  className = '',
-  children,
-  $direction,
-  $alignItems,
-  ...rest
-}) => (
-  <div
-    {...rest}
-    className={cn(className, styles.flex, {
-      [styles.flexRow]: $direction === 'row',
-      [styles.flexColumn]: $direction !== 'row',
-      [styles.alignItemsEnd]: $alignItems === 'flex-end',
-    })}
-  >
-    {children}
-  </div>
-);
-
-const TaskLink: React.FC<React.ComponentProps<typeof NavLink>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <NavLink {...rest} className={cn(className, styles.taskLink)}>
-    {children}
-  </NavLink>
-);
-
-const Stack: React.FC<React.ComponentProps<typeof BaseStack>> = forwardRef(
-  ({className = '', children, ...rest}, ref) => (
-    <BaseStack {...rest} className={cn(className, styles.stack)} ref={ref}>
-      {children}
-    </BaseStack>
-  ),
-);
-
-const Container: React.FC<
-  React.ComponentProps<'article'> & {$active?: boolean}
-> = ({className = '', children, $active, ...rest}) => (
-  <article
-    {...rest}
-    className={cn(className, styles.container, {[styles.active]: $active})}
-  >
-    {children}
-  </article>
-);
-
-const DateLabel: React.FC<React.ComponentProps<typeof Label>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <Label {...rest} className={cn(className, styles.dateLabel)}>
-    {children}
-  </Label>
-);
-
-const PopoverContent: React.FC<
-  React.ComponentProps<typeof BasePopoverContent>
-> = ({className = '', children, ...rest}) => (
-  <BasePopoverContent
-    {...rest}
-    className={cn(className, styles.popoverContent)}
-  >
-    {children}
-  </BasePopoverContent>
-);
-
-const InlineCalender: React.FC<React.ComponentProps<typeof Calendar>> = ({
-  ...rest
-}) => <Calendar className={styles.inlineIcon} {...rest} />;
-
-export {
-  Row,
-  Label,
-  TaskLink,
-  Stack,
-  Container,
-  DateLabel,
-  PopoverContent,
-  InlineCalender,
-};
+export {LabelWithPopover};
