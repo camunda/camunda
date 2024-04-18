@@ -113,6 +113,7 @@ public class OpensearchProcessInstanceDao
       queryTerms.add(
           queryDSLWrapper.term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
       queryTerms.add(queryDSLWrapper.term(ProcessInstance.STATE, filter.getState()));
+      queryTerms.add(queryDSLWrapper.term(ProcessInstance.INCIDENT, filter.getIncident()));
       queryTerms.add(queryDSLWrapper.term(ProcessInstance.TENANT_ID, filter.getTenantId()));
       queryTerms.add(
           queryDSLWrapper.matchDateQuery(
