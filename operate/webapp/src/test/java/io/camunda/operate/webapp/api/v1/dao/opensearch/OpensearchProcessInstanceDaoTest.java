@@ -173,6 +173,7 @@ public class OpensearchProcessInstanceDaoTest {
             .setProcessVersion(1)
             .setBpmnProcessId("bpmnId")
             .setState("state")
+            .setIncident(false)
             .setTenantId("tenant")
             .setStartDate("2024-01-19T18:39:05.196-0500")
             .setEndDate("2024-01-19T18:39:06.196-0500");
@@ -196,6 +197,7 @@ public class OpensearchProcessInstanceDaoTest {
     verify(mockQueryWrapper, times(1))
         .term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId());
     verify(mockQueryWrapper, times(1)).term(ProcessInstance.STATE, filter.getState());
+    verify(mockQueryWrapper, times(1)).term(ProcessInstance.INCIDENT, filter.getIncident());
     verify(mockQueryWrapper, times(1)).term(ProcessInstance.TENANT_ID, filter.getTenantId());
     verify(mockQueryWrapper, times(1))
         .matchDateQuery(ProcessInstance.START_DATE, filter.getStartDate(), expectedDateFormat);

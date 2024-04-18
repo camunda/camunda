@@ -15,34 +15,34 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Label, SkeletonContainer, Row} from './styled';
 import {SkeletonText, Stack} from '@carbon/react';
-import {BodyCompact} from 'modules/components/FontTokens';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 const TaskSkeleton: React.FC = () => {
   return (
-    <SkeletonContainer>
+    <article className={styles.taskSkeleton}>
       <Stack gap={3}>
-        <Row>
-          <BodyCompact>
+        <div className={cn(styles.flex, styles.flexColumn)}>
+          <span className={styles.name}>
             <SkeletonText width="250px" />
-          </BodyCompact>
-          <Label $variant="secondary">
+          </span>
+          <span className={styles.label}>
             <SkeletonText width="200px" />
-          </Label>
-        </Row>
-        <Row>
-          <Label $variant="secondary">
+          </span>
+        </div>
+        <div className={cn(styles.flex, styles.flexColumn)}>
+          <span className={styles.label}>
             <SkeletonText width="50px" />
-          </Label>
-        </Row>
-        <Row>
-          <Label $variant="secondary">
+          </span>
+        </div>
+        <div className={cn(styles.flex, styles.flexColumn)}>
+          <span className={styles.label}>
             <SkeletonText width="100px" />
-          </Label>
-        </Row>
+          </span>
+        </div>
       </Stack>
-    </SkeletonContainer>
+    </article>
   );
 };
 

@@ -69,6 +69,22 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>com.auth0:mvc-auth-commons</dep>
+            <dep>com.auth0:auth0</dep>
+            <dep>com.auth0:java-jwt</dep>
+            <dep>com.auth0:jwks-rsa</dep>
+            <dep>jakarta.servlet:jakarta.servlet-api</dep>
+            <dep>org.apache.commons:commons-lang3</dep>
+            <dep>com.google.guava:guava-annotations</dep>
+            <dep>commons-codec:commons-codec</dep>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.eclipse.transformer</groupId>
         <artifactId>transformer-maven-plugin</artifactId>
         <version>0.5.0</version>

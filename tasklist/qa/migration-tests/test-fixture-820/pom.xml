@@ -19,39 +19,20 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-qa-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
-    <!-- ELASTICSEARCH -->
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-high-level-client</artifactId>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>jakarta.json</artifactId>
-    </dependency>
 
   </dependencies>
 
   <build>
 
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
 
       <!-- LICENSE PLUGIN -->
       <plugin>

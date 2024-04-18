@@ -15,6 +15,7 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 @use '@carbon/layout';
+@use '@carbon/type';
 
 .container {
   width: 100%;
@@ -27,6 +28,11 @@
   width: 100%;
   padding: var(--cds-spacing-04) var(--cds-spacing-05);
   border-bottom: 1px solid var(--cds-border-subtle);
+
+  display: inline-flex;
+  align-items: center;
+  color: var(--cds-text-secondary);
+  @include type.type-style('label-01');
 }
 
 .item {
@@ -38,6 +44,31 @@
   &:last-child {
     border-bottom: none;
   }
+}
+
+.itemName {
+  color: var(--cds-text-primary);
+  @include type.type-style('body-short-01');
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemId {
+  color: var(--cds-text-secondary);
+  @include type.type-style('body-short-01');
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemDetails {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cds-text-secondary);
+  @include type.type-style('label-01');
 }
 
 .skeletonText {
@@ -55,6 +86,16 @@
   border: 1px solid var(--cds-border-subtle);
   background-color: var(--cds-layer);
   margin: var(--cds-spacing-05);
+}
+
+.messageHeading {
+  color: var(--cds-text-primary);
+  @include type.type-style('body-short-02');
+}
+
+.messageBody {
+  color: var(--cds-text-primary);
+  @include type.type-style('body-long-01');
 }
 
 .icon {

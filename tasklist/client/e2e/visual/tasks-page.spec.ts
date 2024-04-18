@@ -15,8 +15,9 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {test, expect, Route, Request} from '@playwright/test';
+import {expect, Route, Request} from '@playwright/test';
 import schema from '../resources/bigForm.json' assert {type: 'json'};
+import {test} from '../test-fixtures';
 
 const MOCK_TENANTS = [
   {
@@ -164,55 +165,50 @@ function mockResponses(
 }
 
 test.describe('tasks page', () => {
-  test('empty state', async ({page}) => {
+  test('empty state', async ({page, taskPanelPage}) => {
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
-    await page.goto('/', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('empty state dark theme', async ({page}) => {
+  test('empty state dark theme', async ({page, taskPanelPage}) => {
     await page.addInitScript(() => {
       window.localStorage.setItem('theme', '"dark"');
     });
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
-    await page.goto('/', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('empty state when completed task before', async ({page}) => {
+  test('empty state when completed task before', async ({
+    page,
+    taskPanelPage,
+  }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem('hasCompletedTask', 'true');
     });
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
-    await page.goto('/', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto();
 
     await expect(page.getByText('No tasks found')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('empty list', async ({page}) => {
+  test('empty list', async ({page, taskPanelPage}) => {
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
-    await page.goto('/?filter=completed&sortBy=creation', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto({filter: 'completed', sortBy: 'creation'});
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('all open tasks', async ({page}) => {
+  test('all open tasks', async ({page, taskPanelPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([
@@ -265,16 +261,14 @@ test.describe('tasks page', () => {
       ]),
     );
 
-    await page.goto('/', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto();
 
     await expect(page.getByText('Welcome to Tasklist')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('tasks assigned to me', async ({page}) => {
+  test('tasks assigned to me', async ({page, taskPanelPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([
@@ -327,16 +321,14 @@ test.describe('tasks page', () => {
       ]),
     );
 
-    await page.goto('/?filter=assigned-to-me&sortBy=follow-up', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto({filter: 'assigned-to-me', sortBy: 'follow-up'});
 
     await expect(page.getByText('Welcome to Tasklist')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('unassigned tasks', async ({page}) => {
+  test('unassigned tasks', async ({page, taskPanelPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([
@@ -389,14 +381,12 @@ test.describe('tasks page', () => {
       ]),
     );
 
-    await page.goto('/?filter=unassigned&sortBy=follow-up', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto({filter: 'unassigned', sortBy: 'follow-up'});
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('completed tasks', async ({page}) => {
+  test('completed tasks', async ({page, taskPanelPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([
@@ -412,7 +402,7 @@ test.describe('tasks page', () => {
           sortValues: ['1681923461000', '2251799813686198'],
           isFirst: true,
           taskDefinitionId: 'registerPassenger',
-          completionDate: null,
+          completionDate: '2025-04-17T16:57:41.000Z',
           formKey: null,
           formId: null,
           formVersion: null,
@@ -435,7 +425,7 @@ test.describe('tasks page', () => {
           sortValues: ['1681923461000', '2251799813686256'],
           isFirst: false,
           taskDefinitionId: 'registerPassenger',
-          completionDate: null,
+          completionDate: '2025-04-17T16:57:41.000Z',
           formKey: null,
           formId: null,
           formVersion: null,
@@ -449,14 +439,17 @@ test.describe('tasks page', () => {
       ]),
     );
 
-    await page.goto('/?filter=completed&sortBy=follow-up', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto({filter: 'completed', sortBy: 'completion'});
+    await expect(page).toHaveScreenshot();
 
+    const task = taskPanelPage.task('Register the passenger');
+    await task.getByTitle(/Created on.*/).hover();
+    await expect(page).toHaveScreenshot();
+    await task.getByTitle(/Completed on.*/).hover();
     await expect(page).toHaveScreenshot();
   });
 
-  test('tasks ordered by due date', async ({page}) => {
+  test('tasks ordered by due date', async ({page, taskPanelPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([
@@ -509,16 +502,18 @@ test.describe('tasks page', () => {
       ]),
     );
 
-    await page.goto('/?filter=all-open&sortBy=due', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto({filter: 'all-open', sortBy: 'due'});
 
     await expect(page.getByText('Welcome to Tasklist')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
+
+    const task = taskPanelPage.task('Register the passenger');
+    await task.getByTitle(/Due on.*/).hover();
+    await expect(page).toHaveScreenshot();
   });
 
-  test('tasks ordered by follow up date', async ({page}) => {
+  test('tasks ordered by follow up date', async ({page, taskPanelPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([
@@ -571,14 +566,19 @@ test.describe('tasks page', () => {
       ]),
     );
 
-    await page.goto('/?filter=all-open&sortBy=follow-up', {
-      waitUntil: 'networkidle',
-    });
+    await taskPanelPage.goto({filter: 'all-open', sortBy: 'follow-up'});
 
+    await expect(page).toHaveScreenshot();
+
+    const task = taskPanelPage.task('Register the passenger');
+    await task.getByTitle(/Follow-up on.*/).hover();
     await expect(page).toHaveScreenshot();
   });
 
-  test('selected task without a form and without variables', async ({page}) => {
+  test('selected task without a form and without variables', async ({
+    page,
+    taskDetailsPage,
+  }) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses(
@@ -611,14 +611,15 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await page.goto(`/${NON_FORM_TASK.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('selected task without a form and with variables', async ({page}) => {
+  test('selected task without a form and with variables', async ({
+    page,
+    taskDetailsPage,
+  }) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses(
@@ -655,14 +656,12 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await page.goto(`/${NON_FORM_TASK.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('selected assigned task', async ({page}) => {
+  test('selected assigned task', async ({page, taskDetailsPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses(
@@ -698,14 +697,12 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await page.goto(`/${NON_FORM_TASK.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('selected completed task', async ({page}) => {
+  test('selected completed task', async ({page, taskDetailsPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses(
@@ -743,14 +740,15 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await page.goto(`/${NON_FORM_TASK.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('selected completed task with variables', async ({page}) => {
+  test('selected completed task with variables', async ({
+    page,
+    taskDetailsPage,
+  }) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses(
@@ -789,14 +787,15 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await page.goto(`/${NON_FORM_TASK.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('selected unassigned task with form', async ({page}) => {
+  test('selected unassigned task with form', async ({
+    page,
+    taskDetailsPage,
+  }) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses(
@@ -832,16 +831,14 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await page.goto(`/${FORM_TASK.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('selected assigned task with form', async ({page}) => {
+  test('selected assigned task with form', async ({page, taskDetailsPage}) => {
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses(
@@ -877,16 +874,14 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await page.goto(`/${FORM_TASK.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test('tenant on task detail', async ({page}) => {
+  test('tenant on task detail', async ({page, taskDetailsPage}) => {
     const NON_FORM_TASK_WITH_TENANT = {
       ...NON_FORM_TASK,
       tenantId: MOCK_TENANTS[0].id,
@@ -918,9 +913,7 @@ test.describe('tasks page', () => {
       mockResponses([NON_FORM_TASK_WITH_TENANT], NON_FORM_TASK_WITH_TENANT),
     );
 
-    await page.goto(`/${NON_FORM_TASK_WITH_TENANT.id}`, {
-      waitUntil: 'networkidle',
-    });
+    await taskDetailsPage.goto(NON_FORM_TASK_WITH_TENANT.id);
 
     await expect(page).toHaveScreenshot();
   });

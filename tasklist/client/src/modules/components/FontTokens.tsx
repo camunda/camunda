@@ -71,19 +71,4 @@ const HeadingCompact = styled.span<Props & BaseProps>`
   `}
 `;
 
-const Label = styled.span<Props & BaseProps>`
-  ${({
-    theme,
-    $color = 'primary',
-    $variant = '01',
-    $showEllipsisOnOverflow,
-  }) => css`
-    display: inline-flex;
-    align-items: center;
-    color: var(--cds-text-${$color});
-    ${$variant === '01' ? theme.label01 : theme.label02};
-    ${$showEllipsisOnOverflow ? textOverflowStyles : ''};
-  `}
-`;
-
-export {BodyCompact, HeadingCompact, Label, BodyLong};
+export {BodyCompact, HeadingCompact, BodyLong};

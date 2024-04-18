@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '17'
+          java-version: '21'
       - run: mvn -f tasklist -q checkstyle:check
         name: Check style
       - run: mvn -f tasklist -q license:check -Dlicense.header=license/license-header
