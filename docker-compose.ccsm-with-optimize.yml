@@ -62,8 +62,7 @@ services:
       - identity-network
   keycloak:
     container_name: keycloak
-    # If you are on an M1 machine, you can use mrparkers/keycloak-m1:17.0.1
-    image: jboss/keycloak:16.1.1
+    image: mrparkers/keycloak-m1:17.0.1
     ports:
       - "18080:8080"
     environment:
