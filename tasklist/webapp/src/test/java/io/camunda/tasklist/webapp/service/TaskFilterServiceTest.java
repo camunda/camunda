@@ -16,9 +16,15 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
+import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,5 +48,27 @@ public class TaskFilterServiceTest {
     addFilterRequest.setCandidateUsers(List.of("demo"));
 
     taskFilterService.addFilter(addFilterRequest);
+  }
+
+  @Test
+  void getFilterById(){
+    final String filterId = "filterId";
+    final TaskFilterEntity expectedFilter = new TaskFilterEntity();
+    expectedFilter.setId(filterId);
+    expectedFilter.setFilter("filter");
+    expectedFilter.setSharedGroups(List.of("groupA", "groupB"));
+    expectedFilter.setSharedUsers(List.of("userA", "userB"));
+    expectedFilter.setCreatedBy("demo");
+    when(taskFilterStore.getById(filterId)).thenReturn(Optional.of(expectedFilter));
+
+    final TaskFilterEntity result = taskFilterService.getTaskFilterById(filterId);
+    assertThat(result).isEqualTo(expectedFilter);
+  }
+
+  @Test
+  void getFilterIdNotFound(){
+    final String filterId = "filterId";
+        when(taskFilterStore.getById(filterId)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> taskFilterService.getTaskFilterById(filterId)).hasMessage(String.format("Task Filter with id %s not found", filterId));
   }
 }
