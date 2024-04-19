@@ -165,7 +165,8 @@ public class DecisionRequirementsController extends ErrorController
               }))
   @Override
   public Results<DecisionRequirements> search(
-      @RequestBody final Query<DecisionRequirements> query) {
+      @RequestBody(required = false) Query<DecisionRequirements> query) {
+    query = (query == null) ? new Query<>() : query;
     return decisionRequirementsDao.search(query);
   }
 

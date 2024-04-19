@@ -63,8 +63,14 @@ public class VariableControllerIT {
   }
 
   @Test
-  public void shouldAcceptEmptyQuery() throws Exception {
+  public void shouldAcceptEmptyJSONQuery() throws Exception {
     assertPostToWithSucceed(URI + SEARCH, "{}");
+    verify(variableDao).search(new Query<>());
+  }
+
+  @Test
+  public void shouldAcceptEmptyQuery() throws Exception {
+    assertPostToWithSucceed(URI + SEARCH, "");
     verify(variableDao).search(new Query<>());
   }
 
@@ -89,7 +95,7 @@ public class VariableControllerIT {
         .search(new Query<Variable>().setSize(7).setSort(Sort.listOf(Variable.NAME, Order.DESC)));
   }
 
-  private String getSortFor(String field, Query.Sort.Order order) {
+  private String getSortFor(final String field, final Query.Sort.Order order) {
     return "{ \"field\":\"" + field + "\", \"order\": \"" + order.name() + "\" }";
   }
 

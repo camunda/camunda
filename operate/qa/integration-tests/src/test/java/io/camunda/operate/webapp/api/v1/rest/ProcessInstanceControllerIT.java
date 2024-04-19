@@ -77,8 +77,13 @@ public class ProcessInstanceControllerIT {
   }
 
   @Test
-  public void shouldAcceptEmptyQuery() throws Exception {
+  public void shouldAcceptEmptyJSONQuery() throws Exception {
     assertPostToWithSucceed(URI + SEARCH, "{}");
+    verify(processInstanceDao).search(new Query<>());
+  }
+
+  public void shouldAcceptEmptyQuery() throws Exception {
+    assertPostToWithSucceed(URI + SEARCH, "");
     verify(processInstanceDao).search(new Query<>());
   }
 
@@ -97,7 +102,7 @@ public class ProcessInstanceControllerIT {
         .search(new Query<ProcessInstance>().setSize(7).setSort(Sort.listOf(VERSION, Order.DESC)));
   }
 
-  private String getSortFor(String field, Query.Sort.Order order) {
+  private String getSortFor(final String field, final Query.Sort.Order order) {
     return "{ \"field\":\"" + field + "\", \"order\": \"" + order.name() + "\" }";
   }
 
