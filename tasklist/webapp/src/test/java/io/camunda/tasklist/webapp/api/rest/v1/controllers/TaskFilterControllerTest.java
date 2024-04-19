@@ -18,7 +18,8 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,6 +33,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.TaskFilterService;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -153,5 +155,51 @@ public class TaskFilterControllerTest {
     assertThat(result.getMessage()).isEqualTo(expectedMessage);
 
     return result;
+  }
+
+  @Test
+  void getFilter() throws Exception {
+    final String filterId = "filterId";
+
+    final TaskFilterEntity expectedFilter = new TaskFilterEntity();
+    expectedFilter.setId(filterId);
+    expectedFilter.setFilter("filter");
+    expectedFilter.setCandidateUsers(List.of("groupA", "groupB"));
+    expectedFilter.setCandidateUsers(List.of("userA", "userB"));
+    expectedFilter.setCreatedBy("demo");
+    when(taskFilterStore.getById(filterId)).thenReturn(Optional.of(expectedFilter));
+
+    var response =
+        mockMvc.perform(
+            get(TasklistURIs.TASK_FILTERS_URL_V1.concat(String.format("/%s", filterId)))
+        ).andDo(print())
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse();
+
+    final var result = CommonUtils.OBJECT_MAPPER.readValue(response.getContentAsString(), TaskFilterEntity.class);
+
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    assertThat(result).isEqualTo(expectedFilter);
+  }
+
+  @Test
+  void getFilterNotFound() throws Exception {
+    final String filterId = "notFound";
+
+    when(taskFilterStore.getById(filterId)).thenReturn(Optional.empty());
+
+    var response =
+        mockMvc.perform(
+                get(TasklistURIs.TASK_FILTERS_URL_V1.concat(String.format("/%s", filterId)))
+            ).andDo(print())
+            .andExpect(status().isNotFound())
+            .andReturn()
+            .getResponse();
+
+    final var result = CommonUtils.OBJECT_MAPPER.readValue(response.getContentAsString(), Error.class);
+
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+    assertThat(result.getMessage()).isEqualTo(String.format("Task Filter with id %s not found", filterId));
   }
 }

@@ -17,14 +17,26 @@
 package io.camunda.tasklist.store.opensearch;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.TaskFilterIndex;
 import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.Query.Builder;
+import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -33,6 +45,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class TaskFilterStoreOpenSearch implements TaskFilterStore {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TaskFilterStoreOpenSearch.class);
 
   @Autowired private TaskFilterIndex taskFilterIndex;
 
@@ -51,5 +65,33 @@ public class TaskFilterStoreOpenSearch implements TaskFilterStore {
       throw new TasklistRuntimeException(e);
     }
     return filterEntity;
+  }
+
+  @Override
+  public Optional<TaskFilterEntity> getById(final String id) {
+    try {
+      final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
+      searchRequest.index(taskFilterIndex.getAlias());
+
+      final Query.Builder query = new Query.Builder();
+      query.ids(ids -> ids.values(id));
+      searchRequest.query(query.build());
+
+      final SearchResponse<TaskFilterEntity> response = tenantAwareClient.search(searchRequest, TaskFilterEntity.class);
+
+      final List<Hit<TaskFilterEntity>> hits = response.hits().hits();
+      if (hits.size() == 0) {
+        return Optional.empty();
+      }
+
+      final Hit<TaskFilterEntity> hit = hits.get(0);
+      return Optional.of(hit.source());
+
+    } catch (IOException e) {
+      LOGGER.error(
+          String.format("Error retrieving task filter with ID [%s]", id),
+          e);
+      throw new TasklistRuntimeException(e);
+    }
   }
 }

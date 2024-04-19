@@ -17,6 +17,8 @@
 package io.camunda.tasklist.webapp.service;
 
 import io.camunda.tasklist.entities.TaskFilterEntity;
+import io.camunda.tasklist.exceptions.NotFoundException;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
 import org.slf4j.Logger;
@@ -34,5 +36,9 @@ public class TaskFilterService {
   public TaskFilterEntity addFilter(final AddFilterRequest addFilterRequest) {
     addFilterRequest.validate();
     return taskFilterStore.persistFilter(addFilterRequest.toFilterEntity());
+  }
+
+  public TaskFilterEntity getTaskFilterById(final String taskFilterId) {
+    return taskFilterStore.getById(taskFilterId).orElseThrow(() -> new NotFoundException(String.format("Task Filter with id %s not found", taskFilterId)));
   }
 }

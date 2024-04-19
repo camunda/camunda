@@ -23,11 +23,20 @@ import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +70,27 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
       throw new TasklistRuntimeException(exception);
     }
     return filterEntity;
+  }
+
+  @Override
+  public Optional<TaskFilterEntity> getById(final String id) {
+    try {
+      final GetRequest getRequest = new GetRequest(taskFilterIndex.getAlias()).id(id);
+      final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
+      final SearchRequest searchRequest = new SearchRequest(taskFilterIndex.getAlias());
+      final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+      sourceBuilder.query(QueryBuilders.idsQuery().addIds(id));
+      searchRequest.source(sourceBuilder);
+
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      if(searchResponse.getHits().getHits().length == 0){
+        return Optional.empty();
+      }
+
+      return Optional.of(ElasticsearchUtil.fromSearchHit(response.getSourceAsString(), objectMapper, TaskFilterEntity.class));
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
   }
 
 }
