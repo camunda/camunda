@@ -124,6 +124,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
     processEntity.setBpmnProcessId(process.getBpmnProcessId());
     processEntity.setVersion(process.getVersion());
     processEntity.setTenantId(process.getTenantId());
+    processEntity.setBpmnXml(new String(process.getResource()));
 
     final byte[] byteArray = process.getResource();
 
