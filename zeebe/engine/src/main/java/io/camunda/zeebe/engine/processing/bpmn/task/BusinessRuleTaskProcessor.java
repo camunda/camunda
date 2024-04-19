@@ -67,9 +67,14 @@ public final class BusinessRuleTaskProcessor
   @Override
   public Either<Failure, ?> onActivateInternal(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    return variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> decisionBehavior.evaluateDecision(element, context))
+    return variableMappingBehavior.applyInputMappings(context, element);
+  }
+
+  @Override
+  protected Either<Failure, ?> onFinalizeActivationInternal(
+      final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+    return decisionBehavior
+        .evaluateDecision(element, context)
         .thenDo(
             ok -> {
               final var activated =
@@ -81,13 +86,15 @@ public final class BusinessRuleTaskProcessor
   @Override
   public Either<Failure, ?> onCompleteInternal(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    return variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
+    return variableMappingBehavior.applyOutputMappings(context, element);
+  }
+
+  @Override
+  protected Either<Failure, ?> onFinalizeCompletionInternal(
+      final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);

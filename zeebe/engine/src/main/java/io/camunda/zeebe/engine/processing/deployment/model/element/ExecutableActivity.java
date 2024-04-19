@@ -40,8 +40,8 @@ public class ExecutableActivity extends ExecutableFlowNode implements Executable
   public void attach(final ExecutableFlowElementContainer eventSubprocess) {
     eventSubprocesses.add(eventSubprocess);
 
-    final var startEvent = eventSubprocess.getStartEvents().get(0);
-    catchEvents.add(0, startEvent);
+    final var startEvent = eventSubprocess.getStartEvents().getFirst();
+    catchEvents.addFirst(startEvent);
 
     if (startEvent.interrupting()) {
       interruptingIds.add(startEvent.getId());
