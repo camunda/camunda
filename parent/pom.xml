@@ -149,8 +149,10 @@
     <version.parsson>1.1.6</version.parsson>
     <version.springdoc>2.5.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
+
     <version.node>v20.12.2</version.node>
-    <version.yarn>v1.22.10</version.yarn>
+    <version.yarn>v1.22.21</version.yarn>
+
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
     <version.aws-java-sdk>1.12.704</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.7</version.elasticsearch-test-container>
@@ -217,6 +219,7 @@
     <plugin.version.surefire>3.2.5</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
+    <plugin.version.maven-source>3.3.0</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.22.0</plugin.version.google-java-format>
@@ -262,7 +265,6 @@
     <!-- disable other non-essential goals -->
     <flatten.skip>${quickly}</flatten.skip>
     <assembly.skipAssembly>${quickly}</assembly.skipAssembly>
-    <plugin.version.maven-source>3.3.0</plugin.version.maven-source>
   </properties>
 
   <dependencyManagement>
