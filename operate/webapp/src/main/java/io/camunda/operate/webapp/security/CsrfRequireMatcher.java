@@ -28,6 +28,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 public class CsrfRequireMatcher implements RequestMatcher {
   private static final Pattern ALLOWED_METHODS = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
 
+  // GraphQL is bypassed as it is deprecated and not used by our Front-end
   private static final Pattern ALLOWED_PATHS =
       Pattern.compile(LOGIN_RESOURCE + "|" + LOGOUT_RESOURCE);
 
@@ -60,7 +61,7 @@ public class CsrfRequireMatcher implements RequestMatcher {
       return false;
     }
 
-    // If is authenticated from as API user using Bearer Token
+    // If is authenticated from as API user using Bareer Token
     final String authorizationHeader = request.getHeader("Authorization");
     final boolean isAuthorizationHeaderPresent =
         authorizationHeader != null && authorizationHeader.startsWith("Bearer ");
