@@ -80,6 +80,9 @@ jobs:
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
+      - name: Build backend
+        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
