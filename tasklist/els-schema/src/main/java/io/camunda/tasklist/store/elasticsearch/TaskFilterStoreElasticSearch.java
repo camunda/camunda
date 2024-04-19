@@ -18,7 +18,7 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.schema.indices.FilterIndex;
+import io.camunda.tasklist.schema.indices.TaskFilterIndex;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -34,12 +34,11 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskFilterStoreElasticSearch.class);
 
-  @Autowired private FilterIndex filterIndex;
+  @Autowired private TaskFilterIndex taskFilterIndex;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private RestHighLevelClient esClient;
-
 }

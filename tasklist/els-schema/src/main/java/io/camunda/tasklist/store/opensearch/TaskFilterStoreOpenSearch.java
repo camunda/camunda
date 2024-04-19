@@ -17,7 +17,7 @@
 package io.camunda.tasklist.store.opensearch;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.schema.indices.FilterIndex;
+import io.camunda.tasklist.schema.indices.TaskFilterIndex;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -30,12 +30,11 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class TaskFilterStoreOpenSearch implements TaskFilterStore {
 
-  @Autowired private FilterIndex filterIndex;
+  @Autowired private TaskFilterIndex taskFilterIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
   @Autowired
   @Qualifier("openSearchClient")
   private OpenSearchClient osClient;
-
 }
