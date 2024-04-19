@@ -17,6 +17,7 @@
 package io.camunda.tasklist.entities;
 
 import java.util.List;
+import java.util.Objects;
 
 public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity> {
 
@@ -64,5 +65,28 @@ public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity
 
   public void setCandidateGroups(final List<String> candidateGroups) {
     this.candidateGroups = candidateGroups;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final TaskFilterEntity that = (TaskFilterEntity) o;
+    return Objects.equals(name, that.name) && Objects.equals(createdBy,
+        that.createdBy) && Objects.equals(filter, that.filter) && Objects.equals(
+        candidateUsers, that.candidateUsers) && Objects.equals(candidateGroups,
+        that.candidateGroups);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), name, createdBy, filter, candidateUsers, candidateGroups);
   }
 }

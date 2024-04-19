@@ -18,6 +18,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import io.camunda.tasklist.entities.TaskFilterEntity;
 import java.util.List;
+import java.util.Objects;
 
 public class AddFilterRequest {
 
@@ -87,5 +88,25 @@ public class AddFilterRequest {
 
   public void setCandidateUsers(final List<String> candidateUsers) {
     this.candidateUsers = candidateUsers;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AddFilterRequest that = (AddFilterRequest) o;
+    return Objects.equals(name, that.name) && Objects.equals(filter, that.filter)
+        && Objects.equals(createdBy, that.createdBy) && Objects.equals(
+        candidateUsers, that.candidateUsers) && Objects.equals(candidateGroups,
+        that.candidateGroups);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, filter, createdBy, candidateUsers, candidateGroups);
   }
 }

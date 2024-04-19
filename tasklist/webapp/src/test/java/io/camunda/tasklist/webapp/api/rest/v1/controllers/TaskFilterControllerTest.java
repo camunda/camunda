@@ -80,6 +80,9 @@ public class TaskFilterControllerTest {
     addFilterRequest.setCandidateGroups(List.of("groupA"));
     addFilterRequest.setCandidateUsers(List.of("demo"));
 
+
+    when(taskFilterStore.persistFilter(expectedFilter)).thenReturn(expectedFilter);
+
     var response =
         mockMvc
             .perform(
@@ -89,7 +92,7 @@ public class TaskFilterControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON))
             .andDo(print())
-            .andExpect(status().isOk())
+            .andExpect(status().isCreated())
             .andReturn()
             .getResponse()
             .getContentAsString();
