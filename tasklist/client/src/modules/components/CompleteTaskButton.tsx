@@ -14,24 +14,57 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-@use '@carbon/layout';
 
-.form {
-  width: 100%;
-  height: 100%;
+import {InlineLoadingStatus} from '@carbon/react';
+import {AsyncActionButton} from './AsyncActionButton';
+
+function getCompletionButtonDescription(status: InlineLoadingStatus) {
+  if (status === 'active') {
+    return 'Completing task...';
+  }
+
+  if (status === 'error') {
+    return 'Completion failed';
+  }
+
+  if (status === 'finished') {
+    return 'Completed';
+  }
+
+  return undefined;
 }
 
-.container {
-  padding: 0 0 var(--cds-spacing-05) 0;
-}
+const CompleteTaskButton: React.FC<{
+  submissionState: InlineLoadingStatus;
+  onClick?: () => void;
+  onSuccess?: () => void;
+  onError?: () => void;
+  hide: boolean;
+  disabled: boolean;
+}> = ({submissionState, hide, disabled, onClick, onSuccess, onError}) => {
+  return (
+    <AsyncActionButton
+      inlineLoadingProps={{
+        description: getCompletionButtonDescription(submissionState),
+        'aria-live': 'polite',
+        onSuccess,
+      }}
+      buttonProps={{
+        className: hide ? 'hide' : '',
+        size: 'md',
+        type: 'submit',
+        disabled: submissionState === 'active' || disabled,
+        onClick,
+        title: disabled
+          ? undefined
+          : 'You must first assign this task to complete it',
+      }}
+      status={submissionState}
+      onError={onError}
+    >
+      Complete Task
+    </AsyncActionButton>
+  );
+};
 
-.inlineIcon {
-  margin-right: var(--cds-spacing-01);
-}
-
-.panelHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: layout.to-rem(32px);
-}
+export {CompleteTaskButton};
