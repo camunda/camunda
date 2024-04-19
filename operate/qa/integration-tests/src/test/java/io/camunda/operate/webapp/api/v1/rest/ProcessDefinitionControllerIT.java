@@ -67,8 +67,14 @@ public class ProcessDefinitionControllerIT {
   }
 
   @Test
-  public void shouldAcceptEmptyQuery() throws Exception {
+  public void shouldAcceptEmptyJSONQuery() throws Exception {
     assertPostToWithSucceed(URI + SEARCH, "{}");
+    verify(processDefinitionDao).search(new Query<>());
+  }
+
+  @Test
+  public void shouldAcceptEmptyQuery() throws Exception {
+    assertPostToWithSucceed(URI + SEARCH, "");
     verify(processDefinitionDao).search(new Query<>());
   }
 

@@ -63,8 +63,14 @@ public class FlowNodeInstanceControllerIT {
   }
 
   @Test
-  public void shouldAcceptEmptyQuery() throws Exception {
+  public void shouldAcceptEmptyJSONQuery() throws Exception {
     assertPostToWithSucceed(URI + SEARCH, "{}");
+    verify(flowNodeInstanceDao).search(new Query<>());
+  }
+
+  @Test
+  public void shouldAcceptEmptyQuery() throws Exception {
+    assertPostToWithSucceed(URI + SEARCH, "");
     verify(flowNodeInstanceDao).search(new Query<>());
   }
 
@@ -94,7 +100,7 @@ public class FlowNodeInstanceControllerIT {
                 .setSort(Sort.listOf(FlowNodeInstance.START_DATE, Order.DESC)));
   }
 
-  private String getSortFor(String field, Query.Sort.Order order) {
+  private String getSortFor(final String field, final Query.Sort.Order order) {
     return "{ \"field\":\"" + field + "\", \"order\": \"" + order.name() + "\" }";
   }
 
