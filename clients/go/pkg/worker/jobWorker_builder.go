@@ -271,6 +271,7 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, re
 			Timeout:        commands.DefaultJobTimeoutInMs,
 			Worker:         commands.DefaultJobWorkerName,
 			RequestTimeout: DefaultRequestTimeout.Milliseconds(),
+			TenantIds:      []string{commands.DefaultJobTenantId},
 		},
 		requestTimeout:  DefaultRequestTimeout + RequestTimeoutOffset,
 		shouldRetry:     retryPred,
