@@ -35,7 +35,7 @@
     <version.lucene>8.11.3</version.lucene>
     <version.elasticsearch-client>8.10.4</version.elasticsearch-client>
     <version.opensearch>2.8.0</version.opensearch>
-    <version.spring.boot>3.2.4</version.spring.boot>
+    <version.spring.boot>3.2.5</version.spring.boot>
     <version.spring>6.1.6</version.spring>
     <version.spring-security>6.2.3</version.spring-security>
     <version.log4j>2.19.0</version.log4j>
