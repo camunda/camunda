@@ -9,7 +9,7 @@
     "@camunda/camunda-composite-components": "^0.5.0",
     "@camunda/camunda-optimize-composite-components": "^0.0.15-rc4",
     "@carbon/icons-react": "^11.25.0",
-    "@carbon/react": "^1.51.1",
+    "@carbon/react": "^1.55.0",
     "@lexical/react": "^0.14.2",
     "@ungap/structured-clone": "^1.2.0",
     "bpmn-js": "17.2.2",

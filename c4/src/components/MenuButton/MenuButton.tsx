@@ -27,7 +27,7 @@ interface MenuButtonProps
 	menuLabel: string
 	iconDescription?: string
 	hasIconOnly?: boolean
-	menuTarget?: Element | null
+	menuTarget?: HTMLElement | null
 }
 
 export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
