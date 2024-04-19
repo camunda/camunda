@@ -32,6 +32,7 @@ import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.operate.util.elasticsearch.ElasticsearcRequestValidator;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
@@ -317,9 +318,12 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, long maxBulkRequestSizeInBytes)
+      RestHighLevelClient esClient,
+      BulkRequest bulkRequest,
+      long maxBulkRequestSizeInBytes,
+      boolean ignoreNullIndex)
       throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
+    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes, ignoreNullIndex);
   }
 
   /* EXECUTE QUERY */
@@ -328,8 +332,10 @@ public abstract class ElasticsearchUtil {
       RestHighLevelClient esClient,
       BulkRequest bulkRequest,
       boolean refreshImmediately,
-      long maxBulkRequestSizeInBytes)
+      long maxBulkRequestSizeInBytes,
+      boolean ignoreNullIndex)
       throws PersistenceException {
+    bulkRequest = ElasticsearcRequestValidator.validateIndices(bulkRequest, ignoreNullIndex);
     if (bulkRequest.estimatedSizeInBytes() > maxBulkRequestSizeInBytes) {
       divideLargeBulkRequestAndProcess(
           esClient, bulkRequest, refreshImmediately, maxBulkRequestSizeInBytes);

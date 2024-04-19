@@ -14,75 +14,66 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.zeebeimport.post.elasticsearch;
+package io.camunda.operate.util.elasticsearch;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.ThreadUtil;
-import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ElasticsearchPostImporterRequests {
-  private HashMap<String, UpdateRequest> listViewRequests = new HashMap<>();
-  private HashMap<String, UpdateRequest> flowNodeInstanceRequests = new HashMap<>();
-  private HashMap<String, UpdateRequest> incidentRequests = new HashMap<>();
+public class ElasticsearcRequestValidator {
 
-  public HashMap<String, UpdateRequest> getListViewRequests() {
-    return listViewRequests;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearcRequestValidator.class);
+
+  public static BulkRequest validateIndices(
+      final BulkRequest bulkRequest, final boolean ignoreNullIndex) throws PersistenceException {
+    final List<DocWriteRequest<?>> invalidRequests =
+        bulkRequest.requests().stream()
+            .filter(ElasticsearcRequestValidator::isIndexMissing)
+            .toList();
+    if (invalidRequests.isEmpty()) {
+      return bulkRequest;
+    }
+
+    final String requestsError =
+        invalidRequests.stream()
+            .map(r -> "- request: " + r.toString())
+            .collect(Collectors.joining(System.lineSeparator()));
+    if (ignoreNullIndex) {
+      LOGGER.warn(
+          String.format(
+              "Bulk request has %d requests with missing index. Ignoring invalid requests:%s%s",
+              invalidRequests.size(), System.lineSeparator(), requestsError));
+      final BulkRequest newBulkRequest = new BulkRequest();
+      bulkRequest
+          .requests()
+          .forEach(
+              request -> {
+                if (!isIndexMissing(request)) {
+                  newBulkRequest.add(request);
+                }
+              });
+      newBulkRequest.pipeline(bulkRequest.pipeline());
+      newBulkRequest.requireAlias(bulkRequest.requireAlias());
+      newBulkRequest.routing(bulkRequest.routing());
+      newBulkRequest.setParentTask(bulkRequest.getParentTask());
+      newBulkRequest.setRefreshPolicy(bulkRequest.getRefreshPolicy());
+      newBulkRequest.timeout(bulkRequest.timeout());
+      newBulkRequest.waitForActiveShards(bulkRequest.waitForActiveShards());
+      return newBulkRequest;
+    }
+
+    throw new PersistenceException(
+        String.format(
+            "Bulk request has %d requests with missing index:%s%s",
+            invalidRequests.size(), System.lineSeparator(), requestsError));
   }
 
-  public ElasticsearchPostImporterRequests setListViewRequests(
-      HashMap<String, UpdateRequest> listViewRequests) {
-    this.listViewRequests = listViewRequests;
-    return this;
-  }
-
-  public HashMap<String, UpdateRequest> getFlowNodeInstanceRequests() {
-    return flowNodeInstanceRequests;
-  }
-
-  public ElasticsearchPostImporterRequests setFlowNodeInstanceRequests(
-      HashMap<String, UpdateRequest> flowNodeInstanceRequests) {
-    this.flowNodeInstanceRequests = flowNodeInstanceRequests;
-    return this;
-  }
-
-  public HashMap<String, UpdateRequest> getIncidentRequests() {
-    return incidentRequests;
-  }
-
-  public ElasticsearchPostImporterRequests setIncidentRequests(
-      HashMap<String, UpdateRequest> incidentRequests) {
-    this.incidentRequests = incidentRequests;
-    return this;
-  }
-
-  public boolean isEmpty() {
-    return listViewRequests.isEmpty()
-        && flowNodeInstanceRequests.isEmpty()
-        && incidentRequests.isEmpty();
-  }
-
-  public boolean execute(RestHighLevelClient esClient, OperateProperties operateProperties)
-      throws PersistenceException {
-
-    final BulkRequest bulkRequest = new BulkRequest();
-
-    listViewRequests.values().stream().forEach(bulkRequest::add);
-    flowNodeInstanceRequests.values().stream().forEach(bulkRequest::add);
-    incidentRequests.values().stream().forEach(bulkRequest::add);
-
-    ElasticsearchUtil.processBulkRequest(
-        esClient,
-        bulkRequest,
-        operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes(),
-        operateProperties.getElasticsearch().isBulkRequestIgnoreNullIndex());
-
-    ThreadUtil.sleepFor(3000L);
-
-    return true;
+  public static boolean isIndexMissing(final DocWriteRequest<?> request) {
+    final boolean isMissing = (request.index() == null) || request.index().isEmpty();
+    return isMissing;
   }
 }

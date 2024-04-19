@@ -20,7 +20,9 @@ import static io.camunda.operate.util.ExceptionHelper.withOperateRuntimeExceptio
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.util.opensearch.OpensearchRequestValidator;
 import java.io.IOException;
 import java.util.List;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -32,42 +34,54 @@ import org.springframework.beans.factory.BeanFactory;
 
 public class OpenSearchBatchOperations extends OpenSearchSyncOperation {
   private final BeanFactory beanFactory;
+  private final OpensearchProperties opensearchProperties;
 
   public OpenSearchBatchOperations(
-      Logger logger, OpenSearchClient openSearchClient, BeanFactory beanFactory) {
+      Logger logger,
+      OpenSearchClient openSearchClient,
+      BeanFactory beanFactory,
+      OpensearchProperties opensearchProperties) {
     super(logger, openSearchClient);
     this.beanFactory = beanFactory;
+    this.opensearchProperties = opensearchProperties;
   }
 
   private void processBulkRequest(OpenSearchClient osClient, BulkRequest bulkRequest)
       throws PersistenceException {
-    if (bulkRequest.operations().size() > 0) {
-      try {
-        logger.debug("************* FLUSH BULK START *************");
-        final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
-        final List<BulkResponseItem> items = bulkItemResponses.items();
-        for (BulkResponseItem responseItem : items) {
-          if (responseItem.error() != null) {
-            // TODO check how to log the error for OpenSearch;
-            logger.error(
-                String.format(
-                    "%s failed for type [%s] and id [%s]: %s",
-                    responseItem.operationType(),
-                    responseItem.index(),
-                    responseItem.id(),
-                    responseItem.error().reason()),
-                "error on OpenSearch BulkRequest");
-            throw new PersistenceException(
-                "Operation failed: " + responseItem.error().reason(),
-                new OperateRuntimeException(responseItem.error().reason()),
-                Integer.valueOf(responseItem.id()));
-          }
+    if (bulkRequest.operations().isEmpty()) {
+      return;
+    }
+
+    bulkRequest =
+        OpensearchRequestValidator.validateIndices(
+            bulkRequest,
+            opensearchProperties.isBulkRequestIgnoreNullIndex(),
+            osClient._transport().jsonpMapper());
+    try {
+      logger.debug("************* FLUSH BULK START *************");
+      final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
+      final List<BulkResponseItem> items = bulkItemResponses.items();
+      for (BulkResponseItem responseItem : items) {
+        if (responseItem.error() != null) {
+          // TODO check how to log the error for OpenSearch;
+          logger.error(
+              String.format(
+                  "%s failed for type [%s] and id [%s]: %s",
+                  responseItem.operationType(),
+                  responseItem.index(),
+                  responseItem.id(),
+                  responseItem.error().reason()),
+              "error on OpenSearch BulkRequest");
+          throw new PersistenceException(
+              "Operation failed: " + responseItem.error().reason(),
+              new OperateRuntimeException(responseItem.error().reason()),
+              Integer.valueOf(responseItem.id()));
         }
-        logger.debug("************* FLUSH BULK FINISH *************");
-      } catch (IOException ex) {
-        throw new PersistenceException(
-            "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
       }
+      logger.debug("************* FLUSH BULK FINISH *************");
+    } catch (IOException ex) {
+      throw new PersistenceException(
+          "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
     }
   }
 
