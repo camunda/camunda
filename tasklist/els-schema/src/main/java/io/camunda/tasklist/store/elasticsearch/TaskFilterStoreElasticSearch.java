@@ -19,9 +19,16 @@ package io.camunda.tasklist.store.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.schema.indices.TaskFilterIndex;
+import io.camunda.tasklist.entities.TaskFilterEntity;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import java.io.IOException;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,4 +48,19 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private RestHighLevelClient esClient;
+
+  @Override
+  public TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity) {
+    try {
+      final IndexRequest indexRequest = new IndexRequest(taskFilterIndex.getFullQualifiedName()).source(
+          objectMapper.writeValueAsString(filterEntity),
+          XContentType.JSON);
+      final IndexResponse indexResponse = esClient.index(indexRequest, RequestOptions.DEFAULT);
+      System.out.println(indexResponse);
+    } catch (IOException exception) {
+      throw new TasklistRuntimeException(exception);
+    }
+    return null;
+  }
+
 }

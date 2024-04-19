@@ -14,11 +14,63 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.store;
+package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
-import io.camunda.tasklist.entities.TaskFilterEntity;
+import io.camunda.tasklist.store.FilterStore;
+import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
+import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.service.FilterService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-public interface TaskFilterStore {
-  TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity);
+@Tag(name = "Filter", description = "API to query and add filters for Tasks.")
+@RestController
+@RequestMapping(value = TasklistURIs.FILTERS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
+public class FilterController extends ApiErrorController {
+
+  @Autowired private FilterService filterService;
+
+  @Operation(
+      summary = "Add a filter",
+      description =
+          "Add/store a new Task Filter.",
+      responses = {
+        @ApiResponse(
+            description = "On success returned.",
+            responseCode = "200",
+            useReturnTypeSchema = true),
+        @ApiResponse(
+            description =
+                "An unexpected error happened.",
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
+      })
+  @PostMapping
+  public ResponseEntity<FormResponse> addFilter(
+      @RequestBody(required = false) AddFilterRequest addFilterRequest) {
+
+    filterService.addFilter(addFilterRequest);
+    return ResponseEntity.ok(FormResponse.fromFormEntity(null));
+  }
 }
-
