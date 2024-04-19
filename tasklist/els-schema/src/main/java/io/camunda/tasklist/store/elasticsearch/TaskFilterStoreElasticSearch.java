@@ -19,7 +19,7 @@ package io.camunda.tasklist.store.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.schema.indices.FilterIndex;
-import io.camunda.tasklist.store.FilterStore;
+import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
@@ -30,9 +30,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class FilterStoreElasticSearch implements FilterStore {
+public class TaskFilterStoreElasticSearch implements TaskFilterStore {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FilterStoreElasticSearch.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TaskFilterStoreElasticSearch.class);
 
   @Autowired private FilterIndex filterIndex;
 

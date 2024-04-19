@@ -14,12 +14,28 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.store;
+package io.camunda.tasklist.store.opensearch;
 
-import io.camunda.tasklist.entities.FormEntity;
-import java.util.List;
-import java.util.Optional;
+import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.schema.indices.FilterIndex;
+import io.camunda.tasklist.store.TaskFilterStore;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
-public interface FilterStore {
+@Component
+@Conditional(OpenSearchCondition.class)
+public class TaskFilterStoreOpenSearch implements TaskFilterStore {
+
+  @Autowired private FilterIndex filterIndex;
+
+  @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
+
+  @Autowired
+  @Qualifier("openSearchClient")
+  private OpenSearchClient osClient;
 
 }

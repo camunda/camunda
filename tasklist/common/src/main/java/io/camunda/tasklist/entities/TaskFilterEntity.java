@@ -9,7 +9,7 @@ package io.camunda.tasklist.entities;
 
 import java.util.List;
 
-public class FilterEntity extends TenantAwareTasklistEntity<FilterEntity> {
+public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity> {
 
   private String name;
   private String createdBy;
