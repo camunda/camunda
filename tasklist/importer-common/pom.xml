@@ -91,14 +91,4 @@
 
   </dependencies>
 
-  <build>
-    <plugins>
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>
