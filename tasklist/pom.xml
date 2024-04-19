@@ -14,11 +14,6 @@
 
   <name>Tasklist Parent</name>
 
-  <organization>
-    <name>Camunda Services GmbH</name>
-    <url>http://www.camunda.com</url>
-  </organization>
-
   <modules>
     <module>client</module>
     <module>common</module>
@@ -36,13 +31,6 @@
     <module>test-coverage</module>
   </modules>
 
-  <scm>
-    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git</developerConnection>
-    <tag>HEAD</tag>
-    <url>https://github.com/camunda/tasklist</url>
-  </scm>
-
   <issueManagement>
     <system>Git</system>
     <url>https://github.com/camunda/tasklist/issues</url>
@@ -59,18 +47,9 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
-    <skip.fe.build>false</skip.fe.build>
-
-    <plugin.version.license>4.3</plugin.version.license>
-    <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.6.1</plugin.version.dependency>
-    <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
-    <version.checkstyle>10.13.0</version.checkstyle>
-    <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
-    <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.19.2</plugin.version.google-java-format>
-
     <license.header>${maven.multiModuleProjectDirectory}/license/license-header</license.header>
+
+    <skip.fe.build>false</skip.fe.build>
 
   </properties>
 
@@ -87,14 +66,7 @@
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.1</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.5</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -138,11 +110,9 @@
           </configuration>
         </plugin>
 
-        <!-- LICENSE PLUGIN -->
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>${plugin.version.license}</version>
           <configuration>
             <header>${license.header}</header>
             <includes>
@@ -159,140 +129,6 @@
                 <goal>format</goal>
               </goals>
               <phase>compile</phase>
-            </execution>
-          </executions>
-        </plugin>
-
-        <!-- CHECKSTYLE -->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>${plugin.version.checkstyle}</version>
-          <configuration>
-            <configLocation>check/.checkstyle.xml</configLocation>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <encoding>UTF-8</encoding>
-            <failOnViolation>true</failOnViolation>
-            <sourceDirectories>
-              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-              <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
-            </sourceDirectories>
-            <excludes>**/GetCustomSnapshotResponse.java</excludes>
-          </configuration>
-          <!-- dependency on build tool to reference the checkstyle cfg -->
-          <dependencies>
-            <dependency>
-              <groupId>io.camunda</groupId>
-              <artifactId>zeebe-build-tools</artifactId>
-              <version>8.5.0</version>
-            </dependency>
-            <dependency>
-              <groupId>com.puppycrawl.tools</groupId>
-              <artifactId>checkstyle</artifactId>
-              <version>${version.checkstyle}</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>validate-java</id>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <phase>validate</phase>
-              <configuration></configuration>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.12</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <version>${plugin.version.enforcer}</version>
-          <executions>
-            <execution>
-              <id>enforce-dependency-convergence</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <dependencyConvergence>
-                    <!-- To be removed once these conflicts are resolved by identity. -->
-                    <!-- See https://github.com/camunda-cloud/identity/issues/1696 -->
-                    <excludes>
-                      <exclude>com.auth0:java-jwt</exclude>
-                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
-                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk8</exclude>
-                      <exclude>com.squareup.okio:okio</exclude>
-                    </excludes>
-                  </dependencyConvergence>
-                </rules>
-              </configuration>
-            </execution>
-            <execution>
-              <id>enforce-unique-dependencies</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
-                </rules>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>${plugin.version.dependency}</version>
-          <!-- To run with Java 11 - https://issues.apache.org/jira/browse/MDEP-613-->
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.maven.shared</groupId>
-              <artifactId>maven-dependency-analyzer</artifactId>
-              <version>${plugin.version.dependency-analyzer}</version>
-            </dependency>
-          </dependencies>
-
-          <executions>
-            <execution>
-              <id>analyze-dependencies</id>
-              <goals>
-                <goal>analyze-only</goal>
-              </goals>
-              <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
-              <phase>verify</phase>
-              <configuration>
-                <failOnWarning>true</failOnWarning>
-                <outputXML>true</outputXML>
-                <!-- dependencies not directly used in all projects during tests -->
-                <ignoredUnusedDeclaredDependencies combine.children="append">
-                  <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
-                  <dep>org.apache.logging.log4j:log4j-core</dep>
-                  <dep>io.camunda:zeebe-build-tools</dep>
-                  <dep>io.camunda:zeebe-gateway-protocol</dep>
-                  <dep>org.ow2.asm:asm</dep>
-                  <dep>org.bouncycastle:bcpkix-jdk18on</dep>
-                  <dep>org.bouncycastle:bcprov-jdk18on</dep>
-                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
-                  <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
-                  <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
-                  <dep>org.postgresql:postgresql</dep>
-                  <dep>org.springframework:spring-aspects</dep>
-                </ignoredUnusedDeclaredDependencies>
-                <ignoredNonTestScopedDependencies>
-                  <dep>org.elasticsearch:elasticsearch-x-content</dep>
-                </ignoredNonTestScopedDependencies>
-              </configuration>
             </execution>
           </executions>
         </plugin>
@@ -317,14 +153,6 @@
               <exclude>**/camunda/tasklist/webapp/**/ClusterMetadata.*</exclude>
             </excludes>
           </configuration>
-          <executions>
-            <execution>
-              <id>prepare-agent</id>
-              <goals>
-                <goal>prepare-agent</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
