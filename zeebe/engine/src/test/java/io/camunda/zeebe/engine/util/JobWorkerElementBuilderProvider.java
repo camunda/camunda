@@ -26,8 +26,7 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
 public final class JobWorkerElementBuilderProvider implements ArgumentsProvider {
 
   @Override
-  public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)
-      throws Exception {
+  public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext) {
     return builders().map(Arguments::of);
   }
 

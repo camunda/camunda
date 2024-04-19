@@ -74,9 +74,13 @@ public final class ScriptTaskProcessor
   @Override
   protected Either<Failure, ?> onActivateInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
-    return variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> evaluateScript(element, context))
+    return variableMappingBehavior.applyInputMappings(context, element);
+  }
+
+  @Override
+  protected Either<Failure, ?> onFinalizeActivationInternal(
+      final ExecutableScriptTask element, final BpmnElementContext context) {
+    return evaluateScript(element, context)
         .thenDo(
             ok -> {
               final var activated =
@@ -88,13 +92,15 @@ public final class ScriptTaskProcessor
   @Override
   protected Either<Failure, ?> onCompleteInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
-    return variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
+    return variableMappingBehavior.applyOutputMappings(context, element);
+  }
+
+  @Override
+  protected Either<Failure, ?> onFinalizeCompletionInternal(
+      final ExecutableScriptTask element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);

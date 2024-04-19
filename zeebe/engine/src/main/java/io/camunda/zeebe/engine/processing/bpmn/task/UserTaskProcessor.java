@@ -65,9 +65,14 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected Either<Failure, ?> onActivateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    return variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> userTaskBehavior.evaluateUserTaskExpressions(element, context))
+    return variableMappingBehavior.applyInputMappings(context, element);
+  }
+
+  @Override
+  protected Either<Failure, ?> onFinalizeActivationInternal(
+      final ExecutableUserTask element, final BpmnElementContext context) {
+    return userTaskBehavior
+        .evaluateUserTaskExpressions(element, context)
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .thenDo(
             userTaskProperties -> {
@@ -83,12 +88,15 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final ExecutableUserTask element, final BpmnElementContext context) {
     return variableMappingBehavior
         .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+  }
+
+  @Override
+  protected Either<Failure, ?> onFinalizeCompletionInternal(
+      final ExecutableUserTask element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);

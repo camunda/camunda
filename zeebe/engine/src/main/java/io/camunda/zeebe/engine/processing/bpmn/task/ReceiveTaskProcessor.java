@@ -47,10 +47,14 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableReceiveTask element, final BpmnElementContext context) {
+    return variableMappingBehavior.applyInputMappings(context, element);
+  }
 
-    return variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
+    return eventSubscriptionBehavior
+        .subscribeToEvents(element, context)
         .thenDo(
             ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()));
   }
@@ -58,15 +62,17 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableReceiveTask element, final BpmnElementContext context) {
-
     return variableMappingBehavior
         .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
