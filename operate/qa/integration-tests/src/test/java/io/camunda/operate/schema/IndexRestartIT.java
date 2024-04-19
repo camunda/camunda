@@ -49,7 +49,7 @@ import org.springframework.test.util.ReflectionTestUtils;
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class SchemaManagerIT {
+public class IndexRestartIT {
   @Autowired private OperateProperties operateProperties;
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private SchemaManager schemaManager;
