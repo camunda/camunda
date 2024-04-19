@@ -17,11 +17,16 @@
 package io.camunda.tasklist.store;
 
 import io.camunda.tasklist.entities.TaskFilterEntity;
+import java.util.List;
 import java.util.Optional;
 
 public interface TaskFilterStore {
   TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity);
 
   Optional<TaskFilterEntity> getById(final String id);
+
+  List<TaskFilterEntity> getFilters(List<String> candidateUsers, List<String> candidateGroups);
+
+  List<TaskFilterEntity> getFilters();
 }
 

@@ -24,10 +24,13 @@ import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.Query.Builder;
 import org.opensearch.client.opensearch.core.GetResponse;
@@ -91,6 +94,58 @@ public class TaskFilterStoreOpenSearch implements TaskFilterStore {
       LOGGER.error(
           String.format("Error retrieving task filter with ID [%s]", id),
           e);
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<TaskFilterEntity> getFilters(final List<String> candidateUsers,
+      final List<String> candidateGroups) {
+    final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
+    searchRequest.index(taskFilterIndex.getAlias());
+
+    final Query.Builder query = new Query.Builder();
+    final BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+    candidateGroups.forEach(group -> boolQuery.should(s -> s.terms(terms -> terms.terms(tv -> tv.value(List.of(FieldValue.of(group)))).field(TaskFilterIndex.CANDIDATE_GROUPS))));
+    candidateUsers.forEach(user -> boolQuery.should(s -> s.terms(terms -> terms.terms(tv -> tv.value(List.of(FieldValue.of(user)))).field(TaskFilterIndex.CANDIDATE_USERS))));
+
+    boolQuery.should(s -> s.bool(bool ->
+        bool.mustNot(mn -> mn.exists(e -> e.field(TaskFilterIndex.CANDIDATE_GROUPS)))
+            .mustNot(mn -> mn.exists(e -> e.field(TaskFilterIndex.CANDIDATE_USERS))))
+    );
+
+    query.bool(boolQuery.build());
+    searchRequest.query(query.build());
+
+    try {
+      final SearchResponse<TaskFilterEntity> response = tenantAwareClient.search(searchRequest, TaskFilterEntity.class);
+      return response.hits().hits().stream()
+          .map(
+              m -> {
+                return m.source();
+              })
+          .collect(Collectors.toList());
+    } catch (IOException e) {
+      LOGGER.error("Error retrieving task filters", e);
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<TaskFilterEntity> getFilters() {
+    final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
+    searchRequest.index(taskFilterIndex.getAlias());
+
+    try {
+      final SearchResponse<TaskFilterEntity> response = tenantAwareClient.search(searchRequest, TaskFilterEntity.class);
+      return response.hits().hits().stream()
+          .map(
+              m -> {
+                return m.source();
+              })
+          .collect(Collectors.toList());
+    } catch (IOException e) {
+      LOGGER.error("Error retrieving task filters", e);
       throw new TasklistRuntimeException(e);
     }
   }

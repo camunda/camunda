@@ -22,6 +22,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.service.TaskFilterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,6 +30,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +39,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -48,6 +51,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class TaskFilterController extends ApiErrorController {
 
   @Autowired private TaskFilterService taskFilterService;
+
+  @Autowired private UserReader userReader;
 
   @Operation(
       summary = "Add a filter",
@@ -87,5 +92,22 @@ public class TaskFilterController extends ApiErrorController {
   public ResponseEntity<TaskFilterEntity> getFilterById(@PathVariable final String taskFilterId){
     final TaskFilterEntity taskFilterEntity = taskFilterService.getTaskFilterById(taskFilterId);
     return ResponseEntity.ok(taskFilterEntity);
+  }
+
+  @GetMapping
+  public ResponseEntity<List<TaskFilterEntity>> getFilters(@RequestParam(required = false) List<String> candidateUsers, @RequestParam(required = false) List<String> candidateGroups) {
+    final Boolean isApi = userReader.getCurrentUser().isApiUser();
+
+    final List<TaskFilterEntity> taskFilters;
+    if(!isApi){
+      if((candidateUsers != null && !candidateUsers.isEmpty()) || (candidateGroups != null && candidateGroups.isEmpty())){
+        throw new InvalidRequestException("Candidate Users and Candidate Groups parameters can only be used by Api users");
+      }
+      taskFilters = taskFilterService.getTaskFilters();
+    } else {
+      taskFilters = taskFilterService.getTaskFilters(candidateUsers, candidateGroups);
+    }
+
+    return ResponseEntity.ok(taskFilters);
   }
 }

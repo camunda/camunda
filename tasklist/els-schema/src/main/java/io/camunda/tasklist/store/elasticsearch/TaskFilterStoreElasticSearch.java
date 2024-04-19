@@ -18,9 +18,11 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
+import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.schema.indices.TaskFilterIndex;
 import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
@@ -32,6 +34,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -89,6 +92,47 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
 
       return Optional.of(ElasticsearchUtil.fromSearchHit(response.getSourceAsString(), objectMapper, TaskFilterEntity.class));
     } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<TaskFilterEntity> getFilters(final List<String> candidateUsers,
+      final List<String> candidateGroups) {
+    SearchRequest searchRequest = new SearchRequest(taskFilterIndex.getAlias());
+    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+    final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+
+    candidateUsers.forEach(user -> boolQueryBuilder.should(QueryBuilders.termsQuery(TaskFilterIndex.CANDIDATE_USERS, user)));
+    candidateGroups.forEach(group -> boolQueryBuilder.should(QueryBuilders.termsQuery(TaskFilterIndex.CANDIDATE_GROUPS, group)));
+
+    boolQueryBuilder.should(
+        QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(TaskFilterIndex.CANDIDATE_USERS))
+            .mustNot(QueryBuilders.existsQuery(TaskFilterIndex.CANDIDATE_GROUPS))
+    );
+
+    sourceBuilder.query(boolQueryBuilder);
+    searchRequest.source(sourceBuilder);
+
+    try {
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      return ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), (sh) -> ElasticsearchUtil.fromSearchHit(
+          sh.getSourceAsString(), objectMapper, TaskFilterEntity.class));
+    } catch (IOException e) {
+      LOGGER.error("Error when trying to get Task Filters", e);
+      throw new TasklistRuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<TaskFilterEntity> getFilters() {
+    final SearchRequest searchRequest = new SearchRequest(taskFilterIndex.getAlias());
+    try {
+      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      return ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), (sh) -> ElasticsearchUtil.fromSearchHit(
+          sh.getSourceAsString(), objectMapper, TaskFilterEntity.class));
+    } catch (IOException e) {
+      LOGGER.error("Error when trying to get Task Filters", e);
       throw new TasklistRuntimeException(e);
     }
   }

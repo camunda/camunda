@@ -18,9 +18,14 @@ package io.camunda.tasklist.webapp.service;
 
 import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
+import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.IdentityService;
+import java.util.List;
+import javax.print.DocFlavor.STRING;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +38,12 @@ public class TaskFilterService {
 
   @Autowired private TaskFilterStore taskFilterStore;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
+  @Autowired private UserReader userReader;
+
+  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+
   public TaskFilterEntity addFilter(final AddFilterRequest addFilterRequest) {
     addFilterRequest.validate();
     return taskFilterStore.persistFilter(addFilterRequest.toFilterEntity());
@@ -40,5 +51,21 @@ public class TaskFilterService {
 
   public TaskFilterEntity getTaskFilterById(final String taskFilterId) {
     return taskFilterStore.getById(taskFilterId).orElseThrow(() -> new NotFoundException(String.format("Task Filter with id %s not found", taskFilterId)));
+  }
+
+  public List<TaskFilterEntity> getTaskFilters() {
+    if (tasklistProperties.getIdentity() != null
+        && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled() && !userReader.getCurrentUser()
+        .isApiUser()) {
+      final String userName = userReader.getCurrentUser().getUserId();
+      final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
+      return taskFilterStore.getFilters(List.of(userName), listOfUserGroups);
+    } else {
+      return taskFilterStore.getFilters();
+    }
+  }
+
+  public List<TaskFilterEntity> getTaskFilters(List<String> candidateUsers, List<String> candidateGroups) {
+    return taskFilterStore.getFilters(candidateUsers, candidateGroups);
   }
 }
