@@ -27,8 +27,7 @@
   width: 100%;
   display: grid;
   grid-template-columns: auto auto;
-  grid-column-gap: var(--cds-spacing-03);
-  grid-row-gap: var(--cds-spacing-06);
+  grid-gap: var(--cds-spacing-06) var(--cds-spacing-03);
   align-items: flex-end;
 
   & > * {
@@ -45,8 +44,7 @@
 .variableGrid {
   display: grid;
   grid-template-columns: minmax(auto, layout.to-rem(288px)) auto 40px;
-  grid-column-gap: var(--cds-spacing-03);
-  grid-row-gap: var(--cds-spacing-05);
+  grid-gap: var(--cds-spacing-05) var(--cds-spacing-03);
   align-items: flex-end;
 
   &:not(:empty) {
