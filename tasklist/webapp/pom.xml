@@ -529,11 +529,20 @@
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>com.nimbusds:nimbus-jose-jwt</dep>
+            <dep>org.springframework:spring-aspects</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
             <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dependency>
             <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dependency>
           </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <configuration>
+          <excludes>**/GetCustomSnapshotResponse.java</excludes>
         </configuration>
       </plugin>
 
