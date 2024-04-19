@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-const {createProxyMiddleware, responseInterceptor} = require('http-proxy-middleware');
+const {legacyCreateProxyMiddleware, responseInterceptor} = require('http-proxy-middleware');
 const fetch = require('node-fetch');
 
 module.exports = function (app) {
   app.use(
     ['/api', '/external/api', '/external/static'],
-    createProxyMiddleware({
+    legacyCreateProxyMiddleware({
       target: 'http://localhost:8090',
     })
   );
@@ -29,7 +29,7 @@ module.exports = function (app) {
   };
 
   app.use(
-    createProxyMiddleware(filter, {
+    legacyCreateProxyMiddleware(filter, {
       target: 'http://localhost:8090',
       selfHandleResponse: true,
       onProxyRes: responseInterceptor(async (responseBuffer, proxyRes, req) => {
@@ -49,7 +49,7 @@ module.exports = function (app) {
   );
 
   app.use(
-    createProxyMiddleware('/ws/status', {
+    legacyCreateProxyMiddleware('/ws/status', {
       target: 'http://localhost:8090',
       ws: true,
     })

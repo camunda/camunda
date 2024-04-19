@@ -101,7 +101,7 @@
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-testcafe": "^0.2.1",
     "event-source-polyfill": "^1.0.31",
-    "http-proxy-middleware": "^2.0.6",
+    "http-proxy-middleware": "^3.0.0",
     "husky": "^9.0.0",
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^16.0.0",
