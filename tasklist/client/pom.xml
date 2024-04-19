@@ -57,6 +57,7 @@
             <configuration>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
+              <arguments>install --force --network-concurrency 1 --network-timeout 100000</arguments>
             </configuration>
           </execution>
 
@@ -76,7 +77,6 @@
 
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.3.1</version>
         <executions>
           <execution>
         <id>copy-resources</id>
