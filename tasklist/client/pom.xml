@@ -13,6 +13,10 @@
   <artifactId>tasklist-webjar</artifactId>
   <packaging>jar</packaging>
 
+  <properties>
+    <plugin.version.frontend-maven>1.12.1</plugin.version.frontend-maven>
+  </properties>
+
   <build>
 
     <plugins>
@@ -57,7 +61,6 @@
             <configuration>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
-              <arguments>install --force --network-concurrency 1 --network-timeout 100000</arguments>
             </configuration>
           </execution>
 
