@@ -13,10 +13,6 @@
   <artifactId>tasklist-webjar</artifactId>
   <packaging>jar</packaging>
 
-  <properties>
-    <plugin.version.frontend-maven>1.12.1</plugin.version.frontend-maven>
-  </properties>
-
   <build>
 
     <plugins>

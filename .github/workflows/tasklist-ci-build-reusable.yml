@@ -83,10 +83,14 @@ jobs:
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
-      # Build: maven artifacts and Docker images
-      - name: Build Maven
+      # Build frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-tasklist-fe
+      #########################################################################
+      # Build backend
+      - name: Build backend
         run: |
-          mvn -T1C clean deploy -B -P -docker -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          mvn -T1C clean deploy -B -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging

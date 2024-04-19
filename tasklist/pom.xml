@@ -49,7 +49,7 @@
 
     <license.header>${maven.multiModuleProjectDirectory}/license/license-header</license.header>
 
-    <skip.fe.build>false</skip.fe.build>
+    <skip.fe.build>true</skip.fe.build>
 
   </properties>
 

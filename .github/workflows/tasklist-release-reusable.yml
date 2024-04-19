@@ -148,7 +148,7 @@ jobs:
           -Dtag=${{ env.RELEASE_VERSION }} \
           -DreleaseVersion=${{ env.RELEASE_VERSION }} \
           -DdevelopmentVersion=${{ inputs.nextDevelopmentVersion }} \
-          -Darguments='-Dmaven.deploy.skip=${{ env.SKIP_DEPLOY }} -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=${{ env.SKIP_DEPLOY }} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+          -Darguments='-Dmaven.deploy.skip=${{ env.SKIP_DEPLOY }} -P -docker -Dskip.fe.build=false -DskipTests=true -DskipNexusStagingDeployMojo=${{ env.SKIP_DEPLOY }} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
 
       # Setup: Generate token for 'Upload to GitHub Release' step
       - name: Generate GitHub token
