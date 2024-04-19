@@ -408,8 +408,8 @@ final class OpensearchExporterIT {
       // given
       configureExporter(false);
       final var records = new ArrayList<Record<RecordValue>>();
-      // using 498 here as we will export one more record after (1 main shard, 1 replica)
-      final int limit = 498;
+      // using 490 here as we will export one more record after (1 main shard, 1 replica)
+      final int limit = 490;
       for (int i = 0; i < limit; i++) {
         final var record = factory.generateRecord(ValueType.JOB);
         records.add(record);
