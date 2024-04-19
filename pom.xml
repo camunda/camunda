@@ -24,6 +24,7 @@
     <module>zeebe</module>
     <module>operate</module>
     <module>identity</module>
+    <module>tasklist</module>
   </modules>
 
   <scm>

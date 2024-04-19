@@ -34,6 +34,7 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
   private String formId;
   private Boolean isFormEmbedded;
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
+  private String bpmnXml;
 
   public String getName() {
     return name;
@@ -107,8 +108,17 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
     return this;
   }
 
+  public String getBpmnXml() {
+    return bpmnXml;
+  }
+
+  public ProcessEntity setBpmnXml(final String bpmnXml) {
+    this.bpmnXml = bpmnXml;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -126,7 +136,8 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
         && Objects.equals(formKey, that.formKey)
         && Objects.equals(formId, that.formId)
         && Objects.equals(isFormEmbedded, that.isFormEmbedded)
-        && Objects.equals(flowNodes, that.flowNodes);
+        && Objects.equals(flowNodes, that.flowNodes)
+        && Objects.equals(bpmnXml, that.bpmnXml);
   }
 
   @Override
@@ -140,6 +151,7 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
         formKey,
         formId,
         isFormEmbedded,
-        flowNodes);
+        flowNodes,
+        bpmnXml);
   }
 }
