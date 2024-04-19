@@ -65,6 +65,25 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private TenantService tenantService;
 
   @Operation(
+      summary = "Returns the process by ProcessDefinitionKey",
+      description = "Returns the process by ProcessDefinitionKey",
+      responses = {
+          @ApiResponse(
+              description = "On success returned",
+              responseCode = "200",
+              useReturnTypeSchema = true),
+          @ApiResponse(
+              description = "Process Not Found",
+              responseCode = "404")
+      })
+  @GetMapping("{processDefinitionKey}")
+  public ResponseEntity<ProcessResponse> getProcess(@PathVariable final String processDefinitionKey){
+    final ProcessEntity processEntity = processStore.getProcessByProcessDefinitionKey(processDefinitionKey);
+    final ProcessResponse processResponse = new ProcessResponse().fromProcessEntity(processEntity, getStartEventFormIdByBpmnProcess(processEntity));
+    return ResponseEntity.ok(processResponse);
+  }
+
+  @Operation(
       summary = "Returns the list of processes by search query",
       description = "Get the processes by `search` query.",
       responses = {
@@ -105,7 +124,7 @@ public class ProcessInternalController extends ApiErrorController {
                 tenantId,
                 isStartedByForm)
             .stream()
-            .map(pe -> ProcessResponse.fromProcessEntity(pe, getStartEventFormIdByBpmnProcess(pe)))
+            .map(pe -> ProcessResponse.fromProcessEntityWithoutBpmnXml(pe, getStartEventFormIdByBpmnProcess(pe)))
             .collect(Collectors.toList());
     return ResponseEntity.ok(processes);
   }
