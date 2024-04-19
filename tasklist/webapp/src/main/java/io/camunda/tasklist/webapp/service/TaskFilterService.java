@@ -14,67 +14,24 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.api.rest.v1.entities;
+package io.camunda.tasklist.webapp.service;
 
 import io.camunda.tasklist.entities.TaskFilterEntity;
-import java.util.List;
+import io.camunda.tasklist.store.TaskFilterStore;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-public class AddFilterRequest {
+@Component
+public class TaskFilterService {
 
-  private String name;
-  private String filter;
-  private String createdBy;
-  private List<String> candidateUsers;
+  private static final Logger LOGGER = LoggerFactory.getLogger(TaskFilterService.class);
 
-  public TaskFilterEntity toFilterEntity() {
-    TaskFilterEntity filterEntity = new TaskFilterEntity();
-    filterEntity.setName(this.getName());
-    filterEntity.setFilter(this.getFilter());
-    filterEntity.setCandidateGroups(this.getCandidateGroups());
-    filterEntity.setCandidateUsers(this.getCandidateUsers());
-    filterEntity.setCreatedBy(this.getCreatedBy());
-    return filterEntity;
-  }
+  @Autowired private TaskFilterStore taskFilterStore;
 
-  public List<String> getCandidateGroups() {
-    return candidateGroups;
-  }
-
-  public void setCandidateGroups(final List<String> candidateGroups) {
-    this.candidateGroups = candidateGroups;
-  }
-
-  private List<String> candidateGroups;
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(final String name) {
-    this.name = name;
-  }
-
-  public String getFilter() {
-    return filter;
-  }
-
-  public void setFilter(final String filter) {
-    this.filter = filter;
-  }
-
-  public String getCreatedBy() {
-    return createdBy;
-  }
-
-  public void setCreatedBy(final String user) {
-    this.createdBy = user;
-  }
-
-  public List<String> getCandidateUsers() {
-    return candidateUsers;
-  }
-
-  public void setCandidateUsers(final List<String> candidateUsers) {
-    this.candidateUsers = candidateUsers;
+  public TaskFilterEntity addFilter(final AddFilterRequest addFilterRequest) {
+    return taskFilterStore.persistFilter(addFilterRequest.toFilterEntity());
   }
 }

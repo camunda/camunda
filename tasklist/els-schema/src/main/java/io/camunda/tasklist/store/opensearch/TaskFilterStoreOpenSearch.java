@@ -43,5 +43,4 @@ public class TaskFilterStoreOpenSearch implements TaskFilterStore {
   public TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity) {
     return null;
   }
-
 }
