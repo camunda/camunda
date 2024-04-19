@@ -18,55 +18,69 @@ package io.camunda.operate.webapp.security;
 
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import jakarta.servlet.http.HttpServletRequest;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.util.regex.Pattern;
-import org.springframework.security.web.util.matcher.RequestMatcher;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public class CsrfRequireMatcher implements RequestMatcher {
-  private static final Pattern ALLOWED_METHODS = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
+@ExtendWith(MockitoExtension.class)
+class CsrfRequireMatcherTest {
 
-  private static final Pattern ALLOWED_PATHS =
-      Pattern.compile(LOGIN_RESOURCE + "|" + LOGOUT_RESOURCE);
+  @Mock HttpServletRequest request;
 
-  @Override
-  public boolean matches(final HttpServletRequest request) {
-    // If request is from Allowed Methods, Login and Logout
-    if (ALLOWED_METHODS.matcher(request.getMethod()).matches()) {
-      return false;
-    }
-    if (ALLOWED_PATHS.matcher(request.getServletPath()).matches()) {
-      return false;
-    }
+  final CsrfRequireMatcher csrfRequireMatcher = new CsrfRequireMatcher();
 
-    final String referer = request.getHeader("Referer");
+  @Test
+  void shouldNotMatchHttpMethods() {
+    Stream.of("GET", "HEAD", "TRACE", "OPTIONS")
+        .forEach(
+            method -> {
+              when(request.getMethod()).thenReturn(method);
+              assertThat(csrfRequireMatcher.matches(request)).isFalse();
+            });
+  }
 
-    // If request is from Swagger UI
-    final String baseRequestUrl;
-    try {
-      final URL requestUrl = URI.create(request.getRequestURI()).toURL();
-      baseRequestUrl =
-          requestUrl.getProtocol()
-              + "://"
-              + requestUrl.getHost()
-              + (requestUrl.getPort() > 0 ? ":" + requestUrl.getPort() : "");
-    } catch (final MalformedURLException e) {
-      throw new OperateRuntimeException(e);
-    }
+  @Test
+  void shouldNotMatchPaths() {
+    when(request.getMethod()).thenReturn("POST");
+    Stream.of(LOGIN_RESOURCE, LOGOUT_RESOURCE)
+        .forEach(
+            path -> {
+              when(request.getServletPath()).thenReturn(path);
+              assertThat(csrfRequireMatcher.matches(request)).isFalse();
+            });
+  }
 
-    if (referer != null && referer.matches(baseRequestUrl + "/swagger-ui.*")) {
-      return false;
-    }
+  @Test
+  void shouldNotMatchForSwagger() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn("/swagger-ui.html");
+    when(request.getHeader("Referer")).thenReturn("http://localhost:8080/swagger-ui.html");
+    when(request.getRequestURI()).thenReturn("http://localhost:8080/swagger-ui.html");
+    assertThat(csrfRequireMatcher.matches(request)).isFalse();
+  }
 
-    // If is authenticated from as API user using Bearer Token
-    final String authorizationHeader = request.getHeader("Authorization");
-    final boolean isAuthorizationHeaderPresent =
-        authorizationHeader != null && authorizationHeader.startsWith("Bearer ");
+  @Test
+  void shouldNotMatchForPublicAPIAccessWithBearerToken() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn("/v1/process-definitions/search");
+    when(request.getHeader("Referer")).thenReturn(null);
+    when(request.getRequestURI()).thenReturn("http://localhost:8080/v1/process-definitions/search");
+    when(request.getHeader("Authorization")).thenReturn("Bearer eyBlackCoffee");
+    assertThat(csrfRequireMatcher.matches(request)).isFalse();
+  }
 
-    return !isAuthorizationHeaderPresent;
+  @Test
+  void shouldMatchForInternalAPIAccess() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn("/api/processes/grouped");
+    when(request.getHeader("Referer")).thenReturn(null);
+    when(request.getRequestURI()).thenReturn("http://localhost:8080//api/processes/grouped");
+    assertThat(csrfRequireMatcher.matches(request)).isTrue();
   }
 }
