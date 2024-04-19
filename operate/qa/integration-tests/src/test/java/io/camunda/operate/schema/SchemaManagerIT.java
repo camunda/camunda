@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
@@ -50,6 +51,7 @@ public class SchemaManagerIT {
   @Autowired private OperateProperties operateProperties;
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private SchemaManager schemaManager;
+  @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
 
   @BeforeAll
   public void init() throws Exception {
@@ -64,11 +66,11 @@ public class SchemaManagerIT {
   }
 
   private String idxName(final String name) {
-    return "operate-decision-8.3.0_" + name;
+    return indexDescriptors.isEmpty() ? "" : indexDescriptors.get(0).getFullQualifiedName() + name;
   }
 
   @Test
-  public void testCheckAndUpdateIndices() throws Exception {
+  public void testCheckAndUpdateIndices() {
 
     int defaultNumberofReplicas = 4;
     final String defaultRefreshInterval = "4s";
