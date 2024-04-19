@@ -23,9 +23,9 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -39,19 +39,18 @@ import org.springframework.util.MultiValueMap;
 public interface AuthenticationTestable {
 
   String SET_COOKIE_HEADER = "Set-Cookie";
+
   // Frontend is relying on this - see e2e tests
   Pattern COOKIE_PATTERN =
       Pattern.compile(
           "^" + OperateURIs.COOKIE_JSESSIONID + "=[0-9A-Z]{32}$", Pattern.CASE_INSENSITIVE);
   String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
-  String COOKIE_ENTRY_SEPARATOR = ";";
-  String EMPTY_HEADER_VALUE = "=" + COOKIE_ENTRY_SEPARATOR;
 
   default HttpHeaders getHeaderWithCSRF(final HttpHeaders responseHeaders) {
     final HttpHeaders headers = new HttpHeaders();
     if (responseHeaders.containsKey(X_CSRF_TOKEN)) {
-      headers.set(
-          X_CSRF_TOKEN, Objects.requireNonNull(responseHeaders.get(X_CSRF_TOKEN)).getFirst());
+      final String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
+      headers.set(X_CSRF_TOKEN, csrfToken);
     }
     return headers;
   }
@@ -60,50 +59,29 @@ public interface AuthenticationTestable {
       final ResponseEntity<?> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
-    getSessionCookie(response).ifPresent(sessionCookie -> headers.add("Cookie", sessionCookie));
-    getCsrfCookie(response).ifPresent(csrfCookie -> headers.add(X_CSRF_TOKEN, csrfCookie));
-    return new HttpEntity<>(new HashMap<>(), headers);
+    headers.add("Cookie", getSessionCookies(response).stream().findFirst().orElse(""));
+
+    final Map<String, String> body = new HashMap<>();
+    return new HttpEntity<>(body, headers);
   }
 
   default List<String> getCookies(final ResponseEntity<?> response) {
     return Optional.ofNullable(response.getHeaders().get(SET_COOKIE_HEADER)).orElse(List.of());
   }
 
-  default Optional<String> getCsrfCookie(final ResponseEntity<?> response) {
-    return getCookies(response).stream().filter(key -> key.startsWith(X_CSRF_TOKEN)).findFirst();
-  }
-
-  default Optional<String> getSessionCookie(final ResponseEntity<?> response) {
+  default List<String> getSessionCookies(final ResponseEntity<?> response) {
     return getCookies(response).stream()
-        .filter(key -> key.startsWith(COOKIE_JSESSIONID))
-        .findFirst();
+        .filter(key -> key.contains(COOKIE_JSESSIONID))
+        .collect(Collectors.toList());
   }
 
-  default void assertThatCookiesAndSecurityHeadersAreSet(
-      final ResponseEntity<?> response, final boolean csrfEnabled) {
-    getSessionCookie(response)
-        .ifPresent(
-            sessionCookie -> {
-              assertThat(sessionCookie.split(COOKIE_ENTRY_SEPARATOR)[0]).matches(COOKIE_PATTERN);
-              assertSameSiteIsSet(sessionCookie);
-            });
-    if (csrfEnabled) {
-      getCsrfCookie(response)
-          .ifPresent(
-              csrfCookie -> {
-                assertThat(csrfCookie).contains(X_CSRF_TOKEN);
-                assertThat(csrfCookie.split(COOKIE_ENTRY_SEPARATOR)[0]).isNotEmpty();
-              });
-      assertThatCSRFHeadersAreSet(response);
-    }
+  default void assertThatCookiesAndSecurityHeadersAreSet(final ResponseEntity<?> response) {
+    final List<String> cookies = getSessionCookies(response);
+    assertThat(cookies).isNotEmpty();
+    final String lastSetCookie = cookies.get(cookies.size() - 1);
+    assertThat(lastSetCookie.split(";")[0]).matches(COOKIE_PATTERN);
+    assertSameSiteIsSet(lastSetCookie);
     assertThatSecurityHeadersAreSet(response);
-  }
-
-  default void assertThatCSRFHeadersAreSet(final ResponseEntity<?> response) {
-    final var csrfHeader = response.getHeaders().get(X_CSRF_TOKEN);
-    assertThat(csrfHeader).isNotEmpty();
-    final var token = csrfHeader.getFirst();
-    assertThat(token).isNotEmpty();
   }
 
   default void assertThatSecurityHeadersAreSet(final ResponseEntity<?> response) {
@@ -124,8 +102,12 @@ public interface AuthenticationTestable {
   }
 
   default void assertThatCookiesAreDeleted(final ResponseEntity<?> response) {
-    getSessionCookie(response)
-        .ifPresent(s -> assertThat(s).contains(COOKIE_JSESSIONID + EMPTY_HEADER_VALUE));
+    final String emptyValue = "=;";
+    final List<String> sessionCookies = getSessionCookies(response);
+    if (!sessionCookies.isEmpty()) {
+      final String lastSetCookie = sessionCookies.get(sessionCookies.size() - 1);
+      assertThat(lastSetCookie).contains(COOKIE_JSESSIONID + emptyValue);
+    }
   }
 
   default ResponseEntity<Void> login(final String username, final String password) {
