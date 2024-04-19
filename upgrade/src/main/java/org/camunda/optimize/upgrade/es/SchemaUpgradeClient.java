@@ -6,16 +6,21 @@
 package org.camunda.optimize.upgrade.es;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.getTaskResponse;
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.validateTaskResponse;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -23,6 +28,7 @@ import java.util.function.Function;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
@@ -31,6 +37,8 @@ import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto.Fields;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
@@ -40,6 +48,8 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -52,6 +62,7 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.tasks.TaskInfo;
 import org.elasticsearch.xcontent.XContentType;
 
@@ -155,6 +166,30 @@ public class SchemaUpgradeClient {
           String.format("Could not get document with id %s from index %s.", id, index);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  public List<UpgradeStepLogEntryDto> getAppliedUpdateStepsForTargetVersion(
+      final String targetOptimizeVersion) {
+    SearchResponse searchResponse;
+    try {
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder()
+              .query(boolQuery().must(termQuery(Fields.optimizeVersion, targetOptimizeVersion)))
+              .size(LIST_FETCH_LIMIT);
+      searchResponse =
+          elasticsearchClient.search(
+              new SearchRequest(UPDATE_LOG_ENTRY_INDEX_NAME).source(searchSourceBuilder));
+    } catch (IOException e) {
+      String reason =
+          String.format(
+              "Was not able to fetch completed update steps for target version %s",
+              targetOptimizeVersion);
+      log.error(reason, e);
+      throw new UpgradeRuntimeException(reason, e);
+    }
+
+    return ElasticsearchReaderUtil.mapHits(
+        searchResponse.getHits(), UpgradeStepLogEntryDto.class, objectMapper);
   }
 
   public boolean indexExists(final String indexName) {

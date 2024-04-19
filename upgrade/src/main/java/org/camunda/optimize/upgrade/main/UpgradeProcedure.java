@@ -10,6 +10,7 @@ import static org.camunda.optimize.upgrade.steps.UpgradeStepType.REINDEX;
 import com.vdurmont.semver4j.Semver;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -75,6 +76,9 @@ public class UpgradeProcedure {
   private void executeUpgradePlan(final UpgradePlan upgradePlan) {
     int currentStepCount = 1;
     final List<UpgradeStep> upgradeSteps = upgradePlan.getUpgradeSteps();
+    Map<String, UpgradeStepLogEntryDto> appliedStepsById =
+        upgradeStepLogService.getAllAppliedStepsForUpdateToById(
+            schemaUpgradeClient, upgradePlan.getToVersion().toString());
     for (UpgradeStep step : upgradeSteps) {
       final UpgradeStepLogEntryDto logEntryDto =
           UpgradeStepLogEntryDto.builder()
@@ -84,7 +88,8 @@ public class UpgradeProcedure {
               .stepNumber(currentStepCount)
               .build();
       final Optional<Instant> stepAppliedDate =
-          upgradeStepLogService.getStepAppliedDate(schemaUpgradeClient, logEntryDto);
+          Optional.ofNullable(appliedStepsById.get(logEntryDto.getId()))
+              .map(UpgradeStepLogEntryDto::getAppliedDate);
       if (stepAppliedDate.isEmpty()) {
         log.info(
             "Starting step {}/{}: {} on index: {}",

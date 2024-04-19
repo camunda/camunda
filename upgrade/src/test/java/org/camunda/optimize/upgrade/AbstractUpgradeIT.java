@@ -27,6 +27,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
@@ -40,7 +41,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
-import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.indices.UserTestIndex;
 import org.camunda.optimize.upgrade.indices.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.indices.UserTestWithTemplateIndex;
@@ -296,7 +296,8 @@ public abstract class AbstractUpgradeIT {
   }
 
   private String getLogIndexAlias() {
-    return indexNameService.getOptimizeIndexAliasForIndex(UpdateLogEntryIndex.INDEX_NAME);
+    return indexNameService.getOptimizeIndexAliasForIndex(
+        DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME);
   }
 
   private Settings createIndexSettings(final IndexMappingCreator indexMappingCreator) {

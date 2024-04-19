@@ -19,9 +19,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.util.DateCreationFreezer;
-import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -211,7 +211,8 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
     upgradeProcedureLogs.assertContains("Starting step 1/1");
     upgradeProcedureLogs.assertContains("Successfully finished step 1/1");
     final List<UpgradeStepLogEntryDto> updateLogEntries =
-        getAllDocumentsOfIndexAs(UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class);
+        getAllDocumentsOfIndexAs(
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME, UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .contains(
             UpgradeStepLogEntryDto.builder()

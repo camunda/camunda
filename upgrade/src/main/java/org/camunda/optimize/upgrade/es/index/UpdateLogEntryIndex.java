@@ -9,6 +9,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
+import static org.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
 
 import java.io.IOException;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
@@ -18,12 +19,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuilder> {
-  public static final String INDEX_NAME = "update-log";
+
   public static final int VERSION = 1;
 
   @Override
   public String getIndexName() {
-    return INDEX_NAME;
+    return UPDATE_LOG_ENTRY_INDEX_NAME;
   }
 
   @Override

@@ -5,8 +5,11 @@
  */
 package org.camunda.optimize.upgrade.service;
 
-import java.time.Instant;
-import java.util.Optional;
+import static org.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
+
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
@@ -22,14 +25,12 @@ public class UpgradeStepLogService {
   public void recordAppliedStep(
       final SchemaUpgradeClient schemaUpgradeClient, final UpgradeStepLogEntryDto logEntryDto) {
     logEntryDto.setAppliedDate(LocalDateUtil.getCurrentDateTime().toInstant());
-    schemaUpgradeClient.upsert(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), logEntryDto);
+    schemaUpgradeClient.upsert(UPDATE_LOG_ENTRY_INDEX_NAME, logEntryDto.getId(), logEntryDto);
   }
 
-  public Optional<Instant> getStepAppliedDate(
-      final SchemaUpgradeClient schemaUpgradeClient, final UpgradeStepLogEntryDto logEntryDto) {
-    return schemaUpgradeClient
-        .getDocumentByIdAs(
-            UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), UpgradeStepLogEntryDto.class)
-        .map(UpgradeStepLogEntryDto::getAppliedDate);
+  public Map<String, UpgradeStepLogEntryDto> getAllAppliedStepsForUpdateToById(
+      final SchemaUpgradeClient schemaUpgradeClient, final String targetOptimizeVersion) {
+    return schemaUpgradeClient.getAppliedUpdateStepsForTargetVersion(targetOptimizeVersion).stream()
+        .collect(Collectors.toMap(UpgradeStepLogEntryDto::getId, Function.identity()));
   }
 }

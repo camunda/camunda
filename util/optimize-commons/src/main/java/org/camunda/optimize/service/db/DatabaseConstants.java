@@ -55,7 +55,6 @@ public class DatabaseConstants {
   public static final String DYNAMIC_PROPERTY_TYPE = "dynamic";
 
   public static final String TYPE_KEYWORD = "keyword";
-  public static final String TYPE_INTEGER = "integer";
   public static final String TYPE_LONG = "long";
   public static final String TYPE_DOUBLE = "double";
   public static final String TYPE_DATE = "date";
@@ -86,6 +85,7 @@ public class DatabaseConstants {
   public static final String TIMESTAMP_BASED_IMPORT_INDEX_NAME = "timestamp-based-import-index";
   public static final String POSITION_BASED_IMPORT_INDEX_NAME = "position-based-import-index";
   public static final String METADATA_INDEX_NAME = "metadata";
+  public static final String UPDATE_LOG_ENTRY_INDEX_NAME = "update-log";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
   public static final String TENANT_INDEX_NAME = "tenant";
   public static final String EXTERNAL_EVENTS_INDEX_NAME = "event";
