@@ -7,13 +7,20 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.Optional;
 
 public final class ProcessTransformer implements ModelElementTransformer<Process> {
+
+  private final ExecutionListenerTransformer executionListenerTransformer =
+      new ExecutionListenerTransformer();
 
   @Override
   public Class<Process> getType() {
@@ -31,5 +38,18 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
 
     context.addProcess(process);
     context.setCurrentProcess(process);
+    transformExecutionListeners(element, process, context.getExpressionLanguage());
+  }
+
+  private void transformExecutionListeners(
+      final Process element,
+      final ExecutableProcess flowNode,
+      final ExpressionLanguage expressionLanguage) {
+
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeExecutionListeners.class))
+        .ifPresent(
+            listeners ->
+                executionListenerTransformer.transform(
+                    flowNode, listeners.getExecutionListeners(), expressionLanguage));
   }
 }

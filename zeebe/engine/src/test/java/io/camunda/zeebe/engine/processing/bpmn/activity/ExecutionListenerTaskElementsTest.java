@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.assertExecutionListenerJobsCompletedForElement;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
@@ -211,7 +212,7 @@ public class ExecutionListenerTaskElementsTest {
     // complete failed start EL job
     ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
 
-    // then: process main task activity
+    // process main task activity
     processTask.accept(processInstanceKey);
 
     // then: assert the start EL job was completed after the failure
@@ -789,14 +790,14 @@ public class ExecutionListenerTaskElementsTest {
     ENGINE
         .variables()
         .ofScope(processInstanceKey)
-        .withDocument(Map.of("start_el_2_name_var", START_EL_TYPE + "_2"))
+        .withDocument(Map.of("start_el_2_name_var", START_EL_TYPE + "_eval_2"))
         .update();
     // and: resolve incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
-    // then: complete 1st re-created EL[start] job
+    // then: complete 1st re-created start EL job
     completeRecreatedJobWithType(processInstanceKey, START_EL_TYPE + "_1");
-    // complete 2nd & 3d start ELs
-    ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE + "_2").complete();
+    // complete 2nd & 3d start EL jobs
+    ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE + "_eval_2").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE + "_3").complete();
 
     // process main task activity
@@ -810,7 +811,7 @@ public class ExecutionListenerTaskElementsTest {
             jobRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.EXECUTION_LISTENER)
-                .limit(6)
+                .limit(8)
                 .onlyEvents())
         .extracting(r -> r.getValue().getType(), Record::getIntent)
         .containsSequence(
@@ -819,9 +820,11 @@ public class ExecutionListenerTaskElementsTest {
             // 1st start EL job recreated
             tuple(START_EL_TYPE + "_1", JobIntent.CREATED),
             tuple(START_EL_TYPE + "_1", JobIntent.COMPLETED),
-            // last start EL job processing
-            tuple(START_EL_TYPE + "_2", JobIntent.CREATED),
-            tuple(START_EL_TYPE + "_2", JobIntent.COMPLETED));
+            // remaining start EL jobs processing
+            tuple(START_EL_TYPE + "_eval_2", JobIntent.CREATED),
+            tuple(START_EL_TYPE + "_eval_2", JobIntent.COMPLETED),
+            tuple(START_EL_TYPE + "_3", JobIntent.CREATED),
+            tuple(START_EL_TYPE + "_3", JobIntent.COMPLETED));
 
     // assert the process instance has completed as expected
     assertThat(
@@ -884,7 +887,7 @@ public class ExecutionListenerTaskElementsTest {
     ENGINE
         .variables()
         .ofScope(processInstanceKey)
-        .withDocument(Map.of("end_el_3_name_var", END_EL_TYPE + "_3"))
+        .withDocument(Map.of("end_el_3_name_var", END_EL_TYPE + "_eval_3"))
         .update();
     // resolve incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
@@ -893,7 +896,7 @@ public class ExecutionListenerTaskElementsTest {
     completeRecreatedJobWithType(processInstanceKey, END_EL_TYPE + "_1");
     completeRecreatedJobWithType(processInstanceKey, END_EL_TYPE + "_2");
     // complete last end EL job
-    ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_3").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_eval_3").complete();
 
     // then: assert that the 1st & 2nd end EL job were re-created
     assertThat(
@@ -918,8 +921,8 @@ public class ExecutionListenerTaskElementsTest {
             tuple(END_EL_TYPE + "_2", JobIntent.CREATED),
             tuple(END_EL_TYPE + "_2", JobIntent.COMPLETED),
             // last end EL job processing
-            tuple(END_EL_TYPE + "_3", JobIntent.CREATED),
-            tuple(END_EL_TYPE + "_3", JobIntent.COMPLETED));
+            tuple(END_EL_TYPE + "_eval_3", JobIntent.CREATED),
+            tuple(END_EL_TYPE + "_eval_3", JobIntent.COMPLETED));
 
     // assert the process instance has completed as expected
     assertThat(
@@ -944,15 +947,8 @@ public class ExecutionListenerTaskElementsTest {
 
   private void assertExecutionListenerJobsCompleted(
       final long processInstanceKey, final String... elJobTypes) {
-    assertThat(
-            RecordingExporter.jobRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withJobKind(JobKind.EXECUTION_LISTENER)
-                .withIntent(JobIntent.COMPLETED)
-                .withElementId(elementType.name())
-                .limit(elJobTypes.length))
-        .extracting(r -> r.getValue().getType())
-        .containsExactly(elJobTypes);
+    assertExecutionListenerJobsCompletedForElement(
+        processInstanceKey, elementType.name(), elJobTypes);
   }
 
   private static void deployProcess(final BpmnModelInstance modelInstance) {
