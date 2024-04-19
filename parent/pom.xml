@@ -92,12 +92,12 @@
     <version.testcontainers>1.19.7</version.testcontainers>
     <version.netflix.concurrency>0.5.0</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.3</version.zeebe-test-container>
-    <version.feel-scala>1.17.5</version.feel-scala>
+    <version.feel-scala>1.17.6</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
     <version.spring>6.1.6</version.spring>
     <version.spring-security>6.2.4</version.spring-security>
-    <version.spring-boot>3.2.4</version.spring-boot>
+    <version.spring-boot>3.2.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.37.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.33</version.awssdk>
+    <version.awssdk>2.25.34</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -152,7 +152,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.10</version.yarn>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.703</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.704</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.7</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.7</version.postgres-test-container>
     <version.elasticsearch7>7.17.20</version.elasticsearch7>
