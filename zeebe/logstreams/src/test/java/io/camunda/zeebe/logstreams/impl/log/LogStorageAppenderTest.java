@@ -15,6 +15,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
@@ -49,20 +50,23 @@ final class LogStorageAppenderTest {
   private final ListLogStorage logStorage = spy(new ListLogStorage());
 
   private Sequencer sequencer;
-  private LogStorageAppender appender;
   private LogStreamReader reader;
 
   @BeforeEach
   void beforeEach() {
-    scheduler.start();
-    sequencer = new Sequencer(INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(1));
-    appender = new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer);
+    sequencer =
+        new Sequencer(
+            logStorage,
+            INITIAL_POSITION,
+            4 * 1024 * 1024,
+            new SequencerMetrics(PARTITION_ID),
+            new AppenderMetrics(PARTITION_ID));
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 
   @AfterEach
   public void tearDown() {
-    CloseHelper.quietCloseAll(appender, sequencer, scheduler);
+    CloseHelper.quietCloseAll(sequencer);
   }
 
   @Test
@@ -71,9 +75,8 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
     final var entry = TestEntry.ofDefaults();
     // when
-    final var position = sequencer.tryWrite(entry).get();
     logStorage.setPositionListener(i -> latch.countDown());
-    scheduler.submitActor(appender).join();
+    final var position = sequencer.tryWrite(entry).get();
 
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).as("value was written within 5 seconds").isTrue();
@@ -90,10 +93,9 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
 
     // when
+    logStorage.setPositionListener(i -> latch.countDown());
     final var highestPosition = sequencer.tryWrite(entries).get();
     final var lowestPosition = highestPosition - 1;
-    logStorage.setPositionListener(i -> latch.countDown());
-    scheduler.submitActor(appender).join();
 
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).as("value was written within 5 seconds").isTrue();
