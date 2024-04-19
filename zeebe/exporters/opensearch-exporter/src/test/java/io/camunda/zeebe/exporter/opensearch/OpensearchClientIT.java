@@ -137,9 +137,9 @@ final class OpensearchClientIT {
   @Test
   void shouldAuthenticateWithBasicAuth() {
     // given
-    testClient.putUser("user", "password", List.of("admin"));
+    testClient.putUser("user", "^AHq>z@)&l;RJU=\"", List.of("admin"));
     config.getAuthentication().setUsername("user");
-    config.getAuthentication().setPassword("password");
+    config.getAuthentication().setPassword("^AHq>z@)&l;RJU=\"");
 
     // when
     // force recreating the client
