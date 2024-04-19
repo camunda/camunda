@@ -8,6 +8,7 @@
 import {cleanEntities} from '../setup';
 import config from '../config';
 import {login, save, getUser, createNewDashboard, addEditEntityDescription} from '../utils';
+import {Selector} from 'testcafe';
 
 import * as Common from './Common.elements.js';
 import * as e from './Collection.elements.js';
@@ -108,7 +109,7 @@ test('user permissions', async (t) => {
   await t.click(e.addButton);
   await t.click(Common.usersTypeahead);
   await t.typeText(Common.usersTypeahead, 'sales', {replace: true});
-  await t.click(Common.carbonOption('sales'));
+  await t.click(Common.carbonOption('Sales'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(Common.listItem('user group').visible).ok();
@@ -141,7 +142,9 @@ test('user permissions', async (t) => {
 
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, username, {replace: true});
-  await t.click(Common.carbonOption(username));
+  // We have no way of knowing the exact name of the user on the list, so we just wait and select the first option
+  await t.wait(1500);
+  await t.click(Selector(`[id="USER:${username}"]`));
   await t.click(e.carbonRoleOption('Manager'));
   await t.click(Common.modalConfirmButton);
 

@@ -37,7 +37,7 @@ type Item = {
   id: string;
   label: string;
   tag?: string | null;
-  subTexts?: (string | null)[];
+  subText?: string | null;
   disabled?: boolean;
 };
 
@@ -172,31 +172,25 @@ export default function MultiUserInput({
       }}
       items={getItems()}
       itemToString={(item) => {
-        const {label, tag, subTexts} = item;
-        return label + (tag || '') + subTexts?.filter((subText) => !!subText).join(',');
+        const {label, tag, subText, id} = item;
+        return label + (tag || '') + subText + (id || '');
       }}
       itemToElement={(item) => {
         if (item.id === 'loading') {
           return <p className="cds--checkbox-label-text cds--skeleton" />;
         }
 
-        const {label, tag, subTexts} = item;
+        const {label, tag, subText, id} = item;
         return (
-          <>
+          <span id={id}>
             {formatters.getHighlightedText(label, textValue)}
             {tag}
-            {subTexts && (
-              <span className="subTexts">
-                {subTexts
-                  .filter((subText): subText is string => !!subText)
-                  .map((subText, i) => (
-                    <span className="subText" key={i}>
-                      {formatters.getHighlightedText(subText, textValue, true)}
-                    </span>
-                  ))}
+            {subText && (
+              <span className="subText">
+                {formatters.getHighlightedText(subText, textValue, true)}
               </span>
             )}
-          </>
+          </span>
         );
       }}
     />
@@ -206,31 +200,27 @@ export default function MultiUserInput({
 function formatTypeaheadOption({name, email, id, type}: User['identity']): {
   label: string;
   tag: string | null;
-  subTexts: (string | null)[];
+  subText: string | null;
 } {
-  const subTexts: (string | null)[] = [];
+  let subText: string | null = null;
   if (name && email) {
-    subTexts.push(email);
-  }
-
-  if (name || email) {
-    subTexts.push(id);
+    subText = email;
   }
 
   return {
     label: name || email || id || '',
     tag: type === 'group' ? ` (${t('common.user-group.label')})` : null,
-    subTexts,
+    subText,
   };
 }
 
 function formatIdentity(identity: User['identity']): Item {
-  const {label, tag, subTexts} = formatTypeaheadOption(identity);
+  const {label, tag, subText} = formatTypeaheadOption(identity);
 
   return {
     id: getUserId(identity.id, identity.type),
     label,
     tag,
-    subTexts,
+    subText,
   };
 }
