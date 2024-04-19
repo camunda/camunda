@@ -25,7 +25,6 @@
     <module>operate</module>
     <module>tasklist</module>
     <module>identity</module>
-    <module>tasklist</module>
   </modules>
 
   <scm>
