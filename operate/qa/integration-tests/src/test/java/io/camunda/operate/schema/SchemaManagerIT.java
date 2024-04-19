@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.backup.Prio4Backup;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @SpringBootTest(
@@ -52,9 +54,14 @@ public class SchemaManagerIT {
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private SchemaManager schemaManager;
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
+  private final String testDescriptorName = "operate-test_descriptor-8.3.0_";
 
   @BeforeAll
   public void init() throws Exception {
+    final TestDescriptor testDescriptor = new TestDescriptor();
+    indexDescriptors.add(testDescriptor);
+    ReflectionTestUtils.setField(schemaManager, "indexDescriptors", indexDescriptors);
+    createIndex(idxName(""), List.of(Map.of("test_name1", "test_value1")));
     createIndex(idxName("index1"), List.of(Map.of("test_name1", "test_value1")));
     createIndex(idxName("index2"), List.of(Map.of("test_name2", "test_value2")));
     createIndex(idxName("index3"), List.of(Map.of("test_name3", "test_value3")));
@@ -62,17 +69,17 @@ public class SchemaManagerIT {
 
   @AfterAll
   public void tearDown() {
-    schemaManager.deleteIndicesFor(idxName("index*"));
+    schemaManager.deleteIndicesFor(idxName("*"));
   }
 
   private String idxName(final String name) {
-    return indexDescriptors.isEmpty() ? "" : indexDescriptors.get(0).getFullQualifiedName() + name;
+    return testDescriptorName + name;
   }
 
   @Test
   public void testCheckAndUpdateIndices() {
 
-    int defaultNumberofReplicas = 4;
+    int defaultNumberofReplicas = 3;
     final String defaultRefreshInterval = "4s";
 
     final Map<String, String> currentSettings =
@@ -138,6 +145,36 @@ public class SchemaManagerIT {
     searchRepository.createIndex(indexName, mapping);
     for (final var document : documents) {
       searchRepository.createOrUpdateDocument(indexName, UUID.randomUUID().toString(), document);
+    }
+  }
+
+  public class TestDescriptor extends AbstractIndexDescriptor implements Prio4Backup {
+
+    public static final String INDEX_NAME = "test_descriptor";
+    public static final String ID = "id";
+    public static final String KEY = "key";
+    public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+    public static final String NAME = "name";
+    public static final String VERSION = "version";
+    public static final String BPMN_XML = "bpmnXml";
+    public static final String RESOURCE_NAME = "resourceName";
+    public static final String FLOWNODES = "flowNodes";
+    public static final String FLOWNODE_ID = "id";
+    public static final String FLOWNODE_NAME = "name";
+
+    @Override
+    public String getIndexName() {
+      return INDEX_NAME;
+    }
+
+    @Override
+    public String getVersion() {
+      return "8.3.0";
+    }
+
+    @Override
+    public String getFullQualifiedName() {
+      return String.format("%s-%s-%s_", "operate", getIndexName(), getVersion());
     }
   }
 }
