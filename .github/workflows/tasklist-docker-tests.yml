@@ -84,8 +84,26 @@ jobs:
               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Setup yarn
+        run: npm install -g yarn
+      - name: Setup yarn cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - name: Install node dependencies
+        working-directory: ./tasklist/client
+        run: yarn
+      - name: Build frontend
+        working-directory: ./tasklist/client
+        run: yarn build
       - name: Build backend
-        run: mvn clean install -B -T1C -DskipChecks -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
