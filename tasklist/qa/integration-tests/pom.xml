@@ -7,9 +7,9 @@
     <artifactId>tasklist-qa</artifactId>
     <version>8.6.0-SNAPSHOT</version>
   </parent>
+  <artifactId>tasklist-it-tests</artifactId>
 
   <name>Tasklist Integration Tests</name>
-  <artifactId>tasklist-it-tests</artifactId>
 
   <dependencies>
 
@@ -195,7 +195,6 @@
       <artifactId>spring-test</artifactId>
       <scope>test</scope>
     </dependency>
-
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -419,14 +418,13 @@
       <scope>test</scope>
     </dependency>
 
-
   </dependencies>
 
   <build>
     <testResources>
       <testResource>
-        <directory>src/test/resources/</directory>
         <filtering>true</filtering>
+        <directory>src/test/resources/</directory>
       </testResource>
     </testResources>
 
@@ -480,10 +478,10 @@
           </execution>
           <execution>
             <id>before-tasklist-integration-test-execution</id>
-            <phase>pre-integration-test</phase>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
+            <phase>pre-integration-test</phase>
             <configuration>
               <destFile>${project.build.directory}/tasklist-integration-jacoco.exec</destFile>
               <propertyName>failsafe.jacoco.args</propertyName>
@@ -531,11 +529,11 @@
     <profile>
       <id>docker-os</id>
       <activation>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>camunda.tasklist.database</name>
           <value>opensearch</value>
         </property>
-        <activeByDefault>true</activeByDefault>
       </activation>
       <build>
         <plugins>
@@ -547,10 +545,10 @@
 
               <execution>
                 <id>docker-start-os</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
@@ -563,13 +561,12 @@
                 </configuration>
               </execution>
 
-
               <execution>
                 <id>docker-stop</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
@@ -591,15 +588,14 @@
       </build>
     </profile>
 
-
     <profile>
       <id>docker-es</id>
       <activation>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>camunda.tasklist.database</name>
           <value>elasticsearch</value>
         </property>
-        <activeByDefault>true</activeByDefault>
       </activation>
       <build>
         <plugins>
@@ -610,10 +606,10 @@
             <executions>
               <execution>
                 <id>docker-start-es</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
@@ -626,13 +622,12 @@
                 </configuration>
               </execution>
 
-
               <execution>
                 <id>docker-stop</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
@@ -652,7 +647,6 @@
         </plugins>
       </build>
     </profile>
-
 
   </profiles>
 

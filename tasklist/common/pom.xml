@@ -9,9 +9,9 @@
     <version>8.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <artifactId>tasklist-common</artifactId>
 
   <name>Tasklist Common</name>
-  <artifactId>tasklist-common</artifactId>
 
   <dependencies>
 
@@ -254,6 +254,15 @@
   </dependencies>
 
   <build>
+    <!--
+      Enabled setting of schema version
+     -->
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources/</directory>
+      </resource>
+    </resources>
     <plugins>
       <!-- LICENSE PLUGIN -->
       <plugin>
@@ -267,15 +276,6 @@
       </plugin>
 
     </plugins>
-    <!--
-      Enabled setting of schema version
-     -->
-    <resources>
-      <resource>
-        <directory>src/main/resources/</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
   </build>
 
 </project>

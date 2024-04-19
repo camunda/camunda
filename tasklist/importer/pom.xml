@@ -8,9 +8,9 @@
     <version>8.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <artifactId>tasklist-importer</artifactId>
 
   <name>Tasklist Importer</name>
-  <artifactId>tasklist-importer</artifactId>
 
   <dependencies>
 

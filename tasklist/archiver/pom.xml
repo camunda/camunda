@@ -8,9 +8,9 @@
     <version>8.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <artifactId>tasklist-archiver</artifactId>
 
   <name>Tasklist Archiver</name>
-  <artifactId>tasklist-archiver</artifactId>
 
   <dependencies>
 
