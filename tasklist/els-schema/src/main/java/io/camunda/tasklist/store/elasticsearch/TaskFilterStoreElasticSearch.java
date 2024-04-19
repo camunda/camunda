@@ -50,17 +50,17 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
   @Autowired private RestHighLevelClient esClient;
 
   @Override
-  public TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity) {
+  public TaskFilterEntity persistFilter(TaskFilterEntity filterEntity) {
     try {
       final IndexRequest indexRequest =
           new IndexRequest(taskFilterIndex.getFullQualifiedName())
               .source(objectMapper.writeValueAsString(filterEntity), XContentType.JSON);
       final IndexResponse indexResponse = esClient.index(indexRequest, RequestOptions.DEFAULT);
-      System.out.println(indexResponse);
+      filterEntity.setId(indexResponse.getId());
     } catch (IOException exception) {
       throw new TasklistRuntimeException(exception);
     }
-    return null;
+    return filterEntity;
   }
 
 }

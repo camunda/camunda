@@ -36,7 +36,7 @@ public final class TasklistURIs {
   public static final String TASKS_URL_V1 = "/v1/tasks";
   public static final String VARIABLES_URL_V1 = "/v1/variables";
   public static final String FORMS_URL_V1 = "/v1/forms";
-  public static final String FILTERS_URL_V1 = "/v1/tasks/filters";
+  public static final String TASK_FILTERS_URL_V1 = "/v1/tasks/filters";
   public static final String USERS_URL_V1 = "/v1/internal/users";
   public static final String DEV_UTIL_URL_V1 = "/v1/external/devUtil";
   public static final String PROCESSES_URL_V1 = "/v1/internal/processes";

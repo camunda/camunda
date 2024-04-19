@@ -14,78 +14,39 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.api.rest.v1.entities;
+package io.camunda.tasklist.webapp.service;
+
+import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.entities.TaskFilterEntity;
+import io.camunda.tasklist.store.TaskFilterStore;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
 import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public class AddFilterRequest {
+@ExtendWith(MockitoExtension.class)
+public class TaskFilterServiceTest {
 
-  private String name;
-  private String filter;
-  private String createdBy;
-  private List<String> candidateUsers;
-  private List<String> candidateGroups;
+  @Mock private TaskFilterStore taskFilterStore;
 
-  public TaskFilterEntity toFilterEntity() {
-    TaskFilterEntity filterEntity = new TaskFilterEntity();
-    filterEntity.setName(this.getName());
-    filterEntity.setFilter(this.getFilter());
-    filterEntity.setCandidateGroups(this.getCandidateGroups());
-    filterEntity.setCandidateUsers(this.getCandidateUsers());
-    filterEntity.setCreatedBy(this.getCreatedBy());
-    return filterEntity;
-  }
+  @InjectMocks private TaskFilterService taskFilterService;
 
-  public void validate() {
-    if (this.getName() == null || this.getName().isBlank()) {
-      throw new IllegalArgumentException("Name is mandatory");
-    }
-    if (this.getFilter() == null || this.getFilter().isEmpty()) {
-      throw new IllegalArgumentException("Filter is mandatory");
-    }
-    if (this.getCreatedBy() == null || this.getCreatedBy().isEmpty()) {
-      throw new IllegalArgumentException("CreatedBy is mandatory");
-    }
-  }
+  @Test
+  void addFilter() {
+    final AddFilterRequest addFilterRequest = new AddFilterRequest();
+    addFilterRequest.setFilter("{\"candidateUser\":\"demo\"}");
+    addFilterRequest.setName("filterName");
+    addFilterRequest.setCreatedBy("demo");
+    addFilterRequest.setCandidateGroups(List.of("groupA"));
+    addFilterRequest.setCandidateUsers(List.of("demo"));
 
-  public List<String> getCandidateGroups() {
-    return candidateGroups;
-  }
+    taskFilterService.addFilter(addFilterRequest);
 
-  public void setCandidateGroups(final List<String> candidateGroups) {
-    this.candidateGroups = candidateGroups;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(final String name) {
-    this.name = name;
-  }
-
-  public String getFilter() {
-    return filter;
-  }
-
-  public void setFilter(final String filter) {
-    this.filter = filter;
-  }
-
-  public String getCreatedBy() {
-    return createdBy;
-  }
-
-  public void setCreatedBy(final String user) {
-    this.createdBy = user;
-  }
-
-  public List<String> getCandidateUsers() {
-    return candidateUsers;
-  }
-
-  public void setCandidateUsers(final List<String> candidateUsers) {
-    this.candidateUsers = candidateUsers;
   }
 }

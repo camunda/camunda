@@ -17,11 +17,14 @@
 package io.camunda.tasklist.store.opensearch;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.TaskFilterIndex;
 import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -40,7 +43,13 @@ public class TaskFilterStoreOpenSearch implements TaskFilterStore {
   private OpenSearchClient osClient;
 
   @Override
-  public TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity) {
-    return null;
+  public TaskFilterEntity persistFilter(TaskFilterEntity filterEntity) {
+    try {
+      final IndexResponse indexResponse = osClient.index(indexRequest -> indexRequest.index(taskFilterIndex.getFullQualifiedName()).document(filterEntity));
+      filterEntity.setId(indexResponse.id());
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
+    return filterEntity;
   }
 }

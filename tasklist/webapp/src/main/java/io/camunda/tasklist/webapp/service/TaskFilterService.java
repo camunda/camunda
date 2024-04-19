@@ -32,6 +32,7 @@ public class TaskFilterService {
   @Autowired private TaskFilterStore taskFilterStore;
 
   public TaskFilterEntity addFilter(final AddFilterRequest addFilterRequest) {
+    addFilterRequest.validate();
     return taskFilterStore.persistFilter(addFilterRequest.toFilterEntity());
   }
 }
