@@ -129,8 +129,6 @@ jobs:
             }]
       - name: Maven Prepare Release
         id: maven-prepare-release
-        env:
-          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
         run: |
           # Preparing the maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html
