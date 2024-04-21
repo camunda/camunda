@@ -143,7 +143,7 @@ jobs:
           #
           # -DpreparationGoals 
           #   Goals to run as part of the preparation step, after transformation but before committing. Space delimited.
-          #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later again) so we set it to empty
+          #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later) so we set it to empty
           # 
           # -Darguments
           #   Additional arguments to pass to the Maven executions, separated by spaces.
