@@ -145,7 +145,7 @@ jobs:
           # 
           # -Darguments
           #   Additional arguments to pass to the Maven executions, separated by spaces.
-          #   Per default it is not required, but it the release plugin is configured in the camunda release plugin (and this property is used)
+          #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
           ./mvnw release:prepare -B \
             -Dresume=false \
