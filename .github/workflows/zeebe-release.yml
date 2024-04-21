@@ -177,7 +177,7 @@ jobs:
 
           # -P-integration-tests,-autoFormat
           #   In order to disable QA/IT and the auto formatting during the release.
-          #   It is not necessary to release integration tests, and we don't want to run unnecessary the auto formatting.
+          #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
           ./mvnw release:perform -B \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
             -DlocalCheckout=${{ inputs.dryRun }} \
