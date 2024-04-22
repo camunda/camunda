@@ -88,56 +88,54 @@ zeebe:
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
       ioThreadCount: 2
 
-# Operate configuration properties
-
-camunda.operate:
-  # Set operate username and password.
-  # If user with <username> does not exists it will be created.
-  # Default: demo/demo
-  #username:
-  #password:
-  # ELS instance to store Operate data
-  elasticsearch:
-    # Cluster name
-    clusterName: elasticsearch
-    # URL
-    url: http://localhost:9200
-  # Zeebe instance
-  zeebe:
-    # Gateway address
-    gatewayAddress: localhost:26500
-  # ELS instance to export Zeebe data to
-  zeebeElasticsearch:
-    # Cluster name
-    clusterName: elasticsearch
-    # URL
-    url: http://localhost:9200
-    # Index prefix, configured in Zeebe Elasticsearch exporter
-    prefix: zeebe-record
-
-# Tasklist configuration properties
-
-camunda.tasklist:
-  # Set Tasklist username and password.
-  # If user with <username> does not exists it will be created.
-  # Default: demo/demo
-  #username:
-  #password:
-  # ELS instance to store Tasklist data
-  elasticsearch:
-    # Cluster name
-    clusterName: elasticsearch
-    # URL
-    url: http://localhost:9200
-  # Zeebe instance
-  zeebe:
-    # Gateway address
-    gatewayAdress: localhost:26500
-  # ELS instance to export Zeebe data to
-  zeebeElasticsearch:
-    # Cluster name
-    clusterName: elasticsearch
-    # Url
-    url: http://localhost:9200
-    # Index prefix, configured in Zeebe Elasticsearch exporter
-    prefix: zeebe-record
+camunda:
+  # Operate configuration properties
+  operate:
+    # Set operate username and password.
+    # If user with <username> does not exists it will be created.
+    # Default: demo/demo
+    #username:
+    #password:
+    # ELS instance to store Operate data
+    elasticsearch:
+      # Cluster name
+      clusterName: elasticsearch
+      # URL
+      url: http://localhost:9200
+    # Zeebe instance
+    zeebe:
+      # Gateway address
+      gatewayAddress: localhost:26500
+    # ELS instance to export Zeebe data to
+    zeebeElasticsearch:
+      # Cluster name
+      clusterName: elasticsearch
+      # URL
+      url: http://localhost:9200
+      # Index prefix, configured in Zeebe Elasticsearch exporter
+      prefix: zeebe-record
+  # Tasklist configuration properties
+  tasklist:
+    # Set Tasklist username and password.
+    # If user with <username> does not exists it will be created.
+    # Default: demo/demo
+    #username:
+    #password:
+    # ELS instance to store Tasklist data
+    elasticsearch:
+      # Cluster name
+      clusterName: elasticsearch
+      # URL
+      url: http://localhost:9200
+    # Zeebe instance
+    zeebe:
+      # Gateway address
+      gatewayAdress: localhost:26500
+    # ELS instance to export Zeebe data to
+    zeebeElasticsearch:
+      # Cluster name
+      clusterName: elasticsearch
+      # Url
+      url: http://localhost:9200
+      # Index prefix, configured in Zeebe Elasticsearch exporter
+      prefix: zeebe-record
