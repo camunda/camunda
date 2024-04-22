@@ -9,47 +9,58 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
+import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.scheduler.ActorCondition;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The sequencer is a multiple-producer, single-consumer queue of {@link LogAppendEntry}. It buffers
- * a fixed amount of entries and rejects writes when the queue is full. The consumer may read at its
- * own pace by repeatedly calling {@link Sequencer#tryRead()} or register for notifications when new
- * entries are written by calling {@link Sequencer#registerConsumer(ActorCondition)}.
- *
- * <p>The sequencer assigns all entries a position and makes that position available to its
- * consumer. The sequencer does not copy or serialize entries, it only keeps a reference to them
- * until they are handed off to the consumer.
+ * The sequencer takes concurrent {@link #tryWrite(List, long) tryWrite} calls and serializes them,
+ * assigning positions to all entries. Writes that are accepted are written directly to the {@link
+ * LogStorage}.
  */
-final class Sequencer implements LogStreamWriter, Closeable {
+final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int maxFragmentSize;
 
   private volatile long position;
   private volatile boolean isClosed = false;
-  private volatile ActorCondition consumer;
-  private final Queue<SequencedBatch> queue = new ArrayBlockingQueue<>(128);
   private final ReentrantLock lock = new ReentrantLock();
-  private final SequencerMetrics metrics;
+  private final LogStorage logStorage;
+  private final SequencerMetrics sequencerMetrics;
+  private final AppenderMetrics appenderMetrics;
+  private final AppenderFlowControl flowControl;
 
-  Sequencer(final long initialPosition, final int maxFragmentSize, final SequencerMetrics metrics) {
+  Sequencer(
+      final LogStorage logStorage,
+      final long initialPosition,
+      final int maxFragmentSize,
+      final SequencerMetrics sequencerMetrics,
+      final AppenderMetrics appenderMetrics) {
+    this.logStorage = logStorage;
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     position = initialPosition;
     this.maxFragmentSize = maxFragmentSize;
-    this.metrics = Objects.requireNonNull(metrics, "must specify metrics");
+    this.sequencerMetrics =
+        Objects.requireNonNull(sequencerMetrics, "must specify sequencer metrics");
+    this.appenderMetrics = Objects.requireNonNull(appenderMetrics, "must specify appender metrics");
+    flowControl = new AppenderFlowControl(this, appenderMetrics);
   }
 
   /** {@inheritDoc} */
@@ -82,43 +93,37 @@ final class Sequencer implements LogStreamWriter, Closeable {
       return Either.left(WriteFailure.INVALID_ARGUMENT);
     }
 
+    final var inflightAppend = flowControl.tryAcquire().orElse(null);
+    if (inflightAppend == null) {
+      return Either.left(WriteFailure.FULL);
+    }
+
     final long currentPosition;
-    final boolean isEnqueued;
     lock.lock();
     try {
       currentPosition = position;
       final var sequencedBatch =
           new SequencedBatch(
               ActorClock.currentTimeMillis(), currentPosition, sourcePosition, appendEntries);
-      isEnqueued = queue.offer(sequencedBatch);
-      if (isEnqueued) {
-        metrics.observeBatchLengthBytes(sequencedBatch.length());
-        position = currentPosition + batchSize;
-      }
+      final var lowestPosition = sequencedBatch.firstPosition();
+      final var highestPosition =
+          sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
+      // extract only the required metadata for metrics from the batch to avoid capturing the whole
+      // batch and holding onto its memory longer than necessary.
+      final List<LogAppendEntryMetadata> metricsMetadata = copyMetricsMetadata(sequencedBatch);
+      inflightAppend.start(highestPosition);
+      logStorage.append(
+          lowestPosition,
+          highestPosition,
+          sequencedBatch,
+          new InstrumentedAppendListener(inflightAppend, metricsMetadata, appenderMetrics));
+      position = currentPosition + batchSize;
+      sequencerMetrics.observeBatchLengthBytes(sequencedBatch.length());
     } finally {
       lock.unlock();
     }
-
-    if (consumer != null) {
-      consumer.signal();
-    }
-    metrics.setQueueSize(queue.size());
-    if (isEnqueued) {
-      metrics.observeBatchSize(batchSize);
-      return Either.right(currentPosition + batchSize - 1);
-    } else {
-      LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntries);
-      return Either.left(WriteFailure.FULL);
-    }
-  }
-
-  /**
-   * Retrieves, but does not remove, the first item in the sequenced batch queue.
-   *
-   * @return A {@link SequencedBatch} or null if none is available
-   */
-  SequencedBatch tryRead() {
-    return queue.poll();
+    sequencerMetrics.observeBatchSize(batchSize);
+    return Either.right(currentPosition + batchSize - 1);
   }
 
   /**
@@ -131,14 +136,72 @@ final class Sequencer implements LogStreamWriter, Closeable {
     isClosed = true;
   }
 
-  void registerConsumer(final ActorCondition consumer) {
-    this.consumer = consumer;
-  }
-
   private boolean isEntryValid(final LogAppendEntry entry) {
     return entry.recordValue() != null
         && entry.recordValue().getLength() > 0
         && entry.recordMetadata() != null
         && entry.recordMetadata().getLength() > 0;
+  }
+
+  @Override
+  public void onCommitError(final Throwable error) {
+    LOG.error("Failed to commit entry", error);
+    close();
+  }
+
+  @Override
+  public void onWriteError(final Throwable error) {
+    LOG.error("Failed to write entry", error);
+    close();
+  }
+
+  static List<LogAppendEntryMetadata> copyMetricsMetadata(final SequencedBatch sequencedBatch) {
+    final var entries = sequencedBatch.entries();
+    final List<LogAppendEntryMetadata> metricsMetadata = new ArrayList<>(entries.size());
+    for (final LogAppendEntry entry : entries) {
+      metricsMetadata.add(new LogAppendEntryMetadata(entry));
+    }
+
+    return metricsMetadata;
+  }
+
+  record LogAppendEntryMetadata(RecordType recordType, ValueType valueType, Intent intent) {
+    private LogAppendEntryMetadata(final LogAppendEntry entry) {
+      this(
+          entry.recordMetadata().getRecordType(),
+          entry.recordMetadata().getValueType(),
+          entry.recordMetadata().getIntent());
+    }
+  }
+
+  record InstrumentedAppendListener(
+      AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, AppenderMetrics metrics)
+      implements AppendListener {
+
+    @Override
+    public void onWrite(final long address) {
+      delegate.onWrite(address);
+      batchMetadata.forEach(this::recordAppendedEntry);
+    }
+
+    @Override
+    public void onWriteError(final Throwable error) {
+      delegate.onWriteError(error);
+    }
+
+    @Override
+    public void onCommit(final long address) {
+      delegate.onCommit(address);
+    }
+
+    @Override
+    public void onCommitError(final long address, final Throwable error) {
+      delegate.onCommitError(address, error);
+    }
+
+    private void recordAppendedEntry(final LogAppendEntryMetadata metadata) {
+      metrics.recordAppendedEntry(
+          1, metadata.recordType(), metadata.valueType(), metadata.intent());
+    }
   }
 }
