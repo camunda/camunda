@@ -7,19 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
 final class SequencerMetrics {
-  private static final Gauge QUEUE_SIZE =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("sequencer_queue_size")
-          .help(
-              "Current length of queue, i.e. how many entry batches are available to the appender")
-          .labelNames("partition")
-          .register();
-
   private static final Histogram BATCH_SIZE =
       Histogram.build()
           .namespace("zeebe")
@@ -38,19 +28,13 @@ final class SequencerMetrics {
           .labelNames("partition")
           .register();
 
-  private final Gauge.Child queueSize;
   private final Histogram.Child batchSize;
   private final Histogram.Child batchLengthBytes;
 
   SequencerMetrics(final int partitionId) {
     final var partitionLabel = String.valueOf(partitionId);
-    queueSize = QUEUE_SIZE.labels(partitionLabel);
     batchSize = BATCH_SIZE.labels(partitionLabel);
     batchLengthBytes = BATCH_LENGTH_BYTES.labels(partitionLabel);
-  }
-
-  void setQueueSize(final int length) {
-    queueSize.set(length);
   }
 
   void observeBatchSize(final int size) {
