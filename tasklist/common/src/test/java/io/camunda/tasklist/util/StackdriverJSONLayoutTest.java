@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 /**
  * This test ensures that StackdriverLayout defined in zeebe-util library is working as expected. If
  * the test is failing, then probably smth was changed on Zeebe side and we need to make adjustments
- * accordingly, including /tasklist-distro/config/log4j2.xml file and docs on logging.
+ * accordingly, including dist/config/log4j2.xml file and docs on logging.
  */
 @LoggerContextSource("log4j2-test.xml")
 class StackdriverJSONLayoutTest {
@@ -42,7 +42,7 @@ class StackdriverJSONLayoutTest {
   private static final ObjectReader JSON_READER = new ObjectMapper().reader();
 
   @Test
-  void testLayout(LoggerContext ctx, @Named(STACKDRIVER_APPENDER_NAME) ListAppender app)
+  void testLayout(final LoggerContext ctx, @Named(STACKDRIVER_APPENDER_NAME) final ListAppender app)
       throws Exception {
     // given
     // having Stackdriver appender activated

@@ -9,7 +9,7 @@ FROM ${BASE_IMAGE} as prepare
 WORKDIR /tmp/tasklist
 
 # download tasklist
-COPY tasklist-distro/target/camunda-tasklist-*.tar.gz tasklist.tar.gz
+COPY dist/target/camunda-zeebe-*.tar.gz tasklist.tar.gz
 RUN tar xzvf tasklist.tar.gz --strip 1 && \
     rm tasklist.tar.gz
 
@@ -78,6 +78,8 @@ WORKDIR /usr/local/tasklist
 VOLUME /tmp
 
 COPY --from=prepare /tmp/tasklist /usr/local/tasklist
+RUN mv /usr/local/tasklist/bin/tasklist-migrate /usr/local/tasklist/bin/migrate
+RUN rm /usr/local/tasklist/lib/operate-webjar*
 
 RUN addgroup --gid 1001 camunda && adduser -D -h /usr/local/tasklist -G camunda -u 1001 camunda
 USER 1001:1001

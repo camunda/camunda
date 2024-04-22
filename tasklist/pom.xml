@@ -26,7 +26,6 @@
     <module>archiver</module>
     <module>webapp</module>
     <module>qa</module>
-    <module>../tasklist-distro</module>
     <module>mvc-auth-commons</module>
     <module>test-coverage</module>
   </modules>

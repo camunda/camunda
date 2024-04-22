@@ -66,6 +66,7 @@ WORKDIR /usr/local/operate
 VOLUME /tmp
 
 COPY --from=prepare /tmp/operate /usr/local/operate
+RUN rm /usr/local/operate/lib/tasklist-webjar*
 
 RUN addgroup --gid 1001 camunda && adduser -D -h /usr/local/operate -G camunda -u 1001 camunda
 USER 1001:1001
