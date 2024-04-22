@@ -2,7 +2,7 @@ camunda:
   client:
     mode: saas
     tenant-ids:
-    - <default>
+      - <default>
     auth:
       issuer: https://login.cloud.camunda.io/oauth/token
     zeebe:
@@ -11,18 +11,6 @@ camunda:
       base-url: https://${camunda.client.region}.zeebe.camunda.io/${camunda.client.cluster-id}
       gateway-url: https://${camunda.client.cluster-id}.${camunda.client.region}.zeebe.camunda.io
       prefer-rest-over-grpc: false
-    operate:
-      enabled: true
-      audience: operate.camunda.io
-      base-url: https://${camunda.client.region}.operate.camunda.io/${camunda.client.cluster-id}
-    tasklist:
-      enabled: true
-      audience: tasklist.camunda.io
-      base-url: https://${camunda.client.region}.tasklist.camunda.io/${camunda.client.cluster-id}
-    optimize:
-      enabled: true
-      audience: optimize.camunda.io
-      base-url: https://${camunda.client.region}.optimize.camunda.io/${camunda.client.cluster-id}
     identity:
       enabled: false
 
