@@ -50,12 +50,20 @@ version: "3.6"
 services:
   keycloak:
     container_name: keycloak
-    image: mrparkers/keycloak-m1:17.0.1
+    image: bitnami/keycloak:24.0.3@sha256:c01c2dffbff9385aeb3a69459eeb41c75ace8205622644a0a85b7dec0ec768bd
     ports:
       - "18080:8080"
     environment:
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_DATABASE_VENDOR: dev-mem
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_ENABLE_HEALTH_ENDPOINTS: true
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - localhost
   identity:
@@ -63,7 +71,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:SNAPSHOT
+    image: camunda/identity:latest
     ports:
       - "8081:8081"
     environment:
