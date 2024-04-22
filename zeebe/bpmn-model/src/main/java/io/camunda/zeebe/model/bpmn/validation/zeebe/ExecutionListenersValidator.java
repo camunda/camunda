@@ -18,8 +18,9 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,16 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class ExecutionListenersValidator implements ModelElementValidator<ZeebeExecutionListeners> {
 
   private static final Set<String> ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS =
-      Collections.singleton(BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK);
+      new HashSet<>(
+          Arrays.asList(
+              BpmnModelConstants.BPMN_ELEMENT_TASK,
+              BpmnModelConstants.BPMN_ELEMENT_SEND_TASK,
+              BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK,
+              BpmnModelConstants.BPMN_ELEMENT_SCRIPT_TASK,
+              BpmnModelConstants.BPMN_ELEMENT_USER_TASK,
+              BpmnModelConstants.BPMN_ELEMENT_RECEIVE_TASK,
+              BpmnModelConstants.BPMN_ELEMENT_BUSINESS_RULE_TASK,
+              BpmnModelConstants.BPMN_ELEMENT_MANUAL_TASK));
 
   @Override
   public Class<ZeebeExecutionListeners> getElementType() {

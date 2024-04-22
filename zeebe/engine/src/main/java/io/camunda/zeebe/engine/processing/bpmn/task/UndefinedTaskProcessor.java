@@ -37,7 +37,7 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableActivity element, final BpmnElementContext context) {
     final var activated =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
@@ -46,7 +46,7 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public Either<Failure, ?> onComplete(
+  public Either<Failure, ?> finalizeCompletion(
       final ExecutableActivity element, final BpmnElementContext context) {
     compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
     return stateTransitionBehavior

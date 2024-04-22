@@ -25,7 +25,7 @@ jobs:
         id: get-last-run-id
         run: |
           runs=$(gh api /repos/camunda/zeebe/actions/workflows/zeebe-version-compatibility.yml/runs)
-          last_run_id=$(echo $runs | jq 'first(.workflow_runs[] | select((.status=="completed") and (.conclusion=="success")).id)')
+          last_run_id=$(echo $runs | jq 'first(.workflow_runs[] | select(.status=="completed").id)')
           echo "last_run_id=$last_run_id" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

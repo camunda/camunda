@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -85,5 +86,10 @@ public abstract class ExporterRecordStream<
 
   public S withValueType(final ValueType valueType) {
     return filter(m -> m.getValueType() == valueType);
+  }
+
+  public S withValueTypes(final ValueType... valueTypes) {
+    final var valueTypesSet = Set.of(valueTypes);
+    return filter(m -> valueTypesSet.contains(m.getValueType()));
   }
 }

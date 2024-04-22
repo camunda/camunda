@@ -19,26 +19,40 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ZeebeExecutionListenersValidationTest {
+  private static final String PROCESS_ID = "process";
+  private static final String SERVICE_TASK_TYPE = "service_task_job";
+  private static final String START_EL_TYPE = "start_execution_listener_job";
+  private static final String END_EL_TYPE = "end_execution_listener_job";
+
   @Test
   @DisplayName("element with ExecutionListeners defined without job `type`")
   void testJobTypeNotDefined() {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask(
                 "task",
                 task ->
-                    task.zeebeJobType("service_task_type")
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
                         .zeebeJobRetries("6")
                         .zeebeStartExecutionListener(null /*job type not defined*/))
+            .endEvent()
             .done();
 
     // when/then
@@ -61,6 +75,50 @@ public class ZeebeExecutionListenersValidationTest {
         process, expect(ZeebeExecutionListener.class, "Attribute 'eventType' must be present"));
   }
 
+  static Stream<Arguments> taskElementProvider() {
+    return Stream.of(
+        Arguments.of("task", setup(AbstractFlowNodeBuilder::task)),
+        Arguments.of("serviceTask", setup(b -> b.serviceTask().zeebeJobType(SERVICE_TASK_TYPE))),
+        Arguments.of("scriptTask", setup(b -> b.scriptTask().zeebeJobType("script_task_job"))),
+        Arguments.of(
+            "businessRuleTask",
+            setup(b -> b.businessRuleTask().zeebeJobType("business_rule_task_job"))),
+        Arguments.of("manualTask", setup(AbstractFlowNodeBuilder::manualTask)),
+        Arguments.of("sendTask", setup(b -> b.sendTask().zeebeJobType("send_task_job"))),
+        Arguments.of(
+            "receiveTask",
+            setup(
+                b ->
+                    b.receiveTask()
+                        .message(mb -> mb.name("message").zeebeCorrelationKeyExpression("foo")))),
+        Arguments.of("userTask", setup(b -> b.userTask().zeebeFormKey("formKey"))));
+  }
+
+  private static Function<AbstractFlowNodeBuilder<?, ?>, AbstractTaskBuilder<?, ?>> setup(
+      final Function<AbstractFlowNodeBuilder<?, ?>, AbstractTaskBuilder<?, ?>> taskConfigurer) {
+    return taskConfigurer;
+  }
+
+  @ParameterizedTest(
+      name = "validate that ''{0}'' can be configured with execution listeners and pass validation")
+  @MethodSource("taskElementProvider")
+  void validateExecutionListenersSupportedByTaskElements(
+      final String elementType,
+      final Function<StartEventBuilder, AbstractTaskBuilder<?, ?>> taskConfigurer) {
+
+    final BpmnModelInstance process =
+        taskConfigurer
+            .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
+            .id(elementType)
+            .zeebeStartExecutionListener(START_EL_TYPE)
+            .zeebeEndExecutionListener(END_EL_TYPE)
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
   @Test
   @DisplayName("validate execution listeners are supported only for specified BPMN elements")
   void validateExecutionListenersSupportedOnlyForSpecifiedElements() {
@@ -75,7 +133,9 @@ public class ZeebeExecutionListenersValidationTest {
         process,
         expect(
             ZeebeExecutionListeners.class,
-            "Execution listeners are not supported for the 'scriptTask' element. Currently, only [serviceTask] elements can have execution listeners."));
+            "Execution listeners are not supported for the 'startEvent' element. "
+                + "Currently, only [scriptTask, task, serviceTask, businessRuleTask, manualTask, "
+                + "sendTask, receiveTask, userTask] elements can have execution listeners."));
   }
 
   @Test
@@ -84,12 +144,12 @@ public class ZeebeExecutionListenersValidationTest {
   void testExecutionListenersTheSameJobTypeButDifferentEventType() {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask(
                 "task",
                 task ->
-                    task.zeebeJobType("service_task_type")
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
                         .zeebeStartExecutionListener("type_A")
                         .zeebeEndExecutionListener("type_A"))
             .done();
@@ -103,12 +163,12 @@ public class ZeebeExecutionListenersValidationTest {
   void testExecutionListenersWithTheSameEventTypeAndJobType() {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask(
                 "task",
                 task ->
-                    task.zeebeJobType("service_task_type")
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
                         .zeebeJobRetries("6")
                         .zeebeStartExecutionListener("type_A")
                         .zeebeStartExecutionListener("type_A")

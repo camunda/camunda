@@ -5,7 +5,6 @@
 @use '@carbon/react/scss/theme';
 @use '@carbon/react/scss/grid';
 @use '@carbon/layout/scss/convert';
-
 @include grid.flex-grid(
   $breakpoints: (
     sm: (
@@ -66,5 +65,5 @@ body,
 }
 
 svg {
-  fill: currentColor;
+  fill: currentcolor;
 }

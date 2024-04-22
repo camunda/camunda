@@ -154,8 +154,9 @@ public class IncidentController extends ErrorController implements SearchControl
                             + "sorted descending by 'creationTime' and paged from previous 'sortValues' value."),
               }))
   @Override
-  public Results<Incident> search(@RequestBody final Query<Incident> query) {
+  public Results<Incident> search(@RequestBody(required = false) Query<Incident> query) {
     logger.debug("search for query {}", query);
+    query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, Incident.class, MESSAGE_SORT_VALIDATOR);
     return incidentDao.search(query);
   }

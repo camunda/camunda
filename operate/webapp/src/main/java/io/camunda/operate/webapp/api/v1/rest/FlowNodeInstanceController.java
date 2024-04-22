@@ -142,8 +142,10 @@ public class FlowNodeInstanceController extends ErrorController
                             + ", sorted ascending by 'startDate' and paged from previous 'sortValues' value."),
               }))
   @Override
-  public Results<FlowNodeInstance> search(@RequestBody final Query<FlowNodeInstance> query) {
+  public Results<FlowNodeInstance> search(
+      @RequestBody(required = false) Query<FlowNodeInstance> query) {
     logger.debug("search for query {}", query);
+    query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, FlowNodeInstance.class);
     return flowNodeInstanceDao.search(query);
   }

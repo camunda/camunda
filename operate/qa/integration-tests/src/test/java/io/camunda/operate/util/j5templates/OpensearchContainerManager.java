@@ -41,22 +41,25 @@ public class OpensearchContainerManager extends SearchContainerManager {
   protected RichOpenSearchClient richOpenSearchClient;
 
   public OpensearchContainerManager(
-      RichOpenSearchClient richOpenSearchClient,
-      OperateProperties operateProperties,
-      SchemaManager schemaManager) {
+      final RichOpenSearchClient richOpenSearchClient,
+      final OperateProperties operateProperties,
+      final SchemaManager schemaManager) {
     super(operateProperties, schemaManager);
     this.richOpenSearchClient = richOpenSearchClient;
   }
 
+  @Override
   protected void updatePropertiesIndexPrefix() {
     operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
   }
 
+  @Override
   protected boolean shouldCreateSchema() {
     return operateProperties.getOpensearch().isCreateSchema();
   }
 
-  protected boolean areIndicesCreated(String indexPrefix, int minCountOfIndices)
+  @Override
+  protected boolean areIndicesCreated(final String indexPrefix, final int minCountOfIndices)
       throws IOException {
     final var indexRequestBuilder =
         getIndexRequestBuilder(indexPrefix + "*")
@@ -87,7 +90,7 @@ public class OpensearchContainerManager extends SearchContainerManager {
   public int getOpenScrollContextSize() {
     try {
       return richOpenSearchClient.cluster().totalOpenContexts();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
       return 0;
     }

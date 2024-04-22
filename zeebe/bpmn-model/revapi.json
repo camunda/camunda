@@ -65,6 +65,14 @@
           "methodName": "compensation",
           "oldType": "java.util.function.Consumer<io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder>",
           "newType": "java.util.function.Consumer<B extends io.camunda.zeebe.model.bpmn.builder.AbstractBoundaryEventBuilder<B>>"
+        },
+        {
+          "justification": "The EL-related builder methods from `AbstractServiceTaskBuilder` were moved to the `AbstractTaskBuilder` parent class . This is okay because execution listeners was not officially supported yet.",
+          "code": "java.method.returnTypeErasureChanged",
+          "package": "io.camunda.zeebe.model.bpmn.builder",
+          "classQualifiedName": "io.camunda.zeebe.model.bpmn.builder.AbstractServiceTaskBuilder",
+          "oldType": "io.camunda.zeebe.model.bpmn.builder.AbstractServiceTaskBuilder",
+          "newType": "io.camunda.zeebe.model.bpmn.builder.AbstractTaskBuilder"
         }
       ]
     }

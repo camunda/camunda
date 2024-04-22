@@ -14,8 +14,6 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.impl.feel.FeelEvaluationResult;
-import io.camunda.zeebe.el.impl.feel.FeelVariableContext;
 import io.camunda.zeebe.feel.impl.FeelFunctionProvider;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.feel.impl.MessagePackValueMapper;
