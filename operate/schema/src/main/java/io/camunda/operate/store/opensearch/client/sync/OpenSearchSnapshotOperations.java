@@ -41,7 +41,7 @@ public class OpenSearchSnapshotOperations extends OpenSearchSyncOperation {
             safe(
                 () ->
                     extendedOpenSearchClient.arbitraryRequest(
-                        "GET", String.format("/_snapshot/%s/", repository), "{}"),
+                        "GET", String.format("/_snapshot/%s", repository), "{}"),
                 e -> format("Failed to get repository %s", repository)));
   }
 
