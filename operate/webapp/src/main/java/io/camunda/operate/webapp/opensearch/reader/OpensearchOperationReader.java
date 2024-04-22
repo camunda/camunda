@@ -38,6 +38,7 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.security.UserService;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -206,6 +207,12 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
+  }
+
+  @Override
+  public List<BatchOperationDto> enrichBatchEntitiesWithMetadata(
+      final List<BatchOperationEntity> batchEntities) {
+    return null; // TODO implement
   }
 
   @Override

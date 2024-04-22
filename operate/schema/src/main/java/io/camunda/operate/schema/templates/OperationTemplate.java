@@ -35,6 +35,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor
   public static final String USERNAME = "username";
   public static final String MODIFIY_INSTRUCTIONS = "modifyInstructions";
   public static final String MIGRATION_PLAN = "migrationPlan";
+  public static final String METADATA_AGGREGATION = "metadataAggregation";
 
   @Override
   public String getIndexName() {

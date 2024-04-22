@@ -28,6 +28,8 @@ public class BatchOperationDto {
   private Integer instancesCount = 0;
   private Integer operationsTotalCount = 0;
   private Integer operationsFinishedCount = 0;
+  private Integer failedOperationsCount = 0;
+  private Integer completedOperationsCount = 0;
 
   /**
    * Sort values, define the position of batch operation in the list and may be used to search for
@@ -125,6 +127,24 @@ public class BatchOperationDto {
     return this;
   }
 
+  public Integer getFailedOperationsCount() {
+    return failedOperationsCount;
+  }
+
+  public BatchOperationDto setFailedOperationsCount(final Integer failedOperationsCount) {
+    this.failedOperationsCount = failedOperationsCount;
+    return this;
+  }
+
+  public Integer getCompletedOperationsCount() {
+    return completedOperationsCount;
+  }
+
+  public BatchOperationDto setCompletedOperationsCount(final Integer completedOperationsCount) {
+    this.completedOperationsCount = completedOperationsCount;
+    return this;
+  }
+
   public String getId() {
     return id;
   }
@@ -197,6 +217,16 @@ public class BatchOperationDto {
     if (operationsFinishedCount != null
         ? !operationsFinishedCount.equals(that.operationsFinishedCount)
         : that.operationsFinishedCount != null) {
+      return false;
+    }
+    if (failedOperationsCount != null
+        ? !failedOperationsCount.equals(that.failedOperationsCount)
+        : that.failedOperationsCount != null) {
+      return false;
+    }
+    if (completedOperationsCount != null
+        ? !completedOperationsCount.equals(that.completedOperationsCount)
+        : that.completedOperationsCount != null) {
       return false;
     }
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
