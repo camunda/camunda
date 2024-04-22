@@ -388,7 +388,7 @@ describe('Modification Summary Modal', () => {
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByRole('button', {name: 'close'}));
+    await user.click(screen.getByRole('button', {name: /close/i}));
 
     expect(mockOnClose).toHaveBeenCalledTimes(2);
   });
