@@ -94,6 +94,7 @@ test.describe('process page', () => {
     page,
     mainPage,
     taskDetailsPage,
+    formJSDetailsPage,
     processesPage,
     taskPanelPage,
   }) => {
@@ -110,7 +111,7 @@ test.describe('process page', () => {
     await taskPanelPage.openTask('User_Task');
 
     await taskDetailsPage.assignToMeButton.click();
-    await taskDetailsPage.completeButton.click();
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
   });
 });

@@ -18,12 +18,6 @@
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {createInstances, deploy} from '../zeebeClient';
-import {
-  fillDate,
-  selectDropdownValue,
-  enterTime,
-  selectTaglistValues,
-} from '../pages/UtilitiesPage';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -120,223 +114,239 @@ test.describe('task details page', () => {
     page,
     taskDetailsPage,
     taskPanelPage,
+    formJSDetailsPage,
   }) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
-    await expect(taskDetailsPage.completeButton).toBeDisabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
-    await expect(taskDetailsPage.completeButton).toBeEnabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me', {
       useInnerText: true,
     });
 
     await taskDetailsPage.unassignButton.click();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
-    await expect(taskDetailsPage.completeButton).toBeDisabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled();
     await expect(taskDetailsPage.assignee).toHaveText('Unassigned', {
       useInnerText: true,
     });
 
     await page.reload();
 
-    await expect(taskDetailsPage.completeButton).toBeDisabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled();
   });
 
-  test('complete task', async ({page, taskDetailsPage, taskPanelPage}) => {
+  test('complete task', async ({
+    page,
+    taskDetailsPage,
+    taskPanelPage,
+    formJSDetailsPage,
+  }) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
 
     const taskUrl = page.url();
     await taskDetailsPage.assignToMeButton.click();
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 
     await page.goto(taskUrl);
 
     await expect(taskDetailsPage.assignToMeButton).not.toBeVisible();
     await expect(taskDetailsPage.unassignButton).not.toBeVisible();
-    await expect(taskDetailsPage.completeTaskButton).not.toBeVisible();
+    await expect(formJSDetailsPage.completeTaskButton).not.toBeVisible();
   });
 
   test('task completion with form', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
   }) => {
     await taskPanelPage.openTask('User registration');
 
-    await expect(taskDetailsPage.nameInput).toBeVisible();
+    await expect(formJSDetailsPage.nameInput).toBeVisible();
     await taskDetailsPage.assignToMeButton.click();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
 
-    await taskDetailsPage.nameInput.fill('Jon');
-    await taskDetailsPage.addressInput.fill('Earth');
-    await taskDetailsPage.ageInput.fill('21');
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.nameInput.fill('Jon');
+    await formJSDetailsPage.addressInput.fill('Earth');
+    await formJSDetailsPage.ageInput.fill('21');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('User registration');
 
-    await expect(taskDetailsPage.nameInput).toHaveValue('Jon');
-    await expect(taskDetailsPage.addressInput).toHaveValue('Earth');
-    await expect(taskDetailsPage.ageInput).toHaveValue('21');
+    await expect(formJSDetailsPage.nameInput).toHaveValue('Jon');
+    await expect(formJSDetailsPage.addressInput).toHaveValue('Earth');
+    await expect(formJSDetailsPage.ageInput).toHaveValue('21');
   });
 
   test('task completion with form from assigned to me filter', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
   }) => {
     await taskPanelPage.openTask('User registration');
 
-    await expect(taskDetailsPage.nameInput).toBeVisible();
+    await expect(formJSDetailsPage.nameInput).toBeVisible();
     await taskDetailsPage.assignToMeButton.click();
-    await expect(taskDetailsPage.completeButton).toBeEnabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
 
     await taskPanelPage.filterBy('Assigned to me');
     await taskPanelPage.openTask('User registration');
 
-    await expect(taskDetailsPage.nameInput).toBeVisible();
-    await taskDetailsPage.nameInput.fill('Gaius Julius Caesar');
-    await taskDetailsPage.addressInput.fill('Rome');
-    await taskDetailsPage.ageInput.fill('55');
-    await taskDetailsPage.completeTaskButton.click();
+    await expect(formJSDetailsPage.nameInput).toBeVisible();
+    await formJSDetailsPage.nameInput.fill('Gaius Julius Caesar');
+    await formJSDetailsPage.addressInput.fill('Rome');
+    await formJSDetailsPage.ageInput.fill('55');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('User registration');
 
-    await expect(taskDetailsPage.nameInput).toHaveValue('Gaius Julius Caesar');
-    await expect(taskDetailsPage.addressInput).toHaveValue('Rome');
-    await expect(taskDetailsPage.ageInput).toHaveValue('55');
+    await expect(formJSDetailsPage.nameInput).toHaveValue(
+      'Gaius Julius Caesar',
+    );
+    await expect(formJSDetailsPage.addressInput).toHaveValue('Rome');
+    await expect(formJSDetailsPage.ageInput).toHaveValue('55');
   });
 
   test('task completion with prefilled form', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('User registration with vars');
     await taskDetailsPage.assignToMeButton.click();
 
-    await expect(taskDetailsPage.nameInput).toHaveValue('Jane');
-    await expect(taskDetailsPage.addressInput).toHaveValue('');
-    await expect(taskDetailsPage.ageInput).toHaveValue('50');
+    await expect(formJSDetailsPage.nameInput).toHaveValue('Jane');
+    await expect(formJSDetailsPage.addressInput).toHaveValue('');
+    await expect(formJSDetailsPage.ageInput).toHaveValue('50');
 
-    await taskDetailsPage.nameInput.fill('Jon');
-    await taskDetailsPage.addressInput.fill('Earth');
-    await taskDetailsPage.ageInput.fill('21');
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.nameInput.fill('Jon');
+    await formJSDetailsPage.addressInput.fill('Earth');
+    await formJSDetailsPage.ageInput.fill('21');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('User registration with vars');
 
-    await expect(taskDetailsPage.nameInput).toHaveValue('Jon');
-    await expect(taskDetailsPage.addressInput).toHaveValue('Earth');
-    await expect(taskDetailsPage.ageInput).toHaveValue('21');
+    await expect(formJSDetailsPage.nameInput).toHaveValue('Jon');
+    await expect(formJSDetailsPage.addressInput).toHaveValue('Earth');
+    await expect(formJSDetailsPage.ageInput).toHaveValue('21');
   });
 
   test('should rerender forms properly', async ({
     taskPanelPage,
-    taskDetailsPage,
+    formJSDetailsPage,
   }) => {
     await taskPanelPage.openTask('User Task with form rerender 1');
-    await expect(taskDetailsPage.nameInput).toHaveValue('Mary');
+    await expect(formJSDetailsPage.nameInput).toHaveValue('Mary');
 
     await taskPanelPage.openTask('User Task with form rerender 2');
-    await expect(taskDetailsPage.nameInput).toHaveValue('Stuart');
+    await expect(formJSDetailsPage.nameInput).toHaveValue('Stuart');
   });
 
   test('task completion with number form by input', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('UserTask_Number');
     await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.numberInput.fill('4');
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.numberInput.fill('4');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('UserTask_Number');
 
-    await expect(taskDetailsPage.numberInput).toHaveValue('4');
+    await expect(formJSDetailsPage.numberInput).toHaveValue('4');
   });
 
   test('task completion with number form by buttons', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('UserTask_Number');
     await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.incrementButton.click();
-    await expect(taskDetailsPage.numberInput).toHaveValue('1');
-    await taskDetailsPage.incrementButton.click();
-    await expect(taskDetailsPage.numberInput).toHaveValue('2');
-    await taskDetailsPage.decrementButton.click();
-    await expect(taskDetailsPage.numberInput).toHaveValue('1');
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.incrementButton.click();
+    await expect(formJSDetailsPage.numberInput).toHaveValue('1');
+    await formJSDetailsPage.incrementButton.click();
+    await expect(formJSDetailsPage.numberInput).toHaveValue('2');
+    await formJSDetailsPage.decrementButton.click();
+    await expect(formJSDetailsPage.numberInput).toHaveValue('1');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('UserTask_Number');
-    await expect(taskDetailsPage.numberInput).toHaveValue('1');
+    await expect(formJSDetailsPage.numberInput).toHaveValue('1');
   });
 
   test('task completion with date and time form', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Date and Time Task');
     await taskDetailsPage.assignToMeButton.click();
 
-    await fillDate('1/1/3000');
-    await enterTime('12:00 PM');
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.fillDate('1/1/3000');
+    await formJSDetailsPage.enterTime('12:00 PM');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Date and Time Task');
 
-    await expect(taskDetailsPage.dateInput).toHaveValue('1/1/3000');
-    await expect(taskDetailsPage.timeInput).toHaveValue('12:00 PM');
+    await expect(formJSDetailsPage.dateInput).toHaveValue('1/1/3000');
+    await expect(formJSDetailsPage.timeInput).toHaveValue('12:00 PM');
   });
 
   test('task completion with checkbox form', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Checkbox Task');
     await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.checkbox.check();
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.checkbox.check();
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Checkbox Task');
 
-    await expect(taskDetailsPage.checkbox).toBeChecked();
+    await expect(formJSDetailsPage.checkbox).toBeChecked();
   });
 
   test('task completion with select form', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
@@ -344,19 +354,20 @@ test.describe('task details page', () => {
     await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
-    await selectDropdownValue('Value');
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.selectDropdownValue('Value');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Select User Task');
 
-    await expect(taskDetailsPage.form.getByText('Value')).toBeVisible();
+    await expect(formJSDetailsPage.form.getByText('Value')).toBeVisible();
   });
 
   test('task completion with radio button form', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
@@ -364,7 +375,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assignToMeButton.click();
 
     await page.getByText('Value').check();
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -376,6 +387,7 @@ test.describe('task details page', () => {
   test('task completion with checklist form', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
@@ -384,7 +396,7 @@ test.describe('task details page', () => {
 
     await page.getByRole('checkbox', {name: 'Value1'}).check();
     await page.getByRole('checkbox', {name: 'Value2'}).check();
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -398,6 +410,7 @@ test.describe('task details page', () => {
   test.skip('task completion with tag list form', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     test.slow();
@@ -405,23 +418,24 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('Tag list Task');
     await taskDetailsPage.assignToMeButton.click();
 
-    await selectTaglistValues(['Value 2', 'Value']);
-    await taskDetailsPage.completeTaskButton.click();
+    await formJSDetailsPage.selectTaglistValues(['Value 2', 'Value']);
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Tag list Task');
 
     await expect(
-      taskDetailsPage.form.getByText('Value', {exact: true}),
+      formJSDetailsPage.form.getByText('Value', {exact: true}),
     ).toBeVisible();
-    await expect(taskDetailsPage.form.getByText('Value 2')).toBeVisible();
+    await expect(formJSDetailsPage.form.getByText('Value 2')).toBeVisible();
   });
 
   // TODO issue #3719
   test.skip('task completion with text template form', async ({
     taskPanelPage,
     taskDetailsPage,
+    formJSDetailsPage,
     page,
   }) => {
     test.slow();
@@ -429,15 +443,15 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('Text_Templating_Form_Task');
     await taskDetailsPage.assignToMeButton.click();
 
-    await expect(taskDetailsPage.form).toContainText('Hello Jane');
-    await expect(taskDetailsPage.form).toContainText('You are 50 years old');
-    await taskDetailsPage.completeTaskButton.click();
+    await expect(formJSDetailsPage.form).toContainText('Hello Jane');
+    await expect(formJSDetailsPage.form).toContainText('You are 50 years old');
+    await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Text_Templating_Form_Task');
 
-    await expect(taskDetailsPage.form).toContainText('Hello Jane');
-    await expect(taskDetailsPage.form).toContainText('You are 50 years old');
+    await expect(formJSDetailsPage.form).toContainText('Hello Jane');
+    await expect(formJSDetailsPage.form).toContainText('You are 50 years old');
   });
 });
