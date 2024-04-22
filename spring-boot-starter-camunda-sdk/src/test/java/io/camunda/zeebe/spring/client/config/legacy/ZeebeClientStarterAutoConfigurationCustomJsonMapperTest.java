@@ -13,26 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.config;
+package io.camunda.zeebe.spring.client.config.legacy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
+import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
+import io.camunda.zeebe.spring.common.json.SdkObjectMapper;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(SpringExtension.class)
@@ -55,12 +60,12 @@ import org.springframework.test.util.ReflectionTestUtils;
     })
 @ContextConfiguration(
     classes = {
-      CamundaAutoConfiguration.class,
-      ZeebeClientStarterAutoConfigurationTest.TestConfig.class
+      ZeebeClientStarterAutoConfigurationCustomJsonMapperTest.TestConfig.class,
+      CamundaAutoConfiguration.class
     })
-public class ZeebeClientStarterAutoConfigurationTest {
+public class ZeebeClientStarterAutoConfigurationCustomJsonMapperTest {
 
-  @Autowired private JsonMapper jsonMapper;
+  @Autowired private io.camunda.zeebe.client.api.JsonMapper jsonMapper;
   @Autowired private ZeebeClientProdAutoConfiguration autoConfiguration;
   @Autowired private ApplicationContext applicationContext;
 
@@ -69,13 +74,15 @@ public class ZeebeClientStarterAutoConfigurationTest {
     assertThat(jsonMapper).isNotNull();
     assertThat(autoConfiguration).isNotNull();
 
-    final Map<String, JsonMapper> jsonMapperBeans =
-        applicationContext.getBeansOfType(JsonMapper.class);
+    final Map<String, io.camunda.zeebe.client.api.JsonMapper> jsonMapperBeans =
+        applicationContext.getBeansOfType(io.camunda.zeebe.client.api.JsonMapper.class);
     final Object objectMapper = ReflectionTestUtils.getField(jsonMapper, "objectMapper");
 
-    assertThat(jsonMapperBeans.size()).isEqualTo(1);
-    assertThat(jsonMapperBeans.containsKey("zeebeJsonMapper")).isTrue();
-    assertThat(jsonMapperBeans.get("zeebeJsonMapper")).isSameAs(jsonMapper);
+    assertThat(jsonMapperBeans.size()).isEqualTo(2);
+    assertThat(jsonMapperBeans.containsKey("overridingJsonMapper")).isTrue();
+    assertThat(jsonMapperBeans.get("overridingJsonMapper")).isSameAs(jsonMapper);
+    assertThat(jsonMapperBeans.containsKey("aSecondJsonMapper")).isTrue();
+    assertThat(jsonMapperBeans.get("aSecondJsonMapper")).isNotSameAs(jsonMapper);
     assertThat(objectMapper).isNotNull();
     assertThat(objectMapper).isInstanceOf(ObjectMapper.class);
     assertThat(((ObjectMapper) objectMapper).getDeserializationConfig()).isNotNull();
@@ -83,17 +90,21 @@ public class ZeebeClientStarterAutoConfigurationTest {
             ((ObjectMapper) objectMapper)
                 .getDeserializationConfig()
                 .isEnabled(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES))
-        .isFalse();
+        .isTrue();
     assertThat(
             ((ObjectMapper) objectMapper)
                 .getDeserializationConfig()
                 .isEnabled(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES))
-        .isFalse();
+        .isTrue();
   }
 
   @Test
   void testClientConfiguration() {
     final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
+    final io.camunda.zeebe.client.api.JsonMapper clientJsonMapper =
+        AopTestUtils.getUltimateTargetObject(client.getConfiguration().getJsonMapper());
+    assertThat(clientJsonMapper).isSameAs(jsonMapper);
+    assertThat(clientJsonMapper).isSameAs(applicationContext.getBean("overridingJsonMapper"));
     assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("localhost:1234");
     assertThat(client.getConfiguration().getGrpcAddress().toString())
         .isEqualTo("https://localhost:1234");
@@ -108,11 +119,37 @@ public class ZeebeClientStarterAutoConfigurationTest {
         .isEqualTo(Duration.ofSeconds(99));
   }
 
+  @EnableConfigurationProperties(CamundaClientProperties.class)
   public static class TestConfig {
-
     @Bean
-    public ObjectMapper objectMapper() {
-      return new ObjectMapper();
+    public io.camunda.zeebe.spring.common.json.JsonMapper commonJsonMapper() {
+      return new SdkObjectMapper();
+    }
+
+    @Primary
+    @Bean(name = "overridingJsonMapper")
+    public io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper() {
+      final ObjectMapper objectMapper =
+          new ObjectMapper()
+              .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, true)
+              .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true);
+      return new ZeebeObjectMapper(objectMapper);
+    }
+
+    @Bean(name = "aSecondJsonMapper")
+    public io.camunda.zeebe.client.api.JsonMapper aSecondJsonMapper() {
+      final ObjectMapper objectMapper =
+          new ObjectMapper()
+              .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, true)
+              .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true);
+      return new ZeebeObjectMapper(objectMapper);
+    }
+
+    @Bean(name = "jsonMapper")
+    public ZeebeClientStarterAutoConfigurationCustomJsonMapperTest.JsonMapper jsonMapper() {
+      return new ZeebeClientStarterAutoConfigurationCustomJsonMapperTest.JsonMapper();
     }
   }
+
+  private static final class JsonMapper {}
 }
