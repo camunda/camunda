@@ -1,0 +1,373 @@
+name: Zeebe Release Workflow
+on:
+  workflow_call:
+    inputs:
+      releaseBranch:
+        description: 'The branch to perform the release on, defaults to `release-$releaseVersion`'
+        type: string
+        required: false
+        default: ''
+      releaseVersion:
+        description: 'The version to be build and released. If no releaseBranch specified, expecting `release-$releaseVersion` to already exist.'
+        type: string
+        required: true
+      nextDevelopmentVersion:
+        description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
+        type: string
+        required: true
+      isLatest:
+        description: 'Whether this is the latest release and the docker image should be tagged as camunda/zeebe:latest'
+        type: boolean
+        required: false
+        default: false
+      dryRun:
+        description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
+        type: boolean
+        default: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
+  RELEASE_VERSION: ${{ inputs.releaseVersion }}
+
+jobs:
+  release:
+    name: Maven & Go Release
+    runs-on: gcp-core-16-release
+    outputs:
+      releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
+      releaseBranch: ${{ env.RELEASE_BRANCH }}
+    env:
+      DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
+      PUSH_CHANGES: ${{ inputs.dryRun == false }}
+    steps:
+      - name: Output Inputs
+        run: echo "${{ toJSON(github.event.inputs) }}"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_USR;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+      - name: Git User Setup
+        run: |
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
+      - name: Install Maven Central GPG Key
+        # setup-maven supports this as well but needs the key in the armor ascii format,
+        # while we only have it plain bas64 encoded
+        # see https://github.com/actions/setup-java/issues/100#issuecomment-742679976
+        run: |
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC }}" \
+            | base64 --decode \
+            | gpg -q --allow-secret-key-import --import --no-tty --batch --yes
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
+            | base64 --decode \
+            | gpg -q --import --no-tty --batch --yes
+      - name: Setup Github cli
+        # On non-Github hosted runners it may be missing
+        # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
+        run: |
+          type -p curl >/dev/null || sudo apt install curl -y
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+      - name: Setup Zeebe Build Tooling
+        uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+      - name: Set and commit Go Client version
+        run: |
+          pushd clients/go/internal/embedded
+          echo "${RELEASE_VERSION}" > data/VERSION
+
+          git commit -am "build(project): update go embedded version data"
+      - name: Build Go Client
+        uses: ./.github/actions/build-zeebe
+        with:
+          java: false
+      - uses: s4u/maven-settings-action@v3.0.0
+        with:
+          servers: |
+            [{
+                "id": "camunda-nexus",
+                "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
+                "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
+            },
+            {
+                "id": "central",
+                "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
+                "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
+            }]
+          mirrors: |
+            [{
+                "id": "camunda-nexus",
+                "name": "Camunda Nexus",
+                "mirrorOf": "camunda-nexus",
+                "url": "https://repository.nexus.camunda.cloud/content/groups/internal/"
+            }]
+      - name: Maven Prepare Release
+        id: maven-prepare-release
+        run: |
+          # Preparing the maven release
+          # https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html
+          # https://maven.apache.org/maven-release/maven-release-plugin/usage/prepare-release.html
+          #
+          # -DcompletionGoals
+          #   Goals to run on completion of the preparation step, after transformation back to the next development
+          #   version but before committing. Space delimited.
+          #   We apply spotless to make sure that pom format is correct before committing.
+          #
+          # -DpreparationGoals 
+          #   Goals to run as part of the preparation step, after transformation but before committing. Space delimited.
+          #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later) so we set it to empty
+          # 
+          # -Darguments
+          #   Additional arguments to pass to the Maven executions, separated by spaces.
+          #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
+          #   This is the reason why we have to set it at least as empty string.
+          ./mvnw release:prepare -B \
+            -Dresume=false \
+            -Dtag=${RELEASE_VERSION} \
+            -DreleaseVersion=${RELEASE_VERSION} \
+            -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
+            -DpushChanges=${PUSH_CHANGES} \
+            -DremoteTagging=${PUSH_CHANGES} \
+            -DcompletionGoals="spotless:apply" \
+            -P-autoFormat \
+            -DpreparationGoals="" \
+            -Darguments=''
+
+      - name: Maven Perform Release
+        id: maven-perform-release
+        env:
+          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
+        run: |
+          # Perform a maven release
+          # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
+          # https://maven.apache.org/maven-release/maven-release-plugin/usage/perform-release.html
+
+          # The following env var is used to include the previously built go artifacts into the final maven release build.
+          # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
+          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+          export ZBCTL_ROOT_DIR=${PWD}
+
+          # -P-integration-tests,-autoFormat
+          #   In order to disable QA/IT and the auto formatting during the release.
+          #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
+          ./mvnw release:perform -B \
+            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
+            -DlocalCheckout=${{ inputs.dryRun }} \
+            -P-integration-tests,-autoFormat \
+            -Darguments='-T0.5C -P-integration-tests,-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+
+          # switch to the directory to which maven checks out the release tag
+          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+          pushd target/checkout
+          export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
+          echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
+          popd
+      - name: Collect Release artifacts
+        id: release-artifacts
+        run: |
+          ARTIFACT_DIR=$(mktemp -d)
+          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz "${ARTIFACT_DIR}/"
+          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.zip "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl.exe "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl.darwin "${ARTIFACT_DIR}/"
+          echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
+      - name: Upload Zeebe Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+          path: ${{ steps.release-artifacts.outputs.dir }}
+          retention-days: 5
+      - name: Update Compat Version
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
+            exit 0
+          fi
+
+          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
+          FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
+          rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
+          git commit -am "build(project): update java compat versions"
+      - name: Go Post-Release
+        run: |
+          # Publish Go tag for the release
+          git tag "clients/go/v${RELEASE_VERSION}"
+          if [ "$PUSH_CHANGES" = "true" ]; then
+            git push origin "clients/go/v${RELEASE_VERSION}"
+          fi
+
+          # Prepare Go version for the next release
+          pushd "clients/go/internal/embedded" || exit $?
+
+          echo "${DEVELOPMENT_VERSION}" > data/VERSION
+
+          git commit -am "build(project): prepare next development version (Go client)"
+      - name: Push Changes to Release branch
+        if: ${{ inputs.dryRun == false }}
+        run: git push origin "${RELEASE_BRANCH}"
+      - name: Cleanup Maven Central GPG Key
+        # make sure we always remove the imported signing key to avoid it leaking on runners
+        if: always()
+        run: rm -rf $HOME/.gnupg
+  github:
+    needs: release
+    name: Github Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Create Artifact Checksums
+        id: checksum
+        run: |
+          for filename in *; do
+            checksumFile="${filename}.sha1sum"
+            sha1sum "${filename}" > "${checksumFile}"
+            sha1sumResult=$?
+            if [ ! -f "${checksumFile}" ]; then
+              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
+              exit 1
+            fi
+          done
+      - name: Determine if Pre-Release
+        id: pre-release
+        run: |
+          shopt -s nocasematch # set matching to case insensitive
+          PRE_RELEASE=false
+          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
+            PRE_RELEASE=true
+          fi
+          shopt -u nocasematch # reset it
+          echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
+      - name: Create Github release
+        uses: ncipollo/release-action@v1
+        if: ${{ inputs.dryRun == false }}
+        with:
+          name: ${{ inputs.releaseVersion }}
+          artifacts: "*"
+          artifactErrorsFailBuild: true
+          draft: true
+          body: Release ${{ inputs.releaseVersion }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ steps.pre-release.result }}
+          tag: ${{ inputs.releaseVersion }}
+  docker:
+    needs: release
+    name: Docker Image Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    env:
+      PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+      DOCKER_IMAGE: camunda/zeebe
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Download Zeebe Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Build Docker Image
+        uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
+        with:
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          # pushes to local registry for verification prior pushing to remote
+          push: true
+          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+          platforms: ${{ env.PLATFORMS }}
+      - name: Verify Docker image
+        uses: ./.github/actions/verify-zeebe-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-zeebe-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          platforms: ${{ env.PLATFORMS }}
+      - name: Sync Docker Image to DockerHub
+        id: push-docker
+        if: ${{ inputs.dryRun == false }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-zeebe-docker.outputs.image }}
+  snyk:
+    name: Snyk Monitor
+    needs: [ docker, release ]
+    # skip if the version contains a dash as a quick test for -alpha, -rc, -SNAPSHOT, etc.
+    if: ${{ !contains(inputs.releaseVersion, '-') }}
+    concurrency:
+      group: release-snyk-${{ inputs.releaseVersion }}
+      cancel-in-progress: false
+    uses: ./.github/workflows/zeebe-snyk.yml
+    with:
+      # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
+      ref: ${{ needs.release.outputs.releaseBranch }}
+      version: ${{ inputs.releaseVersion }}
+      useMinorVersion: true
+      # test instead of monitor during dry-runs
+      monitor: ${{ !inputs.dryRun }}
+      # the docker image will not be pushed during a dry-run, so we need to build it locally
+      build: ${{ inputs.dryRun }}
+      dockerImage: ${{ inputs.dryRun && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+    secrets: inherit
+
+
