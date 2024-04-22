@@ -98,7 +98,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultNameLegacy() throws NoSuchMethodException {
+  void shouldSetDefaultNameLegacy() {
     // given
     final ZeebeClientConfigurationProperties properties = legacyProperties();
     properties.getWorker().setDefaultName("defaultName");
@@ -113,7 +113,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultName() throws NoSuchMethodException {
+  void shouldSetDefaultName() {
     // given
     final CamundaClientProperties properties = properties();
     final ZeebeClientProperties zeebeClientProperties = new ZeebeClientProperties();

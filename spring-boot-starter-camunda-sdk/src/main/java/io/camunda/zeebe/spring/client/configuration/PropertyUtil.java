@@ -41,7 +41,6 @@ public class PropertyUtil {
       final Supplier<T> legacyPropertySupplier,
       final T defaultProperty,
       final Map<String, Object> configCache) {
-    T property = defaultProperty;
     if (configCache != null) {
       try {
         LOG.debug("Property {}: Loading from cache", propertyName);
@@ -52,8 +51,9 @@ public class PropertyUtil {
         LOG.debug("Error while loading cached property " + propertyName, e);
       }
     }
-    if (property == null || property.equals(defaultProperty)) {
-      LOG.debug("Propery {}: not set or default, applying legacy property", propertyName);
+    T property = defaultProperty;
+    if (property == null) {
+      LOG.debug("Property {}: not set or default, applying legacy property", propertyName);
       try {
         property = legacyPropertySupplier.get();
       } catch (final Exception e) {
@@ -61,7 +61,7 @@ public class PropertyUtil {
       }
     }
     if (property == null || property.equals(defaultProperty)) {
-      LOG.debug("Propery {}: not set or default, applying property", propertyName);
+      LOG.debug("Property {}: not set or default, applying property", propertyName);
       try {
         property = propertySupplier.get();
       } catch (final Exception e) {
@@ -69,7 +69,7 @@ public class PropertyUtil {
       }
     }
     if (property == null || property.equals(defaultProperty)) {
-      LOG.debug("Propery {}: not set or default, using default", propertyName);
+      LOG.debug("Property {}: not set or default, using default", propertyName);
       property = defaultProperty;
     }
     if (configCache != null) {
