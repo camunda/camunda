@@ -21,7 +21,6 @@ import static java.lang.String.format;
 import io.camunda.operate.store.opensearch.response.OpenSearchGetSnapshotResponse;
 import io.camunda.operate.store.opensearch.response.OpenSearchSnapshotInfo;
 import io.camunda.operate.store.opensearch.response.SnapshotState;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -34,13 +33,19 @@ public class OpenSearchSnapshotOperations extends OpenSearchSyncOperation {
     super(logger, openSearchClient);
   }
 
-  public GetRepositoryResponse getRepository(final GetRepositoryRequest.Builder requestBuilder)
-      throws IOException {
-    return openSearchClient.snapshot().getRepository(requestBuilder.build());
+  public Map<String, Object> getRepository(final GetRepositoryRequest.Builder requestBuilder) {
+    final var request = requestBuilder.build();
+    final var repository = request.name().get(0);
+    return withExtendedOpenSearchClient(
+        extendedOpenSearchClient ->
+            safe(
+                () ->
+                    extendedOpenSearchClient.arbitraryRequest(
+                        "GET", String.format("/_snapshot/%s/", repository), "{}"),
+                e -> format("Failed to get repository %s", repository)));
   }
 
-  public OpenSearchGetSnapshotResponse get(final GetSnapshotRequest.Builder requestBuilder)
-      throws IOException {
+  public OpenSearchGetSnapshotResponse get(final GetSnapshotRequest.Builder requestBuilder) {
     final var request = requestBuilder.build();
     final var repository = request.repository();
     final var snapshot = request.snapshot().get(0);
