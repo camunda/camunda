@@ -21,6 +21,7 @@ import {
   mockBatchOperations,
   mockGroupedProcesses,
   mockProcessInstances,
+  mockProcessInstancesWithOperationError,
   mockProcessXml,
   mockStatistics,
   mockResponses,
@@ -299,6 +300,94 @@ test.describe('processes page', () => {
       });
 
       await page.getByRole('columnheader', {name: 'Select all rows'}).click();
+
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`filled with data and active batchOperationId filter - ${theme}`, async ({
+      page,
+      commonPage,
+      processesPage,
+    }) => {
+      await commonPage.changeTheme(theme);
+
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          groupedProcesses: mockGroupedProcesses,
+          batchOperations: mockBatchOperations,
+          processInstances: mockProcessInstancesWithOperationError,
+          statistics: mockStatistics,
+          processXml: mockProcessXml,
+        }),
+      );
+
+      await processesPage.navigateToProcesses({
+        searchParams: {
+          active: 'true',
+          incidents: 'true',
+          batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+        },
+
+        options: {
+          waitUntil: 'networkidle',
+        },
+      });
+
+      await processesPage.displayOptionalFilter('Operation Id');
+      await processesPage.operationIdFilter.type(
+        'bf547ac3-9a35-45b9-ab06-b80b43785153',
+      );
+
+      await expect(page.getByLabel('Sort by Operation State')).toBeInViewport();
+
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`filled with data, active batchOperationId filter and error message expanded - ${theme}`, async ({
+      page,
+      commonPage,
+      processesPage,
+    }) => {
+      await commonPage.changeTheme(theme);
+
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          groupedProcesses: mockGroupedProcesses,
+          batchOperations: mockBatchOperations,
+          processInstances: mockProcessInstancesWithOperationError,
+          statistics: mockStatistics,
+          processXml: mockProcessXml,
+        }),
+      );
+
+      await processesPage.navigateToProcesses({
+        searchParams: {
+          active: 'true',
+          incidents: 'true',
+          batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+        },
+
+        options: {
+          waitUntil: 'networkidle',
+        },
+      });
+
+      await processesPage.displayOptionalFilter('Operation Id');
+      await processesPage.operationIdFilter.type(
+        'bf547ac3-9a35-45b9-ab06-b80b43785153',
+      );
+
+      const errorRow = page.getByRole('row', {name: '6755399441062827'});
+
+      await expect(errorRow).toBeInViewport();
+
+      await errorRow.getByRole('button', {name: 'Expand current row'}).click();
+
+      await expect(
+        page.getByText('Batch Operation Error Message'),
+      ).toBeInViewport();
 
       await expect(page).toHaveScreenshot();
     });
