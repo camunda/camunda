@@ -399,8 +399,6 @@ class ProcessInternalControllerTest {
       assertThat(result).isEqualTo(expectedEndpointsResponse);
     }
 
-
-
     @Test
     void getPublicEndpointsByBpmnProcessIdWhenTenantIdIsInvalid() throws Exception {
       // given
@@ -433,7 +431,7 @@ class ProcessInternalControllerTest {
   }
 
   @Nested
-  class GetProcessTests{
+  class GetProcessTests {
     @Test
     void getProcess() throws Exception {
       final var processDefinitionKey = "225599880022";
@@ -450,25 +448,48 @@ class ProcessInternalControllerTest {
               .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
       final var expectedProcessReturn =
-          new ProcessResponse().setId(processDefinitionKey).setName("Register car for rent").setBpmnProcessId("registerCarForRent").setVersion(1).setBpmnXml("<abc></abc>").setTenantId(DEFAULT_TENANT_IDENTIFIER);
+          new ProcessResponse()
+              .setId(processDefinitionKey)
+              .setName("Register car for rent")
+              .setBpmnProcessId("registerCarForRent")
+              .setVersion(1)
+              .setBpmnXml("<abc></abc>")
+              .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
-      when(processStore.getProcessByProcessDefinitionKey(processDefinitionKey)).thenReturn(providedProcessEntity);
-      final var response = mockMvc.perform(get(
-          TasklistURIs.PROCESSES_URL_V1.concat(String.format("/%s", processDefinitionKey))
-      )).andDo(print()).andReturn().getResponse();
+      when(processStore.getProcessByProcessDefinitionKey(processDefinitionKey))
+          .thenReturn(providedProcessEntity);
+      final var response =
+          mockMvc
+              .perform(
+                  get(
+                      TasklistURIs.PROCESSES_URL_V1.concat(
+                          String.format("/%s", processDefinitionKey))))
+              .andDo(print())
+              .andReturn()
+              .getResponse();
       assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-      final ProcessResponse responseObject = CommonUtils.OBJECT_MAPPER.readValue(response.getContentAsString(), new TypeReference<ProcessResponse>() {});
+      final ProcessResponse responseObject =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              response.getContentAsString(), new TypeReference<ProcessResponse>() {});
       assertThat(responseObject).isEqualTo(expectedProcessReturn);
     }
 
     @Test
     void getProcessShouldReturn404() throws Exception {
       final String processDefinitionKey = "shouldReturn404";
-      final String errorMessage = String.format("Process with key %s not found", processDefinitionKey);
-      when(processStore.getProcessByProcessDefinitionKey(processDefinitionKey)).thenThrow(new NotFoundException(errorMessage));
-      final var response = mockMvc.perform(get(
-          TasklistURIs.PROCESSES_URL_V1.concat(String.format("/%s", processDefinitionKey))
-      )).andDo(print()).andReturn().getResponse();
+      final String errorMessage =
+          String.format("Process with key %s not found", processDefinitionKey);
+      when(processStore.getProcessByProcessDefinitionKey(processDefinitionKey))
+          .thenThrow(new NotFoundException(errorMessage));
+      final var response =
+          mockMvc
+              .perform(
+                  get(
+                      TasklistURIs.PROCESSES_URL_V1.concat(
+                          String.format("/%s", processDefinitionKey))))
+              .andDo(print())
+              .andReturn()
+              .getResponse();
 
       assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(response.getContentAsString()).contains(errorMessage);
