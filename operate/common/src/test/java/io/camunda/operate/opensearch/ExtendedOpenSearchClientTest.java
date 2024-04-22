@@ -14,47 +14,52 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp;
+package io.camunda.operate.opensearch;
 
-import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.webapp.security.UserService;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.transport.Endpoint;
+import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.TransportOptions;
 
-@Ignore("Will be addressed in later issues")
-@RunWith(SpringRunner.class)
-@SpringBootTest(
-    classes = {TestApplication.class},
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {
-      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE,
-      "server.servlet.context-path = " + IndexControllerIT.CONTEXT_PATH
-    })
-public class IndexControllerIT {
+@ExtendWith(MockitoExtension.class)
+class ExtendedOpenSearchClientTest {
 
-  static final String CONTEXT_PATH = "/context-path-test/";
+  private @Mock OpenSearchTransport transport;
+  private ExtendedOpenSearchClient extendedClient;
 
-  @Autowired private TestRestTemplate webclient;
-
-  @MockBean private UserService userService;
+  @BeforeEach
+  void setUp() {
+    extendedClient = new ExtendedOpenSearchClient(transport);
+    assertThat(extendedClient).isNotNull();
+  }
 
   @Test
-  public void shouldReturnCurrentContextPath() {
-    final String baseTagWithContextPath = String.format("<base href=\"%s\"/>", CONTEXT_PATH);
-    final ResponseEntity<String> response = webclient.getForEntity("/login", String.class);
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).contains(baseTagWithContextPath);
+  void shouldUseTransportOptionsInArbitraryRequest() throws IOException {
+    when(transport.jsonpMapper()).thenReturn(new JacksonJsonpMapper());
+    when(transport.options()).thenReturn(mock(TransportOptions.class));
+    extendedClient.arbitraryRequest("GET", "/_snapshot/backups/camunda-part-1", "{}");
+    verify(transport).performRequest(anyMap(), any(Endpoint.class), any(TransportOptions.class));
+  }
+
+  @Test
+  void shouldUseTransportOptionsInSearchAsMap() throws IOException {
+    when(transport.options()).thenReturn(mock(TransportOptions.class));
+    extendedClient.searchAsMap(new SearchRequest.Builder().build());
+    verify(transport)
+        .performRequest(any(SearchRequest.class), any(Endpoint.class), any(TransportOptions.class));
   }
 }

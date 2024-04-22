@@ -35,7 +35,7 @@
     <version.lucene>8.11.3</version.lucene>
     <version.elasticsearch-client>8.10.4</version.elasticsearch-client>
     <version.opensearch>2.8.0</version.opensearch>
-    <version.spring.boot>3.2.4</version.spring.boot>
+    <version.spring.boot>3.2.5</version.spring.boot>
     <version.spring>6.1.6</version.spring>
     <version.spring-security>6.2.3</version.spring-security>
     <version.log4j>2.19.0</version.log4j>
@@ -57,8 +57,8 @@
     <version.guava>33.0.0-jre</version.guava>
     <version.httpclient>4.5.14</version.httpclient>
     <version.apache.httpclient5>5.3.1</version.apache.httpclient5>
-    <version.awssdk>2.25.33</version.awssdk>
-    <version.aws-java-sdk>1.12.703</version.aws-java-sdk>
+    <version.awssdk>2.25.35</version.awssdk>
+    <version.aws-java-sdk>1.12.705</version.aws-java-sdk>
     <version.joda-time>2.12.7</version.joda-time>
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
     <version.commons-logging>1.3.1</version.commons-logging>
@@ -73,7 +73,7 @@
     <version.opentest4j>1.3.0</version.opentest4j>
     <version.keycloak>23.0.7</version.keycloak>
     <version.docker-java-api>3.3.6</version.docker-java-api>
-    <version.bouncycastle>1.78</version.bouncycastle>
+    <version.bouncycastle>1.78.1</version.bouncycastle>
 
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
@@ -784,7 +784,7 @@
         <plugin>
           <groupId>com.github.eirslett</groupId>
           <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.12.1</version>
+          <version>1.15.0</version>
         </plugin>
 
         <plugin>

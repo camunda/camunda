@@ -92,7 +92,6 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         .get()
         .withLogStorage(atomixLogStorage)
         .withLogName("logstream-" + context.getRaftPartition().name())
-        .withNodeId(context.getNodeId())
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
         .withActorSchedulingService(context.getActorSchedulingService())

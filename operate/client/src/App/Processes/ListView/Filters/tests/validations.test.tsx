@@ -213,7 +213,7 @@ describe('Validations', () => {
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));
-    await user.click(screen.getByRole('switch', {name: 'Multiple'}));
+    await user.click(screen.getByLabelText('Multiple'));
 
     await user.type(
       screen.getByTestId('optional-filter-variable-name'),

@@ -43,7 +43,6 @@ const DangerButton: React.FC<ItemProps> = ({
     <li>
       <Button
         kind="danger--ghost"
-        tooltipPosition="left"
         iconDescription={title}
         onClick={onClick}
         disabled={disabled}

@@ -39,38 +39,22 @@ function cardinalToOrdinal(numberValue: number): string {
 class TaskDetailsPage {
   private page: Page;
   readonly assignToMeButton: Locator;
-  readonly completeButton: Locator;
   readonly unassignButton: Locator;
   readonly assignee: Locator;
-  readonly completeTaskButton: Locator;
   readonly addVariableButton: Locator;
   readonly detailsPanel: Locator;
   readonly detailsHeader: Locator;
   readonly pickATaskHeader: Locator;
   readonly emptyTaskMessage: Locator;
-  readonly nameInput: Locator;
-  readonly addressInput: Locator;
-  readonly ageInput: Locator;
   readonly variablesTable: Locator;
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
-  readonly form: Locator;
-  readonly numberInput: Locator;
-  readonly incrementButton: Locator;
-  readonly decrementButton: Locator;
-  readonly dateInput: Locator;
-  readonly timeInput: Locator;
-  readonly checkbox: Locator;
-  readonly selectDropdown: Locator;
-  readonly tagList: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.assignToMeButton = page.getByRole('button', {name: 'Assign to me'});
-    this.completeButton = page.getByRole('button', {name: 'Complete'});
     this.unassignButton = page.getByRole('button', {name: 'Unassign'});
     this.assignee = page.getByTestId('assignee');
-    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
     this.addVariableButton = page.getByRole('button', {name: 'Add Variable'});
     this.detailsPanel = this.page.getByRole('complementary', {
       name: 'Task details right panel',
@@ -82,9 +66,6 @@ class TaskDetailsPage {
     this.emptyTaskMessage = page.getByRole('heading', {
       name: /task has no variables/i,
     });
-    this.nameInput = page.getByLabel('Name*');
-    this.addressInput = page.getByLabel('Address*');
-    this.ageInput = page.getByLabel('Age');
     this.variablesTable = page.getByTestId('variables-table');
     this.nameColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Name',
@@ -92,15 +73,6 @@ class TaskDetailsPage {
     this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Value',
     });
-    this.form = page.getByTestId('embedded-form');
-    this.numberInput = this.form.getByLabel('Number');
-    this.incrementButton = page.getByRole('button', {name: 'Increment'});
-    this.decrementButton = page.getByRole('button', {name: 'Decrement'});
-    this.dateInput = page.getByPlaceholder('mm/dd/yyyy');
-    this.timeInput = page.getByPlaceholder('hh:mm ?m');
-    this.checkbox = this.form.getByLabel('Checkbox');
-    this.selectDropdown = this.form.getByText('Select').last();
-    this.tagList = page.getByPlaceholder('Search');
   }
 
   async goto(id: string) {

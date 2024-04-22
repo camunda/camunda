@@ -39,7 +39,7 @@
     <version.agrona>1.21.1</version.agrona>
     <version.assertj>3.25.3</version.assertj>
     <version.awaitility>4.2.1</version.awaitility>
-    <version.bouncycastle>1.78</version.bouncycastle>
+    <version.bouncycastle>1.78.1</version.bouncycastle>
     <version.camunda>7.21.0</version.camunda>
     <version.checkstyle>10.15.0</version.checkstyle>
     <version.commons-lang>3.14.0</version.commons-lang>
@@ -78,7 +78,7 @@
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
-    <version.protobuf-common>2.37.1</version.protobuf-common>
+    <version.protobuf-common>2.38.0</version.protobuf-common>
     <version.micrometer>1.12.5</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
     <version.sbe>1.31.1</version.sbe>
@@ -92,12 +92,12 @@
     <version.testcontainers>1.19.7</version.testcontainers>
     <version.netflix.concurrency>0.5.0</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.3</version.zeebe-test-container>
-    <version.feel-scala>1.17.5</version.feel-scala>
+    <version.feel-scala>1.17.6</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
     <version.spring>6.1.6</version.spring>
     <version.spring-security>6.2.4</version.spring-security>
-    <version.spring-boot>3.2.4</version.spring-boot>
+    <version.spring-boot>3.2.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -110,7 +110,7 @@
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.171</version.classgraph>
+    <version.classgraph>4.8.172</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.37.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.33</version.awssdk>
+    <version.awssdk>2.25.35</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -152,7 +152,7 @@
     <version.node>v20.8.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.703</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.705</version.aws-java-sdk>
     <elasticsearch-test-container.version>1.19.7</elasticsearch-test-container.version>
     <postgres-test-container.version>1.19.7</postgres-test-container.version>
     <version.elasticsearch7>7.17.20</version.elasticsearch7>
@@ -194,13 +194,12 @@
     <plugin.version.failsafe>3.2.5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
-    <plugin.version.maven-jar>3.4.0</plugin.version.maven-jar>
+    <plugin.version.maven-jar>3.4.1</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
-    <plugin.version.scala>4.8.1</plugin.version.scala>
     <plugin.version.shade>3.5.2</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.4.0</plugin.version.spotbugs>
@@ -2087,35 +2086,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>${plugin.version.resources}</version>
-        </plugin>
-
-        <!-- Scala Plugin -->
-        <plugin>
-          <groupId>net.alchim31.maven</groupId>
-          <artifactId>scala-maven-plugin</artifactId>
-          <version>${plugin.version.scala}</version>
-          <configuration>
-            <scalaVersion>${version.scala}</scalaVersion>
-            <source>${version.java}</source>
-            <target>${version.java}</target>
-          </configuration>
-          <executions>
-            <execution>
-              <id>scala-compile-first</id>
-              <goals>
-                <goal>add-source</goal>
-                <goal>compile</goal>
-              </goals>
-              <phase>process-resources</phase>
-            </execution>
-            <execution>
-              <id>scala-test-compile</id>
-              <goals>
-                <goal>testCompile</goal>
-              </goals>
-              <phase>process-test-resources</phase>
-            </execution>
-          </executions>
         </plugin>
 
         <!--This plugin's configuration is used to store Eclipse m2e settings

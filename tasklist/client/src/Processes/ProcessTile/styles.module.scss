@@ -42,12 +42,14 @@
 .title {
   @include textOverflowEllipsis;
   @include type.type-style('productive-heading-02');
+
   color: var(--cds-text-primary);
 }
 
 .subtitle {
   @include textOverflowEllipsis;
   @include type.type-style('label-01');
+
   min-height: layout.to-rem(16px);
   margin-bottom: var(--cds-spacing-06);
   color: var(--cds-text-secondary);
@@ -55,11 +57,9 @@
 
 .buttonRow {
   display: flex;
-  flex-direction: row-reverse;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-flow: row-reverse wrap;
+  place-content: end flex-end;
   gap: var(--cds-spacing-05);
-  align-content: end;
 
   & .startButton {
     margin-right: auto;

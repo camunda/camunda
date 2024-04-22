@@ -362,7 +362,7 @@ describe('<ProcessOperations />', () => {
       await screen.findByText('Please tick this box if you want to proceed.'),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /close/}));
+    await user.click(screen.getByRole('button', {name: /close/i}));
 
     await user.click(
       screen.getByRole('button', {
@@ -483,7 +483,7 @@ describe('<ProcessOperations />', () => {
 
     expect(checkbox).toBeChecked();
 
-    await user.click(screen.getByLabelText('close', {selector: 'button'}));
+    await user.click(screen.getByRole('button', {name: /close/i}));
 
     await user.click(deleteButton);
 

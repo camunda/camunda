@@ -227,7 +227,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
     if (!(element instanceof final ExecutableFlowNode node)) {
       // other elements, like sequence flows, do not have execution listeners
-      // assume that the element is activated already
+      // assume that the element is processed already
       return BpmnElementProcessor.SUCCESS;
     }
 

@@ -56,7 +56,7 @@ public final class ProcessProcessor
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
     final var activatedContext =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
@@ -70,6 +70,12 @@ public final class ProcessProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
+    return SUCCESS;
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance

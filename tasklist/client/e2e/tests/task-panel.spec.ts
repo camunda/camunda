@@ -86,6 +86,7 @@ test.describe('task panel page', () => {
   test('update task list according to user actions', async ({
     page,
     taskPanelPage,
+    formJSDetailsPage,
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
@@ -105,8 +106,8 @@ test.describe('task panel page', () => {
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
     await taskPanelPage.openTask('usertask_to_be_assigned');
 
-    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
-    await taskDetailsPage.completeButton.click();
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
+    await formJSDetailsPage.completeTaskButton.click();
     await page.reload();
 
     await expect(

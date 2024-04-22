@@ -15,16 +15,16 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {ListContainer} from './styled';
 import {TaskSkeleton} from './Task/TaskSkeleton';
+import styles from './styles.module.scss';
 
 const Skeleton: React.FC = () => {
   return (
-    <ListContainer data-testid="tasks-skeleton">
+    <div data-testid="tasks-skeleton" className={styles.listContainer}>
       {Array.from({length: 50}).map((_, index) => (
         <TaskSkeleton key={index} />
       ))}
-    </ListContainer>
+    </div>
   );
 };
 

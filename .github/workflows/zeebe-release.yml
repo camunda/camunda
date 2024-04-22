@@ -38,7 +38,7 @@ jobs:
     name: Maven & Go Release
     runs-on: gcp-core-16-release
     outputs:
-      releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
+      releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
@@ -103,10 +103,10 @@ jobs:
           echo "${RELEASE_VERSION}" > data/VERSION
 
           git commit -am "build(project): update go embedded version data"
-      - name: Build Go Client & Zeebe
+      - name: Build Go Client
         uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          java: false
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
@@ -127,27 +127,60 @@ jobs:
                 "mirrorOf": "camunda-nexus",
                 "url": "https://repository.nexus.camunda.cloud/content/groups/internal/"
             }]
-      - name: Maven Release
-        id: maven-release
-        env:
-          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
+      - name: Maven Prepare Release
+        id: maven-prepare-release
         run: |
-          # This var is used to include the previously built go artifacts into the final maven release build.
-          # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
-          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
-          export ZBCTL_ROOT_DIR=${PWD}
-          ./mvnw release:prepare release:perform -B \
-            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
+          # Preparing the maven release
+          # https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html
+          # https://maven.apache.org/maven-release/maven-release-plugin/usage/prepare-release.html
+          #
+          # -DcompletionGoals
+          #   Goals to run on completion of the preparation step, after transformation back to the next development
+          #   version but before committing. Space delimited.
+          #   We apply spotless to make sure that pom format is correct before committing.
+          #
+          # -DpreparationGoals 
+          #   Goals to run as part of the preparation step, after transformation but before committing. Space delimited.
+          #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later) so we set it to empty
+          # 
+          # -Darguments
+          #   Additional arguments to pass to the Maven executions, separated by spaces.
+          #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
+          #   This is the reason why we have to set it at least as empty string.
+          ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag=${RELEASE_VERSION} \
             -DreleaseVersion=${RELEASE_VERSION} \
             -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
             -DpushChanges=${PUSH_CHANGES} \
             -DremoteTagging=${PUSH_CHANGES} \
-            -DlocalCheckout=${{ inputs.dryRun }} \
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
-            -Darguments='-T0.5C -P-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            -DpreparationGoals="" \
+            -Darguments=''
+
+      - name: Maven Perform Release
+        id: maven-perform-release
+        env:
+          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
+        run: |
+          # Perform a maven release
+          # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
+          # https://maven.apache.org/maven-release/maven-release-plugin/usage/perform-release.html
+
+          # The following env var is used to include the previously built go artifacts into the final maven release build.
+          # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
+          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+          export ZBCTL_ROOT_DIR=${PWD}
+
+          # -P-integration-tests,-autoFormat
+          #   In order to disable QA/IT and the auto formatting during the release.
+          #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
+          ./mvnw release:perform -B \
+            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
+            -DlocalCheckout=${{ inputs.dryRun }} \
+            -P-integration-tests,-autoFormat \
+            -Darguments='-T0.5C -P-integration-tests,-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory

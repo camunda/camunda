@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.stream.Stream;
 
@@ -29,6 +30,10 @@ public final class JobRecordStream
 
   public JobRecordStream withRetries(final int retries) {
     return valueFilter(v -> v.getRetries() == retries);
+  }
+
+  public JobRecordStream withJobKind(final JobKind jobKind) {
+    return valueFilter(v -> v.getJobKind() == jobKind);
   }
 
   public JobRecordStream withProcessInstanceKey(final long processInstanceKey) {

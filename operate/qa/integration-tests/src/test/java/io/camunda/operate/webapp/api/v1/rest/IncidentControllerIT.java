@@ -64,8 +64,14 @@ public class IncidentControllerIT {
   }
 
   @Test
-  public void shouldAcceptEmptyQuery() throws Exception {
+  public void shouldAcceptEmptyJSONQuery() throws Exception {
     assertPostToWithSucceed(URI + SEARCH, "{}");
+    verify(incidentDao).search(new Query<>());
+  }
+
+  @Test
+  public void shouldAcceptEmptyQuery() throws Exception {
+    assertPostToWithSucceed(URI + SEARCH, "");
     verify(incidentDao).search(new Query<>());
   }
 
@@ -93,7 +99,7 @@ public class IncidentControllerIT {
                 .setSort(Sort.listOf(Incident.CREATION_TIME, Order.DESC)));
   }
 
-  private String getSortFor(String field, Query.Sort.Order order) {
+  private String getSortFor(final String field, final Query.Sort.Order order) {
     return "{ \"field\":\"" + field + "\", \"order\": \"" + order.name() + "\" }";
   }
 

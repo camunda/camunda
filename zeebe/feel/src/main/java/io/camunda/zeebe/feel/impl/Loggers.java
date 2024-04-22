@@ -12,4 +12,6 @@ import org.slf4j.LoggerFactory;
 
 public final class Loggers {
   public static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.feel");
+
+  private Loggers() {}
 }

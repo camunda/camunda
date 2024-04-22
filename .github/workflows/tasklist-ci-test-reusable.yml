@@ -54,7 +54,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@cd7d8d697e10461458bc61a30d094dc601a8b017
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -90,9 +90,10 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2.16.1
         if: ${{ (success() || failure()) }}
         with:
+          check_name: "Tasklist Test Results"
           files: |
-            **/target/surefire-reports/*.xml
-            **/target/failsafe-reports/TEST-*.xml
+            tasklist/**/target/surefire-reports/*.xml
+            tasklist/**/target/failsafe-reports/TEST-*.xml
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
