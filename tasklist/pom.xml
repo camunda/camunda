@@ -58,7 +58,7 @@
     <version.httpclient>4.5.14</version.httpclient>
     <version.apache.httpclient5>5.3.1</version.apache.httpclient5>
     <version.awssdk>2.25.34</version.awssdk>
-    <version.aws-java-sdk>1.12.704</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.705</version.aws-java-sdk>
     <version.joda-time>2.12.7</version.joda-time>
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
     <version.commons-logging>1.3.1</version.commons-logging>
