@@ -31,11 +31,6 @@
     <module>test-coverage</module>
   </modules>
 
-  <issueManagement>
-    <system>Git</system>
-    <url>https://github.com/camunda/tasklist/issues</url>
-  </issueManagement>
-
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
