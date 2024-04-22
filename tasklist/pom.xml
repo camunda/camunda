@@ -73,7 +73,7 @@
     <version.opentest4j>1.3.0</version.opentest4j>
     <version.keycloak>23.0.7</version.keycloak>
     <version.docker-java-api>3.3.6</version.docker-java-api>
-    <version.bouncycastle>1.78</version.bouncycastle>
+    <version.bouncycastle>1.78.1</version.bouncycastle>
 
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
