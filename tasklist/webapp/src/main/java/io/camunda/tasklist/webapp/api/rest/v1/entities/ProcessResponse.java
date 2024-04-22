@@ -132,7 +132,8 @@ public class ProcessResponse {
         .setBpmnXml(process.getBpmnXml());
   }
 
-  public static ProcessResponse fromProcessEntityWithoutBpmnXml(ProcessEntity process, String startEventFormId) {
+  public static ProcessResponse fromProcessEntityWithoutBpmnXml(
+      ProcessEntity process, String startEventFormId) {
     process.setBpmnXml(null);
     return fromProcessEntity(process, startEventFormId);
   }
@@ -146,17 +147,26 @@ public class ProcessResponse {
       return false;
     }
     final ProcessResponse that = (ProcessResponse) o;
-    return Objects.equals(id, that.id) && Objects.equals(name, that.name)
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.deepEquals(sortValues, that.sortValues) && Objects.equals(
-        version, that.version) && Objects.equals(startEventFormId, that.startEventFormId)
-        && Objects.equals(tenantId, that.tenantId) && Objects.equals(bpmnXml,
-        that.bpmnXml);
+        && Objects.deepEquals(sortValues, that.sortValues)
+        && Objects.equals(version, that.version)
+        && Objects.equals(startEventFormId, that.startEventFormId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(bpmnXml, that.bpmnXml);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, bpmnProcessId, Arrays.hashCode(sortValues), version,
-        startEventFormId, tenantId, bpmnXml);
+    return Objects.hash(
+        id,
+        name,
+        bpmnProcessId,
+        Arrays.hashCode(sortValues),
+        version,
+        startEventFormId,
+        tenantId,
+        bpmnXml);
   }
 }
