@@ -112,6 +112,9 @@
     {
       "description": "Automerge all updates with green CI.",
       "matchPackagePatterns": ["*"],
+      "excludePackagePatterns": [
+        "@types/react"
+      ],
       "automerge": true,
       "addLabels": ["automerge"]
     }
