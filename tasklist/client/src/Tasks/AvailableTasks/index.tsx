@@ -16,20 +16,15 @@
  */
 
 import {useEffect, useRef} from 'react';
-import {
-  EmptyMessage,
-  ListContainer,
-  Container,
-  EmptyMessageText,
-  EmptyListIcon,
-} from './styled';
-import {Task} from './Task';
 import {Stack} from '@carbon/react';
-import {Skeleton} from './Skeleton';
+import {Search} from '@carbon/react/icons';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {Task as TaskType} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import {BodyCompact, BodyLong} from 'modules/components/FontTokens';
+import {Task} from './Task';
+import {Skeleton} from './Skeleton';
+import styles from './styles.module.scss';
+import cn from 'classnames';
 
 type Props = {
   onScrollUp: () => Promise<TaskType[]>;
@@ -55,8 +50,10 @@ const AvailableTasks: React.FC<Props> = ({
   }, [filter]);
 
   return (
-    <Container
-      $enablePadding={tasks.length === 0 && !isLoading}
+    <div
+      className={cn(styles.container, {
+        [styles.containerPadding]: tasks.length === 0 && !isLoading,
+      })}
       title="Available tasks"
     >
       {isLoading ? (
@@ -64,7 +61,8 @@ const AvailableTasks: React.FC<Props> = ({
       ) : (
         <>
           {tasks.length > 0 && (
-            <ListContainer
+            <div
+              className={styles.listContainer}
               data-testid="scrollable-list"
               ref={scrollableListRef}
               onScroll={async (event) => {
@@ -106,22 +104,28 @@ const AvailableTasks: React.FC<Props> = ({
                   />
                 );
               })}
-            </ListContainer>
+            </div>
           )}
           {tasks.length === 0 && (
-            <Stack as={EmptyMessage} gap={5} orientation="horizontal">
-              <EmptyListIcon size={24} alt="" />
-              <Stack gap={1} as={EmptyMessageText}>
-                <BodyCompact $variant="02">No tasks found</BodyCompact>
-                <BodyLong $color="secondary">
+            <Stack
+              gap={5}
+              orientation="horizontal"
+              className={styles.emptyMessage}
+            >
+              <Search size={24} alt="" className={styles.emptyListIcon} />
+              <Stack gap={1} className={styles.emptyMessageText}>
+                <span className={styles.emptyMessageHeading}>
+                  No tasks found
+                </span>
+                <span className={styles.emptyMessageBody}>
                   There are no tasks matching your filter criteria.
-                </BodyLong>
+                </span>
               </Stack>
             </Stack>
           )}
         </>
       )}
-    </Container>
+    </div>
   );
 };
 
