@@ -11,6 +11,9 @@ on:
     paths:
       - '.github/actions/**'
       - '.github/workflows/tasklist-*'
+      - 'bom/*'
+      - 'parent/*'
+      - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'
@@ -18,6 +21,9 @@ on:
     paths:
       - '.github/actions/**'
       - '.github/workflows/tasklist-*'
+      - 'bom/*'
+      - 'parent/*'
+      - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'

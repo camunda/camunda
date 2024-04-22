@@ -7,13 +7,9 @@
     <artifactId>tasklist-qa-migration-tests-parent</artifactId>
     <version>8.6.0-SNAPSHOT</version>
   </parent>
-
-  <name>Tasklist QA Migration Tests</name>
   <artifactId>tasklist-qa-migration-tests</artifactId>
 
-  <properties>
-    <license.header>${project.baseUri}/../../../../license/license-header</license.header>
-  </properties>
+  <name>Tasklist QA Migration Tests</name>
 
   <dependencies>
 
@@ -162,18 +158,19 @@
       <scope>test</scope>
     </dependency>
 
-
   </dependencies>
 
   <build>
+    <!--
+			Enabled setting of schema version
+		 -->
+    <testResources>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/test/resources/</directory>
+      </testResource>
+    </testResources>
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -198,15 +195,6 @@
         </configuration>
       </plugin>
     </plugins>
-    <!--
-			Enabled setting of schema version
-		 -->
-    <testResources>
-      <testResource>
-        <directory>src/test/resources/</directory>
-        <filtering>true</filtering>
-      </testResource>
-    </testResources>
   </build>
 
   <profiles>

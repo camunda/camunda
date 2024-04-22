@@ -314,6 +314,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build

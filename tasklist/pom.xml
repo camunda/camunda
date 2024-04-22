@@ -2,11 +2,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Tasklist Parent</name>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.6.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
   <groupId>io.camunda</groupId>
   <artifactId>tasklist-parent</artifactId>
-  <version>8.6.0-SNAPSHOT</version>
   <packaging>pom</packaging>
+
+  <name>Tasklist Parent</name>
 
   <modules>
     <module>client</module>
@@ -29,817 +35,25 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>8.5.0</version.zeebe>
-    <version.identity>8.5.0</version.identity>
-    <version.elasticsearch>7.17.20</version.elasticsearch>
-    <version.lucene>8.11.3</version.lucene>
-    <version.elasticsearch-client>8.10.4</version.elasticsearch-client>
-    <version.opensearch>2.8.0</version.opensearch>
-    <version.spring.boot>3.2.5</version.spring.boot>
-    <version.spring>6.1.6</version.spring>
-    <version.spring-security>6.2.3</version.spring-security>
-    <version.log4j>2.19.0</version.log4j>
-    <version.junit>5.9.3</version.junit>
-    <version.jakarta.json>2.0.1</version.jakarta.json>
-    <version.micrometer>1.12.5</version.micrometer>
-    <version.mockito>5.0.0</version.mockito>
-    <version.byte.buddy>1.14.13</version.byte.buddy>
-    <version.assertj-core>3.25.3</version.assertj-core>
-    <version.jackson>2.17.0</version.jackson>
-    <version.graphql>15.1.0</version.graphql>
-    <version.graphql.tools>13.1.1</version.graphql.tools>
-    <version.graphql-java>21.3</version.graphql-java>
-    <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
-    <version.graphql-java.dataloader>3.2.0</version.graphql-java.dataloader>
-    <version.snakeyaml>2.2</version.snakeyaml>
-    <version.commons-text>1.11.0</version.commons-text>
-    <version.failsafe>2.4.4</version.failsafe>
-    <version.guava>33.0.0-jre</version.guava>
-    <version.httpclient>4.5.14</version.httpclient>
-    <version.apache.httpclient5>5.3.1</version.apache.httpclient5>
-    <version.awssdk>2.25.35</version.awssdk>
-    <version.aws-java-sdk>1.12.705</version.aws-java-sdk>
-    <version.joda-time>2.12.7</version.joda-time>
-    <version.hdr-histogram>2.1.12</version.hdr-histogram>
-    <version.commons-logging>1.3.1</version.commons-logging>
-    <version.protobuf>3.25.3</version.protobuf>
-    <version.jetbrains>24.1.0</version.jetbrains>
-    <version.javassist>3.29.0-GA</version.javassist>
-    <version.commons-collections4>4.4</version.commons-collections4>
-    <version.springdoc>2.2.0</version.springdoc>
-    <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-    <version.grpc-api>1.62.2</version.grpc-api>
-    <version.jna>5.14.0</version.jna>
-    <version.opentest4j>1.3.0</version.opentest4j>
-    <version.keycloak>23.0.7</version.keycloak>
-    <version.docker-java-api>3.3.6</version.docker-java-api>
-    <version.bouncycastle>1.78.1</version.bouncycastle>
-
-    <version.node>v20.12.2</version.node>
-    <version.yarn>v1.22.21</version.yarn>
-
-    <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.4</elasticsearch-test-container.version>
-    <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
-    <postgres-test-container.version>1.19.4</postgres-test-container.version>
-    <testcontainers.version>1.19.4</testcontainers.version>
+    <!-- release parent settings -->
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist/</nexus.release.repository>
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
-    <skip.fe.build>false</skip.fe.build>
+    <license.header>${maven.multiModuleProjectDirectory}/license/license-header</license.header>
 
-    <plugin.version.license>4.3</plugin.version.license>
-    <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.6.1</plugin.version.dependency>
-    <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
-    <version.checkstyle>10.13.0</version.checkstyle>
-    <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
-    <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.19.2</plugin.version.google-java-format>
+    <skip.fe.build>true</skip.fe.build>
 
-    <license.header>${project.baseUri}/../../license/license-header</license.header>
-
-    <!-- Auth0 Dependencies -->
-    <!-- If any of the following version changes, -->
-    <!-- please check if they are compatible with "mvc-auth-commons" -->
-    <version.auth0>1.45.1</version.auth0>
-    <version.auth0.commons>1.11.0</version.auth0.commons>
-    <version.auth0.jwt>4.4.0</version.auth0.jwt>
-    <version.jakarta.servlet>6.0.0</version.jakarta.servlet>
-    <version.jwks-rsa>0.22.1</version.jwks-rsa>
-    <version.commons.lang>3.14.0</version.commons.lang>
-    <version.guava.annotations>r03</version.guava.annotations>
-    <version.commons.codec>1.16.1</version.commons.codec>
-    <version.swagger.annotations>2.2.21</version.swagger.annotations>
-    <version.json>20231013</version.json>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-
-      <!-- Tasklist Modules -->
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-webjar</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-archiver</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-850</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-860</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-data-generator</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-els-schema</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-mvc-auth-commons</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-it-tests</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-810</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-820</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-830</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-840</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-qa-migration-tests-test-fixture-850</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>zeebe-bom</artifactId>
-        <version>${version.zeebe}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${version.jackson}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-framework-bom</artifactId>
-        <version>${version.spring}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-bom</artifactId>
-        <version>${version.spring-security}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <!-- Import dependency management from Spring Boot -->
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${version.spring.boot}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>${version.guava}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.squareup.okio</groupId>
-        <artifactId>okio</artifactId>
-        <version>3.8.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.squareup.okio</groupId>
-        <artifactId>okio-jvm</artifactId>
-        <version>3.8.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.nimbusds</groupId>
-        <artifactId>nimbus-jose-jwt</artifactId>
-        <version>9.37.2</version>
-        <scope>compile</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.parsson</groupId>
-        <artifactId>parsson</artifactId>
-        <version>1.1.6</version>
-        <scope>compile</scope>
-        <exclusions>
-          <exclusion>
-            <artifactId>third-party-jackson-core</artifactId>
-            <groupId>software.amazon.awssdk</groupId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>identity-spring-boot-starter</artifactId>
-        <version>${version.identity}</version>
-      </dependency>
-
-      <!-- Elasticsearch  -->
-      <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-x-content</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-core</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.lucene</groupId>
-        <artifactId>lucene-core</artifactId>
-        <version>${version.lucene}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>co.elastic.clients</groupId>
-        <artifactId>elasticsearch-java</artifactId>
-        <version>${version.elasticsearch-client}</version>
-      </dependency>
-
-      <!-- Opensearch  -->
-      <dependency>
-        <groupId>org.opensearch.client</groupId>
-        <artifactId>opensearch-java</artifactId>
-        <version>${version.opensearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opensearch.client</groupId>
-        <artifactId>opensearch-rest-client</artifactId>
-        <version>${version.opensearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.json</groupId>
-        <artifactId>json</artifactId>
-        <version>${version.json}</version>
-      </dependency>
-
-      <!-- End Opensearch  -->
-
-      <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${version.elasticsearch}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-client</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-      <!-- END -->
-
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${version.log4j}</version>
-        <type>test-jar</type>
-      </dependency>
-
-      <dependency>
-        <groupId>org.glassfish</groupId>
-        <artifactId>jakarta.json</artifactId>
-        <version>${version.jakarta.json}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${version.junit}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <version>${version.junit}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-test-container</artifactId>
-        <version>${zeebe-test-container.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${elasticsearch-test-container.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opensearch</groupId>
-        <artifactId>opensearch-testcontainers</artifactId>
-        <version>${opensearch-testcontainers.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>postgresql</artifactId>
-        <version>${postgres-test-container.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
-        <version>${testcontainers.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.keycloak</groupId>
-        <artifactId>keycloak-admin-client</artifactId>
-        <version>${version.keycloak}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.keycloak</groupId>
-        <artifactId>keycloak-core</artifactId>
-        <version>${version.keycloak}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-registry-prometheus</artifactId>
-        <version>${version.micrometer}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-core</artifactId>
-        <version>${version.micrometer}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <version>${version.mockito}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>net.bytebuddy</groupId>
-        <artifactId>byte-buddy</artifactId>
-        <version>${version.byte.buddy}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.assertj</groupId>
-        <artifactId>assertj-core</artifactId>
-        <version>${version.assertj-core}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter</artifactId>
-        <version>${version.graphql}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-kickstart</artifactId>
-        <version>${version.graphql}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-servlet</artifactId>
-        <version>${version.graphql}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter-test</artifactId>
-        <version>${version.graphql}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test</artifactId>
-        <version>${version.graphql}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
-        <version>${version.graphql}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-tools</artifactId>
-        <version>${version.graphql.tools}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java</artifactId>
-        <version>${version.graphql-java}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java-extended-scalars</artifactId>
-        <version>${version.graphql-java.scalars}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>java-dataloader</artifactId>
-        <version>${version.graphql-java.dataloader}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>net.jodah</groupId>
-        <artifactId>failsafe</artifactId>
-        <version>${version.failsafe}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.yaml</groupId>
-        <artifactId>snakeyaml</artifactId>
-        <version>${version.snakeyaml}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-text</artifactId>
-        <version>${version.commons-text}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.httpcomponents.client5</groupId>
-        <artifactId>httpclient5</artifactId>
-        <version>${version.apache.httpclient5}</version>
-      </dependency>
-
-      <!-- Auth0 and it's direct dependencies -->
-      <dependency>
-        <groupId>com.auth0</groupId>
-        <artifactId>mvc-auth-commons</artifactId>
-        <version>${version.auth0.commons}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.auth0</groupId>
-        <artifactId>auth0</artifactId>
-        <version>${version.auth0}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.auth0</groupId>
-        <artifactId>java-jwt</artifactId>
-        <version>${version.auth0.jwt}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.auth0</groupId>
-        <artifactId>jwks-rsa</artifactId>
-        <version>${version.jwks-rsa}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>jakarta.servlet</groupId>
-        <artifactId>jakarta.servlet-api</artifactId>
-        <version>${version.jakarta.servlet}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-lang3</artifactId>
-        <version>${version.commons.lang}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava-annotations</artifactId>
-        <version>${version.guava.annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>${version.commons.codec}</version>
-      </dependency>
-
-      <!-- Start AWS -->
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-bom</artifactId>
-        <version>${version.aws-java-sdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>bom</artifactId>
-        <version>${version.awssdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.swagger.core.v3</groupId>
-        <artifactId>swagger-annotations</artifactId>
-        <version>${version.swagger.annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.swagger.core.v3</groupId>
-        <artifactId>swagger-models-jakarta</artifactId>
-        <version>${version.swagger.annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springdoc</groupId>
-        <artifactId>springdoc-openapi-starter-common</artifactId>
-        <version>${version.springdoc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springdoc</groupId>
-        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-        <version>${version.springdoc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>joda-time</groupId>
-        <artifactId>joda-time</artifactId>
-        <version>${version.joda-time}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.hdrhistogram</groupId>
-        <artifactId>HdrHistogram</artifactId>
-        <version>${version.hdr-histogram}</version>
-      </dependency>
-
-      <!-- between opensearch-rest-client and elasticsearch-rest-client -->
-      <dependency>
-        <groupId>commons-logging</groupId>
-        <artifactId>commons-logging</artifactId>
-        <version>${version.commons-logging}</version>
-      </dependency>
-
-      <!-- between opensearch-rest-client and elasticsearch-rest-client -->
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>${version.httpclient}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-bom</artifactId>
-        <version>${version.protobuf}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.jetbrains</groupId>
-        <artifactId>annotations</artifactId>
-        <version>${version.jetbrains}</version>
-      </dependency>
-
-      <!-- between graphql-spring-boot and thymeleaf -->
-      <dependency>
-        <groupId>org.javassist</groupId>
-        <artifactId>javassist</artifactId>
-        <version>${version.javassist}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-collections4</artifactId>
-        <version>${version.commons-collections4}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>identity-sdk</artifactId>
-        <version>${version.identity}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.code.findbugs</groupId>
-        <artifactId>jsr305</artifactId>
-        <version>${version.findbugs.jsr305}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-api</artifactId>
-        <version>${version.grpc-api}</version>
-      </dependency>
-
-      <!-- testcontainers and docker: see
-        https://github.com/testcontainers/testcontainers-java/issues/3308 -->
-      <dependency>
-        <groupId>net.java.dev.jna</groupId>
-        <artifactId>jna</artifactId>
-        <version>${version.jna}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opentest4j</groupId>
-        <artifactId>opentest4j</artifactId>
-        <version>${version.opentest4j}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.github.docker-java</groupId>
-        <artifactId>docker-java-api</artifactId>
-        <version>${version.docker-java-api}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcpkix-jdk18on</artifactId>
-        <version>${version.bouncycastle}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.bouncycastle</groupId>
-        <artifactId>bcprov-jdk18on</artifactId>
-        <version>${version.bouncycastle}</version>
-      </dependency>
-
-    </dependencies>
-  </dependencyManagement>
 
   <build>
     <pluginManagement>
       <plugins>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.12.1</version>
-          <configuration>
-            <forceJavacCompilerUse>true</forceJavacCompilerUse>
-            <parameters>true</parameters>
-          </configuration>
-        </plugin>
-
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>exec-maven-plugin</artifactId>
-          <version>3.1.1</version>
-        </plugin>
-
-        <plugin>
-          <groupId>com.github.eirslett</groupId>
-          <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.15.0</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.1</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.0</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>appassembler-maven-plugin</artifactId>
-          <version>2.1.0</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.6.0</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>build-helper-maven-plugin</artifactId>
-          <version>3.5.0</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-maven-plugin</artifactId>
-          <version>${version.spring.boot}</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.sonatype.plugins</groupId>
-          <artifactId>nexus-staging-maven-plugin</artifactId>
-          <version>1.6.13</version>
-          <extensions>true</extensions>
-          <configuration>
-            <detectBuildFailures>true</detectBuildFailures>
-            <serverId>camunda-nexus</serverId>
-            <nexusUrl>https://artifacts.camunda.com/artifactory/</nexusUrl>
-            <skipStaging>true</skipStaging>
-          </configuration>
-        </plugin>
-
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.6.3</version>
           <configuration>
             <skip>true</skip>
           </configuration>
@@ -848,7 +62,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.5</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -862,7 +75,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.5</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -884,7 +96,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.3.1</version>
           <configuration>
             <nonFilteredFileExtensions>
               <nonFilteredFileExtension>p12</nonFilteredFileExtension>
@@ -894,11 +105,9 @@
           </configuration>
         </plugin>
 
-        <!-- LICENSE PLUGIN -->
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>${plugin.version.license}</version>
           <configuration>
             <header>${license.header}</header>
             <includes>
@@ -911,415 +120,58 @@
           <executions>
             <execution>
               <id>add-license</id>
-              <phase>compile</phase>
               <goals>
                 <goal>format</goal>
               </goals>
+              <phase>compile</phase>
             </execution>
           </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.1</version>
-        </plugin>
-
-        <!-- CHECKSTYLE -->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>${plugin.version.checkstyle}</version>
-          <configuration>
-            <configLocation>check/.checkstyle.xml</configLocation>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <encoding>UTF-8</encoding>
-            <failOnViolation>true</failOnViolation>
-            <sourceDirectories>
-              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-              <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
-            </sourceDirectories>
-            <excludes>**/GetCustomSnapshotResponse.java</excludes>
-          </configuration>
-          <!-- dependency on build tool to reference the checkstyle cfg -->
-          <dependencies>
-            <dependency>
-              <groupId>io.camunda</groupId>
-              <artifactId>zeebe-build-tools</artifactId>
-              <version>${version.zeebe}</version>
-            </dependency>
-            <dependency>
-              <groupId>com.puppycrawl.tools</groupId>
-              <artifactId>checkstyle</artifactId>
-              <version>${version.checkstyle}</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>validate-java</id>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <phase>validate</phase>
-              <configuration/>
-            </execution>
-          </executions>
-        </plugin>
-
-        <!-- Google code format plugin -->
-        <plugin>
-          <groupId>com.diffplug.spotless</groupId>
-          <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.43.0</version>
-          <configuration>
-            <java>
-              <googleJavaFormat>
-                <version>${plugin.version.google-java-format}</version>
-                <style>GOOGLE</style>
-              </googleJavaFormat>
-            </java>
-            <!-- While other files are generally placed in a special directory, markdown
-              files are not. To make sure all markdown files are formatted, we need to
-              rely on the **/*.md pattern. This pattern will match all *.md files in all
-              subdirectories (also in all submodules). -->
-            <markdown>
-              <includes>
-                <include>**/*.md</include>
-              </includes>
-              <excludes>
-                <exclude>**/target/**/*.md</exclude>
-                <exclude>**/node_modules/**/*.md</exclude>
-                <exclude>**/client/**/*.md</exclude>
-              </excludes>
-              <flexmark/>
-            </markdown>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>com.google.googlejavaformat</groupId>
-              <artifactId>google-java-format</artifactId>
-              <version>${plugin.version.google-java-format}</version>
-            </dependency>
-          </dependencies>
         </plugin>
 
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.12</version>
+          <configuration>
+            <excludes>
+              <!--exclusions for `tasklist-common` module-->
+              <exclude>**/camunda/tasklist/entities/**/*</exclude>
+              <exclude>**/camunda/tasklist/exceptions/**/*</exclude>
+              <exclude>**/camunda/tasklist/property/**/*</exclude>
+              <!--exclusions for `tasklist-webapp` module-->
+              <exclude>**/camunda/tasklist/webapp/api/rest/v1/entities/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/management/dto/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/graphql/entity/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/rest/exception/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/config/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/es/dao/response/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/**/*ErrorController.*</exclude>
+              <exclude>**/camunda/tasklist/webapp/**/ClusterMetadata.*</exclude>
+            </excludes>
+          </configuration>
         </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <version>${plugin.version.enforcer}</version>
-          <executions>
-            <execution>
-              <id>enforce-dependency-convergence</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <dependencyConvergence>
-                    <!-- To be removed once these conflicts are resolved by identity. -->
-                    <!-- See https://github.com/camunda-cloud/identity/issues/1696 -->
-                    <excludes>
-                      <exclude>com.auth0:java-jwt</exclude>
-                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
-                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk8</exclude>
-                      <exclude>com.squareup.okio:okio</exclude>
-                    </excludes>
-                  </dependencyConvergence>
-                </rules>
-              </configuration>
-            </execution>
-            <execution>
-              <id>enforce-unique-dependencies</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
-                </rules>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>${plugin.version.dependency}</version>
-          <!-- To run with Java 11 - https://issues.apache.org/jira/browse/MDEP-613-->
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.maven.shared</groupId>
-              <artifactId>maven-dependency-analyzer</artifactId>
-              <version>${plugin.version.dependency-analyzer}</version>
-            </dependency>
-          </dependencies>
-
-          <executions>
-            <execution>
-              <id>analyze-dependencies</id>
-              <goals>
-                <goal>analyze-only</goal>
-              </goals>
-              <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
-              <phase>verify</phase>
-              <configuration>
-                <failOnWarning>true</failOnWarning>
-                <outputXML>true</outputXML>
-                <!-- dependencies not directly used in all projects during tests -->
-                <ignoredUnusedDeclaredDependencies combine.children="append">
-                  <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
-                  <dep>org.apache.logging.log4j:log4j-core</dep>
-                  <dep>io.camunda:zeebe-build-tools</dep>
-                  <dep>io.camunda:zeebe-gateway-protocol</dep>
-                  <dep>org.ow2.asm:asm</dep>
-                  <dep>org.bouncycastle:bcpkix-jdk18on</dep>
-                  <dep>org.bouncycastle:bcprov-jdk18on</dep>
-                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
-                  <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
-                  <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
-                  <dep>org.postgresql:postgresql</dep>
-                  <dep>org.springframework:spring-aspects</dep>
-                </ignoredUnusedDeclaredDependencies>
-                <ignoredNonTestScopedDependencies>
-                  <dep>org.elasticsearch:elasticsearch-x-content</dep>
-                </ignoredNonTestScopedDependencies>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-
       </plugins>
-
     </pluginManagement>
-
-    <plugins>
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <!--exclusions for `tasklist-common` module-->
-            <exclude>**/camunda/tasklist/entities/**/*</exclude>
-            <exclude>**/camunda/tasklist/exceptions/**/*</exclude>
-            <exclude>**/camunda/tasklist/property/**/*</exclude>
-            <!--exclusions for `tasklist-webapp` module-->
-            <exclude>**/camunda/tasklist/webapp/api/rest/v1/entities/**/*</exclude>
-            <exclude>**/camunda/tasklist/webapp/management/dto/**/*</exclude>
-            <exclude>**/camunda/tasklist/webapp/graphql/entity/**/*</exclude>
-            <exclude>**/camunda/tasklist/webapp/rest/exception/**/*</exclude>
-            <exclude>**/camunda/tasklist/webapp/config/**/*</exclude>
-            <exclude>**/camunda/tasklist/webapp/es/dao/response/**/*</exclude>
-            <exclude>**/camunda/tasklist/webapp/**/*ErrorController.*</exclude>
-            <exclude>**/camunda/tasklist/webapp/**/ClusterMetadata.*</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>prepare-agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
 
   <profiles>
-
-    <!-- profile to auto format -->
     <profile>
-      <id>autoFormat</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
+      <!--
+        We have to skip spotbugs analysis until we fix several findings
+        See https://github.com/camunda/zeebe/issues/17598
+      -->
+      <id>spotbugs</id>
       <build>
         <plugins>
           <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>spotless-format</id>
-                <goals>
-                  <goal>apply</goal>
-                </goals>
-                <phase>process-sources</phase>
-              </execution>
-            </executions>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-maven-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
           </plugin>
         </plugins>
       </build>
     </profile>
-
-
-    <!-- profile to perform strict validation checks -->
-    <profile>
-      <id>checkFormat</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>spotless-check</id>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-                <phase>validate</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-checkstyle-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
   </profiles>
-
-  <distributionManagement>
-    <snapshotRepository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist-snapshots/</url>
-    </snapshotRepository>
-    <repository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist/</url>
-    </repository>
-  </distributionManagement>
-
-  <scm>
-    <url>https://github.com/camunda/tasklist</url>
-    <connection>
-      scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git
-    </connection>
-    <developerConnection>
-      scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/tasklist.git
-    </developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-
-  <issueManagement>
-    <system>Git</system>
-    <url>https://github.com/camunda/tasklist/issues</url>
-  </issueManagement>
-
-  <organization>
-    <name>Camunda Services GmbH</name>
-    <url>http://www.camunda.com</url>
-  </organization>
-
-  <repositories>
-    <repository>
-      <id>zeebe</id>
-      <name>Zeebe Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>camunda-shared-services-snapshot</id>
-      <name>Shared services Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-shared-services-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>camunda-shared-services</id>
-      <name>Shared services Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-shared-services/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>zeebe-snapshots</id>
-      <name>Zeebe Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>camunda-identity</id>
-      <name>camunda identity Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-identity/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>camunda-identity-snapshot</id>
-      <name>camunda identity Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>elasticsearch</id>
-      <name>Elasticsearch Repository</name>
-      <url>https://artifacts.elastic.co/maven/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-  </repositories>
 
 </project>

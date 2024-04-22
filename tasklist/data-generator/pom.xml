@@ -8,9 +8,9 @@
     <version>8.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <artifactId>tasklist-data-generator</artifactId>
 
   <name>Tasklist Data Generator</name>
-  <artifactId>tasklist-data-generator</artifactId>
 
   <dependencies>
 
@@ -94,17 +94,5 @@
     </dependency>
 
   </dependencies>
-
-  <build>
-    <plugins>
-
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
-    </plugins>
-  </build>
 
 </project>
