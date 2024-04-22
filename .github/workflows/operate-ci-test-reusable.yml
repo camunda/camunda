@@ -87,9 +87,10 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2.16.1
         if: ${{ (success() || failure()) }}
         with:
+          check_name: "Operate Test Results"
           files: |
-            **/target/*-reports/*.xml
-            !**/target/*-reports/*-summary.xml
+            operate/**/target/*-reports/*.xml
+            !operate/**/target/*-reports/*-summary.xml
       - name: Upload Test Report
         if: ${{ (success() || failure()) }}
         uses: ./.github/actions/collect-operate-test-artifacts

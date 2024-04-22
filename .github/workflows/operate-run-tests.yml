@@ -54,8 +54,9 @@ jobs:
           comment_mode: off
           report_individual_runs: true
           report_suite_logs: error
+          check_name: "Operate Test Results"
           files: |
-            **/target/surefire-reports/*.xml
+            operate/**/target/surefire-reports/*.xml
       - name: Send Slack notification on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.25.0
