@@ -159,6 +159,9 @@ const VariableEditor: React.FC<Props> = ({
 
                       onEdit(createVariableFieldName(variable.name));
                     }}
+                    size="sm"
+                    kind="ghost"
+                    leaveDelayMs={100}
                   >
                     <Popup />
                   </IconButton>
@@ -277,6 +280,9 @@ const VariableEditor: React.FC<Props> = ({
                             onClick={() => {
                               onEdit(valueFieldName);
                             }}
+                            size="sm"
+                            kind="ghost"
+                            leaveDelayMs={100}
                           >
                             <Popup />
                           </IconButton>
@@ -285,6 +291,9 @@ const VariableEditor: React.FC<Props> = ({
                             onClick={() => {
                               fields.remove(index);
                             }}
+                            size="sm"
+                            kind="ghost"
+                            leaveDelayMs={100}
                           >
                             <Close />
                           </IconButton>
