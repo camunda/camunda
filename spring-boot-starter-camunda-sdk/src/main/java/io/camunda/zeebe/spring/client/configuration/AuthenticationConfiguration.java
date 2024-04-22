@@ -2,6 +2,8 @@ package io.camunda.zeebe.spring.client.configuration;
 
 import static java.util.Optional.*;
 
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties.ClientMode;
@@ -11,13 +13,13 @@ import io.camunda.zeebe.spring.common.auth.Authentication;
 import io.camunda.zeebe.spring.common.auth.DefaultNoopAuthentication;
 import io.camunda.zeebe.spring.common.auth.Product;
 import io.camunda.zeebe.spring.common.auth.identity.IdentityConfig;
+import io.camunda.zeebe.spring.common.auth.identity.IdentityContainer;
 import io.camunda.zeebe.spring.common.auth.jwt.JwtConfig;
 import io.camunda.zeebe.spring.common.auth.jwt.JwtCredential;
 import io.camunda.zeebe.spring.common.auth.saas.SaaSAuthentication;
 import io.camunda.zeebe.spring.common.auth.selfmanaged.SelfManagedAuthentication;
 import io.camunda.zeebe.spring.common.json.JsonMapper;
 import java.net.URL;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -83,17 +85,17 @@ public class AuthenticationConfiguration {
       final String clientSecret = clientSecret();
       final String audience = audienceForProduct(product);
       jwtConfig.addProduct(product, new JwtCredential(clientId, clientSecret, audience, issuer));
-      //      final IdentityConfiguration identityCfg =
-      //          new IdentityConfiguration(
-      //              baseUrlForProduct(Product.IDENTITY).toString(),
-      //              issuer,
-      //              issuer,
-      //              clientId,
-      //              clientSecret,
-      //              audience,
-      //              globalOidcType().name());
-      //      identityConfig.addProduct(
-      //          product, new IdentityContainer(new Identity(identityCfg), identityCfg));
+      final IdentityConfiguration identityCfg =
+          new IdentityConfiguration(
+              baseUrlForProduct(Product.IDENTITY).toString(),
+              issuer,
+              issuer,
+              clientId,
+              clientSecret,
+              audience,
+              globalOidcType().name());
+      identityConfig.addProduct(
+          product, new IdentityContainer(new Identity(identityCfg), identityCfg));
     } else {
       LOG.debug("{} is disabled", product);
     }
@@ -174,11 +176,17 @@ public class AuthenticationConfiguration {
 
   private ApiPropertiesSupplier apiPropertiesForProduct(
       final CamundaClientProperties properties, final Product product) {
-    if (Objects.requireNonNull(product) == Product.ZEEBE) {
-      return properties::getZeebe;
+    switch (product) {
+      case ZEEBE -> {
+        return properties::getZeebe;
+      }
+      case IDENTITY -> {
+        return properties::getIdentity;
+      }
+      default ->
+          throw new IllegalStateException(
+              "Could not detect auth properties supplier for product " + product);
     }
-    throw new IllegalStateException(
-        "Could not detect auth properties supplier for product " + product);
   }
 
   private <T> T getApiProperty(

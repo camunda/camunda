@@ -8,8 +8,8 @@ import org.slf4j.LoggerFactory;
 public class PropertiesUtil {
   private static final Logger LOG = LoggerFactory.getLogger(PropertiesUtil.class);
 
-  public static String getZeebeGatewayAddress(ZeebeClientConfigurationProperties properties) {
-    String connectionMode = properties.getConnectionMode();
+  public static String getZeebeGatewayAddress(final ZeebeClientConfigurationProperties properties) {
+    final String connectionMode = properties.getConnectionMode();
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOG.info("Using connection mode '{}' to connect to Zeebe", connectionMode);
       if (CONNECTION_MODE_CLOUD.equalsIgnoreCase(connectionMode)) {

@@ -19,7 +19,8 @@ import java.util.Arrays;
 
 /** Enum for supported C8 Products */
 public enum Product {
-  ZEEBE(true);
+  ZEEBE(true),
+  IDENTITY(true);
 
   private final boolean covered;
 

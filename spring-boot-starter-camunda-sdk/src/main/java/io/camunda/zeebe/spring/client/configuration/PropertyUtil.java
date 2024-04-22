@@ -21,11 +21,11 @@ public class PropertyUtil {
    * @param <T> the type of the property
    */
   public static <T> T getOrLegacyOrDefault(
-      String propertyName,
-      Supplier<T> propertySupplier,
-      Supplier<T> legacyPropertySupplier,
-      T defaultProperty,
-      Map<String, Object> configCache) {
+      final String propertyName,
+      final Supplier<T> propertySupplier,
+      final Supplier<T> legacyPropertySupplier,
+      final T defaultProperty,
+      final Map<String, Object> configCache) {
     T property = defaultProperty;
     if (configCache != null) {
       try {
@@ -33,7 +33,7 @@ public class PropertyUtil {
         if (configCache.containsKey(propertyName)) {
           return (T) configCache.get(propertyName);
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.debug("Error while loading cached property " + propertyName, e);
       }
     }
@@ -41,7 +41,7 @@ public class PropertyUtil {
       LOG.debug("Propery {}: not set or default, applying legacy property", propertyName);
       try {
         property = legacyPropertySupplier.get();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.debug("Error while loading legacy property " + propertyName, e);
       }
     }
@@ -49,7 +49,7 @@ public class PropertyUtil {
       LOG.debug("Propery {}: not set or default, applying property", propertyName);
       try {
         property = propertySupplier.get();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.debug("Error while loading property " + propertyName, e);
       }
     }
@@ -63,14 +63,15 @@ public class PropertyUtil {
     return property;
   }
 
-  public static <T> Supplier<T> prioritized(T defaultProperty, List<Supplier<T>> suppliers) {
-    for (Supplier<T> supplier : suppliers) {
+  public static <T> Supplier<T> prioritized(
+      final T defaultProperty, final List<Supplier<T>> suppliers) {
+    for (final Supplier<T> supplier : suppliers) {
       try {
-        T property = supplier.get();
+        final T property = supplier.get();
         if (property != null && !property.equals(defaultProperty)) {
           return supplier;
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         // ignore
       }
     }

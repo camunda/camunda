@@ -13,25 +13,26 @@ public class PropertiesPostProcessor implements EnvironmentPostProcessor {
 
   @Override
   public void postProcessEnvironment(
-      ConfigurableEnvironment environment, SpringApplication application) {
+      final ConfigurableEnvironment environment, final SpringApplication application) {
     try {
-      ClientMode clientMode = environment.getProperty("camunda.client.mode", ClientMode.class);
+      final ClientMode clientMode =
+          environment.getProperty("camunda.client.mode", ClientMode.class);
       if (clientMode == null) {
         return;
       }
-      YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
-      String propertiesFile = determinePropertiesFile(clientMode);
-      ClassPathResource resource = new ClassPathResource(propertiesFile);
-      List<PropertySource<?>> props = loader.load(propertiesFile, resource);
-      for (PropertySource<?> prop : props) {
+      final YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
+      final String propertiesFile = determinePropertiesFile(clientMode);
+      final ClassPathResource resource = new ClassPathResource(propertiesFile);
+      final List<PropertySource<?>> props = loader.load(propertiesFile, resource);
+      for (final PropertySource<?> prop : props) {
         environment.getPropertySources().addLast(prop); // lowest priority
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new IllegalStateException("Error while post processing camunda properties", e);
     }
   }
 
-  private String determinePropertiesFile(ClientMode clientMode) {
+  private String determinePropertiesFile(final ClientMode clientMode) {
     switch (clientMode) {
       case oidc -> {
         return "application-camunda-oidc.yaml";
@@ -39,10 +40,9 @@ public class PropertiesPostProcessor implements EnvironmentPostProcessor {
       case saas -> {
         return "application-camunda-saas.yaml";
       }
-      case simple -> {
-        return "application-camunda-simple.yaml";
+      default -> {
+        throw new IllegalStateException("Unknown client mode " + clientMode);
       }
     }
-    throw new IllegalStateException("Unknown client mode " + clientMode);
   }
 }
