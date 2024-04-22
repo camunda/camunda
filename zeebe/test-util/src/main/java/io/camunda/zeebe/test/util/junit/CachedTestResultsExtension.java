@@ -239,7 +239,7 @@ public final class CachedTestResultsExtension
       }
     }
 
-    void snapshot() {
+    synchronized void snapshot() {
       try (final var writer = Files.newBufferedWriter(path)) {
         for (final var version : cached) {
           writer.write(version.toLine());
