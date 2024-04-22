@@ -249,15 +249,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.8.4":
-  version "1.8.4"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.4.tgz#0b67527d6a352f01a9457077f87f7174772c3721"
-  integrity sha512-fDxzJ5/CfyMlina3sGVUrZSnK/aomOS7zHVnKI8TAAejDXoNDkvTjmeqjyk8N0347DynUqaWVOB7IUJsohyJgw==
+"@bpmn-io/form-js-carbon-styles@1.8.5":
+  version "1.8.5"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.5.tgz#70783dbcd77827bff33c6c9583437bf70553e3cc"
+  integrity sha512-i7lnF5k78tZjNENPgAycHgsuUGBc+aGaO+TGyjZZcntZ/fOHC3r96F1oqm9phaIs68HnWxL+toUf1a4QoxANvw==
 
-"@bpmn-io/form-js-viewer@1.8.4":
-  version "1.8.4"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.4.tgz#9af77b06dae70593076040ee44a923b71a78788a"
-  integrity sha512-eyEjf5LK7xKwkGmSzY9JKwBNP5iOYpl5xUoYH7TlhN2zExOZCI//2WPYn2cQ2VceCwEPNIrLIg8F8rRmZMtT0g==
+"@bpmn-io/form-js-viewer@1.8.5":
+  version "1.8.5"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.5.tgz#e945d7ca966a174e29cfd73cf7bd922456047bee"
+  integrity sha512-HHI83nl4XNj/WqD+PfYMwGJuq68gh2FZulfWfLJ3QiAhp306eRg+FIGyF8BJdASw2knjmVKtqkIbCZMcVDdPRQ==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -5662,10 +5662,10 @@ vite-tsconfig-paths@4.3.2:
     globrex "^0.1.2"
     tsconfck "^3.0.3"
 
-vite@5.2.9, vite@^5.0.0:
-  version "5.2.9"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-5.2.9.tgz#cd9a356c6ff5f7456c09c5ce74068ffa8df743d9"
-  integrity sha512-uOQWfuZBlc6Y3W/DTuQ1Sr+oIXWvqljLvS881SVmAj00d5RdgShLcuXWxseWPd4HXwiYBFW/vXHfKFeqj9uQnw==
+vite@5.2.10, vite@^5.0.0:
+  version "5.2.10"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-5.2.10.tgz#2ac927c91e99d51b376a5c73c0e4b059705f5bd7"
+  integrity sha512-PAzgUZbP7msvQvqdSD+ErD5qGnSFiGOoWmV5yAKUEI0kdhjbH6nMWVyZQC/hSc4aXwc0oJ9aEdIiF9Oje0JFCw==
   dependencies:
     esbuild "^0.20.1"
     postcss "^8.4.38"
