@@ -51,16 +51,13 @@ describe('TimeStampPill', () => {
   it('should render "Show" / "Hide" label', async () => {
     const {user} = render(<TimeStampPill />, {wrapper: Wrapper});
 
-    expect(screen.getByText('Show End Date')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByRole('switch', {name: 'Show End Date'})).toBeEnabled();
+      expect(screen.getByLabelText('Show End Date')).toBeEnabled();
     });
 
-    await user.click(screen.getByRole('switch', {name: 'Show End Date'}));
+    await user.click(screen.getByLabelText('Show End Date'));
 
-    expect(
-      await screen.findByRole('switch', {name: 'Hide End Date'}),
-    ).toBeInTheDocument();
+    expect(await screen.findByLabelText('Hide End Date')).toBeInTheDocument();
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {
