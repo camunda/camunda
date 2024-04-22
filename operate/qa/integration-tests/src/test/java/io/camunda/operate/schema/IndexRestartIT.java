@@ -53,13 +53,15 @@ public class IndexRestartIT {
   @Autowired private OperateProperties operateProperties;
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private SchemaManager schemaManager;
-  @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
-  private final String testDescriptorName = "operate-test_descriptor-8.3.0_";
+  private List<AbstractIndexDescriptor> indexDescriptors;
+  private String testDescriptorName;
 
   @BeforeAll
   public void init() throws Exception {
+    schemaManager.createSchema();
     final TestDescriptor testDescriptor = new TestDescriptor();
-    indexDescriptors.add(testDescriptor);
+    indexDescriptors = List.of(testDescriptor);
+    testDescriptorName = testDescriptor.getFullQualifiedName();
     ReflectionTestUtils.setField(schemaManager, "indexDescriptors", indexDescriptors);
     createIndex(idxName(""), List.of(Map.of("test_name1", "test_value1")));
     createIndex(idxName("index1"), List.of(Map.of("test_name1", "test_value1")));
@@ -151,16 +153,6 @@ public class IndexRestartIT {
   public class TestDescriptor extends AbstractIndexDescriptor implements Prio4Backup {
 
     public static final String INDEX_NAME = "test_descriptor";
-    public static final String ID = "id";
-    public static final String KEY = "key";
-    public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-    public static final String NAME = "name";
-    public static final String VERSION = "version";
-    public static final String BPMN_XML = "bpmnXml";
-    public static final String RESOURCE_NAME = "resourceName";
-    public static final String FLOWNODES = "flowNodes";
-    public static final String FLOWNODE_ID = "id";
-    public static final String FLOWNODE_NAME = "name";
 
     @Override
     public String getIndexName() {
