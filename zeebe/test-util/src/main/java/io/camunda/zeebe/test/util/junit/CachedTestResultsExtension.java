@@ -215,7 +215,7 @@ public final class CachedTestResultsExtension
     void confirm(final String id) {
       final var invocation = staged.remove(id);
       if (invocation == null) {
-        throw new IllegalArgumentException("No staged invocation with id " + id + " found.");
+        return;
       }
       if (!cached.add(invocation)) {
         throw new IllegalStateException("Invocation " + invocation + "is already cached.");
