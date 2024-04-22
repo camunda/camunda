@@ -1,4 +1,4 @@
-name: Zeebe Release Workflow
+name: Camunda Platform Release Workflow
 on:
   workflow_call:
     inputs:
@@ -16,7 +16,7 @@ on:
         type: string
         required: true
       isLatest:
-        description: 'Whether this is the latest release and the docker image should be tagged as camunda/zeebe:latest'
+        description: 'Whether this is the latest release and the docker image should be tagged as camunda/{component}:latest'
         type: boolean
         required: false
         default: false
@@ -90,7 +90,7 @@ jobs:
           && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
           && sudo apt update \
           && sudo apt install gh -y
-      - name: Setup Zeebe Build Tooling
+      - name: Setup Build Tooling
         uses: ./.github/actions/setup-zeebe
         with:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -198,7 +198,7 @@ jobs:
           cp clients/go/cmd/zbctl/dist/zbctl.exe "${ARTIFACT_DIR}/"
           cp clients/go/cmd/zbctl/dist/zbctl.darwin "${ARTIFACT_DIR}/"
           echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
-      - name: Upload Zeebe Release Artifacts
+      - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
@@ -317,7 +317,7 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Zeebe Release Artifacts
+      - name: Download Release Artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}

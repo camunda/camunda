@@ -1,4 +1,4 @@
-name: Zeebe Release
+name: Camunda Platform Release
 on:
   workflow_dispatch:
     inputs:
@@ -34,7 +34,7 @@ concurrency:
 jobs:
   run-release:
     name: "Release ${{ inputs.releaseVersion }} from ${{ inputs.releaseBranch }}"
-    uses: ./.github/workflows/zeebe-release.yml
+    uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     with:
       releaseBranch: ${{ inputs.releaseBranch }}
