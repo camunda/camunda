@@ -24,6 +24,7 @@ import {TaskDetailsPage} from './pages/TaskDetailsPage';
 import {TaskPanelPage} from './pages/TaskPanelPage';
 import {PublicFormsPage} from './pages/PublicFormsPage';
 import {ProcessesPage} from './pages/ProcessesPage';
+import {FormJSDetailsPage} from './pages/FormJSDetailsPage';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -35,6 +36,7 @@ type PlaywrightFixtures = {
   taskPanelPage: TaskPanelPage;
   publicFormsPage: PublicFormsPage;
   processesPage: ProcessesPage;
+  formJSDetailsPage: FormJSDetailsPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -79,6 +81,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   processesPage: async ({page}, use) => {
     await use(new ProcessesPage(page));
+  },
+  formJSDetailsPage: async ({page}, use) => {
+    await use(new FormJSDetailsPage(page));
   },
 });
 

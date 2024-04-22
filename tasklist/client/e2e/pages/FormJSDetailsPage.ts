@@ -15,29 +15,63 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-// import {Page} from '@playwright/test';
-// import {TaskdetailsPage} from '@pages/TaskDetailsPage';
+import {Locator, Page} from '@playwright/test';
 
-export async function fillDate(date: string) {
-  await this.dateInput.click();
-  await this.dateInput.fill(date);
-  await this.dateInput.press('Enter');
-}
+class FormJSDetailsPage {
+  private page: Page;
+  readonly completeTaskButton: Locator;
+  readonly addVariableButton: Locator;
+  readonly nameInput: Locator;
+  readonly addressInput: Locator;
+  readonly ageInput: Locator;
+  readonly numberInput: Locator;
+  readonly incrementButton: Locator;
+  readonly decrementButton: Locator;
+  readonly dateInput: Locator;
+  readonly timeInput: Locator;
+  readonly checkbox: Locator;
+  readonly selectDropdown: Locator;
+  readonly tagList: Locator;
+  readonly form: Locator;
 
-export async function enterTime(time: string) {
-  await this.timeInput.click();
-  await this.page.getByText(time).click();
-}
+  constructor(page: Page) {
+    this.page = page;
+    this.form = page.getByTestId('embedded-form');
+    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
+    this.nameInput = page.getByLabel('Name*');
+    this.addressInput = page.getByLabel('Address*');
+    this.ageInput = page.getByLabel('Age');
+    this.numberInput = this.form.getByLabel('Number');
+    this.incrementButton = page.getByRole('button', {name: 'Increment'});
+    this.decrementButton = page.getByRole('button', {name: 'Decrement'});
+    this.dateInput = page.getByPlaceholder('mm/dd/yyyy');
+    this.timeInput = page.getByPlaceholder('hh:mm ?m');
+    this.checkbox = this.form.getByLabel('Checkbox');
+    this.selectDropdown = this.form.getByText('Select').last();
+    this.checkbox = this.form.getByLabel('Checkbox');
+    this.tagList = page.getByPlaceholder('Search');
+  }
+  async fillDate(date: string) {
+    await this.dateInput.click();
+    await this.dateInput.fill(date);
+    await this.dateInput.press('Enter');
+  }
 
-export async function selectDropdownValue(value: string) {
-  await this.selectDropdown.click();
-  await this.page.getByText(value).click();
-}
+  async enterTime(time: string) {
+    await this.timeInput.click();
+    await this.page.getByText(time).click();
+  }
 
-export async function selectTaglistValues(values: string[]) {
-  await this.tagList.click();
+  async selectDropdownValue(value: string) {
+    await this.selectDropdown.click();
+    await this.page.getByText(value).click();
+  }
 
-  for (const value of values) {
-    await this.page.getByText(value, {exact: true}).click();
+  async selectTaglistValues(values: string[]) {
+    await this.tagList.click();
+    for (const value of values) {
+      await this.page.getByText(value, {exact: true}).click();
+    }
   }
 }
+export {FormJSDetailsPage};
