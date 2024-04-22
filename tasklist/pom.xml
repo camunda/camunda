@@ -44,7 +44,6 @@
     <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist/</nexus.release.repository>
 
-
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
