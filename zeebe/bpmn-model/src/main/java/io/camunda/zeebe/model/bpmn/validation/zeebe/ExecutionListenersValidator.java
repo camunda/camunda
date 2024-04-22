@@ -34,6 +34,7 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
   private static final Set<String> ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS =
       new HashSet<>(
           Arrays.asList(
+              BpmnModelConstants.BPMN_ELEMENT_PROCESS,
               BpmnModelConstants.BPMN_ELEMENT_TASK,
               BpmnModelConstants.BPMN_ELEMENT_SEND_TASK,
               BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK,
