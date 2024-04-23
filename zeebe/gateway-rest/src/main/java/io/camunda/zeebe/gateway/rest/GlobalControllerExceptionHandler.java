@@ -7,39 +7,67 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @ControllerAdvice(annotations = RestController.class)
-public class GlobalControllerExceptionHandler {
+public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHandler {
 
-  @ExceptionHandler(ServerWebInputException.class)
-  public ResponseEntity<ProblemDetail> handleServerWebInputExceptions(
-      final ServerWebInputException ex, final ServerWebExchange context) {
-    final ProblemDetail problemDetail = ProblemDetail.forStatus(ex.getStatusCode());
-    problemDetail.setTitle(ex.getReason());
-    if (ex.getCause() != null) {
-      problemDetail.setDetail(ex.getCause().getMessage());
+  private static final String REQUEST_BODY_MISSING_EXCEPTION_MESSAGE =
+      "Required request body is missing";
+
+  @Override
+  protected ProblemDetail createProblemDetail(
+      final Exception ex,
+      final HttpStatusCode status,
+      final String defaultDetail,
+      final String detailMessageCode,
+      final Object[] detailMessageArguments,
+      final WebRequest request) {
+
+    final String detail;
+
+    if (isRequestBodyMissing(ex)) {
+      // Replace detail "Failed to read request"
+      // with "Required request body is missing"
+      // for proper exception tracing
+      detail = REQUEST_BODY_MISSING_EXCEPTION_MESSAGE;
     } else {
-      problemDetail.setDetail(ex.getMessage());
+      detail = defaultDetail;
     }
-    problemDetail.setInstance(URI.create(context.getRequest().getPath().toString()));
-    return ResponseEntity.of(problemDetail).build();
+
+    return super.createProblemDetail(
+        ex, status, detail, detailMessageCode, detailMessageArguments, request);
+  }
+
+  private boolean isRequestBodyMissing(final Exception ex) {
+    if (ex instanceof HttpMessageNotReadableException exception) {
+      final var exceptionMessage = exception.getMessage();
+      if (exceptionMessage != null
+          && exceptionMessage.startsWith(REQUEST_BODY_MISSING_EXCEPTION_MESSAGE)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleAllExceptions(
-      final Exception ex, final ServerWebExchange context) {
+      final Exception ex, final HttpServletRequest request) {
     final ProblemDetail problemDetail =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    problemDetail.setInstance(URI.create(context.getRequest().getPath().toString()));
+    problemDetail.setInstance(URI.create(request.getRequestURI()));
     return ResponseEntity.of(problemDetail).build();
   }
 }

@@ -79,7 +79,7 @@ describe('Operations - Cancel Operation', () => {
       screen.queryByRole('button', {name: 'Apply'}),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'close'}));
+    await user.click(screen.getByRole('button', {name: /close/i}));
 
     expect(screen.queryByText(modalText)).not.toBeInTheDocument();
   });

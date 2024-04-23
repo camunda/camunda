@@ -31,12 +31,12 @@ import org.springframework.context.annotation.Configuration;
 @ImportAutoConfiguration({
   ZeebeClientProdAutoConfiguration.class,
   ZeebeClientAllAutoConfiguration.class,
-  CommonClientConfiguration.class,
-  JsonMapperConfiguration.class,
   ZeebeActuatorConfiguration.class,
-  MetricsDefaultConfiguration.class
+  MetricsDefaultConfiguration.class,
+  AuthenticationConfiguration.class,
+  CommonClientConfiguration.class,
+  JsonMapperConfiguration.class
 })
-// make sure Spring created ObjectMapper is preferred if available
 @AutoConfigureAfter(JacksonAutoConfiguration.class)
 public class CamundaAutoConfiguration {
 

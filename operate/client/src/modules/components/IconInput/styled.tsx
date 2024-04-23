@@ -60,7 +60,7 @@ const IconContainer = styled.div<{$isTextArea?: boolean; $isInvalid?: boolean}>`
   }}
 `;
 
-const TextInput = styled(BaseTextInput)`
+const TextInput: typeof BaseTextInput = styled(BaseTextInput)`
   input {
     ${({invalid}) =>
       invalid
@@ -76,7 +76,7 @@ const TextInput = styled(BaseTextInput)`
           `}
   }
 `;
-const TextArea = styled(BaseTextArea)`
+const TextArea: typeof BaseTextArea = styled(BaseTextArea)`
   textarea {
     ${({invalid}) =>
       invalid

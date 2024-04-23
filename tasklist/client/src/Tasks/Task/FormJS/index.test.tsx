@@ -308,6 +308,8 @@ describe('<FormJS />', () => {
       expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
     );
 
+    await user.tab();
+
     await user.click(
       screen.getByRole('button', {
         name: /complete task/i,
@@ -491,7 +493,7 @@ describe('<FormJS />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should enable completion buttton when form has no inputs', async () => {
+  it('should enable completion button when form has no inputs', async () => {
     nodeMockServer.use(
       http.get(
         '/v1/forms/:formId',

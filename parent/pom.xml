@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.37.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.35</version.awssdk>
+    <version.awssdk>2.25.36</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -154,7 +154,7 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.705</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.706</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.7</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.7</version.postgres-test-container>
     <version.elasticsearch7>7.17.20</version.elasticsearch7>
@@ -182,7 +182,7 @@
     <!-- GraphQL dependencies -->
     <version.graphql-kickstart>15.1.0</version.graphql-kickstart>
     <version.graphql-kickstart.tools>13.1.1</version.graphql-kickstart.tools>
-    <version.graphql-java>21.4</version.graphql-java>
+    <version.graphql-java>21.5</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.2.0</version.graphql-java.dataloader>
 
@@ -218,7 +218,7 @@
     <plugin.version.surefire>3.2.5</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
-    <plugin.version.maven-source>3.3.0</plugin.version.maven-source>
+    <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.22.0</plugin.version.google-java-format>

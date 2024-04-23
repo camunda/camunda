@@ -93,9 +93,10 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2.16.1
         if: ${{ (success() || failure()) }}
         with:
+          check_name: "Tasklist Test Results"
           files: |
-            **/target/surefire-reports/*.xml
-            **/target/failsafe-reports/TEST-*.xml
+            tasklist/**/target/surefire-reports/*.xml
+            tasklist/**/target/failsafe-reports/TEST-*.xml
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize

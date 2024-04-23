@@ -179,7 +179,7 @@ class UserTaskZeebeRecordProcessorTest {
             .withCandidateGroupsList(List.of("Simpsons", "Flanders"))
             .withDueDate("2023-05-23T01:02:03+01:00")
             .withAction("update")
-            .withChangedAttributes(List.of("candidateUserList", "candidateGroupList", "dueDate"))
+            .withChangedAttributes(List.of("candidateUsersList", "candidateGroupsList", "dueDate"))
             .build();
     when(userTaskTemplate.getFullQualifiedName()).thenReturn("user-task-index");
     when(userTaskRecord.getIntent()).thenReturn(UserTaskIntent.UPDATED);
@@ -198,7 +198,57 @@ class UserTaskZeebeRecordProcessorTest {
             "action",
             "update",
             "changedAttributes",
-            List.of("candidateUserList", "candidateGroupList", "dueDate"));
+            List.of("candidateUsersList", "candidateGroupsList", "dueDate"));
+    verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
+  }
+
+  @Test // https://github.com/camunda/zeebe/issues/17611
+  void updateShouldIgnoreMissingAttributes() throws PersistenceException {
+    /* given */
+    final var batchRequest = mock(BatchRequest.class);
+    final var userTaskRecord = (Record<UserTaskRecordValue>) mock(Record.class);
+    final var userTaskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withUserTaskKey(1L)
+            .withTenantId(DEFAULT_TENANT_ID)
+            .withCandidateUsersList(List.of("string"))
+            .withCandidateGroupsList(List.of("string"))
+            .withDueDate("2024-04-03T20:22:18.305Z")
+            .withFollowUpDate("2024-04-03T20:22:18.305Z")
+            .withAction("update")
+            .withChangedAttributes(
+                List.of(
+                    "candidateUsersList",
+                    "candidateGroupsList",
+                    "dueDate",
+                    "followUpDate",
+                    "attribute-not-exist"))
+            .build();
+    when(userTaskTemplate.getFullQualifiedName()).thenReturn("user-task-index");
+    when(userTaskRecord.getIntent()).thenReturn(UserTaskIntent.UPDATED);
+    when(userTaskRecord.getValue()).thenReturn(userTaskRecordValue);
+    /* when */
+    userTaskZeebeRecordProcessor.processUserTaskRecord(batchRequest, userTaskRecord);
+    /* then */
+    final Map<String, Object> expectedUpdateFields =
+        Map.of(
+            "candidateUsers",
+            List.of("string"),
+            "candidateGroups",
+            List.of("string"),
+            "dueDate",
+            OffsetDateTime.parse("2024-04-03T20:22:18.305Z"),
+            "followUpDate",
+            OffsetDateTime.parse("2024-04-03T20:22:18.305Z"),
+            "action",
+            "update",
+            "changedAttributes",
+            List.of(
+                "candidateUsersList",
+                "candidateGroupsList",
+                "dueDate",
+                "followUpDate",
+                "attribute-not-exist"));
     verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
   }
 

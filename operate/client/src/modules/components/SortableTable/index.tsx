@@ -23,7 +23,9 @@ import {
   TableHead,
   EmptyMessageContainer,
   DataTableSkeleton,
-  TableRow,
+  TableExpandRow,
+  TableHeadRow,
+  TableExpandedRow,
 } from './styled';
 
 import {
@@ -34,6 +36,7 @@ import {
   Loading,
   TableSelectAll,
   TableSelectRow,
+  TableExpandHeader,
 } from '@carbon/react';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
@@ -57,10 +60,12 @@ type Props = {
   onSelectAll?: () => void;
   onSelect?: (rowId: string) => void;
   checkIsRowSelected?: (rowId: string) => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
+  rowOperationError?: (rowId: string) => string | null; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
+  batchOperationId?: string;
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -77,9 +82,11 @@ const SortableTable: React.FC<Props> = ({
   checkIsIndeterminate,
   checkIsAllSelected,
   checkIsRowSelected,
+  rowOperationError,
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
+  batchOperationId,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -125,11 +132,14 @@ const SortableTable: React.FC<Props> = ({
           getSelectionProps,
           getTableProps,
         }) => (
-          <TableContainer>
+          <TableContainer $hasError={!!batchOperationId}>
             {state === 'loading' && <Loading data-testid="data-table-loader" />}
             <Table {...getTableProps()} isSortable>
               <TableHead>
-                <TableRow>
+                <TableHeadRow>
+                  {batchOperationId && (
+                    <TableExpandHeader aria-label="expand row" />
+                  )}
                   {selectionType === 'checkbox' && (
                     <TableSelectAll
                       {...getSelectionProps()}
@@ -155,7 +165,7 @@ const SortableTable: React.FC<Props> = ({
                       />
                     );
                   })}
-                </TableRow>
+                </TableHeadRow>
               </TableHead>
               {['content', 'loading'].includes(state) && (
                 <InfiniteScroller
@@ -166,41 +176,57 @@ const SortableTable: React.FC<Props> = ({
                   <tbody aria-live="polite" data-testid="data-list">
                     {rows.map((row) => {
                       const isSelected = checkIsRowSelected?.(row.id) ?? false;
+                      const errorMessage = rowOperationError?.(row.id);
+
+                      const expandRowStyleClasses = () => {
+                        if (batchOperationId)
+                          return errorMessage ? 'errorRow' : 'successRow';
+
+                        return '';
+                      };
 
                       return (
-                        <TableRow
-                          {...getRowProps({row})}
-                          isSelected={isSelected}
-                          $isClickable={selectionType === 'row'}
-                          aria-selected={isSelected}
-                          onClick={() => {
-                            if (selectionType === 'row') {
-                              onSelect?.(row.id);
-                            }
-                          }}
-                        >
-                          {selectionType === 'checkbox' && (
-                            <TableSelectRow
-                              {...getSelectionProps({row})}
-                              checked={isSelected}
-                              onSelect={(event) => {
-                                getSelectionProps({row}).onSelect(event);
+                        <React.Fragment key={row.id}>
+                          <TableExpandRow
+                            className={expandRowStyleClasses()}
+                            {...getRowProps({row})}
+                            isSelected={isSelected}
+                            $isClickable={selectionType === 'row'}
+                            aria-selected={isSelected}
+                            onClick={() => {
+                              if (selectionType === 'row') {
                                 onSelect?.(row.id);
-                              }}
-                            />
+                              }
+                            }}
+                          >
+                            {selectionType === 'checkbox' && (
+                              <TableSelectRow
+                                {...getSelectionProps({row})}
+                                checked={isSelected}
+                                onSelect={(event) => {
+                                  getSelectionProps({row}).onSelect(event);
+                                  onSelect?.(row.id);
+                                }}
+                              />
+                            )}
+                            {row.cells.map((cell) => (
+                              <TableCell
+                                key={cell.id}
+                                data-testid={`cell-${cell.info.header}`}
+                                $hideCellPadding={columnsWithNoContentPadding?.includes(
+                                  cell.info.header,
+                                )}
+                              >
+                                {cell.value}
+                              </TableCell>
+                            ))}
+                          </TableExpandRow>
+                          {errorMessage && (
+                            <TableExpandedRow colSpan={headers.length + 2}>
+                              {errorMessage}
+                            </TableExpandedRow>
                           )}
-                          {row.cells.map((cell) => (
-                            <TableCell
-                              key={cell.id}
-                              data-testid={`cell-${cell.info.header}`}
-                              $hideCellPadding={columnsWithNoContentPadding?.includes(
-                                cell.info.header,
-                              )}
-                            >
-                              {cell.value}
-                            </TableCell>
-                          ))}
-                        </TableRow>
+                        </React.Fragment>
                       );
                     })}
                   </tbody>

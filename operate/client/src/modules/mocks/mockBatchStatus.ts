@@ -15,29 +15,14 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-// import {Page} from '@playwright/test';
-// import {TaskdetailsPage} from '@pages/TaskDetailsPage';
+const mockBatchStatus = [
+  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //delete instance
+  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
+  {completedOperationsCount: 0, failedOperationsCount: 10, instancesCount: 10}, //all fail
+  {completedOperationsCount: 10, failedOperationsCount: 0, instancesCount: 10}, //all success
+  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
+  {completedOperationsCount: 0, failedOperationsCount: 1, instancesCount: 1}, // single fail
+  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //single success
+];
 
-export async function fillDate(date: string) {
-  await this.dateInput.click();
-  await this.dateInput.fill(date);
-  await this.dateInput.press('Enter');
-}
-
-export async function enterTime(time: string) {
-  await this.timeInput.click();
-  await this.page.getByText(time).click();
-}
-
-export async function selectDropdownValue(value: string) {
-  await this.selectDropdown.click();
-  await this.page.getByText(value).click();
-}
-
-export async function selectTaglistValues(values: string[]) {
-  await this.tagList.click();
-
-  for (const value of values) {
-    await this.page.getByText(value, {exact: true}).click();
-  }
-}
+export {mockBatchStatus};

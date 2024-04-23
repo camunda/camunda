@@ -47,12 +47,12 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   private static final String DOCUMENT_ATTR =
       "org.opensearch.client:Deserializer:_global.search.TDocument";
 
-  public ExtendedOpenSearchClient(OpenSearchTransport transport) {
+  public ExtendedOpenSearchClient(final OpenSearchTransport transport) {
     super(transport);
   }
 
   private static <R> SimpleEndpoint<Map<String, Object>, R> arbitraryEndpoint(
-      String method, String path, JsonpDeserializer<R> responseParser) {
+      final String method, final String path, final JsonpDeserializer<R> responseParser) {
     return new SimpleEndpoint<>(
         request -> method, // Request method
         request -> path, // Request path
@@ -66,11 +66,11 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
     return ((JacksonJsonpMapper) transport.jsonpMapper()).objectMapper();
   }
 
-  private Map<String, Object> jsonToMap(String json) throws JsonProcessingException {
+  private Map<String, Object> jsonToMap(final String json) throws JsonProcessingException {
     return objectMapper().readValue(json, new TypeReference<>() {});
   }
 
-  private String json(SearchRequest request) {
+  private String json(final SearchRequest request) {
     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
     final JsonGenerator generator = transport.jsonpMapper().jsonProvider().createGenerator(baos);
     request.serialize(generator, transport.jsonpMapper());
@@ -88,7 +88,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   /*
 
   */
-  private String fixSearchAfter(String json) {
+  private String fixSearchAfter(final String json) {
     final Matcher m = SEARCH_AFTER_PATTERN.matcher(json);
     if (m.find()) {
       final var searchAfter = m.group(1); // Find "searchAfter" block in search request
@@ -103,7 +103,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   }
 
   public <TDocument> SearchResponse<TDocument> fixedSearch(
-      SearchRequest request, Class<TDocument> tDocumentClass)
+      final SearchRequest request, final Class<TDocument> tDocumentClass)
       throws IOException, OpenSearchException {
     final var path = format("/%s/_search", join(",", request.index()));
     JsonEndpoint<Map<String, Object>, SearchResponse<Object>, ErrorResponse> endpoint =
@@ -117,24 +117,24 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
     return (SearchResponse<TDocument>) arbitraryRequest(requestJson, endpoint);
   }
 
-  public Map<String, Object> searchAsMap(SearchRequest request)
+  public Map<String, Object> searchAsMap(final SearchRequest request)
       throws IOException, OpenSearchException {
     final JsonEndpoint<SearchRequest, HashMap, ErrorResponse> endpoint =
         SearchRequest._ENDPOINT.withResponseDeserializer(getDeserializer(HashMap.class));
-
-    return transport.performRequest(request, endpoint, null);
+    return transport.performRequest(request, endpoint, transport.options());
   }
 
-  public Map<String, Object> arbitraryRequest(String method, String path, String json)
+  public Map<String, Object> arbitraryRequest(
+      final String method, final String path, final String json)
       throws IOException, OpenSearchException {
     final JsonEndpoint<Map<String, Object>, HashMap, ErrorResponse> endpoint =
-        arbitraryEndpoint(method, path, this.getDeserializer(HashMap.class));
+        arbitraryEndpoint(method, path, getDeserializer(HashMap.class));
     return arbitraryRequest(json, endpoint);
   }
 
   private <R> R arbitraryRequest(
-      String json, JsonEndpoint<Map<String, Object>, R, ErrorResponse> endpoint)
+      final String json, final JsonEndpoint<Map<String, Object>, R, ErrorResponse> endpoint)
       throws IOException, OpenSearchException {
-    return transport.performRequest(jsonToMap(json), endpoint, null);
+    return transport.performRequest(jsonToMap(json), endpoint, transport.options());
   }
 }

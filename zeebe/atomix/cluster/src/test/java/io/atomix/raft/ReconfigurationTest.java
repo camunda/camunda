@@ -80,6 +80,10 @@ final class ReconfigurationTest {
         .findAny();
   }
 
+  private static Optional<RaftServer> getFollower(final RaftServer... servers) {
+    return Arrays.stream(servers).filter(RaftServer::isFollower).findAny();
+  }
+
   private static AppendResult appendEntry(final LeaderRole leader) {
     final var result = new AppendResult();
     leader.appendEntry(-1, -1, ByteBuffer.wrap(new byte[0]), result);
@@ -738,6 +742,68 @@ final class ReconfigurationTest {
       // then
       awaitLeader(m1, m2);
       assertThat(m1.getContext().isLeader()).isTrue();
+    }
+
+    @Test
+    void forceReconfigureIsIdempotentWhenRetriedViaAFollower() {
+      // given
+      m2.forceConfigure(newMembers()).join();
+      m3.shutdown().join();
+      m4.shutdown().join();
+      awaitLeader(m1, m2);
+      Awaitility.await("Both members have come out of force configuration")
+          .untilAsserted(
+              () -> {
+                assertThat(m2.getContext().getCluster().getConfiguration().force()).isFalse();
+                assertThat(m1.getContext().getCluster().getConfiguration().force()).isFalse();
+              });
+
+      // when
+      final var follower = getFollower(m1, m2).orElseThrow();
+      follower.forceConfigure(newMembers()).join();
+
+      // then
+      Awaitility.await("Both members have come out of force configuration")
+          .untilAsserted(
+              () -> {
+                assertThat(m2.getContext().getCluster().getConfiguration().force())
+                    .describedAs("Member 2 has come out of force configuration")
+                    .isFalse();
+                assertThat(m1.getContext().getCluster().getConfiguration().force())
+                    .describedAs("Member 1 has come out of force configuration")
+                    .isFalse();
+              });
+    }
+
+    @Test
+    void forceReconfigureIsIdempotentWhenRetriedViaLeader() {
+      // given
+      m2.forceConfigure(newMembers()).join();
+      m3.shutdown().join();
+      m4.shutdown().join();
+      awaitLeader(m1, m2);
+      Awaitility.await("Both members have come out of force configuration")
+          .untilAsserted(
+              () -> {
+                assertThat(m2.getContext().getCluster().getConfiguration().force()).isFalse();
+                assertThat(m1.getContext().getCluster().getConfiguration().force()).isFalse();
+              });
+
+      // when
+      final var leader = Stream.of(m1, m2).filter(RaftServer::isLeader).findAny().orElseThrow();
+      leader.forceConfigure(newMembers()).join();
+
+      // then
+      Awaitility.await("Both members have come out of force configuration")
+          .untilAsserted(
+              () -> {
+                assertThat(m2.getContext().getCluster().getConfiguration().force())
+                    .describedAs("Member 2 has come out of force configuration")
+                    .isFalse();
+                assertThat(m1.getContext().getCluster().getConfiguration().force())
+                    .describedAs("Member 1 has come out of force configuration")
+                    .isFalse();
+              });
     }
 
     private Map<MemberId, Type> newMembers() {

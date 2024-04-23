@@ -29,10 +29,14 @@ import java.util.function.Consumer;
 /**
  * @author Sebastian Menski
  */
-public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
+public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder>
+    implements ZeebeExecutionListenersBuilder<ProcessBuilder> {
+
+  private final ZeebeExecutionListenersBuilder<ProcessBuilder> zeebeExecutionListenersBuilder;
 
   public ProcessBuilder(final BpmnModelInstance modelInstance, final Process process) {
     super(modelInstance, process, ProcessBuilder.class);
+    this.zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
   }
 
   public StartEventBuilder startEvent() {
@@ -117,5 +121,31 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
       }
     }
     return lowestheight;
+  }
+
+  @Override
+  public ProcessBuilder zeebeStartExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  @Override
+  public ProcessBuilder zeebeStartExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  @Override
+  public ProcessBuilder zeebeEndExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type, retries);
+  }
+
+  @Override
+  public ProcessBuilder zeebeEndExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type);
+  }
+
+  @Override
+  public ProcessBuilder zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
   }
 }

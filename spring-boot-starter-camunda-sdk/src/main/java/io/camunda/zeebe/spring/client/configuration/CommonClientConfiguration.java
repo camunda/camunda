@@ -25,6 +25,7 @@ import io.camunda.zeebe.spring.common.auth.saas.SaaSAuthentication;
 import io.camunda.zeebe.spring.common.auth.selfmanaged.SelfManagedAuthentication;
 import io.camunda.zeebe.spring.common.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -32,6 +33,7 @@ import org.springframework.context.annotation.Bean;
   CommonConfigurationProperties.class,
   ZeebeSelfManagedProperties.class
 })
+@Deprecated
 public class CommonClientConfiguration {
 
   @Autowired(required = false)
@@ -44,6 +46,7 @@ public class CommonClientConfiguration {
   ZeebeSelfManagedProperties zeebeSelfManagedProperties;
 
   @Bean
+  @ConditionalOnMissingBean
   public Authentication authentication(final JsonMapper jsonMapper) {
 
     if (zeebeClientConfigurationProperties == null) {

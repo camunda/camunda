@@ -43,6 +43,7 @@ public class EventSubProcessInterruptionMarker {
         processState.getFlowElement(
             processDefinitionKey, tenantId, elementId, ExecutableFlowElement.class);
     if (!isRootStartEvent(flowScopeElementInstanceKey)
+        && flowElement.getFlowScope() != null
         && flowElement.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS
         && flowElement instanceof ExecutableStartEvent
         && ((ExecutableStartEvent) flowElement).isInterrupting()) {

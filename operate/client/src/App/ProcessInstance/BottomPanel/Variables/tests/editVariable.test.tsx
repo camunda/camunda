@@ -62,8 +62,7 @@ describe('Edit variable', () => {
 
     expect(
       within(
-        // @ts-expect-error ts-migrate(2345) FIXME: Type 'null' is not assignable to type 'HTMLElement... Remove this comment to see the full error message
-        screen.queryByTestId(`variable-${activeOperationVariable.name}`),
+        screen.getByTestId(`variable-${activeOperationVariable!.name}`),
       ).queryByRole('button', {name: /edit variable/i}),
     ).not.toBeInTheDocument();
 

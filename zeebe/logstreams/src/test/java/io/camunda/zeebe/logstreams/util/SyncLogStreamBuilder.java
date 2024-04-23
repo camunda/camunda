@@ -55,12 +55,6 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withNodeId(final int nodeId) {
-    delegate.withNodeId(nodeId);
-    return this;
-  }
-
-  @Override
   public SyncLogStreamBuilder withLogName(final String logName) {
     delegate.withLogName(logName);
     return this;

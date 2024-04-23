@@ -22,7 +22,6 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private ActorSchedulingService actorSchedulingService;
   private LogStorage logStorage;
   private String logName;
-  private int nodeId = 0;
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
@@ -50,12 +49,6 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withNodeId(final int nodeId) {
-    this.nodeId = nodeId;
-    return this;
-  }
-
-  @Override
   public LogStreamBuilder withLogName(final String logName) {
     this.logName = logName;
     return this;
@@ -66,8 +59,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
     validate();
 
     final var logStreamService =
-        new LogStreamImpl(
-            actorSchedulingService, logName, partitionId, nodeId, maxFragmentSize, logStorage);
+        new LogStreamImpl(logName, partitionId, maxFragmentSize, logStorage);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService

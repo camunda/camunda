@@ -230,19 +230,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   @Override
   public CompletableFuture<ForceConfigureResponse> onForceConfigure(
       final ForceConfigureRequest request) {
-    final Configuration currentConfiguration = raft.getCluster().getConfiguration();
-    if (currentConfiguration != null // this is not expected in a leader
-        && request.newMembers().equals(currentConfiguration.allMembers())) {
-      // It is likely that the previous force configure was successfully completed, and this is a
-      // retry. So just respond success.
-      return CompletableFuture.completedFuture(
-          logResponse(
-              ForceConfigureResponse.builder()
-                  .withStatus(Status.OK)
-                  .withIndex(currentConfiguration.index())
-                  .withTerm(currentConfiguration.term())
-                  .build()));
-    }
 
     // Do not force-configure when you are leader.
     raft.transition(Role.FOLLOWER);

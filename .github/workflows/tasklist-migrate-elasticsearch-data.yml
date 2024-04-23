@@ -18,7 +18,7 @@ jobs:
     steps:
       # Setup: checkout
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
 
       # Setup: import secrets from vault
       - name: Import Secrets
@@ -79,8 +79,9 @@ jobs:
           comment_mode: off
           report_individual_runs: true
           report_suite_logs: error
+          check_name: "Tasklist Migration Test Results"
           files: |
-            **/target/surefire-reports/*.xml
+            tasklist/**/target/surefire-reports/*.xml
 
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure

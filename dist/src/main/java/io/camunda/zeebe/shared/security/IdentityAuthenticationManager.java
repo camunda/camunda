@@ -15,15 +15,14 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 @Component
-public final class IdentityAuthenticationManager implements ReactiveAuthenticationManager {
+public final class IdentityAuthenticationManager implements AuthenticationManager {
 
   private final Identity identity;
   private final MultiTenancyCfg multiTenancy;
@@ -36,9 +35,9 @@ public final class IdentityAuthenticationManager implements ReactiveAuthenticati
   }
 
   @Override
-  public Mono<Authentication> authenticate(final Authentication authentication) {
+  public Authentication authenticate(final Authentication authentication) {
     if (!(authentication instanceof final PreAuthToken preAuthToken)) {
-      return Mono.just(authentication);
+      return authentication;
     }
 
     final List<String> tenants;
@@ -53,7 +52,7 @@ public final class IdentityAuthenticationManager implements ReactiveAuthenticati
 
     tenants = getTenants(tokenValue);
 
-    return Mono.just(new IdentityAuthentication(token, tenants));
+    return new IdentityAuthentication(token, tenants);
   }
 
   private List<String> getTenants(final String token) {

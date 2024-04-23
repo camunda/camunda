@@ -15,75 +15,63 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-/* istanbul ignore file */
+import {Locator, Page} from '@playwright/test';
 
-import {Search} from '@carbon/react/icons';
-import styles from './styles.module.scss';
-import cn from 'classnames';
-import {forwardRef} from 'react';
+class FormJSDetailsPage {
+  private page: Page;
+  readonly completeTaskButton: Locator;
+  readonly addVariableButton: Locator;
+  readonly nameInput: Locator;
+  readonly addressInput: Locator;
+  readonly ageInput: Locator;
+  readonly numberInput: Locator;
+  readonly incrementButton: Locator;
+  readonly decrementButton: Locator;
+  readonly dateInput: Locator;
+  readonly timeInput: Locator;
+  readonly checkbox: Locator;
+  readonly selectDropdown: Locator;
+  readonly tagList: Locator;
+  readonly form: Locator;
 
-const EmptyMessage: React.FC<React.ComponentProps<'div'>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <div {...rest} className={cn(className, styles.emptyMessage)}>
-    {children}
-  </div>
-);
+  constructor(page: Page) {
+    this.page = page;
+    this.form = page.getByTestId('embedded-form');
+    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
+    this.nameInput = page.getByLabel('Name*');
+    this.addressInput = page.getByLabel('Address*');
+    this.ageInput = page.getByLabel('Age');
+    this.numberInput = this.form.getByLabel('Number');
+    this.incrementButton = page.getByRole('button', {name: 'Increment'});
+    this.decrementButton = page.getByRole('button', {name: 'Decrement'});
+    this.dateInput = page.getByPlaceholder('mm/dd/yyyy');
+    this.timeInput = page.getByPlaceholder('hh:mm ?m');
+    this.checkbox = this.form.getByLabel('Checkbox');
+    this.selectDropdown = this.form.getByText('Select').last();
+    this.checkbox = this.form.getByLabel('Checkbox');
+    this.tagList = page.getByPlaceholder('Search');
+  }
+  async fillDate(date: string) {
+    await this.dateInput.click();
+    await this.dateInput.fill(date);
+    await this.dateInput.press('Enter');
+  }
 
-const EmptyMessageText: React.FC<React.ComponentProps<'div'>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <div {...rest} className={cn(className, styles.emptyMessageText)}>
-    {children}
-  </div>
-);
+  async enterTime(time: string) {
+    await this.timeInput.click();
+    await this.page.getByText(time).click();
+  }
 
-const ListContainer: React.FC<React.ComponentProps<'div'>> = forwardRef(
-  ({className = '', children, ...rest}, ref) => (
-    <div {...rest} className={cn(className, styles.listContainer)} ref={ref}>
-      {children}
-    </div>
-  ),
-);
+  async selectDropdownValue(value: string) {
+    await this.selectDropdown.click();
+    await this.page.getByText(value).click();
+  }
 
-type ContainerProps = {
-  $enablePadding: boolean;
-};
-
-const Container: React.FC<React.ComponentProps<'div'> & ContainerProps> = ({
-  $enablePadding,
-  className = '',
-  children,
-  ...rest
-}) => (
-  <div
-    {...rest}
-    className={cn(className, styles.container, {
-      [styles.containerPadding]: $enablePadding,
-    })}
-  >
-    {children}
-  </div>
-);
-
-const EmptyListIcon: React.FC<React.ComponentProps<typeof Search>> = ({
-  className = '',
-  children,
-  ...rest
-}) => (
-  <Search {...rest} className={cn(className, styles.emptyListIcon)}>
-    {children}
-  </Search>
-);
-
-export {
-  EmptyMessage,
-  ListContainer,
-  Container,
-  EmptyMessageText,
-  EmptyListIcon,
-};
+  async selectTaglistValues(values: string[]) {
+    await this.tagList.click();
+    for (const value of values) {
+      await this.page.getByText(value, {exact: true}).click();
+    }
+  }
+}
+export {FormJSDetailsPage};
