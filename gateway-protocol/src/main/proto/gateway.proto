@@ -6,7 +6,7 @@ option java_package = "io.camunda.zeebe.gateway.protocol";
 option go_package = "./;pb";
 
 // For a more complete documentation, refer to Zeebe documentation at:
-// https://https://docs.camunda.io/docs/apis-tools/zeebe-api/overview/
+// https://docs.camunda.io/docs/apis-tools/zeebe-api/gateway-service/
 
 message StreamActivatedJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
