@@ -314,7 +314,6 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
   }
 
   private String composeGatewayAddress() {
-    // check if port is set
     final URL gatewayUrl = camundaClientProperties.getZeebe().getGatewayUrl();
     final int port = gatewayUrl.getPort();
     final int defaultPort = gatewayUrl.getDefaultPort();
