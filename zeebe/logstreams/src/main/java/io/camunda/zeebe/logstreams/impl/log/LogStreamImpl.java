@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.Loggers;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -203,7 +203,7 @@ public final class LogStreamImpl extends Actor
         getWriteBuffersInitialPosition(),
         maxFragmentSize,
         new SequencerMetrics(partitionId),
-        new AppenderMetrics(partitionId));
+        new LogStreamMetrics(partitionId));
   }
 
   private long getLastCommittedPosition() {

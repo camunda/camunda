@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.util.Environment;
 import java.util.Map;
 import java.util.Optional;
@@ -22,9 +23,9 @@ public final class FlowControl {
 
   private final AppendErrorHandler errorHandler;
   private final Limiter<Void> limiter;
-  private final AppenderMetrics metrics;
+  private final LogStreamMetrics metrics;
 
-  public FlowControl(final AppendErrorHandler errorHandler, final AppenderMetrics metrics) {
+  public FlowControl(final AppendErrorHandler errorHandler, final LogStreamMetrics metrics) {
     this.errorHandler = errorHandler;
     this.metrics = metrics;
     limiter = configureLimiter();

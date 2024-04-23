@@ -9,8 +9,8 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -44,7 +44,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
   private final ReentrantLock lock = new ReentrantLock();
   private final LogStorage logStorage;
   private final SequencerMetrics sequencerMetrics;
-  private final AppenderMetrics appenderMetrics;
+  private final LogStreamMetrics logStreamMetrics;
   private final FlowControl flowControl;
 
   Sequencer(
@@ -52,15 +52,16 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
       final long initialPosition,
       final int maxFragmentSize,
       final SequencerMetrics sequencerMetrics,
-      final AppenderMetrics appenderMetrics) {
+      final LogStreamMetrics logStreamMetrics) {
     this.logStorage = logStorage;
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     position = initialPosition;
     this.maxFragmentSize = maxFragmentSize;
     this.sequencerMetrics =
         Objects.requireNonNull(sequencerMetrics, "must specify sequencer metrics");
-    this.appenderMetrics = Objects.requireNonNull(appenderMetrics, "must specify appender metrics");
-    flowControl = new FlowControl(this, appenderMetrics);
+    this.logStreamMetrics =
+        Objects.requireNonNull(logStreamMetrics, "must specify appender metrics");
+    flowControl = new FlowControl(this, logStreamMetrics);
   }
 
   /** {@inheritDoc} */
@@ -116,7 +117,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
           lowestPosition,
           highestPosition,
           sequencedBatch,
-          new InstrumentedAppendListener(inflightAppend, metricsMetadata, appenderMetrics));
+          new InstrumentedAppendListener(inflightAppend, metricsMetadata, logStreamMetrics));
       position = currentPosition + batchSize;
       sequencerMetrics.observeBatchLengthBytes(sequencedBatch.length());
     } finally {
@@ -175,7 +176,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
   }
 
   record InstrumentedAppendListener(
-      AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, AppenderMetrics metrics)
+      AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, LogStreamMetrics metrics)
       implements AppendListener {
 
     @Override

@@ -8,13 +8,14 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import java.util.Optional;
 
 final class NoopLimiter implements Limiter<Void> {
 
   private final NoopListener listener = new NoopListener();
 
-  public NoopLimiter(final AppenderMetrics metrics) {
+  public NoopLimiter(final LogStreamMetrics metrics) {
     metrics.setInflightLimit(-1);
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import java.time.Duration;
 import java.util.LinkedList;
 import org.awaitility.Awaitility;
@@ -21,7 +22,7 @@ final class FlowControlTest {
   void callsErrorHandlerOnWriteError() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
     final var error = new RuntimeException();
     // when
     final var inFlight = flow.tryAcquire().orElseThrow();
@@ -34,7 +35,7 @@ final class FlowControlTest {
   void callsErrorHandlerOnCommitError() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
     final var error = new RuntimeException();
     // when
     final var inFlight = flow.tryAcquire().orElseThrow();
@@ -47,7 +48,7 @@ final class FlowControlTest {
   void eventuallyRejects() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
 
     // when - then
     Awaitility.await("Rejects new appends")
@@ -60,7 +61,7 @@ final class FlowControlTest {
   void recoversWhenCompletingAppends() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new AppenderMetrics(1));
+    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
     // when
     boolean rejecting = false;
     final var inFlight = new LinkedList<InFlightAppend>();

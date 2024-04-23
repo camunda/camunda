@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.prometheus.client.Histogram;
 
@@ -20,7 +21,7 @@ public final class InFlightAppend implements AppendListener {
 
   private final AppendErrorHandler errorHandler;
   private final Limiter.Listener limiter;
-  private final AppenderMetrics metrics;
+  private final LogStreamMetrics metrics;
   private Histogram.Timer writeTimer;
   private Histogram.Timer commitTimer;
   private long position;
@@ -28,7 +29,7 @@ public final class InFlightAppend implements AppendListener {
   public InFlightAppend(
       final AppendErrorHandler errorHandler,
       final Limiter.Listener limiter,
-      final AppenderMetrics metrics) {
+      final LogStreamMetrics metrics) {
     this.errorHandler = errorHandler;
     this.limiter = limiter;
     this.metrics = metrics;
