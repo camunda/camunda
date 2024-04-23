@@ -90,7 +90,7 @@
     <resources>
       <resource>
         <directory>build</directory>
-        <targetPath>${project.build.outputDirectory}/META-INF/resources</targetPath>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources/tasklist</targetPath>
       </resource>
     </resources>
 

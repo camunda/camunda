@@ -68,6 +68,8 @@ public class Application {
     System.setProperty(
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
+    System.setProperty(
+        "spring.web.resources.static-locations", "classpath:/META-INF/resources/tasklist/");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
