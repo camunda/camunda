@@ -41,32 +41,18 @@ public class PropertyUtil {
       final Supplier<T> legacyPropertySupplier,
       final T defaultProperty,
       final Map<String, Object> configCache) {
-    if (configCache != null) {
-      try {
-        LOG.debug("Property {}: Loading from cache", propertyName);
-        if (configCache.containsKey(propertyName)) {
-          return (T) configCache.get(propertyName);
-        }
-      } catch (final Exception e) {
-        LOG.debug("Error while loading cached property " + propertyName, e);
-      }
+
+    if (configCache != null && configCache.containsKey(propertyName)) {
+      LOG.debug("Property {}: Loading from cache", propertyName);
+      return (T) configCache.get(propertyName);
     }
     T property = defaultProperty;
+
     if (property == null) {
-      LOG.debug("Property {}: not set or default, applying legacy property", propertyName);
-      try {
-        property = legacyPropertySupplier.get();
-      } catch (final Exception e) {
-        LOG.debug("Error while loading legacy property " + propertyName, e);
-      }
+      property = getPropertyFromSupplier(legacyPropertySupplier, propertyName, "legacy");
     }
     if (property == null || property.equals(defaultProperty)) {
-      LOG.debug("Property {}: not set or default, applying property", propertyName);
-      try {
-        property = propertySupplier.get();
-      } catch (final Exception e) {
-        LOG.debug("Error while loading property " + propertyName, e);
-      }
+      property = getPropertyFromSupplier(propertySupplier, propertyName, "property");
     }
     if (property == null || property.equals(defaultProperty)) {
       LOG.debug("Property {}: not set or default, using default", propertyName);
@@ -74,6 +60,19 @@ public class PropertyUtil {
     }
     if (configCache != null) {
       configCache.put(propertyName, property);
+    }
+    return property;
+  }
+
+  private static <T> T getPropertyFromSupplier(
+      final Supplier<T> supplier, final String propertyName, final String propertyType) {
+    T property = null;
+    try {
+      LOG.debug(
+          "Property {}: not set or default, applying {} property", propertyName, propertyType);
+      property = supplier.get();
+    } catch (final Exception e) {
+      LOG.debug("Error while loading {} property {}", propertyType, propertyName, e);
     }
     return property;
   }

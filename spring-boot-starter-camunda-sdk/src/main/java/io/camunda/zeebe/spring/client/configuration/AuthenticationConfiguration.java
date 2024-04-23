@@ -86,47 +86,46 @@ public class AuthenticationConfiguration {
           .withJwtConfig(jwtConfig)
           .withJsonMapper(jsonMapper)
           .build();
-    } else {
-      return new DefaultNoopAuthentication();
     }
+    return new DefaultNoopAuthentication();
   }
 
   private void oidcCredentialForProduct(
       final IdentityConfig identityConfig, final JwtConfig jwtConfig, final Product product) {
-    if (enabledForProduct(product)) {
-      LOG.debug("{} is enabled", product);
-      final String issuer = globalIssuer();
-      final String clientId = clientId();
-      final String clientSecret = clientSecret();
-      final String audience = audienceForProduct(product);
-      jwtConfig.addProduct(product, new JwtCredential(clientId, clientSecret, audience, issuer));
-      final IdentityConfiguration identityCfg =
-          new IdentityConfiguration(
-              baseUrlForProduct(Product.IDENTITY).toString(),
-              issuer,
-              issuer,
-              clientId,
-              clientSecret,
-              audience,
-              globalOidcType().name());
-      identityConfig.addProduct(
-          product, new IdentityContainer(new Identity(identityCfg), identityCfg));
-    } else {
+    if (!enabledForProduct(product)) {
       LOG.debug("{} is disabled", product);
+      return;
     }
+    LOG.debug("{} is enabled", product);
+    final String issuer = globalIssuer();
+    final String clientId = clientId();
+    final String clientSecret = clientSecret();
+    final String audience = audienceForProduct(product);
+    jwtConfig.addProduct(product, new JwtCredential(clientId, clientSecret, audience, issuer));
+    final IdentityConfiguration identityCfg =
+        new IdentityConfiguration(
+            baseUrlForProduct(Product.IDENTITY).toString(),
+            issuer,
+            issuer,
+            clientId,
+            clientSecret,
+            audience,
+            globalOidcType().name());
+    identityConfig.addProduct(
+        product, new IdentityContainer(new Identity(identityCfg), identityCfg));
   }
 
   private void saasCredentialForProduct(final JwtConfig jwtConfig, final Product product) {
-    if (enabledForProduct(product)) {
-      LOG.debug("{} is enabled", product);
-      final String issuer = globalIssuer();
-      final String clientId = clientId();
-      final String clientSecret = clientSecret();
-      final String audience = audienceForProduct(product);
-      jwtConfig.addProduct(product, new JwtCredential(clientId, clientSecret, audience, issuer));
-    } else {
+    if (!enabledForProduct(product)) {
       LOG.debug("{} is disabled", product);
+      return;
     }
+    LOG.debug("{} is enabled", product);
+    final String issuer = globalIssuer();
+    final String clientId = clientId();
+    final String clientSecret = clientSecret();
+    final String audience = audienceForProduct(product);
+    jwtConfig.addProduct(product, new JwtCredential(clientId, clientSecret, audience, issuer));
   }
 
   private String globalIssuer() {
