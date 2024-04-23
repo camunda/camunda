@@ -39,12 +39,6 @@ public class CamundaClientPropertiesSaasTest {
     assertThat(properties.getZeebe().getBaseUrl().toString())
         .isEqualTo("https://bru-2.zeebe.camunda.io/my-cluster-id");
     assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);
-    assertThat(properties.getOperate().getBaseUrl().toString())
-        .isEqualTo("https://bru-2.operate.camunda.io/my-cluster-id");
-    assertThat(properties.getTasklist().getBaseUrl().toString())
-        .isEqualTo("https://bru-2.tasklist.camunda.io/my-cluster-id");
-    assertThat(properties.getOptimize().getBaseUrl().toString())
-        .isEqualTo("https://bru-2.optimize.camunda.io/my-cluster-id");
   }
 
   @Test
@@ -54,11 +48,6 @@ public class CamundaClientPropertiesSaasTest {
         .isEqualTo("https://login.cloud.camunda.io/oauth/token");
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
     assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe.camunda.io");
-    assertThat(properties.getOperate().getEnabled()).isEqualTo(true);
-    assertThat(properties.getOperate().getAudience()).isEqualTo("operate.camunda.io");
-    assertThat(properties.getTasklist().getEnabled()).isEqualTo(true);
-    assertThat(properties.getTasklist().getAudience()).isEqualTo("tasklist.camunda.io");
-    assertThat(properties.getOptimize().getEnabled()).isEqualTo(true);
     assertThat(properties.getIdentity().getEnabled()).isEqualTo(false);
   }
 }

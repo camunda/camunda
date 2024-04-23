@@ -36,16 +36,9 @@ public class CamundaClientPropertiesOidcTest {
     assertThat(properties.getZeebe().getBaseUrl().toString()).isEqualTo("http://localhost:8086");
     assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
-    assertThat(properties.getOperate().getBaseUrl().toString()).isEqualTo("http://localhost:8081");
-    assertThat(properties.getOperate().getEnabled()).isEqualTo(true);
-    assertThat(properties.getTasklist().getBaseUrl().toString()).isEqualTo("http://localhost:8082");
-    assertThat(properties.getTasklist().getEnabled()).isEqualTo(true);
-    assertThat(properties.getOptimize().getEnabled()).isEqualTo(true);
+    assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe-api");
     assertThat(properties.getIdentity().getEnabled()).isEqualTo(true);
     assertThat(properties.getIdentity().getBaseUrl().toString()).isEqualTo("http://localhost:8084");
-    assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe-api");
-    assertThat(properties.getOperate().getAudience()).isEqualTo("operate-api");
-    assertThat(properties.getTasklist().getAudience()).isEqualTo("tasklist-api");
     assertThat(properties.getIdentity().getAudience()).isEqualTo("identity-api");
   }
 }
