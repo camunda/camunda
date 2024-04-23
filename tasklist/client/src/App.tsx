@@ -34,7 +34,6 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
 import {tracking} from 'modules/tracking';
-import {C3Provider} from 'C3Provider';
 
 const Wrapper: React.FC = () => {
   return (
@@ -93,15 +92,13 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary FallbackComponent={FallbackErrorPage}>
-      <C3Provider>
-        <ThemeProvider>
-          <ReactQueryProvider>
-            <Notifications />
-            <NetworkStatusWatcher />
-            <RouterProvider router={router} />
-          </ReactQueryProvider>
-        </ThemeProvider>
-      </C3Provider>
+      <ThemeProvider>
+        <ReactQueryProvider>
+          <Notifications />
+          <NetworkStatusWatcher />
+          <RouterProvider router={router} />
+        </ReactQueryProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };
