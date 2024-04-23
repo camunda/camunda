@@ -36,9 +36,9 @@ import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +83,7 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void getBackupsReturnsEmptyListOfBackups() throws Exception {
+  void getBackupsReturnsEmptyListOfBackups() {
     mockSynchronSnapshotOperations();
 
     final var response = new OpenSearchGetSnapshotResponse();
@@ -93,7 +93,7 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void getBackupsReturnsNotEmptyListOfBackups() throws Exception {
+  void getBackupsReturnsNotEmptyListOfBackups() {
     final var metadata =
         new Metadata().setBackupId(5L).setVersion("1").setPartNo(1).setPartCount(3);
     final var snapshotInfos =
@@ -198,7 +198,7 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void getBackupState() throws IOException {
+  void getBackupState() {
     mockSynchronSnapshotOperations();
     mockObjectMapperForMetadata(new Metadata().setPartCount(3));
 
@@ -226,16 +226,15 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void validateRepositoryExistsSuccess() throws IOException {
+  void validateRepositoryExistsSuccess() {
     mockSynchronSnapshotOperations();
-    when(openSearchSnapshotOperations.getRepository(any()))
-        .thenReturn(new GetRepositoryResponse.Builder().build());
+    when(openSearchSnapshotOperations.getRepository(any())).thenReturn(Map.of());
 
     repository.validateRepositoryExists("repo");
   }
 
   @Test
-  void validateRepositoryExistsFailed() throws IOException {
+  void validateRepositoryExistsFailed() {
     mockSynchronSnapshotOperations();
     when(openSearchSnapshotOperations.getRepository(any()))
         .thenThrow(
@@ -256,7 +255,7 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void validateNoDuplicateBackupIdSuccess() throws IOException {
+  void validateNoDuplicateBackupIdSuccess() {
     mockSynchronSnapshotOperations();
     when(openSearchSnapshotOperations.get(any())).thenReturn(new OpenSearchGetSnapshotResponse());
 
@@ -264,7 +263,7 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void validateNoDuplicateBackupIdFailed() throws IOException {
+  void validateNoDuplicateBackupIdFailed() {
     mockSynchronSnapshotOperations();
     when(openSearchSnapshotOperations.get(any()))
         .thenReturn(
