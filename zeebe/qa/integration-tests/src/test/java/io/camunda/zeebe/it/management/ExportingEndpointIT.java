@@ -210,8 +210,8 @@ final class ExportingEndpointIT {
   @Test
   void shouldSoftPauseExporting() {
 
-    final Map<Integer, Long> exportedPositionPerPartition = new HashMap<>();
-    final Map<Integer, Long> secondExportedPositionPerPartition = new HashMap<>();
+    final Map<Integer, Long> exportedPositionPerPartition;
+    final Map<Integer, Long> secondExportedPositionPerPartition;
     // given
     client
         .newPublishMessageCommand()
@@ -227,15 +227,7 @@ final class ExportingEndpointIT {
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
-    for (final var broker : CLUSTER.brokers().values()) {
-      PartitionsActuator.of(broker)
-          .query()
-          .forEach(
-              (partitionId, partitionStatus) -> {
-                exportedPositionPerPartition.put(partitionId, partitionStatus.exportedPosition());
-              });
-    }
-
+    exportedPositionPerPartition = getExportedPositions();
     // when
     getActuator().softPause();
 
@@ -254,25 +246,17 @@ final class ExportingEndpointIT {
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
-    for (final var broker : CLUSTER.brokers().values()) {
-      PartitionsActuator.of(broker)
-          .query()
-          .forEach(
-              (partitionId, partitionStatus) -> {
-                secondExportedPositionPerPartition.put(
-                    partitionId, partitionStatus.exportedPosition());
-              });
-    }
-
+    secondExportedPositionPerPartition = getExportedPositions();
     assertThat(recordsAfterSoftPause).isGreaterThan(recordsBeforePause);
-    assertThat(exportedPositionPerPartition.equals(secondExportedPositionPerPartition)).isTrue();
+    assertThat(exportedPositionPerPartition).isEqualTo(secondExportedPositionPerPartition);
   }
 
   @Test
   void shouldResumeAfterSoftPauseExporting() {
 
-    final Map<Integer, Long> exportedPositionPerPartition = new HashMap<>();
-    final Map<Integer, Long> secondExportedPositionPerPartition = new HashMap<>();
+    final Map<Integer, Long> exportedPositionPerPartition;
+    final Map<Integer, Long> secondExportedPositionPerPartition;
+
     // given
     client
         .newPublishMessageCommand()
@@ -288,15 +272,7 @@ final class ExportingEndpointIT {
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
-    for (final var broker : CLUSTER.brokers().values()) {
-      PartitionsActuator.of(broker)
-          .query()
-          .forEach(
-              (partitionId, partitionStatus) -> {
-                exportedPositionPerPartition.put(partitionId, partitionStatus.exportedPosition());
-              });
-    }
-
+    exportedPositionPerPartition = getExportedPositions();
     // when
     getActuator().softPause();
 
@@ -316,21 +292,8 @@ final class ExportingEndpointIT {
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     getActuator().resume();
-    try {
-      Thread.sleep(1000);
-    } catch (final InterruptedException e) {
-      throw new RuntimeException(e);
-    }
 
-    for (final var broker : CLUSTER.brokers().values()) {
-      PartitionsActuator.of(broker)
-          .query()
-          .forEach(
-              (partitionId, partitionStatus) -> {
-                secondExportedPositionPerPartition.put(
-                    partitionId, partitionStatus.exportedPosition());
-              });
-    }
+    secondExportedPositionPerPartition = getExportedPositions();
 
     assertThat(recordsAfterSoftPause).isGreaterThan(recordsBeforePause);
     // at least one partition should have a higher exported position
@@ -379,8 +342,28 @@ final class ExportingEndpointIT {
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
+    final Map<Integer, Long> exportedPositionsAfterSoftPause = getExportedPositions();
+
     // then
     assertThat(recordsAfterRestart).isGreaterThan(recordsBeforePause);
     Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
+    // all partitions should have -1 as exported position due to restart and the exporter positions
+    // not being able to update due to soft pause.
+    assertTrue(
+        exportedPositionsAfterSoftPause.entrySet().stream()
+            .allMatch(exportedPosition -> exportedPosition.getValue().equals(-1L)));
+  }
+
+  Map<Integer, Long> getExportedPositions() {
+    final Map<Integer, Long> exportedPositionPerPartition = new HashMap<>();
+    for (final var broker : CLUSTER.brokers().values()) {
+      PartitionsActuator.of(broker)
+          .query()
+          .forEach(
+              (partitionId, partitionStatus) -> {
+                exportedPositionPerPartition.put(partitionId, partitionStatus.exportedPosition());
+              });
+    }
+    return exportedPositionPerPartition;
   }
 }
