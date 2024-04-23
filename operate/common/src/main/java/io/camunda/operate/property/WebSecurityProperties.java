@@ -54,26 +54,6 @@ public class WebSecurityProperties {
           + " worker-src 'self' blob:;"
           + " sandbox allow-forms allow-scripts allow-same-origin allow-popups";
 
-  /*
-  const SM cspDirectives = {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'"],
-    scriptSrcElem: ["'self'", `'nonce-${ctx.state.nonce}'`],
-    connectSrc: [
-      "'self'",
-      ...getPusherConnectSrc(client.pusher),
-      getBaseUrl(oAuth2.token.issuer),
-      `*.${camundaCloudBaseDomain}`
-    ],
-    frameSrc: ["'self'", 'https:'],
-    fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://fonts.camunda.io'],
-    mediaSrc: ["'self'", 'data:'],
-    styleSrc: ["'self'", 'https://fonts.googleapis.com', 'https://fonts.google.com', "'unsafe-inline'"],
-    imgSrc: ['*', 'data:'],
-    workerSrc: ["'self'", 'blob:']
-  };
-   */
-
   // What if a year has 366 days? :)
   // Use recommendation of https://hstspreload.org/
   public static final long DEFAULT_HSTS_MAX_AGE =
