@@ -122,7 +122,7 @@ jobs:
         parameters: verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
       with:
         name: migration-junit
         path: |
@@ -190,7 +190,7 @@ jobs:
         parameters: verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
       with:
         name: data-upgrade-test-junit
         path: |
@@ -279,7 +279,7 @@ jobs:
 
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
       with:
         name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
         path: |
@@ -357,7 +357,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
@@ -437,7 +437,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
           name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
           path: |

@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
           name: es-compatibility-${{ matrix.esVersion }}-${{ matrix.includedGroups }}-${{ matrix.excludedGroups }}-${{ matrix.profile }}-junit
           path: |
