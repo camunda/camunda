@@ -25,7 +25,7 @@ final class FlowControlTest {
     final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
     final var error = new RuntimeException();
     // when
-    final var inFlight = flow.tryAcquire().orElseThrow();
+    final var inFlight = flow.tryAcquire().get();
     inFlight.onWriteError(error);
     // then
     Mockito.verify(errorHandler).onWriteError(error);
@@ -38,7 +38,7 @@ final class FlowControlTest {
     final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
     final var error = new RuntimeException();
     // when
-    final var inFlight = flow.tryAcquire().orElseThrow();
+    final var inFlight = flow.tryAcquire().get();
     inFlight.onCommitError(0, error);
     // then
     Mockito.verify(errorHandler).onCommitError(error);
@@ -54,7 +54,7 @@ final class FlowControlTest {
     Awaitility.await("Rejects new appends")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> flow.tryAcquire().isEmpty());
+        .until(() -> flow.tryAcquire().isLeft());
   }
 
   @Test
@@ -67,7 +67,7 @@ final class FlowControlTest {
     final var inFlight = new LinkedList<InFlightAppend>();
     do {
       final var result = flow.tryAcquire();
-      if (result.isEmpty()) {
+      if (result.isLeft()) {
         rejecting = true;
       } else {
         inFlight.push(result.get());
@@ -76,6 +76,6 @@ final class FlowControlTest {
     inFlight.forEach(append -> append.onCommit(1));
 
     // then
-    Awaitility.await("Eventually accepts appends again").until(() -> flow.tryAcquire().isPresent());
+    Awaitility.await("Eventually accepts appends again").until(() -> flow.tryAcquire().isRight());
   }
 }

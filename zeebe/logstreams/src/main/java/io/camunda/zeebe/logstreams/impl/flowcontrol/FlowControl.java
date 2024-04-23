@@ -10,9 +10,10 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.Environment;
 import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,16 +38,15 @@ public final class FlowControl {
    * @return An Optional containing a {@link InFlightAppend} if append was accepted, an empty
    *     Optional otherwise.
    */
-  public Optional<InFlightAppend> tryAcquire() {
-    final var inFlightAppend =
-        limiter
-            .acquire(null)
-            .map(limiterListener -> new InFlightAppend(errorHandler, limiterListener, metrics));
-    if (inFlightAppend.isEmpty()) {
+  public Either<Rejection, InFlightAppend> tryAcquire() {
+    final var appendLimitListener = limiter.acquire(null).orElse(null);
+    if (appendLimitListener == null) {
       metrics.increaseDeferredAppends();
       LOG.trace("Skipping append due to backpressure");
+      return Either.left(new AppendLimitExhausted());
     }
-    return inFlightAppend;
+
+    return Either.right(new InFlightAppend(errorHandler, appendLimitListener, metrics));
   }
 
   private Limiter<Void> configureLimiter() {
@@ -75,5 +75,9 @@ public final class FlowControl {
         .limit(windowedLimiter ? WindowedLimit.newBuilder().build(abstractLimit) : abstractLimit)
         .metrics(metrics)
         .build();
+  }
+
+  public sealed interface Rejection {
+    record AppendLimitExhausted() implements Rejection {}
   }
 }

@@ -12,6 +12,8 @@ import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FR
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightAppend;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -22,6 +24,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.Either.Left;
+import io.camunda.zeebe.util.Either.Right;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,9 +98,12 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
       return Either.left(WriteFailure.INVALID_ARGUMENT);
     }
 
-    final var inflightAppend = flowControl.tryAcquire().orElse(null);
-    if (inflightAppend == null) {
-      return Either.left(WriteFailure.FULL);
+    final InFlightAppend inflightAppend;
+    switch (flowControl.tryAcquire()) {
+      case final Left<Rejection, InFlightAppend> ignored -> {
+        return Either.left(WriteFailure.FULL);
+      }
+      case final Right<Rejection, InFlightAppend> accepted -> inflightAppend = accepted.get();
     }
 
     final long currentPosition;
